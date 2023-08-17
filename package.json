@@ -4,12 +4,13 @@
   "license": "MIT",
   "scripts": {},
   "private": true,
-  "dependencies": {},
   "devDependencies": {
+    "@nxrocks/nx-flutter": "^7.0.3",
     "nx": "16.7.1",
     "nx-cloud": "latest"
   },
   "workspaces": [
-    "packages/*"
+    "libs/*",
+    "apps/*"
   ]
 }

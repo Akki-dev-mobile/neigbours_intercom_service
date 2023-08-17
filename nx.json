@@ -14,5 +14,12 @@
         "accessToken": "ZWJmZmZmNjEtMTdhZS00MjZhLTk4YWYtMzE2MWRiZDBmMjlifHJlYWQtd3JpdGU="
       }
     }
+  },
+  "plugins": [
+    "@nxrocks/nx-flutter"
+  ],
+  "workspaceLayout": {
+    "appsDir": "apps",
+    "libsDir": "libs"
   }
 }

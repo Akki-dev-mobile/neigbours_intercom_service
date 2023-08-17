@@ -1,0 +1,156 @@
+{
+  "name": "flutter-onegate",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/flutter/onegate/src",
+  "projectType": "application",
+  "targets": {
+    "analyze": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter analyze",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter clean",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter format apps/flutter/onegate/*",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter test",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "doctor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter doctor",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "assemble": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter assemble",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "attach": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter attach",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "drive": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter drive",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "gen-l10n": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter gen-l10n",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "install": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter install",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter run",
+        "cwd": "apps/flutter/onegate"
+      }
+    },
+    "build-aar": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build aar",
+        "cwd": "apps/flutter/onegate"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter/onegate/build"
+      ]
+    },
+    "build-apk": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build apk",
+        "cwd": "apps/flutter/onegate"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter/onegate/build"
+      ]
+    },
+    "build-appbundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build appbundle",
+        "cwd": "apps/flutter/onegate"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter/onegate/build"
+      ]
+    },
+    "build-bundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build bundle",
+        "cwd": "apps/flutter/onegate"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter/onegate/build"
+      ]
+    },
+    "build-ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ios",
+        "cwd": "apps/flutter/onegate"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter/onegate/build"
+      ]
+    },
+    "build-ios-framework": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ios-framework",
+        "cwd": "apps/flutter/onegate"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter/onegate/build"
+      ]
+    },
+    "build-ipa": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ipa",
+        "cwd": "apps/flutter/onegate"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter/onegate/build"
+      ]
+    }
+  },
+  "tags": []
+}
