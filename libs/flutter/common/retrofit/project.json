@@ -1,0 +1,114 @@
+{
+  "name": "flutter-common-retrofit",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/flutter/common/retrofit/src",
+  "projectType": "library",
+  "targets": {
+    "analyze": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter analyze",
+        "cwd": "libs/flutter/common/retrofit"
+      }
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter clean",
+        "cwd": "libs/flutter/common/retrofit"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter format libs/flutter/common/retrofit/*",
+        "cwd": "libs/flutter/common/retrofit"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter test",
+        "cwd": "libs/flutter/common/retrofit"
+      }
+    },
+    "doctor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter doctor",
+        "cwd": "libs/flutter/common/retrofit"
+      }
+    },
+    "build-aar": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build aar",
+        "cwd": "libs/flutter/common/retrofit"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/common/retrofit/build"
+      ]
+    },
+    "build-apk": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build apk",
+        "cwd": "libs/flutter/common/retrofit"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/common/retrofit/build"
+      ]
+    },
+    "build-appbundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build appbundle",
+        "cwd": "libs/flutter/common/retrofit"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/common/retrofit/build"
+      ]
+    },
+    "build-bundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build bundle",
+        "cwd": "libs/flutter/common/retrofit"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/common/retrofit/build"
+      ]
+    },
+    "build-ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ios",
+        "cwd": "libs/flutter/common/retrofit"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/common/retrofit/build"
+      ]
+    },
+    "build-ios-framework": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ios-framework",
+        "cwd": "libs/flutter/common/retrofit"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/common/retrofit/build"
+      ]
+    },
+    "build-ipa": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ipa",
+        "cwd": "libs/flutter/common/retrofit"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/common/retrofit/build"
+      ]
+    }
+  },
+  "tags": []
+}
