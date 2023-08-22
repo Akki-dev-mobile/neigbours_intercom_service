@@ -1,103 +1,63 @@
 import 'package:flutter/material.dart';
-
 import 'theme_helper.dart';
+import 'theme_manager_config.dart';
 
 class ThemeManager {
   static ThemeData lightTheme = ThemeData.light();
   static ThemeData darkTheme = ThemeData.dark();
 
-  static Future<void> initializeThemes() async {
-    Map<String, dynamic> config = await ThemeHelper.loadConfig();
+  static Future<void> initializeWithAppId(String appId) async {
+    Map<String, dynamic> config = await ThemeHelper.loadConfigForApp(appId);
+    _initializeThemes(config);
+  }
 
-    lightTheme = ThemeData.light().copyWith(
+  static void _initializeThemes(Map<String, dynamic> config) {
+    lightTheme = _buildTheme(config, true);
+    darkTheme = _buildTheme(config, false);
+  }
+
+  static ThemeData _buildTheme(Map<String, dynamic> config, bool isDark) {
+    Map<String, dynamic> themeData =
+        config['themes'][isDark ? 'dark' : 'light'];
+
+    return ThemeData(
+      brightness: isDark ? Brightness.dark : Brightness.light,
       textTheme: TextTheme(
         displayLarge: TextStyle(
-          fontSize: getConfigValue(config, 'fonts.headline.size'),
-          fontWeight:
-              parseFontWeight(getConfigValue(config, 'fonts.headline.weight')),
-        ),
-        displayMedium: TextStyle(
-          fontSize: getConfigValue(config, 'fonts.subheadline.size'),
-          fontWeight: parseFontWeight(
-              getConfigValue(config, 'fonts.subheadline.weight')),
-        ),
-        bodyLarge: TextStyle(
-          fontSize: getConfigValue(config, 'fonts.primary.size'),
-          fontWeight:
-              parseFontWeight(getConfigValue(config, 'fonts.primary.weight')),
+          fontSize: ThemeManagerConfig.getFontValue(
+              themeData, 'fonts.titleLarge.size'),
+          fontWeight: ThemeManagerConfig.parseFontWeight(
+              ThemeManagerConfig.getFontValue(
+                  themeData, 'fonts.titleLarge.weight')),
+          // color: HexColor.fromHex(
+          //     ThemeManagerConfig.getColor(themeData, 'titleLarge.color')),
         ),
       ),
       colorScheme: ColorScheme.light(
-        primary: HexColor.fromHex(getConfigValue(config, 'colors.primary')),
-        secondary: HexColor.fromHex(getConfigValue(config, 'colors.secondary')),
-        background:
-            HexColor.fromHex(getConfigValue(config, 'colors.background')),
-        onPrimary: HexColor.fromHex(getConfigValue(config, 'colors.text')),
-        onSecondary: HexColor.fromHex(getConfigValue(config, 'colors.text')),
+        background: HexColor.fromHex(
+          ThemeManagerConfig.getColor(themeData, 'colors.primaryBackground'),
+        ),
+        primary: HexColor.fromHex(
+          ThemeManagerConfig.getColor(themeData, 'colors.surfaceTint'),
+        ),
+        // secondary: HexColor.fromHex(
+        //     ThemeManagerConfig.getColor(themeData, 'secondary')),
+        // surface:
+        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'surface')),
+        // onBackground: HexColor.fromHex(
+        //     ThemeManagerConfig.getColor(themeData, 'onBackground')),
+        // onSurface: HexColor.fromHex(
+        //     ThemeManagerConfig.getColor(themeData, 'onSurface')),
+        // error:
+        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'error')),
+        // onError:
+        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'onError')),
+        // brightness: isDark ? Brightness.dark : Brightness.light,
+        // onPrimary:
+        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'onError')),
+        // onSecondary:
+        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'onError')),
       ),
     );
-
-    darkTheme = ThemeData.dark().copyWith(
-      textTheme: TextTheme(
-        displayLarge: TextStyle(
-          fontSize: getConfigValue(config, 'fonts.headline.size'),
-          fontWeight:
-              parseFontWeight(getConfigValue(config, 'fonts.headline.weight')),
-        ),
-        displayMedium: TextStyle(
-          fontSize: getConfigValue(config, 'fonts.subheadline.size'),
-          fontWeight: parseFontWeight(
-              getConfigValue(config, 'fonts.subheadline.weight')),
-        ),
-        bodyLarge: TextStyle(
-          fontSize: getConfigValue(config, 'fonts.primary.size'),
-          fontWeight:
-              parseFontWeight(getConfigValue(config, 'fonts.primary.weight')),
-        ),
-      ),
-      colorScheme: ColorScheme.dark(
-        primary: HexColor.fromHex(getConfigValue(config, 'colors.primary')),
-        secondary: HexColor.fromHex(getConfigValue(config, 'colors.secondary')),
-        background:
-            HexColor.fromHex(getConfigValue(config, 'colors.background')),
-        onPrimary: HexColor.fromHex(getConfigValue(config, 'colors.text')),
-        onSecondary: HexColor.fromHex(getConfigValue(config, 'colors.text')),
-      ),
-    );
-  }
-
-  static dynamic getConfigValue(Map<String, dynamic> config, String path) {
-    List<String> keys = path.split('.');
-    dynamic value = config;
-    for (String key in keys) {
-      value = value[key];
-    }
-    return value;
-  }
-
-  static FontWeight parseFontWeight(String value) {
-    switch (value) {
-      case 'bold':
-        return FontWeight.bold;
-      case 'normal':
-      default:
-        return FontWeight.normal;
-    }
-  }
-}
-
-class HexColor extends Color {
-  static int _getColorFromHex(String hexColor) {
-    hexColor = hexColor.toUpperCase().replaceAll('#', '');
-    if (hexColor.length == 6) {
-      hexColor = 'FF' + hexColor;
-    }
-    return int.parse(hexColor, radix: 16);
-  }
-
-  HexColor(final String hexColor) : super(_getColorFromHex(hexColor));
-
-  static Color fromHex(String hexColor) {
-    return HexColor(hexColor);
   }
 }

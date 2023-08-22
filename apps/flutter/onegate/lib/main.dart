@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:one_theme/theme.dart';
-
 import 'presentation/pages/login_page.dart';
 
-void main() {
+void main() async {
+  String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
@@ -19,6 +19,7 @@ void main() {
       statusBarBrightness: Brightness.light,
     ),
   );
+  await ThemeManager.initializeWithAppId(appId);
   runApp(
     DevicePreview(
       enabled: kDebugMode,
@@ -34,7 +35,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
-      home: LoginInView(),
+      darkTheme: ThemeManager.darkTheme,
+      home: const LoginInView(),
     );
   }
 }

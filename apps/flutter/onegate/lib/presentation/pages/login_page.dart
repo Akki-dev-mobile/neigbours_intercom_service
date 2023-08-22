@@ -44,20 +44,20 @@ class _LoginInViewState extends State<LoginInView> {
         mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Lottie.asset(
-            'assets/lottie/authAnimation.json',
-            height: 180,
-            width: double.infinity,
-          ),
+          // Lottie.asset(
+          //   'assets/lottie/authAnimation.json',
+          //   height: 180,
+          //   width: double.infinity,
+          // ),
           ListTile(
             contentPadding: EdgeInsets.only(top: 20, bottom: 10),
             title: Text(
               'Login',
-              style: Theme.of(context).textTheme.bodyLarge,
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             subtitle: Text(
               "Welcome back! Let's dive in.",
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
           CustomForm.textField(

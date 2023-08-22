@@ -2,8 +2,9 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
 
 class ThemeHelper {
-  static Future<Map<String, dynamic>> loadConfig() async {
-    String jsonString = await rootBundle.loadString('assets/theme.json');
+  static Future<Map<String, dynamic>> loadConfigForApp(String appId) async {
+    String jsonString =
+        await rootBundle.loadString('assets/onegate/theme.json');
     return json.decode(jsonString);
   }
 
