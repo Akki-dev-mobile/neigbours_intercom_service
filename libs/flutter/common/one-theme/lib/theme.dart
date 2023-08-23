@@ -1,4 +1,7 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'theme_helper.dart';
 import 'theme_manager_config.dart';
 
@@ -8,29 +11,104 @@ class ThemeManager {
 
   static Future<void> initializeWithAppId(String appId) async {
     Map<String, dynamic> config = await ThemeHelper.loadConfigForApp(appId);
-    _initializeThemes(config);
+    await _initializeThemes(config);
   }
 
-  static void _initializeThemes(Map<String, dynamic> config) {
-    lightTheme = _buildTheme(config, true);
-    darkTheme = _buildTheme(config, false);
+  static Future<void> _initializeThemes(Map<String, dynamic> config) async {
+    lightTheme = await _buildTheme(config, false);
+    //darkTheme = _buildTheme(config, true);
   }
 
-  static ThemeData _buildTheme(Map<String, dynamic> config, bool isDark) {
+  static Future<ThemeData> _buildTheme(
+      Map<String, dynamic> config, bool isDark) async {
     Map<String, dynamic> themeData =
         config['themes'][isDark ? 'dark' : 'light'];
 
     return ThemeData(
-      brightness: isDark ? Brightness.dark : Brightness.light,
       textTheme: TextTheme(
         displayLarge: TextStyle(
           fontSize: ThemeManagerConfig.getFontValue(
-              themeData, 'fonts.titleLarge.size'),
+              themeData, 'fonts.displayLarge.size'),
           fontWeight: ThemeManagerConfig.parseFontWeight(
-              ThemeManagerConfig.getFontValue(
-                  themeData, 'fonts.titleLarge.weight')),
-          // color: HexColor.fromHex(
-          //     ThemeManagerConfig.getColor(themeData, 'titleLarge.color')),
+            ThemeManagerConfig.getFontValue(
+                themeData, 'fonts.displayLarge.weight'),
+          ),
+          color: HexColor.fromHex(
+            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+          ),
+        ),
+        displayMedium: TextStyle(
+          fontSize: ThemeManagerConfig.getFontValue(
+              themeData, 'fonts.displayMedium.size'),
+          fontWeight: ThemeManagerConfig.parseFontWeight(
+            ThemeManagerConfig.getFontValue(
+                themeData, 'fonts.displayMedium.weight'),
+          ),
+          color: HexColor.fromHex(
+            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+          ),
+        ),
+        displaySmall: TextStyle(
+          fontSize: ThemeManagerConfig.getFontValue(
+              themeData, 'fonts.displaySmall.size'),
+          fontWeight: ThemeManagerConfig.parseFontWeight(
+            ThemeManagerConfig.getFontValue(
+                themeData, 'fonts.displaySmall.weight'),
+          ),
+          color: HexColor.fromHex(
+            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+          ),
+        ),
+        bodyLarge: TextStyle(
+          fontSize: ThemeManagerConfig.getFontValue(
+              themeData, 'fonts.bodyLarge.size'),
+          fontWeight: ThemeManagerConfig.parseFontWeight(
+            ThemeManagerConfig.getFontValue(
+                themeData, 'fonts.bodyLarge.weight'),
+          ),
+          color: HexColor.fromHex(
+            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+          ),
+        ),
+        bodyMedium: TextStyle(
+          fontSize: ThemeManagerConfig.getFontValue(
+              themeData, 'fonts.bodyMedium.size'),
+          fontWeight: ThemeManagerConfig.parseFontWeight(
+            ThemeManagerConfig.getFontValue(
+                themeData, 'fonts.bodyMedium.weight'),
+          ),
+          color: HexColor.fromHex(
+            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+          ),
+        ),
+        labelMedium: TextStyle(
+          fontSize: ThemeManagerConfig.getFontValue(
+              themeData, 'fonts.labelMedium.size'),
+          fontWeight: ThemeManagerConfig.parseFontWeight(
+            ThemeManagerConfig.getFontValue(
+                themeData, 'fonts.labelMedium.weight'),
+          ),
+          color: HexColor.fromHex(
+            ThemeManagerConfig.getColor(themeData, 'colors.mutedText'),
+          ),
+        ),
+        labelSmall: TextStyle(
+          fontSize: ThemeManagerConfig.getFontValue(
+              themeData, 'fonts.labelSmall.size'),
+          fontWeight: ThemeManagerConfig.parseFontWeight(
+            ThemeManagerConfig.getFontValue(
+                themeData, 'fonts.labelSmall.weight'),
+          ),
+          color: HexColor.fromHex(
+            ThemeManagerConfig.getColor(themeData, 'colors.mutedText'),
+          ),
+        ),
+      ),
+      appBarTheme: AppBarTheme(
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         ),
       ),
       colorScheme: ColorScheme.light(
@@ -38,25 +116,13 @@ class ThemeManager {
           ThemeManagerConfig.getColor(themeData, 'colors.primaryBackground'),
         ),
         primary: HexColor.fromHex(
-          ThemeManagerConfig.getColor(themeData, 'colors.surfaceTint'),
+          ThemeManagerConfig.getColor(themeData, 'colors.primaryContainer'),
         ),
-        // secondary: HexColor.fromHex(
-        //     ThemeManagerConfig.getColor(themeData, 'secondary')),
-        // surface:
-        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'surface')),
-        // onBackground: HexColor.fromHex(
-        //     ThemeManagerConfig.getColor(themeData, 'onBackground')),
-        // onSurface: HexColor.fromHex(
-        //     ThemeManagerConfig.getColor(themeData, 'onSurface')),
-        // error:
-        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'error')),
-        // onError:
-        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'onError')),
-        // brightness: isDark ? Brightness.dark : Brightness.light,
-        // onPrimary:
-        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'onError')),
-        // onSecondary:
-        //     HexColor.fromHex(ThemeManagerConfig.getColor(themeData, 'onError')),
+        onPrimary: HexColor.fromHex(
+          ThemeManagerConfig.getColor(themeData, 'colors.kBlackColor'),
+        ),
+
+        // "primaryContainer": "#FAFAFA",
       ),
     );
   }

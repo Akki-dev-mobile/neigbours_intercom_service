@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme.dart';
 
 class HexColor extends Color {
   static int _getColorFromHex(String hexColor) {
@@ -18,11 +19,13 @@ class HexColor extends Color {
 
 class ThemeManagerConfig {
   static dynamic getFontValue(Map<String, dynamic> themeData, String path) {
-    return getConfigValue(themeData, 'fonts.$path');
+    debugPrint('getFontValue: ${getConfigValue(themeData, '$path')}');
+    return getConfigValue(themeData, '$path');
   }
 
   static dynamic getColor(Map<String, dynamic> themeData, String path) {
-    return getConfigValue(themeData, 'colors.$path');
+    debugPrint('getColorValue: ${getConfigValue(themeData, '$path')}');
+    return getConfigValue(themeData, '$path');
   }
 
   static FontWeight parseFontWeight(String value) {

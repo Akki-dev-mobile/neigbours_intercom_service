@@ -37,6 +37,7 @@ class MyScrollView extends StatelessWidget {
             : const NeverScrollableScrollPhysics(),
         slivers: <Widget>[
           SliverAppBar(
+            elevation: 0,
             automaticallyImplyLeading: false,
             leading: hasBackButton
                 ? IconButton(
@@ -62,7 +63,7 @@ class MyScrollView extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Theme.of(context).colorScheme.surfaceVariant,
+                      Theme.of(context).colorScheme.primary,
                       Theme.of(context).colorScheme.background,
                     ],
                   ),
@@ -112,6 +113,7 @@ class CustomForm {
     ValueChanged<String>? onChanged,
     ValueChanged<String>? onFieldSubmitted,
     String? errorText,
+    required Color focusedColor,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 2),
@@ -180,6 +182,13 @@ class CustomForm {
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
                   style: BorderStyle.solid,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(
+                  style: BorderStyle.solid,
+                  color: focusedColor,
                 ),
               ),
               prefixIcon: prefixIcon,
