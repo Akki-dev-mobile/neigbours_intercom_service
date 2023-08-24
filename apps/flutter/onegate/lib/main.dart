@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:one_theme/theme.dart';
 import 'features/login/login_page.dart';
+import 'features/login/ui/login_view.dart';
 
 void main() async {
   String appId = "onegate";
@@ -34,8 +35,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
-      darkTheme: ThemeManager.darkTheme,
-      home: const LoginInView(),
+      // darkTheme: ThemeManager.darkTheme,
+      home: const LoginView(),
     );
   }
 }

@@ -12,20 +12,6 @@ class LoaderView extends StatefulWidget {
 }
 
 class _LoaderViewState extends State<LoaderView> {
-  // @override
-  // void initState() {
-  //   super.initState();
-
-  //   Future.delayed(Duration(seconds: 2), () {
-  //     Navigator.push(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (context) => LoginInView(),
-  //       ),
-  //     );
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
