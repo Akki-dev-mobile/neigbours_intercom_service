@@ -24,3 +24,7 @@ class SocietySelectionButtonEvent extends LoginEvent {
   //   required this.societyId,
   // });
 }
+
+class AdminRoleSelectionButtonEvent extends LoginEvent {}
+
+class GateKeeperRoleSelectionButtonEvent extends LoginEvent {}

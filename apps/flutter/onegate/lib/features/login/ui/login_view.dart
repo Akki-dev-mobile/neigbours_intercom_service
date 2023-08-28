@@ -58,7 +58,23 @@ class _LoginViewState extends State<LoginView> {
           //     child: JoinOnegateView(),
           //   ),
           // );
-        } else if (state is ForgotPasswordButtonPressedState) {}
+        } else if (state is ForgotPasswordButtonPressedState) {
+        } else if (state is SocietySelectionButtonPressedState) {
+          Navigator.pop(context);
+          _roleSelectionBottomSheet(context);
+        } else if (state is AdminRoleSelectionButtonPressedState) {
+          Navigator.pop(context);
+          // Navigator.push(
+          //   context,
+          //   PageTransition(
+          //     type: PageTransitionType.rightToLeft,
+          //     child: AdminDashboard(),
+          //   ),
+          // );
+        } else if (state is GatekeeperRoleSelectionButtonPressedState) {
+          _haveOfflineLoginPopup(context);
+          Navigator.pop(context);
+        }
       },
       builder: (context, state) {
         return MyScrollView(
@@ -226,7 +242,7 @@ class _LoginViewState extends State<LoginView> {
                 },
                 child: Text(
                   'Forgot Password?',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.labelMedium,
                 ),
               ),
             ],
@@ -336,8 +352,9 @@ class _LoginViewState extends State<LoginView> {
                   CustomLargeBtn(
                     text: 'CONFIRM',
                     onPressed: () {
-                      Navigator.pop(context);
-                      _roleSelectionBottomSheet(context);
+                      loginBloc.add(
+                        SocietySelectionButtonEvent(),
+                      );
                     },
                   ),
                   SizedBox(height: 50.0),
@@ -466,18 +483,16 @@ class _LoginViewState extends State<LoginView> {
                     text: 'CONFIRM',
                     onPressed: _selectedValue == 1
                         ? () {
-                            Navigator.pop(context);
-                            // Navigator.push(
-                            //   context,
-                            //   PageTransition(
-                            //     type: PageTransitionType.rightToLeft,
-                            //     child: AdminDashboard(),
-                            //   ),
-                            // );
+                            loginBloc.add(
+                              AdminRoleSelectionButtonEvent(),
+                            );
                           }
                         : () {
-                            Navigator.pop(context);
-                            _haveOfflineLogin(context);
+                            loginBloc.add(
+                              GateKeeperRoleSelectionButtonEvent(),
+                            );
+                            // Navigator.pop(context);
+                            // _haveOfflineLogin(context);
                           },
                   ),
                   SizedBox(height: 50.0),
@@ -490,7 +505,7 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  void _haveOfflineLogin(BuildContext context) {
+  void _haveOfflineLoginPopup(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

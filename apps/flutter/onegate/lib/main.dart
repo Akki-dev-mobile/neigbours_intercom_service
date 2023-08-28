@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:one_theme/theme.dart';
-import 'features/login/login_page.dart';
 import 'features/login/ui/login_view.dart';
 
 void main() async {
