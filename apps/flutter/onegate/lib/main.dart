@@ -1,14 +1,12 @@
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:one_theme/theme.dart';
 import 'features/login/ui/login_view.dart';
 
 void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
-  // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarIconBrightness: Brightness.dark,
@@ -19,22 +17,21 @@ void main() async {
     ),
   );
   await ThemeManager.initializeWithAppId(appId);
+
   runApp(
-    DevicePreview(
-      enabled: !kDebugMode,
-      builder: (context) => const MyApp(),
-    ),
+    const KioskApp(),
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class KioskApp extends StatelessWidget {
+  const KioskApp({super.key});
+
   @override
   Widget build(BuildContext context) {
+    startKioskMode();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
-      // darkTheme: ThemeManager.darkTheme,
       home: const LoginView(),
     );
   }

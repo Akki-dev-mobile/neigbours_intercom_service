@@ -5,6 +5,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:lottie/lottie.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:ionicons/ionicons.dart';
+import '../../request_gate_access/ui/request_gate_access_view.dart';
 import '../bloc/login_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -51,13 +52,13 @@ class _LoginViewState extends State<LoginView> {
         if (state is LoginButtonPressedState) {
           _showSelectSocietyBottomSheet(context);
         } else if (state is SignUpButtonPressedState) {
-          // Navigator.push(
-          //   context,
-          //   PageTransition(
-          //     type: PageTransitionType.rightToLeft,
-          //     child: JoinOnegateView(),
-          //   ),
-          // );
+          Navigator.push(
+            context,
+            PageTransition(
+              type: PageTransitionType.rightToLeft,
+              child: RequestGateAccess(),
+            ),
+          );
         } else if (state is ForgotPasswordButtonPressedState) {
         } else if (state is SocietySelectionButtonPressedState) {
           Navigator.pop(context);
@@ -71,8 +72,12 @@ class _LoginViewState extends State<LoginView> {
           //     child: AdminDashboard(),
           //   ),
           // );
-        } else if (state is GatekeeperRoleSelectionButtonPressedState) {
+        } else if (state is GateKeeperRoleSelectionButtonPressedState) {
+          Navigator.pop(context);
           _haveOfflineLoginPopup(context);
+        } else if (state is HasOfflineLoginButtonPressedState) {
+          Navigator.pop(context);
+        } else if (state is NotHasOfflineLoginButtonPressedState) {
           Navigator.pop(context);
         }
       },
@@ -227,23 +232,29 @@ class _LoginViewState extends State<LoginView> {
                   ],
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  // Navigator.push(
-                  //   context,
-                  //   PageTransition(
-                  //     type: PageTransitionType.rightToLeft,
-                  //     child: ResetPasswordView(),
-                  //   ),
-                  // );
-                  loginBloc.add(
-                    ForgotPasswordButtonPressedEvent(),
-                  );
-                },
-                child: Text(
-                  'Forgot Password?',
-                  style: Theme.of(context).textTheme.labelMedium,
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextButton(
+                  onPressed: () {
+                    // Navigator.push(
+                    //   context,
+                    //   PageTransition(
+                    //     type: PageTransitionType.rightToLeft,
+                    //     child: ResetPasswordView(),
+                    //   ),
+                    // );
+                    loginBloc.add(
+                      ForgotPasswordButtonPressedEvent(),
+                    );
+                  },
+                  child: Text(
+                    'Forgot Password?',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                 ),
+              ),
+              SizedBox(
+                height: 30,
               ),
             ],
           ),

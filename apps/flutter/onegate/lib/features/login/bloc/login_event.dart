@@ -28,3 +28,12 @@ class SocietySelectionButtonEvent extends LoginEvent {
 class AdminRoleSelectionButtonEvent extends LoginEvent {}
 
 class GateKeeperRoleSelectionButtonEvent extends LoginEvent {}
+
+class HasOffineLoginButtonPressedEvent extends LoginEvent {
+  // final bool hasOfflineLogin;
+  // HasOffineLoginButtonPressedEvent({
+  //   required this.hasOfflineLogin,
+  // });
+}
+
+class NotHasOffineLoginButtonPressedEvent extends LoginEvent {}

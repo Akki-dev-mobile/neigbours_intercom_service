@@ -12,6 +12,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<SocietySelectionButtonEvent>(societySelectionButtonEvent);
     on<AdminRoleSelectionButtonEvent>(adminRoleSelectionButtonEvent);
     on<GateKeeperRoleSelectionButtonEvent>(gateKeeperRoleSelectionButtonEvent);
+    on<HasOffineLoginButtonPressedEvent>(hasOffineLoginButtonPressedEvent);
+    on<NotHasOffineLoginButtonPressedEvent>(
+        notHasOffineLoginButtonPressedEvent);
   }
   FutureOr<void> loginButtonPressedEvent(
       LoginButtonPressedEvent event, Emitter<LoginState> emit) {
@@ -57,7 +60,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       GateKeeperRoleSelectionButtonEvent event, Emitter<LoginState> emit) {
     print("gateKeeperRoleSelectionButtonEvent");
     emit(
-      GatekeeperRoleSelectionButtonPressedState(),
+      GateKeeperRoleSelectionButtonPressedState(),
     );
   }
+
+  FutureOr<void> hasOffineLoginButtonPressedEvent(
+      HasOffineLoginButtonPressedEvent event, Emitter<LoginState> emit) {
+    print("hasOffineLoginButtonPressedEvent");
+    emit(
+      HasOfflineLoginButtonPressedState(),
+    );
+  }
+
+  FutureOr<void> notHasOffineLoginButtonPressedEvent(
+      event, Emitter<LoginState> emit) {}
 }
