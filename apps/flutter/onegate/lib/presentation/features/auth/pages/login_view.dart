@@ -9,6 +9,7 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
+import '../../request_gate_access/ui/request_gate_access_view.dart';
 import '../bloc/login_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -57,14 +58,34 @@ class _LoginViewState extends State<LoginView> {
         if (state is LoginButtonPressedState) {
           _showSelectSocietyBottomSheet(context);
         } else if (state is SignUpButtonPressedState) {
+          Navigator.push(
+            context,
+            PageTransition(
+              type: PageTransitionType.rightToLeft,
+              child: RequestGateAccess(),
+            ),
+          );
+        } else if (state is ForgotPasswordButtonPressedState) {
+        } else if (state is SocietySelectionButtonPressedState) {
+          Navigator.pop(context);
+          _roleSelectionBottomSheet(context);
+        } else if (state is AdminRoleSelectionButtonPressedState) {
+          Navigator.pop(context);
           // Navigator.push(
           //   context,
           //   PageTransition(
           //     type: PageTransitionType.rightToLeft,
-          //     child: JoinOnegateView(),
+          //     child: AdminDashboard(),
           //   ),
           // );
-        } else if (state is ForgotPasswordButtonPressedState) {}
+        } else if (state is GateKeeperRoleSelectionButtonPressedState) {
+          Navigator.pop(context);
+          _haveOfflineLoginPopup(context);
+        } else if (state is HasOfflineLoginButtonPressedState) {
+          Navigator.pop(context);
+        } else if (state is NotHasOfflineLoginButtonPressedState) {
+          Navigator.pop(context);
+        }
       },
       builder: (context, state) {
         return MyScrollView(
@@ -217,23 +238,29 @@ class _LoginViewState extends State<LoginView> {
                   ],
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  // Navigator.push(
-                  //   context,
-                  //   PageTransition(
-                  //     type: PageTransitionType.rightToLeft,
-                  //     child: ResetPasswordView(),
-                  //   ),
-                  // );
-                  loginBloc.add(
-                    ForgotPasswordButtonPressedEvent(),
-                  );
-                },
-                child: Text(
-                  'Forgot Password?',
-                  style: Theme.of(context).textTheme.bodySmall,
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextButton(
+                  onPressed: () {
+                    // Navigator.push(
+                    //   context,
+                    //   PageTransition(
+                    //     type: PageTransitionType.rightToLeft,
+                    //     child: ResetPasswordView(),
+                    //   ),
+                    // );
+                    loginBloc.add(
+                      ForgotPasswordButtonPressedEvent(),
+                    );
+                  },
+                  child: Text(
+                    'Forgot Password?',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                 ),
+              ),
+              SizedBox(
+                height: 30,
               ),
             ],
           ),
@@ -342,8 +369,9 @@ class _LoginViewState extends State<LoginView> {
                   CustomLargeBtn(
                     text: 'CONFIRM',
                     onPressed: () {
-                      Navigator.pop(context);
-                      _roleSelectionBottomSheet(context);
+                      loginBloc.add(
+                        SocietySelectionButtonEvent(),
+                      );
                     },
                   ),
                   SizedBox(height: 50.0),
@@ -472,18 +500,16 @@ class _LoginViewState extends State<LoginView> {
                     text: 'CONFIRM',
                     onPressed: _selectedValue == 1
                         ? () {
-                            Navigator.pop(context);
-                            // Navigator.push(
-                            //   context,
-                            //   PageTransition(
-                            //     type: PageTransitionType.rightToLeft,
-                            //     child: AdminDashboard(),
-                            //   ),
-                            // );
+                            loginBloc.add(
+                              AdminRoleSelectionButtonEvent(),
+                            );
                           }
                         : () {
-                            Navigator.pop(context);
-                            _haveOfflineLogin(context);
+                            loginBloc.add(
+                              GateKeeperRoleSelectionButtonEvent(),
+                            );
+                            // Navigator.pop(context);
+                            // _haveOfflineLogin(context);
                           },
                   ),
                   SizedBox(height: 50.0),
@@ -496,7 +522,7 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  void _haveOfflineLogin(BuildContext context) {
+  void _haveOfflineLoginPopup(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

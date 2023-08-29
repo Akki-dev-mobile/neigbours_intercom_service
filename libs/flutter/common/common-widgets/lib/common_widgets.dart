@@ -210,7 +210,7 @@ class CustomLargeBtn extends StatelessWidget {
     required this.onPressed,
     required this.text,
   });
-  final void Function() onPressed;
+  final Function() onPressed;
   final String text;
 
   @override

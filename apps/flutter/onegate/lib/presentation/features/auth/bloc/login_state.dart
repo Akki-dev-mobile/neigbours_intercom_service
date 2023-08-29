@@ -27,3 +27,11 @@ class SignUpButtonPressedState extends LoginActionState {}
 class ForgotPasswordButtonPressedState extends LoginActionState {}
 
 class SocietySelectionButtonPressedState extends LoginActionState {}
+
+class AdminRoleSelectionButtonPressedState extends LoginActionState {}
+
+class GateKeeperRoleSelectionButtonPressedState extends LoginActionState {}
+
+class HasOfflineLoginButtonPressedState extends LoginActionState {}
+
+class NotHasOfflineLoginButtonPressedState extends LoginActionState {}
