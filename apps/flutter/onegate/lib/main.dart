@@ -6,7 +6,6 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:one_theme/theme.dart';
-import 'features/login/ui/login_view.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 
 void main() async {

@@ -9,16 +9,15 @@ final class LoginInitial extends LoginState {}
 
 class LoginLoadingState extends LoginState {}
 
-class LoginLoadingSuccessState extends LoginState {
+class LoginSuccessState extends LoginActionState {
   final AccessTokenResponse? accessTokenResponse;
   final List<Company?> companiesWithAccessToGate;
 
-  LoginLoadingSuccessState(this.accessTokenResponse, this.companiesWithAccessToGate);
+  LoginSuccessState(this.accessTokenResponse, this.companiesWithAccessToGate);
 
-  
 }
 
-class LoginLoadingErrorState extends LoginState {}
+class LoginErrorState extends LoginState {}
 
 class LoginButtonPressedState extends LoginActionState {}
 
@@ -28,10 +27,12 @@ class ForgotPasswordButtonPressedState extends LoginActionState {}
 
 class SocietySelectionButtonPressedState extends LoginActionState {}
 
-class AdminRoleSelectionButtonPressedState extends LoginActionState {}
-
-class GateKeeperRoleSelectionButtonPressedState extends LoginActionState {}
+class RoleSelectionButtonPressedState extends LoginActionState {}
 
 class HasOfflineLoginButtonPressedState extends LoginActionState {}
 
 class NotHasOfflineLoginButtonPressedState extends LoginActionState {}
+
+class NavigateToGateSelectionState extends LoginActionState {}
+
+class NavigateToAdminDashboardState extends LoginActionState {}

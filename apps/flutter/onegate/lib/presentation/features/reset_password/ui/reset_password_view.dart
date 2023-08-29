@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_onegate/features/reset_password/bloc/reset_password_bloc.dart';
+import 'package:flutter_onegate/presentation/features/reset_password/bloc/reset_password_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:common_widgets/common_widgets.dart';

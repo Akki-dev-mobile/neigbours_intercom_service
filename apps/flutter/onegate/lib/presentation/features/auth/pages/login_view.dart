@@ -6,9 +6,11 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/company.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:page_transition/page_transition.dart';
 import '../../request_gate_access/ui/request_gate_access_view.dart';
 import '../bloc/login_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,6 +36,8 @@ class _LoginViewState extends State<LoginView> {
   late bool passwordVisibility;
   String dropdownValue = list.first;
   String rbacDDV = rbac.first;
+  final LoginBloc loginBloc = LoginBloc(LoginUseCase(
+      AuthenticationRepositoryImpl(RemoteDataSource(dioInstance))));
 
   @override
   void initState() {
@@ -41,235 +45,238 @@ class _LoginViewState extends State<LoginView> {
     textController1 = TextEditingController();
     textController2 = TextEditingController();
     passwordVisibility = false;
+    loginBloc.add(LoginInitialEvent());
   }
 
   int _selectedValue = 1;
 
   
-  final LoginBloc loginBloc = LoginBloc(LoginUseCase(AuthenticationRepositoryImpl(RemoteDataSource(dioInstance))));
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<LoginBloc, LoginState>(
-      
       bloc: loginBloc,
       listenWhen: (previous, current) => current is LoginActionState,
       buildWhen: (previous, current) => current is! LoginActionState,
       listener: (context, state) {
-        if (state is LoginButtonPressedState) {
-          _showSelectSocietyBottomSheet(context);
-        } else if (state is SignUpButtonPressedState) {
-          Navigator.push(
-            context,
-            PageTransition(
-              type: PageTransitionType.rightToLeft,
-              child: RequestGateAccess(),
-            ),
-          );
-        } else if (state is ForgotPasswordButtonPressedState) {
-        } else if (state is SocietySelectionButtonPressedState) {
-          Navigator.pop(context);
-          _roleSelectionBottomSheet(context);
-        } else if (state is AdminRoleSelectionButtonPressedState) {
-          Navigator.pop(context);
-          // Navigator.push(
-          //   context,
-          //   PageTransition(
-          //     type: PageTransitionType.rightToLeft,
-          //     child: AdminDashboard(),
-          //   ),
-          // );
-        } else if (state is GateKeeperRoleSelectionButtonPressedState) {
-          Navigator.pop(context);
-          _haveOfflineLoginPopup(context);
-        } else if (state is HasOfflineLoginButtonPressedState) {
-          Navigator.pop(context);
-        } else if (state is NotHasOfflineLoginButtonPressedState) {
-          Navigator.pop(context);
+        switch(state.runtimeType){
+          case LoginSuccessState:
+          final successState = state as LoginSuccessState;
+            _showSelectSocietyBottomSheet(context,successState.companiesWithAccessToGate);
+            break;
         }
       },
       builder: (context, state) {
-        return MyScrollView(
-          hasBackButton: false,
-          pageBody: Column(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Lottie.network(
-                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
-                height: 180,
-                width: double.infinity,
+        switch (state.runtimeType) {
+          case LoginLoadingState:
+            return Scaffold(
+                body: Center(
+              child: CircularProgressIndicator(),
+            ));
+          case LoginInitial:
+            return MyScrollView(
+              hasBackButton: false,
+              pageBody: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Lottie.network(
+                    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
+                    height: 180,
+                    width: double.infinity,
+                  ),
+                  ListTile(
+                    contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
+                    title: Text(
+                      'Login',
+                      style: Theme.of(context).textTheme.displayLarge,
+                    ),
+                    subtitle: Text(
+                      "Welcome back! Let's dive in.",
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ),
+                  CustomForm.textField(
+                    'Mobile / Email',
+                    hintText: 'Mobile / Email',
+                    textController: textController1,
+                    textCapitalization: TextCapitalization.words,
+                    length: 10,
+                    focusedColor: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                  CustomForm.textField(
+                    'Password',
+                    hintText: '**********',
+                    textController: textController2,
+                    isObscureText: passwordVisibility,
+                    suffixIcon: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          passwordVisibility = !passwordVisibility;
+                        });
+                      },
+                      icon: Icon(
+                        passwordVisibility
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.black45,
+                      ),
+                    ),
+                    focusedColor: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20, bottom: 10),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.45,
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ButtonStyle(
+                              overlayColor: MaterialStateProperty.all<Color>(
+                                Color(0x80FFB080),
+                              ),
+                              backgroundColor: MaterialStateProperty.all<Color>(
+                                  Colors.white),
+                              elevation:
+                                  MaterialStateProperty.resolveWith<double>(
+                                (Set<MaterialState> states) {
+                                  if (states.contains(MaterialState.pressed)) {
+                                    return 8;
+                                  }
+                                  return 0;
+                                },
+                              ),
+                              shape: MaterialStateProperty.all<
+                                  RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  side: const BorderSide(
+                                    color: Colors.transparent,
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            onPressed: () {
+                              loginBloc.add(
+                                SignUpButtonPressedEvent(),
+                              );
+                            },
+                            child: const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 22,
+                                wordSpacing: 1.2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.45,
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ButtonStyle(
+                              overlayColor: MaterialStateProperty.all<Color>(
+                                Color(0x80FFB080),
+                              ),
+                              backgroundColor: MaterialStateProperty.all<Color>(
+                                  Colors.black),
+                              elevation:
+                                  MaterialStateProperty.resolveWith<double>(
+                                (Set<MaterialState> states) {
+                                  if (states.contains(MaterialState.pressed)) {
+                                    return 8;
+                                  }
+                                  return 0;
+                                },
+                              ),
+                              shape: MaterialStateProperty.all<
+                                  RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  side: BorderSide(
+                                    color: Colors.transparent,
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            onPressed: () {
+                              loginBloc.add(
+                                LoginButtonPressedEvent(textController1!.text,
+                                    textController2!.text),
+                              );
+                            // _showBottomSheet(context);
+                            },
+                            child: Text(
+                              'Login',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                wordSpacing: 1.2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: TextButton(
+                      onPressed: () {
+                          // Navigator.push(
+                          // context,
+                          // PageTransition(
+                          // type: PageTransitionType.rightToLeft,
+                          // child: ResetPasswordView(),
+                          // ),
+                          // );
+                        loginBloc.add(
+                          ForgotPasswordButtonPressedEvent(),
+                        );
+                      },
+                      child: Text(
+                        'Forgot Password?',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 30,
+                  ),
+                ],
               ),
-              ListTile(
-                contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
-                title: Text(
-                  'Login',
+            );
+          case LoginErrorState:
+            return Scaffold(
+              body: Center(
+                child: Text(
+                  'Error',
                   style: Theme.of(context).textTheme.displayLarge,
                 ),
-                subtitle: Text(
-                  "Welcome back! Let's dive in.",
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
               ),
-              CustomForm.textField(
-                'Mobile / Email',
-                hintText: 'Mobile / Email',
-                textController: textController1,
-                textCapitalization: TextCapitalization.words,
-                length: 10,
-                focusedColor: Theme.of(context).colorScheme.onPrimary,
+            );
+          default:
+          return Scaffold(
+            body: Center(
+              child: Text(
+                'Error',
+                style: Theme.of(context).textTheme.displayLarge,
               ),
-              CustomForm.textField(
-                'Password',
-                hintText: '**********',
-                textController: textController2,
-                isObscureText: passwordVisibility,
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      passwordVisibility = !passwordVisibility;
-                    });
-                  },
-                  icon: Icon(
-                    passwordVisibility
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                    color: Colors.black45,
-                  ),
-                ),
-                focusedColor: Theme.of(context).colorScheme.onPrimary,
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 20, bottom: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.45,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ButtonStyle(
-                          overlayColor: MaterialStateProperty.all<Color>(
-                            Color(0x80FFB080),
-                          ),
-                          backgroundColor:
-                              MaterialStateProperty.all<Color>(Colors.white),
-                          elevation: MaterialStateProperty.resolveWith<double>(
-                            (Set<MaterialState> states) {
-                              if (states.contains(MaterialState.pressed)) {
-                                return 8;
-                              }
-                              return 0;
-                            },
-                          ),
-                          shape:
-                              MaterialStateProperty.all<RoundedRectangleBorder>(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              side: const BorderSide(
-                                color: Colors.transparent,
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                        onPressed: () {
-                          loginBloc.add(
-                            SignUpButtonPressedEvent(),
-                          );
-                        },
-                        child: const Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 22,
-                            wordSpacing: 1.2,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.45,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ButtonStyle(
-                          overlayColor: MaterialStateProperty.all<Color>(
-                            Color(0x80FFB080),
-                          ),
-                          backgroundColor:
-                              MaterialStateProperty.all<Color>(Colors.black),
-                          elevation: MaterialStateProperty.resolveWith<double>(
-                            (Set<MaterialState> states) {
-                              if (states.contains(MaterialState.pressed)) {
-                                return 8;
-                              }
-                              return 0;
-                            },
-                          ),
-                          shape:
-                              MaterialStateProperty.all<RoundedRectangleBorder>(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              side: BorderSide(
-                                color: Colors.transparent,
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                        onPressed: () {
-                          loginBloc.add(
-                            LoginButtonPressedEvent(textController1!.text,textController2!.text),
-                          );
-                          // _showBottomSheet(context);
-                        },
-                        child: Text(
-                          'Login',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            wordSpacing: 1.2,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: TextButton(
-                  onPressed: () {
-                    // Navigator.push(
-                    //   context,
-                    //   PageTransition(
-                    //     type: PageTransitionType.rightToLeft,
-                    //     child: ResetPasswordView(),
-                    //   ),
-                    // );
-                    loginBloc.add(
-                      ForgotPasswordButtonPressedEvent(),
-                    );
-                  },
-                  child: Text(
-                    'Forgot Password?',
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: 30,
-              ),
-            ],
-          ),
-        );
+            ),
+          );
+        }
       },
     );
   }
 
-  void _showSelectSocietyBottomSheet(BuildContext context) async {
+  void _showSelectSocietyBottomSheet(BuildContext context,List<Company?> companiesWithAccessToGate) async {
     showModalBottomSheet(
       isScrollControlled: true,
       useSafeArea: true,
@@ -308,9 +315,9 @@ class _LoginViewState extends State<LoginView> {
                   ),
                   DropdownButtonFormField(
                     enableFeedback: true,
-                    onChanged: (String? value) {
+                    onChanged: (Company? value) {
                       setState(() {
-                        dropdownValue = value!;
+                        dropdownValue = value!.companyName;
                       });
                     },
                     borderRadius: BorderRadius.circular(12),
@@ -343,8 +350,8 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                     ),
-                    items: list.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
+                    items: companiesWithAccessToGate.map<DropdownMenuItem<Company>>((Company? value) {
+                      return DropdownMenuItem<Company>(
                           value: value,
                           child: SizedBox(
                             height: 30,
@@ -353,7 +360,7 @@ class _LoginViewState extends State<LoginView> {
                                 Icon(Ionicons.home_outline),
                                 SizedBox(width: 10),
                                 Text(
-                                  value,
+                                  value!.companyName,
                                   style: TextStyle(
                                     color: Colors.black,
                                   ),
@@ -500,14 +507,14 @@ class _LoginViewState extends State<LoginView> {
                     text: 'CONFIRM',
                     onPressed: _selectedValue == 1
                         ? () {
-                            loginBloc.add(
-                              AdminRoleSelectionButtonEvent(),
-                            );
+                            // loginBloc.add(
+                            //   AdminRoleSelectionButtonEvent(),
+                            // );
                           }
                         : () {
-                            loginBloc.add(
-                              GateKeeperRoleSelectionButtonEvent(),
-                            );
+                            // loginBloc.add(
+                            //   GateKeeperRoleSelectionButtonEvent(),
+                            // );
                             // Navigator.pop(context);
                             // _haveOfflineLogin(context);
                           },
