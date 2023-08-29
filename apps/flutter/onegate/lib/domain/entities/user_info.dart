@@ -40,4 +40,17 @@ class UserInfo {
       uuid: json['uuid'],
     );
   }
+
+  Map<String,dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'first_name': firstName,
+      'last_name': lastName,
+      'username': username,
+      'mobile': mobile,
+      'email': email,
+      'companies': companies,
+      'uuid': uuid,
+    };
+  }
 }

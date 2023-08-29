@@ -3,12 +3,15 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/entities/access_token_response.dart';
 import 'package:flutter_onegate/domain/entities/company.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
 part 'login_event.dart';
 part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final LoginUseCase _loginUseCase;
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   LoginBloc(this._loginUseCase) : super(LoginInitial()) {
     on<LoginInitialEvent>(loginInitialEvent);
     on<LoginButtonPressedEvent>(loginButtonPressedEvent);
@@ -23,7 +26,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       final response = await _loginUseCase.login(
           event.username, event.password, "loginPassword");
-      onSuccess(response, emit);
+      onSuccess(response, emit, _preferenceUtils);
     } catch (e) {
       print(e.toString());
       emit(LoginErrorState());
@@ -47,7 +50,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   FutureOr<void> societySelectionButtonEvent(
-      SocietySelectionButtonEvent event, Emitter<LoginState> emit) {}
+      SocietySelectionButtonEvent event, Emitter<LoginState> emit) {
+    _preferenceUtils.saveSelectedCompany(event.company);
+    emit(
+      RoleSelectionState(_preferenceUtils.getRoles()),
+    );
+  }
 
   FutureOr<void> loginInitialEvent(
       LoginInitialEvent event, Emitter<LoginState> emit) {
@@ -55,7 +63,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 }
 
-void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit) {
+void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
+    PreferenceUtils preferenceUtils) {
   if (response != null) {
     final List<Company> companiesWithAccessToGate = [];
 
@@ -64,9 +73,21 @@ void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit) {
           companyList.where((company) => company.accessTo.contains(5)).toList();
       companiesWithAccessToGate.addAll(filteredCompanies);
     });
-    print("companiesWithAccessToGate: ${companiesWithAccessToGate.toString()}");
+
+    preferenceUtils.saveAccessTokenResponse(response);
+    preferenceUtils.saveUserInfo(response.userInfo);
     emit(LoginInitial());
-    emit(LoginSuccessState(response, companiesWithAccessToGate));
+    if (preferenceUtils.getSelectedCompany() == null) {
+      emit(SocietySelectionState(companiesWithAccessToGate));
+    } else {
+      Company selectedCompany = preferenceUtils.getSelectedCompany()!;
+      final List<String> roles = [];
+      for (final app in selectedCompany.apps) {
+        roles.addAll(app.roles);
+      }
+      preferenceUtils.saveRoles(roles);
+      emit(RoleSelectionState(roles));
+    }
   } else {
     emit(LoginErrorState());
   }

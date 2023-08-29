@@ -11,7 +11,7 @@ import 'package:kiosk_mode/kiosk_mode.dart';
 void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
-
+  setupDependencies();
   setupLocator();
 
   SystemChrome.setSystemUIOverlayStyle(

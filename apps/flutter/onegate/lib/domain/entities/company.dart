@@ -1,5 +1,3 @@
-
-
 import 'package:flutter_onegate/domain/entities/app.dart';
 
 class Company {
@@ -26,5 +24,14 @@ class Company {
       apps: apps,
       accessTo: accessTo,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'company_id': companyId,
+      'company_name': companyName,
+      'apps': apps,
+      'access_to': accessTo,
+    };
   }
 }

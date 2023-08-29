@@ -43,6 +43,7 @@ dependencies:
   get_it: ^7.6.0
   dio: ^4.0.0
   kiosk_mode: ^0.5.0
+  shared_preferences: ^2.0.8
 
 dev_dependencies:
   flutter_test:

@@ -23,4 +23,13 @@ class App {
       roles: roles,
     );
   }
+
+  Map<String,dynamic> toJson() {
+    return{
+      'app_id': appId,
+      'app_name': appName,
+      'product_code': productCode,
+      'roles': roles,
+    };
+  }
 }

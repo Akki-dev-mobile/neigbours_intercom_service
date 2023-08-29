@@ -17,6 +17,18 @@ class LoginSuccessState extends LoginActionState {
 
 }
 
+class SocietySelectionState extends LoginActionState{
+  final List<Company?> companiesWithAccessToGate;
+
+  SocietySelectionState(this.companiesWithAccessToGate);
+}
+
+class RoleSelectionState extends LoginActionState {
+  final List<String?> roles;
+
+  RoleSelectionState(this.roles);
+}
+
 class LoginErrorState extends LoginState {}
 
 class LoginButtonPressedState extends LoginActionState {}

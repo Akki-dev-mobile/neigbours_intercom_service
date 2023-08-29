@@ -20,4 +20,12 @@ class AccessTokenResponse {
       userInfo: UserInfo.fromJson(json['user_info']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'access_token': accessToken,
+      'uuid': uuid,
+      'user_info': userInfo.toJson(),
+    };
+  }
 }

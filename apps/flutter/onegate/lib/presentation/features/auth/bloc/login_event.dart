@@ -14,11 +14,8 @@ class SignUpButtonPressedEvent extends LoginEvent {}
 
 class ForgotPasswordButtonPressedEvent extends LoginEvent {}
 class SocietySelectionButtonEvent extends LoginEvent {
-  // final String societyId;
-
-  // SocietySelectedEvent({
-  //   required this.societyId,
-  // });
+ final Company company;
+  SocietySelectionButtonEvent(this.company);
 }
 
 class RoleSelectionButtonEvent extends LoginEvent {}

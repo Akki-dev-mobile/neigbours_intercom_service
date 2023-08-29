@@ -4,9 +4,11 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/repositories/auth_repo.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/presentation/features/auth/bloc/login_bloc.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
 
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt locator = GetIt.instance;
 
@@ -28,4 +30,10 @@ void setupLocator() {
 
   // Register LoginBloc
   locator.registerFactory(() => LoginBloc(locator<LoginUseCase>()));
+}
+
+ void setupDependencies() async{
+  final preferencesInstance = await SharedPreferences.getInstance();
+  final preferenceUtilsInstance = PreferenceUtils(preferencesInstance);
+  locator.registerSingleton<PreferenceUtils>(preferenceUtilsInstance);
 }

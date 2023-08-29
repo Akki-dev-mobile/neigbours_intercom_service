@@ -34,7 +34,7 @@ class _LoginViewState extends State<LoginView> {
   TextEditingController? textController1;
   TextEditingController? textController2;
   late bool passwordVisibility;
-  String dropdownValue = list.first;
+  dynamic dropdownValue;
   String rbacDDV = rbac.first;
   final LoginBloc loginBloc = LoginBloc(LoginUseCase(
       AuthenticationRepositoryImpl(RemoteDataSource(dioInstance))));
@@ -50,7 +50,6 @@ class _LoginViewState extends State<LoginView> {
 
   int _selectedValue = 1;
 
-  
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<LoginBloc, LoginState>(
@@ -58,10 +57,15 @@ class _LoginViewState extends State<LoginView> {
       listenWhen: (previous, current) => current is LoginActionState,
       buildWhen: (previous, current) => current is! LoginActionState,
       listener: (context, state) {
-        switch(state.runtimeType){
-          case LoginSuccessState:
-          final successState = state as LoginSuccessState;
-            _showSelectSocietyBottomSheet(context,successState.companiesWithAccessToGate);
+        switch (state.runtimeType) {
+          case SocietySelectionState:
+            final societyState = state as SocietySelectionState;
+            _showSelectSocietyBottomSheet(
+                context, societyState.companiesWithAccessToGate);
+            break;
+          case RoleSelectionState:
+            final roleState = state as RoleSelectionState;
+            _roleSelectionBottomSheet(context);
             break;
         }
       },
@@ -210,7 +214,7 @@ class _LoginViewState extends State<LoginView> {
                                 LoginButtonPressedEvent(textController1!.text,
                                     textController2!.text),
                               );
-                            // _showBottomSheet(context);
+                              // _showBottomSheet(context);
                             },
                             child: Text(
                               'Login',
@@ -230,13 +234,13 @@ class _LoginViewState extends State<LoginView> {
                     padding: const EdgeInsets.all(12.0),
                     child: TextButton(
                       onPressed: () {
-                          // Navigator.push(
-                          // context,
-                          // PageTransition(
-                          // type: PageTransitionType.rightToLeft,
-                          // child: ResetPasswordView(),
-                          // ),
-                          // );
+                        // Navigator.push(
+                        // context,
+                        // PageTransition(
+                        // type: PageTransitionType.rightToLeft,
+                        // child: ResetPasswordView(),
+                        // ),
+                        // );
                         loginBloc.add(
                           ForgotPasswordButtonPressedEvent(),
                         );
@@ -263,20 +267,21 @@ class _LoginViewState extends State<LoginView> {
               ),
             );
           default:
-          return Scaffold(
-            body: Center(
-              child: Text(
-                'Error',
-                style: Theme.of(context).textTheme.displayLarge,
+            return Scaffold(
+              body: Center(
+                child: Text(
+                  'Error',
+                  style: Theme.of(context).textTheme.displayLarge,
+                ),
               ),
-            ),
-          );
+            );
         }
       },
     );
   }
 
-  void _showSelectSocietyBottomSheet(BuildContext context,List<Company?> companiesWithAccessToGate) async {
+  void _showSelectSocietyBottomSheet(
+      BuildContext context, List<Company?> companiesWithAccessToGate) async {
     showModalBottomSheet(
       isScrollControlled: true,
       useSafeArea: true,
@@ -317,7 +322,7 @@ class _LoginViewState extends State<LoginView> {
                     enableFeedback: true,
                     onChanged: (Company? value) {
                       setState(() {
-                        dropdownValue = value!.companyName;
+                        dropdownValue = value;
                       });
                     },
                     borderRadius: BorderRadius.circular(12),
@@ -350,7 +355,8 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                     ),
-                    items: companiesWithAccessToGate.map<DropdownMenuItem<Company>>((Company? value) {
+                    items: companiesWithAccessToGate
+                        .map<DropdownMenuItem<Company>>((Company? value) {
                       return DropdownMenuItem<Company>(
                           value: value,
                           child: SizedBox(
@@ -377,7 +383,7 @@ class _LoginViewState extends State<LoginView> {
                     text: 'CONFIRM',
                     onPressed: () {
                       loginBloc.add(
-                        SocietySelectionButtonEvent(),
+                        SocietySelectionButtonEvent(dropdownValue),
                       );
                     },
                   ),
