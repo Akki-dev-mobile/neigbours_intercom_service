@@ -1,15 +1,20 @@
 import 'package:device_preview/device_preview.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/presentation/di/di.dart';
+import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:one_theme/theme.dart';
-import 'features/login/login_page.dart';
-import 'features/login/ui/login_view.dart';
+
 
 void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
-  // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  
+  setupLocator();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarIconBrightness: Brightness.dark,
