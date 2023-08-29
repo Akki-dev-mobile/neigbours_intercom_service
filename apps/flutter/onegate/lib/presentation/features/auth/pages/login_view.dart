@@ -3,6 +3,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
@@ -22,35 +23,51 @@ class LoginView extends StatefulWidget {
   State<LoginView> createState() => _LoginViewState();
 }
 
-List<String> list = <String>[
-  'One',
-  'Two',
-  'Three',
-  'Pratap CHS',
-];
 List<String> rbac = <String>['Admin', 'GateKeeper'];
 
 class _LoginViewState extends State<LoginView> {
-  TextEditingController? textController1;
-  TextEditingController? textController2;
+  TextEditingController? usernameTextCtrl;
+  TextEditingController? passwordTextCtrl;
+  final GlobalKey<FormState> _loginFormKey = GlobalKey<FormState>();
   late bool passwordVisibility;
-  String dropdownValue = list.first;
+  late String dropdownValue;
   String rbacDDV = rbac.first;
-  final LoginBloc loginBloc = LoginBloc(LoginUseCase(
-      AuthenticationRepositoryImpl(RemoteDataSource(dioInstance))));
+  final LoginBloc loginBloc = LoginBloc(
+    LoginUseCase(
+      AuthenticationRepositoryImpl(
+        RemoteDataSource(dioInstance),
+      ),
+    ),
+  );
 
   @override
   void initState() {
     super.initState();
-    textController1 = TextEditingController();
-    textController2 = TextEditingController();
+    usernameTextCtrl = TextEditingController();
+    passwordTextCtrl = TextEditingController();
     passwordVisibility = false;
     loginBloc.add(LoginInitialEvent());
   }
 
+  void _submitForm() {
+    if (_loginFormKey.currentState?.validate() ?? false) {
+      loginBloc.add(
+        LoginButtonPressedEvent(usernameTextCtrl!.text, passwordTextCtrl!.text),
+      );
+      usernameTextCtrl!.clear();
+      passwordTextCtrl!.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    usernameTextCtrl?.dispose();
+    passwordTextCtrl?.dispose();
+    super.dispose();
+  }
+
   int _selectedValue = 1;
 
-  
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<LoginBloc, LoginState>(
@@ -58,21 +75,27 @@ class _LoginViewState extends State<LoginView> {
       listenWhen: (previous, current) => current is LoginActionState,
       buildWhen: (previous, current) => current is! LoginActionState,
       listener: (context, state) {
-        switch(state.runtimeType){
+        switch (state.runtimeType) {
           case LoginSuccessState:
-          final successState = state as LoginSuccessState;
-            _showSelectSocietyBottomSheet(context,successState.companiesWithAccessToGate);
+            final successState = state as LoginSuccessState;
+            _showSelectSocietyBottomSheet(
+                context, successState.companiesWithAccessToGate);
+            break;
+          case LoginErrorState:
+            final errorState = state as LoginErrorState;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorState.message!),
+              ),
+            );
             break;
         }
       },
       builder: (context, state) {
         switch (state.runtimeType) {
           case LoginLoadingState:
-            return Scaffold(
-                body: Center(
-              child: CircularProgressIndicator(),
-            ));
-          case LoginInitial:
+            return LoaderView();
+          default:
             return MyScrollView(
               hasBackButton: false,
               pageBody: Column(
@@ -95,33 +118,40 @@ class _LoginViewState extends State<LoginView> {
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
-                  CustomForm.textField(
-                    'Mobile / Email',
-                    hintText: 'Mobile / Email',
-                    textController: textController1,
-                    textCapitalization: TextCapitalization.words,
-                    length: 10,
-                    focusedColor: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  CustomForm.textField(
-                    'Password',
-                    hintText: '**********',
-                    textController: textController2,
-                    isObscureText: passwordVisibility,
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          passwordVisibility = !passwordVisibility;
-                        });
-                      },
-                      icon: Icon(
-                        passwordVisibility
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: Colors.black45,
-                      ),
+                  Form(
+                    key: _loginFormKey,
+                    child: Column(
+                      children: [
+                        CustomForm.textField(
+                          'Mobile / Email',
+                          hintText: 'Mobile / Email',
+                          textController: usernameTextCtrl,
+                          textCapitalization: TextCapitalization.words,
+                          length: 10,
+                          focusedColor: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        CustomForm.textField(
+                          'Password',
+                          hintText: '**********',
+                          textController: passwordTextCtrl,
+                          isObscureText: passwordVisibility,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                passwordVisibility = !passwordVisibility;
+                              });
+                            },
+                            icon: Icon(
+                              passwordVisibility
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.black45,
+                            ),
+                          ),
+                          focusedColor: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ],
                     ),
-                    focusedColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 20, bottom: 10),
@@ -206,11 +236,7 @@ class _LoginViewState extends State<LoginView> {
                               ),
                             ),
                             onPressed: () {
-                              loginBloc.add(
-                                LoginButtonPressedEvent(textController1!.text,
-                                    textController2!.text),
-                              );
-                            // _showBottomSheet(context);
+                              _submitForm();
                             },
                             child: Text(
                               'Login',
@@ -230,13 +256,13 @@ class _LoginViewState extends State<LoginView> {
                     padding: const EdgeInsets.all(12.0),
                     child: TextButton(
                       onPressed: () {
-                          // Navigator.push(
-                          // context,
-                          // PageTransition(
-                          // type: PageTransitionType.rightToLeft,
-                          // child: ResetPasswordView(),
-                          // ),
-                          // );
+                        // Navigator.push(
+                        // context,
+                        // PageTransition(
+                        // type: PageTransitionType.rightToLeft,
+                        // child: ResetPasswordView(),
+                        // ),
+                        // );
                         loginBloc.add(
                           ForgotPasswordButtonPressedEvent(),
                         );
@@ -253,30 +279,13 @@ class _LoginViewState extends State<LoginView> {
                 ],
               ),
             );
-          case LoginErrorState:
-            return Scaffold(
-              body: Center(
-                child: Text(
-                  'Error',
-                  style: Theme.of(context).textTheme.displayLarge,
-                ),
-              ),
-            );
-          default:
-          return Scaffold(
-            body: Center(
-              child: Text(
-                'Error',
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
-            ),
-          );
         }
       },
     );
   }
 
-  void _showSelectSocietyBottomSheet(BuildContext context,List<Company?> companiesWithAccessToGate) async {
+  void _showSelectSocietyBottomSheet(
+      BuildContext context, List<Company?> companiesWithAccessToGate) async {
     showModalBottomSheet(
       isScrollControlled: true,
       useSafeArea: true,
@@ -313,7 +322,7 @@ class _LoginViewState extends State<LoginView> {
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
-                  DropdownButtonFormField(
+                  DropdownButtonFormField<Company>(
                     enableFeedback: true,
                     onChanged: (Company? value) {
                       setState(() {
@@ -350,25 +359,31 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                     ),
-                    items: companiesWithAccessToGate.map<DropdownMenuItem<Company>>((Company? value) {
-                      return DropdownMenuItem<Company>(
+                    items: companiesWithAccessToGate
+                        .map<DropdownMenuItem<Company>>(
+                      (Company? value) {
+                        return DropdownMenuItem<Company>(
                           value: value,
-                          child: SizedBox(
-                            height: 30,
-                            child: Row(
-                              children: [
-                                Icon(Ionicons.home_outline),
-                                SizedBox(width: 10),
-                                Text(
+                          child: Row(
+                            children: [
+                              Icon(Ionicons.home_outline),
+                              SizedBox(width: 10),
+                              SizedBox(
+                                width: MediaQuery.of(context).size.width * 0.6,
+                                child: Text(
                                   value!.companyName,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
                                   style: TextStyle(
                                     color: Colors.black,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ));
-                    }).toList(),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ).toList(),
                   ),
                   SizedBox(
                     height: 30,

@@ -14,10 +14,13 @@ class LoginSuccessState extends LoginActionState {
   final List<Company?> companiesWithAccessToGate;
 
   LoginSuccessState(this.accessTokenResponse, this.companiesWithAccessToGate);
-
 }
 
-class LoginErrorState extends LoginState {}
+class LoginErrorState extends LoginActionState {
+  final String? message;
+
+  LoginErrorState({this.message});
+}
 
 class LoginButtonPressedState extends LoginActionState {}
 

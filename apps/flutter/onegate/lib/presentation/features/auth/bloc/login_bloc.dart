@@ -26,7 +26,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       onSuccess(response, emit);
     } catch (e) {
       print(e.toString());
-      emit(LoginErrorState());
+      emit(
+        LoginErrorState(
+          message: e.toString(),
+        ),
+      );
     }
   }
 
@@ -56,10 +60,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 }
 
 void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit) {
-  if (response != null) {
+  try {
     final List<Company> companiesWithAccessToGate = [];
 
-    response.userInfo.companies.forEach((key, companyList) {
+    response!.userInfo.companies.forEach((key, companyList) {
       final filteredCompanies =
           companyList.where((company) => company.accessTo.contains(5)).toList();
       companiesWithAccessToGate.addAll(filteredCompanies);
@@ -67,7 +71,8 @@ void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit) {
     print("companiesWithAccessToGate: ${companiesWithAccessToGate.toString()}");
     emit(LoginInitial());
     emit(LoginSuccessState(response, companiesWithAccessToGate));
-  } else {
-    emit(LoginErrorState());
+  } catch (e) {
+    emit(LoginInitial());
+    emit(LoginErrorState(message: e.toString()));
   }
 }
