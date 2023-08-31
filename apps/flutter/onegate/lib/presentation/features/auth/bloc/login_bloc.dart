@@ -6,12 +6,15 @@ import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
+
 part 'login_event.dart';
+
 part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final LoginUseCase _loginUseCase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+
   LoginBloc(this._loginUseCase) : super(LoginInitial()) {
     on<LoginInitialEvent>(loginInitialEvent);
     on<LoginButtonPressedEvent>(loginButtonPressedEvent);
@@ -19,6 +22,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<ForgotPasswordButtonPressedEvent>(forgotPasswordButtonPressedEvent);
     on<SocietySelectionButtonEvent>(societySelectionButtonEvent);
   }
+
   FutureOr<void> loginButtonPressedEvent(
       LoginButtonPressedEvent event, Emitter<LoginState> emit) async {
     print("loginButtonPressedEvent");
@@ -29,7 +33,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       onSuccess(response, emit, _preferenceUtils);
     } catch (e) {
       print(e.toString());
-      emit(LoginErrorState());
+      emit(
+        LoginErrorState(
+          message: e.toString(),
+        ),
+      );
     }
   }
 
@@ -78,12 +86,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
 void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
     PreferenceUtils preferenceUtils) {
-  if (response != null) {
+  try {
     final List<Company> companiesWithAccessToGate = [];
 
-    response.userInfo.companies.forEach((key, companyList) {
+    response!.userInfo.companies.forEach((key, companyList) {
       final filteredCompanies =
-          companyList.where((company) => company.accessTo.contains(5)).toList();
+      companyList.where((company) => company.accessTo.contains(5)).toList();
       companiesWithAccessToGate.addAll(filteredCompanies);
     });
 
@@ -107,7 +115,8 @@ void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
         emit(NavigateToAdminDashboardState());
       }
     }
-  } else {
-    emit(LoginErrorState());
+  } catch (e) {
+    emit(LoginInitial());
+    emit(LoginErrorState(message: e.toString()));
   }
 }

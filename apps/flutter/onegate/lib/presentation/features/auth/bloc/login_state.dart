@@ -29,7 +29,11 @@ class RoleSelectionState extends LoginActionState {
   RoleSelectionState(this.roles);
 }
 
-class LoginErrorState extends LoginState {}
+class LoginErrorState extends LoginActionState {
+  final String? message;
+
+  LoginErrorState({this.message});
+}
 
 class LoginButtonPressedState extends LoginActionState {}
 
