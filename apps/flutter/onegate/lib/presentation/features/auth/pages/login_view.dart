@@ -14,6 +14,7 @@ import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_pa
 import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:page_transition/page_transition.dart';
+import '../../dashboard/admin/pages/admin_dashboard_view.dart';
 import '../../request_gate_access/ui/request_gate_access_view.dart';
 import '../bloc/login_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,6 +61,7 @@ class _LoginViewState extends State<LoginView> {
   void dispose() {
     usernameTextCtrl?.dispose();
     passwordTextCtrl?.dispose();
+    loginBloc.close();
     super.dispose();
   }
 
@@ -76,7 +78,9 @@ class _LoginViewState extends State<LoginView> {
           case SocietySelectionState:
             final societyState = state as SocietySelectionState;
             _showSelectSocietyBottomSheet(
-                context, societyState.companiesWithAccessToGate);
+              context,
+              societyState.companiesWithAccessToGate,
+            );
             break;
           case RoleSelectionState:
             final roleState = state as RoleSelectionState;
@@ -107,6 +111,17 @@ class _LoginViewState extends State<LoginView> {
                 child: ResetPasswordView(),
               ),
             );
+            break;
+          case NavigateToAdminDashboardState:
+            Navigator.of(context).pop();
+            Navigator.pushReplacement(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: AdminDashboardView(),
+              ),
+            );
+            break;
         }
       },
       builder: (context, state) {
@@ -531,19 +546,14 @@ class _LoginViewState extends State<LoginView> {
                   ),
                   CustomLargeBtn(
                     text: 'CONFIRM',
-                    onPressed: _selectedValue == 1
-                        ? () {
-                            // loginBloc.add(
-                            //   AdminRoleSelectionButtonEvent(),
-                            // );
-                          }
-                        : () {
-                            // loginBloc.add(
-                            //   GateKeeperRoleSelectionButtonEvent(),
-                            // );
-                            // Navigator.pop(context);
-                            // _haveOfflineLogin(context);
-                          },
+                    onPressed: () {
+                      // Navigator.of(context).pop();
+                      loginBloc.add(
+                        RoleSelectionButtonPressedEvent(
+                          _selectedValue == 1,
+                        ),
+                      );
+                    },
                   ),
                   SizedBox(height: 50.0),
                 ],

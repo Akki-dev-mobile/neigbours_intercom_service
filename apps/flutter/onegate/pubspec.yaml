@@ -44,6 +44,11 @@ dependencies:
   dio: ^4.0.0
   kiosk_mode: ^0.5.0
   shared_preferences: ^2.0.8
+  animated_text_kit: ^4.2.2
+  material_symbols_icons: ^4.2668.0
+  fluttertoast: ^8.2.2
+  badges: ^3.1.2
+  chips_choice: ^3.0.0
 
 dev_dependencies:
   flutter_test:

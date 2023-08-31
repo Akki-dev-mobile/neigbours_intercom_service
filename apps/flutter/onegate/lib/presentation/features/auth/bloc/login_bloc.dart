@@ -21,6 +21,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<SignUpButtonPressedEvent>(signUpButtonPressedEvent);
     on<ForgotPasswordButtonPressedEvent>(forgotPasswordButtonPressedEvent);
     on<SocietySelectionButtonEvent>(societySelectionButtonEvent);
+    on<RoleSelectionButtonPressedEvent>(roleSelectionButtonPressedEvent);
   }
 
   FutureOr<void> loginButtonPressedEvent(
@@ -82,6 +83,19 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       LoginInitialEvent event, Emitter<LoginState> emit) {
     emit(LoginInitial());
   }
+
+  FutureOr<void> roleSelectionButtonPressedEvent(
+      RoleSelectionButtonPressedEvent event, Emitter<LoginState> emit) {
+    if (event.isAdmin) {
+      emit(NavigateToAdminDashboardState());
+      print("NavigateToAdminDashboardState");
+    } else {
+      emit(NavigateToGatekeeperDashboardState());
+      print("NavigateToGatekeeperDashboardState");
+    }
+
+    emit(RoleSelectionState(_preferenceUtils.getRoles()));
+  }
 }
 
 void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
@@ -91,7 +105,7 @@ void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
 
     response!.userInfo.companies.forEach((key, companyList) {
       final filteredCompanies =
-      companyList.where((company) => company.accessTo.contains(5)).toList();
+          companyList.where((company) => company.accessTo.contains(5)).toList();
       companiesWithAccessToGate.addAll(filteredCompanies);
     });
 
