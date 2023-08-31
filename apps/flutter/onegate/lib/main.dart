@@ -26,12 +26,16 @@ void main() async {
   await ThemeManager.initializeWithAppId(appId);
 
   runApp(
-    const KioskApp(),
+    DevicePreview(
+        enabled: !kDebugMode,
+        builder: (context) {
+          return const MyApp();
+        }),
   );
 }
 
-class KioskApp extends StatelessWidget {
-  const KioskApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
