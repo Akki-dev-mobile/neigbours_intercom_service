@@ -9,10 +9,12 @@ import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/company.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
+import 'package:flutter_onegate/presentation/features/request_gate_access/bloc/request_gate_access_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:page_transition/page_transition.dart';
 import '../../request_gate_access/ui/request_gate_access_view.dart';
+import '../../reset_password/ui/reset_password_view.dart';
 import '../bloc/login_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -45,7 +47,7 @@ class _LoginViewState extends State<LoginView> {
     super.initState();
     usernameTextCtrl = TextEditingController();
     passwordTextCtrl = TextEditingController();
-    passwordVisibility = false;
+    passwordVisibility = true;
     loginBloc.add(LoginInitialEvent());
   }
 
@@ -89,6 +91,23 @@ class _LoginViewState extends State<LoginView> {
               ),
             );
             break;
+          case SignUpButtonPressedState:
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.leftToRightWithFade,
+                child: RequestGateAccess(),
+              ),
+            );
+            break;
+          case ForgotPasswordButtonPressedState:
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.bottomToTop,
+                child: ResetPasswordView(),
+              ),
+            );
         }
       },
       builder: (context, state) {
@@ -256,13 +275,6 @@ class _LoginViewState extends State<LoginView> {
                     padding: const EdgeInsets.all(12.0),
                     child: TextButton(
                       onPressed: () {
-                        // Navigator.push(
-                        // context,
-                        // PageTransition(
-                        // type: PageTransitionType.rightToLeft,
-                        // child: ResetPasswordView(),
-                        // ),
-                        // );
                         loginBloc.add(
                           ForgotPasswordButtonPressedEvent(),
                         );

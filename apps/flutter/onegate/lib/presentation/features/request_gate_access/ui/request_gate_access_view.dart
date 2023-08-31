@@ -15,6 +15,35 @@ class RequestGateAccess extends StatefulWidget {
 }
 
 class _RequestGateAccessState extends State<RequestGateAccess> {
+  TextEditingController? clientNameTextCtrl;
+  TextEditingController? mobileNumberTextCtrl;
+  TextEditingController? clientSocietyTextCtrl;
+  final GlobalKey<FormState> _requestAccessFormKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    clientNameTextCtrl = TextEditingController();
+    mobileNumberTextCtrl = TextEditingController();
+    clientSocietyTextCtrl = TextEditingController();
+    super.initState();
+  }
+
+  void _submitRequestAccessForm() {
+    if (_requestAccessFormKey.currentState?.validate() ?? false) {
+      // clientNameTextCtrl!.clear();
+      // mobileNumberTextCtrl!.clear();
+      // clientSocietyTextCtrl!.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    clientNameTextCtrl?.dispose();
+    mobileNumberTextCtrl?.dispose();
+    clientSocietyTextCtrl?.dispose();
+    super.dispose();
+  }
+
   final RequestGateAccessBloc requestGateAccessBloc = RequestGateAccessBloc();
   @override
   Widget build(BuildContext context) {
@@ -50,29 +79,48 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
               ),
-              CustomForm.textField(
-                'Your Name',
-                hintText: 'Shubham Bane',
-                focusedColor: Theme.of(context).colorScheme.onPrimary,
-                textCapitalization: TextCapitalization.words,
-              ),
-              CustomForm.textField(
-                'Mobile',
-                hintText: 'Mobile',
-                isNumber: true,
-                focusedColor: Theme.of(context).colorScheme.onPrimary,
-                length: 10,
-              ),
-              CustomForm.textField(
-                'Society Name',
-                hintText: 'Society Name',
-                textCapitalization: TextCapitalization.words,
-                focusedColor: Theme.of(context).colorScheme.onPrimary,
+              Form(
+                key: _requestAccessFormKey,
+                child: Column(
+                  children: [
+                    CustomForm.textField(
+                      'Your Name',
+                      textController: clientNameTextCtrl,
+                      hintText: 'Shubham Bane',
+                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    CustomForm.textField(
+                      'Mobile',
+                      textController: mobileNumberTextCtrl,
+                      hintText: 'Mobile',
+                      isNumber: true,
+                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                      length: 10,
+                      validator: (value) {
+                        if (value!.isEmpty) {
+                          return 'Please enter mobile number';
+                        } else if (value.length < 10) {
+                          return 'Please enter valid mobile number';
+                        }
+                        return null;
+                      },
+                    ),
+                    CustomForm.textField(
+                      'Society Name',
+                      textController: clientSocietyTextCtrl,
+                      hintText: 'Society Name',
+                      textCapitalization: TextCapitalization.words,
+                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ],
+                ),
               ),
               Container(
                 margin: EdgeInsets.only(top: 20, bottom: 80),
                 child: CustomLargeBtn(
                   onPressed: () {
+                    _submitRequestAccessForm();
                     // Navigator.push(
                     //   context,
                     //   PageTransition(

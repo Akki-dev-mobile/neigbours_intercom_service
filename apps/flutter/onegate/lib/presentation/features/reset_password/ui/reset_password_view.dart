@@ -15,21 +15,43 @@ class ResetPasswordView extends StatefulWidget {
 }
 
 class _ResetPasswordViewState extends State<ResetPasswordView> {
+  TextEditingController? passwordTextCtrl;
+  TextEditingController? confirmPasswordTextCtrl;
+  final GlobalKey<FormState> _resetPasswordFormKey = GlobalKey<FormState>();
   late bool passwordVisibility;
   late bool confirmPasswordVisibility;
 
   @override
   void initState() {
     super.initState();
+    passwordTextCtrl = TextEditingController();
+    confirmPasswordTextCtrl = TextEditingController();
+    passwordVisibility = true;
+    confirmPasswordVisibility = true;
+  }
 
-    passwordVisibility = false;
-    confirmPasswordVisibility = false;
+  void _submitResetPasswordForm() {
+    if (_resetPasswordFormKey.currentState?.validate() ?? false) {
+      // passwordTextCtrl!.clear();
+      // confirmPasswordTextCtrl!.clear();
+      // passwordTextCtrl!.clear();
+      // confirmPasswordTextCtrl!.clear();      // passwordTextCtrl!.clear();
+      // confirmPasswordTextCtrl!.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    passwordTextCtrl?.dispose();
+    confirmPasswordTextCtrl?.dispose();
+    super.dispose();
   }
 
   final ResetPasswordBloc resetPasswordBloc = ResetPasswordBloc();
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ResetPasswordBloc, ResetPasswordState>(
+      bloc: resetPasswordBloc,
       listenWhen: (previous, current) => current is ResetPasswordActionState,
       buildWhen: (previous, current) => current is! ResetPasswordActionState,
       listener: (context, state) {
@@ -40,7 +62,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           hasBackButton: true,
           pageBody: Column(
             children: [
-              Lottie.asset(
+              Lottie.network(
                 'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/reset_Password_Animation_87a0052bcd.json?updated_at=2023-08-23T06:28:52.178Z',
                 height: 200,
                 width: double.infinity,
@@ -49,51 +71,62 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                 contentPadding: EdgeInsets.only(bottom: 10),
                 title: Text(
                   'Create \nNew Password',
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  style: Theme.of(context).textTheme.displayLarge,
                 ),
               ),
-              CustomForm.textField(
-                focusedColor: Theme.of(context).colorScheme.onPrimary,
-                'Password',
-                hintText: '**********',
-                isObscureText: passwordVisibility,
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      passwordVisibility = !passwordVisibility;
-                    });
-                  },
-                  icon: Icon(
-                    passwordVisibility
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                    color: Colors.black45,
-                  ),
-                ),
-              ),
-              CustomForm.textField(
-                focusedColor: Theme.of(context).colorScheme.onPrimary,
-                'Confirm Password',
-                hintText: '**********',
-                isObscureText: confirmPasswordVisibility,
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      confirmPasswordVisibility = !confirmPasswordVisibility;
-                    });
-                  },
-                  icon: Icon(
-                    confirmPasswordVisibility
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                    color: Colors.black45,
-                  ),
+              Form(
+                key: _resetPasswordFormKey,
+                child: Column(
+                  children: [
+                    CustomForm.textField(
+                      textController: passwordTextCtrl,
+                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                      'Password',
+                      hintText: '**********',
+                      isObscureText: passwordVisibility,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            passwordVisibility = !passwordVisibility;
+                          });
+                        },
+                        icon: Icon(
+                          passwordVisibility
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.black45,
+                        ),
+                      ),
+                    ),
+                    CustomForm.textField(
+                      textController: confirmPasswordTextCtrl,
+                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                      'Confirm Password',
+                      hintText: '**********',
+                      isObscureText: confirmPasswordVisibility,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            confirmPasswordVisibility =
+                                !confirmPasswordVisibility;
+                          });
+                        },
+                        icon: Icon(
+                          confirmPasswordVisibility
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.black45,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Container(
                 margin: EdgeInsets.only(top: 20, bottom: 80),
                 child: CustomLargeBtn(
                   onPressed: () {
+                    _submitResetPasswordForm();
                     // Navigator.push(
                     //   context,
                     //   PageTransition(
