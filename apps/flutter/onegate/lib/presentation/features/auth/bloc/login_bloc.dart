@@ -52,9 +52,22 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   FutureOr<void> societySelectionButtonEvent(
       SocietySelectionButtonEvent event, Emitter<LoginState> emit) {
     _preferenceUtils.saveSelectedCompany(event.company);
-    emit(
-      RoleSelectionState(_preferenceUtils.getRoles()),
-    );
+    // emit(
+    //   RoleSelectionState(_preferenceUtils.getRoles()),
+    // );
+    Company selectedCompany = _preferenceUtils.getSelectedCompany()!;
+    final List<String> roles = [];
+    for (final app in selectedCompany.apps) {
+      roles.addAll(app.roles);
+    }
+    _preferenceUtils.saveRoles(roles);
+    if (roles.contains("master")) {
+      emit(RoleSelectionState(roles));
+    } else if (roles.contains("gatekeeper")) {
+      emit(NavigateToGatekeeperDashboardState());
+    } else {
+      emit(NavigateToAdminDashboardState());
+    }
   }
 
   FutureOr<void> loginInitialEvent(
@@ -86,7 +99,13 @@ void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
         roles.addAll(app.roles);
       }
       preferenceUtils.saveRoles(roles);
-      emit(RoleSelectionState(roles));
+      if (roles.contains("master")) {
+        emit(RoleSelectionState(roles));
+      } else if (roles.contains("gatekeeper")) {
+        emit(NavigateToGatekeeperDashboardState());
+      } else {
+        emit(NavigateToAdminDashboardState());
+      }
     }
   } else {
     emit(LoginErrorState());
