@@ -19,10 +19,10 @@ class _LoaderViewState extends State<LoaderView> {
       body: Center(
         child: Column(
           children: [
-            // Lottie.network(
-            //   'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/loader002_94992e51f3.json?updated_at=2023-08-23T06:28:51.049Z',
-            //   height: 500,
-            // ),
+            Lottie.network(
+              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/loader002_94992e51f3.json?updated_at=2023-08-23T06:28:51.049Z',
+              height: 500,
+            ),
             SizedBox(
               width: double.infinity,
               height: 100.0,

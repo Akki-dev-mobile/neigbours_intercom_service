@@ -15,6 +15,7 @@ import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:page_transition/page_transition.dart';
 import '../../dashboard/admin/pages/admin_dashboard_view.dart';
+import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import '../../request_gate_access/ui/request_gate_access_view.dart';
 import '../bloc/login_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -65,7 +66,9 @@ class _LoginViewState extends State<LoginView> {
     super.dispose();
   }
 
-  int _selectedValue = 1;
+  int _selectedRoleValue = 1; // Initially selected role value
+
+  // int _selectedValue = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -113,15 +116,28 @@ class _LoginViewState extends State<LoginView> {
             );
             break;
           case NavigateToAdminDashboardState:
-            Navigator.of(context).pop();
-            Navigator.pushReplacement(
-              context,
-              PageTransition(
-                type: PageTransitionType.rightToLeft,
-                child: AdminDashboardView(),
-              ),
-            );
+            Navigator.pop(context);
+            Future.delayed(Duration(milliseconds: 100), () {
+              Navigator.pushReplacement(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: AdminDashboardView(),
+                ),
+              );
+            });
             break;
+          case NavigateToGatekeeperDashboardState:
+            Navigator.pop(context);
+            Future.delayed(Duration(milliseconds: 100), () {
+              Navigator.pushReplacement(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: GateDashboardView(),
+                ),
+              );
+            });
         }
       },
       builder: (context, state) {
@@ -465,78 +481,24 @@ class _LoginViewState extends State<LoginView> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
+                  Container(
+                    // fit: BoxFit.scaleDown,
+                    width: double.infinity,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisSize: MainAxisSize.max,
                       children: [
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.4,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              RadioListTile<int>(
-                                title: Container(
-                                  height: 80,
-                                  width: 80,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(
-                                      'https://images.unsplash.com/photo-1507679799987-c73779587ccf?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1171&q=80',
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                value: 1,
-                                groupValue: _selectedValue,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedValue = value!;
-                                  });
-                                },
-                              ),
-                              Text(
-                                'Admin',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
+                        _buildRoleOption(
+                          image:
+                              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/admin_7307678f4d.png?updated_at=2023-08-31T12:10:09.789Z',
+                          label: 'Admin',
+                          value: 1,
                         ),
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.4,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              RadioListTile<int>(
-                                title: Container(
-                                  height: 80,
-                                  width: 80,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(
-                                      'https://images.unsplash.com/photo-1552622594-9a37efeec618?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=388&q=80',
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                value: 2,
-                                groupValue: _selectedValue,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedValue = value!;
-                                  });
-                                },
-                              ),
-                              Text(
-                                'GateKeeper',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
+                        _buildRoleOption(
+                          image:
+                              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/gatekeeper_691f3ec552.png?updated_at=2023-08-31T12:10:09.840Z',
+                          label: 'GateKeeper',
+                          value: 2,
                         ),
                       ],
                     ),
@@ -550,7 +512,7 @@ class _LoginViewState extends State<LoginView> {
                       // Navigator.of(context).pop();
                       loginBloc.add(
                         RoleSelectionButtonPressedEvent(
-                          _selectedValue == 1,
+                          _selectedRoleValue == 1,
                         ),
                       );
                     },
@@ -616,6 +578,56 @@ class _LoginViewState extends State<LoginView> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildRoleOption({
+    required String image,
+    required String label,
+    required int value,
+  }) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedRoleValue = value;
+            });
+            Navigator.pop(context); // Close the bottom sheet
+            _roleSelectionBottomSheet(context);
+          },
+          child: Container(
+            padding: EdgeInsets.all(8),
+            height: 80,
+            width: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: _selectedRoleValue == value
+                    ? Colors.blue
+                    : Colors.transparent,
+                width: 3,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                image,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 18,
+            color: _selectedRoleValue == value ? Colors.blue : Colors.black,
+          ),
+        ),
+      ],
     );
   }
 }
