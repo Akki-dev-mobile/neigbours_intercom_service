@@ -5,6 +5,7 @@ import 'dart:ffi';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/domain/entities/app.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
@@ -59,307 +60,265 @@ class _GateDashboardViewState extends State<GateDashboardView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
-      extendBody: true,
       backgroundColor: Theme.of(context).colorScheme.background,
-      body: CustomScrollView(
-        physics: BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            automaticallyImplyLeading: false,
-            centerTitle: true,
-            title: Container(
-              margin: EdgeInsets.only(top: 0),
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  radius: 18,
-                  backgroundImage: NetworkImage(
-                    'https://3.imimg.com/data3/LL/IT/MY-10283605/apartment-security-service-500x500.jpg',
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.background,
+        elevation: 0.2,
+        title: Text(
+          'Gate Two',
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: Icon(
+              Symbols.alarm_rounded,
+              color: Colors.black,
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              Fluttertoast.showToast(
+                msg: "test for different types of scenarios",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.CENTER,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0,
+              );
+              // showModalBottomSheet(
+              //   backgroundColor:
+              //       Theme.of(context).colorScheme.background,
+              //   context: context,
+              //   builder: (context) => ApprovalsView(),
+              // );
+            },
+            icon: Icon(
+              Symbols.phone_missed_rounded,
+              color: Colors.black,
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: AdminDashboardView(),
+                ),
+              );
+              Fluttertoast.showToast(
+                msg: "Test Switch to Admin Dashboard",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.CENTER,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0,
+              );
+            },
+            icon: Icon(
+              Symbols.settings_rounded,
+              color: Colors.black,
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              margin: EdgeInsets.only(
+                top: 12,
+                bottom: 12,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  DashboardShortcut(
+                    icon: Symbols.deskphone_rounded,
+                    title: 'Intercom',
+                    onTap: () {
+                      Fluttertoast.showToast(
+                        msg: "will be redirecting to crm payment page",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                    },
+                    isPremium: true,
+                    isVisible: true,
                   ),
-                ),
-                title: Text(
-                  'onegate',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                subtitle: Text(
-                  'Gate 2',
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                trailing: SizedBox(
-                  width: 150,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        onPressed: () {},
-                        icon: Icon(
-                          Symbols.alarm_rounded,
-                          color: Colors.black,
-                        ),
+                  DashboardShortcut(
+                    icon: Symbols.package_rounded,
+                    title: 'Parcel',
+                    isPremium: false,
+                    isVisible: true,
+                    onTap: () {},
+                  ),
+                  DashboardShortcut(
+                    isPremium: false,
+                    isVisible: false,
+                    icon: Symbols.qr_code_scanner_rounded,
+                    title: 'Scan',
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              margin: EdgeInsets.only(bottom: 16),
+              height: MediaQuery.of(context).size.height * 0.265,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(
+                    // margin: EdgeInsets.symmetric(vertical: 10),
+                    width: MediaQuery.of(context).size.width * 0.28,
+                    decoration: BoxDecoration(
+                      color: Color(
+                        0xffF2D8A5,
                       ),
-                      IconButton(
-                        onPressed: () {
-                          Fluttertoast.showToast(
-                            msg: "test for different types of scenarios",
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.CENTER,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.red,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
-                          );
-                          // showModalBottomSheet(
-                          //   backgroundColor:
-                          //       Theme.of(context).colorScheme.background,
-                          //   context: context,
-                          //   builder: (context) => ApprovalsView(),
-                          // );
-                        },
-                        icon: Icon(
-                          Symbols.phone_missed_rounded,
-                          color: Colors.black,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            PageTransition(
-                              type: PageTransitionType.rightToLeft,
-                              child: AdminDashboardView(),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(2),
+                          margin: EdgeInsets.only(top: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Image(
+                            height: 45,
+                            width: 45,
+                            fit: BoxFit.contain,
+                            // controller: _outAnimationController,
+                            image: NetworkImage(
+                              "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z",
                             ),
-                          );
-                          Fluttertoast.showToast(
-                            msg: "Test Switch to Admin Dashboard",
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.CENTER,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.red,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
-                          );
-                        },
-                        icon: Icon(
-                          Symbols.settings_rounded,
-                          color: Colors.black,
+                          ),
+                          // child: IconButton(
+                          //   color: Color.fromARGB(255, 182, 143, 64),
+                          //   onPressed: () {},
+                          //   icon: Icon(
+                          //     size: 30,
+                          //     Symbols.import_contacts_rounded,
+                          //   ),
+                          // ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            pinned: true,
-            expandedHeight: 80,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Theme.of(context).colorScheme.surfaceVariant,
-                      Theme.of(context).colorScheme.background,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                DashboardShortcut(
-                  icon: Symbols.deskphone_rounded,
-                  title: 'Intercom',
-                  onTap: () {
-                    Fluttertoast.showToast(
-                      msg: "will be redirecting to crm payment page",
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.CENTER,
-                      timeInSecForIosWeb: 1,
-                      backgroundColor: Colors.red,
-                      textColor: Colors.white,
-                      fontSize: 16.0,
-                    );
-                  },
-                  isPremium: true,
-                  isVisible: true,
-                ),
-                DashboardShortcut(
-                  icon: Symbols.package_rounded,
-                  title: 'Parcel',
-                  isPremium: false,
-                  isVisible: true,
-                  onTap: () {},
-                ),
-                DashboardShortcut(
-                  isPremium: false,
-                  isVisible: false,
-                  icon: Symbols.qr_code_scanner_rounded,
-                  title: 'Scan',
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: GestureDetector(
-              onTap: () {},
-              child: Container(
-                margin: EdgeInsets.only(top: 16, bottom: 16),
-                height: MediaQuery.of(context).size.height * 0.265,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Container(
-                      // margin: EdgeInsets.symmetric(vertical: 10),
-                      width: MediaQuery.of(context).size.width * 0.28,
-                      decoration: BoxDecoration(
-                        color: Color(
-                          0xffF2D8A5,
+                        Text(
+                          'In-Out',
+                          // (parcelCount).toString(),
+                          style: Theme.of(context).textTheme.labelMedium,
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(2),
-                            margin: EdgeInsets.only(top: 10),
+                        Text(
+                          'Book',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 22,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.55,
+                        height: MediaQuery.of(context).size.height * 0.12,
+                        decoration: BoxDecoration(
+                          color: Color(0xffCAF1D1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 20,
+                          ),
+                          title: Text(
+                            '74',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.displayMedium,
+                          ),
+                          subtitle: Text(
+                            'Visitor In',
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          trailing: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Transform(
+                              transform: Matrix4.rotationY(math.pi),
+                              alignment: Alignment.center,
+                              child: Image(
+                                height: 45,
+                                width: 45,
+                                fit: BoxFit.contain,
+                                // controller: _outAnimationController,
+                                image: NetworkImage(
+                                  "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z",
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.55,
+                        height: MediaQuery.of(context).size.height * 0.12,
+                        decoration: BoxDecoration(
+                          color: Color(0xffFFE5E0),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 20,
+                          ),
+                          title: Text(
+                            '38',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.displayMedium,
+                          ),
+                          subtitle: Text(
+                            'Visitor Out',
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          trailing: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Image(
                               height: 45,
                               width: 45,
                               fit: BoxFit.contain,
-                              // controller: _outAnimationController,
                               image: NetworkImage(
-                                "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z",
+                                "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z",
                               ),
                             ),
-                            // child: IconButton(
-                            //   color: Color.fromARGB(255, 182, 143, 64),
-                            //   onPressed: () {},
-                            //   icon: Icon(
-                            //     size: 30,
-                            //     Symbols.import_contacts_rounded,
-                            //   ),
-                            // ),
                           ),
-                          Text(
-                            'In-Out',
-                            // (parcelCount).toString(),
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          Text(
-                            'Book',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 22,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.55,
-                          height: MediaQuery.of(context).size.height * 0.12,
-                          decoration: BoxDecoration(
-                            color: Color(0xffCAF1D1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.symmetric(
-                              vertical: 10,
-                              horizontal: 20,
-                            ),
-                            title: Text(
-                              '74',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.displayMedium,
-                            ),
-                            subtitle: Text(
-                              'Visitor In',
-                              style: Theme.of(context).textTheme.labelMedium,
-                            ),
-                            trailing: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Transform(
-                                transform: Matrix4.rotationY(math.pi),
-                                alignment: Alignment.center,
-                                child: Image(
-                                  height: 45,
-                                  width: 45,
-                                  fit: BoxFit.contain,
-                                  // controller: _outAnimationController,
-                                  image: NetworkImage(
-                                    "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z",
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.55,
-                          height: MediaQuery.of(context).size.height * 0.12,
-                          decoration: BoxDecoration(
-                            color: Color(0xffFFE5E0),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.symmetric(
-                              vertical: 10,
-                              horizontal: 20,
-                            ),
-                            title: Text(
-                              '38',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.displayMedium,
-                            ),
-                            subtitle: Text(
-                              'Visitor Out',
-                              style: Theme.of(context).textTheme.labelMedium,
-                            ),
-                            trailing: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Image(
-                                height: 45,
-                                width: 45,
-                                fit: BoxFit.contain,
-                                image: NetworkImage(
-                                  "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z",
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: GestureDetector(
+            GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
@@ -396,31 +355,24 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         ),
                       ),
                       child: ListTile(
-                        // leading: Icon(
-                        //   FeatherIcons.search,
-                        //   color: Colors.grey,
-                        // ),
-                        title: Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: DefaultTextStyle(
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 18,
-                            ),
-                            child: AnimatedTextKit(
-                              repeatForever: true,
-                              animatedTexts: [
-                                TyperAnimatedText('9912345678'),
-                                TyperAnimatedText('G-39070'),
-                              ],
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  _createRoute(),
-                                );
-                              },
-                            ),
+                        title: DefaultTextStyle(
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 18,
+                          ),
+                          child: AnimatedTextKit(
+                            repeatForever: true,
+                            animatedTexts: [
+                              TyperAnimatedText('9912345678'),
+                              TyperAnimatedText('G-39070'),
+                            ],
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                _createRoute(),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -429,8 +381,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 ),
               ),
             ),
-          )
-        ],
+          ],
+        ),
       ),
     );
   }

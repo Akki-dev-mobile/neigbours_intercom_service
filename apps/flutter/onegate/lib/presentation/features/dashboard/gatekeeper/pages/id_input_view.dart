@@ -26,9 +26,9 @@ List<String> _labels = ['Mobile', 'Pass Code'];
 String? selectedPassAlpha;
 
 List<String> listPassAlpha = [
+  'G',
+  'S',
   'A',
-  'B',
-  'C',
 ];
 
 class _IdInputViewState extends State<IdInputView> {

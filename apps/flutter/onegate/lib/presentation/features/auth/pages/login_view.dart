@@ -30,6 +30,8 @@ class LoginView extends StatefulWidget {
 List<String> rbac = <String>['Admin', 'GateKeeper'];
 
 class _LoginViewState extends State<LoginView> {
+  FocusNode _mobileFocusNode = FocusNode();
+  FocusNode _passwordFocusNode = FocusNode();
   TextEditingController? usernameTextCtrl;
   TextEditingController? passwordTextCtrl;
   final GlobalKey<FormState> _loginFormKey = GlobalKey<FormState>();
@@ -38,6 +40,8 @@ class _LoginViewState extends State<LoginView> {
   String rbacDDV = rbac.first;
   final LoginBloc loginBloc = LoginBloc(LoginUseCase(
       AuthenticationRepositoryImpl(RemoteDataSource(dioInstance))));
+  bool isMobileFieldFocused = false;
+  bool isPasswordFieldFocused = false;
 
   @override
   void initState() {
@@ -55,6 +59,8 @@ class _LoginViewState extends State<LoginView> {
       );
       usernameTextCtrl!.clear();
       passwordTextCtrl!.clear();
+      _mobileFocusNode.dispose();
+      _passwordFocusNode.dispose();
     }
   }
 
@@ -172,6 +178,7 @@ class _LoginViewState extends State<LoginView> {
                     child: Column(
                       children: [
                         CustomForm.textField(
+                          focusNode: _mobileFocusNode,
                           'Mobile / Email',
                           hintText: 'Mobile / Email',
                           textController: usernameTextCtrl,
@@ -180,6 +187,7 @@ class _LoginViewState extends State<LoginView> {
                           focusedColor: Theme.of(context).colorScheme.onPrimary,
                         ),
                         CustomForm.textField(
+                          focusNode: _passwordFocusNode,
                           'Password',
                           hintText: '**********',
                           textController: passwordTextCtrl,

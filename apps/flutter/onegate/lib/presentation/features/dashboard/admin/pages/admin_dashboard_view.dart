@@ -12,6 +12,8 @@ import 'package:badges/badges.dart' as badges;
 
 import 'dart:math' as math;
 
+import '../../gatekeeper/pages/gatekeeper_dashboard_view.dart';
+
 class AdminDashboardView extends StatefulWidget {
   const AdminDashboardView({super.key});
 
@@ -58,6 +60,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                   trailing: IconButton(
                     onPressed: () {
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        PageTransition(
+                          type: PageTransitionType.rightToLeft,
+                          child: GateDashboardView(),
+                        ),
+                      );
                       Fluttertoast.showToast(
                         msg: "Test Switch to Gatekeeper Dashboard",
                         toastLength: Toast.LENGTH_SHORT,
@@ -84,7 +93,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Theme.of(context).colorScheme.surfaceVariant,
+                        Theme.of(context).colorScheme.primary,
                         Theme.of(context).colorScheme.background,
                       ],
                     ),
