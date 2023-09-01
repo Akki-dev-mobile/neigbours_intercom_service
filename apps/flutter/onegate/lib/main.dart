@@ -28,7 +28,7 @@ void main() async {
 
   runApp(
     DevicePreview(
-        enabled: !kDebugMode,
+        enabled: kDebugMode,
         builder: (context) {
           return const MyApp();
         }),

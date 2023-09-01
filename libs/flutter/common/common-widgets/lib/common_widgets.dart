@@ -188,7 +188,7 @@ class CustomForm {
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
                   style: BorderStyle.solid,
-                  color: focusedColor,
+                  color: Colors.blue,
                 ),
               ),
               prefixIcon: prefixIcon,
