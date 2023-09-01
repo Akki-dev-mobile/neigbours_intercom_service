@@ -84,6 +84,7 @@ class _LoginViewState extends State<LoginView> {
             break;
           case RoleSelectionState:
             final roleState = state as RoleSelectionState;
+
             _roleSelectionBottomSheet(context);
             break;
           case LoginErrorState:
@@ -113,14 +114,16 @@ class _LoginViewState extends State<LoginView> {
             );
             break;
           case NavigateToAdminDashboardState:
-            Navigator.of(context).pop();
-            Navigator.pushReplacement(
-              context,
-              PageTransition(
-                type: PageTransitionType.rightToLeft,
-                child: AdminDashboardView(),
-              ),
-            );
+            Navigator.pop(context);
+            Future.delayed(Duration(milliseconds: 100), () {
+              Navigator.pushReplacement(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: AdminDashboardView(),
+                ),
+              );
+            });
             break;
         }
       },
@@ -547,7 +550,6 @@ class _LoginViewState extends State<LoginView> {
                   CustomLargeBtn(
                     text: 'CONFIRM',
                     onPressed: () {
-                      // Navigator.of(context).pop();
                       loginBloc.add(
                         RoleSelectionButtonPressedEvent(
                           _selectedValue == 1,

@@ -49,6 +49,9 @@ dependencies:
   fluttertoast: ^8.2.2
   badges: ^3.1.2
   chips_choice: ^3.0.0
+  country_code_picker: ^3.0.0
+  libphonenumber: ^2.0.2
+  email_validator: ^2.1.17
 
 dev_dependencies:
   flutter_test:

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
+import 'package:common_widgets/phone_number.dart';
 import 'package:one_theme/theme.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 
@@ -43,7 +44,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
-      home: const LoginView(),
+      home:  Scaffold(
+      appBar: AppBar(
+        title: Text('Country Code & Phone Input'),
+      ),
+      body: Center(
+        child: CombinedInputField(),
+      ),
+    ),
     );
   }
 }

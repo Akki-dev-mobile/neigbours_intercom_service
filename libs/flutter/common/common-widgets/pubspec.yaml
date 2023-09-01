@@ -8,9 +8,12 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  country_code_picker: ^3.0.0
+  email_validator: ^2.1.17
   flutter:
     sdk: flutter
   ionicons: ^0.2.2
+  libphonenumber: ^2.0.2
   lottie: ^2.6.0
   shimmer: ^3.0.0
 
