@@ -178,7 +178,7 @@ class _LoginViewState extends State<LoginView> {
                     child: Column(
                       children: [
                         CustomForm.textField(
-                          focusNode: _mobileFocusNode,
+                          // focusNode: _mobileFocusNode,
                           'Mobile / Email',
                           hintText: 'Mobile / Email',
                           textController: usernameTextCtrl,
@@ -187,7 +187,7 @@ class _LoginViewState extends State<LoginView> {
                           focusedColor: Theme.of(context).colorScheme.onPrimary,
                         ),
                         CustomForm.textField(
-                          focusNode: _passwordFocusNode,
+                          // focusNode: _passwordFocusNode,
                           'Password',
                           hintText: '**********',
                           textController: passwordTextCtrl,
