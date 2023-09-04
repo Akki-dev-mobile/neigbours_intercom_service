@@ -93,6 +93,7 @@ class _LoginViewState extends State<LoginView> {
             break;
           case RoleSelectionState:
             final roleState = state as RoleSelectionState;
+
             _roleSelectionBottomSheet(context);
             break;
           case LoginErrorState:
@@ -517,7 +518,6 @@ class _LoginViewState extends State<LoginView> {
                   CustomLargeBtn(
                     text: 'CONFIRM',
                     onPressed: () {
-                      // Navigator.of(context).pop();
                       loginBloc.add(
                         RoleSelectionButtonPressedEvent(
                           _selectedRoleValue == 1,
