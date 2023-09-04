@@ -28,7 +28,7 @@ void main() async {
 
   runApp(
     DevicePreview(
-        enabled: !kDebugMode,
+        enabled: kDebugMode,
         builder: (context) {
           return const MyApp();
         }),
@@ -44,14 +44,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
-      home:  Scaffold(
-      appBar: AppBar(
-        title: Text('Country Code & Phone Input'),
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Country Code & Phone Input'),
+        ),
+        body: Center(
+          child: CombinedInputField(),
+        ),
       ),
-      body: Center(
-        child: CombinedInputField(),
-      ),
-    ),
     );
   }
 }
