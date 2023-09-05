@@ -87,7 +87,7 @@ class _IdInputViewState extends State<IdInputView> {
                     "Visitor Mobile Number",
                     hintText: '0123456789',
                     textController: mobileController,
-                    isNumber: true,
+                    keyboardType: TextInputType.number,
                     length: 10,
                     suffixIcon: IconButton(
                       onPressed: () {
@@ -126,7 +126,7 @@ class _IdInputViewState extends State<IdInputView> {
                         textController: passcodeController,
                         textCapitalization: TextCapitalization.characters,
                         length: 6,
-                        isNumber: true,
+                        keyboardType: TextInputType.number,
                         prefixIcon: Padding(
                           padding: EdgeInsets.only(
                             left: 10,

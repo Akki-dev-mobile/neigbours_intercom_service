@@ -84,6 +84,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                       'Password',
                       hintText: '**********',
                       isObscureText: passwordVisibility,
+                      keyboardType: TextInputType.visiblePassword,
                       suffixIcon: IconButton(
                         onPressed: () {
                           setState(() {
@@ -104,6 +105,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                       'Confirm Password',
                       hintText: '**********',
                       isObscureText: confirmPasswordVisibility,
+                      keyboardType: TextInputType.visiblePassword,
                       suffixIcon: IconButton(
                         onPressed: () {
                           setState(() {

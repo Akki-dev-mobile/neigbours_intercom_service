@@ -95,7 +95,7 @@ class CustomForm {
   static Widget textField(
     String title, {
     Color? titleColor,
-    bool isNumber = false,
+    TextInputType? keyboardType,
     bool isObscureText = false,
     required String hintText,
     int? length,
@@ -159,7 +159,7 @@ class CustomForm {
               LengthLimitingTextInputFormatter(length),
             ],
             obscureText: isObscureText ? true : false,
-            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+            keyboardType: keyboardType ?? TextInputType.text,
             onChanged: onChanged ?? (value) {},
             decoration: InputDecoration(
               counterText: counterText ?? '',

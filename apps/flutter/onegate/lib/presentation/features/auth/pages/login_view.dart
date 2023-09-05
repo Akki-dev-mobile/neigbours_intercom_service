@@ -13,6 +13,7 @@ import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import '../../dashboard/admin/pages/admin_dashboard_view.dart';
 import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -30,8 +31,8 @@ class LoginView extends StatefulWidget {
 List<String> rbac = <String>['Admin', 'GateKeeper'];
 
 class _LoginViewState extends State<LoginView> {
-  FocusNode _mobileFocusNode = FocusNode();
-  FocusNode _passwordFocusNode = FocusNode();
+  late FocusNode _mobileFocusNode = FocusNode();
+  late FocusNode _passwordFocusNode = FocusNode();
   TextEditingController? usernameTextCtrl;
   TextEditingController? passwordTextCtrl;
   final GlobalKey<FormState> _loginFormKey = GlobalKey<FormState>();
@@ -42,6 +43,21 @@ class _LoginViewState extends State<LoginView> {
       AuthenticationRepositoryImpl(RemoteDataSource(dioInstance))));
   bool isMobileFieldFocused = false;
   bool isPasswordFieldFocused = false;
+
+  bool isEmailMode = false;
+  IconData userNameInputIcon = Symbols.abc_rounded;
+
+  void toggleEmailMode() {
+    setState(() {
+      isEmailMode = !isEmailMode;
+      userNameInputIcon = isEmailMode ? Symbols.abc_rounded : Symbols.phone;
+      usernameTextCtrl!.clear();
+      _mobileFocusNode.unfocus();
+      Future.delayed(Duration(milliseconds: 100), () {
+        FocusScope.of(context).requestFocus(_mobileFocusNode);
+      });
+    });
+  }
 
   @override
   void initState() {
@@ -59,8 +75,6 @@ class _LoginViewState extends State<LoginView> {
       );
       usernameTextCtrl!.clear();
       passwordTextCtrl!.clear();
-      _mobileFocusNode.dispose();
-      _passwordFocusNode.dispose();
     }
   }
 
@@ -72,9 +86,7 @@ class _LoginViewState extends State<LoginView> {
     super.dispose();
   }
 
-  int _selectedRoleValue = 1; // Initially selected role value
-
-  // int _selectedValue = 0;
+  int _selectedRoleValue = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -179,18 +191,32 @@ class _LoginViewState extends State<LoginView> {
                     child: Column(
                       children: [
                         CustomForm.textField(
-                          // focusNode: _mobileFocusNode,
-                          'Mobile / Email',
-                          hintText: 'Mobile / Email',
+                          focusNode: _mobileFocusNode,
+                          isEmailMode ? 'Email Address' : 'Mobile Number',
+                          hintText:
+                              isEmailMode ? 'Email Address' : 'Mobile Number',
                           textController: usernameTextCtrl,
                           textCapitalization: TextCapitalization.words,
                           length: 10,
                           focusedColor: Theme.of(context).colorScheme.onPrimary,
+                          keyboardType: isEmailMode
+                              ? TextInputType.emailAddress
+                              : TextInputType.number,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              toggleEmailMode();
+                            },
+                            icon: Icon(
+                              Symbols.abc_rounded,
+                              color: Colors.black,
+                            ),
+                          ),
                         ),
                         CustomForm.textField(
                           // focusNode: _passwordFocusNode,
                           'Password',
                           hintText: '**********',
+                          keyboardType: TextInputType.visiblePassword,
                           textController: passwordTextCtrl,
                           isObscureText: passwordVisibility,
                           suffixIcon: IconButton(

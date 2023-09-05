@@ -66,6 +66,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.background,
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           backgroundColor: Theme.of(context).colorScheme.background,
           elevation: 0.2,
           title: Text(

@@ -94,7 +94,7 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                       'Mobile',
                       textController: mobileNumberTextCtrl,
                       hintText: 'Mobile',
-                      isNumber: true,
+                      keyboardType: TextInputType.number,
                       focusedColor: Theme.of(context).colorScheme.onPrimary,
                       length: 10,
                       validator: (value) {

@@ -1,4 +1,18 @@
 part of 'gatekeeper_dashboard_bloc.dart';
 
 @immutable
-sealed class GatekeeperDashboardEvent {}
+abstract class GatekeeperDashboardEvent {}
+
+class GatekeeperDashboardInitialEvent extends GatekeeperDashboardEvent {}
+
+class GDJaateRaahoButtonPressedEvent extends GatekeeperDashboardEvent {}
+
+class GDMissedApprovalsButtonPressedEvent extends GatekeeperDashboardEvent {}
+
+class GDGateSettingsButtonPressedEvent extends GatekeeperDashboardEvent {}
+
+class GDInAndOutButtonPressedEvent extends GatekeeperDashboardEvent {}
+
+class GDVisitorsInButtonPressedEvent extends GatekeeperDashboardEvent {}
+
+class GDVisitorsOutButtonPressedEvent extends GatekeeperDashboardEvent {}
