@@ -20,6 +20,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import '../../dashboard/admin/pages/admin_dashboard_view.dart';
 import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import '../../gate_selection/ui/gate_selection_view.dart';
 import '../../request_gate_access/ui/request_gate_access_view.dart';
 import '../bloc/login_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,7 +61,6 @@ class _LoginViewState extends State<LoginView> {
 
   String? mobileErrorText;
   String? emailErrorText;
-
 
   void toggleEmailMode() {
     setState(() {
@@ -198,7 +198,7 @@ class _LoginViewState extends State<LoginView> {
                 context,
                 PageTransition(
                   type: PageTransitionType.rightToLeft,
-                  child: AdminDashboardView(),
+                  child: GateSelectionView(),
                 ),
               );
             });
@@ -291,7 +291,8 @@ class _LoginViewState extends State<LoginView> {
                             validator: (value) {
                               if (!isEmailMode && mobileErrorText != null) {
                                 return mobileErrorText;
-                              } else if (isEmailMode && emailErrorText != null) {
+                              } else if (isEmailMode &&
+                                  emailErrorText != null) {
                                 return emailErrorText;
                               }
                               return null;
@@ -762,6 +763,4 @@ class _LoginViewState extends State<LoginView> {
       ],
     );
   }
-
-  
 }
