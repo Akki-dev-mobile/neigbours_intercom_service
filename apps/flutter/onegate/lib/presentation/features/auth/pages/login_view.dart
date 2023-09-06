@@ -1,6 +1,8 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
@@ -11,6 +13,7 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/company.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
+import 'package:libphonenumber/libphonenumber.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -31,6 +34,7 @@ class LoginView extends StatefulWidget {
 List<String> rbac = <String>['Admin', 'GateKeeper'];
 
 class _LoginViewState extends State<LoginView> {
+  String selectedCountryCode = 'IN';
   late FocusNode _mobileFocusNode = FocusNode();
   late FocusNode _passwordFocusNode = FocusNode();
   bool areTextFieldsFocused = false;
@@ -44,9 +48,14 @@ class _LoginViewState extends State<LoginView> {
       AuthenticationRepositoryImpl(RemoteDataSource(dioInstance))));
   bool isMobileFieldFocused = false;
   bool isPasswordFieldFocused = false;
+  bool isValid = true;
 
   bool isEmailMode = false;
   IconData userNameInputIcon = Symbols.abc_rounded;
+
+  String? mobileErrorText;
+  String? emailErrorText;
+
 
   void toggleEmailMode() {
     setState(() {
@@ -86,6 +95,39 @@ class _LoginViewState extends State<LoginView> {
       usernameTextCtrl!.clear();
       passwordTextCtrl!.clear();
     }
+  }
+
+  Future<void> validateMobileNumber(String input) async {
+    final isoCode = selectedCountryCode;
+    try {
+      final isValidNumber = await PhoneNumberUtil.isValidPhoneNumber(
+        phoneNumber: input,
+        isoCode: isoCode,
+      );
+      setState(() {
+        if (isValidNumber!) {
+          mobileErrorText = null; // Valid mobile number
+        } else {
+          mobileErrorText = 'Invalid Mobile Number';
+        }
+      });
+    } catch (e) {
+      print('Error validating mobile number: $e');
+      setState(() {
+        mobileErrorText = 'Error validating mobile number';
+      });
+    }
+  }
+
+  void validateEmail(String input) {
+    final isEmailValid = EmailValidator.validate(input);
+    setState(() {
+      if (isEmailValid) {
+        emailErrorText = null; // Valid email address
+      } else {
+        emailErrorText = 'Invalid Email Address';
+      }
+    });
   }
 
   @override
@@ -214,7 +256,6 @@ class _LoginViewState extends State<LoginView> {
                                 isEmailMode ? 'Email Address' : 'Mobile Number',
                             textController: usernameTextCtrl,
                             textCapitalization: TextCapitalization.words,
-                            length: 10,
                             focusedColor:
                                 Theme.of(context).colorScheme.onPrimary,
                             keyboardType: isEmailMode
@@ -229,6 +270,34 @@ class _LoginViewState extends State<LoginView> {
                                 color: Colors.black,
                               ),
                             ),
+                            prefixIcon: !isEmailMode
+                                ? CountryCodePicker(
+                                    showFlagMain: true,
+                                    showFlagDialog: true,
+                                    onChanged: (CountryCode countryCode) {
+                                      setState(() {
+                                        selectedCountryCode = countryCode.code!;
+                                      });
+                                    },
+                                    initialSelection: 'IN',
+                                    favorite: ['IN'],
+                                  )
+                                : null,
+                            validator: (value) {
+                              if (!isEmailMode && mobileErrorText != null) {
+                                return mobileErrorText;
+                              } else if (isEmailMode && emailErrorText != null) {
+                                return emailErrorText;
+                              }
+                              return null;
+                            },
+                            onChanged: (value) {
+                              if (!isEmailMode) {
+                                validateMobileNumber(value);
+                              } else {
+                                validateEmail(value);
+                              }
+                            },
                           ),
                           CustomForm.textField(
                             focusNode: _passwordFocusNode,
@@ -688,4 +757,6 @@ class _LoginViewState extends State<LoginView> {
       ],
     );
   }
+
+  
 }
