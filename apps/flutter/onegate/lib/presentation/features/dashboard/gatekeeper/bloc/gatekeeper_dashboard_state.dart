@@ -1,6 +1,6 @@
 part of 'gatekeeper_dashboard_bloc.dart';
 
 @immutable
-sealed class GatekeeperDashboardState {}
+ class GatekeeperDashboardState {}
 
-final class GatekeeperDashboardInitial extends GatekeeperDashboardState {}
+ class GatekeeperDashboardInitial extends GatekeeperDashboardState {}

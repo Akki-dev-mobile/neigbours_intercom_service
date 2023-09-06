@@ -53,6 +53,9 @@ dependencies:
   country_code_picker: ^3.0.0
   libphonenumber: ^2.0.2
   email_validator: ^2.1.17
+  flutter_native_splash: ^2.3.2
+
+
 
 dev_dependencies:
   flutter_test:
@@ -82,3 +85,17 @@ flutter:
   assets:
     - assets/
     - assets/onegate/theme.json
+
+flutter_native_splash:
+  color: "#FFACAC"
+  image: assets/media/images/oneapp_logo.png
+  color_dark: "#121212"
+  image_dark: assets/media/images/oneapp_logo.png
+
+  android_12:
+    image: assets/media/images/oneapp_logo.png
+    icon_background_color: "#FFACAC"
+    image_dark: assets/media/images/oneapp_logo.png
+    icon_background_color_dark: "#121212"
+
+  web: false

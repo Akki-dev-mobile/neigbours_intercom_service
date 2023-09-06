@@ -44,8 +44,13 @@ class _LoginViewState extends State<LoginView> {
   late bool passwordVisibility;
   dynamic dropdownValue;
   String rbacDDV = rbac.first;
-  final LoginBloc loginBloc = LoginBloc(LoginUseCase(
-      AuthenticationRepositoryImpl(RemoteDataSource(dioInstance))));
+  final LoginBloc loginBloc = LoginBloc(
+    LoginUseCase(
+      AuthenticationRepositoryImpl(
+        RemoteDataSource(dioInstance),
+      ),
+    ),
+  );
   bool isMobileFieldFocused = false;
   bool isPasswordFieldFocused = false;
   bool isValid = true;

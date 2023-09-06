@@ -1,6 +1,6 @@
 part of 'admin_dashboard_bloc.dart';
 
 @immutable
-sealed class AdminDashboardState {}
+ class AdminDashboardState {}
 
-final class AdminDashboardInitial extends AdminDashboardState {}
+ class AdminDashboardInitial extends AdminDashboardState {}
