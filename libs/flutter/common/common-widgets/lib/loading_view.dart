@@ -15,6 +15,7 @@ class _LoaderViewState extends State<LoaderView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       body: Center(
         child: Column(

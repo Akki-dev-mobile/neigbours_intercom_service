@@ -15,6 +15,9 @@ class ResetPasswordView extends StatefulWidget {
 }
 
 class _ResetPasswordViewState extends State<ResetPasswordView> {
+  late FocusNode _newPasswordFocusNode = FocusNode();
+  late FocusNode _confirmPasswordFocusNode = FocusNode();
+  bool areTextFieldsFocused = false;
   TextEditingController? passwordTextCtrl;
   TextEditingController? confirmPasswordTextCtrl;
   final GlobalKey<FormState> _resetPasswordFormKey = GlobalKey<FormState>();
@@ -26,17 +29,23 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
     super.initState();
     passwordTextCtrl = TextEditingController();
     confirmPasswordTextCtrl = TextEditingController();
+    _newPasswordFocusNode.addListener(_onFocusChange);
+    _confirmPasswordFocusNode.addListener(_onFocusChange);
     passwordVisibility = true;
     confirmPasswordVisibility = true;
   }
 
+  void _onFocusChange() {
+    setState(() {
+      areTextFieldsFocused =
+          _newPasswordFocusNode.hasFocus || _confirmPasswordFocusNode.hasFocus;
+    });
+  }
+
   void _submitResetPasswordForm() {
     if (_resetPasswordFormKey.currentState?.validate() ?? false) {
-      // passwordTextCtrl!.clear();
-      // confirmPasswordTextCtrl!.clear();
-      // passwordTextCtrl!.clear();
-      // confirmPasswordTextCtrl!.clear();      // passwordTextCtrl!.clear();
-      // confirmPasswordTextCtrl!.clear();
+      passwordTextCtrl!.clear();
+      confirmPasswordTextCtrl!.clear();
     }
   }
 
@@ -62,11 +71,13 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           hasBackButton: true,
           pageBody: Column(
             children: [
-              Lottie.network(
-                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/reset_Password_Animation_87a0052bcd.json?updated_at=2023-08-23T06:28:52.178Z',
-                height: 200,
-                width: double.infinity,
-              ),
+              areTextFieldsFocused
+                  ? SizedBox()
+                  : Lottie.network(
+                      'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/reset_Password_Animation_87a0052bcd.json?updated_at=2023-08-23T06:28:52.178Z',
+                      height: 200,
+                      width: double.infinity,
+                    ),
               ListTile(
                 contentPadding: EdgeInsets.only(bottom: 10),
                 title: Text(
@@ -79,6 +90,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                 child: Column(
                   children: [
                     CustomForm.textField(
+                      focusNode: _newPasswordFocusNode,
                       textController: passwordTextCtrl,
                       focusedColor: Theme.of(context).colorScheme.onPrimary,
                       'Password',
@@ -100,6 +112,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                       ),
                     ),
                     CustomForm.textField(
+                      focusNode: _confirmPasswordFocusNode,
                       textController: confirmPasswordTextCtrl,
                       focusedColor: Theme.of(context).colorScheme.onPrimary,
                       'Confirm Password',

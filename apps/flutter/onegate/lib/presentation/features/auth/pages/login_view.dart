@@ -33,6 +33,7 @@ List<String> rbac = <String>['Admin', 'GateKeeper'];
 class _LoginViewState extends State<LoginView> {
   late FocusNode _mobileFocusNode = FocusNode();
   late FocusNode _passwordFocusNode = FocusNode();
+  bool areTextFieldsFocused = false;
   TextEditingController? usernameTextCtrl;
   TextEditingController? passwordTextCtrl;
   final GlobalKey<FormState> _loginFormKey = GlobalKey<FormState>();
@@ -50,7 +51,7 @@ class _LoginViewState extends State<LoginView> {
   void toggleEmailMode() {
     setState(() {
       isEmailMode = !isEmailMode;
-      userNameInputIcon = isEmailMode ? Symbols.abc_rounded : Symbols.phone;
+      userNameInputIcon = isEmailMode ? Symbols.phone : Symbols.abc_rounded;
       usernameTextCtrl!.clear();
       _mobileFocusNode.unfocus();
       Future.delayed(Duration(milliseconds: 100), () {
@@ -64,8 +65,17 @@ class _LoginViewState extends State<LoginView> {
     super.initState();
     usernameTextCtrl = TextEditingController();
     passwordTextCtrl = TextEditingController();
+    _mobileFocusNode.addListener(_onFocusChange);
+    _passwordFocusNode.addListener(_onFocusChange);
     passwordVisibility = true;
     loginBloc.add(LoginInitialEvent());
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      areTextFieldsFocused =
+          _mobileFocusNode.hasFocus || _passwordFocusNode.hasFocus;
+    });
   }
 
   void _submitForm() {
@@ -166,194 +176,208 @@ class _LoginViewState extends State<LoginView> {
           default:
             return MyScrollView(
               hasBackButton: false,
-              pageBody: Column(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Lottie.network(
-                    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
-                    height: 180,
-                    width: double.infinity,
-                  ),
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
-                    title: Text(
-                      'Login',
-                      style: Theme.of(context).textTheme.displayLarge,
-                    ),
-                    subtitle: Text(
-                      "Welcome back! Let's dive in.",
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                  ),
-                  Form(
-                    key: _loginFormKey,
-                    child: Column(
-                      children: [
-                        CustomForm.textField(
-                          focusNode: _mobileFocusNode,
-                          isEmailMode ? 'Email Address' : 'Mobile Number',
-                          hintText:
-                              isEmailMode ? 'Email Address' : 'Mobile Number',
-                          textController: usernameTextCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          length: 10,
-                          focusedColor: Theme.of(context).colorScheme.onPrimary,
-                          keyboardType: isEmailMode
-                              ? TextInputType.emailAddress
-                              : TextInputType.number,
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              toggleEmailMode();
-                            },
-                            icon: Icon(
-                              Symbols.abc_rounded,
-                              color: Colors.black,
-                            ),
+              pageBody: GestureDetector(
+                onTap: () {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    areTextFieldsFocused
+                        ? SizedBox()
+                        : Lottie.network(
+                            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
+                            height: 180,
+                            width: double.infinity,
                           ),
-                        ),
-                        CustomForm.textField(
-                          // focusNode: _passwordFocusNode,
-                          'Password',
-                          hintText: '**********',
-                          keyboardType: TextInputType.visiblePassword,
-                          textController: passwordTextCtrl,
-                          isObscureText: passwordVisibility,
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                passwordVisibility = !passwordVisibility;
-                              });
-                            },
-                            icon: Icon(
-                              passwordVisibility
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: Colors.black45,
-                            ),
-                          ),
-                          focusedColor: Theme.of(context).colorScheme.onPrimary,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20, bottom: 10),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.45,
-                          height: 50,
-                          child: ElevatedButton(
-                            style: ButtonStyle(
-                              overlayColor: MaterialStateProperty.all<Color>(
-                                Color(0x80FFB080),
-                              ),
-                              backgroundColor: MaterialStateProperty.all<Color>(
-                                  Colors.white),
-                              elevation:
-                                  MaterialStateProperty.resolveWith<double>(
-                                (Set<MaterialState> states) {
-                                  if (states.contains(MaterialState.pressed)) {
-                                    return 8;
-                                  }
-                                  return 0;
-                                },
-                              ),
-                              shape: MaterialStateProperty.all<
-                                  RoundedRectangleBorder>(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: const BorderSide(
-                                    color: Colors.transparent,
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            onPressed: () {
-                              loginBloc.add(
-                                SignUpButtonPressedEvent(),
-                              );
-                            },
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 22,
-                                wordSpacing: 1.2,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.45,
-                          height: 50,
-                          child: ElevatedButton(
-                            style: ButtonStyle(
-                              overlayColor: MaterialStateProperty.all<Color>(
-                                Color(0x80FFB080),
-                              ),
-                              backgroundColor: MaterialStateProperty.all<Color>(
-                                  Colors.black),
-                              elevation:
-                                  MaterialStateProperty.resolveWith<double>(
-                                (Set<MaterialState> states) {
-                                  if (states.contains(MaterialState.pressed)) {
-                                    return 8;
-                                  }
-                                  return 0;
-                                },
-                              ),
-                              shape: MaterialStateProperty.all<
-                                  RoundedRectangleBorder>(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  side: BorderSide(
-                                    color: Colors.transparent,
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            onPressed: () {
-                              _submitForm();
-                            },
-                            child: Text(
-                              'Login',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                wordSpacing: 1.2,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: TextButton(
-                      onPressed: () {
-                        loginBloc.add(
-                          ForgotPasswordButtonPressedEvent(),
-                        );
-                      },
-                      child: Text(
-                        'Forgot Password?',
+                    ListTile(
+                      contentPadding:
+                          const EdgeInsets.only(top: 20, bottom: 10),
+                      title: Text(
+                        'Login',
+                        style: Theme.of(context).textTheme.displayLarge,
+                      ),
+                      subtitle: Text(
+                        "Welcome back! Let's dive in.",
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    height: 30,
-                  ),
-                ],
+                    Form(
+                      key: _loginFormKey,
+                      child: Column(
+                        children: [
+                          CustomForm.textField(
+                            focusNode: _mobileFocusNode,
+                            isEmailMode ? 'Email Address' : 'Mobile Number',
+                            hintText:
+                                isEmailMode ? 'Email Address' : 'Mobile Number',
+                            textController: usernameTextCtrl,
+                            textCapitalization: TextCapitalization.words,
+                            length: 10,
+                            focusedColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            keyboardType: isEmailMode
+                                ? TextInputType.emailAddress
+                                : TextInputType.number,
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                toggleEmailMode();
+                              },
+                              icon: Icon(
+                                userNameInputIcon,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          CustomForm.textField(
+                            focusNode: _passwordFocusNode,
+                            'Password',
+                            hintText: '**********',
+                            keyboardType: TextInputType.visiblePassword,
+                            textController: passwordTextCtrl,
+                            isObscureText: passwordVisibility,
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  passwordVisibility = !passwordVisibility;
+                                });
+                              },
+                              icon: Icon(
+                                passwordVisibility
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.black45,
+                              ),
+                            ),
+                            focusedColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20, bottom: 10),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.45,
+                            height: 50,
+                            child: ElevatedButton(
+                              style: ButtonStyle(
+                                overlayColor: MaterialStateProperty.all<Color>(
+                                  Color(0x80FFB080),
+                                ),
+                                backgroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                        Colors.white),
+                                elevation:
+                                    MaterialStateProperty.resolveWith<double>(
+                                  (Set<MaterialState> states) {
+                                    if (states
+                                        .contains(MaterialState.pressed)) {
+                                      return 8;
+                                    }
+                                    return 0;
+                                  },
+                                ),
+                                shape: MaterialStateProperty.all<
+                                    RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    side: const BorderSide(
+                                      color: Colors.transparent,
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              onPressed: () {
+                                loginBloc.add(
+                                  SignUpButtonPressedEvent(),
+                                );
+                              },
+                              child: const Text(
+                                'Sign Up',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 22,
+                                  wordSpacing: 1.2,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.45,
+                            height: 50,
+                            child: ElevatedButton(
+                              style: ButtonStyle(
+                                overlayColor: MaterialStateProperty.all<Color>(
+                                  Color(0x80FFB080),
+                                ),
+                                backgroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                        Colors.black),
+                                elevation:
+                                    MaterialStateProperty.resolveWith<double>(
+                                  (Set<MaterialState> states) {
+                                    if (states
+                                        .contains(MaterialState.pressed)) {
+                                      return 8;
+                                    }
+                                    return 0;
+                                  },
+                                ),
+                                shape: MaterialStateProperty.all<
+                                    RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    side: BorderSide(
+                                      color: Colors.transparent,
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              onPressed: () {
+                                _submitForm();
+                              },
+                              child: Text(
+                                'Login',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  wordSpacing: 1.2,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: TextButton(
+                        onPressed: () {
+                          loginBloc.add(
+                            ForgotPasswordButtonPressedEvent(),
+                          );
+                        },
+                        child: Text(
+                          'Forgot Password?',
+                          style: Theme.of(context).textTheme.labelMedium,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 30,
+                    ),
+                  ],
+                ),
               ),
             );
         }

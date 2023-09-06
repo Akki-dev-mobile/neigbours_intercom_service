@@ -37,6 +37,7 @@ class MyScrollView extends StatelessWidget {
             : const NeverScrollableScrollPhysics(),
         slivers: <Widget>[
           SliverAppBar(
+            backgroundColor: Theme.of(context).colorScheme.background,
             elevation: 0,
             automaticallyImplyLeading: false,
             leading: hasBackButton

@@ -15,6 +15,10 @@ class RequestGateAccess extends StatefulWidget {
 }
 
 class _RequestGateAccessState extends State<RequestGateAccess> {
+  late FocusNode _userNameFocusNode = FocusNode();
+  late FocusNode _mobileNumberFocusNode = FocusNode();
+  late FocusNode _societyNameFocusNode = FocusNode();
+  bool areTextFieldsFocused = false;
   TextEditingController? clientNameTextCtrl;
   TextEditingController? mobileNumberTextCtrl;
   TextEditingController? clientSocietyTextCtrl;
@@ -25,7 +29,18 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
     clientNameTextCtrl = TextEditingController();
     mobileNumberTextCtrl = TextEditingController();
     clientSocietyTextCtrl = TextEditingController();
+    _userNameFocusNode.addListener(_onFocusChange);
+    _mobileNumberFocusNode.addListener(_onFocusChange);
+    _societyNameFocusNode.addListener(_onFocusChange);
     super.initState();
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      areTextFieldsFocused = _userNameFocusNode.hasFocus ||
+          _mobileNumberFocusNode.hasFocus ||
+          _societyNameFocusNode.hasFocus;
+    });
   }
 
   void _submitRequestAccessForm() {
@@ -62,12 +77,14 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Lottie.network(
-                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/gate_request_bf36d610fe.json?updated_at=2023-08-23T06:28:50.842Z',
-                height: 300,
-                width: double.infinity,
-                fit: BoxFit.contain,
-              ),
+              areTextFieldsFocused
+                  ? SizedBox()
+                  : Lottie.network(
+                      'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/gate_request_bf36d610fe.json?updated_at=2023-08-23T06:28:50.842Z',
+                      height: 300,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
               ListTile(
                 contentPadding: EdgeInsets.only(top: 20, bottom: 10),
                 title: Text(
@@ -84,6 +101,7 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                 child: Column(
                   children: [
                     CustomForm.textField(
+                      focusNode: _userNameFocusNode,
                       'Your Name',
                       textController: clientNameTextCtrl,
                       hintText: 'Shubham Bane',
@@ -91,6 +109,7 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                       textCapitalization: TextCapitalization.words,
                     ),
                     CustomForm.textField(
+                      focusNode: _mobileNumberFocusNode,
                       'Mobile',
                       textController: mobileNumberTextCtrl,
                       hintText: 'Mobile',
@@ -109,6 +128,7 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                     CustomForm.textField(
                       'Society Name',
                       textController: clientSocietyTextCtrl,
+                      focusNode: _societyNameFocusNode,
                       hintText: 'Society Name',
                       textCapitalization: TextCapitalization.words,
                       focusedColor: Theme.of(context).colorScheme.onPrimary,
