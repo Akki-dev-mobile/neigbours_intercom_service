@@ -1,6 +1,7 @@
 part of 'gate_selection_bloc.dart';
 
 @immutable
-sealed class GateSelectionState {}
+class GateSelectionState {}
+abstract class GateSelectionActionState extends GateSelectionState {}
 
-final class GateSelectionInitial extends GateSelectionState {}
+class GateSelectionInitial extends GateSelectionState {}

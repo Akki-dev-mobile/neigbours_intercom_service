@@ -1,4 +1,4 @@
-import 'package:flutter_onegate/domain/entities/app.dart';
+import 'package:flutter_onegate/domain/entities/auth/app.dart';
 
 class Company {
   final int companyId;

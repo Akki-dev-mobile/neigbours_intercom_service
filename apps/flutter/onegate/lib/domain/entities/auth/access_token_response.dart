@@ -1,6 +1,4 @@
-
-
-import 'package:flutter_onegate/domain/entities/user_info.dart';
+import 'package:flutter_onegate/domain/entities/auth/user_info.dart';
 
 class AccessTokenResponse {
   final String accessToken;

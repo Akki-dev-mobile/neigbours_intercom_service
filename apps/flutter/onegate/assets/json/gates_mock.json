@@ -1,0 +1,57 @@
+{
+    "data": [
+      {
+        "name": "Gate 1",
+        "gatekeeperId": "gatekeeper_1",
+        "configuration": {
+          "allowVisitorIn": true,
+          "allowVisitorOut": true,
+          "allowVehicleIn": true,
+          "allowVehicleOut": true
+        },
+        "settings": {
+          "cameraSettings": {
+            "faceRecognition": true
+          },
+          "visitSettings": {
+            "visitorNameRequired": true,
+            "visitorAddressRequired": true,
+            "visitorPurposeRequired": true,
+            "memberApprovalRequired": false
+          },
+          "languageSettings": {
+            "language": "English"
+          },
+          "visitorApprovalTime": "15 minutes",
+          "offlineDataStorageDuration": "30 days"
+        }
+      },
+      {
+        "name": "Gate 2",
+        "gatekeeperId": "gatekeeper_2",
+        "configuration": {
+          "allowVisitorIn": true,
+          "allowVisitorOut": false,
+          "allowVehicleIn": true,
+          "allowVehicleOut": false
+        },
+        "settings": {
+          "cameraSettings": {
+            "faceRecognition": false
+          },
+          "visitSettings": {
+            "visitorNameRequired": true,
+            "visitorAddressRequired": true,
+            "visitorPurposeRequired": true,
+            "memberApprovalRequired": true
+          },
+          "languageSettings": {
+            "language": "Spanish"
+          },
+          "visitorApprovalTime": "30 minutes",
+          "offlineDataStorageDuration": "60 days"
+        }
+      }
+    ]
+  }
+  

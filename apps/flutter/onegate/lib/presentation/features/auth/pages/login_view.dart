@@ -1,5 +1,4 @@
 // ignore_for_file: prefer_const_constructors
-
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:email_validator/email_validator.dart';
@@ -10,7 +9,7 @@ import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/entities/company.dart';
+import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
 import 'package:libphonenumber/libphonenumber.dart';
@@ -214,6 +213,14 @@ class _LoginViewState extends State<LoginView> {
                 ),
               );
             });
+          case NavigateToGateSelectionState:
+            Navigator.pushReplacement(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: GateSelectionView(),
+              ),
+            );
         }
       },
       builder: (context, state) {

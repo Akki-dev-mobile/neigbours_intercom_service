@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
-import 'package:flutter_onegate/domain/entities/access_token_response.dart';
-import 'package:flutter_onegate/domain/entities/company.dart';
+import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart';
+import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -87,8 +87,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   FutureOr<void> roleSelectionButtonPressedEvent(
       RoleSelectionButtonPressedEvent event, Emitter<LoginState> emit) {
     if (event.isAdmin) {
-      emit(NavigateToAdminDashboardState());
-      print("NavigateToAdminDashboardState");
+      emit(NavigateToGateSelectionState());
+      print("NavigateToGateSelectionState");
     } else {
       emit(NavigateToGatekeeperDashboardState());
       print("NavigateToGatekeeperDashboardState");

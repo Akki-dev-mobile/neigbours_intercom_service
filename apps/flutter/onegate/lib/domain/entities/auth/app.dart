@@ -1,4 +1,3 @@
-
 class App {
   final int appId;
   final String appName;
@@ -24,8 +23,8 @@ class App {
     );
   }
 
-  Map<String,dynamic> toJson() {
-    return{
+  Map<String, dynamic> toJson() {
+    return {
       'app_id': appId,
       'app_name': appName,
       'product_code': productCode,

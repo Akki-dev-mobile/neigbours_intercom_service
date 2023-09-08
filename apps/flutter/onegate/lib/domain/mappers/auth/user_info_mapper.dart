@@ -1,5 +1,5 @@
-import 'package:flutter_onegate/domain/entities/user_info.dart';
-import 'package:flutter_onegate/domain/mappers/company_mapper.dart';
+import 'package:flutter_onegate/domain/entities/auth/user_info.dart';
+import 'package:flutter_onegate/domain/mappers/auth/company_mapper.dart';
 
 class UserInfoMapper {
   static UserInfo fromJson(Map<String, dynamic> json) {

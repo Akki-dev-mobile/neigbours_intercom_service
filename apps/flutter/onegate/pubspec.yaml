@@ -85,6 +85,7 @@ flutter:
   assets:
     - assets/
     - assets/onegate/theme.json
+    - assets/json/gates_mock.json
 
 flutter_native_splash:
   color: "#FFACAC"

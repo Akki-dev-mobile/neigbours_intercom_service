@@ -1,5 +1,5 @@
-import 'package:flutter_onegate/domain/entities/company.dart';
-import 'package:flutter_onegate/domain/mappers/app_mapper.dart';
+import 'package:flutter_onegate/domain/entities/auth/company.dart';
+import 'package:flutter_onegate/domain/mappers/auth/app_mapper.dart';
 
 class CompanyMapper {
   static Company fromJson(Map<String, dynamic> json) {

@@ -1,6 +1,4 @@
-
-
-import 'package:flutter_onegate/domain/entities/company.dart';
+import 'package:flutter_onegate/domain/entities/auth/company.dart';
 
 class UserInfo {
   final int userId;
@@ -26,7 +24,11 @@ class UserInfo {
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     final companiesJson = json['companies'] as Map<String, dynamic>;
     final companies = companiesJson.map((key, value) {
-      return MapEntry(key, (value as List).map((companyJson) => Company.fromJson(companyJson)).toList());
+      return MapEntry(
+          key,
+          (value as List)
+              .map((companyJson) => Company.fromJson(companyJson))
+              .toList());
     });
 
     return UserInfo(
@@ -41,7 +43,7 @@ class UserInfo {
     );
   }
 
-  Map<String,dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'user_id': userId,
       'first_name': firstName,

@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 
 class RemoteDataSource {
   final Dio _dio;
@@ -19,4 +22,10 @@ class RemoteDataSource {
   }
   return {};
   }
+
+  Future<Map<String, dynamic>> fetchGatesData(int companyId, int userId) async {
+  final String jsonText = await rootBundle.loadString('assets/gates_data.json');
+  final Map<String,dynamic>jsonData = json.decode(jsonText);
+  return jsonData;
+}
 }
