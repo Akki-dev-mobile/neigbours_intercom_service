@@ -6,6 +6,9 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:common_widgets/common_widgets.dart';
 
+import '../../dashboard/admin/pages/admin_dashboard_view.dart';
+import '../../gate_config/ui/gate_config_view.dart';
+
 class GateSelectionView extends StatefulWidget {
   const GateSelectionView({Key? key}) : super(key: key);
 
@@ -39,6 +42,7 @@ class _GateSelectionViewState extends State<GateSelectionView> {
       pageBody: Column(
         children: [
           ListTile(
+            contentPadding: EdgeInsets.zero,
             title: Text(
               'Select your gate',
               style: TextStyle(
@@ -64,14 +68,13 @@ class _GateSelectionViewState extends State<GateSelectionView> {
         child: CustomLargeBtn(
           text: 'CONFIRM',
           onPressed: () {
-            Navigator.pop(context);
-            // Navigator.push(
-            //   context,
-            //   PageTransition(
-            //     type: PageTransitionType.rightToLeft,
-            //     child: AdminDashboard(),
-            //   ),
-            // );
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.bottomToTop,
+                child: GateConfigView(),
+              ),
+            );
           },
         ),
       ),
@@ -98,6 +101,7 @@ class GateSettingListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      contentPadding: EdgeInsets.zero,
       leading: leadingIcon != null
           ? CircleAvatar(
               // backgroundColor: Color(0X101973E9),

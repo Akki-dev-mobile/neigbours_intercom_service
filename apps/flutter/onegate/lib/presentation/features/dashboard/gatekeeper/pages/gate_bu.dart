@@ -17,11 +17,11 @@ import 'dart:math' as math;
 
 import 'id_input_view.dart';
 
-class GateDashboardBack extends StatefulWidget {
-  const GateDashboardBack({super.key});
+class GateBack extends StatefulWidget {
+  const GateBack({super.key});
 
   @override
-  State<GateDashboardBack> createState() => _GateDashboardBackState();
+  State<GateBack> createState() => _GateBackState();
 }
 
 late FocusNode _focusNode;
@@ -39,8 +39,7 @@ List<String> listPassAlpha = [
   'C',
 ];
 
-class _GateDashboardBackState extends State<GateDashboardBack>
-    with TickerProviderStateMixin {
+class _GateBackState extends State<GateBack> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
@@ -58,151 +57,125 @@ class _GateDashboardBackState extends State<GateDashboardBack>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      extendBody: true,
-      backgroundColor: Theme.of(context).colorScheme.background,
-      body: CustomScrollView(
-        physics: BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            centerTitle: true,
-            pinned: true,
-            expandedHeight: 80,
-            flexibleSpace: AppBar(
-              elevation: 1,
-              backgroundColor: Colors.white,
-              title: Container(
-                margin: EdgeInsets.only(top: 0),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    radius: 18,
-                    backgroundImage: NetworkImage(
-                      'https://3.imimg.com/data3/LL/IT/MY-10283605/apartment-security-service-500x500.jpg',
-                    ),
-                  ),
-                  title: Text(
-                    'onegate',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  subtitle: Text(
-                    'Gate 2',
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                  trailing: SizedBox(
-                    width: 150,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(
-                            Symbols.alarm_rounded,
-                            color: Colors.black,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            Fluttertoast.showToast(
-                              msg: "test for different types of scenarios",
-                              toastLength: Toast.LENGTH_SHORT,
-                              gravity: ToastGravity.CENTER,
-                              timeInSecForIosWeb: 1,
-                              backgroundColor: Colors.red,
-                              textColor: Colors.white,
-                              fontSize: 16.0,
-                            );
-                            // showModalBottomSheet(
-                            //   backgroundColor:
-                            //       Theme.of(context).colorScheme.background,
-                            //   context: context,
-                            //   builder: (context) => ApprovalsView(),
-                            // );
-                          },
-                          icon: Icon(
-                            Symbols.phone_missed_rounded,
-                            color: Colors.black,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              PageTransition(
-                                type: PageTransitionType.rightToLeft,
-                                child: AdminDashboardView(),
-                              ),
-                            );
-                            Fluttertoast.showToast(
-                              msg: "Test Switch to Admin Dashboard",
-                              toastLength: Toast.LENGTH_SHORT,
-                              gravity: ToastGravity.CENTER,
-                              timeInSecForIosWeb: 1,
-                              backgroundColor: Colors.red,
-                              textColor: Colors.white,
-                              fontSize: 16.0,
-                            );
-                          },
-                          icon: Icon(
-                            Symbols.settings_rounded,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+    return WillPopScope(
+      onWillPop: () async {
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.background,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Theme.of(context).colorScheme.background,
+          elevation: 0.2,
+          title: Text(
+            'Gate Two',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          actions: [
+            IconButton(
+              onPressed: () {},
+              icon: Icon(
+                Symbols.alarm_rounded,
+                color: Colors.black,
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                DashboardShortcut(
-                  icon: Symbols.deskphone_rounded,
-                  title: 'Intercom',
-                  onTap: () {
-                    Fluttertoast.showToast(
-                      msg: "will be redirecting to crm payment page",
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.CENTER,
-                      timeInSecForIosWeb: 1,
-                      backgroundColor: Colors.red,
-                      textColor: Colors.white,
-                      fontSize: 16.0,
-                    );
-                  },
-                  isPremium: true,
-                  isVisible: true,
-                ),
-                DashboardShortcut(
-                  icon: Symbols.package_rounded,
-                  title: 'Parcel',
-                  isPremium: false,
-                  isVisible: true,
-                  onTap: () {},
-                ),
-                DashboardShortcut(
-                  isPremium: false,
-                  isVisible: false,
-                  icon: Symbols.qr_code_scanner_rounded,
-                  title: 'Scan',
-                  onTap: () {},
-                ),
-              ],
+            IconButton(
+              onPressed: () {
+                Fluttertoast.showToast(
+                  msg: "test for different types of scenarios",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.CENTER,
+                  timeInSecForIosWeb: 1,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+                // showModalBottomSheet(
+                //   backgroundColor:
+                //       Theme.of(context).colorScheme.background,
+                //   context: context,
+                //   builder: (context) => ApprovalsView(),
+                // );
+              },
+              icon: Icon(
+                Symbols.phone_missed_rounded,
+                color: Colors.black,
+              ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: GestureDetector(
-              onTap: () {},
-              child: Container(
-                margin: EdgeInsets.only(top: 16, bottom: 16),
+            IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  PageTransition(
+                    type: PageTransitionType.rightToLeft,
+                    child: AdminDashboardView(),
+                  ),
+                );
+                Fluttertoast.showToast(
+                  msg: "Test Switch to Admin Dashboard",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.CENTER,
+                  timeInSecForIosWeb: 1,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+              },
+              icon: Icon(
+                Symbols.settings_rounded,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                margin: EdgeInsets.only(
+                  top: 12,
+                  bottom: 12,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    DashboardShortcut(
+                      icon: Symbols.deskphone_rounded,
+                      title: 'Intercom',
+                      onTap: () {
+                        Fluttertoast.showToast(
+                          msg: "will be redirecting to crm payment page",
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                      },
+                      isPremium: true,
+                      isVisible: true,
+                    ),
+                    DashboardShortcut(
+                      icon: Symbols.package_rounded,
+                      title: 'Parcel',
+                      isPremium: false,
+                      isVisible: true,
+                      onTap: () {},
+                    ),
+                    DashboardShortcut(
+                      isPremium: false,
+                      isVisible: false,
+                      icon: Symbols.qr_code_scanner_rounded,
+                      title: 'Scan',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                margin: EdgeInsets.only(bottom: 16),
                 height: MediaQuery.of(context).size.height * 0.265,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -348,53 +321,44 @@ class _GateDashboardBackState extends State<GateDashboardBack>
                   ],
                 ),
               ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  _createRoute(),
-                );
-              },
-              child: Container(
-                margin: EdgeInsets.symmetric(vertical: 2),
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      'Enter Visitor Details',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: Colors.black87,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    _createRoute(),
+                  );
+                },
+                child: Container(
+                  margin: EdgeInsets.symmetric(vertical: 2),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      SizedBox(
+                        height: 10,
                       ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.only(top: 5, bottom: 8),
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
+                      Text(
+                        'Enter Visitor Details',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: Colors.black87,
                         ),
                       ),
-                      child: ListTile(
-                        // leading: Icon(
-                        //   FeatherIcons.search,
-                        //   color: Colors.grey,
-                        // ),
-                        title: Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: DefaultTextStyle(
+                      Container(
+                        margin: EdgeInsets.only(top: 5, bottom: 8),
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                          ),
+                        ),
+                        child: ListTile(
+                          title: DefaultTextStyle(
                             style: TextStyle(
                               color: Colors.grey,
                               fontWeight: FontWeight.w500,
@@ -416,13 +380,13 @@ class _GateDashboardBackState extends State<GateDashboardBack>
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          )
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -14,6 +14,7 @@ class MyScrollView extends StatelessWidget {
     this.controller,
     this.hasBackButton = true,
     this.isScrollable = true,
+    this.actions,
   });
 
   final Widget pageBody;
@@ -23,6 +24,7 @@ class MyScrollView extends StatelessWidget {
   final ScrollController? controller;
   final bool hasBackButton;
   final bool isScrollable;
+  final List<Widget>? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +40,7 @@ class MyScrollView extends StatelessWidget {
         slivers: <Widget>[
           SliverAppBar(
             backgroundColor: Theme.of(context).colorScheme.background,
-            elevation: 0,
+            elevation: 1,
             automaticallyImplyLeading: false,
             leading: hasBackButton
                 ? IconButton(
@@ -56,7 +58,8 @@ class MyScrollView extends StatelessWidget {
               pageTitle ?? '',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            expandedHeight: 80,
+            actions: actions,
+            // expandedHeight: 50,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -136,7 +139,7 @@ class CustomForm {
             height: 5,
           ),
           TextFormField(
-            autovalidateMode: AutovalidateMode.onUserInteraction,
+            // autovalidateMode: AutovalidateMode.onUserInteraction,
             focusNode: focusNode,
             onFieldSubmitted: onFieldSubmitted,
             textInputAction: textInputAction ?? TextInputAction.go,
