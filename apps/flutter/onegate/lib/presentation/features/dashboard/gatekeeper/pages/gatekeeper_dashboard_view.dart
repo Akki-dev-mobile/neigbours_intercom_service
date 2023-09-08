@@ -3,6 +3,7 @@
 import 'dart:ffi';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
@@ -12,6 +13,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:common_widgets/common_widgets.dart';
 
 import 'dart:math' as math;
 
@@ -62,304 +64,309 @@ class _GateDashboardViewState extends State<GateDashboardView>
       onWillPop: () async {
         return false;
       },
-      child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.background,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Theme.of(context).colorScheme.background,
-          elevation: 0.2,
-          title: Text(
-            'Gate Two',
-            style: Theme.of(context).textTheme.bodyLarge,
+      child: MyScrollView(
+        hasBackButton: false,
+        pageTitle: 'Gate One',
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: Icon(
+              Symbols.alarm_rounded,
+              color: Colors.black,
+            ),
           ),
-          actions: [
-            IconButton(
-              onPressed: () {},
-              icon: Icon(
-                Symbols.alarm_rounded,
-                color: Colors.black,
-              ),
+          IconButton(
+            onPressed: () {
+              Fluttertoast.showToast(
+                msg: "test for different types of scenarios",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.CENTER,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0,
+              );
+              // showModalBottomSheet(
+              //   backgroundColor:
+              //       Theme.of(context).colorScheme.background,
+              //   context: context,
+              //   builder: (context) => ApprovalsView(),
+              // );
+            },
+            icon: Icon(
+              Symbols.phone_missed_rounded,
+              color: Colors.black,
             ),
-            IconButton(
-              onPressed: () {
-                Fluttertoast.showToast(
-                  msg: "test for different types of scenarios",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.CENTER,
-                  timeInSecForIosWeb: 1,
-                  backgroundColor: Colors.red,
-                  textColor: Colors.white,
-                  fontSize: 16.0,
-                );
-                // showModalBottomSheet(
-                //   backgroundColor:
-                //       Theme.of(context).colorScheme.background,
-                //   context: context,
-                //   builder: (context) => ApprovalsView(),
-                // );
-              },
-              icon: Icon(
-                Symbols.phone_missed_rounded,
-                color: Colors.black,
-              ),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: AdminDashboardView(),
+                ),
+              );
+              Fluttertoast.showToast(
+                msg: "Test Switch to Admin Dashboard",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.CENTER,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0,
+              );
+            },
+            icon: Icon(
+              Symbols.settings_rounded,
+              color: Colors.black,
             ),
-            IconButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  PageTransition(
-                    type: PageTransitionType.rightToLeft,
-                    child: AdminDashboardView(),
+          ),
+        ],
+        pageBody: Column(
+          children: [
+            Container(
+              margin: EdgeInsets.only(
+                top: 0,
+                bottom: 12,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  DashboardShortcut(
+                    icon: Symbols.deskphone_rounded,
+                    title: 'Intercom',
+                    onTap: () {
+                      Fluttertoast.showToast(
+                        msg: "will be redirecting to crm payment page",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                    },
+                    isPremium: true,
+                    isVisible: true,
                   ),
-                );
-                Fluttertoast.showToast(
-                  msg: "Test Switch to Admin Dashboard",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.CENTER,
-                  timeInSecForIosWeb: 1,
-                  backgroundColor: Colors.red,
-                  textColor: Colors.white,
-                  fontSize: 16.0,
-                );
-              },
-              icon: Icon(
-                Symbols.settings_rounded,
-                color: Colors.black,
+                  DashboardShortcut(
+                    icon: Symbols.package_rounded,
+                    title: 'Parcel',
+                    isPremium: false,
+                    isVisible: true,
+                    onTap: () {},
+                  ),
+                  DashboardShortcut(
+                    isPremium: false,
+                    isVisible: false,
+                    icon: Symbols.qr_code_scanner_rounded,
+                    title: 'Scan',
+                    onTap: () {},
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                margin: EdgeInsets.only(
-                  top: 12,
-                  bottom: 12,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    DashboardShortcut(
-                      icon: Symbols.deskphone_rounded,
-                      title: 'Intercom',
-                      onTap: () {
-                        Fluttertoast.showToast(
-                          msg: "will be redirecting to crm payment page",
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.CENTER,
-                          timeInSecForIosWeb: 1,
-                          backgroundColor: Colors.red,
-                          textColor: Colors.white,
-                          fontSize: 16.0,
-                        );
-                      },
-                      isPremium: true,
-                      isVisible: true,
-                    ),
-                    DashboardShortcut(
-                      icon: Symbols.package_rounded,
-                      title: 'Parcel',
-                      isPremium: false,
-                      isVisible: true,
-                      onTap: () {},
-                    ),
-                    DashboardShortcut(
-                      isPremium: false,
-                      isVisible: false,
-                      icon: Symbols.qr_code_scanner_rounded,
-                      title: 'Scan',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.only(bottom: 16),
-                height: MediaQuery.of(context).size.height * 0.265,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Container(
-                      // margin: EdgeInsets.symmetric(vertical: 10),
-                      width: MediaQuery.of(context).size.width * 0.28,
-                      decoration: BoxDecoration(
-                        color: Color(
-                          0xffF2D8A5,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+            Container(
+              margin: EdgeInsets.only(bottom: 16),
+              height: MediaQuery.of(context).size.height * 0.265,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(
+                    // margin: EdgeInsets.symmetric(vertical: 10),
+                    width: MediaQuery.of(context).size.width * 0.28,
+                    decoration: BoxDecoration(
+                      color: Color(
+                        0xffF2D8A5,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(2),
-                            margin: EdgeInsets.only(top: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Image(
-                              height: 45,
-                              width: 45,
-                              fit: BoxFit.contain,
-                              // controller: _outAnimationController,
-                              image: NetworkImage(
-                                "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z",
-                              ),
-                            ),
-                            // child: IconButton(
-                            //   color: Color.fromARGB(255, 182, 143, 64),
-                            //   onPressed: () {},
-                            //   icon: Icon(
-                            //     size: 30,
-                            //     Symbols.import_contacts_rounded,
-                            //   ),
-                            // ),
-                          ),
-                          Text(
-                            'In-Out',
-                            // (parcelCount).toString(),
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          Text(
-                            'Book',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 22,
-                            ),
-                          ),
-                        ],
-                      ),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         Container(
-                          width: MediaQuery.of(context).size.width * 0.55,
-                          height: MediaQuery.of(context).size.height * 0.12,
+                          padding: EdgeInsets.all(2),
+                          margin: EdgeInsets.only(top: 10),
                           decoration: BoxDecoration(
-                            color: Color(0xffCAF1D1),
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.symmetric(
-                              vertical: 10,
-                              horizontal: 20,
+                          child: CachedNetworkImage(
+                            maxHeightDiskCache: 10,
+                            height: 45,
+                            width: 45,
+                            fit: BoxFit.contain,
+                            imageUrl:
+                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
+                            placeholder: (context, url) =>
+                                const CircularProgressIndicator(),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error,
+                              color: Colors.red,
                             ),
-                            title: Text(
-                              '74',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.displayMedium,
-                            ),
-                            subtitle: Text(
-                              'Visitor In',
-                              style: Theme.of(context).textTheme.labelMedium,
-                            ),
-                            trailing: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Transform(
-                                transform: Matrix4.rotationY(math.pi),
-                                alignment: Alignment.center,
-                                child: Image(
-                                  height: 45,
-                                  width: 45,
-                                  fit: BoxFit.contain,
-                                  // controller: _outAnimationController,
-                                  image: NetworkImage(
-                                    "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z",
-                                  ),
-                                ),
-                              ),
-                            ),
+                            fadeOutDuration: const Duration(seconds: 1),
+                            fadeInDuration: const Duration(seconds: 3),
                           ),
                         ),
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.55,
-                          height: MediaQuery.of(context).size.height * 0.12,
-                          decoration: BoxDecoration(
-                            color: Color(0xffFFE5E0),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.symmetric(
-                              vertical: 10,
-                              horizontal: 20,
-                            ),
-                            title: Text(
-                              '38',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.displayMedium,
-                            ),
-                            subtitle: Text(
-                              'Visitor Out',
-                              style: Theme.of(context).textTheme.labelMedium,
-                            ),
-                            trailing: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Image(
-                                height: 45,
-                                width: 45,
-                                fit: BoxFit.contain,
-                                image: NetworkImage(
-                                  "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z",
-                                ),
-                              ),
-                            ),
-                          ),
+                        Text(
+                          'In-Out',
+                          // (parcelCount).toString(),
+                          style: Theme.of(context).textTheme.displayMedium,
+                        ),
+                        Text(
+                          'Book',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelMedium,
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    _createRoute(),
-                  );
-                },
-                child: Container(
-                  margin: EdgeInsets.symmetric(vertical: 2),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Text(
-                        'Enter Visitor Details',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: Colors.black87,
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.55,
+                        height: MediaQuery.of(context).size.height * 0.12,
+                        decoration: BoxDecoration(
+                          color: Color(0xffCAF1D1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 20,
+                          ),
+                          title: Text(
+                            '74',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.displayMedium,
+                          ),
+                          subtitle: Text(
+                            'Visitor In',
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          trailing: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Transform(
+                              transform: Matrix4.rotationY(math.pi),
+                              alignment: Alignment.center,
+                              child: CachedNetworkImage(
+                                maxHeightDiskCache: 10,
+                                height: 45,
+                                width: 45,
+                                fit: BoxFit.contain,
+                                imageUrl:
+                                    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
+                                placeholder: (context, url) =>
+                                    const CircularProgressIndicator(),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                ),
+                                fadeOutDuration: const Duration(seconds: 1),
+                                fadeInDuration: const Duration(seconds: 3),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       Container(
-                        margin: EdgeInsets.only(top: 5, bottom: 8),
-                        height: 60,
+                        width: MediaQuery.of(context).size.width * 0.55,
+                        height: MediaQuery.of(context).size.height * 0.12,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Color(0xffFFE5E0),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.grey.shade300,
-                          ),
                         ),
                         child: ListTile(
-                          title: DefaultTextStyle(
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 20,
+                          ),
+                          title: Text(
+                            '38',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.displayMedium,
+                          ),
+                          subtitle: Text(
+                            'Visitor Out',
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          trailing: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: CachedNetworkImage(
+                              maxHeightDiskCache: 10,
+                              height: 45,
+                              width: 45,
+                              fit: BoxFit.contain,
+                              imageUrl:
+                                  'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
+                              placeholder: (context, url) =>
+                                  const CircularProgressIndicator(),
+                              errorWidget: (context, url, error) => const Icon(
+                                Icons.error,
+                                color: Colors.red,
+                              ),
+                              fadeOutDuration: const Duration(seconds: 1),
+                              fadeInDuration: const Duration(seconds: 3),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  _createRoute(),
+                );
+              },
+              child: Container(
+                margin: EdgeInsets.symmetric(vertical: 2),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Text(
+                      'Enter Visitor Details',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Container(
+                      margin: EdgeInsets.only(top: 5, bottom: 8),
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                        ),
+                      ),
+                      child: ListTile(
+                        title: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: DefaultTextStyle(
                             style: TextStyle(
                               color: Colors.grey,
                               fontWeight: FontWeight.w500,
@@ -381,12 +388,12 @@ class _GateDashboardViewState extends State<GateDashboardView>
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

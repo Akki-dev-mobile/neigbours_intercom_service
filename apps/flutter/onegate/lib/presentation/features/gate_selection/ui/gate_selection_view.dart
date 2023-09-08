@@ -13,6 +13,9 @@ import 'package:page_transition/page_transition.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 
+import '../../dashboard/admin/pages/admin_dashboard_view.dart';
+import '../../gate_config/ui/gate_config_view.dart';
+
 class GateSelectionView extends StatefulWidget {
   const GateSelectionView({Key? key}) : super(key: key);
 
@@ -29,93 +32,66 @@ class _GateSelectionViewState extends State<GateSelectionView> {
     ),
   );
   // List of gates
+  List<Map<String, dynamic>> gates = [
+    {'gate': 'Gate 1', 'switchValue': true}, // Gate 1 selected by default
+    {'gate': 'Gate 2', 'switchValue': false},
+    {'gate': 'Gate 3', 'switchValue': false},
+    {'gate': 'Gate 4', 'switchValue': false},
+    {'gate': 'Gate 5', 'switchValue': false},
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    gateBloc.add(GateSelectionInitialEvent());
+  void _updateSwitchValue(bool newValue, int index) {
+    setState(() {
+      gates.forEach((gate) {
+        gate['switchValue'] = false;
+      });
+      gates[index]['switchValue'] = newValue;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<GateSelectionBloc, GateSelectionState>(
-      bloc: gateBloc,
-      listenWhen: (previous, current) => current is GateSelectionActionState,
-      buildWhen: (previous, current) => current is! GateSelectionActionState,
-      listener: (BuildContext context, GateSelectionState state) {
-        switch (state.runtimeType) {
-          case GateSelectionErrorState:
-            final errorState = state as GateSelectionErrorState;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(errorState.message),
+    return MyScrollView(
+      pageTitle: 'Gate Selection',
+      pageBody: Column(
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Select your gate',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 20,
+              ),
+            ),
+          ),
+          ...List.generate(gates.length, (index) {
+            return GateSettingListTile(
+              switchValue: gates[index]['switchValue'],
+              onChanged: (value) => _updateSwitchValue(value, index),
+              title: gates[index]['gate'],
+              subtitle: 'Enable/Disable ${gates[index]['gate']}',
+              // leadingIcon: Ionicons.grid_outline,
+              leadingIcon: Symbols.gate,
+            );
+          }),
+        ],
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: CustomLargeBtn(
+          text: 'CONFIRM',
+          onPressed: () {
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.bottomToTop,
+                child: GateConfigView(),
               ),
             );
-            break;
-          default:
-            break;
-        }
-      },
-      builder: (context, state) {
-        switch (state.runtimeType) {
-          case GateSelectionLoadingState:
-            return LoaderView();
-          case GateSelectionSuccessState:
-            final successState = state as GateSelectionSuccessState;
-            return MyScrollView(
-              pageTitle: 'Gate Selection',
-              pageBody: Column(
-                children: [
-                  ListTile(
-                    title: Text(
-                      'Select your gate',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
-                  ...List.generate(successState.gates.length, (index) {
-                    return GateSettingListTile(
-                      switchValue: successState.gates[index].isSelected!,
-                      onChanged: (value) => {
-                        setState(() {
-                          successState.gates.forEach((gate) {
-                            gate.isSelected = false;
-                          });
-                          successState.gates[index].isSelected = true;
-                        })
-                      },
-                      title: successState.gates[index].name,
-                      subtitle:
-                          'Enable/Disable ${successState.gates[index].name}',
-                      // leadingIcon: Ionicons.grid_outline,
-                      leadingIcon: Symbols.gate,
-                    );
-                  }),
-                ],
-              ),
-              floatingActionButton: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: CustomLargeBtn(
-                  text: 'CONFIRM',
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Navigator.push(
-                    //   context,
-                    //   PageTransition(
-                    //     type: PageTransitionType.rightToLeft,
-                    //     child: AdminDashboard(),
-                    //   ),
-                    // );
-                  },
-                ),
-              ),
-            );
-          default:
-            return Container();
-        }
-      },
+          },
+        ),
+      ),
     );
   }
 }
@@ -139,6 +115,7 @@ class GateSettingListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      contentPadding: EdgeInsets.zero,
       leading: leadingIcon != null
           ? CircleAvatar(
               // backgroundColor: Color(0X101973E9),
