@@ -9,8 +9,7 @@ class GateRepositoryImpl implements GateRepository {
   GateRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<GateListResponse?> gateList(
-      int companyId, int userId) async {
+  Future<GateListResponse?> gateList(int companyId, int userId) async {
     try {
       final response =
           await _remoteDataSource.fetchGatesData(companyId, userId);

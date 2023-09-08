@@ -2,7 +2,7 @@
     "data": [
       {
         "name": "Gate 1",
-        "gatekeeperId": "gatekeeper_1",
+        "gatekeeperId": 101,
         "configuration": {
           "allowVisitorIn": true,
           "allowVisitorOut": true,
@@ -28,7 +28,7 @@
       },
       {
         "name": "Gate 2",
-        "gatekeeperId": "gatekeeper_2",
+        "gatekeeperId": 102,
         "configuration": {
           "allowVisitorIn": true,
           "allowVisitorOut": false,

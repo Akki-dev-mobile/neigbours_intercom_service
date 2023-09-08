@@ -6,7 +6,7 @@ class GateListResponse {
   GateListResponse({required this.gates});
 
   factory GateListResponse.fromJson(Map<String, dynamic> json) {
-    final List<dynamic> gateList = json['gates'];
+    final List<dynamic> gateList = json['data'];
     final gates = gateList.map((gateJson) => Gate.fromJson(gateJson)).toList();
 
     return GateListResponse(gates: gates);
@@ -14,7 +14,7 @@ class GateListResponse {
 
   Map<String, dynamic> toJson() {
     return {
-      'gates': gates.map((gate) => gate.toJson()).toList(),
+      'data': gates.map((gate) => gate.toJson()).toList(),
     };
   }
 }

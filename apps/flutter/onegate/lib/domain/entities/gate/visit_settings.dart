@@ -1,32 +1,32 @@
 
 class VisitSettings {
-  final bool visitorNameMandatory;
-  final bool visitorAddressMandatory;
-  final bool visitorPurposeMandatory;
-  final bool memberApprovalMandatory;
+  final bool visitorNameRequired;
+  final bool visitorAddressRequired;
+  final bool visitorPurposeRequired;
+  final bool memberApprovalRequired;
 
   VisitSettings({
-    required this.visitorNameMandatory,
-    required this.visitorAddressMandatory,
-    required this.visitorPurposeMandatory,
-    required this.memberApprovalMandatory,
+    required this.visitorNameRequired,
+    required this.visitorAddressRequired,
+    required this.visitorPurposeRequired,
+    required this.memberApprovalRequired,
   });
 
   factory VisitSettings.fromJson(Map<String, dynamic> json) {
     return VisitSettings(
-      visitorNameMandatory: json['visitorNameMandatory'] as bool,
-      visitorAddressMandatory: json['visitorAddressMandatory'] as bool,
-      visitorPurposeMandatory: json['visitorPurposeMandatory'] as bool,
-      memberApprovalMandatory: json['memberApprovalMandatory'] as bool,
+      visitorNameRequired: json['visitorNameRequired'],
+      visitorAddressRequired: json['visitorAddressRequired'],
+      visitorPurposeRequired: json['visitorPurposeRequired'],
+      memberApprovalRequired: json['memberApprovalRequired'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'visitorNameMandatory': visitorNameMandatory,
-      'visitorAddressMandatory': visitorAddressMandatory,
-      'visitorPurposeMandatory': visitorPurposeMandatory,
-      'memberApprovalMandatory': memberApprovalMandatory,
+      'visitorNameRequired': visitorNameRequired,
+      'visitorAddressRequired': visitorAddressRequired,
+      'visitorPurposeRequired': visitorPurposeRequired,
+      'memberApprovalRequired': memberApprovalRequired,
     };
   }
 }

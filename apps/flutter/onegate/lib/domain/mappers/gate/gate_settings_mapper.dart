@@ -1,22 +1,27 @@
-import 'package:flutter_onegate/domain/entities/gate/gate%20_settings.dart';
+import 'package:flutter_onegate/domain/entities/gate/camera_settings.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate_settings.dart';
+import 'package:flutter_onegate/domain/entities/gate/language_setting.dart';
+import 'package:flutter_onegate/domain/entities/gate/visit_settings.dart';
+import 'package:flutter_onegate/domain/mappers/gate/camera_settings_mapper.dart';
+import 'package:flutter_onegate/domain/mappers/gate/language_settings_mapper.dart';
 import 'package:flutter_onegate/domain/mappers/gate/visit_settings_mapper.dart';
 
 class GateSettingsMapper {
   static GateSettings fromJson(Map<String, dynamic> json) {
     return GateSettings(
-      cameraSetting: json['cameraSetting'] as String,
-      visitSetting: VisitSettingsMapper.fromJson(json['visitSetting']),
-      languageSetting: json['languageSetting'] as String,
-      visitorApprovalTime: json['visitorApprovalTime'] as int,
-      offlineDataStorageDuration: json['offlineDataStorageDuration'] as int,
+      cameraSettings: CameraSettings.fromJson(json['cameraSettings']),
+      visitSettings: VisitSettings.fromJson(json['visitSettings']),
+      languageSettings: LanguageSettings.fromJson(json['languageSettings']),
+      visitorApprovalTime: json['visitorApprovalTime'],
+      offlineDataStorageDuration: json['offlineDataStorageDuration'],
     );
   }
 
   static Map<String, dynamic> toJson(GateSettings settings) {
     return {
-      'cameraSetting': settings.cameraSetting,
-      'visitSetting': VisitSettingsMapper.toJson(settings.visitSetting),
-      'languageSetting': settings.languageSetting,
+      'cameraSettings': CameraSettingsMapper.toJson(settings.cameraSettings),
+      'visitSettings': VisitSettingsMapper.toJson(settings.visitSettings),
+      'languageSettings': LanguageSettingsMapper.toJson(settings.languageSettings),
       'visitorApprovalTime': settings.visitorApprovalTime,
       'offlineDataStorageDuration': settings.offlineDataStorageDuration,
     };

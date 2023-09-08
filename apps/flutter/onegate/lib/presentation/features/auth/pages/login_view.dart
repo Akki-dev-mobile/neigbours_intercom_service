@@ -214,13 +214,16 @@ class _LoginViewState extends State<LoginView> {
               );
             });
           case NavigateToGateSelectionState:
-            Navigator.pushReplacement(
-              context,
-              PageTransition(
-                type: PageTransitionType.rightToLeft,
-                child: GateSelectionView(),
-              ),
-            );
+            Navigator.pop(context);
+            Future.delayed(Duration(milliseconds: 100), () {
+              Navigator.pushReplacement(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: GateSelectionView(),
+                ),
+              );
+            });
         }
       },
       builder: (context, state) {

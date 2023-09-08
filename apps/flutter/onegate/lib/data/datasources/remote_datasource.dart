@@ -24,7 +24,7 @@ class RemoteDataSource {
   }
 
   Future<Map<String, dynamic>> fetchGatesData(int companyId, int userId) async {
-  final String jsonText = await rootBundle.loadString('assets/gates_data.json');
+  final String jsonText = await rootBundle.loadString('assets/json/gates_mock.json');
   final Map<String,dynamic>jsonData = json.decode(jsonText);
   return jsonData;
 }

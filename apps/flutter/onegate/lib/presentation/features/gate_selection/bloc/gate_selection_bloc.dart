@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -10,9 +13,19 @@ part 'gate_selection_state.dart';
 class GateSelectionBloc extends Bloc<GateSelectionEvent, GateSelectionState> {
   final GateUseCase _gateUseCase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
-  GateSelectionBloc(this._gateUseCase) : super(GateSelectionInitial()) {
-    on<GateSelectionEvent>((event, emit) {
-      // TODO: implement event handler
-    });
+  GateSelectionBloc(this._gateUseCase) : super(GateSelectionInitialState()) {
+    on<GateSelectionInitialEvent>(gateSelectionInitialEvent);
+  }
+
+  FutureOr<void> gateSelectionInitialEvent(
+      GateSelectionInitialEvent event, Emitter<GateSelectionState> emit) async{
+    emit(GateSelectionLoadingState());
+    try {
+      final response = await _gateUseCase.gateList(_preferenceUtils.getSelectedCompany()!.companyId,_preferenceUtils.getUserInfo()!.userId);
+      final List<Gate> gates = response!.gates;
+      emit(GateSelectionSuccessState(gates));
+    } catch (e) {
+      emit(GateSelectionErrorState(message: e.toString()));
+    }
   }
 }
