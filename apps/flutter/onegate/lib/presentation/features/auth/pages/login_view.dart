@@ -213,6 +213,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
               );
             });
+            break;
           case NavigateToGateSelectionState:
             Navigator.pop(context);
             Future.delayed(Duration(milliseconds: 100), () {
@@ -224,6 +225,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
               );
             });
+            break;
         }
       },
       builder: (context, state) {

@@ -1,6 +1,6 @@
 part of 'gate_config_bloc.dart';
 
 @immutable
-sealed class GateConfigState {}
+ class GateConfigState {}
 
-final class GateConfigInitial extends GateConfigState {}
+ class GateConfigInitial extends GateConfigState {}
