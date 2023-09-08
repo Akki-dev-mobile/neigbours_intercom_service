@@ -30,7 +30,7 @@ void main() async {
 
   runApp(
     DevicePreview(
-        enabled: kDebugMode,
+        enabled: !kDebugMode,
         builder: (context) {
           return const MyApp();
         }),
@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
-      home: const GateSelectionView(),
+      home: const GateDashboardView(),
     );
   }
 }

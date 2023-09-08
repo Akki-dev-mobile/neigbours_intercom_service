@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -8,6 +9,8 @@ import 'package:page_transition/page_transition.dart';
 
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:common_widgets/common_widgets.dart';
+
+import '../../../visitor_checkin_flow/ui/visitor_in_entry.dart';
 
 class IdInputView extends StatefulWidget {
   const IdInputView({Key? key}) : super(key: key);
@@ -209,11 +212,11 @@ class ImageGridBottomSheet extends StatefulWidget {
 class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   int selectedImageIndex = -1;
   final List<String> imagePaths = [
-    'assets/images/guest.png',
-    'assets/images/cab.png',
-    'assets/images/delivery.png',
-    'assets/images/staff.png',
-    'assets/images/vendor.png',
+    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/guest_dbd7ea2cb9.png?updated_at=2023-09-08T12:42:09.850Z',
+    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/guest_dbd7ea2cb9.png?updated_at=2023-09-08T12:42:09.850Z',
+    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/delivery_boy_4bba1833cc.png?updated_at=2023-09-08T12:42:09.875Z',
+    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/staff_ae83c36d56.png?updated_at=2023-09-08T12:42:09.891Z',
+    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/vendor_f5d3fe1fa3.png?updated_at=2023-09-08T12:42:09.822Z',
   ];
 
   final List<String> imageValues = [
@@ -300,10 +303,23 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                               padding: const EdgeInsets.only(top: 7),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(15),
-                                child: Image.asset(
+                                child: CachedNetworkImage(
+                                  maxHeightDiskCache: 10,
                                   height: 60,
-                                  imagePaths[index],
+                                  width: 45,
                                   fit: BoxFit.cover,
+                                  imageUrl: imagePaths[index],
+                                  placeholder: (context, url) =>
+                                      const CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(
+                                    Icons.error,
+                                    color: Colors.red,
+                                  ),
+                                  fadeOutDuration:
+                                      const Duration(milliseconds: 300),
+                                  fadeInDuration:
+                                      const Duration(milliseconds: 300),
                                 ),
                               ),
                             ),
@@ -313,9 +329,6 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   imageValues[index],
-                                  // style: TextStyle(
-                                  //   fontWeight: FontWeight.bold,
-                                  // ),
                                 ),
                               ),
                             ),
@@ -324,12 +337,12 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                       ),
                       selectedImageIndex == index
                           ? Positioned(
+                              right: 10,
+                              top: 10,
                               child: Icon(
                                 Ionicons.checkmark_circle_outline,
                                 color: Colors.red,
                               ),
-                              right: 10,
-                              top: 10,
                             )
                           : SizedBox()
                     ],
@@ -344,6 +357,14 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               if (selectedImageIndex != -1) {
                 String selectedValue = imageValues[selectedImageIndex];
                 Navigator.pop(context, selectedValue);
+
+                Navigator.push(
+                  context,
+                  PageTransition(
+                    type: PageTransitionType.rightToLeft,
+                    child: VisitorsInEntry(selectedValue: selectedValue),
+                  ),
+                );
               }
             },
           ),

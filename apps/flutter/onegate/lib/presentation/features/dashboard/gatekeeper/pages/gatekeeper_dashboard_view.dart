@@ -3,6 +3,7 @@
 import 'dart:ffi';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
@@ -193,36 +194,32 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Image(
+                          child: CachedNetworkImage(
+                            maxHeightDiskCache: 10,
                             height: 45,
                             width: 45,
                             fit: BoxFit.contain,
-                            // controller: _outAnimationController,
-                            image: NetworkImage(
-                              "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z",
+                            imageUrl:
+                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
+                            placeholder: (context, url) =>
+                                const CircularProgressIndicator(),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error,
+                              color: Colors.red,
                             ),
+                            fadeOutDuration: const Duration(seconds: 1),
+                            fadeInDuration: const Duration(seconds: 3),
                           ),
-                          // child: IconButton(
-                          //   color: Color.fromARGB(255, 182, 143, 64),
-                          //   onPressed: () {},
-                          //   icon: Icon(
-                          //     size: 30,
-                          //     Symbols.import_contacts_rounded,
-                          //   ),
-                          // ),
                         ),
                         Text(
                           'In-Out',
                           // (parcelCount).toString(),
-                          style: Theme.of(context).textTheme.labelMedium,
+                          style: Theme.of(context).textTheme.displayMedium,
                         ),
                         Text(
                           'Book',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 22,
-                          ),
+                          style: Theme.of(context).textTheme.labelMedium,
                         ),
                       ],
                     ),
@@ -259,14 +256,22 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             child: Transform(
                               transform: Matrix4.rotationY(math.pi),
                               alignment: Alignment.center,
-                              child: Image(
+                              child: CachedNetworkImage(
+                                maxHeightDiskCache: 10,
                                 height: 45,
                                 width: 45,
                                 fit: BoxFit.contain,
-                                // controller: _outAnimationController,
-                                image: NetworkImage(
-                                  "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z",
+                                imageUrl:
+                                    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
+                                placeholder: (context, url) =>
+                                    const CircularProgressIndicator(),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(
+                                  Icons.error,
+                                  color: Colors.red,
                                 ),
+                                fadeOutDuration: const Duration(seconds: 1),
+                                fadeInDuration: const Duration(seconds: 3),
                               ),
                             ),
                           ),
@@ -298,13 +303,21 @@ class _GateDashboardViewState extends State<GateDashboardView>
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Image(
+                            child: CachedNetworkImage(
+                              maxHeightDiskCache: 10,
                               height: 45,
                               width: 45,
                               fit: BoxFit.contain,
-                              image: NetworkImage(
-                                "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z",
+                              imageUrl:
+                                  'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
+                              placeholder: (context, url) =>
+                                  const CircularProgressIndicator(),
+                              errorWidget: (context, url, error) => const Icon(
+                                Icons.error,
+                                color: Colors.red,
                               ),
+                              fadeOutDuration: const Duration(seconds: 1),
+                              fadeInDuration: const Duration(seconds: 3),
                             ),
                           ),
                         ),
@@ -351,24 +364,27 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         ),
                       ),
                       child: ListTile(
-                        title: DefaultTextStyle(
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 18,
-                          ),
-                          child: AnimatedTextKit(
-                            repeatForever: true,
-                            animatedTexts: [
-                              TyperAnimatedText('9912345678'),
-                              TyperAnimatedText('G-39070'),
-                            ],
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                _createRoute(),
-                              );
-                            },
+                        title: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: DefaultTextStyle(
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 18,
+                            ),
+                            child: AnimatedTextKit(
+                              repeatForever: true,
+                              animatedTexts: [
+                                TyperAnimatedText('9912345678'),
+                                TyperAnimatedText('G-39070'),
+                              ],
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  _createRoute(),
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
