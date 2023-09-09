@@ -8,52 +8,52 @@
         "displayLarge": {
           "size": 36.0,
           "weight": "bold",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "displayMedium": {
           "size": 28.0,
           "weight": "600",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "displaySmall": {
           "size": 22.0,
           "weight": "500",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "bodyLarge": {
           "size": 20.0,
           "weight": "600",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "bodyMedium": {
           "size": 18.0,
           "weight": "500",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "labelMedium": {
           "size": 18.0,
           "weight": "500",
-          "color": "mutedText",
+          "color": "onPrimary",
           "fontFamily": "kDefaultFont"
         },
        
         "labelSmall": {
           "size": 12.0,
           "weight": "500",
-          "color": "mutedText",
+          "color": "onPrimary",
           "fontFamily": "kDefaultFont"
         }
       },
       "colors": {
         "kBlackColor": "#121212",
         "primaryBackground": "#FFFFFF",
-        "primaryText": "#212427",
-        "mutedText": "#57636C",
+        "onBackground": "#212427",
+        "onPrimary": "#57636C",
         "primaryContainer": "#FFEBE6",
         "surfaceTint": "#333333",
         "accent": "#ff5722"
@@ -61,55 +61,56 @@
     },
     "dark": {
       "fonts": {
-        "titleLarge": {
+        "displayLarge": {
           "size": 36.0,
-          "weight": "600",
-          "color": "primaryText",
+          "weight": "bold",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
-        "titleMedium": {
+        "displayMedium": {
           "size": 28.0,
           "weight": "600",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
-        "titleSmall": {
+        "displaySmall": {
           "size": 22.0,
           "weight": "500",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "bodyLarge": {
           "size": 20.0,
           "weight": "600",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "bodyMedium": {
           "size": 18.0,
           "weight": "500",
-          "color": "primaryText",
+          "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "labelMedium": {
           "size": 18.0,
           "weight": "500",
-          "color": "mutedText",
+          "color": "onPrimary",
           "fontFamily": "kDefaultFont"
         },
+       
         "labelSmall": {
           "size": 12.0,
           "weight": "500",
-          "color": "mutedText",
+          "color": "onPrimary",
           "fontFamily": "kDefaultFont"
         }
       },
       "colors": {
+        "kBlackColor": "#121212",
         "primaryBackground": "#121212",
-        "primaryText": "#212427",
-        "mutedText": "#57636C",
-        "surfaceVariant": "#FFEBE6",
-        "primaryContainer": "#FAFAFA",
+        "onBackground": "#ffffff",
+        "onPrimary": "#AFC0CC",
+        "primaryContainer": "#761600",
         "surfaceTint": "#333333",
         "accent": "#ff5722"
       }

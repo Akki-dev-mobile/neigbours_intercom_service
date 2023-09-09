@@ -6,6 +6,7 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
@@ -72,7 +73,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
             onPressed: () {},
             icon: Icon(
               Symbols.alarm_rounded,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onBackground,
             ),
           ),
           IconButton(
@@ -95,19 +96,19 @@ class _GateDashboardViewState extends State<GateDashboardView>
             },
             icon: Icon(
               Symbols.phone_missed_rounded,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onBackground,
             ),
           ),
           IconButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: AdminDashboardView(),
-                ),
-              );
+              // Navigator.push(
+              //   context,
+              //   PageTransition(
+              //     type: PageTransitionType.rightToLeft,
+              //     child: AdminDashboardView(),
+              //   ),
+              // );
               Fluttertoast.showToast(
                 msg: "Test Switch to Admin Dashboard",
                 toastLength: Toast.LENGTH_SHORT,
@@ -120,7 +121,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
             },
             icon: Icon(
               Symbols.settings_rounded,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onBackground,
             ),
           ),
         ],
@@ -350,17 +351,17 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onBackground,
                       ),
                     ),
                     Container(
                       margin: EdgeInsets.only(top: 5, bottom: 8),
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.background,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.grey.shade300,
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                       ),
                       child: ListTile(
@@ -368,7 +369,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                           padding: const EdgeInsets.only(top: 4.0),
                           child: DefaultTextStyle(
                             style: TextStyle(
-                              color: Colors.grey,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontWeight: FontWeight.w500,
                               fontSize: 18,
                             ),
@@ -489,7 +490,7 @@ class DashboardShortcut extends StatelessWidget {
                           ),
                           child: Icon(
                             icon,
-                            color: Colors.black,
+                            color: Theme.of(context).colorScheme.onBackground,
                             size: 24,
                           ),
                         )
@@ -502,13 +503,13 @@ class DashboardShortcut extends StatelessWidget {
                           ),
                           child: Icon(
                             icon,
-                            color: Colors.black,
+                            color: Theme.of(context).colorScheme.onBackground,
                             size: 24,
                           ),
                         )
                   : Icon(
                       icon,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onBackground,
                       size: 24,
                     ),
             ),

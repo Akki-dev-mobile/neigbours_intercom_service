@@ -92,7 +92,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                     CustomForm.textField(
                       focusNode: _newPasswordFocusNode,
                       textController: passwordTextCtrl,
-                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                      titleColor: Theme.of(context).colorScheme.onBackground,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
                       'Password',
                       hintText: '**********',
                       isObscureText: passwordVisibility,
@@ -114,7 +115,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                     CustomForm.textField(
                       focusNode: _confirmPasswordFocusNode,
                       textController: confirmPasswordTextCtrl,
-                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                      titleColor: Theme.of(context).colorScheme.onBackground,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
                       'Confirm Password',
                       hintText: '**********',
                       isObscureText: confirmPasswordVisibility,
@@ -142,13 +144,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                 child: CustomLargeBtn(
                   onPressed: () {
                     _submitResetPasswordForm();
-                    // Navigator.push(
-                    //   context,
-                    //   PageTransition(
-                    //     type: PageTransitionType.rightToLeft,
-                    //     child: LoginInView(),
-                    //   ),
-                    // );
+                    Navigator.pop(context);
                   },
                   text: 'RESET PASSWORD',
                 ),

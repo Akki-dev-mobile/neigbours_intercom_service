@@ -56,7 +56,7 @@ class _LoginViewState extends State<LoginView> {
   bool isValid = true;
 
   bool isEmailMode = false;
-  IconData userNameInputIcon = Symbols.abc_rounded;
+  IconData userNameInputIcon = Symbols.alternate_email;
 
   String? mobileErrorText;
   String? emailErrorText;
@@ -64,7 +64,7 @@ class _LoginViewState extends State<LoginView> {
   void toggleEmailMode() {
     setState(() {
       isEmailMode = !isEmailMode;
-      userNameInputIcon = isEmailMode ? Symbols.phone : Symbols.abc_rounded;
+      userNameInputIcon = isEmailMode ? Symbols.phone : Symbols.alternate_email;
       usernameTextCtrl!.clear();
       _mobileFocusNode.unfocus();
       Future.delayed(Duration(milliseconds: 100), () {
@@ -96,8 +96,8 @@ class _LoginViewState extends State<LoginView> {
       loginBloc.add(
         LoginButtonPressedEvent(usernameTextCtrl!.text, passwordTextCtrl!.text),
       );
-      usernameTextCtrl!.clear();
-      passwordTextCtrl!.clear();
+      // usernameTextCtrl!.clear();
+      // passwordTextCtrl!.clear();
     }
   }
 
@@ -193,13 +193,13 @@ class _LoginViewState extends State<LoginView> {
           case NavigateToAdminDashboardState:
             Navigator.pop(context);
             Future.delayed(Duration(milliseconds: 100), () {
-              Navigator.pushReplacement(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: GateSelectionView(),
-                ),
-              );
+              // Navigator.pushReplacement(
+              //   context,
+              //   PageTransition(
+              //     type: PageTransitionType.rightToLeft,
+              //     child: GateSelectionView(),
+              //   ),
+              // );
             });
             break;
           case NavigateToGatekeeperDashboardState:
@@ -214,13 +214,13 @@ class _LoginViewState extends State<LoginView> {
               );
             });
           case NavigateToGateSelectionState:
-            Navigator.pushReplacement(
-              context,
-              PageTransition(
-                type: PageTransitionType.rightToLeft,
-                child: GateSelectionView(),
-              ),
-            );
+          // Navigator.pushReplacement(
+          //   context,
+          //   PageTransition(
+          //     type: PageTransitionType.rightToLeft,
+          //     child: GateSelectionView(),
+          //   ),
+          // );
         }
       },
       builder: (context, state) {
@@ -262,14 +262,15 @@ class _LoginViewState extends State<LoginView> {
                       child: Column(
                         children: [
                           CustomForm.textField(
+                            titleColor:
+                                Theme.of(context).colorScheme.onBackground,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
                             focusNode: _mobileFocusNode,
                             isEmailMode ? 'Email Address' : 'Mobile Number',
                             hintText:
                                 isEmailMode ? 'Email Address' : 'Mobile Number',
                             textController: usernameTextCtrl,
                             textCapitalization: TextCapitalization.words,
-                            focusedColor:
-                                Theme.of(context).colorScheme.onPrimary,
                             keyboardType: isEmailMode
                                 ? TextInputType.emailAddress
                                 : TextInputType.number,
@@ -279,20 +280,68 @@ class _LoginViewState extends State<LoginView> {
                               },
                               icon: Icon(
                                 userNameInputIcon,
-                                color: Colors.black,
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
                               ),
                             ),
                             prefixIcon: !isEmailMode
                                 ? CountryCodePicker(
+                                    initialSelection: 'IN',
+                                    favorite: ['IN'],
                                     showFlagMain: true,
                                     showFlagDialog: true,
+                                    barrierColor: Theme.of(context)
+                                        .colorScheme
+                                        .background
+                                        .withOpacity(0.5),
+                                    closeIcon: Icon(
+                                      Icons.close,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .background,
+                                    ),
+                                    searchDecoration: InputDecoration(
+                                      hintText: 'Search',
+                                      hintStyle: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .background,
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                        borderSide: BorderSide(
+                                          style: BorderStyle.solid,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .background,
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                        borderSide: BorderSide(
+                                          style: BorderStyle.solid,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .background,
+                                        ),
+                                      ),
+                                    ),
+                                    textStyle: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onBackground,
+                                      fontSize: 18,
+                                    ),
+                                    dialogTextStyle: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .background,
+                                    ),
                                     onChanged: (CountryCode countryCode) {
                                       setState(() {
                                         selectedCountryCode = countryCode.code!;
                                       });
                                     },
-                                    initialSelection: 'IN',
-                                    favorite: ['IN'],
                                   )
                                 : null,
                             validator: (value) {
@@ -314,6 +363,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           CustomForm.textField(
                             focusNode: _passwordFocusNode,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
                             'Password',
                             hintText: '**********',
                             keyboardType: TextInputType.visiblePassword,
@@ -329,11 +379,12 @@ class _LoginViewState extends State<LoginView> {
                                 passwordVisibility
                                     ? Icons.visibility_off
                                     : Icons.visibility,
-                                color: Colors.black45,
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
                               ),
                             ),
-                            focusedColor:
-                                Theme.of(context).colorScheme.onPrimary,
+                            titleColor:
+                                Theme.of(context).colorScheme.onBackground,
                           ),
                         ],
                       ),
@@ -354,7 +405,8 @@ class _LoginViewState extends State<LoginView> {
                                 ),
                                 backgroundColor:
                                     MaterialStateProperty.all<Color>(
-                                        Colors.white),
+                                  Colors.transparent,
+                                ),
                                 elevation:
                                     MaterialStateProperty.resolveWith<double>(
                                   (Set<MaterialState> states) {
@@ -369,10 +421,6 @@ class _LoginViewState extends State<LoginView> {
                                     RoundedRectangleBorder>(
                                   RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(15),
-                                    side: const BorderSide(
-                                      color: Colors.transparent,
-                                      width: 1,
-                                    ),
                                   ),
                                 ),
                               ),
@@ -381,10 +429,12 @@ class _LoginViewState extends State<LoginView> {
                                   SignUpButtonPressedEvent(),
                                 );
                               },
-                              child: const Text(
+                              child: Text(
                                 'Sign Up',
                                 style: TextStyle(
-                                  color: Colors.black,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
                                   fontSize: 22,
                                   wordSpacing: 1.2,
                                   fontWeight: FontWeight.w500,
@@ -402,7 +452,8 @@ class _LoginViewState extends State<LoginView> {
                                 ),
                                 backgroundColor:
                                     MaterialStateProperty.all<Color>(
-                                        Colors.black),
+                                  Theme.of(context).colorScheme.onBackground,
+                                ),
                                 elevation:
                                     MaterialStateProperty.resolveWith<double>(
                                   (Set<MaterialState> states) {
@@ -430,7 +481,8 @@ class _LoginViewState extends State<LoginView> {
                               child: Text(
                                 'Login',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color:
+                                      Theme.of(context).colorScheme.background,
                                   fontSize: 22,
                                   wordSpacing: 1.2,
                                   fontWeight: FontWeight.w500,
@@ -513,9 +565,10 @@ class _LoginViewState extends State<LoginView> {
                       });
                     },
                     borderRadius: BorderRadius.circular(12),
+                    dropdownColor: Theme.of(context).colorScheme.background,
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onBackground,
                     ),
                     decoration: InputDecoration(
                       counterText: '',
@@ -525,20 +578,27 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       hintText: 'Select Society',
                       hintStyle: TextStyle(
-                        color: Colors.black38,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
                           style: BorderStyle.solid,
-                          color: Colors.black,
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(
+                          style: BorderStyle.solid,
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
                         borderSide: BorderSide(
                           style: BorderStyle.solid,
-                          color: Theme.of(context).colorScheme.onPrimary,
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                       ),
                     ),
@@ -549,7 +609,11 @@ class _LoginViewState extends State<LoginView> {
                           value: value,
                           child: Row(
                             children: [
-                              Icon(Ionicons.home_outline),
+                              Icon(
+                                Ionicons.home_outline,
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                              ),
                               SizedBox(width: 10),
                               SizedBox(
                                 width: MediaQuery.of(context).size.width * 0.6,
@@ -558,7 +622,9 @@ class _LoginViewState extends State<LoginView> {
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
                                   style: TextStyle(
-                                    color: Colors.black,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground,
                                   ),
                                 ),
                               ),
@@ -764,7 +830,9 @@ class _LoginViewState extends State<LoginView> {
           label,
           style: TextStyle(
             fontSize: 18,
-            color: _selectedRoleValue == value ? Colors.blue : Colors.black,
+            color: _selectedRoleValue == value
+                ? Colors.blue
+                : Theme.of(context).colorScheme.onPrimary,
           ),
         ),
       ],

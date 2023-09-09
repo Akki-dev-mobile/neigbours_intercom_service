@@ -46,7 +46,7 @@ class MyScrollView extends StatelessWidget {
                 ? IconButton(
                     icon: Icon(
                       Ionicons.arrow_back_outline,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onBackground,
                     ),
                     onPressed: () {
                       Navigator.pop(context);
@@ -56,7 +56,7 @@ class MyScrollView extends StatelessWidget {
             pinned: true,
             title: Text(
               pageTitle ?? '',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).textTheme.bodyLarge,
             ),
             actions: actions,
             // expandedHeight: 50,
@@ -98,7 +98,8 @@ class MyScrollView extends StatelessWidget {
 class CustomForm {
   static Widget textField(
     String title, {
-    Color? titleColor,
+    required Color titleColor,
+    required Color hintColor,
     TextInputType? keyboardType,
     bool isObscureText = false,
     required String hintText,
@@ -117,7 +118,6 @@ class CustomForm {
     ValueChanged<String>? onChanged,
     ValueChanged<String>? onFieldSubmitted,
     String? errorText,
-    required Color focusedColor,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 2),
@@ -132,7 +132,7 @@ class CustomForm {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 15,
-              color: titleColor ?? Colors.black87,
+              color: titleColor,
             ),
           ),
           SizedBox(
@@ -147,6 +147,7 @@ class CustomForm {
             initialValue: hasInitialValue,
             maxLines: lines,
             style: TextStyle(
+              color: titleColor,
               fontSize: 18,
             ),
             textCapitalization: textCapitalization,
@@ -176,15 +177,20 @@ class CustomForm {
               ),
               errorText: errorText,
               hintText: hintText,
+              hintStyle: TextStyle(
+                color: hintColor,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
                   style: BorderStyle.solid,
+                  color: titleColor,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
+                  color: titleColor,
                   style: BorderStyle.solid,
                 ),
               ),
@@ -192,6 +198,7 @@ class CustomForm {
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
                   style: BorderStyle.solid,
+                  width: 2,
                   color: Colors.blue,
                 ),
               ),
@@ -228,7 +235,9 @@ class CustomLargeBtn extends StatelessWidget {
           overlayColor: MaterialStateProperty.all<Color>(
             Color(0x80FFB080),
           ),
-          backgroundColor: MaterialStateProperty.all<Color>(Colors.black),
+          backgroundColor: MaterialStateProperty.all<Color>(
+            Theme.of(context).colorScheme.onBackground,
+          ),
           elevation: MaterialStateProperty.resolveWith<double>(
             (Set<MaterialState> states) {
               if (states.contains(MaterialState.pressed)) {
@@ -240,10 +249,6 @@ class CustomLargeBtn extends StatelessWidget {
           shape: MaterialStateProperty.all<RoundedRectangleBorder>(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
-              side: BorderSide(
-                color: Colors.transparent,
-                width: 1,
-              ),
             ),
           ),
         ),
@@ -251,7 +256,7 @@ class CustomLargeBtn extends StatelessWidget {
         child: Text(
           text,
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.background,
             fontSize: 22,
             wordSpacing: 1.2,
             fontWeight: FontWeight.w500,

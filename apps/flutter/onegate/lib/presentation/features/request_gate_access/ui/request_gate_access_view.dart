@@ -105,8 +105,9 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                       'Your Name',
                       textController: clientNameTextCtrl,
                       hintText: 'Shubham Bane',
-                      focusedColor: Theme.of(context).colorScheme.onPrimary,
                       textCapitalization: TextCapitalization.words,
+                      titleColor: Theme.of(context).colorScheme.onBackground,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                     CustomForm.textField(
                       focusNode: _mobileNumberFocusNode,
@@ -114,7 +115,8 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                       textController: mobileNumberTextCtrl,
                       hintText: 'Mobile',
                       keyboardType: TextInputType.number,
-                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                      titleColor: Theme.of(context).colorScheme.onBackground,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
                       length: 10,
                       validator: (value) {
                         if (value!.isEmpty) {
@@ -131,7 +133,8 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                       focusNode: _societyNameFocusNode,
                       hintText: 'Society Name',
                       textCapitalization: TextCapitalization.words,
-                      focusedColor: Theme.of(context).colorScheme.onPrimary,
+                      titleColor: Theme.of(context).colorScheme.onBackground,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ],
                 ),

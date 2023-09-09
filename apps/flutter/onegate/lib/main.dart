@@ -46,6 +46,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
+      darkTheme: ThemeManager.darkTheme,
       home: const GateDashboardView(),
     );
   }
