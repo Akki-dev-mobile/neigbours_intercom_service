@@ -5,16 +5,16 @@ abstract class GateSelectionState {}
 
 abstract class GateSelectionActionState extends GateSelectionState {}
 
-final class GateSelectionInitialState extends GateSelectionState {}
+class GateSelectionInitialState extends GateSelectionState {}
 
-final class GateSelectionLoadingState extends GateSelectionState {}
+class GateSelectionLoadingState extends GateSelectionState {}
 
-final class GateSelectionSuccessState extends GateSelectionState {
+class GateSelectionSuccessState extends GateSelectionState {
   final List<Gate> gates;
   GateSelectionSuccessState(this.gates);
 }
 
-final class GateSelectionErrorState extends GateSelectionActionState {
+class GateSelectionErrorState extends GateSelectionActionState {
   String message;
   GateSelectionErrorState({required this.message});
 }
