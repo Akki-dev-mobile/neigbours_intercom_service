@@ -15,6 +15,7 @@ class GateSelectionBloc extends Bloc<GateSelectionEvent, GateSelectionState> {
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   GateSelectionBloc(this._gateUseCase) : super(GateSelectionInitialState()) {
     on<GateSelectionInitialEvent>(gateSelectionInitialEvent);
+    on<GateSelectionConfirmEvent>(gateSelectionConfirmEvent);
   }
 
   FutureOr<void> gateSelectionInitialEvent(
@@ -24,6 +25,18 @@ class GateSelectionBloc extends Bloc<GateSelectionEvent, GateSelectionState> {
       final response = await _gateUseCase.gateList(_preferenceUtils.getSelectedCompany()!.companyId,_preferenceUtils.getUserInfo()!.userId);
       final List<Gate> gates = response!.gates;
       emit(GateSelectionSuccessState(gates));
+    } catch (e) {
+      emit(GateSelectionErrorState(message: e.toString()));
+    }
+  }
+
+  FutureOr<void> gateSelectionConfirmEvent(GateSelectionConfirmEvent event, Emitter<GateSelectionState> emit) {
+    emit(GateSelectionLoadingState());
+    try {
+      _preferenceUtils.saveGatesList(event.gates);
+      final selectedGate = event.gates.firstWhere((gate) => gate.isSelected == true);
+      _preferenceUtils.setSelectedGate(selectedGate);
+      emit(GateSelectionNavigateToAdminDashActionState());
     } catch (e) {
       emit(GateSelectionErrorState(message: e.toString()));
     }

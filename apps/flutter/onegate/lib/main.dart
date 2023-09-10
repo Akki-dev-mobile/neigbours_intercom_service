@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
-      home: const GateDashboardView(),
+      home: const LoginView(),
     );
   }
 }

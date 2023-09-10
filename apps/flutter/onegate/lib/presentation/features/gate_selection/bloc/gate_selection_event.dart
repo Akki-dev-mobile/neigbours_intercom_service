@@ -12,4 +12,10 @@ class GateSelectionSuccessEvent extends GateSelectionEvent {
   GateSelectionSuccessEvent(this.gates);
 }
 
+class GateSelectionConfirmEvent extends GateSelectionEvent {
+  final List<Gate> gates;
+
+  GateSelectionConfirmEvent({required this.gates});
+}
+
 
