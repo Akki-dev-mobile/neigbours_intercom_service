@@ -16,7 +16,7 @@ class ThemeManager {
 
   static Future<void> _initializeThemes(Map<String, dynamic> config) async {
     lightTheme = await _buildTheme(config, false);
-    //darkTheme = _buildTheme(config, true);
+    darkTheme = await _buildTheme(config, true);
   }
 
   static Future<ThemeData> _buildTheme(
@@ -34,7 +34,7 @@ class ThemeManager {
                 themeData, 'fonts.displayLarge.weight'),
           ),
           color: HexColor.fromHex(
-            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+            ThemeManagerConfig.getColor(themeData, 'colors.onBackground'),
           ),
         ),
         displayMedium: TextStyle(
@@ -45,7 +45,7 @@ class ThemeManager {
                 themeData, 'fonts.displayMedium.weight'),
           ),
           color: HexColor.fromHex(
-            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+            ThemeManagerConfig.getColor(themeData, 'colors.onBackground'),
           ),
         ),
         displaySmall: TextStyle(
@@ -56,7 +56,7 @@ class ThemeManager {
                 themeData, 'fonts.displaySmall.weight'),
           ),
           color: HexColor.fromHex(
-            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+            ThemeManagerConfig.getColor(themeData, 'colors.onBackground'),
           ),
         ),
         bodyLarge: TextStyle(
@@ -67,7 +67,7 @@ class ThemeManager {
                 themeData, 'fonts.bodyLarge.weight'),
           ),
           color: HexColor.fromHex(
-            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+            ThemeManagerConfig.getColor(themeData, 'colors.onBackground'),
           ),
         ),
         bodyMedium: TextStyle(
@@ -78,7 +78,7 @@ class ThemeManager {
                 themeData, 'fonts.bodyMedium.weight'),
           ),
           color: HexColor.fromHex(
-            ThemeManagerConfig.getColor(themeData, 'colors.primaryText'),
+            ThemeManagerConfig.getColor(themeData, 'colors.onBackground'),
           ),
         ),
         labelMedium: TextStyle(
@@ -89,7 +89,7 @@ class ThemeManager {
                 themeData, 'fonts.labelMedium.weight'),
           ),
           color: HexColor.fromHex(
-            ThemeManagerConfig.getColor(themeData, 'colors.mutedText'),
+            ThemeManagerConfig.getColor(themeData, 'colors.onPrimary'),
           ),
         ),
         labelSmall: TextStyle(
@@ -100,7 +100,7 @@ class ThemeManager {
                 themeData, 'fonts.labelSmall.weight'),
           ),
           color: HexColor.fromHex(
-            ThemeManagerConfig.getColor(themeData, 'colors.mutedText'),
+            ThemeManagerConfig.getColor(themeData, 'colors.onPrimary'),
           ),
         ),
       ),
@@ -115,11 +115,14 @@ class ThemeManager {
         background: HexColor.fromHex(
           ThemeManagerConfig.getColor(themeData, 'colors.primaryBackground'),
         ),
+        onBackground: HexColor.fromHex(
+          ThemeManagerConfig.getColor(themeData, 'colors.onBackground'),
+        ),
         primary: HexColor.fromHex(
           ThemeManagerConfig.getColor(themeData, 'colors.primaryContainer'),
         ),
         onPrimary: HexColor.fromHex(
-          ThemeManagerConfig.getColor(themeData, 'colors.kBlackColor'),
+          ThemeManagerConfig.getColor(themeData, 'colors.onPrimary'),
         ),
 
         // "primaryContainer": "#FAFAFA",

@@ -65,13 +65,15 @@ class _IdInputViewState extends State<IdInputView> {
             fontSize: 18.0,
             changeOnTap: true,
             initialLabelIndex: _currentIndex,
-            activeBgColor: [Colors.black],
-            activeFgColor: Colors.white,
-            borderColor: [
-              Colors.black,
+            activeBgColor: [
+              Theme.of(context).colorScheme.onBackground,
             ],
-            inactiveBgColor: Color.fromARGB(255, 247, 247, 247),
-            inactiveFgColor: Colors.black,
+            activeFgColor: Theme.of(context).colorScheme.background,
+            borderColor: [
+              Theme.of(context).colorScheme.onBackground,
+            ],
+            inactiveBgColor: Theme.of(context).colorScheme.background,
+            inactiveFgColor: Theme.of(context).colorScheme.onPrimary,
             totalSwitches: 2,
             labels: _labels,
             onToggle: (index) {
@@ -86,6 +88,8 @@ class _IdInputViewState extends State<IdInputView> {
               ? Form(
                   key: mobileControllerFormKey,
                   child: CustomForm.textField(
+                    titleColor: Theme.of(context).colorScheme.onBackground,
+                    hintColor: Theme.of(context).colorScheme.onPrimary,
                     focusNode: _focusNode,
                     "Visitor Mobile Number",
                     hintText: '0123456789',
@@ -116,7 +120,6 @@ class _IdInputViewState extends State<IdInputView> {
                       }
                       return null;
                     },
-                    focusedColor: Colors.blue,
                   ),
                 )
               : Column(
@@ -124,6 +127,8 @@ class _IdInputViewState extends State<IdInputView> {
                     Form(
                       key: passcodeControllerFormKey,
                       child: CustomForm.textField(
+                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Visitor Passcode",
                         hintText: '123456',
                         textController: passcodeController,
@@ -170,7 +175,6 @@ class _IdInputViewState extends State<IdInputView> {
                           }
                           return null;
                         },
-                        focusedColor: Colors.blue,
                       ),
                     ),
                     ChipsChoice<String>.single(
@@ -358,13 +362,13 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                 String selectedValue = imageValues[selectedImageIndex];
                 Navigator.pop(context, selectedValue);
 
-                Navigator.push(
-                  context,
-                  PageTransition(
-                    type: PageTransitionType.rightToLeft,
-                    child: VisitorsInEntry(selectedValue: selectedValue),
-                  ),
-                );
+                // Navigator.push(
+                //   context,
+                //   PageTransition(
+                //     type: PageTransitionType.rightToLeft,
+                //     child: VisitorsInEntry(selectedValue: selectedValue),
+                //   ),
+                // );
               }
             },
           ),
