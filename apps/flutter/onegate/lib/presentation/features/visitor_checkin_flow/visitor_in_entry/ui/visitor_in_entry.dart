@@ -7,6 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:page_transition/page_transition.dart';
+
+import '../../units_selection/ui/unit_selection_view.dart';
 
 class VisitorsInEntry extends StatefulWidget {
   final String selectedValue;
@@ -287,6 +290,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       ),
       floatingActionButton: CustomLargeBtn(
         onPressed: () {
+          Navigator.push(
+            context,
+            PageTransition(
+              type: PageTransitionType.leftToRightWithFade,
+              child: UnitSelectionView(),
+            ),
+          );
           // _captureImageFromCamera();
         },
         text: 'NEXT',
@@ -335,7 +345,7 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
       shrinkWrap: true,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        mainAxisSpacing: 8,
+        mainAxisSpacing: 16,
         crossAxisSpacing: 3,
       ),
       itemCount: imagePaths.length,
@@ -343,7 +353,7 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
         return GestureDetector(
           onTap: () => selectImage(index),
           child: Container(
-            margin: EdgeInsets.all(5),
+            padding: EdgeInsets.all(5),
             decoration: BoxDecoration(
               color: selectedUserInput == index
                   ? Color(0xffFFEBE6)

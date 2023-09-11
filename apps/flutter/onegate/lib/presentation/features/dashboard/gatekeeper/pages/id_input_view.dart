@@ -159,9 +159,8 @@ class _IdInputViewState extends State<IdInputView> {
                                 isScrollControlled: true,
                                 useSafeArea: true,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(20),
-                                    topRight: Radius.circular(20),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(20),
                                   ),
                                 ),
                                 backgroundColor:
@@ -226,7 +225,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   int selectedImageIndex = -1;
   final List<String> imagePaths = [
     'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/guest_dbd7ea2cb9.png?updated_at=2023-09-08T12:42:09.850Z',
-    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/guest_dbd7ea2cb9.png?updated_at=2023-09-08T12:42:09.850Z',
+    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/cab_8ed111c563.png?updated_at=2023-09-08T12:42:09.898Z',
     'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/delivery_boy_4bba1833cc.png?updated_at=2023-09-08T12:42:09.875Z',
     'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/staff_ae83c36d56.png?updated_at=2023-09-08T12:42:09.891Z',
     'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/vendor_f5d3fe1fa3.png?updated_at=2023-09-08T12:42:09.822Z',
@@ -312,8 +311,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(15),
                                 child: CachedNetworkImage(
-                                  maxHeightDiskCache: 10,
-                                  height: 60,
+                                  maxHeightDiskCache: 60,
+                                  maxWidthDiskCache: 60,
+                                  height: 45,
                                   width: 45,
                                   fit: BoxFit.cover,
                                   imageUrl: imagePaths[index],
@@ -339,12 +339,13 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   imageValues[index],
                                   style: TextStyle(
                                     color: selectedImageIndex == index
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .background
+                                        ? Colors.red
                                         : Theme.of(context)
                                             .colorScheme
                                             .onBackground,
+                                    fontWeight: selectedImageIndex == index
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                   ),
                                 ),
                               ),
