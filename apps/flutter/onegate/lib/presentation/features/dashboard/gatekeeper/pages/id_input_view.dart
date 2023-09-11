@@ -10,7 +10,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:common_widgets/common_widgets.dart';
 
-import '../../../visitor_checkin_flow/ui/visitor_in_entry.dart';
+import '../../../visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 
 class IdInputView extends StatefulWidget {
   const IdInputView({Key? key}) : super(key: key);
@@ -109,7 +109,7 @@ class _IdInputViewState extends State<IdInputView> {
                       },
                       icon: Icon(
                         Symbols.done_rounded,
-                        color: Colors.black,
+                        color: Theme.of(context).colorScheme.onBackground,
                       ),
                     ),
                     validator: (value) {
@@ -156,6 +156,14 @@ class _IdInputViewState extends State<IdInputView> {
                             if (passcodeControllerFormKey.currentState!
                                 .validate()) {
                               showModalBottomSheet(
+                                isScrollControlled: true,
+                                useSafeArea: true,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(20),
+                                    topRight: Radius.circular(20),
+                                  ),
+                                ),
                                 backgroundColor:
                                     Theme.of(context).colorScheme.background,
                                 context: context,
@@ -165,6 +173,7 @@ class _IdInputViewState extends State<IdInputView> {
                           },
                           icon: Icon(
                             Symbols.done_rounded,
+                            color: Theme.of(context).colorScheme.onBackground,
                           ),
                         ),
                         validator: (value) {
@@ -240,11 +249,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.52,
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+      padding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 20,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -254,10 +261,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           ListTile(
             title: Text(
               'Select Purpose of visit',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             trailing: Icon(
               Ionicons.close_circle_outline,
@@ -333,6 +337,15 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   imageValues[index],
+                                  style: TextStyle(
+                                    color: selectedImageIndex == index
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .background
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onBackground,
+                                  ),
                                 ),
                               ),
                             ),
@@ -361,14 +374,13 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               if (selectedImageIndex != -1) {
                 String selectedValue = imageValues[selectedImageIndex];
                 Navigator.pop(context, selectedValue);
-
-                // Navigator.push(
-                //   context,
-                //   PageTransition(
-                //     type: PageTransitionType.rightToLeft,
-                //     child: VisitorsInEntry(selectedValue: selectedValue),
-                //   ),
-                // );
+                Navigator.push(
+                  context,
+                  PageTransition(
+                    type: PageTransitionType.rightToLeft,
+                    child: VisitorsInEntry(selectedValue: selectedValue),
+                  ),
+                );
               }
             },
           ),

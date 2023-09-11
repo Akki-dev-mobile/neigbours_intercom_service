@@ -139,6 +139,7 @@ class CustomForm {
             height: 5,
           ),
           TextFormField(
+            cursorColor: Colors.blue,
             // autovalidateMode: AutovalidateMode.onUserInteraction,
             focusNode: focusNode,
             onFieldSubmitted: onFieldSubmitted,

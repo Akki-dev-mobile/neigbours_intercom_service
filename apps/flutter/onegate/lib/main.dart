@@ -11,6 +11,8 @@ import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_sel
 import 'package:one_theme/theme.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 
+import 'presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
+
 void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +50,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
       darkTheme: ThemeManager.darkTheme,
-      home: const LoginView(),
+      home: const IdInputView(),
     );
   }
 }
