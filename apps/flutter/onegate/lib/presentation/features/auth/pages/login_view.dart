@@ -165,6 +165,7 @@ class _LoginViewState extends State<LoginView> {
             _roleSelectionBottomSheet(context);
             break;
           case LoginErrorState:
+            Navigator.pop(context);
             final errorState = state as LoginErrorState;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -295,6 +296,11 @@ class _LoginViewState extends State<LoginView> {
                                     favorite: ['IN'],
                                     showFlagMain: true,
                                     showFlagDialog: true,
+                                    boxDecoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .background,
+                                    ),
                                     barrierColor: Theme.of(context)
                                         .colorScheme
                                         .background
@@ -303,14 +309,20 @@ class _LoginViewState extends State<LoginView> {
                                       Icons.close,
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .background,
+                                          .onBackground,
                                     ),
                                     searchDecoration: InputDecoration(
+                                      prefixIcon: Icon(
+                                        Icons.search,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onBackground,
+                                      ),
                                       hintText: 'Search',
                                       hintStyle: TextStyle(
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .background,
+                                            .onBackground,
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(15),
@@ -318,7 +330,7 @@ class _LoginViewState extends State<LoginView> {
                                           style: BorderStyle.solid,
                                           color: Theme.of(context)
                                               .colorScheme
-                                              .background,
+                                              .onBackground,
                                         ),
                                       ),
                                       enabledBorder: OutlineInputBorder(
@@ -327,7 +339,7 @@ class _LoginViewState extends State<LoginView> {
                                           style: BorderStyle.solid,
                                           color: Theme.of(context)
                                               .colorScheme
-                                              .background,
+                                              .onBackground,
                                         ),
                                       ),
                                     ),
@@ -340,7 +352,7 @@ class _LoginViewState extends State<LoginView> {
                                     dialogTextStyle: TextStyle(
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .background,
+                                          .onBackground,
                                     ),
                                     onChanged: (CountryCode countryCode) {
                                       setState(() {
