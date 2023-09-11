@@ -229,7 +229,7 @@ class CustomLargeBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8),
-      width: MediaQuery.of(context).size.width * 1,
+      width: MediaQuery.of(context).size.width * 0.9,
       height: 60,
       child: ElevatedButton(
         style: ButtonStyle(

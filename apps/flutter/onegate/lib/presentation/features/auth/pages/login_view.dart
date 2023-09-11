@@ -12,6 +12,7 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:libphonenumber/libphonenumber.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
@@ -96,8 +97,6 @@ class _LoginViewState extends State<LoginView> {
       loginBloc.add(
         LoginButtonPressedEvent(usernameTextCtrl!.text, passwordTextCtrl!.text),
       );
-      usernameTextCtrl!.clear();
-      passwordTextCtrl!.clear();
     }
   }
 
@@ -165,12 +164,15 @@ class _LoginViewState extends State<LoginView> {
             _roleSelectionBottomSheet(context);
             break;
           case LoginErrorState:
-            Navigator.pop(context);
             final errorState = state as LoginErrorState;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(errorState.message!),
-              ),
+            Fluttertoast.showToast(
+              msg: errorState.message!,
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              fontSize: 16.0,
             );
             break;
           case SignUpButtonPressedState:
@@ -657,6 +659,8 @@ class _LoginViewState extends State<LoginView> {
                   CustomLargeBtn(
                     text: 'CONFIRM',
                     onPressed: () {
+                      Navigator.pop(context);
+
                       loginBloc.add(
                         SocietySelectionButtonEvent(dropdownValue),
                       );
@@ -733,6 +737,7 @@ class _LoginViewState extends State<LoginView> {
                   CustomLargeBtn(
                     text: 'CONFIRM',
                     onPressed: () {
+                      Navigator.pop(context);
                       loginBloc.add(
                         RoleSelectionButtonPressedEvent(
                           _selectedRoleValue == 1,
