@@ -1,6 +1,6 @@
 part of 'units_selection_bloc.dart';
 
 @immutable
-sealed class UnitsSelectionState {}
+ class UnitsSelectionState {}
 
-final class UnitsSelectionInitial extends UnitsSelectionState {}
+ class UnitsSelectionInitial extends UnitsSelectionState {}
