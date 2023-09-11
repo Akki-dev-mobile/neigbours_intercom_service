@@ -29,11 +29,12 @@ void main() async {
   await ThemeManager.initializeWithAppId(appId);
 
   runApp(
-    DevicePreview(
-        enabled: !kDebugMode,
-        builder: (context) {
-          return const MyApp();
-        }),
+    // DevicePreview(
+    //     enabled: !kDebugMode,
+    //     builder: (context) {
+    //       return const MyApp();
+    //     }),
+    const MyApp(),
   );
 }
 

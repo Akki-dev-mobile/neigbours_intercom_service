@@ -5,8 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/gate_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/bloc/gate_selection_bloc.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
@@ -24,6 +27,9 @@ class GateSelectionView extends StatefulWidget {
 }
 
 class _GateSelectionViewState extends State<GateSelectionView> {
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  Gate? storedGate, selectedGate;
+
   final GateSelectionBloc gateBloc = GateSelectionBloc(
     GateUseCase(
       GateRepositoryImpl(
@@ -36,6 +42,8 @@ class _GateSelectionViewState extends State<GateSelectionView> {
   void initState() {
     super.initState();
     gateBloc.add(GateSelectionInitialEvent());
+    storedGate = _preferenceUtils.getSelectedGate();
+    selectedGate = storedGate;
   }
 
   @override
@@ -74,14 +82,31 @@ class _GateSelectionViewState extends State<GateSelectionView> {
             return LoaderView();
           case GateSelectionSuccessState:
             final successState = state as GateSelectionSuccessState;
-            // Check if any gate is selected
-            bool anyGateSelected =
-                successState.gates.any((gate) => gate.isSelected);
-
-            // If none of the gates is selected, set the first one as selected
-            if (!anyGateSelected && successState.gates.isNotEmpty) {
-              successState.gates[0].isSelected = true;
+            if (storedGate != null && selectedGate != null) {
+              if (storedGate!.name == selectedGate!.name) {
+                for (var gate in successState.gates) {
+                  if (gate.name == storedGate!.name) {
+                    gate.isSelected = true;
+                    selectedGate = gate;
+                  }
+                }
+              } else {
+                bool anyGateSelected =
+                    successState.gates.any((gate) => gate.isSelected);
+                if (!anyGateSelected && successState.gates.isNotEmpty) {
+                  successState.gates[0].isSelected = true;
+                  selectedGate = successState.gates[0];
+                }
+              }
+            } if(storedGate == null ) {
+              bool anyGateSelected =
+                  successState.gates.any((gate) => gate.isSelected);
+              if (!anyGateSelected && successState.gates.isNotEmpty) {
+                successState.gates[0].isSelected = true;
+                selectedGate = successState.gates[0];
+              }
             }
+
             return MyScrollView(
               pageTitle: 'Gate Selection',
               pageBody: Column(
@@ -97,14 +122,17 @@ class _GateSelectionViewState extends State<GateSelectionView> {
                     ),
                   ),
                   ...List.generate(successState.gates.length, (index) {
+                    List<Gate> gatesList = successState.gates;
                     return GateSettingListTile(
-                      switchValue: successState.gates[index].isSelected,
+                      switchValue: gatesList[index].isSelected,
                       onChanged: (value) => {
                         setState(() {
-                          successState.gates.forEach((gate) {
+                          for (var gate in gatesList) {
                             gate.isSelected = false;
-                          });
-                          successState.gates[index].isSelected = true;
+                            print(gate.isSelected);
+                          }
+                          gatesList[index].isSelected = true;
+                          selectedGate = gatesList[index];
                         })
                       },
                       title: successState.gates[index].name,

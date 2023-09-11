@@ -1,0 +1,522 @@
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+
+import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
+import 'package:ionicons/ionicons.dart';
+import 'package:common_widgets/common_widgets.dart';
+import 'package:chips_choice/chips_choice.dart';
+import 'package:provider/provider.dart';
+import 'gate_selection.dart';
+import 'settings_gate.dart';
+
+class SettingsHome extends StatefulWidget {
+  const SettingsHome({super.key});
+
+  @override
+  State<SettingsHome> createState() => _SettingsHomeState();
+}
+
+class _SettingsHomeState extends State<SettingsHome> {
+  String? _cameraValue;
+  String? _languageValue;
+  String? _visitorApprovalTimeValue;
+  String? _dataStorageValue;
+  String? selectedGate;
+
+  List<String> options = [
+    'Gate 1',
+    'Gate 2',
+    'Gate 3',
+    'Gate 4',
+  ];
+
+  void _showCameraSettings(BuildContext context) async {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Select an option',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  ListView.builder(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shrinkWrap: true,
+                    itemCount: _cameraItems.length,
+                    itemBuilder: (context, index) {
+                      final item = _cameraItems[index];
+                      return RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(item.label),
+                        value: item.value,
+                        groupValue: _cameraValue,
+                        onChanged: (value) {
+                          setState(() {
+                            _cameraValue = value!;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                  CustomLargeBtn(
+                    text: 'Confirm',
+                    onPressed: () {
+                      setState(() {
+                        _cameraValue = _cameraValue;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  SizedBox(height: 50.0),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showLanguageSettings(BuildContext context) async {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Select an option',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  ListView.builder(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shrinkWrap: true,
+                    itemCount: _languageItems.length,
+                    itemBuilder: (context, index) {
+                      final item = _languageItems[index];
+                      return RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(item.label),
+                        value: item.value,
+                        groupValue: _cameraValue,
+                        onChanged: (value) {
+                          setState(() {
+                            _languageValue = value!;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                  CustomLargeBtn(
+                    text: 'Confirm',
+                    onPressed: () {
+                      setState(() {
+                        _languageValue = _languageValue;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  SizedBox(height: 50.0),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showVisitorApprovalTime(BuildContext context) async {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Select an option',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 16.0),
+                  ListView.builder(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shrinkWrap: true,
+                    itemCount: _visitorApprovalTimeItems.length,
+                    itemBuilder: (context, index) {
+                      final item = _visitorApprovalTimeItems[index];
+                      return RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(item.label),
+                        value: item.value,
+                        groupValue: _visitorApprovalTimeValue,
+                        onChanged: (value) {
+                          setState(() {
+                            _cameraValue = value!;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                  CustomLargeBtn(
+                    text: 'Confirm',
+                    onPressed: () {
+                      setState(() {
+                        _visitorApprovalTimeValue = _visitorApprovalTimeValue;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  SizedBox(height: 50.0),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDataStorage(BuildContext context) async {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Select an option',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  ListView.builder(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shrinkWrap: true,
+                    itemCount: _dataStorageItems.length,
+                    itemBuilder: (context, index) {
+                      final item = _dataStorageItems[index];
+                      return RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(item.label),
+                        value: item.value,
+                        groupValue: _visitorApprovalTimeValue,
+                        onChanged: (value) {
+                          setState(() {
+                            _dataStorageValue = value!;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                  CustomLargeBtn(
+                    text: 'Confirm',
+                    onPressed: () {
+                      setState(() {
+                        _dataStorageValue = _dataStorageValue;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  SizedBox(height: 50.0),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MyScrollView(
+      pageTitle: "Settings",
+      pageBody: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ChipsChoice<String>.single(
+          //   choiceStyle: C2ChipStyle.outlined(),
+          //   choiceCheckmark: true,
+          //   value: selectedGate,
+          //   scrollPhysics: BouncingScrollPhysics(),
+          //   onChanged: (value) {
+          //     setState(() {
+          //       selectedGate = value;
+          //     });
+          //   },
+          //   choiceItems: C2Choice.listFrom<String, String>(
+          //     source: options,
+          //     value: (i, v) => v,
+          //     label: (i, v) => v,
+          //   ),
+          // ),
+          SecondarySettingsTile(
+            title: 'Gate Settings',
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.grid_outline,
+            title: 'Gate Settings',
+            subtitle: 'Current Preference: Gate One',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GateSelectionView(),
+                ),
+              );
+            },
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.person_outline,
+            title: 'Visitors and Vehicles Settings',
+            subtitle: 'All visitors will be automatically approved',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GateSettingView(),
+                ),
+              );
+            },
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.people_outline,
+            title: 'Visitors Settings',
+            subtitle: 'Mark mandatory fields for visitors',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VisitorSettingsView(),
+                ),
+              );
+            },
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.time_outline,
+            title: 'Visitor Approval Time',
+            subtitle:
+                'Current Preference: ${_visitorApprovalTimeValue ?? "None"}',
+            onTap: () {
+              _showVisitorApprovalTime(context);
+            },
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.alarm_outline,
+            title: 'Configure Duty Alarms',
+            subtitle: 'Enable/Disable Duty Alarms',
+          ),
+          SecondarySettingsTile(
+            title: 'Applicaton Settings',
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.camera_outline,
+            title: 'Camera Settings',
+            subtitle: "Current Preference: ${_cameraValue ?? "None"}",
+            onTap: () {
+              _showCameraSettings(context);
+            },
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.file_tray_full_outline,
+            title: 'Data Storage',
+            subtitle: 'Current Preference: ${_dataStorageValue ?? "None"}',
+            onTap: () {
+              _showDataStorage(context);
+            },
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.options_outline,
+            title: 'Configure Permissions',
+            subtitle: 'All Approved',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AppPermissions(),
+                ),
+              );
+            },
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.shield_half_outline,
+            title: 'Change Password',
+            subtitle: 'Change your password',
+            onTap: () {
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (context) => OtpView(),
+              //   ),
+              // );
+            },
+          ),
+          // PrimarySettingsTile(
+          //   icon: Ionicons.sunny_outline,
+          //   title: 'Change Theme',
+          //   subtitle:
+          //       'Current Settings: ${themeManager.currentThemeMode == oneTheme.ThemeMode.obsidianTheme ? 'Dark' : 'Light'}',
+          //   trailing: Switch(
+          //     value: themeManager.currentThemeMode ==
+          //         oneTheme.ThemeMode.obsidianTheme,
+          //     onChanged: (newValue) {
+          //       themeManager.toggleTheme();
+          //     },
+          //   ),
+          // ),
+          PrimarySettingsTile(
+            icon: Ionicons.language_outline,
+            title: 'Change Language',
+            subtitle: 'Current Preference: ${_languageValue ?? "None"}',
+            onTap: () {
+              _showLanguageSettings(context);
+            },
+          ),
+          PrimarySettingsTile(
+              icon: Ionicons.log_out_outline,
+              title: 'Logout',
+              subtitle: 'Logout from the app',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GateDashboardView(),
+                  ),
+                );
+              }),
+        ],
+      ),
+    );
+  }
+}
+
+class PrimarySettingsTile extends StatelessWidget {
+  const PrimarySettingsTile({
+    this.icon,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+    this.trailing,
+  });
+
+  final IconData? icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        size: 22,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(subtitle ?? ''),
+      onTap: onTap,
+      trailing: trailing,
+    );
+  }
+}
+
+class MultiSelectItem<T> {
+  final String label;
+  final T value;
+  MultiSelectItem(this.label, this.value);
+}
+
+List<MultiSelectItem<String>> _dataStorageItems = [
+  MultiSelectItem<String>('1 month', '1'),
+  MultiSelectItem<String>('2 months', '2'),
+  MultiSelectItem<String>('3 months', '3'),
+  MultiSelectItem<String>('4 months', '4'),
+  MultiSelectItem<String>('5 months', '5'),
+  MultiSelectItem<String>('6 months', '6'),
+];
+
+List<MultiSelectItem<String>> _cameraItems = [
+  MultiSelectItem<String>('Front Camera', 'front'),
+  MultiSelectItem<String>('Back Camera', 'back'),
+];
+List<MultiSelectItem<String>> _languageItems = [
+  MultiSelectItem<String>('English', 'English'),
+  MultiSelectItem<String>('Marathi', 'Marathi'),
+  MultiSelectItem<String>('Hindi', 'Hindi'),
+];
+List<MultiSelectItem<String>> _visitorApprovalTimeItems = [
+  MultiSelectItem<String>('20 seconds', '20'),
+  MultiSelectItem<String>('40 seconds', '40'),
+  MultiSelectItem<String>('60 seconds', '60'),
+  MultiSelectItem<String>('80 seconds', '80'),
+  MultiSelectItem<String>('100 seconds', '100'),
+  MultiSelectItem<String>('120 seconds', '120'),
+];
+
+class SecondarySettingsTile extends StatelessWidget {
+  const SecondarySettingsTile({
+    required this.title,
+  });
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(
+        vertical: 0,
+        horizontal: 20,
+      ),
+      title: Text(
+        title,
+        // color: Color(0xff1973E9),
+
+        style: TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 20,
+        ),
+      ),
+    );
+  }
+}

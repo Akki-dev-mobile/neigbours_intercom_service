@@ -5,6 +5,13 @@ import 'dart:ffi';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/repositories/admin_dash_repo_impl.dart';
+import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/use_cases/admin_dash_usecase.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
@@ -23,271 +30,315 @@ class AdminDashboardView extends StatefulWidget {
 
 class _AdminDashboardViewState extends State<AdminDashboardView>
     with TickerProviderStateMixin {
+  final AdminDashboardBloc adminDashboardBloc = AdminDashboardBloc(
+    AdminDashboardUseCase(
+      AdminDashboardRepositoryImpl(
+        RemoteDataSource(dioInstance),
+      ),
+    ),
+  );
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        return false;
-      },
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        extendBody: true,
-        backgroundColor: Theme.of(context).colorScheme.background,
-        body: CustomScrollView(
-          physics: BouncingScrollPhysics(),
-          slivers: [
-            SliverAppBar(
-              automaticallyImplyLeading: false,
-              centerTitle: true,
-              title: Container(
-                margin: EdgeInsets.only(top: 0),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    radius: 18,
-                    backgroundImage: NetworkImage(
-                      'https://3.imimg.com/data3/LL/IT/MY-10283605/apartment-security-service-500x500.jpg',
-                    ),
-                  ),
-                  title: Text(
-                    'onegate',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  subtitle: Text(
-                    'Admin',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  trailing: IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.rightToLeft,
-                          child: GateDashboardView(),
-                        ),
-                      );
-                      Fluttertoast.showToast(
-                        msg: "Test Switch to Gatekeeper Dashboard",
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.CENTER,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.red,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
-                      );
-                    },
-                    icon: Icon(
-                      Symbols.settings_rounded,
-                      color: Colors.black,
-                    ),
-                  ),
+    return BlocConsumer<AdminDashboardBloc, AdminDashboardState>(
+        bloc: adminDashboardBloc,
+        listenWhen: (previous, current) => current is AdminDashboardActionState,
+        buildWhen: (previous, current) => current is! AdminDashboardActionState,
+        listener: (context, state) {
+          switch (state.runtimeType) {
+            case NavigateToSettingsState:
+              Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: SettingsHome(),
                 ),
-              ),
-              pinned: true,
-              expandedHeight: 80,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.background,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  AdminDashboardShortcut(
-                    icon: Symbols.looks_one_rounded,
-                    title: 'onesociety',
-                    onTap: () {
-                      Fluttertoast.showToast(
-                        msg: "will be redirecting to crm payment page",
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.CENTER,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.red,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
-                      );
-                    },
-                    isPremium: true,
-                    isVisible: true,
-                  ),
-                  AdminDashboardShortcut(
-                    icon: Symbols.package_rounded,
-                    title: 'Parcel',
-                    isPremium: false,
-                    isVisible: true,
-                    onTap: () {},
-                  ),
-                  AdminDashboardShortcut(
-                    isPremium: false,
-                    isVisible: false,
-                    icon: Symbols.badge_rounded,
-                    title: 'Staff',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: GestureDetector(
-                onTap: () {},
-                child: Container(
-                  margin: EdgeInsets.only(top: 16, bottom: 16),
-                  height: MediaQuery.of(context).size.height * 0.27,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.3,
-                        decoration: BoxDecoration(
-                          color: Color(
-                            0xffF2D8A5,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(2),
-                              margin: EdgeInsets.only(top: 10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Image(
-                                height: 45,
-                                width: 45,
-                                fit: BoxFit.contain,
-                                image: NetworkImage(
-                                  "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z",
-                                ),
+              );
+              break;
+          }
+        },
+        builder: (context, state) {
+          switch (state.runtimeType) {
+            default:
+              return WillPopScope(
+                onWillPop: () async {
+                  return false;
+                },
+                child: Scaffold(
+                  resizeToAvoidBottomInset: true,
+                  extendBody: true,
+                  backgroundColor: Theme.of(context).colorScheme.background,
+                  body: CustomScrollView(
+                    physics: BouncingScrollPhysics(),
+                    slivers: [
+                      SliverAppBar(
+                        automaticallyImplyLeading: false,
+                        centerTitle: true,
+                        title: Container(
+                          margin: EdgeInsets.only(top: 0),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundImage: NetworkImage(
+                                'https://3.imimg.com/data3/LL/IT/MY-10283605/apartment-security-service-500x500.jpg',
                               ),
                             ),
-                            Text(
-                              'In-Out',
+                            title: Text(
+                              'onegate',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            subtitle: Text(
+                              'Admin',
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
-                            Text(
-                              'Book',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 22,
+                            trailing: IconButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  PageTransition(
+                                    type: PageTransitionType.rightToLeft,
+                                    child: SettingsHome(),
+                                  ),
+                                );
+                              },
+                              icon: Icon(
+                                Symbols.settings_rounded,
+                                color: Colors.black,
                               ),
+                            ),
+                          ),
+                        ),
+                        pinned: true,
+                        expandedHeight: 80,
+                        flexibleSpace: FlexibleSpaceBar(
+                          background: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Theme.of(context).colorScheme.primary,
+                                  Theme.of(context).colorScheme.background,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            AdminDashboardShortcut(
+                              icon: Symbols.looks_one_rounded,
+                              title: 'onesociety',
+                              onTap: () {
+                                Fluttertoast.showToast(
+                                  msg:
+                                      "will be redirecting to crm payment page",
+                                  toastLength: Toast.LENGTH_SHORT,
+                                  gravity: ToastGravity.CENTER,
+                                  timeInSecForIosWeb: 1,
+                                  backgroundColor: Colors.red,
+                                  textColor: Colors.white,
+                                  fontSize: 16.0,
+                                );
+                              },
+                              isPremium: true,
+                              isVisible: true,
+                            ),
+                            AdminDashboardShortcut(
+                              icon: Symbols.package_rounded,
+                              title: 'Parcel',
+                              isPremium: false,
+                              isVisible: true,
+                              onTap: () {},
+                            ),
+                            AdminDashboardShortcut(
+                              isPremium: false,
+                              isVisible: false,
+                              icon: Symbols.badge_rounded,
+                              title: 'Staff',
+                              onTap: () {},
                             ),
                           ],
                         ),
                       ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          GestureDetector(
-                            onTap: () {},
-                            child: Container(
-                              height: MediaQuery.of(context).size.height * 0.13,
-                              width: MediaQuery.of(context).size.width * 0.6,
-                              decoration: BoxDecoration(
-                                color: Color(0xffCAF1D1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: ListTile(
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 10,
-                                  horizontal: 20,
-                                ),
-                                title: Text(
-                                  '74',
-                                  textAlign: TextAlign.center,
-                                  style:
-                                      Theme.of(context).textTheme.displayMedium,
-                                ),
-                                subtitle: Text(
-                                  'Visitor In',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                                trailing: Container(
+                      SliverToBoxAdapter(
+                        child: GestureDetector(
+                          onTap: () {},
+                          child: Container(
+                            margin: EdgeInsets.only(top: 16, bottom: 16),
+                            height: MediaQuery.of(context).size.height * 0.27,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.3,
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
+                                    color: Color(
+                                      0xffF2D8A5,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: Transform(
-                                    transform: Matrix4.rotationY(math.pi),
-                                    alignment: Alignment.center,
-                                    child: Image(
-                                      height: 45,
-                                      width: 45,
-                                      fit: BoxFit.contain,
-                                      image: NetworkImage(
-                                        "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z",
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Container(
+                                        padding: EdgeInsets.all(2),
+                                        margin: EdgeInsets.only(top: 10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Image(
+                                          height: 45,
+                                          width: 45,
+                                          fit: BoxFit.contain,
+                                          image: NetworkImage(
+                                            "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z",
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        'In-Out',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                      Text(
+                                        'Book',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 22,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {},
+                                      child: Container(
+                                        height:
+                                            MediaQuery.of(context).size.height *
+                                                0.13,
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                                0.6,
+                                        decoration: BoxDecoration(
+                                          color: Color(0xffCAF1D1),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: ListTile(
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 10,
+                                            horizontal: 20,
+                                          ),
+                                          title: Text(
+                                            '74',
+                                            textAlign: TextAlign.center,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .displayMedium,
+                                          ),
+                                          subtitle: Text(
+                                            'Visitor In',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium,
+                                          ),
+                                          trailing: Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Transform(
+                                              transform:
+                                                  Matrix4.rotationY(math.pi),
+                                              alignment: Alignment.center,
+                                              child: Image(
+                                                height: 45,
+                                                width: 45,
+                                                fit: BoxFit.contain,
+                                                image: NetworkImage(
+                                                  "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z",
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                    Container(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.13,
+                                      width: MediaQuery.of(context).size.width *
+                                          0.6,
+                                      decoration: BoxDecoration(
+                                        color: Color(0xffFFE5E0),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.symmetric(
+                                          vertical: 10,
+                                          horizontal: 20,
+                                        ),
+                                        title: Text(
+                                          '38',
+                                          textAlign: TextAlign.center,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .displayMedium,
+                                        ),
+                                        subtitle: Text(
+                                          'Visitor Out',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium,
+                                        ),
+                                        trailing: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade100,
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Image(
+                                            height: 45,
+                                            width: 45,
+                                            fit: BoxFit.contain,
+                                            image: NetworkImage(
+                                              "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z",
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
+                              ],
                             ),
                           ),
-                          Container(
-                            height: MediaQuery.of(context).size.height * 0.13,
-                            width: MediaQuery.of(context).size.width * 0.6,
-                            decoration: BoxDecoration(
-                              color: Color(0xffFFE5E0),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 20,
-                              ),
-                              title: Text(
-                                '38',
-                                textAlign: TextAlign.center,
-                                style:
-                                    Theme.of(context).textTheme.displayMedium,
-                              ),
-                              subtitle: Text(
-                                'Visitor Out',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                              trailing: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Image(
-                                  height: 45,
-                                  width: 45,
-                                  fit: BoxFit.contain,
-                                  image: NetworkImage(
-                                    "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z",
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+              );
+          }
+        });
   }
 }
 
