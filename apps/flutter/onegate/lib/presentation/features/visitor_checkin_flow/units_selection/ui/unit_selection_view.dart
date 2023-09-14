@@ -2,10 +2,13 @@
 
 import 'dart:async';
 import 'package:chips_choice/chips_choice.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
+
+import '../../request_permission/ui/request_permission_view.dart';
 
 class UnitSelectionView extends StatefulWidget {
   const UnitSelectionView({Key? key}) : super(key: key);
@@ -79,6 +82,43 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     'A-118',
     'A-119',
     'A-120',
+    'A-106',
+    'A-107',
+    'A-108',
+    'A-109',
+    'A-110',
+    'A-111',
+    'A-112',
+    'A-113',
+    'A-114',
+    'A-115',
+    'A-116',
+    'A-117',
+    'A-118',
+    'A-119',
+    'A-120',
+    'A-119',
+    'A-120',
+    'A-101',
+    'A-102',
+    'A-103',
+    'A-104',
+    'A-105',
+    'A-106',
+    'A-107',
+    'A-108',
+    'A-109',
+    'A-110',
+    'A-111',
+    'A-112',
+    'A-113',
+    'A-114',
+    'A-115',
+    'A-116',
+    'A-117',
+    'A-118',
+    'A-119',
+    'A-1211',
   ];
 
   List<String> anotherList = [];
@@ -115,12 +155,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     'Building E',
   ];
 
-  ScrollController _selectUnitsController = ScrollController();
-
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-      controller: _selectUnitsController,
+      isScrollable: false,
       pageTitle: 'Select Units/Members',
       pageBody: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,14 +170,20 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 TabBar(
                   tabs: unitTypeTabs,
                   indicatorColor: Colors.red,
-                  labelColor: Colors.red,
+                  labelColor: Theme.of(context)
+                      .colorScheme
+                      .onBackground
+                      .withOpacity(0.7),
+                  unselectedLabelColor: Theme.of(context)
+                      .colorScheme
+                      .onBackground
+                      .withOpacity(0.7),
                   dividerColor: Colors.transparent,
                   labelStyle: TextStyle(
                     fontSize: 18,
                   ),
                 ),
-                Container(
-                  // margin: EdgeInsets.all(15),
+                SizedBox(
                   width: MediaQuery.of(context).size.width,
                   height: MediaQuery.of(context).size.height,
                   child: TabBarView(
@@ -147,31 +191,45 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     children: [
                       Column(
                         children: [
-                          ChipsChoice<String>.single(
-                            choiceStyle: C2ChipStyle.filled(
-                              color: Color(0xffFFEBE6),
-                              foregroundColor: Colors.black,
-                              selectedStyle: C2ChipStyle.outlined(
-                                color: Colors.red,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 15,
+                            ),
+                            child: ChipsChoice<String>.single(
+                              // scrollToSelectedOnChanged: true,
+                              choiceStyle: C2ChipStyle.outlined(
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                                selectedStyle: C2ChipStyle.filled(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.background,
+                                  backgroundOpacity: 1,
+                                ),
+                                height: 40,
+                              ),
+                              choiceCheckmark: true,
+                              value: selectedBuilding,
+                              scrollPhysics: BouncingScrollPhysics(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedBuilding = value;
+                                });
+                              },
+                              choiceItems: C2Choice.listFrom<String, String>(
+                                source: options,
+                                value: (i, v) => v,
+                                label: (i, v) => v,
                               ),
                             ),
-                            choiceCheckmark: true,
-                            value: selectedBuilding,
-                            scrollPhysics: BouncingScrollPhysics(),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedBuilding = value;
-                              });
-                            },
-                            choiceItems: C2Choice.listFrom<String, String>(
-                              source: options,
-                              value: (i, v) => v,
-                              label: (i, v) => v,
-                            ),
                           ),
-                          SizedBox(height: 15),
                           Expanded(
                             child: GridView.builder(
+                              padding: EdgeInsets.only(
+                                bottom: 150,
+                              ),
                               shrinkWrap: true,
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
@@ -190,34 +248,42 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                       } else {
                                         selectedIndices.add(index);
                                       }
-                                      // Print the selectedIndices
-                                      print(
-                                          'Selected Indices: $selectedIndices');
-                                      // Clear anotherList
+                                      if (kDebugMode) {
+                                        print(
+                                            'Selected Indices: $selectedIndices');
+                                      }
                                       anotherList.clear();
-                                      // Add selected values to anotherList
                                       for (int index in selectedIndices) {
                                         if (index >= 0 &&
                                             index < items.length) {
                                           anotherList.add(items[index]);
                                         }
                                       }
-                                      // Print the updated anotherList
-                                      print('Another List: $anotherList');
+                                      if (kDebugMode) {
+                                        print('Another List: $anotherList');
+                                      }
                                     });
                                   },
                                   child: Container(
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
                                       color: selectedIndices.contains(index)
-                                          ? Color(0xffFFEBE6)
-                                          : Colors.transparent,
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .onBackground
+                                              .withOpacity(0.9)
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .background,
                                       border: Border.all(
                                         color: selectedIndices.contains(index)
-                                            ? Colors.red
-                                            : Colors.red.withOpacity(
-                                                0.5,
-                                              ),
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .onBackground
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .onBackground
+                                                .withOpacity(0.5),
                                         width: 1,
                                       ),
                                     ),
@@ -228,7 +294,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 22,
-                                          color: Colors.black,
+                                          color: selectedIndices.contains(index)
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .background
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onBackground,
                                         ),
                                       ),
                                     ),
@@ -265,14 +337,20 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               ),
                             ),
                           ),
-                          Lottie.asset('assets/lottie/search_members.json',
-                              width: double.infinity, height: 300),
+                          Lottie.network(
+                            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/search_members_692a406814.json?updated_at=2023-08-23T06:28:52.176Z',
+                            width: double.infinity,
+                            height: 300,
+                          ),
                           Text(
                             'No Members Found.\nSearch members by their name or flat',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black.withOpacity(0.5),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onBackground
+                                  .withOpacity(0.5),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -292,44 +370,63 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         child: FloatingActionButton(
           elevation: 0.5,
           onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              builder: (context) => SelectedUnitsBottomSheet(
-                selectedIndices: selectedIndices,
-              ),
-            );
+            (selectedIndices.length == 1)
+                ? Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RequestPermissionView(),
+                    ),
+                  )
+                : showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (context) => SelectedUnitsBottomSheet(
+                      selectedIndices: selectedIndices,
+                    ),
+                  );
           },
           child: Container(
             height: 80,
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Color(0xffFFEBE6)),
-            child: ListTile(
-              contentPadding: EdgeInsets.only(left: 16),
-              title: Text(
-                getSelectedItemsText(),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 18, color: Colors.black),
-              ),
-              trailing: Container(
-                margin: EdgeInsets.all(5),
-                height: 75,
-                width: 70,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.black,
-                ),
-                child: Center(
-                  child: Text(
-                    'VIEW',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
+              borderRadius: BorderRadius.circular(8),
+              color: Color(0xffFFEBE6),
             ),
+            child: ListTile(
+                contentPadding: EdgeInsets.only(left: 16),
+                title: Text(
+                  getSelectedItemsText(),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 18,
+                      color: Theme.of(context).colorScheme.onBackground),
+                ),
+                trailing: (selectedIndices.isEmpty)
+                    ? SizedBox()
+                    : Container(
+                        margin: EdgeInsets.all(5),
+                        height: 75,
+                        width: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                        child: Center(
+                          child: Text(
+                            'NEXT',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      )),
           ),
         ),
       ),
@@ -374,13 +471,19 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black.withOpacity(0.5),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onBackground
+                          .withOpacity(0.5),
                     ),
                     textAlign: TextAlign.center,
                   ),
                 ),
-                Lottie.asset('assets/lottie/search_members.json',
-                    width: double.infinity, height: 200),
+                Lottie.network(
+                  'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/search_members_692a406814.json?updated_at=2023-08-23T06:28:52.176Z',
+                  width: double.infinity,
+                  height: 200,
+                ),
                 SizedBox(height: 50)
               ],
             )
@@ -404,21 +507,21 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                         backgroundColor: Colors.transparent,
                       ),
                       onPressed: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => RequestPermission(),
-                        //   ),
-                        // );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RequestPermissionView(),
+                          ),
+                        );
                       },
                       icon: Icon(
                         Ionicons.arrow_forward_outline,
-                        color: Colors.black,
+                        color: Theme.of(context).colorScheme.onBackground,
                       ),
                       label: Text(
                         'NEXT',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: Theme.of(context).colorScheme.onBackground,
                           fontSize: 18,
                         ),
                       ),
