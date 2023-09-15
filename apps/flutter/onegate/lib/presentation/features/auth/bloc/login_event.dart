@@ -33,6 +33,11 @@ class RoleSelectionButtonPressedEvent extends LoginEvent {
   );
 }
 
+class GateSelectionButtonPressedEvent extends LoginEvent {
+  final Gate gate;
+  GateSelectionButtonPressedEvent(this.gate);
+}
+
 class HasOffineLoginButtonPressedEvent extends LoginEvent {
   // final bool hasOfflineLogin;
   // HasOffineLoginButtonPressedEvent({

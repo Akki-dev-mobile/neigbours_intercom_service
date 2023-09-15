@@ -23,6 +23,12 @@ class SocietySelectionState extends LoginActionState{
   SocietySelectionState(this.companiesWithAccessToGate);
 }
 
+class GateSelectionState extends LoginActionState{
+  final List<Gate?> gates;
+
+  GateSelectionState(this.gates);
+}
+
 class RoleSelectionState extends LoginActionState {
   final List<String?> roles;
 
@@ -48,8 +54,6 @@ class RoleSelectionButtonPressedState extends LoginActionState {}
 class HasOfflineLoginButtonPressedState extends LoginActionState {}
 
 class NotHasOfflineLoginButtonPressedState extends LoginActionState {}
-
-class NavigateToGateSelectionState extends LoginActionState {}
 
 class NavigateToAdminDashboardState extends LoginActionState {}
 

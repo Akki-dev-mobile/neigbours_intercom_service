@@ -1,14 +1,17 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:provider/provider.dart';
-import 'gate_selection.dart';
 import 'settings_gate.dart';
 
 class SettingsHome extends StatefulWidget {
@@ -24,6 +27,9 @@ class _SettingsHomeState extends State<SettingsHome> {
   String? _visitorApprovalTimeValue;
   String? _dataStorageValue;
   String? selectedGate;
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  Gate? selectedGateObj;
+  
 
   List<String> options = [
     'Gate 1',
@@ -31,6 +37,13 @@ class _SettingsHomeState extends State<SettingsHome> {
     'Gate 3',
     'Gate 4',
   ];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    selectedGateObj = _preferenceUtils.getSelectedGate();
+  }
 
   void _showCameraSettings(BuildContext context) async {
     showModalBottomSheet(
@@ -270,29 +283,13 @@ class _SettingsHomeState extends State<SettingsHome> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ChipsChoice<String>.single(
-          //   choiceStyle: C2ChipStyle.outlined(),
-          //   choiceCheckmark: true,
-          //   value: selectedGate,
-          //   scrollPhysics: BouncingScrollPhysics(),
-          //   onChanged: (value) {
-          //     setState(() {
-          //       selectedGate = value;
-          //     });
-          //   },
-          //   choiceItems: C2Choice.listFrom<String, String>(
-          //     source: options,
-          //     value: (i, v) => v,
-          //     label: (i, v) => v,
-          //   ),
-          // ),
           SecondarySettingsTile(
             title: 'Gate Settings',
           ),
           PrimarySettingsTile(
             icon: Ionicons.grid_outline,
             title: 'Gate Settings',
-            subtitle: 'Current Preference: Gate One',
+            subtitle: 'Current Preference: ${selectedGateObj?.name ?? "None"}',
             onTap: () {
               Navigator.push(
                 context,

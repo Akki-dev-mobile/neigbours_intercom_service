@@ -25,34 +25,34 @@
           "visitorApprovalTime": "15 minutes",
           "offlineDataStorageDuration": "30 days"
         }
-      },
-      {
+       },
+       {
         "name": "Gate 2",
         "gatekeeperId": 102,
         "configuration": {
           "allowVisitorIn": true,
-          "allowVisitorOut": false,
+          "allowVisitorOut": true,
           "allowVehicleIn": true,
-          "allowVehicleOut": false
+          "allowVehicleOut": true
         },
         "settings": {
           "cameraSettings": {
-            "faceRecognition": false
+            "faceRecognition": true
           },
           "visitSettings": {
             "visitorNameRequired": true,
             "visitorAddressRequired": true,
             "visitorPurposeRequired": true,
-            "memberApprovalRequired": true
+            "memberApprovalRequired": false
           },
           "languageSettings": {
-            "language": "Spanish"
+            "language": "English"
           },
-          "visitorApprovalTime": "30 minutes",
-          "offlineDataStorageDuration": "60 days"
+          "visitorApprovalTime": "15 minutes",
+          "offlineDataStorageDuration": "30 days"
         }
-      },
-      {
+       },
+       {
         "name": "Gate 3",
         "gatekeeperId": 103,
         "configuration": {
@@ -77,7 +77,7 @@
           "visitorApprovalTime": "15 minutes",
           "offlineDataStorageDuration": "30 days"
         }
-      }
+       }
     ]
   }
   

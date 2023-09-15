@@ -37,7 +37,7 @@ void setupLocator() {
   locator.registerLazySingleton(() => LoginUseCase(locator<AuthenticationRepository>()));
 
   // Register LoginBloc
-  locator.registerFactory(() => LoginBloc(locator<LoginUseCase>()));
+  locator.registerFactory(() => LoginBloc(locator<LoginUseCase>(),locator<GateUseCase>()));
 
   // Register GateRepository
   locator.registerLazySingleton<GateRepository>(

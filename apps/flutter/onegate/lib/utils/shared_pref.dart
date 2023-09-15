@@ -20,6 +20,7 @@ class PreferenceUtils {
   static const String _selectedCompanyKey = 'selected_company';
   static const String _roles = 'roles';
   static const String _gatesList = 'gates_list';
+  static const String _isAdmin='is_admin';
 
   Future<void> saveAccessTokenResponse(AccessTokenResponse accessToken) async {
     _preferences.setString(_accessTokenKey, jsonEncode(accessToken.toJson()));
@@ -54,6 +55,18 @@ class PreferenceUtils {
       return AccessTokenResponse.fromJson(accessTokenMap);
     }
     return null;
+  }
+
+  Future<void>setIsAdmin(bool isAdmin)async {
+    _preferences.setBool(_isAdmin, isAdmin);
+  }
+
+  bool? getIsAdmin() {
+    final isAdmin = _preferences.getBool(_isAdmin);
+    if (isAdmin != null) {
+      return isAdmin;
+    }
+    return false;
   }
 
   List<String> getRoles() {

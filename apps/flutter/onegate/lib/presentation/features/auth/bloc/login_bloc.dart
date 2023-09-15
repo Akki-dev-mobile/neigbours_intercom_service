@@ -4,6 +4,7 @@ import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart'
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
+import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
@@ -14,15 +15,17 @@ part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final LoginUseCase _loginUseCase;
+  final GateUseCase _gateUseCase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
 
-  LoginBloc(this._loginUseCase) : super(LoginInitial()) {
+  LoginBloc(this._loginUseCase, this._gateUseCase) : super(LoginInitial()) {
     on<LoginInitialEvent>(loginInitialEvent);
     on<LoginButtonPressedEvent>(loginButtonPressedEvent);
     on<SignUpButtonPressedEvent>(signUpButtonPressedEvent);
     on<ForgotPasswordButtonPressedEvent>(forgotPasswordButtonPressedEvent);
     on<SocietySelectionButtonEvent>(societySelectionButtonEvent);
     on<RoleSelectionButtonPressedEvent>(roleSelectionButtonPressedEvent);
+    on<GateSelectionButtonPressedEvent>(gateSelectionButtonPressedEvent);
   }
 
   FutureOr<void> loginButtonPressedEvent(
@@ -86,29 +89,44 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   FutureOr<void> roleSelectionButtonPressedEvent(
-      RoleSelectionButtonPressedEvent event, Emitter<LoginState> emit) async{
+      RoleSelectionButtonPressedEvent event, Emitter<LoginState> emit) async {
+        _preferenceUtils.setIsAdmin(event.isAdmin);
     if (event.isAdmin) {
       final List<Gate> gates = await _preferenceUtils.getGatesList();
-      if(gates.isEmpty){
-        emit(NavigateToGateSelectionState());
-        print("NavigateToGateSelectionState");
-      }else{
+      if (gates.isEmpty) {
+        final response = await _gateUseCase.gateList(
+            _preferenceUtils.getSelectedCompany()!.companyId,
+            _preferenceUtils.getUserInfo()!.userId);
+        final List<Gate> gates = response!.gates;
+        if (response.gates.length == 1) {
+          _preferenceUtils.setSelectedGate(response.gates[0]);
+          emit(NavigateToAdminDashboardState());
+          return;
+        } else {
+          emit(GateSelectionState(gates));
+        }
+      } else {
         emit(NavigateToAdminDashboardState());
-        print("NavigateToAdminDashboardState");
       }
-
     } else {
-      Gate? selectedGate=_preferenceUtils.getSelectedGate();
-      if(selectedGate!=null){
+      Gate? selectedGate = _preferenceUtils.getSelectedGate();
+      if (selectedGate != null) {
         emit(NavigateToGatekeeperDashboardState());
-      }else{
+      } else {
         emit(LoginErrorState(message: "Please info admin to select gate"));
       }
-      
-      print("NavigateToGatekeeperDashboardState");
     }
 
-    emit(RoleSelectionState(_preferenceUtils.getRoles()));
+    //emit(RoleSelectionState(_preferenceUtils.getRoles()));
+  }
+
+  FutureOr<void> gateSelectionButtonPressedEvent(GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) {
+    _preferenceUtils.setSelectedGate(event.gate);
+    if(_preferenceUtils.getIsAdmin()!){
+      emit(NavigateToAdminDashboardState());
+    }else{
+      emit(NavigateToGatekeeperDashboardState());
+    }
   }
 }
 

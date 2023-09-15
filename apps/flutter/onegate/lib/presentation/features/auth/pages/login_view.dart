@@ -8,11 +8,16 @@ import 'package:common_widgets/loading_view.dart';
 
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
+import 'package:flutter_onegate/data/repositories/gate_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
+import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
 import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get_it/get_it.dart';
 import 'package:libphonenumber/libphonenumber.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ionicons/ionicons.dart';
@@ -45,13 +50,6 @@ class _LoginViewState extends State<LoginView> {
   late bool passwordVisibility;
   dynamic dropdownValue;
   String rbacDDV = rbac.first;
-  final LoginBloc loginBloc = LoginBloc(
-    LoginUseCase(
-      AuthenticationRepositoryImpl(
-        RemoteDataSource(dioInstance),
-      ),
-    ),
-  );
   bool isMobileFieldFocused = false;
   bool isPasswordFieldFocused = false;
   bool isValid = true;
@@ -61,6 +59,20 @@ class _LoginViewState extends State<LoginView> {
 
   String? mobileErrorText;
   String? emailErrorText;
+
+  Gate? storedGate, selectedGate;
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  final LoginBloc loginBloc = LoginBloc(
+      LoginUseCase(
+        AuthenticationRepositoryImpl(
+          RemoteDataSource(dioInstance),
+        ),
+      ),
+      GateUseCase(
+        GateRepositoryImpl(
+          RemoteDataSource(dioInstance),
+        ),
+      ));
 
   void toggleEmailMode() {
     setState(() {
@@ -82,6 +94,8 @@ class _LoginViewState extends State<LoginView> {
     _mobileFocusNode.addListener(_onFocusChange);
     _passwordFocusNode.addListener(_onFocusChange);
     passwordVisibility = true;
+    storedGate = _preferenceUtils.getSelectedGate();
+    selectedGate = storedGate;
     loginBloc.add(LoginInitialEvent());
   }
 
@@ -150,6 +164,7 @@ class _LoginViewState extends State<LoginView> {
       listenWhen: (previous, current) => current is LoginActionState,
       buildWhen: (previous, current) => current is! LoginActionState,
       listener: (context, state) {
+        print(state.runtimeType.toString());
         switch (state.runtimeType) {
           case SocietySelectionState:
             final societyState = state as SocietySelectionState;
@@ -157,6 +172,10 @@ class _LoginViewState extends State<LoginView> {
               context,
               societyState.companiesWithAccessToGate,
             );
+            break;
+          case GateSelectionState:
+            final gateState = state as GateSelectionState;
+            _showGateSelectionBottomSheet(context, gateState.gates);
             break;
           case RoleSelectionState:
             final roleState = state as RoleSelectionState;
@@ -194,16 +213,16 @@ class _LoginViewState extends State<LoginView> {
             );
             break;
           case NavigateToAdminDashboardState:
-            Navigator.pop(context);
-            Future.delayed(Duration(milliseconds: 100), () {
-              Navigator.pushReplacement(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: GateSelectionView(),
-                ),
-              );
-            });
+            //Navigator.pop(context);
+            // Future.delayed(Duration(milliseconds: 100), () {
+            Navigator.pushReplacement(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: AdminDashboardView(),
+              ),
+            );
+            //});
             break;
           case NavigateToGatekeeperDashboardState:
             Navigator.pop(context);
@@ -217,21 +236,11 @@ class _LoginViewState extends State<LoginView> {
               );
             });
             break;
-          case NavigateToGateSelectionState:
-            Navigator.pop(context);
-            Future.delayed(Duration(milliseconds: 100), () {
-              Navigator.pushReplacement(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: GateSelectionView(),
-                ),
-              );
-            });
-            break;
         }
       },
       builder: (context, state) {
+        print(state.runtimeType.toString());
+
         switch (state.runtimeType) {
           case LoginLoadingState:
             return LoaderView();
@@ -737,15 +746,111 @@ class _LoginViewState extends State<LoginView> {
                   CustomLargeBtn(
                     text: 'CONFIRM',
                     onPressed: () {
+                      print('CONFIRM button pressed');
+
                       Navigator.pop(context);
-                      loginBloc.add(
-                        RoleSelectionButtonPressedEvent(
-                          _selectedRoleValue == 1,
-                        ),
-                      );
+                      Future.delayed(Duration(milliseconds: 200), () {
+                        loginBloc.add(
+                          RoleSelectionButtonPressedEvent(
+                            _selectedRoleValue == 1,
+                          ),
+                        );
+                      });
                     },
                   ),
                   SizedBox(height: 50.0),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showGateSelectionBottomSheet(
+      BuildContext context, List<Gate?> gatesList) async {
+    if (storedGate != null && selectedGate != null) {
+      if (storedGate!.name == selectedGate!.name) {
+        for (var gate in gatesList) {
+          if (gate!.name == storedGate!.name) {
+            gate.isSelected = true;
+            selectedGate = gate;
+          }
+        }
+      } else {
+        bool anyGateSelected = gatesList.any((gate) => gate!.isSelected);
+        if (!anyGateSelected && gatesList.isNotEmpty) {
+          gatesList[0]!.isSelected = true;
+          selectedGate = gatesList[0];
+        }
+      }
+    }
+    if (storedGate == null) {
+      bool anyGateSelected = gatesList.any((gate) => gate!.isSelected);
+      if (!anyGateSelected && gatesList.isNotEmpty) {
+        gatesList[0]!.isSelected = true;
+        selectedGate = gatesList[0];
+      }
+    }
+    showModalBottomSheet(
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      'Select your gate',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                  ...List.generate(gatesList.length, (index) {
+                    return GateSettingListTile(
+                      switchValue: gatesList[index]!.isSelected,
+                      onChanged: (value) => {
+                        setState(() {
+                          for (var gate in gatesList) {
+                            gate!.isSelected = false;
+                            print(gate.isSelected);
+                          }
+                          gatesList[index]!.isSelected = true;
+                          selectedGate = gatesList[index];
+                        })
+                      },
+                      title: gatesList[index]!.name,
+                      subtitle: 'Enable/Disable ${gatesList[index]!.name}',
+                      // leadingIcon: Ionicons.grid_outline,
+                      leadingIcon: Symbols.gate,
+                    );
+                  }),
+                  SizedBox(
+                    height: 30,
+                  ),
+                  CustomLargeBtn(
+                    text: 'CONFIRM',
+                    onPressed: () {
+                      loginBloc.add(
+                        GateSelectionButtonPressedEvent(selectedGate!),
+                      );
+                    },
+                  ),
                 ],
               ),
             );
