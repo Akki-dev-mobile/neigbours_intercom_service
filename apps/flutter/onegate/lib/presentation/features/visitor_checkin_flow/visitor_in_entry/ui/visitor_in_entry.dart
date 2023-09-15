@@ -8,6 +8,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 
@@ -46,6 +47,30 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       });
     }
   }
+
+  PickedFile? _imageFile;
+
+  // Future<void> _captureImageFromCamera() async {
+  //   final picker = ImagePicker();
+  //   final image = await picker.pickImage(
+  //     source: ImageSource.camera,
+  //   );
+
+  //   if (image == null) {
+  //     return;
+  //   }
+
+  //   setState(() {
+  //     _imageFile = image as PickedFile?;
+  //   });
+
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => UnitSelectionView(),
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {

@@ -225,16 +225,16 @@ class _LoginViewState extends State<LoginView> {
             //});
             break;
           case NavigateToGatekeeperDashboardState:
-            Navigator.pop(context);
-            Future.delayed(Duration(milliseconds: 100), () {
-              Navigator.pushReplacement(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: GateDashboardView(),
-                ),
-              );
-            });
+            //Navigator.pop(context);
+            //Future.delayed(Duration(milliseconds: 100), () {
+            Navigator.pushReplacement(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: GateDashboardView(),
+              ),
+            );
+            //});
             break;
         }
       },
@@ -806,7 +806,14 @@ class _LoginViewState extends State<LoginView> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return Padding(
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                color: Theme.of(context).colorScheme.background,
+              ),
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -815,10 +822,7 @@ class _LoginViewState extends State<LoginView> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       'Select your gate',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 20,
-                      ),
+                      style: Theme.of(context).textTheme.displaySmall,
                     ),
                   ),
                   ...List.generate(gatesList.length, (index) {

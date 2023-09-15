@@ -97,7 +97,8 @@ class _GateSelectionViewState extends State<GateSelectionView> {
                   selectedGate = successState.gates[0];
                 }
               }
-            } if(storedGate == null ) {
+            }
+            if (storedGate == null) {
               bool anyGateSelected =
                   successState.gates.any((gate) => gate.isSelected);
               if (!anyGateSelected && successState.gates.isNotEmpty) {
@@ -114,10 +115,7 @@ class _GateSelectionViewState extends State<GateSelectionView> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       'Select your gate',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 20,
-                      ),
+                      style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   ),
                   ...List.generate(successState.gates.length, (index) {
@@ -195,9 +193,18 @@ class GateSettingListTile extends StatelessWidget {
               ),
             )
           : null,
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(
+        title,
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
+      subtitle: Text(
+        subtitle,
+        style: Theme.of(context).textTheme.labelSmall,
+      ),
       trailing: Switch(
+        inactiveThumbColor: Theme.of(context).colorScheme.onBackground,
+        inactiveTrackColor:
+            Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
         value: switchValue,
         onChanged: onChanged,
       ),

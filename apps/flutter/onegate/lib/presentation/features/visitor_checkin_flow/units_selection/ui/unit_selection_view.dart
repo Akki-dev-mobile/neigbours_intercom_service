@@ -196,7 +196,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               vertical: 15,
                             ),
                             child: ChipsChoice<String>.single(
-                              // scrollToSelectedOnChanged: true,
+                              scrollToSelectedOnChanged: true,
                               choiceStyle: C2ChipStyle.outlined(
                                 color:
                                     Theme.of(context).colorScheme.onBackground,

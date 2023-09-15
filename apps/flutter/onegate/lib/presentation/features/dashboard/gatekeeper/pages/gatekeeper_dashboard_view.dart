@@ -8,6 +8,7 @@ import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -19,6 +20,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'dart:math' as math;
 
 import 'id_input_view.dart';
+import 'scan_qr.dart';
 
 class GateDashboardView extends StatefulWidget {
   const GateDashboardView({super.key});
@@ -101,14 +103,13 @@ class _GateDashboardViewState extends State<GateDashboardView>
           ),
           IconButton(
             onPressed: () {
-              Navigator.pop(context);
-              // Navigator.push(
-              //   context,
-              //   PageTransition(
-              //     type: PageTransitionType.rightToLeft,
-              //     child: AdminDashboardView(),
-              //   ),
-              // );
+              Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: SettingsHome(),
+                ),
+              );
               Fluttertoast.showToast(
                 msg: "Test Switch to Admin Dashboard",
                 toastLength: Toast.LENGTH_SHORT,
@@ -164,7 +165,15 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     isVisible: false,
                     icon: Symbols.qr_code_scanner_rounded,
                     title: 'Scan',
-                    onTap: () {},
+                    onTap: () {
+                      // Navigator.push(
+                      //   context,
+                      //   PageTransition(
+                      //     type: PageTransitionType.rightToLeft,
+                      //     child: QRScan(),
+                      //   ),
+                      // );
+                    },
                   ),
                 ],
               ),

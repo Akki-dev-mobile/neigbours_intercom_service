@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
       darkTheme: ThemeManager.darkTheme,
-      home: const LoginView(),
+      home: const AppIntroView(),
     );
   }
 }

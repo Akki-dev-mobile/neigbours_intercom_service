@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate.dart';
+import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
@@ -29,7 +30,6 @@ class _SettingsHomeState extends State<SettingsHome> {
   String? selectedGate;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   Gate? selectedGateObj;
-  
 
   List<String> options = [
     'Gate 1',
@@ -48,21 +48,33 @@ class _SettingsHomeState extends State<SettingsHome> {
   void _showCameraSettings(BuildContext context) async {
     showModalBottomSheet(
       isScrollControlled: true,
+      useSafeArea: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                color: Theme.of(context).colorScheme.background,
+              ),
               padding: EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Select an option',
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   ListView.builder(
                     padding: EdgeInsets.symmetric(vertical: 16),
@@ -72,7 +84,13 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _cameraItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(item.label),
+                        fillColor: MaterialStateProperty.all(
+                          Colors.red,
+                        ),
+                        title: Text(
+                          item.label,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         value: item.value,
                         groupValue: _cameraValue,
                         onChanged: (value) {
@@ -105,21 +123,33 @@ class _SettingsHomeState extends State<SettingsHome> {
   void _showLanguageSettings(BuildContext context) async {
     showModalBottomSheet(
       isScrollControlled: true,
+      useSafeArea: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                color: Theme.of(context).colorScheme.background,
+              ),
               padding: EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Select an option',
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   ListView.builder(
                     padding: EdgeInsets.symmetric(vertical: 16),
@@ -129,7 +159,13 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _languageItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(item.label),
+                        fillColor: MaterialStateProperty.all(
+                          Colors.red,
+                        ),
+                        title: Text(
+                          item.label,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         value: item.value,
                         groupValue: _cameraValue,
                         onChanged: (value) {
@@ -162,21 +198,33 @@ class _SettingsHomeState extends State<SettingsHome> {
   void _showVisitorApprovalTime(BuildContext context) async {
     showModalBottomSheet(
       isScrollControlled: true,
+      useSafeArea: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                color: Theme.of(context).colorScheme.background,
+              ),
               padding: EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Select an option',
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   SizedBox(height: 16.0),
                   ListView.builder(
@@ -187,7 +235,13 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _visitorApprovalTimeItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(item.label),
+                        fillColor: MaterialStateProperty.all(
+                          Colors.red,
+                        ),
+                        title: Text(
+                          item.label,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         value: item.value,
                         groupValue: _visitorApprovalTimeValue,
                         onChanged: (value) {
@@ -220,21 +274,33 @@ class _SettingsHomeState extends State<SettingsHome> {
   void _showDataStorage(BuildContext context) async {
     showModalBottomSheet(
       isScrollControlled: true,
+      useSafeArea: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                color: Theme.of(context).colorScheme.background,
+              ),
               padding: EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Select an option',
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   ListView.builder(
                     padding: EdgeInsets.symmetric(vertical: 16),
@@ -244,7 +310,13 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _dataStorageItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(item.label),
+                        fillColor: MaterialStateProperty.all(
+                          Colors.red,
+                        ),
+                        title: Text(
+                          item.label,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         value: item.value,
                         groupValue: _visitorApprovalTimeValue,
                         onChanged: (value) {
@@ -289,7 +361,8 @@ class _SettingsHomeState extends State<SettingsHome> {
           PrimarySettingsTile(
             icon: Ionicons.grid_outline,
             title: 'Gate Settings',
-            subtitle: 'Current Preference: ${selectedGateObj?.name ?? "None"}',
+            subtitle:
+                'Current Preference: ${selectedGateObj?.name ?? "Gate 1"}',
             onTap: () {
               Navigator.push(
                 context,
@@ -302,7 +375,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           PrimarySettingsTile(
             icon: Ionicons.person_outline,
             title: 'Visitors and Vehicles Settings',
-            subtitle: 'All visitors will be automatically approved',
+            subtitle: 'All visitors will be auto approved',
             onTap: () {
               Navigator.push(
                 context,
@@ -329,7 +402,7 @@ class _SettingsHomeState extends State<SettingsHome> {
             icon: Ionicons.time_outline,
             title: 'Visitor Approval Time',
             subtitle:
-                'Current Preference: ${_visitorApprovalTimeValue ?? "None"}',
+                'Current Preference: ${_visitorApprovalTimeValue ?? "100 seconds"}',
             onTap: () {
               _showVisitorApprovalTime(context);
             },
@@ -345,7 +418,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           PrimarySettingsTile(
             icon: Ionicons.camera_outline,
             title: 'Camera Settings',
-            subtitle: "Current Preference: ${_cameraValue ?? "None"}",
+            subtitle: "Current Preference: ${_cameraValue ?? "Back Camera"}",
             onTap: () {
               _showCameraSettings(context);
             },
@@ -353,7 +426,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           PrimarySettingsTile(
             icon: Ionicons.file_tray_full_outline,
             title: 'Data Storage',
-            subtitle: 'Current Preference: ${_dataStorageValue ?? "None"}',
+            subtitle: 'Current Preference: ${_dataStorageValue ?? "6 Months"}',
             onTap: () {
               _showDataStorage(context);
             },
@@ -400,7 +473,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           PrimarySettingsTile(
             icon: Ionicons.language_outline,
             title: 'Change Language',
-            subtitle: 'Current Preference: ${_languageValue ?? "None"}',
+            subtitle: 'Current Preference: ${_languageValue ?? "English"}',
             onTap: () {
               _showLanguageSettings(context);
             },
@@ -413,7 +486,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => GateDashboardView(),
+                    builder: (context) => LoginView(),
                   ),
                 );
               }),
@@ -441,18 +514,29 @@ class PrimarySettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(
-        icon,
-        size: 22,
+      horizontalTitleGap: 0,
+      contentPadding: EdgeInsets.zero,
+      leading: Padding(
+        padding: EdgeInsets.only(
+          top: 7,
+          left: 3,
+        ),
+        child: Icon(
+          icon,
+          size: 22,
+          color: Theme.of(context).colorScheme.onBackground,
+        ),
       ),
       title: Text(
         title,
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
+      subtitle: Text(
+        subtitle ?? '',
         style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+          color: Theme.of(context).colorScheme.onPrimary,
         ),
       ),
-      subtitle: Text(subtitle ?? ''),
       onTap: onTap,
       trailing: trailing,
     );
@@ -503,16 +587,11 @@ class SecondarySettingsTile extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.symmetric(
         vertical: 0,
-        horizontal: 20,
+        horizontal: 10,
       ),
       title: Text(
         title,
-        // color: Color(0xff1973E9),
-
-        style: TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 20,
-        ),
+        style: Theme.of(context).textTheme.bodyLarge,
       ),
     );
   }
