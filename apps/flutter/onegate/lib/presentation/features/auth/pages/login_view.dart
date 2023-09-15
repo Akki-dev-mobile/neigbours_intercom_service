@@ -233,8 +233,7 @@ class _LoginViewState extends State<LoginView> {
                   type: PageTransitionType.rightToLeft,
                   child: GateDashboardView(),
                 ),
-              );
-           // });
+              )
             break;
         }
       },
@@ -581,7 +580,7 @@ class _LoginViewState extends State<LoginView> {
                       style: Theme.of(context).textTheme.displaySmall,
                     ),
                     subtitle: Text(
-                      'Kindly, select your society associated with +${_preferenceUtils.getUserInfo()!.mobile}',
+                      'Kindly, select your society associated with +91-*******101',
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
@@ -806,7 +805,14 @@ class _LoginViewState extends State<LoginView> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return Padding(
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                color: Theme.of(context).colorScheme.background,
+              ),
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -815,10 +821,7 @@ class _LoginViewState extends State<LoginView> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       'Select your gate',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 20,
-                      ),
+                      style: Theme.of(context).textTheme.displaySmall,
                     ),
                   ),
                   ...List.generate(gatesList.length, (index) {

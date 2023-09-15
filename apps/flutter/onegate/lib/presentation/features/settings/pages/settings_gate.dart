@@ -25,7 +25,10 @@ class _GateSettingViewState extends State<GateSettingView> {
       pageBody: Column(
         children: [
           ListTile(
-            title: Text('Visitors Permissions'),
+            title: Text(
+              'Visitors Permissions',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
           ),
           GateSettingListTile(
             switchValue: _visitorsIn,
@@ -50,7 +53,10 @@ class _GateSettingViewState extends State<GateSettingView> {
             leadingIcon: Ionicons.person_outline,
           ),
           ListTile(
-            title: Text('Vehicle Permissions'),
+            title: Text(
+              'Vehicle Permissions',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
           ),
           GateSettingListTile(
             switchValue: _vehicleIn,
