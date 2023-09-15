@@ -7,7 +7,7 @@ part 'gatekeeper_dashboard_state.dart';
 class GatekeeperDashboardBloc extends Bloc<GatekeeperDashboardEvent, GatekeeperDashboardState> {
   GatekeeperDashboardBloc() : super(GatekeeperDashboardInitial()) {
     on<GatekeeperDashboardEvent>((event, emit) {
-      // TODO: implement event handler
+      
     });
   }
 }

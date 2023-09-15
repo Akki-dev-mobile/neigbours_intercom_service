@@ -8,24 +8,30 @@ class RemoteDataSource {
 
   RemoteDataSource(this._dio);
 
-  Future<Map<String, dynamic>> loginUser(String username, String password, String method) async {
-  try{
-     final response = await _dio.post('/saas/auth/sso', data: {
-      'username': "91$username",
-      'otp': password,
-      'method': method
-    });
+  Future<Map<String, dynamic>> loginUser(
+      String username, String password, String method) async {
+    try {
+      final response = await _dio.post('/saas/auth/sso',
+          data: {'username': "91$username", 'otp': password, 'method': method});
 
-    return response.data['data'];
-  }catch(e){
-    print(e.toString());
-  }
-  return {};
+      return response.data['data'];
+    } catch (e) {
+      print(e.toString());
+    }
+    return {};
   }
 
   Future<Map<String, dynamic>> fetchGatesData(int companyId, int userId) async {
-  final String jsonText = await rootBundle.loadString('assets/json/gates_mock.json');
-  final Map<String,dynamic>jsonData = json.decode(jsonText);
-  return jsonData;
-}
+    final String jsonText =
+        await rootBundle.loadString('assets/json/gates_mock.json');
+    final Map<String, dynamic> jsonData = json.decode(jsonText);
+    return jsonData;
+  }
+
+  Future<Map<String, dynamic>> fetchBuildingsData(int companyId) async {
+    final String jsonText =
+        await rootBundle.loadString('assets/json/buildings_mock.json');
+    final Map<String, dynamic> jsonData = json.decode(jsonText);
+    return jsonData;
+  }
 }

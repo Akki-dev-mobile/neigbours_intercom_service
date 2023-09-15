@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/units_list.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -18,108 +19,8 @@ class UnitSelectionView extends StatefulWidget {
 }
 
 class _UnitSelectionViewState extends State<UnitSelectionView> {
-  List<int> selectedIndices = [];
-  List<String> items = [
-    'A-101',
-    'A-102',
-    'A-103',
-    'A-104',
-    'A-105',
-    'A-106',
-    'A-107',
-    'A-108',
-    'A-109',
-    'A-110',
-    'A-111',
-    'A-112',
-    'A-113',
-    'A-114',
-    'A-115',
-    'A-116',
-    'A-117',
-    'A-118',
-    'A-119',
-    'A-120',
-    'A-101',
-    'A-102',
-    'A-103',
-    'A-104',
-    'A-105',
-    'A-106',
-    'A-107',
-    'A-108',
-    'A-109',
-    'A-110',
-    'A-111',
-    'A-112',
-    'A-113',
-    'A-114',
-    'A-115',
-    'A-116',
-    'A-117',
-    'A-118',
-    'A-119',
-    'A-120',
-    'A-119',
-    'A-120',
-    'A-101',
-    'A-102',
-    'A-103',
-    'A-104',
-    'A-105',
-    'A-106',
-    'A-107',
-    'A-108',
-    'A-109',
-    'A-110',
-    'A-111',
-    'A-112',
-    'A-113',
-    'A-114',
-    'A-115',
-    'A-116',
-    'A-117',
-    'A-118',
-    'A-119',
-    'A-120',
-    'A-106',
-    'A-107',
-    'A-108',
-    'A-109',
-    'A-110',
-    'A-111',
-    'A-112',
-    'A-113',
-    'A-114',
-    'A-115',
-    'A-116',
-    'A-117',
-    'A-118',
-    'A-119',
-    'A-120',
-    'A-119',
-    'A-120',
-    'A-101',
-    'A-102',
-    'A-103',
-    'A-104',
-    'A-105',
-    'A-106',
-    'A-107',
-    'A-108',
-    'A-109',
-    'A-110',
-    'A-111',
-    'A-112',
-    'A-113',
-    'A-114',
-    'A-115',
-    'A-116',
-    'A-117',
-    'A-118',
-    'A-119',
-    'A-1211',
-  ];
+  List<String> selectedUnits = [];
+  List<String> items = buildingA;
 
   List<String> anotherList = [];
   // late String itemCount;
@@ -146,14 +47,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   String? selectedBuilding;
-  List<String> options = [
-    'Society Office',
-    'Building A',
-    'Building B',
-    'Building C',
-    'Building D',
-    'Building E',
-  ];
+  List<String> options = ['Building A', 'Building B', 'Building C'];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    selectedBuilding = 'Building A';
+
+  // Update the items list based on the selected building
+  if (selectedBuilding == 'Building A') {
+    items = buildingA;
+  } else if (selectedBuilding == 'Building B') {
+    items = buildingB;
+  } else if (selectedBuilding == 'Building C') {
+    items = buildingC;
+  }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -216,6 +126,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               onChanged: (value) {
                                 setState(() {
                                   selectedBuilding = value;
+
+                                  selectedBuilding = value;
+
+                                  // Update the items list based on the selected building
+                                  if (selectedBuilding == 'Building A') {
+                                    items = buildingA;
+                                  } else if (selectedBuilding == 'Building B') {
+                                    items = buildingB;
+                                  } else if (selectedBuilding == 'Building C') {
+                                    items = buildingC;
+                                  }
                                 });
                               },
                               choiceItems: C2Choice.listFrom<String, String>(
@@ -243,21 +164,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 return GestureDetector(
                                   onTap: () {
                                     setState(() {
-                                      if (selectedIndices.contains(index)) {
-                                        selectedIndices.remove(index);
+                                      if (selectedUnits.contains(items[index])) {
+                                        selectedUnits.remove(items[index]);
                                       } else {
-                                        selectedIndices.add(index);
+                                        selectedUnits.add(items[index]);
                                       }
                                       if (kDebugMode) {
                                         print(
-                                            'Selected Indices: $selectedIndices');
+                                            'Selected Indices: $selectedUnits');
                                       }
                                       anotherList.clear();
-                                      for (int index in selectedIndices) {
-                                        if (index >= 0 &&
-                                            index < items.length) {
-                                          anotherList.add(items[index]);
-                                        }
+                                      for (String index in selectedUnits) {
+                                        // if (index >= 0 &&
+                                        //     index < items.length) {
+                                          anotherList.add(index);
+                                        //}
                                       }
                                       if (kDebugMode) {
                                         print('Another List: $anotherList');
@@ -267,7 +188,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
-                                      color: selectedIndices.contains(index)
+                                      color: selectedUnits.contains(items[index])
                                           ? Theme.of(context)
                                               .colorScheme
                                               .onBackground
@@ -276,7 +197,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                               .colorScheme
                                               .background,
                                       border: Border.all(
-                                        color: selectedIndices.contains(index)
+                                        color: selectedUnits.contains(items[index])
                                             ? Theme.of(context)
                                                 .colorScheme
                                                 .onBackground
@@ -294,7 +215,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 22,
-                                          color: selectedIndices.contains(index)
+                                          color: selectedUnits.contains(items[index])
                                               ? Theme.of(context)
                                                   .colorScheme
                                                   .background
@@ -370,11 +291,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         child: FloatingActionButton(
           elevation: 0.5,
           onPressed: () {
-            (selectedIndices.length == 1)
+            (selectedUnits.length == 1)
                 ? Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => RequestPermissionView(),
+                      builder: (context) => RequestPermissionView(gridData: selectedUnits,),
                     ),
                   )
                 : showModalBottomSheet(
@@ -388,7 +309,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       ),
                     ),
                     builder: (context) => SelectedUnitsBottomSheet(
-                      selectedIndices: selectedIndices,
+                      selectedIndices: selectedUnits,
                     ),
                   );
           },
@@ -407,7 +328,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       fontSize: 18,
                       color: Theme.of(context).colorScheme.onBackground),
                 ),
-                trailing: (selectedIndices.isEmpty)
+                trailing: (selectedUnits.isEmpty)
                     ? SizedBox()
                     : Container(
                         margin: EdgeInsets.all(5),
@@ -435,7 +356,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 }
 
 class SelectedUnitsBottomSheet extends StatefulWidget {
-  List<int>? selectedIndices = [];
+  List<String>? selectedIndices = [];
   SelectedUnitsBottomSheet({super.key, this.selectedIndices});
 
   @override
@@ -510,9 +431,8 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => RequestPermissionView(),
-                          ),
-                        );
+                            builder: (context) => RequestPermissionView(gridData: widget.selectedIndices!,),
+                          ));
                       },
                       icon: Icon(
                         Ionicons.arrow_forward_outline,
@@ -553,7 +473,7 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                         },
                       ),
                       title: Text('Shubham Bane'),
-                      subtitle: Text('Building A | $item'),
+                      subtitle: Text('$item'),
                     );
                   },
                   separatorBuilder: (context, index) {

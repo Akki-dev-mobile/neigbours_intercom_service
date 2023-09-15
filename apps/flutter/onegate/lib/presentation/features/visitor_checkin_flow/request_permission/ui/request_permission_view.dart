@@ -8,10 +8,12 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 
 class RequestPermissionView extends StatefulWidget {
-  const RequestPermissionView({super.key});
+  final List<String>? gridData;
+  const RequestPermissionView({super.key, this.gridData});
 
   @override
-  State<RequestPermissionView> createState() => _RequestPermissionViewState();
+  State<RequestPermissionView> createState() =>
+      _RequestPermissionViewState(gridData: gridData);
 }
 
 enum RequestType {
@@ -25,14 +27,9 @@ enum RequestType {
 
 class _RequestPermissionViewState extends State<RequestPermissionView> {
   RequestType requestType = RequestType.notRecheable;
-  List<String> gridData = [
-    'A-101',
-    'A-102',
-    'A-103',
-    'A-104',
-    'A-105',
-    'A-106',
-  ];
+  final List<String>? gridData;
+
+  _RequestPermissionViewState({this.gridData});
 
   @override
   Widget build(BuildContext context) {
@@ -113,23 +110,48 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                 horizontal: 15,
                 vertical: 10,
               ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Theme.of(context).colorScheme.surfaceVariant,
-                border: Border.all(
-                  color: Colors.red.withOpacity(
-                    0.5,
-                  ),
-                  width: 1,
+
+              child: GridView.builder(
+                
+                padding: EdgeInsets.only(
+                  bottom: 10,
                 ),
-              ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'A-101',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                shrinkWrap: true,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  childAspectRatio: 2,
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 10.0,
+                  mainAxisSpacing: 10.0,
                 ),
+                itemCount: gridData!.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      border: Border.all(
+                        color: Colors.red.withOpacity(
+                          0.5,
+                        ),
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${gridData![index]}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  );
+                },
               ),
+              // child: FittedBox(
+              //   fit: BoxFit.scaleDown,
+              //   child: Text(
+              //     'A-101',
+              //     style: Theme.of(context).textTheme.bodyMedium,
+              //   ),
+              // ),
             ),
           ),
           Container(

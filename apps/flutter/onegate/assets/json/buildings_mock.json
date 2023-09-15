@@ -1,0 +1,131 @@
+{
+    "buildings": [
+      {
+        "id": 1,
+        "name": "Building A",
+        "member_units": [
+          {
+            "id": 101,
+            "unit_name": "Flat 101",
+            "members": [
+              {
+                "id": 1,
+                "name": "John Doe",
+                "mobile_number": "1234567890",
+                "member_type": "owner"
+              }
+            ]
+          },
+          {
+            "id": 102,
+            "unit_name": "Flat 102",
+            "members": [
+              {
+                "id": 2,
+                "name": "Jane Smith",
+                "mobile_number": "9876543210",
+                "member_type": "tenant"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Building B",
+        "member_units": [
+          {
+            "id": 201,
+            "unit_name": "Flat 201",
+            "members": [
+              {
+                "id": 3,
+                "name": "Mike Johnson",
+                "mobile_number": "1112223333",
+                "member_type": "owner"
+              },
+              {
+                "id": 4,
+                "name": "Anna Lee",
+                "mobile_number": "4445556666",
+                "member_type": "tenant"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Building C",
+        "member_units": [
+          {
+            "id": 301,
+            "unit_name": "Flat 301",
+            "members": [
+              {
+                "id": 5,
+                "name": "David Clark",
+                "mobile_number": "7778889999",
+                "member_type": "owner"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Building D",
+        "member_units": [
+          {
+            "id": 401,
+            "unit_name": "Flat 401",
+            "members": [
+              {
+                "id": 6,
+                "name": "Laura Davis",
+                "mobile_number": "1231231234",
+                "member_type": "tenant"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Building E",
+        "member_units": [
+          {
+            "id": 501,
+            "unit_name": "Flat 501",
+            "members": [
+              {
+                "id": 7,
+                "name": "Robert Brown",
+                "mobile_number": "9879879876",
+                "member_type": "owner"
+              },
+              {
+                "id": 8,
+                "name": "Sarah Miller",
+                "mobile_number": "6546546543",
+                "member_type": "tenant"
+              }
+            ]
+          },
+          {
+            "id": 502,
+            "unit_name": "Flat 502",
+            "members": [
+              {
+                "id": 9,
+                "name": "Tom Wilson",
+                "mobile_number": "1112223333",
+                "member_type": "owner"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  

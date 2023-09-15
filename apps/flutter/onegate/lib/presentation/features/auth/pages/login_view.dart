@@ -225,8 +225,8 @@ class _LoginViewState extends State<LoginView> {
             //});
             break;
           case NavigateToGatekeeperDashboardState:
-            Navigator.pop(context);
-            Future.delayed(Duration(milliseconds: 100), () {
+           // Navigator.pop(context);
+            //Future.delayed(Duration(milliseconds: 100), () {
               Navigator.pushReplacement(
                 context,
                 PageTransition(
@@ -234,7 +234,7 @@ class _LoginViewState extends State<LoginView> {
                   child: GateDashboardView(),
                 ),
               );
-            });
+           // });
             break;
         }
       },
@@ -581,7 +581,7 @@ class _LoginViewState extends State<LoginView> {
                       style: Theme.of(context).textTheme.displaySmall,
                     ),
                     subtitle: Text(
-                      'Kindly, select your society associated with +91-*******101',
+                      'Kindly, select your society associated with +${_preferenceUtils.getUserInfo()!.mobile}',
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
