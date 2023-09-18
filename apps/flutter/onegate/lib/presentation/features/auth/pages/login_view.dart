@@ -233,7 +233,7 @@ class _LoginViewState extends State<LoginView> {
                   type: PageTransitionType.rightToLeft,
                   child: GateDashboardView(),
                 ),
-              )
+              );
             break;
         }
       },
