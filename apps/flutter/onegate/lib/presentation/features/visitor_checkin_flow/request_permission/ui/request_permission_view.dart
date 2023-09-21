@@ -2,6 +2,7 @@
 
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -112,7 +113,6 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
               ),
 
               child: GridView.builder(
-                
                 padding: EdgeInsets.only(
                   bottom: 10,
                 ),
@@ -154,10 +154,20 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
               // ),
             ),
           ),
-          Container(
-            margin: EdgeInsets.only(top: 40, bottom: 30),
-            width: double.infinity,
-            child: _getLottieAnimation(requestType),
+          GestureDetector(
+            child: Container(
+              margin: EdgeInsets.only(top: 40, bottom: 30),
+              width: double.infinity,
+              child: _getLottieAnimation(requestType),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GateDashboardView(),
+                ),
+              );
+            },
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

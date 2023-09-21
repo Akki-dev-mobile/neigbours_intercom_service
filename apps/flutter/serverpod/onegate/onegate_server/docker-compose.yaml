@@ -1,0 +1,22 @@
+version: '3.7'
+
+services:
+  postgres:
+    image: postgres:14.1
+    ports:
+      - '8090:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: onegate
+      POSTGRES_PASSWORD: "F0EVhnL5fvLNEd-J94dg2T0qQ5skUaib"
+    volumes:
+      - onegate_data:/var/lib/postgresql/data
+  redis:
+    image: redis:6.2.6
+    ports:
+      - '8091:6379'
+    command: redis-server --requirepass "MMmlpZSYUL_meieYS2ZJjqiiM289JOmt"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+volumes:
+  onegate_data:
