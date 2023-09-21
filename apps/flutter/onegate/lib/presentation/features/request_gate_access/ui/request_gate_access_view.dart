@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animated_button/flutter_animated_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -81,19 +82,22 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                   ? SizedBox()
                   : Lottie.network(
                       'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/gate_request_bf36d610fe.json?updated_at=2023-08-23T06:28:50.842Z',
-                      height: 300,
+                      height: 250,
                       width: double.infinity,
                       fit: BoxFit.contain,
                     ),
               ListTile(
                 contentPadding: EdgeInsets.only(top: 20, bottom: 10),
                 title: Text(
-                  'Ready to Roll?',
-                  style: Theme.of(context).textTheme.displayLarge,
+                  'Ready to Roll ?',
+                  style: Theme.of(context).textTheme.displayMedium,
                 ),
-                subtitle: Text(
-                  'Request Now & Hear from Us in 24-48 Hours!',
-                  style: Theme.of(context).textTheme.labelMedium,
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Text(
+                    'Request now & hear from us in 24-48 hours!',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                 ),
               ),
               Form(
@@ -139,6 +143,19 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                   ],
                 ),
               ),
+              // AnimatedButton(
+              //   height: 70,
+              //   width: 200,
+              //   text: 'SUBMIT',
+              //   isReverse: false,
+              //   selectedTextColor: Colors.black,
+              //   transitionType: TransitionType.LEFT_TO_RIGHT,
+              //   backgroundColor: Colors.black,
+              //   borderColor: Colors.black54,
+              //   borderRadius: 50,
+              //   borderWidth: 2,
+              //   onPress: () {},
+              // ),
               Container(
                 margin: EdgeInsets.only(top: 20, bottom: 80),
                 child: CustomLargeBtn(
@@ -152,7 +169,7 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                     //   ),
                     // );
                   },
-                  text: 'REQUEST CALLBACK',
+                  text: 'Request Callback',
                 ),
               )
             ],

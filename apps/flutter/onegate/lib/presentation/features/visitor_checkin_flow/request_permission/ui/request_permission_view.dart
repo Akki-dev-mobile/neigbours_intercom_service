@@ -93,8 +93,10 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              'Flat Numbers',
-              style: Theme.of(context).textTheme.bodyMedium,
+              'Selected Flat',
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
           GestureDetector(
@@ -111,7 +113,6 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                 horizontal: 15,
                 vertical: 10,
               ),
-
               child: GridView.builder(
                 padding: EdgeInsets.only(
                   bottom: 10,
@@ -128,18 +129,19 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                   return Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      color: Color(0x10C08261),
                       border: Border.all(
-                        color: Colors.red.withOpacity(
-                          0.5,
-                        ),
-                        width: 1,
+                        color: Color(0xffC08261),
+                        width: 2,
                       ),
                     ),
                     child: Center(
                       child: Text(
                         '${gridData![index]}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: Color(0xffC08261),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ),
                   );
@@ -216,7 +218,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
               return;
           }
         },
-        text: 'REQUEST PERMISSION',
+        text: 'Allow',
       ),
     );
   }
@@ -225,7 +227,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
     switch (requestType) {
       case RequestType.notRecheable:
         return Lottie.network(
-          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/not_reachable_6f7a889bde.json?updated_at=2023-08-23T06:28:51.658Z',
+          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z',
           height: 200,
         );
       case RequestType.approved:
@@ -267,9 +269,12 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
     switch (requestType) {
       case RequestType.notRecheable:
         return Text(
-          'Request permission from member',
+          'Allow by gatekeeper',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                color:
+                    Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
+              ),
         );
       case RequestType.approved:
         return Text(

@@ -14,7 +14,6 @@ import 'package:kiosk_mode/kiosk_mode.dart';
 
 import 'presentation/features/app_intro/ui/app_intro_view.dart';
 import 'presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
-import 'presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 
 void main() async {
   String appId = "onegate";
@@ -34,12 +33,12 @@ void main() async {
   await ThemeManager.initializeWithAppId(appId);
 
   runApp(
-    // DevicePreview(
-    //     enabled: !kDebugMode,
-    //     builder: (context) {
-    //       return const MyApp();
-    //     }),
-    const MyApp(),
+    DevicePreview(
+        enabled: !kDebugMode,
+        builder: (context) {
+          return const MyApp();
+        }),
+    // const MyApp(),
   );
 }
 
@@ -52,8 +51,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
-      darkTheme: ThemeManager.darkTheme,
-      home: const AppIntroView(),
+      // darkTheme: ThemeManager.darkTheme,
+      home: const GateDashboardView(),
     );
   }
 }

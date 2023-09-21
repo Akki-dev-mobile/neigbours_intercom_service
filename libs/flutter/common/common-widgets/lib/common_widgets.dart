@@ -56,7 +56,9 @@ class MyScrollView extends StatelessWidget {
             pinned: true,
             title: Text(
               pageTitle ?? '',
-              style: Theme.of(context).textTheme.bodyLarge,
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             actions: actions,
             // expandedHeight: 50,
@@ -229,12 +231,15 @@ class CustomLargeBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8),
-      width: MediaQuery.of(context).size.width * 0.9,
+      width: MediaQuery.of(context).size.width * 0.85,
       height: 60,
       child: ElevatedButton(
         style: ButtonStyle(
-          overlayColor: MaterialStateProperty.all<Color>(
-            Color(0x80FFB080),
+          // overlayColor: MaterialStateProperty.all<Color>(
+          //   Color(0xFF61677A),
+          // ),
+          foregroundColor: MaterialStateProperty.all<Color>(
+            Color(0xFF7D7C7C),
           ),
           backgroundColor: MaterialStateProperty.all<Color>(
             Theme.of(context).colorScheme.onBackground,

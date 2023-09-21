@@ -55,14 +55,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     super.initState();
     selectedBuilding = 'Building A';
 
-  // Update the items list based on the selected building
-  if (selectedBuilding == 'Building A') {
-    items = buildingA;
-  } else if (selectedBuilding == 'Building B') {
-    items = buildingB;
-  } else if (selectedBuilding == 'Building C') {
-    items = buildingC;
-  }
+    // Update the items list based on the selected building
+    if (selectedBuilding == 'Building A') {
+      items = buildingA;
+    } else if (selectedBuilding == 'Building B') {
+      items = buildingB;
+    } else if (selectedBuilding == 'Building C') {
+      items = buildingC;
+    }
   }
 
   @override
@@ -79,7 +79,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               children: [
                 TabBar(
                   tabs: unitTypeTabs,
-                  indicatorColor: Colors.red,
+                  indicatorColor: Color(0xffC08261),
                   labelColor: Theme.of(context)
                       .colorScheme
                       .onBackground
@@ -91,6 +91,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   dividerColor: Colors.transparent,
                   labelStyle: TextStyle(
                     fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 SizedBox(
@@ -106,17 +107,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               vertical: 15,
                             ),
                             child: ChipsChoice<String>.single(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
                               scrollToSelectedOnChanged: true,
+                              spacing: 20,
                               choiceStyle: C2ChipStyle.outlined(
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
+                                borderWidth: 1,
+                                color: Colors.grey.shade700,
                                 selectedStyle: C2ChipStyle.filled(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.background,
-                                  backgroundOpacity: 1,
+                                  foregroundColor: Color(0xFFC08261),
                                 ),
                                 height: 40,
                               ),
@@ -129,7 +127,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
                                   selectedBuilding = value;
 
-                                  // Update the items list based on the selected building
                                   if (selectedBuilding == 'Building A') {
                                     items = buildingA;
                                   } else if (selectedBuilding == 'Building B') {
@@ -164,7 +161,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 return GestureDetector(
                                   onTap: () {
                                     setState(() {
-                                      if (selectedUnits.contains(items[index])) {
+                                      if (selectedUnits
+                                          .contains(items[index])) {
                                         selectedUnits.remove(items[index]);
                                       } else {
                                         selectedUnits.add(items[index]);
@@ -177,7 +175,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                       for (String index in selectedUnits) {
                                         // if (index >= 0 &&
                                         //     index < items.length) {
-                                          anotherList.add(index);
+                                        anotherList.add(index);
                                         //}
                                       }
                                       if (kDebugMode) {
@@ -188,24 +186,19 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
-                                      color: selectedUnits.contains(items[index])
-                                          ? Theme.of(context)
-                                              .colorScheme
-                                              .onBackground
-                                              .withOpacity(0.9)
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .background,
+                                      color:
+                                          selectedUnits.contains(items[index])
+                                              ? Color(0x10C08261)
+                                              : Colors.transparent,
                                       border: Border.all(
-                                        color: selectedUnits.contains(items[index])
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .onBackground
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .onBackground
-                                                .withOpacity(0.5),
-                                        width: 1,
+                                        color:
+                                            selectedUnits.contains(items[index])
+                                                ? Color(0xffC08261)
+                                                : Colors.grey.shade400,
+                                        width:
+                                            selectedUnits.contains(items[index])
+                                                ? 2
+                                                : 1,
                                       ),
                                     ),
                                     child: FittedBox(
@@ -215,13 +208,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 22,
-                                          color: selectedUnits.contains(items[index])
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .background
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .onBackground,
+                                          color: selectedUnits
+                                                  .contains(items[index])
+                                              ? Color(0xffC08261)
+                                              : Colors.grey.shade700,
                                         ),
                                       ),
                                     ),
@@ -295,7 +285,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 ? Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => RequestPermissionView(gridData: selectedUnits,),
+                      builder: (context) => RequestPermissionView(
+                        gridData: selectedUnits,
+                      ),
                     ),
                   )
                 : showModalBottomSheet(
@@ -340,7 +332,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         ),
                         child: Center(
                           child: Text(
-                            'NEXT',
+                            selectedUnits.length == 1 ? 'Next' : 'View',
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.white,
@@ -385,8 +377,10 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
     return SingleChildScrollView(
       child: (widget.selectedIndices == null || widget.selectedIndices!.isEmpty)
           ? Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
+                  contentPadding: EdgeInsets.zero,
                   title: Text(
                     'Select flats or search for members',
                     style: TextStyle(
@@ -410,7 +404,7 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
             )
           : Column(
               children: [
-                SizedBox(height: 30),
+                SizedBox(height: 10),
                 ListTile(
                   title: Text(
                     'Selected Units/Members',
@@ -425,23 +419,26 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                       style: ElevatedButton.styleFrom(
                         // padding: EdgeInsets.only(bottom: 15.0),
                         elevation: 0,
-                        backgroundColor: Colors.transparent,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.onBackground,
                       ),
                       onPressed: () {
                         Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RequestPermissionView(gridData: widget.selectedIndices!,),
-                          ));
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RequestPermissionView(
+                                gridData: widget.selectedIndices!,
+                              ),
+                            ));
                       },
                       icon: Icon(
                         Ionicons.arrow_forward_outline,
-                        color: Theme.of(context).colorScheme.onBackground,
+                        color: Theme.of(context).colorScheme.background,
                       ),
                       label: Text(
-                        'NEXT',
+                        'Next',
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.background,
                           fontSize: 18,
                         ),
                       ),
