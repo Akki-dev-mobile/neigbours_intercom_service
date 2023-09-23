@@ -57,7 +57,7 @@ class MyScrollView extends StatelessWidget {
             title: Text(
               pageTitle ?? '',
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                    fontWeight: FontWeight.bold,
+                  // fontWeight: FontWeight.bold,
                   ),
             ),
             actions: actions,

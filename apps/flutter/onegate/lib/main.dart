@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
       // darkTheme: ThemeManager.darkTheme,
-      home: const GateDashboardView(),
+      home: const AdminDashboardView(),
     );
   }
 }

@@ -160,7 +160,7 @@ class _GateSelectionViewState extends State<GateSelectionView> {
   }
 }
 
-class GateSettingListTile extends StatelessWidget {
+class GateSettingListTile extends StatefulWidget {
   const GateSettingListTile({
     Key? key,
     required this.switchValue,
@@ -177,36 +177,41 @@ class GateSettingListTile extends StatelessWidget {
   final IconData? leadingIcon;
 
   @override
+  State<GateSettingListTile> createState() => _GateSettingListTileState();
+}
+
+class _GateSettingListTileState extends State<GateSettingListTile> {
+  @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: leadingIcon != null
+      leading: widget.leadingIcon != null
           ? CircleAvatar(
               // backgroundColor: Color(0X101973E9),
               backgroundColor: Color(0xffFFEBE6),
               radius: 22,
               child: Icon(
                 size: 24,
-                leadingIcon,
+                widget.leadingIcon,
                 // color: Color(0XFF1973E9),
                 color: Colors.black,
               ),
             )
           : null,
       title: Text(
-        title,
+        widget.title,
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       subtitle: Text(
-        subtitle,
+        widget.subtitle,
         style: Theme.of(context).textTheme.labelSmall,
       ),
       trailing: Switch(
         inactiveThumbColor: Theme.of(context).colorScheme.onBackground,
         inactiveTrackColor:
             Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
-        value: switchValue,
-        onChanged: onChanged,
+        value: widget.switchValue,
+        onChanged: widget.onChanged,
       ),
     );
   }

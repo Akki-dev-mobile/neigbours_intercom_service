@@ -49,6 +49,7 @@ dependencies:
   serverpod_flutter: ^1.1.1
   onegate_client:
     path: ../serverpod/onegate/onegate_client
+  random_avatar: ^0.0.8
   
 
 
@@ -81,6 +82,8 @@ flutter:
     - assets/
     - assets/onegate/theme.json
     - assets/json/gates_mock.json
+    - assets/json/media.json
+
 
 flutter_native_splash:
   color: "#FFACAC"
