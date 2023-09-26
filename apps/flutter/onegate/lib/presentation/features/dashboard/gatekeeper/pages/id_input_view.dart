@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -26,7 +27,9 @@ TextEditingController mobileController = TextEditingController();
 TextEditingController passcodeController = TextEditingController();
 int _currentIndex = 0;
 List<String> _labels = ['Mobile', 'Pass Code'];
-String? selectedPassAlpha;
+String? selectedPassAlpha = 'A';
+String selectedCountryCode = 'IN';
+final isoCode = selectedCountryCode;
 
 List<String> listPassAlpha = [
   'G',
@@ -93,25 +96,62 @@ class _IdInputViewState extends State<IdInputView> {
                     focusNode: _focusNode,
                     "Visitor Mobile Number",
                     hintText: '0123456789',
+                    prefixIcon: CountryCodePicker(
+                      initialSelection: 'IN',
+                      favorite: ['IN'],
+                      showFlagMain: true,
+                      showFlagDialog: true,
+                      boxDecoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.background,
+                      ),
+                      barrierColor: Theme.of(context)
+                          .colorScheme
+                          .background
+                          .withOpacity(0.5),
+                      closeIcon: Icon(
+                        Icons.close,
+                        color: Theme.of(context).colorScheme.onBackground,
+                      ),
+                      searchDecoration: InputDecoration(
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                        hintText: 'Search',
+                        hintStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(
+                            style: BorderStyle.solid,
+                            color: Theme.of(context).colorScheme.onBackground,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(
+                            style: BorderStyle.solid,
+                            color: Theme.of(context).colorScheme.onBackground,
+                          ),
+                        ),
+                      ),
+                      textStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onBackground,
+                        fontSize: 18,
+                      ),
+                      dialogTextStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onBackground,
+                      ),
+                      onChanged: (CountryCode countryCode) {
+                        setState(() {
+                          selectedCountryCode = countryCode.code!;
+                        });
+                      },
+                    ),
                     textController: mobileController,
                     keyboardType: TextInputType.number,
                     length: 10,
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        if (mobileControllerFormKey.currentState!.validate()) {
-                          showModalBottomSheet(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.background,
-                            context: context,
-                            builder: (context) => ImageGridBottomSheet(),
-                          );
-                        }
-                      },
-                      icon: Icon(
-                        Symbols.done_rounded,
-                        color: Theme.of(context).colorScheme.onBackground,
-                      ),
-                    ),
                     validator: (value) {
                       if (value!.isEmpty) {
                         return 'Mobile number is required';
@@ -156,11 +196,11 @@ class _IdInputViewState extends State<IdInputView> {
                             if (passcodeControllerFormKey.currentState!
                                 .validate()) {
                               showModalBottomSheet(
-                                isScrollControlled: true,
                                 useSafeArea: true,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(20),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(20),
+                                    topRight: Radius.circular(20),
                                   ),
                                 ),
                                 backgroundColor:
@@ -186,12 +226,14 @@ class _IdInputViewState extends State<IdInputView> {
                       ),
                     ),
                     ChipsChoice<String>.single(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
                       spacing: 20,
-                      choiceStyle: C2ChipStyle.filled(
-                        color: Color(0xffFFEBE6),
-                        foregroundColor: Colors.black,
+                      choiceStyle: C2ChipStyle.outlined(
+                        borderWidth: 1,
+                        color: Colors.grey,
                         selectedStyle: C2ChipStyle.outlined(
-                          color: Colors.red,
+                          overlayColor: Color(0x90C08261),
+                          color: Color(0xFF0C08261),
                         ),
                       ),
                       choiceCheckmark: true,
@@ -212,6 +254,25 @@ class _IdInputViewState extends State<IdInputView> {
                 ),
         ],
       ),
+      floatingActionButton: CustomLargeBtn(
+        text: 'Next',
+        onPressed: () {
+          if (mobileControllerFormKey.currentState!.validate()) {
+            showModalBottomSheet(
+              useSafeArea: true,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              backgroundColor: Theme.of(context).colorScheme.background,
+              context: context,
+              builder: (context) => ImageGridBottomSheet(),
+            );
+          }
+        },
+      ),
     );
   }
 }
@@ -222,7 +283,7 @@ class ImageGridBottomSheet extends StatefulWidget {
 }
 
 class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
-  int selectedImageIndex = -1;
+  int selectedImageIndex = 0;
   final List<String> imagePaths = [
     'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/guest_dbd7ea2cb9.png?updated_at=2023-09-08T12:42:09.850Z',
     'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/cab_8ed111c563.png?updated_at=2023-09-08T12:42:09.898Z',
@@ -249,8 +310,14 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 20,
+        horizontal: 5,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        color: Theme.of(context).colorScheme.background,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -260,7 +327,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           ListTile(
             title: Text(
               'Select Purpose of visit',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             trailing: Icon(
               Ionicons.close_circle_outline,
@@ -274,6 +343,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           SizedBox(height: 10),
           Expanded(
             child: GridView.builder(
+              shrinkWrap: true,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 mainAxisSpacing: 3,
@@ -286,20 +356,20 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                   child: Stack(
                     children: [
                       Container(
-                        height: 300,
+                        height: 250,
                         width: 200,
                         /*padding:
                             EdgeInsets.symmetric(vertical: 7, horizontal: 10),*/
                         margin: EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           color: selectedImageIndex == index
-                              ? Color(0xffFFEBE6)
+                              ? Color(0x10C08261)
                               : Colors.transparent,
                           border: Border.all(
                             color: selectedImageIndex == index
-                                ? Colors.red
-                                : Colors.transparent,
-                            width: 1,
+                                ? Color(0xffC08261)
+                                : Colors.grey,
+                            width: selectedImageIndex == index ? 2 : 1,
                           ),
                           borderRadius: BorderRadius.circular(15),
                         ),
@@ -311,10 +381,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(15),
                                 child: CachedNetworkImage(
-                                  maxHeightDiskCache: 60,
-                                  maxWidthDiskCache: 60,
-                                  height: 45,
-                                  width: 45,
+                                  maxHeightDiskCache: 90,
+                                  maxWidthDiskCache: 90,
+                                  height: 60,
+                                  width: 60,
                                   fit: BoxFit.cover,
                                   imageUrl: imagePaths[index],
                                   placeholder: (context, url) =>
@@ -339,7 +409,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   imageValues[index],
                                   style: TextStyle(
                                     color: selectedImageIndex == index
-                                        ? Colors.red
+                                        ? Color(0xffC08261)
                                         : Theme.of(context)
                                             .colorScheme
                                             .onBackground,
@@ -358,8 +428,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                               right: 10,
                               top: 10,
                               child: Icon(
+                                size: 20,
                                 Ionicons.checkmark_circle_outline,
-                                color: Colors.red,
+                                color: Color(0xffC08261),
                               ),
                             )
                           : SizedBox()
@@ -369,21 +440,24 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               },
             ),
           ),
-          CustomLargeBtn(
-            text: 'NEXT',
-            onPressed: () {
-              if (selectedImageIndex != -1) {
-                String selectedValue = imageValues[selectedImageIndex];
-                Navigator.pop(context, selectedValue);
-                Navigator.push(
-                  context,
-                  PageTransition(
-                    type: PageTransitionType.rightToLeft,
-                    child: VisitorsInEntry(selectedValue: selectedValue),
-                  ),
-                );
-              }
-            },
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            child: CustomLargeBtn(
+              text: 'Next',
+              onPressed: () {
+                if (selectedImageIndex != -1) {
+                  String selectedValue = imageValues[selectedImageIndex];
+                  Navigator.pop(context, selectedValue);
+                  Navigator.push(
+                    context,
+                    PageTransition(
+                      type: PageTransitionType.rightToLeft,
+                      child: VisitorsInEntry(selectedValue: selectedValue),
+                    ),
+                  );
+                }
+              },
+            ),
           ),
           SizedBox(height: 10)
         ],

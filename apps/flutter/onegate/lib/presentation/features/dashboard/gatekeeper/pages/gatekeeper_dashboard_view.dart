@@ -16,6 +16,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:common_widgets/common_widgets.dart';
+import 'package:shimmer/shimmer.dart';
 
 import 'dart:math' as math;
 
@@ -180,13 +181,14 @@ class _GateDashboardViewState extends State<GateDashboardView>
             ),
             Container(
               margin: EdgeInsets.only(bottom: 16),
-              height: MediaQuery.of(context).size.height * 0.265,
+              height: MediaQuery.of(context).size.height * 0.300,
+              width: MediaQuery.of(context).size.width,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Container(
                     // margin: EdgeInsets.symmetric(vertical: 10),
-                    width: MediaQuery.of(context).size.width * 0.28,
+                    width: MediaQuery.of(context).size.width * 0.32,
                     decoration: BoxDecoration(
                       color: Color(
                         0xffF2D8A5,
@@ -206,8 +208,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                           ),
                           child: CachedNetworkImage(
                             maxHeightDiskCache: 10,
-                            height: 45,
-                            width: 45,
+                            height: 55,
+                            width: 55,
                             fit: BoxFit.contain,
                             imageUrl:
                                 'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
@@ -238,8 +240,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        width: MediaQuery.of(context).size.width * 0.55,
-                        height: MediaQuery.of(context).size.height * 0.12,
+                        width: MediaQuery.of(context).size.width * 0.50,
+                        height: MediaQuery.of(context).size.height * 0.14,
                         decoration: BoxDecoration(
                           color: Color(0xffCAF1D1),
                           borderRadius: BorderRadius.circular(20),
@@ -255,7 +257,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             style: Theme.of(context).textTheme.displayMedium,
                           ),
                           subtitle: Text(
-                            'Visitor In',
+                            'Visitor\nIn',
+                            textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.labelMedium,
                           ),
                           trailing: Container(
@@ -268,8 +271,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                               alignment: Alignment.center,
                               child: CachedNetworkImage(
                                 maxHeightDiskCache: 10,
-                                height: 45,
-                                width: 45,
+                                height: 55,
+                                width: 55,
                                 fit: BoxFit.contain,
                                 imageUrl:
                                     'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
@@ -288,8 +291,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         ),
                       ),
                       Container(
-                        width: MediaQuery.of(context).size.width * 0.55,
-                        height: MediaQuery.of(context).size.height * 0.12,
+                        width: MediaQuery.of(context).size.width * 0.50,
+                        height: MediaQuery.of(context).size.height * 0.14,
                         decoration: BoxDecoration(
                           color: Color(0xffFFE5E0),
                           borderRadius: BorderRadius.circular(20),
@@ -305,7 +308,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             style: Theme.of(context).textTheme.displayMedium,
                           ),
                           subtitle: Text(
-                            'Visitor Out',
+                            'Visitor\nOut',
+                            textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.labelMedium,
                           ),
                           trailing: Container(
@@ -315,8 +319,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             ),
                             child: CachedNetworkImage(
                               maxHeightDiskCache: 10,
-                              height: 45,
-                              width: 45,
+                              height: 55,
+                              width: 55,
                               fit: BoxFit.contain,
                               imageUrl:
                                   'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
@@ -385,7 +389,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             child: AnimatedTextKit(
                               repeatForever: true,
                               animatedTexts: [
-                                TyperAnimatedText('9912345678'),
+                                TyperAnimatedText(
+                                  '9912345678',
+                                ),
                                 TyperAnimatedText('G-39070'),
                               ],
                               onTap: () {
@@ -466,6 +472,7 @@ class DashboardShortcut extends StatelessWidget {
           children: [
             Container(
               padding: EdgeInsets.all(12),
+              margin: EdgeInsets.only(bottom: 5),
               decoration: BoxDecoration(
                 border: Border.all(
                   color: Colors.grey.shade300,

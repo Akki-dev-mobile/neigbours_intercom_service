@@ -225,15 +225,15 @@ class _LoginViewState extends State<LoginView> {
             //});
             break;
           case NavigateToGatekeeperDashboardState:
-           // Navigator.pop(context);
+            // Navigator.pop(context);
             //Future.delayed(Duration(milliseconds: 100), () {
-              Navigator.pushReplacement(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: GateDashboardView(),
-                ),
-              );
+            Navigator.pushReplacement(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: GateDashboardView(),
+              ),
+            );
             break;
         }
       },
@@ -268,9 +268,12 @@ class _LoginViewState extends State<LoginView> {
                         'Login',
                         style: Theme.of(context).textTheme.displayLarge,
                       ),
-                      subtitle: Text(
-                        "Welcome back! Let's dive in.",
-                        style: Theme.of(context).textTheme.labelMedium,
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: Text(
+                          "Welcome back! Let's dive in.",
+                          style: Theme.of(context).textTheme.labelMedium,
+                        ),
                       ),
                     ),
                     Form(
@@ -416,121 +419,27 @@ class _LoginViewState extends State<LoginView> {
                         ],
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20, bottom: 10),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.45,
-                            height: 50,
-                            child: ElevatedButton(
-                              style: ButtonStyle(
-                                overlayColor: MaterialStateProperty.all<Color>(
-                                  Color(0x80FFB080),
-                                ),
-                                backgroundColor:
-                                    MaterialStateProperty.all<Color>(
-                                  Colors.transparent,
-                                ),
-                                elevation:
-                                    MaterialStateProperty.resolveWith<double>(
-                                  (Set<MaterialState> states) {
-                                    if (states
-                                        .contains(MaterialState.pressed)) {
-                                      return 8;
-                                    }
-                                    return 0;
-                                  },
-                                ),
-                                shape: MaterialStateProperty.all<
-                                    RoundedRectangleBorder>(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                ),
-                              ),
-                              onPressed: () {
-                                loginBloc.add(
-                                  SignUpButtonPressedEvent(),
-                                );
-                              },
-                              child: Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
-                                  fontSize: 22,
-                                  wordSpacing: 1.2,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.45,
-                            height: 50,
-                            child: ElevatedButton(
-                              style: ButtonStyle(
-                                overlayColor: MaterialStateProperty.all<Color>(
-                                  Color(0x80FFB080),
-                                ),
-                                backgroundColor:
-                                    MaterialStateProperty.all<Color>(
-                                  Theme.of(context).colorScheme.onBackground,
-                                ),
-                                elevation:
-                                    MaterialStateProperty.resolveWith<double>(
-                                  (Set<MaterialState> states) {
-                                    if (states
-                                        .contains(MaterialState.pressed)) {
-                                      return 8;
-                                    }
-                                    return 0;
-                                  },
-                                ),
-                                shape: MaterialStateProperty.all<
-                                    RoundedRectangleBorder>(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                    side: BorderSide(
-                                      color: Colors.transparent,
-                                      width: 1,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              onPressed: () {
-                                _submitForm();
-                              },
-                              child: Text(
-                                'Login',
-                                style: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.background,
-                                  fontSize: 22,
-                                  wordSpacing: 1.2,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    SizedBox(height: 18),
+                    CustomLargeBtn(
+                      text: 'Login',
+                      onPressed: () {
+                        _submitForm();
+                      },
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(12.0),
+                      padding: const EdgeInsets.all(10.0),
                       child: TextButton(
                         onPressed: () {
                           loginBloc.add(
-                            ForgotPasswordButtonPressedEvent(),
+                            SignUpButtonPressedEvent(),
                           );
                         },
                         child: Text(
-                          'Forgot Password?',
-                          style: Theme.of(context).textTheme.labelMedium,
+                          'Sign Up',
+                          style:
+                              Theme.of(context).textTheme.labelMedium!.copyWith(
+                                    fontSize: 20,
+                                  ),
                         ),
                       ),
                     ),
@@ -574,14 +483,19 @@ class _LoginViewState extends State<LoginView> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    contentPadding: EdgeInsets.only(top: 10, bottom: 15),
+                    contentPadding: EdgeInsets.only(top: 0, bottom: 15),
                     title: Text(
                       'Select Society',
-                      style: Theme.of(context).textTheme.displaySmall,
+                      style: Theme.of(context).textTheme.displaySmall!.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-                    subtitle: Text(
-                      'Kindly, select your society associated with +91-*******101',
-                      style: Theme.of(context).textTheme.labelMedium,
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 5.0),
+                      child: Text(
+                        'Kindly, select your society linked with +91-*******101',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
                     ),
                   ),
                   DropdownButtonFormField<Company>(
@@ -665,7 +579,7 @@ class _LoginViewState extends State<LoginView> {
                     height: 30,
                   ),
                   CustomLargeBtn(
-                    text: 'CONFIRM',
+                    text: 'Confirm',
                     onPressed: () {
                       Navigator.pop(context);
 
@@ -706,15 +620,17 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 color: Theme.of(context).colorScheme.background,
               ),
-              padding: EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(12.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    contentPadding: EdgeInsets.only(top: 10, bottom: 15),
+                    contentPadding: EdgeInsets.only(top: 0, bottom: 15),
                     title: Text(
                       'Select Role',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: Theme.of(context).textTheme.displaySmall!.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
                   Container(
@@ -743,9 +659,9 @@ class _LoginViewState extends State<LoginView> {
                     height: 30,
                   ),
                   CustomLargeBtn(
-                    text: 'CONFIRM',
+                    text: 'Confirm',
                     onPressed: () {
-                      print('CONFIRM button pressed');
+                      print('Confirm button pressed');
 
                       Navigator.pop(context);
                       Future.delayed(Duration(milliseconds: 200), () {
@@ -821,7 +737,9 @@ class _LoginViewState extends State<LoginView> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       'Select your gate',
-                      style: Theme.of(context).textTheme.displaySmall,
+                      style: Theme.of(context).textTheme.displaySmall!.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
                   ...List.generate(gatesList.length, (index) {
@@ -847,7 +765,7 @@ class _LoginViewState extends State<LoginView> {
                     height: 30,
                   ),
                   CustomLargeBtn(
-                    text: 'CONFIRM',
+                    text: 'Confirm',
                     onPressed: () {
                       loginBloc.add(
                         GateSelectionButtonPressedEvent(selectedGate!),
@@ -935,15 +853,18 @@ class _LoginViewState extends State<LoginView> {
           },
           child: Container(
             padding: EdgeInsets.all(8),
-            height: 80,
-            width: 80,
+            height: 90,
+            width: 90,
             decoration: BoxDecoration(
+              color: _selectedRoleValue == value
+                  ? Color(0x10C08261)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: _selectedRoleValue == value
-                    ? Colors.blue
-                    : Colors.transparent,
-                width: 3,
+                    ? Color(0xffC08261)
+                    : Colors.grey.shade300,
+                width: _selectedRoleValue == value ? 3 : 2,
               ),
             ),
             child: ClipRRect(
@@ -960,8 +881,10 @@ class _LoginViewState extends State<LoginView> {
           label,
           style: TextStyle(
             fontSize: 18,
+            fontWeight:
+                _selectedRoleValue == value ? FontWeight.w600 : FontWeight.w400,
             color: _selectedRoleValue == value
-                ? Colors.blue
+                ? Color(0xffC08261)
                 : Theme.of(context).colorScheme.onPrimary,
           ),
         ),

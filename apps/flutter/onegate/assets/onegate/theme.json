@@ -6,14 +6,14 @@
     "light": {
       "fonts": {
         "displayLarge": {
-          "size": 36.0,
+          "size": 32.0,
           "weight": "bold",
           "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
         "displayMedium": {
           "size": 28.0,
-          "weight": "600",
+          "weight": "bold",
           "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
@@ -35,13 +35,18 @@
           "color": "onBackground",
           "fontFamily": "kDefaultFont"
         },
-        "labelMedium": {
+        "labelLarge": {
           "size": 18.0,
           "weight": "500",
           "color": "onPrimary",
           "fontFamily": "kDefaultFont"
         },
-       
+        "labelMedium": {
+          "size": 16.0,
+          "weight": "500",
+          "color": "onPrimary",
+          "fontFamily": "kDefaultFont"
+        },
         "labelSmall": {
           "size": 12.0,
           "weight": "500",
@@ -97,7 +102,6 @@
           "color": "onPrimary",
           "fontFamily": "kDefaultFont"
         },
-       
         "labelSmall": {
           "size": 12.0,
           "weight": "500",

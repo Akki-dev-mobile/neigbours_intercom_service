@@ -324,7 +324,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           );
           // _captureImageFromCamera();
         },
-        text: 'NEXT',
+        text: 'Next',
       ),
     );
   }

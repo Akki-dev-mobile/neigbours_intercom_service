@@ -34,12 +34,12 @@ void main() async {
   await ThemeManager.initializeWithAppId(appId);
 
   runApp(
-    // DevicePreview(
-    //     enabled: !kDebugMode,
-    //     builder: (context) {
-    //       return const MyApp();
-    //     }),
-    const MyApp(),
+    DevicePreview(
+        enabled: !kDebugMode,
+        builder: (context) {
+          return const MyApp();
+        }),
+    // const MyApp(),
   );
 }
 
@@ -52,6 +52,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme,
+      // darkTheme: ThemeManager.darkTheme,
+      home: const AdminDashboardView(),
       darkTheme: ThemeManager.darkTheme,
       home: const LoginView(),
     );

@@ -45,9 +45,11 @@ dependencies:
   cached_network_image: ^3.2.3
   image_picker: ^1.0.4
   concentric_transition: ^1.0.3
+  flutter_animated_button: ^2.0.3
   serverpod_flutter: ^1.1.1
   onegate_client:
     path: ../serverpod/onegate/onegate_client
+  random_avatar: ^0.0.8
   
 
 
@@ -80,6 +82,8 @@ flutter:
     - assets/
     - assets/onegate/theme.json
     - assets/json/gates_mock.json
+    - assets/json/media.json
+
 
 flutter_native_splash:
   color: "#FFACAC"
