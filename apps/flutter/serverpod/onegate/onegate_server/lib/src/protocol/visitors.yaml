@@ -1,0 +1,17 @@
+class: Visitors
+table: visitors
+fields:
+  mobile: String
+  member_category_id: int
+  visitor_img_url: String
+  in_gate_id: int
+  in_time: DateTime
+  out_gate_id: int
+  out_time: DateTime
+  permission_status: String
+  visitor_count: int
+  passcode: String
+  created_at: DateTime
+  created_by: String
+  updated_at: DateTime
+  updated_by: String

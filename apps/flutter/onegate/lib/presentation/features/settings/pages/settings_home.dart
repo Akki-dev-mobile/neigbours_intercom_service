@@ -1,7 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
-import 'package:flutter_onegate/domain/entities/gate/gate.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
@@ -362,7 +362,7 @@ class _SettingsHomeState extends State<SettingsHome> {
             icon: Ionicons.grid_outline,
             title: 'Gate Settings',
             subtitle:
-                'Current Preference: ${selectedGateObj?.name ?? "Gate 1"}',
+                'Current Preference: ${selectedGateObj?.gateName ?? "Gate 1"}',
             onTap: () {
               Navigator.push(
                 context,

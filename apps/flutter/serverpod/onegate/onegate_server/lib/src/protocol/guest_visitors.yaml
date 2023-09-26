@@ -1,0 +1,7 @@
+class: GuestVisitors
+table: guest_visitors
+fields:
+  visitor_id: int
+  guest_name: String
+  guest_coming_from: String
+  guest_count: int

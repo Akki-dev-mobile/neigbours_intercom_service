@@ -22,11 +22,13 @@ final GetIt locator = GetIt.instance;
 
 void setupLocator() {
   // Register Dio instance
-  final Dio dio = Dio(); // You can configure Dio here
+  // You can configure Dio here
+  final dioInstance = Dio();
   locator.registerLazySingleton(() => dioInstance);
 
   // Register RemoteDataSource
-  locator.registerLazySingleton(() => RemoteDataSource(locator<Dio>()));
+  locator.registerLazySingleton(
+      () => RemoteDataSource(locator<Dio>(), locator<Dio>()));
 
   // Register AuthenticationRepository
   locator.registerLazySingleton<AuthenticationRepository>(
@@ -34,10 +36,12 @@ void setupLocator() {
   );
 
   // Register LoginUseCase
-  locator.registerLazySingleton(() => LoginUseCase(locator<AuthenticationRepository>()));
+  locator.registerLazySingleton(
+      () => LoginUseCase(locator<AuthenticationRepository>()));
 
   // Register LoginBloc
-  locator.registerFactory(() => LoginBloc(locator<LoginUseCase>(),locator<GateUseCase>()));
+  locator.registerFactory(
+      () => LoginBloc(locator<LoginUseCase>(), locator<GateUseCase>()));
 
   // Register GateRepository
   locator.registerLazySingleton<GateRepository>(
@@ -56,13 +60,15 @@ void setupLocator() {
   );
 
   // Register AdminDashboardUseCase
-  locator.registerLazySingleton(() => AdminDashboardUseCase(locator<AdminDashboardRepository>()));
+  locator.registerLazySingleton(
+      () => AdminDashboardUseCase(locator<AdminDashboardRepository>()));
 
   // Register AdminDashboardBloc
-  locator.registerFactory(() => AdminDashboardBloc(locator<AdminDashboardUseCase>()));
+  locator.registerFactory(
+      () => AdminDashboardBloc(locator<AdminDashboardUseCase>()));
 }
 
- void setupDependencies() async{
+void setupDependencies() async {
   final preferencesInstance = await SharedPreferences.getInstance();
   final preferenceUtilsInstance = PreferenceUtils(preferencesInstance);
   locator.registerSingleton<PreferenceUtils>(preferenceUtilsInstance);

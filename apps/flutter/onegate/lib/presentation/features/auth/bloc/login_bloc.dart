@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
-import 'package:flutter_onegate/domain/entities/gate/gate.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -95,11 +95,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final List<Gate> gates = await _preferenceUtils.getGatesList();
       if (gates.isEmpty) {
         final response = await _gateUseCase.gateList(
-            _preferenceUtils.getSelectedCompany()!.companyId,
-            _preferenceUtils.getUserInfo()!.userId);
-        final List<Gate> gates = response!.gates;
-        if (response.gates.length == 1) {
-          _preferenceUtils.setSelectedGate(response.gates[0]);
+            _preferenceUtils.getSelectedCompany()!.companyId);
+        final List<Gate> gates = response!;
+        if (response.length == 1) {
+          _preferenceUtils.setSelectedGate(response[0]);
           emit(NavigateToAdminDashboardState());
           return;
         } else {

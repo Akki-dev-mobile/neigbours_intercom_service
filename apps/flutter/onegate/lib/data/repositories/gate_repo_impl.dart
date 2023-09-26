@@ -1,6 +1,6 @@
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/domain/entities/gate/gate_list_response.dart';
-import 'package:flutter_onegate/domain/mappers/gate/gate_list_response_mapper.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
+import 'package:flutter_onegate/domain/mappers/gate/gate2_mapper.dart';
 import 'package:flutter_onegate/domain/repositories/gate_repo.dart';
 
 class GateRepositoryImpl implements GateRepository {
@@ -9,11 +9,11 @@ class GateRepositoryImpl implements GateRepository {
   GateRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<GateListResponse?> gateList(int companyId, int userId) async {
+  Future<List<Gate>?> gateList(int companyId) async {
     try {
       final response =
-          await _remoteDataSource.fetchGatesData(companyId, userId);
-      final gateListResponse = GateListResponseMapper.fromJson(response);
+          await _remoteDataSource.fetchGates(companyId);
+      final gateListResponse = GateMapper.fromJsonList(response);;
       return gateListResponse;
     } catch (error) {
       return null; // Handle error or Gate failure

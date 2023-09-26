@@ -10,12 +10,12 @@ class SocietyRepositoryImpl implements SocietyRepository {
 
   @override
   Future<Building?> getBuildings(int companyId) async {
-    try {
-      final response = await _remoteDataSource.fetchBuildingsData(companyId);
-      final buildingResponse = BuildingMapper.fromJson(response);
-      return buildingResponse;
-    } catch (error) {
-      return null; // Handle error or authentication failure
-    }
+    // try {
+    //   final response = await _remoteDataSource.fetchBuildingsData(companyId);
+    //   final buildingResponse = BuildingMapper.fromJson(response);
+    //   return buildingResponse;
+    // } catch (error) {
+    //   return null; // Handle error or authentication failure
+    // }
   }
 }

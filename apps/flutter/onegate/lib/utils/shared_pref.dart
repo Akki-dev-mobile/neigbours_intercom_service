@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/auth/user_info.dart';
-import 'package:flutter_onegate/domain/entities/gate/gate.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferenceUtils {

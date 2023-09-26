@@ -1,0 +1,20 @@
+class: MemberStaff
+table: member_staff
+fields:
+  name: String
+  phone: String
+  dob: DateTime
+  gender: String
+  member_category_id: int
+  member_sub_category_id: int
+  email: String
+  address: String
+  verification_type_id: int
+  verification_number: String
+  profile_image_url: String
+  status: String
+  deleted_by: String
+  created_at: DateTime
+  created_by: String
+  updated_at: DateTime
+  updated_by: String

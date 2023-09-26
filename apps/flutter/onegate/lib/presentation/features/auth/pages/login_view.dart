@@ -11,7 +11,7 @@ import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/gate_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
-import 'package:flutter_onegate/domain/entities/gate/gate.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
 import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
@@ -65,12 +65,12 @@ class _LoginViewState extends State<LoginView> {
   final LoginBloc loginBloc = LoginBloc(
       LoginUseCase(
         AuthenticationRepositoryImpl(
-          RemoteDataSource(dioInstance),
+          RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2),
         ),
       ),
       GateUseCase(
         GateRepositoryImpl(
-          RemoteDataSource(dioInstance),
+          RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2),
         ),
       ));
 
@@ -770,9 +770,9 @@ class _LoginViewState extends State<LoginView> {
   void _showGateSelectionBottomSheet(
       BuildContext context, List<Gate?> gatesList) async {
     if (storedGate != null && selectedGate != null) {
-      if (storedGate!.name == selectedGate!.name) {
+      if (storedGate!.id == selectedGate!.id) {
         for (var gate in gatesList) {
-          if (gate!.name == storedGate!.name) {
+          if (gate!.id == storedGate!.id) {
             gate.isSelected = true;
             selectedGate = gate;
           }
@@ -837,8 +837,8 @@ class _LoginViewState extends State<LoginView> {
                           selectedGate = gatesList[index];
                         })
                       },
-                      title: gatesList[index]!.name,
-                      subtitle: 'Enable/Disable ${gatesList[index]!.name}',
+                      title: gatesList[index]!.gateName,
+                      subtitle: 'Enable/Disable ${gatesList[index]!.gateName}',
                       // leadingIcon: Ionicons.grid_outline,
                       leadingIcon: Symbols.gate,
                     );

@@ -1,0 +1,5 @@
+class: StaffCompanyBuilding
+table: staff_company_building
+fields:
+  staff_comapany_id: int
+  building_id: int  

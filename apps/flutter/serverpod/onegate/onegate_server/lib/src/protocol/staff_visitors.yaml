@@ -1,0 +1,5 @@
+class: StaffVisitors
+table: staff_visitors
+fields:
+  visitor_id: int
+  member_sub_category_id: String

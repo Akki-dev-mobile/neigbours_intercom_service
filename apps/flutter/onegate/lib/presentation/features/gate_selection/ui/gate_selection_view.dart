@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/gate_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/entities/gate/gate.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/bloc/gate_selection_bloc.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -32,7 +32,7 @@ class _GateSelectionViewState extends State<GateSelectionView> {
   final GateSelectionBloc gateBloc = GateSelectionBloc(
     GateUseCase(
       GateRepositoryImpl(
-        RemoteDataSource(dioInstance),
+        RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2),
       ),
     ),
   );
@@ -82,9 +82,9 @@ class _GateSelectionViewState extends State<GateSelectionView> {
           case GateSelectionSuccessState:
             final successState = state as GateSelectionSuccessState;
             if (storedGate != null && selectedGate != null) {
-              if (storedGate!.name == selectedGate!.name) {
+              if (storedGate!.id == selectedGate!.id) {
                 for (var gate in successState.gates) {
-                  if (gate.name == storedGate!.name) {
+                  if (gate.gateName == storedGate!.gateName) {
                     gate.isSelected = true;
                     selectedGate = gate;
                   }
@@ -132,9 +132,9 @@ class _GateSelectionViewState extends State<GateSelectionView> {
                           selectedGate = gatesList[index];
                         })
                       },
-                      title: successState.gates[index].name,
+                      title: successState.gates[index].gateName,
                       subtitle:
-                          'Enable/Disable ${successState.gates[index].name}',
+                          'Enable/Disable ${successState.gates[index].gateName}',
                       // leadingIcon: Ionicons.grid_outline,
                       leadingIcon: Symbols.gate,
                     );

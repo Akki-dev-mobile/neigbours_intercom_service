@@ -33,7 +33,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
   final AdminDashboardBloc adminDashboardBloc = AdminDashboardBloc(
     AdminDashboardUseCase(
       AdminDashboardRepositoryImpl(
-        RemoteDataSource(dioInstance),
+        RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2),
       ),
     ),
   );

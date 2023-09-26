@@ -1,0 +1,7 @@
+class: VerificationTypes
+table: verification_types
+fields:
+  name: String
+  status: String
+  created_at: DateTime
+  updated_at: DateTime
