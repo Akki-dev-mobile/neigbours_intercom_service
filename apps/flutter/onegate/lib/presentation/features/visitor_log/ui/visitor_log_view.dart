@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   final List<String> items =
       List.generate(50, (index) => 'Name Surname $index');
   late String selectedId;
+  String? selectedTime;
+  List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
 
   @override
   void initState() {
@@ -36,7 +40,14 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   Widget build(BuildContext context) {
     return MyScrollView(
       isScrollable: false,
-      pageTitle: widget.id,
+      // pageTitle: widget.id,
+      pageTitleWidget: Hero(
+        tag: 'page_title',
+        child: Text(
+          widget.id,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      ),
       hasBackButton: true,
       pageBody: Column(
         children: [
@@ -88,6 +99,32 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               ],
             ),
           ),
+          ChipsChoice<String>.single(
+            padding: EdgeInsets.only(right: 20),
+            scrollToSelectedOnChanged: true,
+            spacing: 20,
+            choiceStyle: C2ChipStyle.outlined(
+              borderWidth: 1,
+              color: Colors.grey.shade700,
+              selectedStyle: C2ChipStyle.filled(
+                foregroundColor: Color(0xFFC08261),
+              ),
+              height: 40,
+            ),
+            choiceCheckmark: true,
+            value: selectedTime,
+            scrollPhysics: BouncingScrollPhysics(),
+            onChanged: (value) {
+              setState(() {
+                selectedTime = value;
+              });
+            },
+            choiceItems: C2Choice.listFrom<String, String>(
+              source: options,
+              value: (i, v) => v,
+              label: (i, v) => v,
+            ),
+          ),
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.7,
             child: ListView.builder(
@@ -128,14 +165,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: ' A/201, +4',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall!
-                                        .merge(
-                                          const TextStyle(fontSize: 12),
-                                        ),
-                                  ),
+                                      text: ' A/201, +4',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall),
                                   WidgetSpan(
                                     child: Container(
                                       margin: const EdgeInsets.only(left: 8),
@@ -146,9 +179,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                       decoration: BoxDecoration(
                                         color: const Color(0xffFFEBE6),
                                         borderRadius: BorderRadius.circular(8),
-                                        // border: Border.all(
-                                        //   color: Colors.black,
-                                        // ),
                                       ),
                                       child: const Text(
                                         'Guest',
@@ -165,7 +195,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             ),
                           ),
                           trailing: const Icon(
-                            Ionicons.call,
+                            Ionicons.call_outline,
                             color: Colors.green,
                           ),
                         ),
@@ -188,7 +218,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   text: ' 04:00 AM',
                                   style: Theme.of(context)
                                       .textTheme
-                                      .labelSmall!
+                                      .labelMedium!
                                       .merge(
                                         const TextStyle(
                                           color: Colors.green,
@@ -224,7 +254,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         .textTheme
                                         .labelSmall!
                                         .merge(
-                                          TextStyle(
+                                          const TextStyle(
                                               color: Colors.white,
                                               fontSize: 14),
                                         ),
@@ -233,7 +263,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               : RichText(
                                   text: TextSpan(
                                     children: [
-                                      WidgetSpan(
+                                      const WidgetSpan(
                                         child: Icon(
                                           Symbols.directions_walk_rounded,
                                           color: Colors.red,
@@ -243,9 +273,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         text: ' 09:00 PM',
                                         style: Theme.of(context)
                                             .textTheme
-                                            .labelSmall!
+                                            .labelMedium!
                                             .merge(
-                                              TextStyle(
+                                              const TextStyle(
                                                 color: Colors.red,
                                               ),
                                             ),

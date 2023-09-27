@@ -50,27 +50,32 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   PickedFile? _imageFile;
 
-  // Future<void> _captureImageFromCamera() async {
-  //   final picker = ImagePicker();
-  //   final image = await picker.pickImage(
-  //     source: ImageSource.camera,
-  //   );
+  Future<void> _captureImageFromCamera() async {
+    final picker = ImagePicker();
 
-  //   if (image == null) {
-  //     return;
-  //   }
+    try {
+      final image = await picker.pickImage(
+        source: ImageSource.camera,
+      );
 
-  //   setState(() {
-  //     _imageFile = image as PickedFile?;
-  //   });
+      if (image == null) {
+        return;
+      }
 
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => UnitSelectionView(),
-  //     ),
-  //   );
-  // }
+      setState(() {
+        _imageFile = PickedFile(image.path);
+      });
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UnitSelectionView(),
+        ),
+      );
+    } catch (e) {
+      print('Error capturing image from camera: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -315,14 +320,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       ),
       floatingActionButton: CustomLargeBtn(
         onPressed: () {
-          Navigator.push(
-            context,
-            PageTransition(
-              type: PageTransitionType.leftToRightWithFade,
-              child: UnitSelectionView(),
-            ),
-          );
-          // _captureImageFromCamera();
+          // Navigator.push(
+          //   context,
+          //   PageTransition(
+          //     type: PageTransitionType.leftToRightWithFade,
+          //     child: UnitSelectionView(),
+          //   ),
+          // );
+          _captureImageFromCamera();
         },
         text: 'Next',
       ),

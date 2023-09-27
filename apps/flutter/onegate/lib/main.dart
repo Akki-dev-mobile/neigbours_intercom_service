@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
+
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +22,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setupDependencies();
   setupLocator();
-
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarIconBrightness: Brightness.dark,
@@ -34,11 +36,10 @@ void main() async {
 
   runApp(
     DevicePreview(
-        enabled: !kDebugMode,
+        enabled: kDebugMode,
         builder: (context) {
           return const MyApp();
         }),
-    // const MyApp(),
   );
 }
 
@@ -50,9 +51,16 @@ class MyApp extends StatelessWidget {
     // startKioskMode();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeManager.lightTheme,
+      theme: ThemeManager.lightTheme.copyWith(
+        pageTransitionsTheme: PageTransitionsTheme(
+          builders: <TargetPlatform, PageTransitionsBuilder>{
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          },
+        ),
+      ),
       // darkTheme: ThemeManager.darkTheme,
-      home: const AdminDashboardView(),
+      home: const AppIntroView(),
     );
   }
 }

@@ -88,9 +88,12 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                     ),
               ListTile(
                 contentPadding: EdgeInsets.only(top: 20, bottom: 10),
-                title: Text(
-                  'Ready to Roll ?',
-                  style: Theme.of(context).textTheme.displayMedium,
+                title: Hero(
+                  tag: 'signUpHero',
+                  child: Text(
+                    'Ready to Roll ?',
+                    style: Theme.of(context).textTheme.displayMedium,
+                  ),
                 ),
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 5),

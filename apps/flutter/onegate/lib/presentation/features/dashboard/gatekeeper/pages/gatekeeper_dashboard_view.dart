@@ -10,6 +10,7 @@ import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
@@ -20,6 +21,7 @@ import 'package:shimmer/shimmer.dart';
 
 import 'dart:math' as math;
 
+import '../../commons/ui/dashboard_commons.dart';
 import 'id_input_view.dart';
 import 'scan_qr.dart';
 
@@ -49,6 +51,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
   @override
   void initState() {
+    // startKioskMode();
     super.initState();
     _focusNode = FocusNode();
     Future.delayed(Duration(milliseconds: 200), () {
@@ -70,7 +73,13 @@ class _GateDashboardViewState extends State<GateDashboardView>
       },
       child: MyScrollView(
         hasBackButton: false,
-        pageTitle: 'Gate One',
+        // pageTitle: 'Gate One',
+        pageTitleWidget: Hero(
+            tag: 'gate_dashboard',
+            child: Text(
+              'Gate One',
+              style: Theme.of(context).textTheme.bodyLarge,
+            )),
         actions: [
           IconButton(
             onPressed: () {},
@@ -179,168 +188,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 ],
               ),
             ),
-            Container(
-              margin: EdgeInsets.only(bottom: 16),
-              height: MediaQuery.of(context).size.height * 0.300,
-              width: MediaQuery.of(context).size.width,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Container(
-                    // margin: EdgeInsets.symmetric(vertical: 10),
-                    width: MediaQuery.of(context).size.width * 0.32,
-                    decoration: BoxDecoration(
-                      color: Color(
-                        0xffF2D8A5,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(2),
-                          margin: EdgeInsets.only(top: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: CachedNetworkImage(
-                            maxHeightDiskCache: 10,
-                            height: 55,
-                            width: 55,
-                            fit: BoxFit.contain,
-                            imageUrl:
-                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
-                            placeholder: (context, url) =>
-                                const CircularProgressIndicator(),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.error,
-                              color: Colors.red,
-                            ),
-                            fadeOutDuration: const Duration(seconds: 1),
-                            fadeInDuration: const Duration(seconds: 3),
-                          ),
-                        ),
-                        Text(
-                          'In-Out',
-                          // (parcelCount).toString(),
-                          style: Theme.of(context).textTheme.displayMedium,
-                        ),
-                        Text(
-                          'Book',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.50,
-                        height: MediaQuery.of(context).size.height * 0.14,
-                        decoration: BoxDecoration(
-                          color: Color(0xffCAF1D1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 20,
-                          ),
-                          title: Text(
-                            '74',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.displayMedium,
-                          ),
-                          subtitle: Text(
-                            'Visitor\nIn',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          trailing: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Transform(
-                              transform: Matrix4.rotationY(math.pi),
-                              alignment: Alignment.center,
-                              child: CachedNetworkImage(
-                                maxHeightDiskCache: 10,
-                                height: 55,
-                                width: 55,
-                                fit: BoxFit.contain,
-                                imageUrl:
-                                    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
-                                placeholder: (context, url) =>
-                                    const CircularProgressIndicator(),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(
-                                  Icons.error,
-                                  color: Colors.red,
-                                ),
-                                fadeOutDuration: const Duration(seconds: 1),
-                                fadeInDuration: const Duration(seconds: 3),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.50,
-                        height: MediaQuery.of(context).size.height * 0.14,
-                        decoration: BoxDecoration(
-                          color: Color(0xffFFE5E0),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 20,
-                          ),
-                          title: Text(
-                            '38',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.displayMedium,
-                          ),
-                          subtitle: Text(
-                            'Visitor\nOut',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          trailing: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: CachedNetworkImage(
-                              maxHeightDiskCache: 10,
-                              height: 55,
-                              width: 55,
-                              fit: BoxFit.contain,
-                              imageUrl:
-                                  'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
-                              placeholder: (context, url) =>
-                                  const CircularProgressIndicator(),
-                              errorWidget: (context, url, error) => const Icon(
-                                Icons.error,
-                                color: Colors.red,
-                              ),
-                              fadeOutDuration: const Duration(seconds: 1),
-                              fadeInDuration: const Duration(seconds: 3),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            DashboardBlocks(),
             GestureDetector(
               onTap: () {
                 Navigator.push(

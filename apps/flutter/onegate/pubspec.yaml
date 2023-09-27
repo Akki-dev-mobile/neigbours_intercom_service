@@ -50,6 +50,8 @@ dependencies:
   onegate_client:
     path: ../serverpod/onegate/onegate_client
   random_avatar: ^0.0.8
+  animations: ^2.0.8
+  flutter_animate: ^4.2.0+1
   
 
 

@@ -195,13 +195,26 @@ class _LoginViewState extends State<LoginView> {
             );
             break;
           case SignUpButtonPressedState:
-            Navigator.push(
-              context,
-              PageTransition(
-                type: PageTransitionType.leftToRightWithFade,
-                child: RequestGateAccess(),
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (context) => RequestGateAccess(),
+            //   ),
+            // );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (BuildContext context) {
+                  return const RequestGateAccess();
+                },
               ),
             );
+            // Navigator.push(
+            //   context,
+            //   PageTransition(
+            //     type: PageTransitionType.leftToRightWithFade,
+            //     child: RequestGateAccess(),
+            //   ),
+            // );
             break;
           case ForgotPasswordButtonPressedState:
             Navigator.push(
@@ -434,12 +447,17 @@ class _LoginViewState extends State<LoginView> {
                             SignUpButtonPressedEvent(),
                           );
                         },
-                        child: Text(
-                          'Sign Up',
-                          style:
-                              Theme.of(context).textTheme.labelMedium!.copyWith(
-                                    fontSize: 20,
-                                  ),
+                        child: Hero(
+                          tag: 'signUpHero',
+                          child: Text(
+                            'Sign Up',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelMedium!
+                                .copyWith(
+                                  fontSize: 20,
+                                ),
+                          ),
                         ),
                       ),
                     ),
