@@ -1,21 +1,17 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
 
+import 'dart:js';
+
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
-import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
-import 'package:common_widgets/phone_number.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
-import 'package:one_theme/theme.dart';
-import 'package:kiosk_mode/kiosk_mode.dart';
 
-import 'presentation/features/app_intro/ui/app_intro_view.dart';
-import 'presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
+
+import 'package:one_theme/theme.dart';
 
 void main() async {
   String appId = "onegate";
@@ -32,7 +28,11 @@ void main() async {
       statusBarColor: Colors.transparent,
     ),
   );
-  await ThemeManager.initializeWithAppId(appId);
+
+  await ThemeManager.initializeWithAppId(
+    appId,
+    context,
+  );
 
   runApp(
     DevicePreview(
@@ -60,7 +60,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       // darkTheme: ThemeManager.darkTheme,
-      home: const AppIntroView(),
+      home: const AdminDashboardView(),
     );
   }
 }

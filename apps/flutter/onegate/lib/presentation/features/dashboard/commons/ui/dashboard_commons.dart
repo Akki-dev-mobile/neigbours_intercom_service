@@ -105,53 +105,60 @@ class DashboardBlocks extends StatelessWidget {
                   );
                 },
                 child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.height * 0.02,
+                  ),
                   width: MediaQuery.of(context).size.width * 0.50,
                   height: MediaQuery.of(context).size.height * 0.14,
                   decoration: BoxDecoration(
                     color: const Color(0xffCAF1D1),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 20,
-                    ),
-                    title: Text(
-                      '74',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.displayMedium,
-                    ),
-                    subtitle: Text(
-                      'Visitor\nIn',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    trailing: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Transform(
-                        transform: Matrix4.rotationY(math.pi),
-                        alignment: Alignment.center,
-                        child: CachedNetworkImage(
-                          maxHeightDiskCache: 10,
-                          height: 55,
-                          width: 55,
-                          fit: BoxFit.contain,
-                          imageUrl:
-                              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
-                          placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) => const Icon(
-                            Icons.error,
-                            color: Colors.red,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '74',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.displayMedium,
                           ),
-                          fadeOutDuration: const Duration(seconds: 1),
-                          fadeInDuration: const Duration(seconds: 3),
+                          Text(
+                            'Visitor\nIn',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                        ],
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Transform(
+                          transform: Matrix4.rotationY(math.pi),
+                          alignment: Alignment.center,
+                          child: CachedNetworkImage(
+                            maxHeightDiskCache: 10,
+                            height: 55,
+                            width: 55,
+                            fit: BoxFit.contain,
+                            imageUrl:
+                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
+                            placeholder: (context, url) =>
+                                const CircularProgressIndicator(),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error,
+                              color: Colors.red,
+                            ),
+                            fadeOutDuration: const Duration(seconds: 1),
+                            fadeInDuration: const Duration(seconds: 3),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -173,49 +180,60 @@ class DashboardBlocks extends StatelessWidget {
                   );
                 },
                 child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.height * 0.02,
+                  ),
                   width: MediaQuery.of(context).size.width * 0.50,
                   height: MediaQuery.of(context).size.height * 0.14,
                   decoration: BoxDecoration(
                     color: const Color(0xffFFE5E0),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 20,
-                    ),
-                    title: Text(
-                      '38',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.displayMedium,
-                    ),
-                    subtitle: Text(
-                      'Visitor\nOut',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    trailing: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '74',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.displayMedium,
+                          ),
+                          Text(
+                            'Visitor\nIn',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                        ],
                       ),
-                      child: CachedNetworkImage(
-                        maxHeightDiskCache: 10,
-                        height: 55,
-                        width: 55,
-                        fit: BoxFit.contain,
-                        imageUrl:
-                            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
-                        placeholder: (context, url) =>
-                            const CircularProgressIndicator(),
-                        errorWidget: (context, url, error) => const Icon(
-                          Icons.error,
-                          color: Colors.red,
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        fadeOutDuration: const Duration(seconds: 1),
-                        fadeInDuration: const Duration(seconds: 3),
+                        child: Transform(
+                          transform: Matrix4.rotationY(math.pi),
+                          alignment: Alignment.center,
+                          child: CachedNetworkImage(
+                            maxHeightDiskCache: 10,
+                            height: 55,
+                            width: 55,
+                            fit: BoxFit.contain,
+                            imageUrl:
+                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
+                            placeholder: (context, url) =>
+                                const CircularProgressIndicator(),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error,
+                              color: Colors.red,
+                            ),
+                            fadeOutDuration: const Duration(seconds: 1),
+                            fadeInDuration: const Duration(seconds: 3),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),

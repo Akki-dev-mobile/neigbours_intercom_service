@@ -15,9 +15,14 @@ import '../../gate_selection/ui/gate_selection_view.dart';
 class VisitorLogView extends StatefulWidget {
   String id;
   final List<String> logList;
+  final String? selectedBuilding;
 
-  VisitorLogView({required this.id, required this.logList, Key? key})
-      : super(key: key);
+  VisitorLogView({
+    required this.id,
+    required this.logList,
+    this.selectedBuilding,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<VisitorLogView> createState() => _VisitorLogViewState();
@@ -29,6 +34,14 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   late String selectedId;
   String? selectedTime;
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
+
+  String? selectedBuilding;
+  List<String> selectedBuildingOptions = [
+    'All',
+    'Building A',
+    'Building B',
+    'Building C',
+  ];
 
   @override
   void initState() {
@@ -52,9 +65,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       pageBody: Column(
         children: [
           CustomForm.textField(
+            widget.selectedBuilding ?? 'Search',
             titleColor: Theme.of(context).colorScheme.onBackground,
             hintColor: Theme.of(context).colorScheme.onPrimary,
-            "Search",
+            // "Search" ?? ,
             hintText: 'Search Visitor',
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.search,
@@ -91,7 +105,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     _showLogBookConfigBottomSheet(context);
                   },
                   icon: Icon(
-                    Ionicons.options_outline,
+                    Ionicons.funnel_outline,
                     color: Theme.of(context).colorScheme.onBackground,
                     size: 28,
                   ),
@@ -327,10 +341,36 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      'Select your gate',
+                      'Filters',
                       style: Theme.of(context).textTheme.displaySmall!.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
+                    ),
+                  ),
+                  ChipsChoice<String>.single(
+                    padding: EdgeInsets.only(right: 20),
+                    scrollToSelectedOnChanged: true,
+                    spacing: 20,
+                    choiceStyle: C2ChipStyle.outlined(
+                      borderWidth: 1,
+                      color: Colors.grey.shade700,
+                      selectedStyle: C2ChipStyle.filled(
+                        foregroundColor: Color(0xFFC08261),
+                      ),
+                      height: 40,
+                    ),
+                    choiceCheckmark: true,
+                    value: selectedBuilding,
+                    scrollPhysics: BouncingScrollPhysics(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedBuilding = value;
+                      });
+                    },
+                    choiceItems: C2Choice.listFrom<String, String>(
+                      source: selectedBuildingOptions,
+                      value: (i, v) => v,
+                      label: (i, v) => v,
                     ),
                   ),
                   Expanded(
@@ -360,9 +400,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       setState(() {
                         widget.id = selectedId;
                       });
-
                       Navigator.pop(context);
-
                       Navigator.pushReplacement(
                         context,
                         PageTransition(
@@ -370,6 +408,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           child: VisitorLogView(
                             id: widget.id,
                             logList: widget.logList,
+                            selectedBuilding: selectedBuilding,
                           ),
                         ),
                       );

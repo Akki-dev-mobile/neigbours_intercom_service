@@ -9,26 +9,38 @@ class ThemeManager {
   static ThemeData lightTheme = ThemeData.light();
   static ThemeData darkTheme = ThemeData.dark();
 
-  static Future<void> initializeWithAppId(String appId) async {
+  static Future<void> initializeWithAppId(
+      String appId, BuildContext context) async {
     Map<String, dynamic> config = await ThemeHelper.loadConfigForApp(appId);
-    await _initializeThemes(config);
+    await _initializeThemes(config, context);
   }
 
-  static Future<void> _initializeThemes(Map<String, dynamic> config) async {
-    lightTheme = await _buildTheme(config, false);
-    darkTheme = await _buildTheme(config, true);
+  static Future<void> _initializeThemes(
+      Map<String, dynamic> config, BuildContext context) async {
+    lightTheme = await _buildTheme(
+      config,
+      false,
+      context,
+    );
+    darkTheme = await _buildTheme(
+      config,
+      true,
+      context,
+    );
   }
 
   static Future<ThemeData> _buildTheme(
-      Map<String, dynamic> config, bool isDark) async {
+      Map<String, dynamic> config, bool isDark, BuildContext context) async {
     Map<String, dynamic> themeData =
         config['themes'][isDark ? 'dark' : 'light'];
 
     return ThemeData(
       textTheme: TextTheme(
         displayLarge: TextStyle(
-          fontSize: ThemeManagerConfig.getFontValue(
-              themeData, 'fonts.displayLarge.size'),
+          fontSize: getResponsiveFontSize(
+              context,
+              ThemeManagerConfig.getFontValue(
+                  themeData, 'fonts.displayLarge.size')),
           fontWeight: ThemeManagerConfig.parseFontWeight(
             ThemeManagerConfig.getFontValue(
                 themeData, 'fonts.displayLarge.weight'),
