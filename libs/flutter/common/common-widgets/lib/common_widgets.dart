@@ -123,6 +123,8 @@ class CustomForm {
     ValueChanged<String>? onChanged,
     ValueChanged<String>? onFieldSubmitted,
     String? errorText,
+    List<TextInputFormatter>? inputFormatters,
+    bool? isReadOnly,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 2),
@@ -144,6 +146,7 @@ class CustomForm {
             height: 5,
           ),
           TextFormField(
+            readOnly: isReadOnly ?? false,
             cursorColor: Colors.blue,
             // autovalidateMode: AutovalidateMode.onUserInteraction,
             focusNode: focusNode,
@@ -166,9 +169,10 @@ class CustomForm {
                   }
                   return null;
                 },
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(length),
-            ],
+            inputFormatters: inputFormatters,
+            // [
+            //    LengthLimitingTextInputFormatter(length),
+            // ],
             obscureText: isObscureText ? true : false,
             keyboardType: keyboardType ?? TextInputType.text,
             onChanged: onChanged ?? (value) {},

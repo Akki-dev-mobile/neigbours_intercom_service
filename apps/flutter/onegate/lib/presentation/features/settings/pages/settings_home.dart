@@ -13,6 +13,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:provider/provider.dart';
+import '../../self_entry/ui/self_entry_view.dart';
 import 'settings_gate.dart';
 
 class SettingsHome extends StatefulWidget {
@@ -440,6 +441,19 @@ class _SettingsHomeState extends State<SettingsHome> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => AppPermissions(),
+                ),
+              );
+            },
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.options_outline,
+            title: 'Self Entry Settings',
+            subtitle: 'Enable/Disable Self Entry',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SelfEntryView(),
                 ),
               );
             },
