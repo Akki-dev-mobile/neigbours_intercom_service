@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'dart:async';
@@ -14,6 +15,9 @@ import 'package:numpad_layout/extension/numbers.dart';
 import 'package:numpad_layout/numpad.dart';
 import 'package:numpad_layout/widgets/num_button.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
+import 'package:page_transition/page_transition.dart';
+
+import 'self_profile_view.dart';
 
 class SelfEntryView extends StatefulWidget {
   const SelfEntryView({super.key});
@@ -26,16 +30,22 @@ class _SelfEntryViewState extends State<SelfEntryView>
     with TickerProviderStateMixin {
   int activeStep = 0;
   String code = "";
-
   String selectedCountryCodeSE = 'IN';
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _purposeController = TextEditingController();
+  final TextEditingController _hostController = TextEditingController();
 
-  bool hasOTP = false;
-  // final isoCode = selectedCountryCodeSE;
+  FocusNode _nameFocusNode = FocusNode();
+  FocusNode _locationFocusNode = FocusNode();
+  FocusNode _purposeFocusNode = FocusNode();
+  FocusNode _hostFocusNode = FocusNode();
 
   late Timer _timer;
   int _start = 10;
+  PickedFile? _imageFile;
 
   void startTimer() {
     const oneSec = Duration(seconds: 1);
@@ -53,6 +63,33 @@ class _SelfEntryViewState extends State<SelfEntryView>
         }
       },
     );
+  }
+
+  Future<void> _captureImageFromCamera() async {
+    final picker = ImagePicker();
+
+    try {
+      final image = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+      );
+
+      if (image == null) {
+        return;
+      }
+
+      setState(() {
+        _imageFile = PickedFile(image.path);
+      });
+      _tabController.animateTo(
+        (_tabController.index + 1),
+      );
+      Future.delayed(Duration(milliseconds: 200), () {
+        FocusScope.of(context).requestFocus(_purposeFocusNode);
+      });
+    } catch (e) {
+      print('Error capturing image from camera: $e');
+    }
   }
 
   late TabController _tabController;
@@ -197,7 +234,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                     ),
                     Tab(text: 'OTP Verification'),
                     Tab(text: 'User Info'),
-                    Tab(text: 'User Card'),
+                    Tab(text: 'Host Info'),
                   ],
                 ),
               ),
@@ -351,10 +388,10 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                     builder: (context) => LoginView(),
                                   ),
                                 );
+                              } else {
+                                _tabController
+                                    .animateTo((_tabController.index + 1) % 3);
                               }
-
-                              // _tabController
-                              //     .animateTo((_tabController.index + 1) % 3);
                             },
                           ),
                         ),
@@ -429,13 +466,142 @@ class _SelfEntryViewState extends State<SelfEntryView>
                         ),
                       ],
                     ),
-                    Container(
-                      color: Colors.black,
-                      height: 500,
+                    Form(
+                      child: Column(
+                        children: [
+                          CustomForm.textField(
+                            titleColor:
+                                Theme.of(context).colorScheme.onBackground,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
+                            "Your Name",
+                            textController: _nameController,
+                            focusNode: _nameFocusNode,
+                            hintText: 'Name Surname',
+                            keyboardType: TextInputType.visiblePassword,
+                            validator: (value) {
+                              return 'Please enter your name';
+                            },
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                if (_nameController.text.isNotEmpty) {
+                                  FocusScope.of(context)
+                                      .requestFocus(_locationFocusNode);
+                                }
+                              },
+                              icon: CircleAvatar(
+                                backgroundColor: Color(0xffFFEBE6),
+                                radius: 20,
+                                child: Icon(
+                                  size: 22,
+                                  Symbols.done,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                          CustomForm.textField(
+                            titleColor:
+                                Theme.of(context).colorScheme.onBackground,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
+                            "Coming From",
+                            focusNode: _locationFocusNode,
+                            textController: _locationController,
+                            hintText: 'Mumbai',
+                            keyboardType: TextInputType.name,
+                            validator: (value) {
+                              return 'Location is required';
+                            },
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                if (_locationController.text.isNotEmpty) {
+                                  _captureImageFromCamera();
+                                }
+                              },
+                              icon: CircleAvatar(
+                                backgroundColor: Color(0xffFFEBE6),
+                                radius: 20,
+                                child: Icon(
+                                  size: 22,
+                                  Symbols.done,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Container(
-                      color: Colors.green,
-                      height: 500,
+                    Form(
+                      child: Column(
+                        children: [
+                          CustomForm.textField(
+                            titleColor:
+                                Theme.of(context).colorScheme.onBackground,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
+                            "Purpose of visit",
+                            textController: _purposeController,
+                            focusNode: _purposeFocusNode,
+                            hintText: 'Meeting',
+                            keyboardType: TextInputType.visiblePassword,
+                            validator: (value) {
+                              return 'Purpose of visit is required';
+                            },
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                if (_purposeController.text.isNotEmpty) {
+                                  FocusScope.of(context)
+                                      .requestFocus(_hostFocusNode);
+                                }
+                              },
+                              icon: CircleAvatar(
+                                backgroundColor: Color(0xffFFEBE6),
+                                radius: 20,
+                                child: Icon(
+                                  size: 22,
+                                  Symbols.done,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                          CustomForm.textField(
+                            titleColor:
+                                Theme.of(context).colorScheme.onBackground,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
+                            "Select Host",
+                            textController: _hostController,
+                            focusNode: _hostFocusNode,
+                            hintText: 'Mr. Shubham Bane',
+                            isReadOnly: false,
+                            keyboardType: TextInputType.visiblePassword,
+                            validator: (value) {
+                              return 'Host is required';
+                            },
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                if (_hostController.text.isNotEmpty) {
+                                  Navigator.push(
+                                    context,
+                                    PageTransition(
+                                      type: PageTransitionType.rightToLeft,
+                                      child: SelfProfileView(),
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: CircleAvatar(
+                                backgroundColor: Color(0xffFFEBE6),
+                                radius: 20,
+                                child: Icon(
+                                  size: 22,
+                                  Symbols.done,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
