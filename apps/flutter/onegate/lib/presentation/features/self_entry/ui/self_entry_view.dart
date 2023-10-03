@@ -149,66 +149,25 @@ class _SelfEntryViewState extends State<SelfEntryView>
               flexibleSpace: FlexibleSpaceBar(
                 background: CarouselSlider(
                   items: [
-                    Container(
-                      height: 300.0,
-                      width: double.infinity,
-                      margin: EdgeInsets.all(0),
-                      child: Stack(
-                        children: [
-                          ShaderMask(
-                            shaderCallback: (rect) {
-                              return LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black,
-                                  Colors.transparent,
-                                ],
-                              ).createShader(
-                                Rect.fromLTRB(
-                                  0,
-                                  0,
-                                  rect.width,
-                                  rect.height,
-                                ),
-                              );
-                            },
-                            blendMode: BlendMode.dstIn,
-                            child: Image.network(
-                              'https://images.unsplash.com/photo-1631195092568-a1030d926fd3?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'One Gate',
-                                  style:
-                                      Theme.of(context).textTheme.displayMedium,
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 10,
-                                    bottom: 25,
-                                  ),
-                                  child: Text(
-                                    'Secure your home and manage visitors, connect with society gate and much more',
-                                    style:
-                                        Theme.of(context).textTheme.labelMedium,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 10,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    SelfEntryAd(
+                      bgImage:
+                          'https://images.unsplash.com/photo-1631195092568-a1030d926fd3?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80',
+                      title: 'onegate',
+                      subTitle:
+                          'Secure your home and manage visitors, connect with society gate and much more',
+                    ),
+                    SelfEntryAd(
+                      bgImage:
+                          'https://images.unsplash.com/photo-1496065187959-7f07b8353c55?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+                      title: 'oneapp',
+                      subTitle: 'The ALL in One App',
+                    ),
+                    SelfEntryAd(
+                      bgImage:
+                          'https://images.unsplash.com/photo-1580041065738-e72023775cdc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+                      title: 'onesociety',
+                      subTitle:
+                          'Experience the Ease of Community Management with onesociety',
                     ),
                   ],
                   options: CarouselOptions(
@@ -223,19 +182,43 @@ class _SelfEntryViewState extends State<SelfEntryView>
                 ),
               ),
               bottom: PreferredSize(
-                preferredSize: Size.fromHeight(50),
-                child: TabBar(
-                  isScrollable: true,
-                  labelColor: Colors.black,
-                  controller: _tabController,
-                  tabs: [
-                    Tab(
-                      text: 'Basic',
-                    ),
-                    Tab(text: 'OTP Verification'),
-                    Tab(text: 'User Info'),
-                    Tab(text: 'Host Info'),
-                  ],
+                preferredSize: Size.fromHeight(0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    //This is for background color
+                    color: Colors.white.withOpacity(0.0),
+                    //This is for bottom border that is needed
+                    border: Border(
+                        bottom: BorderSide(color: Colors.grey, width: 0.8)),
+                  ),
+                  child: TabBar(
+                    // isScrollable: true,R
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    unselectedLabelColor: Colors.blue,
+                    // indicator: BoxDecoration(
+                    //   color: Colors.red,
+                    // ),
+                    labelColor: Colors.black,
+                    controller: _tabController,
+                    tabs: [
+                      Tab(
+                        text: '',
+                        height: 0,
+                      ),
+                      Tab(
+                        text: '',
+                        height: 0,
+                      ),
+                      Tab(
+                        text: '',
+                        height: 0,
+                      ),
+                      Tab(
+                        text: '',
+                        height: 0,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -609,6 +592,83 @@ class _SelfEntryViewState extends State<SelfEntryView>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class SelfEntryAd extends StatelessWidget {
+  const SelfEntryAd({
+    required this.bgImage,
+    required this.title,
+    required this.subTitle,
+    super.key,
+  });
+
+  final String bgImage;
+  final String title;
+  final String subTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 300.0,
+      width: double.infinity,
+      margin: EdgeInsets.all(0),
+      child: Stack(
+        children: [
+          ShaderMask(
+            shaderCallback: (rect) {
+              return LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black,
+                  Colors.transparent,
+                ],
+              ).createShader(
+                Rect.fromLTRB(
+                  0,
+                  0,
+                  rect.width,
+                  rect.height,
+                ),
+              );
+            },
+            blendMode: BlendMode.dstIn,
+            child: Image.network(
+              bgImage,
+              // 'https://images.unsplash.com/photo-1631195092568-a1030d926fd3?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80',
+              fit: BoxFit.contain,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.displayMedium,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: 10,
+                    bottom: 25,
+                  ),
+                  child: Text(
+                    subTitle,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

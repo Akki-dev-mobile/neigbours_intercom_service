@@ -53,17 +53,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // startKioskMode();
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeManager.lightTheme.copyWith(
-        pageTransitionsTheme: PageTransitionsTheme(
-          builders: <TargetPlatform, PageTransitionsBuilder>{
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          },
-        ),
-      ),
-      home: SelfEntryView(),
-    );
+    return DevicePreview(
+        enabled: !kReleaseMode,
+        builder: (context) {
+          return MaterialApp(
+            useInheritedMediaQuery: true,
+            debugShowCheckedModeBanner: false,
+            theme: ThemeManager.lightTheme.copyWith(
+              pageTransitionsTheme: PageTransitionsTheme(
+                builders: <TargetPlatform, PageTransitionsBuilder>{
+                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                  TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                },
+              ),
+            ),
+            home: SelfEntryView(),
+          );
+        });
   }
 }
