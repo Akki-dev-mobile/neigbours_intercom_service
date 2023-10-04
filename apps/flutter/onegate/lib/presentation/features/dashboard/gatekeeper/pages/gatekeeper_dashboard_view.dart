@@ -73,7 +73,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
       },
       child: MyScrollView(
         hasBackButton: false,
-        // pageTitle: 'Gate One',
         pageTitleWidget: Hero(
             tag: 'gate_dashboard',
             child: Text(

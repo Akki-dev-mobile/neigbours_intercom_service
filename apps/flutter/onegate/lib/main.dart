@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
                 },
               ),
             ),
-            home: SelfEntryView(),
+            home: GateDashboardView(),
           );
         });
   }
