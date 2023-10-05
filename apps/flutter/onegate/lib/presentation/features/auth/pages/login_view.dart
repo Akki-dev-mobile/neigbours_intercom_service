@@ -5,7 +5,6 @@ import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/gate_repo_impl.dart';
@@ -63,16 +62,17 @@ class _LoginViewState extends State<LoginView> {
   Gate? storedGate, selectedGate;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   final LoginBloc loginBloc = LoginBloc(
-      LoginUseCase(
-        AuthenticationRepositoryImpl(
-          RemoteDataSource(dioInstance),
-        ),
+    LoginUseCase(
+      AuthenticationRepositoryImpl(
+        RemoteDataSource(dioInstance),
       ),
-      GateUseCase(
-        GateRepositoryImpl(
-          RemoteDataSource(dioInstance),
-        ),
-      ));
+    ),
+    GateUseCase(
+      GateRepositoryImpl(
+        RemoteDataSource(dioInstance),
+      ),
+    ),
+  );
 
   void toggleEmailMode() {
     setState(() {

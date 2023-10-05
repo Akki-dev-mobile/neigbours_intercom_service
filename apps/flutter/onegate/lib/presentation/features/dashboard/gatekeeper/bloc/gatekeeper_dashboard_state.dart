@@ -17,3 +17,17 @@ class GatekeeperDashboardErrorState extends GatekeeperDashboardActionState {
 
   GatekeeperDashboardErrorState({this.message});
 }
+
+class GDIntercomButtonPressedState extends GatekeeperDashboardActionState {}
+
+class GDParcelButtonPressedState extends GatekeeperDashboardActionState {}
+
+class GDScanButtonPressedState extends GatekeeperDashboardActionState {}
+
+class GDInAndOutButtonPressedState extends GatekeeperDashboardActionState {}
+
+class GDVisitorsInButtonPressedState extends GatekeeperDashboardActionState {}
+
+class GDVisitorsOutButtonPressedState extends GatekeeperDashboardActionState {}
+
+class GDInputFieldPressedState extends GatekeeperDashboardActionState {}
