@@ -3,6 +3,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/loading_view.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
+import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:chips_choice/chips_choice.dart';
@@ -47,6 +55,12 @@ class _IdInputViewState extends State<IdInputView> {
     });
   }
 
+  final gateDashboardBloc = GatekeeperDashboardBloc(VisitorUsecase(
+    VisitorRepoImpl(
+      RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,DioSingleton.instance3),
+    ),
+  ));
+
   @override
   void dispose() {
     _focusNode.dispose();
@@ -55,7 +69,34 @@ class _IdInputViewState extends State<IdInputView> {
 
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
+    return BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
+      bloc: gateDashboardBloc,
+      listenWhen: (previous, current) =>
+          current is GatekeeperDashboardActionState,
+      buildWhen: (previous, current) =>
+          current is! GatekeeperDashboardActionState,
+      listener: (context, state) {
+        switch (state.runtimeType) {
+          case GatekeeperDashboardErrorState:
+            final errorState = state as GatekeeperDashboardErrorState;
+            Fluttertoast.showToast(
+              msg: errorState.message,
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              fontSize: 16.0,
+            );
+            break;
+        }
+      },
+      builder: (context, state) {
+        switch (state.runtimeType) {
+          case GatekeeperDashboardLoadingState:
+            return LoaderView();
+          default:
+            return MyScrollView(
       hasBackButton: true,
       pageBody: Column(
         mainAxisSize: MainAxisSize.min,
@@ -144,6 +185,7 @@ class _IdInputViewState extends State<IdInputView> {
                         color: Theme.of(context).colorScheme.onBackground,
                       ),
                       onChanged: (CountryCode countryCode) {
+                       
                         setState(() {
                           selectedCountryCode = countryCode.code!;
                         });
@@ -152,14 +194,19 @@ class _IdInputViewState extends State<IdInputView> {
                     textController: mobileController,
                     keyboardType: TextInputType.number,
                     length: 10,
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Mobile number is required';
-                      } else if (value.length != 10) {
-                        return 'Please enter a 10-digit number';
-                      }
-                      return null;
+                    onChanged: (value) {
+                       if(value.length==10){
+                          gateDashboardBloc.add(GDOnMobileNumberEnteredEvent(mobileController.text));
+                        }
                     },
+                    // validator: (value) {
+                    //   if (value!.isEmpty) {
+                    //     return 'Mobile number is required';
+                    //   } else if (value.length != 10) {
+                    //     return 'Please enter a 10-digit number';
+                    //   }
+                    //   return null;
+                    // },
                   ),
                 )
               : Column(
@@ -233,7 +280,7 @@ class _IdInputViewState extends State<IdInputView> {
                         color: Colors.grey,
                         selectedStyle: C2ChipStyle.outlined(
                           overlayColor: Color(0x90C08261),
-                          color: Color(0xFF0C08261),
+                          color: Color(0xff0c08261),
                         ),
                       ),
                       choiceCheckmark: true,
@@ -274,10 +321,15 @@ class _IdInputViewState extends State<IdInputView> {
         },
       ),
     );
+        }
+      },
+    );
   }
 }
 
 class ImageGridBottomSheet extends StatefulWidget {
+  const ImageGridBottomSheet({super.key});
+
   @override
   _ImageGridBottomSheetState createState() => _ImageGridBottomSheetState();
 }

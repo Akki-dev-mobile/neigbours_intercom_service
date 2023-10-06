@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_const_constructors
 import 'package:country_code_picker/country_code_picker.dart';
-import 'package:dio/dio.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -41,8 +40,8 @@ List<String> rbac = <String>['Admin', 'GateKeeper'];
 
 class _LoginViewState extends State<LoginView> {
   String selectedCountryCode = 'IN';
-  late FocusNode _mobileFocusNode = FocusNode();
-  late FocusNode _passwordFocusNode = FocusNode();
+  late final FocusNode _mobileFocusNode = FocusNode();
+  late final FocusNode _passwordFocusNode = FocusNode();
   bool areTextFieldsFocused = false;
   TextEditingController? usernameTextCtrl;
   TextEditingController? passwordTextCtrl;
@@ -65,12 +64,12 @@ class _LoginViewState extends State<LoginView> {
   final LoginBloc loginBloc = LoginBloc(
       LoginUseCase(
         AuthenticationRepositoryImpl(
-          RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2),
+          RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2,DioSingleton.instance3),
         ),
       ),
       GateUseCase(
         GateRepositoryImpl(
-          RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2),
+          RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2,DioSingleton.instance3),
         ),
       ));
 
@@ -306,7 +305,7 @@ class _LoginViewState extends State<LoginView> {
                             prefixIcon: !isEmailMode
                                 ? CountryCodePicker(
                                     initialSelection: 'IN',
-                                    favorite: ['IN'],
+                                    favorite: const ['IN'],
                                     showFlagMain: true,
                                     showFlagDialog: true,
                                     boxDecoration: BoxDecoration(
@@ -633,7 +632,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                     ),
                   ),
-                  Container(
+                  SizedBox(
                     // fit: BoxFit.scaleDown,
                     width: double.infinity,
                     child: Row(

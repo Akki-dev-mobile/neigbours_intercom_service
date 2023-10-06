@@ -94,9 +94,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (event.isAdmin) {
       final List<Gate> gates = await _preferenceUtils.getGatesList();
       if (gates.isEmpty) {
+        emit(LoginLoadingState());
         final response = await _gateUseCase.gateList(
             _preferenceUtils.getSelectedCompany()!.companyId);
         final List<Gate> gates = response!;
+        emit(LoginInitial());
         if (response.length == 1) {
           _preferenceUtils.setSelectedGate(response[0]);
           emit(NavigateToAdminDashboardState());

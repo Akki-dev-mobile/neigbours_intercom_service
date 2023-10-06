@@ -1,12 +1,9 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
-import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 
 class RequestPermissionView extends StatefulWidget {
   final List<String>? gridData;
@@ -137,7 +134,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                     ),
                     child: Center(
                       child: Text(
-                        '${gridData![index]}',
+                        gridData![index],
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                               color: Color(0xffC08261),
                               fontWeight: FontWeight.bold,

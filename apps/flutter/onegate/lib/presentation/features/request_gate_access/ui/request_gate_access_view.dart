@@ -1,8 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_animated_button/flutter_animated_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -16,9 +14,9 @@ class RequestGateAccess extends StatefulWidget {
 }
 
 class _RequestGateAccessState extends State<RequestGateAccess> {
-  late FocusNode _userNameFocusNode = FocusNode();
-  late FocusNode _mobileNumberFocusNode = FocusNode();
-  late FocusNode _societyNameFocusNode = FocusNode();
+  late final FocusNode _userNameFocusNode = FocusNode();
+  late final FocusNode _mobileNumberFocusNode = FocusNode();
+  late final FocusNode _societyNameFocusNode = FocusNode();
   bool areTextFieldsFocused = false;
   TextEditingController? clientNameTextCtrl;
   TextEditingController? mobileNumberTextCtrl;

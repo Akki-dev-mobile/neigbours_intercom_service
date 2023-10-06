@@ -7,27 +7,19 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
+import 'protocol.dart' as _i2;
 
 class MemberStaff extends _i1.SerializableEntity {
   MemberStaff({
     this.id,
     required this.name,
-    required this.phone,
-    required this.dob,
-    required this.gender,
-    required this.member_category_id,
-    required this.member_sub_category_id,
-    required this.email,
-    required this.address,
-    required this.verification_type_id,
-    required this.verification_number,
-    required this.profile_image_url,
-    required this.status,
-    required this.deleted_by,
-    required this.created_at,
-    required this.created_by,
-    required this.updated_at,
-    required this.updated_by,
+    required this.category_id,
+    required this.sub_category_id,
+    required this.company_id,
+    required this.id_proof_type,
+    required this.id_proof_number,
+    required this.id_proof_image,
+    this.member_staff_building_unit,
   });
 
   factory MemberStaff.fromJson(
@@ -37,37 +29,21 @@ class MemberStaff extends _i1.SerializableEntity {
     return MemberStaff(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
       name: serializationManager.deserialize<String>(jsonSerialization['name']),
-      phone:
-          serializationManager.deserialize<String>(jsonSerialization['phone']),
-      dob: serializationManager.deserialize<DateTime>(jsonSerialization['dob']),
-      gender:
-          serializationManager.deserialize<String>(jsonSerialization['gender']),
-      member_category_id: serializationManager
-          .deserialize<int>(jsonSerialization['member_category_id']),
-      member_sub_category_id: serializationManager
-          .deserialize<int>(jsonSerialization['member_sub_category_id']),
-      email:
-          serializationManager.deserialize<String>(jsonSerialization['email']),
-      address: serializationManager
-          .deserialize<String>(jsonSerialization['address']),
-      verification_type_id: serializationManager
-          .deserialize<int>(jsonSerialization['verification_type_id']),
-      verification_number: serializationManager
-          .deserialize<String>(jsonSerialization['verification_number']),
-      profile_image_url: serializationManager
-          .deserialize<String>(jsonSerialization['profile_image_url']),
-      status:
-          serializationManager.deserialize<String>(jsonSerialization['status']),
-      deleted_by: serializationManager
-          .deserialize<String>(jsonSerialization['deleted_by']),
-      created_at: serializationManager
-          .deserialize<DateTime>(jsonSerialization['created_at']),
-      created_by: serializationManager
-          .deserialize<String>(jsonSerialization['created_by']),
-      updated_at: serializationManager
-          .deserialize<DateTime>(jsonSerialization['updated_at']),
-      updated_by: serializationManager
-          .deserialize<String>(jsonSerialization['updated_by']),
+      category_id: serializationManager
+          .deserialize<int>(jsonSerialization['category_id']),
+      sub_category_id: serializationManager
+          .deserialize<int>(jsonSerialization['sub_category_id']),
+      company_id: serializationManager
+          .deserialize<int>(jsonSerialization['company_id']),
+      id_proof_type: serializationManager
+          .deserialize<String>(jsonSerialization['id_proof_type']),
+      id_proof_number: serializationManager
+          .deserialize<String>(jsonSerialization['id_proof_number']),
+      id_proof_image: serializationManager
+          .deserialize<String>(jsonSerialization['id_proof_image']),
+      member_staff_building_unit:
+          serializationManager.deserialize<List<_i2.MemberStaffBuildingUnit>?>(
+              jsonSerialization['member_staff_building_unit']),
     );
   }
 
@@ -78,59 +54,32 @@ class MemberStaff extends _i1.SerializableEntity {
 
   String name;
 
-  String phone;
+  int category_id;
 
-  DateTime dob;
+  int sub_category_id;
 
-  String gender;
+  int company_id;
 
-  int member_category_id;
+  String id_proof_type;
 
-  int member_sub_category_id;
+  String id_proof_number;
 
-  String email;
+  String id_proof_image;
 
-  String address;
-
-  int verification_type_id;
-
-  String verification_number;
-
-  String profile_image_url;
-
-  String status;
-
-  String deleted_by;
-
-  DateTime created_at;
-
-  String created_by;
-
-  DateTime updated_at;
-
-  String updated_by;
+  List<_i2.MemberStaffBuildingUnit>? member_staff_building_unit;
 
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
-      'phone': phone,
-      'dob': dob,
-      'gender': gender,
-      'member_category_id': member_category_id,
-      'member_sub_category_id': member_sub_category_id,
-      'email': email,
-      'address': address,
-      'verification_type_id': verification_type_id,
-      'verification_number': verification_number,
-      'profile_image_url': profile_image_url,
-      'status': status,
-      'deleted_by': deleted_by,
-      'created_at': created_at,
-      'created_by': created_by,
-      'updated_at': updated_at,
-      'updated_by': updated_by,
+      'category_id': category_id,
+      'sub_category_id': sub_category_id,
+      'company_id': company_id,
+      'id_proof_type': id_proof_type,
+      'id_proof_number': id_proof_number,
+      'id_proof_image': id_proof_image,
+      'member_staff_building_unit': member_staff_building_unit,
     };
   }
 }

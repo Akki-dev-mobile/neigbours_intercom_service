@@ -1,6 +1,0 @@
-class: VendorVisitors
-table: vendor_visitors
-fields:
-  visitor_id: int
-  vendor_name: String
-  member_sub_category_id: String

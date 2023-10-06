@@ -1,0 +1,4 @@
+class: StaffCategory
+table: staff_categories
+fields: 
+  category_name: String

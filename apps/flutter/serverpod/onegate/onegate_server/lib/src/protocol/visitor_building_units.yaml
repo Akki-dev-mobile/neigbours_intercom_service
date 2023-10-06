@@ -1,5 +1,0 @@
-class: VisitorBuildingUnits
-table: visitor_building_units
-fields:
-  visitor_company_building_id: int
-  unit_id: int

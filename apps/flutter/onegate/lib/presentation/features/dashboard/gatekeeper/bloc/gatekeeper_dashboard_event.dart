@@ -16,3 +16,9 @@ class GDInAndOutButtonPressedEvent extends GatekeeperDashboardEvent {}
 class GDVisitorsInButtonPressedEvent extends GatekeeperDashboardEvent {}
 
 class GDVisitorsOutButtonPressedEvent extends GatekeeperDashboardEvent {}
+
+class GDOnMobileNumberEnteredEvent extends GatekeeperDashboardEvent {
+  final String mobileNumber;
+
+  GDOnMobileNumberEnteredEvent(this.mobileNumber);
+}

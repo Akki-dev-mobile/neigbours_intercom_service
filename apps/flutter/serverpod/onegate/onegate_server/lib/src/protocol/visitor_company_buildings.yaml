@@ -1,5 +1,0 @@
-class: VisitorCompanyBuildings
-table: visitor_company_buildings
-fields:
-  visitor_company_id: int
-  building_id: int

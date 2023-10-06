@@ -1,8 +1,0 @@
-class: MemberSubCategories
-table: member_sub_categories
-fields:
-  name: String
-  member_category_id: int
-  status: String
-  created_at: DateTime
-  updated_at: DateTime

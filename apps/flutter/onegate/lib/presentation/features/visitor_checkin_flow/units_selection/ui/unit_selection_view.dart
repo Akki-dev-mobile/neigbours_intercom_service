@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'dart:async';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -470,7 +469,7 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                         },
                       ),
                       title: Text('Shubham Bane'),
-                      subtitle: Text('$item'),
+                      subtitle: Text(item),
                     );
                   },
                   separatorBuilder: (context, index) {

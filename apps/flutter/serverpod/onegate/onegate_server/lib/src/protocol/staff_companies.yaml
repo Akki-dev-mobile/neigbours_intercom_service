@@ -1,5 +1,0 @@
-class: StaffCompanies
-table: staff_companies
-fields:
-  member_staff_id: int
-  company_id: int

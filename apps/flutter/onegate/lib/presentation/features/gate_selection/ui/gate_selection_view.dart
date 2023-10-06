@@ -16,7 +16,6 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 
 import '../../dashboard/admin/pages/admin_dashboard_view.dart';
-import '../../gate_config/ui/gate_config_view.dart';
 
 class GateSelectionView extends StatefulWidget {
   const GateSelectionView({Key? key}) : super(key: key);
@@ -32,7 +31,7 @@ class _GateSelectionViewState extends State<GateSelectionView> {
   final GateSelectionBloc gateBloc = GateSelectionBloc(
     GateUseCase(
       GateRepositoryImpl(
-        RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2),
+        RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2,DioSingleton.instance3),
       ),
     ),
   );

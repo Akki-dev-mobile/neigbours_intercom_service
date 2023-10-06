@@ -1,6 +1,0 @@
-class: DeliveryVisitors
-table: delivery_visitors
-fields:
-  visitor_id: int
-  delivery_person_name: String
-  delivery_comapny: String

@@ -1,5 +1,0 @@
-class: TransportVisitors
-table: transport_visitors
-fields:
-  visitor_id: int
-  driver_name: int

@@ -13,7 +13,7 @@ class GateRepositoryImpl implements GateRepository {
     try {
       final response =
           await _remoteDataSource.fetchGates(companyId);
-      final gateListResponse = GateMapper.fromJsonList(response);;
+      final gateListResponse = GateMapper.fromJsonList(response);
       return gateListResponse;
     } catch (error) {
       return null; // Handle error or Gate failure

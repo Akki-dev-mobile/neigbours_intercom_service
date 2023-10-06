@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:common_widgets/common_widgets.dart';
 
 class AppPermissions extends StatefulWidget {

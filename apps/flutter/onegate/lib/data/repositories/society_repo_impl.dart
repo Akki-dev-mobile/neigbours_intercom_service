@@ -1,6 +1,5 @@
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/society/building.dart';
-import 'package:flutter_onegate/domain/mappers/society/building_mapper.dart';
 import 'package:flutter_onegate/domain/repositories/society_repo.dart';
 
 class SocietyRepositoryImpl implements SocietyRepository {
@@ -10,6 +9,8 @@ class SocietyRepositoryImpl implements SocietyRepository {
 
   @override
   Future<Building?> getBuildings(int companyId) async {
+    return null;
+  
     // try {
     //   final response = await _remoteDataSource.fetchBuildingsData(companyId);
     //   final buildingResponse = BuildingMapper.fromJson(response);

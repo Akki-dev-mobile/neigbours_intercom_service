@@ -1,7 +1,0 @@
-class: MemberCategories
-table: member_categories
-fields:
-  name: String
-  status: String
-  created_at: DateTime
-  updated_at: DateTime

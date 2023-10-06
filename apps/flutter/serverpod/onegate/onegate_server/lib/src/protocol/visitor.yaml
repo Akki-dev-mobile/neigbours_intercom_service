@@ -1,0 +1,5 @@
+class: Visitor
+table: visitor
+fields: 
+  name: String
+  mobile: String

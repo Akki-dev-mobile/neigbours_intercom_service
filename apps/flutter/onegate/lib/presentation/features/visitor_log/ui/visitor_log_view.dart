@@ -1,4 +1,3 @@
-import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -224,7 +223,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         .textTheme
                                         .labelSmall!
                                         .merge(
-                                          TextStyle(
+                                          const TextStyle(
                                               color: Colors.white,
                                               fontSize: 14),
                                         ),
@@ -233,7 +232,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               : RichText(
                                   text: TextSpan(
                                     children: [
-                                      WidgetSpan(
+                                      const WidgetSpan(
                                         child: Icon(
                                           Symbols.directions_walk_rounded,
                                           color: Colors.red,
@@ -245,7 +244,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                             .textTheme
                                             .labelSmall!
                                             .merge(
-                                              TextStyle(
+                                              const TextStyle(
                                                 color: Colors.red,
                                               ),
                                             ),

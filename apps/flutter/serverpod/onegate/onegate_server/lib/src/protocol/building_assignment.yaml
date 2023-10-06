@@ -1,0 +1,7 @@
+class: BuildingAssignment
+table: building_assignment
+fields:
+  staff_id: int?, parent=MemberStaff
+  visitor_id: int?, parent=Visitor
+  building_id: List<int>
+  unit_id: List<int>

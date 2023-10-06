@@ -2,8 +2,6 @@
 
 import 'dart:ffi';
 
-import 'package:animated_text_kit/animated_text_kit.dart';
-import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -19,7 +17,6 @@ import 'package:badges/badges.dart' as badges;
 
 import 'dart:math' as math;
 
-import '../../gatekeeper/pages/gatekeeper_dashboard_view.dart';
 
 class AdminDashboardView extends StatefulWidget {
   const AdminDashboardView({super.key});
@@ -33,7 +30,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
   final AdminDashboardBloc adminDashboardBloc = AdminDashboardBloc(
     AdminDashboardUseCase(
       AdminDashboardRepositoryImpl(
-        RemoteDataSource(dioInstance),
+        RemoteDataSource(dioInstance1,dioInstance2,DioSingleton.instance3),
       ),
     ),
   );

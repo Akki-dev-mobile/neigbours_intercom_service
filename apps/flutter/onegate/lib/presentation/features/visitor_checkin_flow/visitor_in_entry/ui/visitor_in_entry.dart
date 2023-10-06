@@ -2,13 +2,10 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:chips_choice/chips_choice.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 

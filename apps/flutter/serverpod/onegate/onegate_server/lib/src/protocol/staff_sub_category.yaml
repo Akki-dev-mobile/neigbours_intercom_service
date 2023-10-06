@@ -1,0 +1,5 @@
+class: StaffSubCategory
+table: staff_sub_categories
+fields:
+  staff_category_id: int, parent=StaffCategory
+  sub_categories_name: String
