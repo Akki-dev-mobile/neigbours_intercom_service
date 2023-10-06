@@ -4,17 +4,27 @@ import 'dart:ffi';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:kiosk_mode/kiosk_mode.dart';
+import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:toggle_switch/toggle_switch.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:common_widgets/common_widgets.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:common_widgets/loading_view.dart';
 
 import 'dart:math' as math;
 
 import 'id_input_view.dart';
+import 'scan_qr.dart';
 
 class GateDashboardView extends StatefulWidget {
   const GateDashboardView({super.key});
@@ -40,8 +50,11 @@ List<String> listPassAlpha = [
 
 class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
+  final GatekeeperDashboardBloc gatekeeperDashboardBloc =
+      GatekeeperDashboardBloc();
   @override
   void initState() {
+    // startKioskMode();
     super.initState();
     _focusNode = FocusNode();
     Future.delayed(Duration(milliseconds: 200), () {
@@ -57,85 +70,74 @@ class _GateDashboardViewState extends State<GateDashboardView>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        return false;
+    return BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
+      bloc: gatekeeperDashboardBloc,
+      listenWhen: (previous, current) =>
+          current is GatekeeperDashboardActionState,
+      buildWhen: (previous, current) =>
+          current is! GatekeeperDashboardActionState,
+      listener: (context, state) {
+        // TODO: implement listener
       },
-      child: MyScrollView(
-        hasBackButton: false,
-        pageTitle: 'Gate One',
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Symbols.alarm_rounded,
-              color: Theme.of(context).colorScheme.onBackground,
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              Fluttertoast.showToast(
-                msg: "test for different types of scenarios",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-              // showModalBottomSheet(
-              //   backgroundColor:
-              //       Theme.of(context).colorScheme.background,
-              //   context: context,
-              //   builder: (context) => ApprovalsView(),
-              // );
-            },
-            icon: Icon(
-              Symbols.phone_missed_rounded,
-              color: Theme.of(context).colorScheme.onBackground,
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: SettingsHome(),
-                ),
-              );
-              Fluttertoast.showToast(
-                msg: "Test Switch to Admin Dashboard",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-            },
-            icon: Icon(
-              Symbols.settings_rounded,
-              color: Theme.of(context).colorScheme.onBackground,
-            ),
-          ),
-        ],
-        pageBody: Column(
-          children: [
-            Container(
-              margin: EdgeInsets.only(
-                top: 0,
-                bottom: 12,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  DashboardShortcut(
-                    icon: Symbols.deskphone_rounded,
-                    title: 'Intercom',
-                    onTap: () {
+      builder: (context, state) {
+        switch (state.runtimeType) {
+          case GatekeeperDashboardLoadingState:
+            return LoaderView();
+          default:
+            return WillPopScope(
+              onWillPop: () async {
+                return false;
+              },
+              child: MyScrollView(
+                hasBackButton: false,
+                pageTitleWidget: Hero(
+                    tag: 'gate_dashboard',
+                    child: Text(
+                      'Gate One',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    )),
+                actions: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(
+                      Symbols.alarm_rounded,
+                      color: Theme.of(context).colorScheme.onBackground,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
                       Fluttertoast.showToast(
-                        msg: "will be redirecting to crm payment page",
+                        msg: "test for different types of scenarios",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                      // showModalBottomSheet(
+                      //   backgroundColor:
+                      //       Theme.of(context).colorScheme.background,
+                      //   context: context,
+                      //   builder: (context) => ApprovalsView(),
+                      // );
+                    },
+                    icon: Icon(
+                      Symbols.phone_missed_rounded,
+                      color: Theme.of(context).colorScheme.onBackground,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        PageTransition(
+                          type: PageTransitionType.rightToLeft,
+                          child: SettingsHome(),
+                        ),
+                      );
+                      Fluttertoast.showToast(
+                        msg: "Test Switch to Admin Dashboard",
                         toastLength: Toast.LENGTH_SHORT,
                         gravity: ToastGravity.CENTER,
                         timeInSecForIosWeb: 1,
@@ -144,267 +146,144 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         fontSize: 16.0,
                       );
                     },
-                    isPremium: true,
-                    isVisible: true,
-                  ),
-                  DashboardShortcut(
-                    icon: Symbols.package_rounded,
-                    title: 'Parcel',
-                    isPremium: false,
-                    isVisible: true,
-                    onTap: () {},
-                  ),
-                  DashboardShortcut(
-                    isPremium: false,
-                    isVisible: false,
-                    icon: Symbols.qr_code_scanner_rounded,
-                    title: 'Scan',
-                    onTap: () {
-                      // Navigator.push(
-                      //   context,
-                      //   PageTransition(
-                      //     type: PageTransitionType.rightToLeft,
-                      //     child: QRScan(),
-                      //   ),
-                      // );
-                    },
+                    icon: Icon(
+                      Symbols.settings_rounded,
+                      color: Theme.of(context).colorScheme.onBackground,
+                    ),
                   ),
                 ],
-              ),
-            ),
-            Container(
-              margin: EdgeInsets.only(bottom: 16),
-              height: MediaQuery.of(context).size.height * 0.300,
-              width: MediaQuery.of(context).size.width,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Container(
-                    // margin: EdgeInsets.symmetric(vertical: 10),
-                    width: MediaQuery.of(context).size.width * 0.32,
-                    decoration: BoxDecoration(
-                      color: Color(
-                        0xffF2D8A5,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(2),
-                          margin: EdgeInsets.only(top: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: CachedNetworkImage(
-                            maxHeightDiskCache: 10,
-                            height: 55,
-                            width: 55,
-                            fit: BoxFit.contain,
-                            imageUrl:
-                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
-                            placeholder: (context, url) =>
-                                const CircularProgressIndicator(),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.error,
-                              color: Colors.red,
-                            ),
-                            fadeOutDuration: const Duration(seconds: 1),
-                            fadeInDuration: const Duration(seconds: 3),
-                          ),
-                        ),
-                        Text(
-                          'In-Out',
-                          // (parcelCount).toString(),
-                          style: Theme.of(context).textTheme.displayMedium,
-                        ),
-                        Text(
-                          'Book',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.50,
-                        height: MediaQuery.of(context).size.height * 0.14,
-                        decoration: BoxDecoration(
-                          color: Color(0xffCAF1D1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 20,
-                          ),
-                          title: Text(
-                            '74',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.displayMedium,
-                          ),
-                          subtitle: Text(
-                            'Visitor\nIn',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          trailing: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Transform(
-                              transform: Matrix4.rotationY(math.pi),
-                              alignment: Alignment.center,
-                              child: CachedNetworkImage(
-                                maxHeightDiskCache: 10,
-                                height: 55,
-                                width: 55,
-                                fit: BoxFit.contain,
-                                imageUrl:
-                                    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
-                                placeholder: (context, url) =>
-                                    const CircularProgressIndicator(),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(
-                                  Icons.error,
-                                  color: Colors.red,
-                                ),
-                                fadeOutDuration: const Duration(seconds: 1),
-                                fadeInDuration: const Duration(seconds: 3),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.50,
-                        height: MediaQuery.of(context).size.height * 0.14,
-                        decoration: BoxDecoration(
-                          color: Color(0xffFFE5E0),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 20,
-                          ),
-                          title: Text(
-                            '38',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.displayMedium,
-                          ),
-                          subtitle: Text(
-                            'Visitor\nOut',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          trailing: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: CachedNetworkImage(
-                              maxHeightDiskCache: 10,
-                              height: 55,
-                              width: 55,
-                              fit: BoxFit.contain,
-                              imageUrl:
-                                  'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
-                              placeholder: (context, url) =>
-                                  const CircularProgressIndicator(),
-                              errorWidget: (context, url, error) => const Icon(
-                                Icons.error,
-                                color: Colors.red,
-                              ),
-                              fadeOutDuration: const Duration(seconds: 1),
-                              fadeInDuration: const Duration(seconds: 3),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  _createRoute(),
-                );
-              },
-              child: Container(
-                margin: EdgeInsets.symmetric(vertical: 2),
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      'Enter Visitor Details',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: Theme.of(context).colorScheme.onBackground,
-                      ),
-                    ),
+                pageBody: Column(
+                  children: [
                     Container(
-                      margin: EdgeInsets.only(top: 5, bottom: 8),
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.background,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        ),
+                      margin: EdgeInsets.only(
+                        top: 0,
+                        bottom: 12,
                       ),
-                      child: ListTile(
-                        title: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: DefaultTextStyle(
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 18,
-                            ),
-                            child: AnimatedTextKit(
-                              repeatForever: true,
-                              animatedTexts: [
-                                TyperAnimatedText(
-                                  '9912345678',
-                                ),
-                                TyperAnimatedText('G-39070'),
-                              ],
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  _createRoute(),
-                                );
-                              },
-                            ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          DashboardShortcut(
+                            icon: Symbols.deskphone_rounded,
+                            title: 'Intercom',
+                            onTap: () {
+                              Fluttertoast.showToast(
+                                msg: "will be redirecting to crm payment page",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.CENTER,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                            },
+                            isPremium: true,
+                            isVisible: true,
                           ),
+                          DashboardShortcut(
+                            icon: Symbols.package_rounded,
+                            title: 'Parcel',
+                            isPremium: false,
+                            isVisible: true,
+                            onTap: () {},
+                          ),
+                          DashboardShortcut(
+                            isPremium: false,
+                            isVisible: false,
+                            icon: Symbols.qr_code_scanner_rounded,
+                            title: 'Scan',
+                            onTap: () {
+                              // Navigator.push(
+                              //   context,
+                              //   PageTransition(
+                              //     type: PageTransitionType.rightToLeft,
+                              //     child: QRScan(),
+                              //   ),
+                              // );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    DashboardBlocks(),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          _createRoute(),
+                        );
+                      },
+                      child: Container(
+                        margin: EdgeInsets.symmetric(vertical: 2),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            SizedBox(
+                              height: 10,
+                            ),
+                            Text(
+                              'Enter Visitor Details',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                              ),
+                            ),
+                            Container(
+                              margin: EdgeInsets.only(top: 5, bottom: 8),
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.background,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              ),
+                              child: ListTile(
+                                title: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: DefaultTextStyle(
+                                    style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 18,
+                                    ),
+                                    child: AnimatedTextKit(
+                                      repeatForever: true,
+                                      animatedTexts: [
+                                        TyperAnimatedText(
+                                          '9912345678',
+                                        ),
+                                        TyperAnimatedText('G-39070'),
+                                      ],
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          _createRoute(),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+            );
+        }
+        ;
+      },
     );
   }
 

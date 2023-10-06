@@ -3,12 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class MyScrollView extends StatelessWidget {
   const MyScrollView({
     Key? key,
     required this.pageBody,
     this.pageTitle,
+    this.pageTitleWidget,
     this.floatingActionButton,
     this.bottomSheet,
     this.controller,
@@ -19,6 +21,7 @@ class MyScrollView extends StatelessWidget {
 
   final Widget pageBody;
   final String? pageTitle;
+  final Widget? pageTitleWidget;
   final Widget? floatingActionButton;
   final Widget? bottomSheet;
   final ScrollController? controller;
@@ -54,12 +57,12 @@ class MyScrollView extends StatelessWidget {
                   )
                 : null,
             pinned: true,
-            title: Text(
-              pageTitle ?? '',
-              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  // fontWeight: FontWeight.bold,
-                  ),
-            ),
+            title: pageTitle != null
+                ? Text(
+                    pageTitle ?? '',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  )
+                : pageTitleWidget,
             actions: actions,
             // expandedHeight: 50,
             flexibleSpace: FlexibleSpaceBar(
@@ -120,6 +123,8 @@ class CustomForm {
     ValueChanged<String>? onChanged,
     ValueChanged<String>? onFieldSubmitted,
     String? errorText,
+    List<TextInputFormatter>? inputFormatters,
+    bool? isReadOnly,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 2),
@@ -141,6 +146,7 @@ class CustomForm {
             height: 5,
           ),
           TextFormField(
+            readOnly: isReadOnly ?? false,
             cursorColor: Colors.blue,
             // autovalidateMode: AutovalidateMode.onUserInteraction,
             focusNode: focusNode,
@@ -163,9 +169,10 @@ class CustomForm {
                   }
                   return null;
                 },
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(length),
-            ],
+            inputFormatters: inputFormatters,
+            // [
+            //    LengthLimitingTextInputFormatter(length),
+            // ],
             obscureText: isObscureText ? true : false,
             keyboardType: keyboardType ?? TextInputType.text,
             onChanged: onChanged ?? (value) {},
@@ -223,9 +230,11 @@ class CustomLargeBtn extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.text,
+    this.heroTag,
   });
   final Function() onPressed;
   final String text;
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -259,13 +268,16 @@ class CustomLargeBtn extends StatelessWidget {
           ),
         ),
         onPressed: onPressed,
-        child: Text(
-          text,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.background,
-            fontSize: 22,
-            wordSpacing: 1.2,
-            fontWeight: FontWeight.w500,
+        child: Hero(
+          tag: heroTag ?? 'btn',
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.background,
+              fontSize: 22,
+              wordSpacing: 1.2,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ),

@@ -1,3 +1,6 @@
+// ignore_for_file: prefer_const_constructors
+
+import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -12,9 +15,14 @@ import '../../gate_selection/ui/gate_selection_view.dart';
 class VisitorLogView extends StatefulWidget {
   String id;
   final List<String> logList;
+  final String? selectedBuilding;
 
-  VisitorLogView({required this.id, required this.logList, Key? key})
-      : super(key: key);
+  VisitorLogView({
+    required this.id,
+    required this.logList,
+    this.selectedBuilding,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<VisitorLogView> createState() => _VisitorLogViewState();
@@ -24,6 +32,16 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   final List<String> items =
       List.generate(50, (index) => 'Name Surname $index');
   late String selectedId;
+  String? selectedTime;
+  List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
+
+  String? selectedBuilding;
+  List<String> selectedBuildingOptions = [
+    'All',
+    'Building A',
+    'Building B',
+    'Building C',
+  ];
 
   @override
   void initState() {
@@ -35,14 +53,22 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   Widget build(BuildContext context) {
     return MyScrollView(
       isScrollable: false,
-      pageTitle: widget.id,
+      // pageTitle: widget.id,
+      pageTitleWidget: Hero(
+        tag: 'page_title',
+        child: Text(
+          widget.id,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      ),
       hasBackButton: true,
       pageBody: Column(
         children: [
           CustomForm.textField(
+            widget.selectedBuilding ?? 'Search',
             titleColor: Theme.of(context).colorScheme.onBackground,
             hintColor: Theme.of(context).colorScheme.onPrimary,
-            "Search",
+            // "Search" ?? ,
             hintText: 'Search Visitor',
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.search,
@@ -79,12 +105,38 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     _showLogBookConfigBottomSheet(context);
                   },
                   icon: Icon(
-                    Ionicons.options_outline,
+                    Ionicons.funnel_outline,
                     color: Theme.of(context).colorScheme.onBackground,
                     size: 28,
                   ),
                 ),
               ],
+            ),
+          ),
+          ChipsChoice<String>.single(
+            padding: EdgeInsets.only(right: 20),
+            scrollToSelectedOnChanged: true,
+            spacing: 20,
+            choiceStyle: C2ChipStyle.outlined(
+              borderWidth: 1,
+              color: Colors.grey.shade700,
+              selectedStyle: C2ChipStyle.filled(
+                foregroundColor: Color(0xFFC08261),
+              ),
+              height: 40,
+            ),
+            choiceCheckmark: true,
+            value: selectedTime,
+            scrollPhysics: BouncingScrollPhysics(),
+            onChanged: (value) {
+              setState(() {
+                selectedTime = value;
+              });
+            },
+            choiceItems: C2Choice.listFrom<String, String>(
+              source: options,
+              value: (i, v) => v,
+              label: (i, v) => v,
             ),
           ),
           SizedBox(
@@ -127,14 +179,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: ' A/201, +4',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall!
-                                        .merge(
-                                          const TextStyle(fontSize: 12),
-                                        ),
-                                  ),
+                                      text: ' A/201, +4',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall),
                                   WidgetSpan(
                                     child: Container(
                                       margin: const EdgeInsets.only(left: 8),
@@ -164,7 +212,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             ),
                           ),
                           trailing: const Icon(
-                            Ionicons.call,
+                            Ionicons.call_outline,
                             color: Colors.green,
                           ),
                         ),
@@ -187,7 +235,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   text: ' 04:00 AM',
                                   style: Theme.of(context)
                                       .textTheme
-                                      .labelSmall!
+                                      .labelMedium!
                                       .merge(
                                         const TextStyle(
                                           color: Colors.green,
@@ -242,7 +290,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         text: ' 09:00 PM',
                                         style: Theme.of(context)
                                             .textTheme
-                                            .labelSmall!
+                                            .labelMedium!
                                             .merge(
                                               const TextStyle(
                                                 color: Colors.red,
@@ -296,10 +344,36 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      'Select your gate',
+                      'Filters',
                       style: Theme.of(context).textTheme.displaySmall!.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
+                    ),
+                  ),
+                  ChipsChoice<String>.single(
+                    padding: EdgeInsets.only(right: 20),
+                    scrollToSelectedOnChanged: true,
+                    spacing: 20,
+                    choiceStyle: C2ChipStyle.outlined(
+                      borderWidth: 1,
+                      color: Colors.grey.shade700,
+                      selectedStyle: C2ChipStyle.filled(
+                        foregroundColor: Color(0xFFC08261),
+                      ),
+                      height: 40,
+                    ),
+                    choiceCheckmark: true,
+                    value: selectedBuilding,
+                    scrollPhysics: BouncingScrollPhysics(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedBuilding = value;
+                      });
+                    },
+                    choiceItems: C2Choice.listFrom<String, String>(
+                      source: selectedBuildingOptions,
+                      value: (i, v) => v,
+                      label: (i, v) => v,
                     ),
                   ),
                   Expanded(
@@ -329,9 +403,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       setState(() {
                         widget.id = selectedId;
                       });
-
                       Navigator.pop(context);
-
                       Navigator.pushReplacement(
                         context,
                         PageTransition(
@@ -339,6 +411,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           child: VisitorLogView(
                             id: widget.id,
                             logList: widget.logList,
+                            selectedBuilding: selectedBuilding,
                           ),
                         ),
                       );

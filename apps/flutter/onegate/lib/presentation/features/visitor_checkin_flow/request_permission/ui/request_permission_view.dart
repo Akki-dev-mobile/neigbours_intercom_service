@@ -180,42 +180,50 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
         ],
       ),
       floatingActionButton: CustomLargeBtn(
-        onPressed: () {
-          switch (requestType) {
-            case RequestType.notRecheable:
-              setState(() {
-                requestType = RequestType.approved;
-              });
-              return;
-            case RequestType.approved:
-              setState(() {
-                requestType = RequestType.leaveAtGate;
-              });
-              return;
-            case RequestType.leaveAtGate:
-              setState(() {
-                requestType = RequestType.rejected;
-              });
-              return;
-            case RequestType.request:
-              setState(() {
-                requestType = RequestType.notRecheable;
-              });
-
-              return;
-            case RequestType.rejected:
-              setState(() {
-                requestType = RequestType.request;
-              });
-              return;
-            default:
-              setState(() {
-                requestType = RequestType.notRecheable;
-              });
-              return;
-          }
-        },
+        heroTag: 'gate_dashboard',
         text: 'Allow',
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (BuildContext context) {
+                return const GateDashboardView();
+              },
+            ),
+          );
+          // switch (requestType) {
+          //   case RequestType.notRecheable:
+          //     setState(() {
+          //       requestType = RequestType.approved;
+          //     });
+          //     return;
+          //   case RequestType.approved:
+          //     setState(() {
+          //       requestType = RequestType.leaveAtGate;
+          //     });
+          //     return;
+          //   case RequestType.leaveAtGate:
+          //     setState(() {
+          //       requestType = RequestType.rejected;
+          //     });
+          //     return;
+          //   case RequestType.request:
+          //     setState(() {
+          //       requestType = RequestType.notRecheable;
+          //     });
+
+          //     return;
+          //   case RequestType.rejected:
+          //     setState(() {
+          //       requestType = RequestType.request;
+          //     });
+          //     return;
+          //   default:
+          //     setState(() {
+          //       requestType = RequestType.notRecheable;
+          //     });
+          //     return;
+          // }
+        },
       ),
     );
   }

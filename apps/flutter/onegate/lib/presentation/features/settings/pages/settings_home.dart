@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
@@ -10,6 +11,9 @@ import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:chips_choice/chips_choice.dart';
+import 'package:provider/provider.dart';
+import '../../self_entry/ui/self_entry_view.dart';
 import 'settings_gate.dart';
 
 class SettingsHome extends StatefulWidget {
@@ -359,7 +363,7 @@ class _SettingsHomeState extends State<SettingsHome> {
             icon: Ionicons.grid_outline,
             title: 'Gate Settings',
             subtitle:
-                'Current Preference: ${selectedGateObj?.gateName ?? "Gate 1"}',
+                'Current Preference: ${selectedGateObj?.name ?? "Gate 1"}',
             onTap: () {
               Navigator.push(
                 context,
@@ -442,6 +446,19 @@ class _SettingsHomeState extends State<SettingsHome> {
             },
           ),
           PrimarySettingsTile(
+            icon: Ionicons.options_outline,
+            title: 'Self Entry Settings',
+            subtitle: 'Enable/Disable Self Entry',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SelfEntryView(),
+                ),
+              );
+            },
+          ),
+          PrimarySettingsTile(
             icon: Ionicons.shield_half_outline,
             title: 'Change Password',
             subtitle: 'Change your password',
@@ -494,7 +511,7 @@ class _SettingsHomeState extends State<SettingsHome> {
 }
 
 class PrimarySettingsTile extends StatelessWidget {
-  const PrimarySettingsTile({super.key, 
+  const PrimarySettingsTile({
     this.icon,
     required this.title,
     this.subtitle,
@@ -574,7 +591,7 @@ List<MultiSelectItem<String>> _visitorApprovalTimeItems = [
 ];
 
 class SecondarySettingsTile extends StatelessWidget {
-  const SecondarySettingsTile({super.key, 
+  const SecondarySettingsTile({
     required this.title,
   });
   final String title;

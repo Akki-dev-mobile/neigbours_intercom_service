@@ -11,6 +11,12 @@ class GDMissedApprovalsButtonPressedEvent extends GatekeeperDashboardEvent {}
 
 class GDGateSettingsButtonPressedEvent extends GatekeeperDashboardEvent {}
 
+class GDIntercomButtonPressedEvent extends GatekeeperDashboardEvent {}
+
+class GDParcelButtonPressedEvent extends GatekeeperDashboardEvent {}
+
+class GDScanButtonPressedEvent extends GatekeeperDashboardEvent {}
+
 class GDInAndOutButtonPressedEvent extends GatekeeperDashboardEvent {}
 
 class GDVisitorsInButtonPressedEvent extends GatekeeperDashboardEvent {}

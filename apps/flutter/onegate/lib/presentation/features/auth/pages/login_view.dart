@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors
 import 'package:country_code_picker/country_code_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -194,13 +195,26 @@ class _LoginViewState extends State<LoginView> {
             );
             break;
           case SignUpButtonPressedState:
-            Navigator.push(
-              context,
-              PageTransition(
-                type: PageTransitionType.leftToRightWithFade,
-                child: RequestGateAccess(),
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (context) => RequestGateAccess(),
+            //   ),
+            // );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (BuildContext context) {
+                  return const RequestGateAccess();
+                },
               ),
             );
+            // Navigator.push(
+            //   context,
+            //   PageTransition(
+            //     type: PageTransitionType.leftToRightWithFade,
+            //     child: RequestGateAccess(),
+            //   ),
+            // );
             break;
           case ForgotPasswordButtonPressedState:
             Navigator.push(
@@ -305,7 +319,7 @@ class _LoginViewState extends State<LoginView> {
                             prefixIcon: !isEmailMode
                                 ? CountryCodePicker(
                                     initialSelection: 'IN',
-                                    favorite: const ['IN'],
+                                    favorite: ['IN'],
                                     showFlagMain: true,
                                     showFlagDialog: true,
                                     boxDecoration: BoxDecoration(
@@ -433,12 +447,17 @@ class _LoginViewState extends State<LoginView> {
                             SignUpButtonPressedEvent(),
                           );
                         },
-                        child: Text(
-                          'Sign Up',
-                          style:
-                              Theme.of(context).textTheme.labelMedium!.copyWith(
-                                    fontSize: 20,
-                                  ),
+                        child: Hero(
+                          tag: 'signUpHero',
+                          child: Text(
+                            'Sign Up',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelMedium!
+                                .copyWith(
+                                  fontSize: 20,
+                                ),
+                          ),
                         ),
                       ),
                     ),
@@ -632,7 +651,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                     ),
                   ),
-                  SizedBox(
+                  Container(
                     // fit: BoxFit.scaleDown,
                     width: double.infinity,
                     child: Row(
@@ -685,9 +704,9 @@ class _LoginViewState extends State<LoginView> {
   void _showGateSelectionBottomSheet(
       BuildContext context, List<Gate?> gatesList) async {
     if (storedGate != null && selectedGate != null) {
-      if (storedGate!.id == selectedGate!.id) {
+      if (storedGate!.name == selectedGate!.name) {
         for (var gate in gatesList) {
-          if (gate!.id == storedGate!.id) {
+          if (gate!.name == storedGate!.name) {
             gate.isSelected = true;
             selectedGate = gate;
           }
@@ -754,8 +773,8 @@ class _LoginViewState extends State<LoginView> {
                           selectedGate = gatesList[index];
                         })
                       },
-                      title: gatesList[index]!.gateName,
-                      subtitle: 'Enable/Disable ${gatesList[index]!.gateName}',
+                      title: gatesList[index]!.name,
+                      subtitle: 'Enable/Disable ${gatesList[index]!.name}',
                       // leadingIcon: Ionicons.grid_outline,
                       leadingIcon: Symbols.gate,
                     );
