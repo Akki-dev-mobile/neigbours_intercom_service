@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // startKioskMode();
     return DevicePreview(
-        enabled: !kReleaseMode,
+        enabled: kReleaseMode,
         builder: (context) {
           return MaterialApp(
             useInheritedMediaQuery: true,
