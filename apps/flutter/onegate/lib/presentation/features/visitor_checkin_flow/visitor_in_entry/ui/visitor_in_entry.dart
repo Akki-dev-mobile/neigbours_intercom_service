@@ -216,24 +216,24 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           "Guest Name",
                           hintText: 'Enter Name',
                           textCapitalization: TextCapitalization.words,
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              _speechToText.isNotListening
-                                  ? _startListening()
-                                  : _stopListening();
-                            },
-                            icon: CircleAvatar(
-                              backgroundColor: _speechToText.isNotListening
-                                  ? Color(0xffFFEBE6)
-                                  : Color(0xffCAF1D1),
-                              radius: 20,
-                              child: Icon(
-                                size: 22,
-                                Ionicons.mic_outline,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
+                          // suffixIcon: IconButton(
+                          //   onPressed: () {
+                          //     _speechToText.isNotListening
+                          //         ? _startListening()
+                          //         : _stopListening();
+                          //   },
+                          //   icon: CircleAvatar(
+                          //     backgroundColor: _speechToText.isNotListening
+                          //         ? Color(0xffFFEBE6)
+                          //         : Color(0xffCAF1D1),
+                          //     radius: 20,
+                          //     child: Icon(
+                          //       size: 22,
+                          //       Ionicons.mic_outline,
+                          //       color: Colors.black,
+                          //     ),
+                          //   ),
+                          // ),
                         ),
                         CustomForm.textField(
                           titleColor:
@@ -242,18 +242,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           "Coming From",
                           hintText: 'Enter Coming From',
                           textCapitalization: TextCapitalization.characters,
-                          suffixIcon: IconButton(
-                            onPressed: () {},
-                            icon: CircleAvatar(
-                              backgroundColor: Color(0xffFFEBE6),
-                              radius: 20,
-                              child: Icon(
-                                size: 22,
-                                Ionicons.mic_outline,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
+                          // suffixIcon: IconButton(
+                          //   onPressed: () {},
+                          //   icon: CircleAvatar(
+                          //     backgroundColor: Color(0xffFFEBE6),
+                          //     radius: 20,
+                          //     child: Icon(
+                          //       size: 22,
+                          //       Ionicons.mic_outline,
+                          //       color: Colors.black,
+                          //     ),
+                          //   ),
+                          // ),
                         ),
                         CustomForm.textField("Guest Count",
                             textController: _guestCountController,
@@ -287,16 +287,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                                   ),
                                 ),
                               ],
-                            )
-                            // suffixIcon: IconButton(
-                            //   onPressed: () {
-                            //     _incrementGuestCount();
-                            //   },
-                            //   icon: Icon(
-                            //     Ionicons.add_circle_outline,
-                            //   ),
-                            // ),
-                            ),
+                            )),
                       ],
                     ),
                   if (widget.selectedValue == 'Staff')
