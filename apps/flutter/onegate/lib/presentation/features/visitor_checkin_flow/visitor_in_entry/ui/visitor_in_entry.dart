@@ -3,12 +3,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:chips_choice/chips_choice.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
@@ -115,7 +119,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       builder: (context, state) {
         switch (state.runtimeType) {
           case VisitorInEntryLoadingState:
-            return LoaderView();
+            return Container(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
           default:
             return MyScrollView(
               pageTitle: '${widget.selectedValue} Entry',
