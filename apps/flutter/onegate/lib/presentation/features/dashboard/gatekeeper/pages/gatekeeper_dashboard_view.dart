@@ -290,7 +290,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
               ),
             );
         }
-        ;
       },
     );
   }

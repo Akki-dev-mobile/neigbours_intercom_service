@@ -57,6 +57,7 @@ dependencies:
   carousel_slider: ^4.2.1
   numpad: ^0.0.2
   numpad_layout: ^0.0.3
+  speech_to_text: ^6.3.0
   
 
 

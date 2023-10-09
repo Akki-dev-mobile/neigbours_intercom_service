@@ -17,69 +17,70 @@ class DashboardBlocks extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                PageTransition(
-                  type: PageTransitionType.leftToRight,
-                  child: VisitorLogView(
-                    id: 'In Out Book',
-                    logList: const [
-                      "In Out Book",
-                      "Visitor In",
-                      "Visitor Out",
-                    ],
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.32,
-              decoration: BoxDecoration(
-                color: const Color(
-                  0xffF2D8A5,
-                ),
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.32,
+            child: Material(
+              color: const Color(0xffF2D8A5),
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    margin: const EdgeInsets.only(top: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: CachedNetworkImage(
-                      maxHeightDiskCache: 10,
-                      height: 55,
-                      width: 55,
-                      fit: BoxFit.contain,
-                      imageUrl:
-                          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
-                      placeholder: (context, url) =>
-                          const CircularProgressIndicator(),
-                      errorWidget: (context, url, error) => const Icon(
-                        Icons.error,
-                        color: Colors.red,
+                splashColor: Color.fromARGB(255, 255, 226, 172),
+                autofocus: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    PageTransition(
+                      type: PageTransitionType.leftToRight,
+                      child: VisitorLogView(
+                        id: 'In Out Book',
+                        logList: const [
+                          "In Out Book",
+                          "Visitor In",
+                          "Visitor Out",
+                        ],
                       ),
-                      fadeOutDuration: const Duration(seconds: 1),
-                      fadeInDuration: const Duration(seconds: 3),
                     ),
-                  ),
-                  Text(
-                    'In-Out',
-                    style: Theme.of(context).textTheme.displayMedium,
-                  ),
-                  Text(
-                    'Book',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                ],
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      margin: const EdgeInsets.only(top: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: CachedNetworkImage(
+                        maxHeightDiskCache: 10,
+                        height: 55,
+                        width: 55,
+                        fit: BoxFit.contain,
+                        imageUrl:
+                            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
+                        placeholder: (context, url) =>
+                            const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) => const Icon(
+                          Icons.error,
+                          color: Colors.red,
+                        ),
+                        fadeOutDuration: const Duration(seconds: 1),
+                        fadeInDuration: const Duration(seconds: 3),
+                      ),
+                    ),
+                    Text(
+                      'In-Out',
+                      style: Theme.of(context).textTheme.displayMedium,
+                    ),
+                    Text(
+                      'Book',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
