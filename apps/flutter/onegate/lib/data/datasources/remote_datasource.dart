@@ -1,5 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:onegate_client/onegate_client.dart';
+import 'package:serverpod_flutter/serverpod_flutter.dart';
 
+var client = Client('http://localhost:8080/')
+  ..connectivityMonitor = FlutterConnectivityMonitor();
 class RemoteDataSource {
   final Dio _dio1;
   final Dio _dio2;
@@ -40,21 +44,24 @@ class RemoteDataSource {
     }
   }
 
-  Future<Map<String, dynamic>> searchVisitor(
-      String mobileNumber, String accessToken, int companyId) async {
+  Future<Visitor?> searchVisitor(
+      String mobileNumber) async {
     try {
-      final response = await _dio3.post('/api/v1/global/vpasses', data: {
-        "access_token": accessToken,
-        "unit_id": companyId,
-        "mobile": "91$mobileNumber",
-        "iso_code": "IN",
-        "paginate": 0
-      });
-
-      return response.data['data'];
+      final result = await client.visitor.fetchVisitor(mobileNumber);
+      return result!;
     } catch (e) {
       print(e.toString());
     }
-    return {};
+    return null;
+  }
+
+  Future<List<PurposeCategory>?> fetchPurpose() async {
+    try {
+      final result = await client.purposeCategory.fetchPurposeCategory();
+      return result;
+    } catch (e) {
+      print(e.toString());
+    }
+    return null;
   }
 }

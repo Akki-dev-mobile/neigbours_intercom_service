@@ -1,6 +1,0 @@
-class: SettingsList
-table: settings_list
-fields:
-  setting_id: int
-  setting_type: String
-  settings_name: String

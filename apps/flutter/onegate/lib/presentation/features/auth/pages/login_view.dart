@@ -704,9 +704,9 @@ class _LoginViewState extends State<LoginView> {
   void _showGateSelectionBottomSheet(
       BuildContext context, List<Gate?> gatesList) async {
     if (storedGate != null && selectedGate != null) {
-      if (storedGate!.name == selectedGate!.name) {
+      if (storedGate!.id == selectedGate!.id) {
         for (var gate in gatesList) {
-          if (gate!.name == storedGate!.name) {
+          if (gate!.id == storedGate!.id) {
             gate.isSelected = true;
             selectedGate = gate;
           }
@@ -773,8 +773,8 @@ class _LoginViewState extends State<LoginView> {
                           selectedGate = gatesList[index];
                         })
                       },
-                      title: gatesList[index]!.name,
-                      subtitle: 'Enable/Disable ${gatesList[index]!.name}',
+                      title: gatesList[index]!.gateName,
+                      subtitle: 'Enable/Disable ${gatesList[index]!.gateName}',
                       // leadingIcon: Ionicons.grid_outline,
                       leadingIcon: Symbols.gate,
                     );

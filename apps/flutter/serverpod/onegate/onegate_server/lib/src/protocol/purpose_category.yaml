@@ -2,3 +2,4 @@ class: PurposeCategory
 table: purpose_category
 fields:
   purpose_category_name: String
+  purpose_img: String

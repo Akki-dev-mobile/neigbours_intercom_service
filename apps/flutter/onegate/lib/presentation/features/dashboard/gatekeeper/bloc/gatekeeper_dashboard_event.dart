@@ -28,3 +28,6 @@ class GDOnMobileNumberEnteredEvent extends GatekeeperDashboardEvent {
 
   GDOnMobileNumberEnteredEvent(this.mobileNumber);
 }
+
+class InputPutViewNextClickedEvent extends GatekeeperDashboardEvent {}
+

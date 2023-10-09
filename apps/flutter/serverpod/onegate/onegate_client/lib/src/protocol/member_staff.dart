@@ -13,13 +13,13 @@ class MemberStaff extends _i1.SerializableEntity {
   MemberStaff({
     this.id,
     required this.name,
-    required this.category_id,
-    required this.sub_category_id,
-    required this.company_id,
-    required this.id_proof_type,
+    required this.mobile,
+    required this.id_proof,
     required this.id_proof_number,
     required this.id_proof_image,
-    this.member_staff_building_unit,
+    required this.staff_category_id,
+    required this.staff_sub_category_id,
+    required this.building_assignment,
   });
 
   factory MemberStaff.fromJson(
@@ -29,21 +29,21 @@ class MemberStaff extends _i1.SerializableEntity {
     return MemberStaff(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
       name: serializationManager.deserialize<String>(jsonSerialization['name']),
-      category_id: serializationManager
-          .deserialize<int>(jsonSerialization['category_id']),
-      sub_category_id: serializationManager
-          .deserialize<int>(jsonSerialization['sub_category_id']),
-      company_id: serializationManager
-          .deserialize<int>(jsonSerialization['company_id']),
-      id_proof_type: serializationManager
-          .deserialize<String>(jsonSerialization['id_proof_type']),
+      mobile:
+          serializationManager.deserialize<String>(jsonSerialization['mobile']),
+      id_proof: serializationManager
+          .deserialize<String>(jsonSerialization['id_proof']),
       id_proof_number: serializationManager
           .deserialize<String>(jsonSerialization['id_proof_number']),
       id_proof_image: serializationManager
           .deserialize<String>(jsonSerialization['id_proof_image']),
-      member_staff_building_unit:
-          serializationManager.deserialize<List<_i2.MemberStaffBuildingUnit>?>(
-              jsonSerialization['member_staff_building_unit']),
+      staff_category_id: serializationManager
+          .deserialize<int>(jsonSerialization['staff_category_id']),
+      staff_sub_category_id: serializationManager
+          .deserialize<int>(jsonSerialization['staff_sub_category_id']),
+      building_assignment:
+          serializationManager.deserialize<List<_i2.BuildingAssignment>>(
+              jsonSerialization['building_assignment']),
     );
   }
 
@@ -54,32 +54,32 @@ class MemberStaff extends _i1.SerializableEntity {
 
   String name;
 
-  int category_id;
+  String mobile;
 
-  int sub_category_id;
-
-  int company_id;
-
-  String id_proof_type;
+  String id_proof;
 
   String id_proof_number;
 
   String id_proof_image;
 
-  List<_i2.MemberStaffBuildingUnit>? member_staff_building_unit;
+  int staff_category_id;
+
+  int staff_sub_category_id;
+
+  List<_i2.BuildingAssignment> building_assignment;
 
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
-      'category_id': category_id,
-      'sub_category_id': sub_category_id,
-      'company_id': company_id,
-      'id_proof_type': id_proof_type,
+      'mobile': mobile,
+      'id_proof': id_proof,
       'id_proof_number': id_proof_number,
       'id_proof_image': id_proof_image,
-      'member_staff_building_unit': member_staff_building_unit,
+      'staff_category_id': staff_category_id,
+      'staff_sub_category_id': staff_sub_category_id,
+      'building_assignment': building_assignment,
     };
   }
 }

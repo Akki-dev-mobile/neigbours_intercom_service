@@ -14,6 +14,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:chips_choice/chips_choice.dart';
+import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
 
 import 'package:toggle_switch/toggle_switch.dart';
@@ -38,6 +39,7 @@ List<String> _labels = ['Mobile', 'Pass Code'];
 String? selectedPassAlpha = 'A';
 String selectedCountryCode = 'IN';
 final isoCode = selectedCountryCode;
+Visitor? searchedVisitor;
 
 List<String> listPassAlpha = [
   'G',
@@ -57,7 +59,8 @@ class _IdInputViewState extends State<IdInputView> {
 
   final gateDashboardBloc = GatekeeperDashboardBloc(VisitorUsecase(
     VisitorRepoImpl(
-      RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,DioSingleton.instance3),
+      RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+          DioSingleton.instance3),
     ),
   ));
 
@@ -80,7 +83,7 @@ class _IdInputViewState extends State<IdInputView> {
           case GatekeeperDashboardErrorState:
             final errorState = state as GatekeeperDashboardErrorState;
             Fluttertoast.showToast(
-              msg: errorState.message,
+              msg: errorState.message!,
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.BOTTOM,
               timeInSecForIosWeb: 1,
@@ -89,222 +92,8 @@ class _IdInputViewState extends State<IdInputView> {
               fontSize: 16.0,
             );
             break;
-        }
-      },
-      builder: (context, state) {
-        switch (state.runtimeType) {
-          case GatekeeperDashboardLoadingState:
-            return LoaderView();
-          default:
-            return MyScrollView(
-      hasBackButton: true,
-      pageBody: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ToggleSwitch(
-            cornerRadius: 20.0,
-            borderWidth: 0.5,
-            minWidth: MediaQuery.of(context).size.width * 0.8,
-            minHeight: 50.0,
-            fontSize: 18.0,
-            changeOnTap: true,
-            initialLabelIndex: _currentIndex,
-            activeBgColor: [
-              Theme.of(context).colorScheme.onBackground,
-            ],
-            activeFgColor: Theme.of(context).colorScheme.background,
-            borderColor: [
-              Theme.of(context).colorScheme.onBackground,
-            ],
-            inactiveBgColor: Theme.of(context).colorScheme.background,
-            inactiveFgColor: Theme.of(context).colorScheme.onPrimary,
-            totalSwitches: 2,
-            labels: _labels,
-            onToggle: (index) {
-              setState(() {
-                _currentIndex = index!;
-              });
-              print('Switched to: $_currentIndex');
-            },
-          ),
-          SizedBox(height: 20),
-          (_currentIndex == 0)
-              ? Form(
-                  key: mobileControllerFormKey,
-                  child: CustomForm.textField(
-                    titleColor: Theme.of(context).colorScheme.onBackground,
-                    hintColor: Theme.of(context).colorScheme.onPrimary,
-                    focusNode: _focusNode,
-                    "Visitor Mobile Number",
-                    hintText: '0123456789',
-                    prefixIcon: CountryCodePicker(
-                      initialSelection: 'IN',
-                      favorite: ['IN'],
-                      showFlagMain: true,
-                      showFlagDialog: true,
-                      boxDecoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.background,
-                      ),
-                      barrierColor: Theme.of(context)
-                          .colorScheme
-                          .background
-                          .withOpacity(0.5),
-                      closeIcon: Icon(
-                        Icons.close,
-                        color: Theme.of(context).colorScheme.onBackground,
-                      ),
-                      searchDecoration: InputDecoration(
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                        hintText: 'Search',
-                        hintStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(
-                            style: BorderStyle.solid,
-                            color: Theme.of(context).colorScheme.onBackground,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(
-                            style: BorderStyle.solid,
-                            color: Theme.of(context).colorScheme.onBackground,
-                          ),
-                        ),
-                      ),
-                      textStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onBackground,
-                        fontSize: 18,
-                      ),
-                      dialogTextStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onBackground,
-                      ),
-                      onChanged: (CountryCode countryCode) {
-                       
-                        setState(() {
-                          selectedCountryCode = countryCode.code!;
-                        });
-                      },
-                    ),
-                    textController: mobileController,
-                    keyboardType: TextInputType.number,
-                    length: 10,
-                    onChanged: (value) {
-                       if(value.length==10){
-                          gateDashboardBloc.add(GDOnMobileNumberEnteredEvent(mobileController.text));
-                        }
-                    },
-                    // validator: (value) {
-                    //   if (value!.isEmpty) {
-                    //     return 'Mobile number is required';
-                    //   } else if (value.length != 10) {
-                    //     return 'Please enter a 10-digit number';
-                    //   }
-                    //   return null;
-                    // },
-                  ),
-                )
-              : Column(
-                  children: [
-                    Form(
-                      key: passcodeControllerFormKey,
-                      child: CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onBackground,
-                        hintColor: Theme.of(context).colorScheme.onPrimary,
-                        "Visitor Passcode",
-                        hintText: '123456',
-                        textController: passcodeController,
-                        textCapitalization: TextCapitalization.characters,
-                        length: 6,
-                        keyboardType: TextInputType.number,
-                        prefixIcon: Padding(
-                          padding: EdgeInsets.only(
-                            left: 10,
-                            right: 20,
-                          ),
-                          child: CircleAvatar(
-                            backgroundColor: Color(0xffFFEBE6),
-                            child: Text(
-                              selectedPassAlpha ?? 'A',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            if (passcodeControllerFormKey.currentState!
-                                .validate()) {
-                              showModalBottomSheet(
-                                useSafeArea: true,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(20),
-                                    topRight: Radius.circular(20),
-                                  ),
-                                ),
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.background,
-                                context: context,
-                                builder: (context) => ImageGridBottomSheet(),
-                              );
-                            }
-                          },
-                          icon: Icon(
-                            Symbols.done_rounded,
-                            color: Theme.of(context).colorScheme.onBackground,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return 'Passcode is required';
-                          } else if (value.length != 6) {
-                            return 'Please enter a 6-digit passcode';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    ChipsChoice<String>.single(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      spacing: 20,
-                      choiceStyle: C2ChipStyle.outlined(
-                        borderWidth: 1,
-                        color: Colors.grey,
-                        selectedStyle: C2ChipStyle.outlined(
-                          overlayColor: Color(0x90C08261),
-                          color: Color(0xff0c08261),
-                        ),
-                      ),
-                      choiceCheckmark: true,
-                      value: selectedPassAlpha,
-                      scrollPhysics: BouncingScrollPhysics(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedPassAlpha = value;
-                        });
-                      },
-                      choiceItems: C2Choice.listFrom<String, String>(
-                        source: listPassAlpha,
-                        value: (i, v) => v,
-                        label: (i, v) => v,
-                      ),
-                    ),
-                  ],
-                ),
-        ],
-      ),
-      floatingActionButton: CustomLargeBtn(
-        text: 'Next',
-        onPressed: () {
-          if (mobileControllerFormKey.currentState!.validate()) {
+          case OpenPurposeDialogState:
+            final dialogState = state as OpenPurposeDialogState;
             showModalBottomSheet(
               useSafeArea: true,
               shape: RoundedRectangleBorder(
@@ -315,12 +104,255 @@ class _IdInputViewState extends State<IdInputView> {
               ),
               backgroundColor: Theme.of(context).colorScheme.background,
               context: context,
-              builder: (context) => ImageGridBottomSheet(),
+              builder: (context) => ImageGridBottomSheet(
+                  purposeCategories: dialogState.purposeCategories!),
             );
-          }
-        },
-      ),
-    );
+            break;
+          case SaveSearchedVisitorState:
+            final saveVisitorState = state as SaveSearchedVisitorState;
+            searchedVisitor = saveVisitorState.visitor;
+            break;
+        }
+      },
+      builder: (context, state) {
+        switch (state.runtimeType) {
+          case GatekeeperDashboardLoadingState:
+            return LoaderView();
+          default:
+            return MyScrollView(
+              hasBackButton: true,
+              pageBody: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ToggleSwitch(
+                    cornerRadius: 20.0,
+                    borderWidth: 0.5,
+                    minWidth: MediaQuery.of(context).size.width * 0.8,
+                    minHeight: 50.0,
+                    fontSize: 18.0,
+                    changeOnTap: true,
+                    initialLabelIndex: _currentIndex,
+                    activeBgColor: [
+                      Theme.of(context).colorScheme.onBackground,
+                    ],
+                    activeFgColor: Theme.of(context).colorScheme.background,
+                    borderColor: [
+                      Theme.of(context).colorScheme.onBackground,
+                    ],
+                    inactiveBgColor: Theme.of(context).colorScheme.background,
+                    inactiveFgColor: Theme.of(context).colorScheme.onPrimary,
+                    totalSwitches: 2,
+                    labels: _labels,
+                    onToggle: (index) {
+                      setState(() {
+                        _currentIndex = index!;
+                      });
+                      print('Switched to: $_currentIndex');
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  (_currentIndex == 0)
+                      ? Form(
+                          key: mobileControllerFormKey,
+                          child: CustomForm.textField(
+                            titleColor:
+                                Theme.of(context).colorScheme.onBackground,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
+                            focusNode: _focusNode,
+                            "Visitor Mobile Number",
+                            hintText: '0123456789',
+                            prefixIcon: CountryCodePicker(
+                              initialSelection: 'IN',
+                              favorite: ['IN'],
+                              showFlagMain: true,
+                              showFlagDialog: true,
+                              boxDecoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.background,
+                              ),
+                              barrierColor: Theme.of(context)
+                                  .colorScheme
+                                  .background
+                                  .withOpacity(0.5),
+                              closeIcon: Icon(
+                                Icons.close,
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                              ),
+                              searchDecoration: InputDecoration(
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
+                                ),
+                                hintText: 'Search',
+                                hintStyle: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: BorderSide(
+                                    style: BorderStyle.solid,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: BorderSide(
+                                    style: BorderStyle.solid,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground,
+                                  ),
+                                ),
+                              ),
+                              textStyle: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                                fontSize: 18,
+                              ),
+                              dialogTextStyle: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                              ),
+                              onChanged: (CountryCode countryCode) {
+                                setState(() {
+                                  selectedCountryCode = countryCode.code!;
+                                });
+                              },
+                            ),
+                            textController: mobileController,
+                            keyboardType: TextInputType.number,
+                            length: 10,
+                            onChanged: (value) {
+                              if (value.length == 10) {
+                                gateDashboardBloc.add(
+                                    GDOnMobileNumberEnteredEvent(
+                                        mobileController.text));
+                              }
+                            },
+                            // validator: (value) {
+                            //   if (value!.isEmpty) {
+                            //     return 'Mobile number is required';
+                            //   } else if (value.length != 10) {
+                            //     return 'Please enter a 10-digit number';
+                            //   }
+                            //   return null;
+                            // },
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            Form(
+                              key: passcodeControllerFormKey,
+                              child: CustomForm.textField(
+                                titleColor:
+                                    Theme.of(context).colorScheme.onBackground,
+                                hintColor:
+                                    Theme.of(context).colorScheme.onPrimary,
+                                "Visitor Passcode",
+                                hintText: '123456',
+                                textController: passcodeController,
+                                textCapitalization:
+                                    TextCapitalization.characters,
+                                length: 6,
+                                keyboardType: TextInputType.number,
+                                prefixIcon: Padding(
+                                  padding: EdgeInsets.only(
+                                    left: 10,
+                                    right: 20,
+                                  ),
+                                  child: CircleAvatar(
+                                    backgroundColor: Color(0xffFFEBE6),
+                                    child: Text(
+                                      selectedPassAlpha ?? 'A',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                suffixIcon: IconButton(
+                                  onPressed: () {
+                                    if (passcodeControllerFormKey.currentState!
+                                        .validate()) {
+                                      // showModalBottomSheet(
+                                      //   useSafeArea: true,
+                                      //   shape: RoundedRectangleBorder(
+                                      //     borderRadius: BorderRadius.only(
+                                      //       topLeft: Radius.circular(20),
+                                      //       topRight: Radius.circular(20),
+                                      //     ),
+                                      //   ),
+                                      //   backgroundColor: Theme.of(context)
+                                      //       .colorScheme
+                                      //       .background,
+                                      //   context: context,
+                                      //   builder: (context) =>
+                                      //       ImageGridBottomSheet(),
+                                      // );
+                                    }
+                                  },
+                                  icon: Icon(
+                                    Symbols.done_rounded,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value!.isEmpty) {
+                                    return 'Passcode is required';
+                                  } else if (value.length != 6) {
+                                    return 'Please enter a 6-digit passcode';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            ChipsChoice<String>.single(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              spacing: 20,
+                              choiceStyle: C2ChipStyle.outlined(
+                                borderWidth: 1,
+                                color: Colors.grey,
+                                selectedStyle: C2ChipStyle.outlined(
+                                  overlayColor: Color(0x90C08261),
+                                  color: Color(0xff0c08261),
+                                ),
+                              ),
+                              choiceCheckmark: true,
+                              value: selectedPassAlpha,
+                              scrollPhysics: BouncingScrollPhysics(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedPassAlpha = value;
+                                });
+                              },
+                              choiceItems: C2Choice.listFrom<String, String>(
+                                source: listPassAlpha,
+                                value: (i, v) => v,
+                                label: (i, v) => v,
+                              ),
+                            ),
+                          ],
+                        ),
+                ],
+              ),
+              floatingActionButton: CustomLargeBtn(
+                text: 'Next',
+                onPressed: () {
+                  if (mobileControllerFormKey.currentState!.validate()) {
+                    gateDashboardBloc.add(InputPutViewNextClickedEvent());
+                  }
+                },
+              ),
+            );
         }
       },
     );
@@ -328,7 +360,9 @@ class _IdInputViewState extends State<IdInputView> {
 }
 
 class ImageGridBottomSheet extends StatefulWidget {
-  const ImageGridBottomSheet({super.key});
+  final List<PurposeCategory> purposeCategories;
+  Visitor? searchedVisitor;
+  ImageGridBottomSheet({super.key, required this.purposeCategories,this.searchedVisitor});
 
   @override
   _ImageGridBottomSheetState createState() => _ImageGridBottomSheetState();
@@ -336,21 +370,6 @@ class ImageGridBottomSheet extends StatefulWidget {
 
 class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   int selectedImageIndex = 0;
-  final List<String> imagePaths = [
-    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/guest_dbd7ea2cb9.png?updated_at=2023-09-08T12:42:09.850Z',
-    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/cab_8ed111c563.png?updated_at=2023-09-08T12:42:09.898Z',
-    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/delivery_boy_4bba1833cc.png?updated_at=2023-09-08T12:42:09.875Z',
-    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/staff_ae83c36d56.png?updated_at=2023-09-08T12:42:09.891Z',
-    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/vendor_f5d3fe1fa3.png?updated_at=2023-09-08T12:42:09.822Z',
-  ];
-
-  final List<String> imageValues = [
-    'Guest',
-    'Cabs',
-    'Delivery',
-    'Staff',
-    'Vendor',
-  ];
 
   void selectImage(int index) {
     setState(() {
@@ -401,7 +420,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                 mainAxisSpacing: 3,
                 crossAxisSpacing: 3,
               ),
-              itemCount: imagePaths.length,
+              itemCount: widget.purposeCategories.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () => selectImage(index),
@@ -438,7 +457,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   height: 60,
                                   width: 60,
                                   fit: BoxFit.cover,
-                                  imageUrl: imagePaths[index],
+                                  imageUrl: widget
+                                      .purposeCategories[index].purpose_img,
                                   placeholder: (context, url) =>
                                       const CircularProgressIndicator(),
                                   errorWidget: (context, url, error) =>
@@ -458,7 +478,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 child: Text(
-                                  imageValues[index],
+                                  widget.purposeCategories[index]
+                                      .purpose_category_name,
                                   style: TextStyle(
                                     color: selectedImageIndex == index
                                         ? Color(0xffC08261)
@@ -498,8 +519,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               text: 'Next',
               onPressed: () {
                 if (selectedImageIndex != -1) {
-                  String selectedValue = imageValues[selectedImageIndex];
-                  Navigator.pop(context, selectedValue);
+                  String selectedValue = widget
+                      .purposeCategories[selectedImageIndex]
+                      .purpose_category_name;
+                  Navigator.pop(context, selectedValue,);
                   Navigator.push(
                     context,
                     PageTransition(

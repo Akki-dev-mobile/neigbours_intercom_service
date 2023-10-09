@@ -8,19 +8,20 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
 
-class MemberStaffCategories extends _i1.SerializableEntity {
-  MemberStaffCategories({
+class StaffCategory extends _i1.SerializableEntity {
+  StaffCategory({
     this.id,
-    required this.name,
+    required this.category_name,
   });
 
-  factory MemberStaffCategories.fromJson(
+  factory StaffCategory.fromJson(
     Map<String, dynamic> jsonSerialization,
     _i1.SerializationManager serializationManager,
   ) {
-    return MemberStaffCategories(
+    return StaffCategory(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
-      name: serializationManager.deserialize<String>(jsonSerialization['name']),
+      category_name: serializationManager
+          .deserialize<String>(jsonSerialization['category_name']),
     );
   }
 
@@ -29,13 +30,13 @@ class MemberStaffCategories extends _i1.SerializableEntity {
   /// the id will be null.
   int? id;
 
-  String name;
+  String category_name;
 
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'category_name': category_name,
     };
   }
 }

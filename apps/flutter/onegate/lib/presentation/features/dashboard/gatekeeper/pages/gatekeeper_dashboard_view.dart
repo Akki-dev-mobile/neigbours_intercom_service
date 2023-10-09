@@ -1,14 +1,18 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
-import 'dart:ffi';
-
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
+import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/commons/ui/dashboard_commons.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
@@ -50,8 +54,12 @@ List<String> listPassAlpha = [
 
 class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
-  final GatekeeperDashboardBloc gatekeeperDashboardBloc =
-      GatekeeperDashboardBloc();
+  final gateDashboardBloc = GatekeeperDashboardBloc(VisitorUsecase(
+    VisitorRepoImpl(
+      RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+          DioSingleton.instance3),
+    ),
+  ));
   @override
   void initState() {
     // startKioskMode();
@@ -71,7 +79,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
-      bloc: gatekeeperDashboardBloc,
+      bloc: gateDashboardBloc,
       listenWhen: (previous, current) =>
           current is GatekeeperDashboardActionState,
       buildWhen: (previous, current) =>
@@ -321,7 +329,6 @@ class DashboardShortcut extends StatelessWidget {
     required this.onTap,
     required this.isPremium,
     required this.isVisible,
-    this.value,
     super.key,
   });
   final String title;
@@ -329,7 +336,6 @@ class DashboardShortcut extends StatelessWidget {
   final Function onTap;
   final bool isPremium;
   final bool isVisible;
-  final Int? value;
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

@@ -8,22 +8,23 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
 
-class MemberStaffSubCategories extends _i1.SerializableEntity {
-  MemberStaffSubCategories({
+class PurposeCategory extends _i1.SerializableEntity {
+  PurposeCategory({
     this.id,
-    required this.name,
-    required this.category_id,
+    required this.purpose_category_name,
+    required this.purpose_img,
   });
 
-  factory MemberStaffSubCategories.fromJson(
+  factory PurposeCategory.fromJson(
     Map<String, dynamic> jsonSerialization,
     _i1.SerializationManager serializationManager,
   ) {
-    return MemberStaffSubCategories(
+    return PurposeCategory(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
-      name: serializationManager.deserialize<String>(jsonSerialization['name']),
-      category_id: serializationManager
-          .deserialize<int>(jsonSerialization['category_id']),
+      purpose_category_name: serializationManager
+          .deserialize<String>(jsonSerialization['purpose_category_name']),
+      purpose_img: serializationManager
+          .deserialize<String>(jsonSerialization['purpose_img']),
     );
   }
 
@@ -32,16 +33,16 @@ class MemberStaffSubCategories extends _i1.SerializableEntity {
   /// the id will be null.
   int? id;
 
-  String name;
+  String purpose_category_name;
 
-  int category_id;
+  String purpose_img;
 
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
-      'category_id': category_id,
+      'purpose_category_name': purpose_category_name,
+      'purpose_img': purpose_img,
     };
   }
 }

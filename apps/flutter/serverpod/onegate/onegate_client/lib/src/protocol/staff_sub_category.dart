@@ -8,26 +8,23 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
 
-class MemberStaffBuildingUnit extends _i1.SerializableEntity {
-  MemberStaffBuildingUnit({
+class StaffSubCategory extends _i1.SerializableEntity {
+  StaffSubCategory({
     this.id,
-    required this.member_staff_id,
-    required this.building_id,
-    required this.building_unit_id,
+    required this.staff_category_id,
+    required this.sub_categories_name,
   });
 
-  factory MemberStaffBuildingUnit.fromJson(
+  factory StaffSubCategory.fromJson(
     Map<String, dynamic> jsonSerialization,
     _i1.SerializationManager serializationManager,
   ) {
-    return MemberStaffBuildingUnit(
+    return StaffSubCategory(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
-      member_staff_id: serializationManager
-          .deserialize<int>(jsonSerialization['member_staff_id']),
-      building_id: serializationManager
-          .deserialize<int>(jsonSerialization['building_id']),
-      building_unit_id: serializationManager
-          .deserialize<int>(jsonSerialization['building_unit_id']),
+      staff_category_id: serializationManager
+          .deserialize<int>(jsonSerialization['staff_category_id']),
+      sub_categories_name: serializationManager
+          .deserialize<String>(jsonSerialization['sub_categories_name']),
     );
   }
 
@@ -36,19 +33,16 @@ class MemberStaffBuildingUnit extends _i1.SerializableEntity {
   /// the id will be null.
   int? id;
 
-  int member_staff_id;
+  int staff_category_id;
 
-  int building_id;
-
-  int building_unit_id;
+  String sub_categories_name;
 
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'member_staff_id': member_staff_id,
-      'building_id': building_id,
-      'building_unit_id': building_unit_id,
+      'staff_category_id': staff_category_id,
+      'sub_categories_name': sub_categories_name,
     };
   }
 }

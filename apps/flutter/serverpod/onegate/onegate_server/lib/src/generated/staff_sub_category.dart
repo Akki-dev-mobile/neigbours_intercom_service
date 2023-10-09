@@ -8,39 +8,40 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
 
-class MemberStaffSubCategories extends _i1.TableRow {
-  MemberStaffSubCategories({
+class StaffSubCategory extends _i1.TableRow {
+  StaffSubCategory({
     int? id,
-    required this.name,
-    required this.category_id,
+    required this.staff_category_id,
+    required this.sub_categories_name,
   }) : super(id);
 
-  factory MemberStaffSubCategories.fromJson(
+  factory StaffSubCategory.fromJson(
     Map<String, dynamic> jsonSerialization,
     _i1.SerializationManager serializationManager,
   ) {
-    return MemberStaffSubCategories(
+    return StaffSubCategory(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
-      name: serializationManager.deserialize<String>(jsonSerialization['name']),
-      category_id: serializationManager
-          .deserialize<int>(jsonSerialization['category_id']),
+      staff_category_id: serializationManager
+          .deserialize<int>(jsonSerialization['staff_category_id']),
+      sub_categories_name: serializationManager
+          .deserialize<String>(jsonSerialization['sub_categories_name']),
     );
   }
 
-  static final t = MemberStaffSubCategoriesTable();
+  static final t = StaffSubCategoryTable();
 
-  String name;
+  int staff_category_id;
 
-  int category_id;
+  String sub_categories_name;
 
   @override
-  String get tableName => 'member_staff_sub_categories';
+  String get tableName => 'staff_sub_categories';
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
-      'category_id': category_id,
+      'staff_category_id': staff_category_id,
+      'sub_categories_name': sub_categories_name,
     };
   }
 
@@ -48,8 +49,8 @@ class MemberStaffSubCategories extends _i1.TableRow {
   Map<String, dynamic> toJsonForDatabase() {
     return {
       'id': id,
-      'name': name,
-      'category_id': category_id,
+      'staff_category_id': staff_category_id,
+      'sub_categories_name': sub_categories_name,
     };
   }
 
@@ -57,8 +58,8 @@ class MemberStaffSubCategories extends _i1.TableRow {
   Map<String, dynamic> allToJson() {
     return {
       'id': id,
-      'name': name,
-      'category_id': category_id,
+      'staff_category_id': staff_category_id,
+      'sub_categories_name': sub_categories_name,
     };
   }
 
@@ -71,20 +72,20 @@ class MemberStaffSubCategories extends _i1.TableRow {
       case 'id':
         id = value;
         return;
-      case 'name':
-        name = value;
+      case 'staff_category_id':
+        staff_category_id = value;
         return;
-      case 'category_id':
-        category_id = value;
+      case 'sub_categories_name':
+        sub_categories_name = value;
         return;
       default:
         throw UnimplementedError();
     }
   }
 
-  static Future<List<MemberStaffSubCategories>> find(
+  static Future<List<StaffSubCategory>> find(
     _i1.Session session, {
-    MemberStaffSubCategoriesExpressionBuilder? where,
+    StaffSubCategoryExpressionBuilder? where,
     int? limit,
     int? offset,
     _i1.Column? orderBy,
@@ -93,8 +94,8 @@ class MemberStaffSubCategories extends _i1.TableRow {
     bool useCache = true,
     _i1.Transaction? transaction,
   }) async {
-    return session.db.find<MemberStaffSubCategories>(
-      where: where != null ? where(MemberStaffSubCategories.t) : null,
+    return session.db.find<StaffSubCategory>(
+      where: where != null ? where(StaffSubCategory.t) : null,
       limit: limit,
       offset: offset,
       orderBy: orderBy,
@@ -105,17 +106,17 @@ class MemberStaffSubCategories extends _i1.TableRow {
     );
   }
 
-  static Future<MemberStaffSubCategories?> findSingleRow(
+  static Future<StaffSubCategory?> findSingleRow(
     _i1.Session session, {
-    MemberStaffSubCategoriesExpressionBuilder? where,
+    StaffSubCategoryExpressionBuilder? where,
     int? offset,
     _i1.Column? orderBy,
     bool orderDescending = false,
     bool useCache = true,
     _i1.Transaction? transaction,
   }) async {
-    return session.db.findSingleRow<MemberStaffSubCategories>(
-      where: where != null ? where(MemberStaffSubCategories.t) : null,
+    return session.db.findSingleRow<StaffSubCategory>(
+      where: where != null ? where(StaffSubCategory.t) : null,
       offset: offset,
       orderBy: orderBy,
       orderDescending: orderDescending,
@@ -124,27 +125,27 @@ class MemberStaffSubCategories extends _i1.TableRow {
     );
   }
 
-  static Future<MemberStaffSubCategories?> findById(
+  static Future<StaffSubCategory?> findById(
     _i1.Session session,
     int id,
   ) async {
-    return session.db.findById<MemberStaffSubCategories>(id);
+    return session.db.findById<StaffSubCategory>(id);
   }
 
   static Future<int> delete(
     _i1.Session session, {
-    required MemberStaffSubCategoriesExpressionBuilder where,
+    required StaffSubCategoryExpressionBuilder where,
     _i1.Transaction? transaction,
   }) async {
-    return session.db.delete<MemberStaffSubCategories>(
-      where: where(MemberStaffSubCategories.t),
+    return session.db.delete<StaffSubCategory>(
+      where: where(StaffSubCategory.t),
       transaction: transaction,
     );
   }
 
   static Future<bool> deleteRow(
     _i1.Session session,
-    MemberStaffSubCategories row, {
+    StaffSubCategory row, {
     _i1.Transaction? transaction,
   }) async {
     return session.db.deleteRow(
@@ -155,7 +156,7 @@ class MemberStaffSubCategories extends _i1.TableRow {
 
   static Future<bool> update(
     _i1.Session session,
-    MemberStaffSubCategories row, {
+    StaffSubCategory row, {
     _i1.Transaction? transaction,
   }) async {
     return session.db.update(
@@ -166,7 +167,7 @@ class MemberStaffSubCategories extends _i1.TableRow {
 
   static Future<void> insert(
     _i1.Session session,
-    MemberStaffSubCategories row, {
+    StaffSubCategory row, {
     _i1.Transaction? transaction,
   }) async {
     return session.db.insert(
@@ -177,13 +178,13 @@ class MemberStaffSubCategories extends _i1.TableRow {
 
   static Future<int> count(
     _i1.Session session, {
-    MemberStaffSubCategoriesExpressionBuilder? where,
+    StaffSubCategoryExpressionBuilder? where,
     int? limit,
     bool useCache = true,
     _i1.Transaction? transaction,
   }) async {
-    return session.db.count<MemberStaffSubCategories>(
-      where: where != null ? where(MemberStaffSubCategories.t) : null,
+    return session.db.count<StaffSubCategory>(
+      where: where != null ? where(StaffSubCategory.t) : null,
       limit: limit,
       useCache: useCache,
       transaction: transaction,
@@ -191,30 +192,28 @@ class MemberStaffSubCategories extends _i1.TableRow {
   }
 }
 
-typedef MemberStaffSubCategoriesExpressionBuilder = _i1.Expression Function(
-    MemberStaffSubCategoriesTable);
+typedef StaffSubCategoryExpressionBuilder = _i1.Expression Function(
+    StaffSubCategoryTable);
 
-class MemberStaffSubCategoriesTable extends _i1.Table {
-  MemberStaffSubCategoriesTable()
-      : super(tableName: 'member_staff_sub_categories');
+class StaffSubCategoryTable extends _i1.Table {
+  StaffSubCategoryTable() : super(tableName: 'staff_sub_categories');
 
   /// The database id, set if the object has been inserted into the
   /// database or if it has been fetched from the database. Otherwise,
   /// the id will be null.
   final id = _i1.ColumnInt('id');
 
-  final name = _i1.ColumnString('name');
+  final staff_category_id = _i1.ColumnInt('staff_category_id');
 
-  final category_id = _i1.ColumnInt('category_id');
+  final sub_categories_name = _i1.ColumnString('sub_categories_name');
 
   @override
   List<_i1.Column> get columns => [
         id,
-        name,
-        category_id,
+        staff_category_id,
+        sub_categories_name,
       ];
 }
 
-@Deprecated('Use MemberStaffSubCategoriesTable.t instead.')
-MemberStaffSubCategoriesTable tMemberStaffSubCategories =
-    MemberStaffSubCategoriesTable();
+@Deprecated('Use StaffSubCategoryTable.t instead.')
+StaffSubCategoryTable tStaffSubCategory = StaffSubCategoryTable();

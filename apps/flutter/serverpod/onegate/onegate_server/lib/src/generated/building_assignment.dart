@@ -8,46 +8,46 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
 
-class MemberStaffBuildingUnit extends _i1.TableRow {
-  MemberStaffBuildingUnit({
+class BuildingAssignment extends _i1.TableRow {
+  BuildingAssignment({
     int? id,
-    required this.member_staff_id,
+    this.visitor_id,
     required this.building_id,
-    required this.building_unit_id,
+    required this.unit_id,
   }) : super(id);
 
-  factory MemberStaffBuildingUnit.fromJson(
+  factory BuildingAssignment.fromJson(
     Map<String, dynamic> jsonSerialization,
     _i1.SerializationManager serializationManager,
   ) {
-    return MemberStaffBuildingUnit(
+    return BuildingAssignment(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
-      member_staff_id: serializationManager
-          .deserialize<int>(jsonSerialization['member_staff_id']),
+      visitor_id: serializationManager
+          .deserialize<int?>(jsonSerialization['visitor_id']),
       building_id: serializationManager
           .deserialize<int>(jsonSerialization['building_id']),
-      building_unit_id: serializationManager
-          .deserialize<int>(jsonSerialization['building_unit_id']),
+      unit_id: serializationManager
+          .deserialize<List<int>>(jsonSerialization['unit_id']),
     );
   }
 
-  static final t = MemberStaffBuildingUnitTable();
+  static final t = BuildingAssignmentTable();
 
-  int member_staff_id;
+  int? visitor_id;
 
   int building_id;
 
-  int building_unit_id;
+  List<int> unit_id;
 
   @override
-  String get tableName => 'member_staff_building_unit';
+  String get tableName => 'building_assignment';
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'member_staff_id': member_staff_id,
+      'visitor_id': visitor_id,
       'building_id': building_id,
-      'building_unit_id': building_unit_id,
+      'unit_id': unit_id,
     };
   }
 
@@ -55,9 +55,9 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
   Map<String, dynamic> toJsonForDatabase() {
     return {
       'id': id,
-      'member_staff_id': member_staff_id,
+      'visitor_id': visitor_id,
       'building_id': building_id,
-      'building_unit_id': building_unit_id,
+      'unit_id': unit_id,
     };
   }
 
@@ -65,9 +65,9 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
   Map<String, dynamic> allToJson() {
     return {
       'id': id,
-      'member_staff_id': member_staff_id,
+      'visitor_id': visitor_id,
       'building_id': building_id,
-      'building_unit_id': building_unit_id,
+      'unit_id': unit_id,
     };
   }
 
@@ -80,23 +80,23 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
       case 'id':
         id = value;
         return;
-      case 'member_staff_id':
-        member_staff_id = value;
+      case 'visitor_id':
+        visitor_id = value;
         return;
       case 'building_id':
         building_id = value;
         return;
-      case 'building_unit_id':
-        building_unit_id = value;
+      case 'unit_id':
+        unit_id = value;
         return;
       default:
         throw UnimplementedError();
     }
   }
 
-  static Future<List<MemberStaffBuildingUnit>> find(
+  static Future<List<BuildingAssignment>> find(
     _i1.Session session, {
-    MemberStaffBuildingUnitExpressionBuilder? where,
+    BuildingAssignmentExpressionBuilder? where,
     int? limit,
     int? offset,
     _i1.Column? orderBy,
@@ -105,8 +105,8 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
     bool useCache = true,
     _i1.Transaction? transaction,
   }) async {
-    return session.db.find<MemberStaffBuildingUnit>(
-      where: where != null ? where(MemberStaffBuildingUnit.t) : null,
+    return session.db.find<BuildingAssignment>(
+      where: where != null ? where(BuildingAssignment.t) : null,
       limit: limit,
       offset: offset,
       orderBy: orderBy,
@@ -117,17 +117,17 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
     );
   }
 
-  static Future<MemberStaffBuildingUnit?> findSingleRow(
+  static Future<BuildingAssignment?> findSingleRow(
     _i1.Session session, {
-    MemberStaffBuildingUnitExpressionBuilder? where,
+    BuildingAssignmentExpressionBuilder? where,
     int? offset,
     _i1.Column? orderBy,
     bool orderDescending = false,
     bool useCache = true,
     _i1.Transaction? transaction,
   }) async {
-    return session.db.findSingleRow<MemberStaffBuildingUnit>(
-      where: where != null ? where(MemberStaffBuildingUnit.t) : null,
+    return session.db.findSingleRow<BuildingAssignment>(
+      where: where != null ? where(BuildingAssignment.t) : null,
       offset: offset,
       orderBy: orderBy,
       orderDescending: orderDescending,
@@ -136,27 +136,27 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
     );
   }
 
-  static Future<MemberStaffBuildingUnit?> findById(
+  static Future<BuildingAssignment?> findById(
     _i1.Session session,
     int id,
   ) async {
-    return session.db.findById<MemberStaffBuildingUnit>(id);
+    return session.db.findById<BuildingAssignment>(id);
   }
 
   static Future<int> delete(
     _i1.Session session, {
-    required MemberStaffBuildingUnitExpressionBuilder where,
+    required BuildingAssignmentExpressionBuilder where,
     _i1.Transaction? transaction,
   }) async {
-    return session.db.delete<MemberStaffBuildingUnit>(
-      where: where(MemberStaffBuildingUnit.t),
+    return session.db.delete<BuildingAssignment>(
+      where: where(BuildingAssignment.t),
       transaction: transaction,
     );
   }
 
   static Future<bool> deleteRow(
     _i1.Session session,
-    MemberStaffBuildingUnit row, {
+    BuildingAssignment row, {
     _i1.Transaction? transaction,
   }) async {
     return session.db.deleteRow(
@@ -167,7 +167,7 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
 
   static Future<bool> update(
     _i1.Session session,
-    MemberStaffBuildingUnit row, {
+    BuildingAssignment row, {
     _i1.Transaction? transaction,
   }) async {
     return session.db.update(
@@ -178,7 +178,7 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
 
   static Future<void> insert(
     _i1.Session session,
-    MemberStaffBuildingUnit row, {
+    BuildingAssignment row, {
     _i1.Transaction? transaction,
   }) async {
     return session.db.insert(
@@ -189,13 +189,13 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
 
   static Future<int> count(
     _i1.Session session, {
-    MemberStaffBuildingUnitExpressionBuilder? where,
+    BuildingAssignmentExpressionBuilder? where,
     int? limit,
     bool useCache = true,
     _i1.Transaction? transaction,
   }) async {
-    return session.db.count<MemberStaffBuildingUnit>(
-      where: where != null ? where(MemberStaffBuildingUnit.t) : null,
+    return session.db.count<BuildingAssignment>(
+      where: where != null ? where(BuildingAssignment.t) : null,
       limit: limit,
       useCache: useCache,
       transaction: transaction,
@@ -203,33 +203,31 @@ class MemberStaffBuildingUnit extends _i1.TableRow {
   }
 }
 
-typedef MemberStaffBuildingUnitExpressionBuilder = _i1.Expression Function(
-    MemberStaffBuildingUnitTable);
+typedef BuildingAssignmentExpressionBuilder = _i1.Expression Function(
+    BuildingAssignmentTable);
 
-class MemberStaffBuildingUnitTable extends _i1.Table {
-  MemberStaffBuildingUnitTable()
-      : super(tableName: 'member_staff_building_unit');
+class BuildingAssignmentTable extends _i1.Table {
+  BuildingAssignmentTable() : super(tableName: 'building_assignment');
 
   /// The database id, set if the object has been inserted into the
   /// database or if it has been fetched from the database. Otherwise,
   /// the id will be null.
   final id = _i1.ColumnInt('id');
 
-  final member_staff_id = _i1.ColumnInt('member_staff_id');
+  final visitor_id = _i1.ColumnInt('visitor_id');
 
   final building_id = _i1.ColumnInt('building_id');
 
-  final building_unit_id = _i1.ColumnInt('building_unit_id');
+  final unit_id = _i1.ColumnSerializable('unit_id');
 
   @override
   List<_i1.Column> get columns => [
         id,
-        member_staff_id,
+        visitor_id,
         building_id,
-        building_unit_id,
+        unit_id,
       ];
 }
 
-@Deprecated('Use MemberStaffBuildingUnitTable.t instead.')
-MemberStaffBuildingUnitTable tMemberStaffBuildingUnit =
-    MemberStaffBuildingUnitTable();
+@Deprecated('Use BuildingAssignmentTable.t instead.')
+BuildingAssignmentTable tBuildingAssignment = BuildingAssignmentTable();

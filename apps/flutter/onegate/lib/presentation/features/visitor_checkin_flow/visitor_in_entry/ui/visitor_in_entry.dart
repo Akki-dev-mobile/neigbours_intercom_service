@@ -6,12 +6,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:onegate_client/onegate_client.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 
 class VisitorsInEntry extends StatefulWidget {
   final String selectedValue;
-  const VisitorsInEntry({Key? key, required this.selectedValue})
+  Visitor? searchedVisitor;
+   VisitorsInEntry({Key? key, required this.selectedValue,this.searchedVisitor})
       : super(key: key);
 
   @override
@@ -82,7 +84,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.selectedValue == 'Cabs')
+          if (widget.selectedValue == 'CABS')
             Column(
               children: [
                 CustomForm.textField(
@@ -125,7 +127,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 ),
               ],
             ),
-          if (widget.selectedValue == 'Delivery')
+          if (widget.selectedValue == 'DELIVERY')
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +161,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 SelectTypeWidget(),
               ],
             ),
-          if (widget.selectedValue == 'Guest')
+          if (widget.selectedValue == 'GUEST')
             Column(
               children: [
                 CustomForm.textField(
@@ -243,7 +245,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     ),
               ],
             ),
-          if (widget.selectedValue == 'Staff')
+          if (widget.selectedValue == 'STAFF')
             Column(
               children: [
                 CustomForm.textField(
@@ -278,7 +280,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 SelectTypeWidget(),
               ],
             ),
-          if (widget.selectedValue == 'Vendor')
+          if (widget.selectedValue == 'VENDOR')
             Column(
               children: [
                 CustomForm.textField(

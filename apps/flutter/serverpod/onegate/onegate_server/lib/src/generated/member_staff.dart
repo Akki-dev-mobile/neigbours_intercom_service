@@ -13,13 +13,13 @@ class MemberStaff extends _i1.TableRow {
   MemberStaff({
     int? id,
     required this.name,
-    required this.category_id,
-    required this.sub_category_id,
-    required this.company_id,
-    required this.id_proof_type,
+    required this.mobile,
+    required this.id_proof,
     required this.id_proof_number,
     required this.id_proof_image,
-    this.member_staff_building_unit,
+    required this.staff_category_id,
+    required this.staff_sub_category_id,
+    required this.building_assignment,
   }) : super(id);
 
   factory MemberStaff.fromJson(
@@ -29,21 +29,21 @@ class MemberStaff extends _i1.TableRow {
     return MemberStaff(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
       name: serializationManager.deserialize<String>(jsonSerialization['name']),
-      category_id: serializationManager
-          .deserialize<int>(jsonSerialization['category_id']),
-      sub_category_id: serializationManager
-          .deserialize<int>(jsonSerialization['sub_category_id']),
-      company_id: serializationManager
-          .deserialize<int>(jsonSerialization['company_id']),
-      id_proof_type: serializationManager
-          .deserialize<String>(jsonSerialization['id_proof_type']),
+      mobile:
+          serializationManager.deserialize<String>(jsonSerialization['mobile']),
+      id_proof: serializationManager
+          .deserialize<String>(jsonSerialization['id_proof']),
       id_proof_number: serializationManager
           .deserialize<String>(jsonSerialization['id_proof_number']),
       id_proof_image: serializationManager
           .deserialize<String>(jsonSerialization['id_proof_image']),
-      member_staff_building_unit:
-          serializationManager.deserialize<List<_i2.MemberStaffBuildingUnit>?>(
-              jsonSerialization['member_staff_building_unit']),
+      staff_category_id: serializationManager
+          .deserialize<int>(jsonSerialization['staff_category_id']),
+      staff_sub_category_id: serializationManager
+          .deserialize<int>(jsonSerialization['staff_sub_category_id']),
+      building_assignment:
+          serializationManager.deserialize<List<_i2.BuildingAssignment>>(
+              jsonSerialization['building_assignment']),
     );
   }
 
@@ -51,19 +51,19 @@ class MemberStaff extends _i1.TableRow {
 
   String name;
 
-  int category_id;
+  String mobile;
 
-  int sub_category_id;
-
-  int company_id;
-
-  String id_proof_type;
+  String id_proof;
 
   String id_proof_number;
 
   String id_proof_image;
 
-  List<_i2.MemberStaffBuildingUnit>? member_staff_building_unit;
+  int staff_category_id;
+
+  int staff_sub_category_id;
+
+  List<_i2.BuildingAssignment> building_assignment;
 
   @override
   String get tableName => 'member_staff';
@@ -72,13 +72,13 @@ class MemberStaff extends _i1.TableRow {
     return {
       'id': id,
       'name': name,
-      'category_id': category_id,
-      'sub_category_id': sub_category_id,
-      'company_id': company_id,
-      'id_proof_type': id_proof_type,
+      'mobile': mobile,
+      'id_proof': id_proof,
       'id_proof_number': id_proof_number,
       'id_proof_image': id_proof_image,
-      'member_staff_building_unit': member_staff_building_unit,
+      'staff_category_id': staff_category_id,
+      'staff_sub_category_id': staff_sub_category_id,
+      'building_assignment': building_assignment,
     };
   }
 
@@ -87,12 +87,12 @@ class MemberStaff extends _i1.TableRow {
     return {
       'id': id,
       'name': name,
-      'category_id': category_id,
-      'sub_category_id': sub_category_id,
-      'company_id': company_id,
-      'id_proof_type': id_proof_type,
+      'mobile': mobile,
+      'id_proof': id_proof,
       'id_proof_number': id_proof_number,
       'id_proof_image': id_proof_image,
+      'staff_category_id': staff_category_id,
+      'staff_sub_category_id': staff_sub_category_id,
     };
   }
 
@@ -101,13 +101,13 @@ class MemberStaff extends _i1.TableRow {
     return {
       'id': id,
       'name': name,
-      'category_id': category_id,
-      'sub_category_id': sub_category_id,
-      'company_id': company_id,
-      'id_proof_type': id_proof_type,
+      'mobile': mobile,
+      'id_proof': id_proof,
       'id_proof_number': id_proof_number,
       'id_proof_image': id_proof_image,
-      'member_staff_building_unit': member_staff_building_unit,
+      'staff_category_id': staff_category_id,
+      'staff_sub_category_id': staff_sub_category_id,
+      'building_assignment': building_assignment,
     };
   }
 
@@ -123,23 +123,23 @@ class MemberStaff extends _i1.TableRow {
       case 'name':
         name = value;
         return;
-      case 'category_id':
-        category_id = value;
+      case 'mobile':
+        mobile = value;
         return;
-      case 'sub_category_id':
-        sub_category_id = value;
-        return;
-      case 'company_id':
-        company_id = value;
-        return;
-      case 'id_proof_type':
-        id_proof_type = value;
+      case 'id_proof':
+        id_proof = value;
         return;
       case 'id_proof_number':
         id_proof_number = value;
         return;
       case 'id_proof_image':
         id_proof_image = value;
+        return;
+      case 'staff_category_id':
+        staff_category_id = value;
+        return;
+      case 'staff_sub_category_id':
+        staff_sub_category_id = value;
         return;
       default:
         throw UnimplementedError();
@@ -268,28 +268,28 @@ class MemberStaffTable extends _i1.Table {
 
   final name = _i1.ColumnString('name');
 
-  final category_id = _i1.ColumnInt('category_id');
+  final mobile = _i1.ColumnString('mobile');
 
-  final sub_category_id = _i1.ColumnInt('sub_category_id');
-
-  final company_id = _i1.ColumnInt('company_id');
-
-  final id_proof_type = _i1.ColumnString('id_proof_type');
+  final id_proof = _i1.ColumnString('id_proof');
 
   final id_proof_number = _i1.ColumnString('id_proof_number');
 
   final id_proof_image = _i1.ColumnString('id_proof_image');
 
+  final staff_category_id = _i1.ColumnInt('staff_category_id');
+
+  final staff_sub_category_id = _i1.ColumnInt('staff_sub_category_id');
+
   @override
   List<_i1.Column> get columns => [
         id,
         name,
-        category_id,
-        sub_category_id,
-        company_id,
-        id_proof_type,
+        mobile,
+        id_proof,
         id_proof_number,
         id_proof_image,
+        staff_category_id,
+        staff_sub_category_id,
       ];
 }
 

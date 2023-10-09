@@ -1,12 +1,16 @@
-import 'package:flutter_onegate/domain/entities/visitor.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
+import 'package:onegate_client/onegate_client.dart';
 
 class VisitorUsecase {
   final VisitorRepository _repository;
 
   VisitorUsecase(this._repository);
 
-  Future<Visitor?> searchVisitor(String mobileNUmber) async{
+  Future<Visitor?> searchVisitor(String mobileNUmber) async {
     return await _repository.searchVisitor(mobileNUmber);
+  }
+
+  Future<List<PurposeCategory>?>? fetchPurposeCategory() async {
+    return await _repository.fetchPurposeCategory();
   }
 }

@@ -9,17 +9,29 @@ library protocol; // ignore_for_file: no_leading_underscores_for_library_prefixe
 
 import 'package:serverpod/serverpod.dart' as _i1;
 import 'package:serverpod/protocol.dart' as _i2;
-import 'example.dart' as _i3;
-import 'member_staff.dart' as _i4;
-import 'member_staff_building_unit.dart' as _i5;
-import 'member_staff_categories.dart' as _i6;
-import 'member_staff_sub_categories.dart' as _i7;
-import 'protocol.dart' as _i8;
+import 'building_assignment.dart' as _i3;
+import 'example.dart' as _i4;
+import 'member_staff.dart' as _i5;
+import 'purpose_category.dart' as _i6;
+import 'purpose_sub_category.dart' as _i7;
+import 'staff_category.dart' as _i8;
+import 'staff_sub_category.dart' as _i9;
+import 'visitor.dart' as _i10;
+import 'visitor_card.dart' as _i11;
+import 'visitor_log.dart' as _i12;
+import 'protocol.dart' as _i13;
+import 'package:onegate_server/src/generated/purpose_category.dart' as _i14;
+import 'package:onegate_server/src/generated/visitor_log.dart' as _i15;
+export 'building_assignment.dart';
 export 'example.dart';
 export 'member_staff.dart';
-export 'member_staff_building_unit.dart';
-export 'member_staff_categories.dart';
-export 'member_staff_sub_categories.dart';
+export 'purpose_category.dart';
+export 'purpose_sub_category.dart';
+export 'staff_category.dart';
+export 'staff_sub_category.dart';
+export 'visitor.dart';
+export 'visitor_card.dart';
+export 'visitor_log.dart';
 
 class Protocol extends _i1.SerializationManagerServer {
   Protocol._();
@@ -31,6 +43,65 @@ class Protocol extends _i1.SerializationManagerServer {
   static final Protocol _instance = Protocol._();
 
   static final targetDatabaseDefinition = _i2.DatabaseDefinition(tables: [
+    _i2.TableDefinition(
+      name: 'building_assignment',
+      schema: 'public',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'building_assignment_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: true,
+          dartType: 'int?',
+        ),
+        _i2.ColumnDefinition(
+          name: 'building_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'unit_id',
+          columnType: _i2.ColumnType.json,
+          isNullable: false,
+          dartType: 'List<int>',
+        ),
+      ],
+      foreignKeys: [
+        _i2.ForeignKeyDefinition(
+          constraintName: 'building_assignment_fk_0',
+          columns: ['visitor_id'],
+          referenceTable: 'visitor',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: null,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        )
+      ],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'building_assignment_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            )
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        )
+      ],
+      managed: true,
+    ),
     _i2.TableDefinition(
       name: 'member_staff',
       schema: 'public',
@@ -49,25 +120,13 @@ class Protocol extends _i1.SerializationManagerServer {
           dartType: 'String',
         ),
         _i2.ColumnDefinition(
-          name: 'category_id',
-          columnType: _i2.ColumnType.integer,
+          name: 'mobile',
+          columnType: _i2.ColumnType.text,
           isNullable: false,
-          dartType: 'int',
+          dartType: 'String',
         ),
         _i2.ColumnDefinition(
-          name: 'sub_category_id',
-          columnType: _i2.ColumnType.integer,
-          isNullable: false,
-          dartType: 'int',
-        ),
-        _i2.ColumnDefinition(
-          name: 'company_id',
-          columnType: _i2.ColumnType.integer,
-          isNullable: false,
-          dartType: 'int',
-        ),
-        _i2.ColumnDefinition(
-          name: 'id_proof_type',
+          name: 'id_proof',
           columnType: _i2.ColumnType.text,
           isNullable: false,
           dartType: 'String',
@@ -84,12 +143,24 @@ class Protocol extends _i1.SerializationManagerServer {
           isNullable: false,
           dartType: 'String',
         ),
+        _i2.ColumnDefinition(
+          name: 'staff_category_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'staff_sub_category_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
       ],
       foreignKeys: [
         _i2.ForeignKeyDefinition(
           constraintName: 'member_staff_fk_0',
-          columns: ['category_id'],
-          referenceTable: 'member_staff_categories',
+          columns: ['staff_category_id'],
+          referenceTable: 'staff_categories',
           referenceTableSchema: 'public',
           referenceColumns: ['id'],
           onUpdate: null,
@@ -98,8 +169,8 @@ class Protocol extends _i1.SerializationManagerServer {
         ),
         _i2.ForeignKeyDefinition(
           constraintName: 'member_staff_fk_1',
-          columns: ['sub_category_id'],
-          referenceTable: 'member_staff_sub_categories',
+          columns: ['staff_sub_category_id'],
+          referenceTable: 'staff_sub_categories',
           referenceTableSchema: 'public',
           referenceColumns: ['id'],
           onUpdate: null,
@@ -125,7 +196,7 @@ class Protocol extends _i1.SerializationManagerServer {
       managed: true,
     ),
     _i2.TableDefinition(
-      name: 'member_staff_building_unit',
+      name: 'purpose_category',
       schema: 'public',
       columns: [
         _i2.ColumnDefinition(
@@ -133,71 +204,16 @@ class Protocol extends _i1.SerializationManagerServer {
           columnType: _i2.ColumnType.integer,
           isNullable: false,
           dartType: 'int?',
-          columnDefault:
-              'nextval(\'member_staff_building_unit_id_seq\'::regclass)',
+          columnDefault: 'nextval(\'purpose_category_id_seq\'::regclass)',
         ),
         _i2.ColumnDefinition(
-          name: 'member_staff_id',
-          columnType: _i2.ColumnType.integer,
+          name: 'purpose_category_name',
+          columnType: _i2.ColumnType.text,
           isNullable: false,
-          dartType: 'int',
+          dartType: 'String',
         ),
         _i2.ColumnDefinition(
-          name: 'building_id',
-          columnType: _i2.ColumnType.integer,
-          isNullable: false,
-          dartType: 'int',
-        ),
-        _i2.ColumnDefinition(
-          name: 'building_unit_id',
-          columnType: _i2.ColumnType.integer,
-          isNullable: false,
-          dartType: 'int',
-        ),
-      ],
-      foreignKeys: [
-        _i2.ForeignKeyDefinition(
-          constraintName: 'member_staff_building_unit_fk_0',
-          columns: ['member_staff_id'],
-          referenceTable: 'member_staff',
-          referenceTableSchema: 'public',
-          referenceColumns: ['id'],
-          onUpdate: null,
-          onDelete: _i2.ForeignKeyAction.cascade,
-          matchType: null,
-        )
-      ],
-      indexes: [
-        _i2.IndexDefinition(
-          indexName: 'member_staff_building_unit_pkey',
-          tableSpace: null,
-          elements: [
-            _i2.IndexElementDefinition(
-              type: _i2.IndexElementDefinitionType.column,
-              definition: 'id',
-            )
-          ],
-          type: 'btree',
-          isUnique: true,
-          isPrimary: true,
-        )
-      ],
-      managed: true,
-    ),
-    _i2.TableDefinition(
-      name: 'member_staff_categories',
-      schema: 'public',
-      columns: [
-        _i2.ColumnDefinition(
-          name: 'id',
-          columnType: _i2.ColumnType.integer,
-          isNullable: false,
-          dartType: 'int?',
-          columnDefault:
-              'nextval(\'member_staff_categories_id_seq\'::regclass)',
-        ),
-        _i2.ColumnDefinition(
-          name: 'name',
+          name: 'purpose_img',
           columnType: _i2.ColumnType.text,
           isNullable: false,
           dartType: 'String',
@@ -206,7 +222,7 @@ class Protocol extends _i1.SerializationManagerServer {
       foreignKeys: [],
       indexes: [
         _i2.IndexDefinition(
-          indexName: 'member_staff_categories_pkey',
+          indexName: 'purpose_category_pkey',
           tableSpace: null,
           elements: [
             _i2.IndexElementDefinition(
@@ -222,7 +238,7 @@ class Protocol extends _i1.SerializationManagerServer {
       managed: true,
     ),
     _i2.TableDefinition(
-      name: 'member_staff_sub_categories',
+      name: 'purpose_sub_category',
       schema: 'public',
       columns: [
         _i2.ColumnDefinition(
@@ -230,27 +246,32 @@ class Protocol extends _i1.SerializationManagerServer {
           columnType: _i2.ColumnType.integer,
           isNullable: false,
           dartType: 'int?',
-          columnDefault:
-              'nextval(\'member_staff_sub_categories_id_seq\'::regclass)',
+          columnDefault: 'nextval(\'purpose_sub_category_id_seq\'::regclass)',
         ),
         _i2.ColumnDefinition(
-          name: 'name',
+          name: 'purpose_category_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'purpose_sub_category_name',
           columnType: _i2.ColumnType.text,
           isNullable: false,
           dartType: 'String',
         ),
         _i2.ColumnDefinition(
-          name: 'category_id',
-          columnType: _i2.ColumnType.integer,
+          name: 'purpose_img',
+          columnType: _i2.ColumnType.text,
           isNullable: false,
-          dartType: 'int',
+          dartType: 'String',
         ),
       ],
       foreignKeys: [
         _i2.ForeignKeyDefinition(
-          constraintName: 'member_staff_sub_categories_fk_0',
-          columns: ['category_id'],
-          referenceTable: 'member_staff_categories',
+          constraintName: 'purpose_sub_category_fk_0',
+          columns: ['purpose_category_id'],
+          referenceTable: 'purpose_category',
           referenceTableSchema: 'public',
           referenceColumns: ['id'],
           onUpdate: null,
@@ -260,7 +281,313 @@ class Protocol extends _i1.SerializationManagerServer {
       ],
       indexes: [
         _i2.IndexDefinition(
-          indexName: 'member_staff_sub_categories_pkey',
+          indexName: 'purpose_sub_category_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            )
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        )
+      ],
+      managed: true,
+    ),
+    _i2.TableDefinition(
+      name: 'staff_categories',
+      schema: 'public',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'staff_categories_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'category_name',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+      ],
+      foreignKeys: [],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'staff_categories_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            )
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        )
+      ],
+      managed: true,
+    ),
+    _i2.TableDefinition(
+      name: 'staff_sub_categories',
+      schema: 'public',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'staff_sub_categories_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'staff_category_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'sub_categories_name',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+      ],
+      foreignKeys: [
+        _i2.ForeignKeyDefinition(
+          constraintName: 'staff_sub_categories_fk_0',
+          columns: ['staff_category_id'],
+          referenceTable: 'staff_categories',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: null,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        )
+      ],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'staff_sub_categories_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            )
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        )
+      ],
+      managed: true,
+    ),
+    _i2.TableDefinition(
+      name: 'visitor',
+      schema: 'public',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'visitor_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'name',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'mobile',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_image',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+      ],
+      foreignKeys: [],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'visitor_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            )
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        )
+      ],
+      managed: true,
+    ),
+    _i2.TableDefinition(
+      name: 'visitor_card',
+      schema: 'public',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'visitor_card_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_card_number',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_card_is_assigned',
+          columnType: _i2.ColumnType.boolean,
+          isNullable: false,
+          dartType: 'bool',
+        ),
+      ],
+      foreignKeys: [],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'visitor_card_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            )
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        )
+      ],
+      managed: true,
+    ),
+    _i2.TableDefinition(
+      name: 'visitor_log',
+      schema: 'public',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'visitor_log_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor',
+          columnType: _i2.ColumnType.json,
+          isNullable: false,
+          dartType: 'protocol:Visitor',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_purpose_category_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_purpose_sub_category_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_building_assignment',
+          columnType: _i2.ColumnType.json,
+          isNullable: false,
+          dartType: 'List<protocol:BuildingAssignment>',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_image',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_count',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_check_in',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_check_out',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_card_number',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_card_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'company_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+      ],
+      foreignKeys: [
+        _i2.ForeignKeyDefinition(
+          constraintName: 'visitor_log_fk_0',
+          columns: ['visitor_purpose_category_id'],
+          referenceTable: 'purpose_category',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: null,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+        _i2.ForeignKeyDefinition(
+          constraintName: 'visitor_log_fk_1',
+          columns: ['visitor_purpose_sub_category_id'],
+          referenceTable: 'purpose_sub_category',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: null,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+        _i2.ForeignKeyDefinition(
+          constraintName: 'visitor_log_fk_2',
+          columns: ['visitor_card_id'],
+          referenceTable: 'visitor_card',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: null,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+      ],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'visitor_log_pkey',
           tableSpace: null,
           elements: [
             _i2.IndexElementDefinition(
@@ -287,48 +614,87 @@ class Protocol extends _i1.SerializationManagerServer {
     if (customConstructors.containsKey(t)) {
       return customConstructors[t]!(data, this) as T;
     }
-    if (t == _i3.Example) {
-      return _i3.Example.fromJson(data, this) as T;
+    if (t == _i3.BuildingAssignment) {
+      return _i3.BuildingAssignment.fromJson(data, this) as T;
     }
-    if (t == _i4.MemberStaff) {
-      return _i4.MemberStaff.fromJson(data, this) as T;
+    if (t == _i4.Example) {
+      return _i4.Example.fromJson(data, this) as T;
     }
-    if (t == _i5.MemberStaffBuildingUnit) {
-      return _i5.MemberStaffBuildingUnit.fromJson(data, this) as T;
+    if (t == _i5.MemberStaff) {
+      return _i5.MemberStaff.fromJson(data, this) as T;
     }
-    if (t == _i6.MemberStaffCategories) {
-      return _i6.MemberStaffCategories.fromJson(data, this) as T;
+    if (t == _i6.PurposeCategory) {
+      return _i6.PurposeCategory.fromJson(data, this) as T;
     }
-    if (t == _i7.MemberStaffSubCategories) {
-      return _i7.MemberStaffSubCategories.fromJson(data, this) as T;
+    if (t == _i7.PurposeSubCategory) {
+      return _i7.PurposeSubCategory.fromJson(data, this) as T;
     }
-    if (t == _i1.getType<_i3.Example?>()) {
-      return (data != null ? _i3.Example.fromJson(data, this) : null) as T;
+    if (t == _i8.StaffCategory) {
+      return _i8.StaffCategory.fromJson(data, this) as T;
     }
-    if (t == _i1.getType<_i4.MemberStaff?>()) {
-      return (data != null ? _i4.MemberStaff.fromJson(data, this) : null) as T;
+    if (t == _i9.StaffSubCategory) {
+      return _i9.StaffSubCategory.fromJson(data, this) as T;
     }
-    if (t == _i1.getType<_i5.MemberStaffBuildingUnit?>()) {
-      return (data != null
-          ? _i5.MemberStaffBuildingUnit.fromJson(data, this)
-          : null) as T;
+    if (t == _i10.Visitor) {
+      return _i10.Visitor.fromJson(data, this) as T;
     }
-    if (t == _i1.getType<_i6.MemberStaffCategories?>()) {
-      return (data != null
-          ? _i6.MemberStaffCategories.fromJson(data, this)
-          : null) as T;
+    if (t == _i11.VisitorCard) {
+      return _i11.VisitorCard.fromJson(data, this) as T;
     }
-    if (t == _i1.getType<_i7.MemberStaffSubCategories?>()) {
-      return (data != null
-          ? _i7.MemberStaffSubCategories.fromJson(data, this)
-          : null) as T;
+    if (t == _i12.VisitorLog) {
+      return _i12.VisitorLog.fromJson(data, this) as T;
     }
-    if (t == _i1.getType<List<_i8.MemberStaffBuildingUnit>?>()) {
-      return (data != null
-          ? (data as List)
-              .map((e) => deserialize<_i8.MemberStaffBuildingUnit>(e))
-              .toList()
-          : null) as dynamic;
+    if (t == _i1.getType<_i3.BuildingAssignment?>()) {
+      return (data != null ? _i3.BuildingAssignment.fromJson(data, this) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i4.Example?>()) {
+      return (data != null ? _i4.Example.fromJson(data, this) : null) as T;
+    }
+    if (t == _i1.getType<_i5.MemberStaff?>()) {
+      return (data != null ? _i5.MemberStaff.fromJson(data, this) : null) as T;
+    }
+    if (t == _i1.getType<_i6.PurposeCategory?>()) {
+      return (data != null ? _i6.PurposeCategory.fromJson(data, this) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i7.PurposeSubCategory?>()) {
+      return (data != null ? _i7.PurposeSubCategory.fromJson(data, this) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i8.StaffCategory?>()) {
+      return (data != null ? _i8.StaffCategory.fromJson(data, this) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i9.StaffSubCategory?>()) {
+      return (data != null ? _i9.StaffSubCategory.fromJson(data, this) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i10.Visitor?>()) {
+      return (data != null ? _i10.Visitor.fromJson(data, this) : null) as T;
+    }
+    if (t == _i1.getType<_i11.VisitorCard?>()) {
+      return (data != null ? _i11.VisitorCard.fromJson(data, this) : null) as T;
+    }
+    if (t == _i1.getType<_i12.VisitorLog?>()) {
+      return (data != null ? _i12.VisitorLog.fromJson(data, this) : null) as T;
+    }
+    if (t == List<int>) {
+      return (data as List).map((e) => deserialize<int>(e)).toList() as dynamic;
+    }
+    if (t == List<_i13.BuildingAssignment>) {
+      return (data as List)
+          .map((e) => deserialize<_i13.BuildingAssignment>(e))
+          .toList() as dynamic;
+    }
+    if (t == List<_i14.PurposeCategory>) {
+      return (data as List)
+          .map((e) => deserialize<_i14.PurposeCategory>(e))
+          .toList() as dynamic;
+    }
+    if (t == List<_i15.VisitorLog>) {
+      return (data as List).map((e) => deserialize<_i15.VisitorLog>(e)).toList()
+          as dynamic;
     }
     try {
       return _i2.Protocol().deserialize<T>(data, t);
@@ -338,40 +704,70 @@ class Protocol extends _i1.SerializationManagerServer {
 
   @override
   String? getClassNameForObject(Object data) {
-    if (data is _i3.Example) {
+    if (data is _i3.BuildingAssignment) {
+      return 'BuildingAssignment';
+    }
+    if (data is _i4.Example) {
       return 'Example';
     }
-    if (data is _i4.MemberStaff) {
+    if (data is _i5.MemberStaff) {
       return 'MemberStaff';
     }
-    if (data is _i5.MemberStaffBuildingUnit) {
-      return 'MemberStaffBuildingUnit';
+    if (data is _i6.PurposeCategory) {
+      return 'PurposeCategory';
     }
-    if (data is _i6.MemberStaffCategories) {
-      return 'MemberStaffCategories';
+    if (data is _i7.PurposeSubCategory) {
+      return 'PurposeSubCategory';
     }
-    if (data is _i7.MemberStaffSubCategories) {
-      return 'MemberStaffSubCategories';
+    if (data is _i8.StaffCategory) {
+      return 'StaffCategory';
+    }
+    if (data is _i9.StaffSubCategory) {
+      return 'StaffSubCategory';
+    }
+    if (data is _i10.Visitor) {
+      return 'Visitor';
+    }
+    if (data is _i11.VisitorCard) {
+      return 'VisitorCard';
+    }
+    if (data is _i12.VisitorLog) {
+      return 'VisitorLog';
     }
     return super.getClassNameForObject(data);
   }
 
   @override
   dynamic deserializeByClassName(Map<String, dynamic> data) {
+    if (data['className'] == 'BuildingAssignment') {
+      return deserialize<_i3.BuildingAssignment>(data['data']);
+    }
     if (data['className'] == 'Example') {
-      return deserialize<_i3.Example>(data['data']);
+      return deserialize<_i4.Example>(data['data']);
     }
     if (data['className'] == 'MemberStaff') {
-      return deserialize<_i4.MemberStaff>(data['data']);
+      return deserialize<_i5.MemberStaff>(data['data']);
     }
-    if (data['className'] == 'MemberStaffBuildingUnit') {
-      return deserialize<_i5.MemberStaffBuildingUnit>(data['data']);
+    if (data['className'] == 'PurposeCategory') {
+      return deserialize<_i6.PurposeCategory>(data['data']);
     }
-    if (data['className'] == 'MemberStaffCategories') {
-      return deserialize<_i6.MemberStaffCategories>(data['data']);
+    if (data['className'] == 'PurposeSubCategory') {
+      return deserialize<_i7.PurposeSubCategory>(data['data']);
     }
-    if (data['className'] == 'MemberStaffSubCategories') {
-      return deserialize<_i7.MemberStaffSubCategories>(data['data']);
+    if (data['className'] == 'StaffCategory') {
+      return deserialize<_i8.StaffCategory>(data['data']);
+    }
+    if (data['className'] == 'StaffSubCategory') {
+      return deserialize<_i9.StaffSubCategory>(data['data']);
+    }
+    if (data['className'] == 'Visitor') {
+      return deserialize<_i10.Visitor>(data['data']);
+    }
+    if (data['className'] == 'VisitorCard') {
+      return deserialize<_i11.VisitorCard>(data['data']);
+    }
+    if (data['className'] == 'VisitorLog') {
+      return deserialize<_i12.VisitorLog>(data['data']);
     }
     return super.deserializeByClassName(data);
   }
@@ -385,14 +781,24 @@ class Protocol extends _i1.SerializationManagerServer {
       }
     }
     switch (t) {
-      case _i4.MemberStaff:
-        return _i4.MemberStaff.t;
-      case _i5.MemberStaffBuildingUnit:
-        return _i5.MemberStaffBuildingUnit.t;
-      case _i6.MemberStaffCategories:
-        return _i6.MemberStaffCategories.t;
-      case _i7.MemberStaffSubCategories:
-        return _i7.MemberStaffSubCategories.t;
+      case _i3.BuildingAssignment:
+        return _i3.BuildingAssignment.t;
+      case _i5.MemberStaff:
+        return _i5.MemberStaff.t;
+      case _i6.PurposeCategory:
+        return _i6.PurposeCategory.t;
+      case _i7.PurposeSubCategory:
+        return _i7.PurposeSubCategory.t;
+      case _i8.StaffCategory:
+        return _i8.StaffCategory.t;
+      case _i9.StaffSubCategory:
+        return _i9.StaffSubCategory.t;
+      case _i10.Visitor:
+        return _i10.Visitor.t;
+      case _i11.VisitorCard:
+        return _i11.VisitorCard.t;
+      case _i12.VisitorLog:
+        return _i12.VisitorLog.t;
     }
     return null;
   }

@@ -31,3 +31,16 @@ class GDVisitorsOutButtonPressedState extends GatekeeperDashboardActionState {}
 class GDInputFieldPressedState extends GatekeeperDashboardActionState {}
 
 class GatekeeperSearchVisitorState extends GatekeeperDashboardState {}
+
+class OpenPurposeDialogState extends GatekeeperDashboardActionState {
+  final List<PurposeCategory>? purposeCategories;
+
+  OpenPurposeDialogState({required this.purposeCategories});
+}
+
+class SaveSearchedVisitorState extends GatekeeperDashboardActionState {
+  final Visitor? visitor;
+
+  SaveSearchedVisitorState({required this.visitor});
+}
+

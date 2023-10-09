@@ -3,3 +3,5 @@ table: visitor
 fields: 
   name: String
   mobile: String
+  visitor_image: String
+  

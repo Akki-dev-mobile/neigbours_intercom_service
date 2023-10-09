@@ -52,9 +52,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // startKioskMode();
-    return DevicePreview(
-        enabled: !kReleaseMode,
-        builder: (context) {
+    // return DevicePreview(
+    //     enabled: !kReleaseMode,
+    //     builder: (context) {
           return MaterialApp(
             useInheritedMediaQuery: true,
             debugShowCheckedModeBanner: false,
@@ -67,7 +67,8 @@ class MyApp extends StatelessWidget {
               ),
             ),
             home: GateDashboardView(),
-          );
-        });
+          //);
+        //}
+        );
   }
 }

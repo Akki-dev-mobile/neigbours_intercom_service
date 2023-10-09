@@ -363,7 +363,7 @@ class _SettingsHomeState extends State<SettingsHome> {
             icon: Ionicons.grid_outline,
             title: 'Gate Settings',
             subtitle:
-                'Current Preference: ${selectedGateObj?.name ?? "Gate 1"}',
+                'Current Preference: ${selectedGateObj?.gateName ?? "Gate 1"}',
             onTap: () {
               Navigator.push(
                 context,

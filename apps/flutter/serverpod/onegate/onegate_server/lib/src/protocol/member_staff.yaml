@@ -6,8 +6,6 @@ fields:
   id_proof: String
   id_proof_number: String
   id_proof_image: String
-  staff_category_id: int, parent=StaffCategory
-  staff_category_name: String, parent=StaffCategory
-  staff_sub_category_id: int, parent=StaffSubCategory
-  staff_sub_category_name: String, parent=StaffSubCategory
+  staff_category_id: int, parent=staff_categories
+  staff_sub_category_id: int, parent=staff_sub_categories
   building_assignment: List<BuildingAssignment>, api

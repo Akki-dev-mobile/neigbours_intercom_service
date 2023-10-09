@@ -8,6 +8,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../endpoints/example_endpoint.dart' as _i2;
+import '../endpoints/purpose_endpoint.dart' as _i3;
+import '../endpoints/visitor_endpoint.dart' as _i4;
+import '../endpoints/visitor_log_endpoint.dart' as _i5;
+import 'package:onegate_server/src/generated/visitor.dart' as _i6;
+import 'package:onegate_server/src/generated/visitor_log.dart' as _i7;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -18,7 +23,25 @@ class Endpoints extends _i1.EndpointDispatch {
           server,
           'example',
           null,
-        )
+        ),
+      'purposeCategory': _i3.PurposeCategoryEndpoint()
+        ..initialize(
+          server,
+          'purposeCategory',
+          null,
+        ),
+      'visitor': _i4.VisitorEndpoint()
+        ..initialize(
+          server,
+          'visitor',
+          null,
+        ),
+      'visitorLog': _i5.VisitorLogEndpoint()
+        ..initialize(
+          server,
+          'visitorLog',
+          null,
+        ),
     };
     connectors['example'] = _i1.EndpointConnector(
       name: 'example',
@@ -42,6 +65,114 @@ class Endpoints extends _i1.EndpointDispatch {
             params['name'],
           ),
         )
+      },
+    );
+    connectors['purposeCategory'] = _i1.EndpointConnector(
+      name: 'purposeCategory',
+      endpoint: endpoints['purposeCategory']!,
+      methodConnectors: {
+        'fetchPurposeCategory': _i1.MethodConnector(
+          name: 'fetchPurposeCategory',
+          params: {},
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['purposeCategory'] as _i3.PurposeCategoryEndpoint)
+                  .fetchPurposeCategory(session),
+        )
+      },
+    );
+    connectors['visitor'] = _i1.EndpointConnector(
+      name: 'visitor',
+      endpoint: endpoints['visitor']!,
+      methodConnectors: {
+        'fetchVisitor': _i1.MethodConnector(
+          name: 'fetchVisitor',
+          params: {
+            'mobileNo': _i1.ParameterDescription(
+              name: 'mobileNo',
+              type: _i1.getType<String>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitor'] as _i4.VisitorEndpoint).fetchVisitor(
+            session,
+            params['mobileNo'],
+          ),
+        ),
+        'createVisitor': _i1.MethodConnector(
+          name: 'createVisitor',
+          params: {
+            'visitor': _i1.ParameterDescription(
+              name: 'visitor',
+              type: _i1.getType<_i6.Visitor>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitor'] as _i4.VisitorEndpoint).createVisitor(
+            session,
+            params['visitor'],
+          ),
+        ),
+      },
+    );
+    connectors['visitorLog'] = _i1.EndpointConnector(
+      name: 'visitorLog',
+      endpoint: endpoints['visitorLog']!,
+      methodConnectors: {
+        'createVisitorLog': _i1.MethodConnector(
+          name: 'createVisitorLog',
+          params: {
+            'visitorLog': _i1.ParameterDescription(
+              name: 'visitorLog',
+              type: _i1.getType<_i7.VisitorLog>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
+                  .createVisitorLog(
+            session,
+            params['visitorLog'],
+          ),
+        ),
+        'fetchCheckInVisitorLog': _i1.MethodConnector(
+          name: 'fetchCheckInVisitorLog',
+          params: {
+            'companyId': _i1.ParameterDescription(
+              name: 'companyId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'dateTime': _i1.ParameterDescription(
+              name: 'dateTime',
+              type: _i1.getType<DateTime>(),
+              nullable: false,
+            ),
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
+                  .fetchCheckInVisitorLog(
+            session,
+            params['companyId'],
+            params['dateTime'],
+          ),
+        ),
       },
     );
   }

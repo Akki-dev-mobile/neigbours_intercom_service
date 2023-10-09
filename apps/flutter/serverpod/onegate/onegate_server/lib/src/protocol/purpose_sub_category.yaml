@@ -1,5 +1,6 @@
 class: PurposeSubCategory
 table: purpose_sub_category
 fields:
-  purpose_category_id: int, parent=PurposeCategory
+  purpose_category_id: int, parent=purpose_category
   purpose_sub_category_name: String
+  purpose_img: String

@@ -1,0 +1,6 @@
+class: VisitorCard
+table: visitor_card
+fields:
+  visitor_card_number: String
+  visitor_card_is_assigned: bool
+  
