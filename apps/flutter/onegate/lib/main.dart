@@ -19,6 +19,7 @@ import 'package:kiosk_mode/kiosk_mode.dart';
 import 'presentation/features/app_intro/ui/app_intro_view.dart';
 import 'presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
 import 'presentation/features/self_entry/ui/self_profile_view.dart';
+import 'presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 
 void main() async {
   String appId = "onegate";
@@ -67,9 +68,10 @@ class MyApp extends StatelessWidget {
                 },
               ),
             ),
-            home: GateDashboardView(),
+            home: VisitorsInEntry(
+              selectedValue: 'GUEST',
+            ),
           );
-        }
-        );
+        });
   }
 }

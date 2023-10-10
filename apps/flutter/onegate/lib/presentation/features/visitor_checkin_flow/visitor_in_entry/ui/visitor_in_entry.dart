@@ -20,8 +20,11 @@ import '../bloc/visitor_in_entry_bloc.dart';
 class VisitorsInEntry extends StatefulWidget {
   final String selectedValue;
   Visitor? searchedVisitor;
-   VisitorsInEntry({Key? key, required this.selectedValue,this.searchedVisitor})
-      : super(key: key);
+  VisitorsInEntry({
+    Key? key,
+    required this.selectedValue,
+    this.searchedVisitor,
+  }) : super(key: key);
 
   @override
   State<VisitorsInEntry> createState() => _VisitorsInEntryState();
@@ -211,7 +214,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         SelectTypeWidget(),
                       ],
                     ),
-                  if (widget.selectedValue == 'Guest')
+                  if (widget.selectedValue == 'GUEST')
                     Column(
                       children: [
                         Text(_lastWords),
@@ -261,39 +264,51 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           //   ),
                           // ),
                         ),
-                        CustomForm.textField("Guest Count",
-                            textController: _guestCountController,
-                            hintText: 'Guest Count',
-                            keyboardType: TextInputType.number,
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            length: 2, onChanged: (value) {
-                          setState(() {
-                            _guestCount = int.tryParse(value) ?? 1;
-                          });
-                        },
-                            suffixIcon: ButtonBar(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: _incrementGuestCount,
-                                  icon: Icon(
-                                    Ionicons.add_circle_outline,
-                                    size: 32,
-                                    color: Colors.green,
-                                  ),
+                        CustomForm.textField(
+                          "Guest Count",
+                          textController: _guestCountController,
+                          hintText: 'Guest Count',
+                          keyboardType: TextInputType.number,
+                          titleColor:
+                              Theme.of(context).colorScheme.onBackground,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          length: 2,
+                          onChanged: (value) {
+                            setState(() {
+                              _guestCount = int.tryParse(value) ?? 1;
+                            });
+                          },
+                          suffixIcon: ButtonBar(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: _incrementGuestCount,
+                                icon: Icon(
+                                  Ionicons.add_circle_outline,
+                                  size: 32,
+                                  color: Colors.green,
                                 ),
-                                IconButton(
-                                  onPressed: _decrementGuestCount,
-                                  icon: Icon(
-                                    Ionicons.remove_circle_outline,
-                                    color: Colors.red,
-                                    size: 32,
-                                  ),
+                              ),
+                              IconButton(
+                                onPressed: _decrementGuestCount,
+                                icon: Icon(
+                                  Ionicons.remove_circle_outline,
+                                  color: Colors.red,
+                                  size: 32,
                                 ),
-                              ],
-                            )),
+                              ),
+                            ],
+                          ),
+                        ),
+                        CustomForm.textField(
+                          titleColor:
+                              Theme.of(context).colorScheme.onBackground,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          "ID Number",
+                          hintText: 'Ask the receptionist for one',
+                          keyboardType: TextInputType.visiblePassword,
+                          length: 4,
+                        ),
                       ],
                     ),
                   if (widget.selectedValue == 'Staff')
