@@ -68,9 +68,7 @@ class MyApp extends StatelessWidget {
                 },
               ),
             ),
-            home: VisitorsInEntry(
-              selectedValue: 'GUEST',
-            ),
+            home: SelfEntryView(),
           );
         });
   }

@@ -13,7 +13,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-
+import 'package:common_widgets/text_to_speech_widget.dart';
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
 
@@ -225,6 +225,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           "Guest Name",
                           hintText: 'Enter Name',
                           textCapitalization: TextCapitalization.words,
+                          suffixIcon: VoiceToTextButton(
+                            targetController: TextEditingController(),
+                          ),
                           // suffixIcon: IconButton(
                           //   onPressed: () {
                           //     _speechToText.isNotListening
