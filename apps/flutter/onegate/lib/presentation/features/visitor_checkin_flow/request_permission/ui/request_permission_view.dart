@@ -1,13 +1,32 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
+import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
+import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/request_gate_access/bloc/request_gate_access_bloc.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:onegate_client/onegate_client.dart';
 
 class RequestPermissionView extends StatefulWidget {
-  final List<String>? gridData;
-  const RequestPermissionView({super.key, this.gridData});
+  final List<MemberUnits>? gridData;
+  final Visitor visitor;
+  final PurposeCategory purposeCategory;
+  final String? comingFrom;
+  final int? guestCount;
+  const RequestPermissionView(
+      {super.key,
+      this.gridData,
+      required this.visitor,
+      required this.purposeCategory,
+      this.comingFrom,
+      this.guestCount});
 
   @override
   State<RequestPermissionView> createState() =>
@@ -25,206 +44,226 @@ enum RequestType {
 
 class _RequestPermissionViewState extends State<RequestPermissionView> {
   RequestType requestType = RequestType.notRecheable;
-  final List<String>? gridData;
+  final List<MemberUnits>? gridData;
+  final RequestPermissionBloc requestPermissionBloc = RequestPermissionBloc(
+      VisitorLogUsecase(VisitorLogRepositoryImpl(RemoteDataSource(
+          DioSingleton.instance1,
+          DioSingleton.instance2,
+          DioSingleton.instance3))));
 
   _RequestPermissionViewState({this.gridData});
 
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
-      pageTitle: 'Permission',
-      pageBody: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 45,
-                backgroundImage: NetworkImage(
-                  'https://images.unsplash.com/photo-1687161590608-6d948d357bad?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=653&q=80',
-                ),
+    return BlocConsumer<RequestPermissionBloc, RequestPermissionState>(
+      bloc: requestPermissionBloc,
+      listenWhen: (previous, current) =>
+          current is RequestPermissionActionState,
+      buildWhen: (previous, current) =>
+          current is! RequestPermissionActionState,
+      listener: (context, state) {
+        print('${state.runtimeType}');
+        switch (state.runtimeType) {
+          case RPVisitorCheckedInSuccessState:
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (BuildContext context) {
+                  return const GateDashboardView();
+                },
               ),
-              SizedBox(width: 20),
-              Column(
+            );
+            break;
+          case RPErrorState:
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text((state as RPErrorState).message!),
+              ),
+            );
+            break;
+        }
+      },
+      builder: (context, state) {
+        print('${state.runtimeType}');
+        switch (state.runtimeType) {
+          case RPLoadingState:
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+
+          case RequestPermissionInitial:
+            return MyScrollView(
+              pageTitle: 'Permission',
+              pageBody: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '+9199*****101',
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                  Text(
-                    'Shubham Bane',
-                    style: Theme.of(context).textTheme.displaySmall,
-                  ),
-                  SizedBox(height: 2),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: RichText(
-                      text: TextSpan(
-                        style: Theme.of(context).textTheme.labelMedium,
-                        children: <TextSpan>[
-                          TextSpan(
-                            text: 'Guest ',
-                            style: TextStyle(
-                              color: Colors.blue[400],
-                            ),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 45,
+                        backgroundImage: NetworkImage(
+                          'https://images.unsplash.com/photo-1687161590608-6d948d357bad?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=653&q=80',
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.visitor.mobile,
+                            style: Theme.of(context).textTheme.labelMedium,
                           ),
-                          TextSpan(
-                            text: '| Last In: 2 days ago',
+                          Text(
+                            widget.visitor.name,
+                            style: Theme.of(context).textTheme.displaySmall,
+                          ),
+                          SizedBox(height: 2),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: RichText(
+                              text: TextSpan(
+                                style: Theme.of(context).textTheme.labelMedium,
+                                children: <TextSpan>[
+                                  TextSpan(
+                                    text: widget
+                                        .purposeCategory.purpose_category_name,
+                                    style: TextStyle(
+                                      color: Colors.blue[400],
+                                    ),
+                                  ),
+                                  // TextSpan(
+                                  //   text: '| Last In: 2 days ago',
+                                  // ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Divider(
+                    height: 15,
+                    indent: 20,
+                    endIndent: 20,
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      'Selected Flat',
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => MultiRequestPermissionView(),
+                      //   ),
+                      // );
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 10,
+                      ),
+                      child: GridView.builder(
+                        padding: EdgeInsets.only(
+                          bottom: 10,
+                        ),
+                        shrinkWrap: true,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          childAspectRatio: 2,
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 10.0,
+                          mainAxisSpacing: 10.0,
+                        ),
+                        itemCount: gridData!.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Color(0x10C08261),
+                              border: Border.all(
+                                color: Color(0xffC08261),
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                gridData![index].unitFlatNumber,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Color(0xffC08261),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // child: FittedBox(
+                      //   fit: BoxFit.scaleDown,
+                      //   child: Text(
+                      //     'A-101',
+                      //     style: Theme.of(context).textTheme.bodyMedium,
+                      //   ),
+                      // ),
+                    ),
+                  ),
+                  GestureDetector(
+                    child: Container(
+                      margin: EdgeInsets.only(top: 40, bottom: 30),
+                      width: double.infinity,
+                      child: _getLottieAnimation(requestType),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GateDashboardView(),
+                        ),
+                      );
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: _getIconLabel(requestType),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-          SizedBox(height: 20),
-          Divider(
-            height: 15,
-            indent: 20,
-            endIndent: 20,
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              'Selected Flat',
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (context) => MultiRequestPermissionView(),
-              //   ),
-              // );
-            },
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 15,
-                vertical: 10,
-              ),
-              child: GridView.builder(
-                padding: EdgeInsets.only(
-                  bottom: 10,
-                ),
-                shrinkWrap: true,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  childAspectRatio: 2,
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                ),
-                itemCount: gridData!.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Color(0x10C08261),
-                      border: Border.all(
-                        color: Color(0xffC08261),
-                        width: 2,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        gridData![index],
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              color: Color(0xffC08261),
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
+              floatingActionButton: CustomLargeBtn(
+                heroTag: 'gate_dashboard',
+                text: 'Allow',
+                onPressed: () {
+                  requestPermissionBloc.add(
+                    AllowButtonClickedEvent(
+                      visitor: widget.visitor,
+                      purposeCategory: widget.purposeCategory,
+                      memberUnits: gridData!,
+                      comingFrom: widget.comingFrom,
+                      guestCount: widget.guestCount,
                     ),
                   );
                 },
               ),
-              // child: FittedBox(
-              //   fit: BoxFit.scaleDown,
-              //   child: Text(
-              //     'A-101',
-              //     style: Theme.of(context).textTheme.bodyMedium,
-              //   ),
-              // ),
-            ),
-          ),
-          GestureDetector(
-            child: Container(
-              margin: EdgeInsets.only(top: 40, bottom: 30),
-              width: double.infinity,
-              child: _getLottieAnimation(requestType),
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GateDashboardView(),
-                ),
-              );
-            },
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: _getIconLabel(requestType),
-              ),
-            ],
-          ),
-        ],
-      ),
-      floatingActionButton: CustomLargeBtn(
-        heroTag: 'gate_dashboard',
-        text: 'Allow',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (BuildContext context) {
-                return const GateDashboardView();
-              },
-            ),
-          );
-          // switch (requestType) {
-          //   case RequestType.notRecheable:
-          //     setState(() {
-          //       requestType = RequestType.approved;
-          //     });
-          //     return;
-          //   case RequestType.approved:
-          //     setState(() {
-          //       requestType = RequestType.leaveAtGate;
-          //     });
-          //     return;
-          //   case RequestType.leaveAtGate:
-          //     setState(() {
-          //       requestType = RequestType.rejected;
-          //     });
-          //     return;
-          //   case RequestType.request:
-          //     setState(() {
-          //       requestType = RequestType.notRecheable;
-          //     });
+            );
 
-          //     return;
-          //   case RequestType.rejected:
-          //     setState(() {
-          //       requestType = RequestType.request;
-          //     });
-          //     return;
-          //   default:
-          //     setState(() {
-          //       requestType = RequestType.notRecheable;
-          //     });
-          //     return;
-          // }
-        },
-      ),
+          default:
+            return Container();
+        }
+      },
     );
   }
 

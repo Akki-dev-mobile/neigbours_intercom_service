@@ -31,3 +31,11 @@ class GDOnMobileNumberEnteredEvent extends GatekeeperDashboardEvent {
 
 class InputPutViewNextClickedEvent extends GatekeeperDashboardEvent {}
 
+class PurposeNextButtonClickedEvent extends GatekeeperDashboardEvent {
+  final PurposeCategory purpose;
+  final Visitor? searchedVisitor;
+  final String mobile;
+
+  PurposeNextButtonClickedEvent(this.purpose, this.searchedVisitor, this.mobile);
+}
+

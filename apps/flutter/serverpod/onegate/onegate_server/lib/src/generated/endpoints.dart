@@ -13,6 +13,7 @@ import '../endpoints/visitor_endpoint.dart' as _i4;
 import '../endpoints/visitor_log_endpoint.dart' as _i5;
 import 'package:onegate_server/src/generated/visitor.dart' as _i6;
 import 'package:onegate_server/src/generated/visitor_log.dart' as _i7;
+import 'package:onegate_server/src/generated/building_assignment.dart' as _i8;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -148,28 +149,40 @@ class Endpoints extends _i1.EndpointDispatch {
             params['visitorLog'],
           ),
         ),
-        'fetchCheckInVisitorLog': _i1.MethodConnector(
-          name: 'fetchCheckInVisitorLog',
+        'createBuildingAssignment': _i1.MethodConnector(
+          name: 'createBuildingAssignment',
           params: {
-            'companyId': _i1.ParameterDescription(
-              name: 'companyId',
-              type: _i1.getType<int>(),
+            'buildingAssignment': _i1.ParameterDescription(
+              name: 'buildingAssignment',
+              type: _i1.getType<_i8.BuildingAssignment>(),
               nullable: false,
-            ),
-            'dateTime': _i1.ParameterDescription(
-              name: 'dateTime',
-              type: _i1.getType<DateTime>(),
-              nullable: false,
-            ),
+            )
           },
           call: (
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
               (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
-                  .fetchCheckInVisitorLog(
+                  .createBuildingAssignment(
             session,
-            params['companyId'],
+            params['buildingAssignment'],
+          ),
+        ),
+        'fetchAllLogs': _i1.MethodConnector(
+          name: 'fetchAllLogs',
+          params: {
+            'dateTime': _i1.ParameterDescription(
+              name: 'dateTime',
+              type: _i1.getType<String>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint).fetchAllLogs(
+            session,
             params['dateTime'],
           ),
         ),

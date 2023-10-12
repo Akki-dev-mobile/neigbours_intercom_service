@@ -3,11 +3,20 @@
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
+import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
+import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:random_avatar/random_avatar.dart';
 
 import '../../gate_selection/ui/gate_selection_view.dart';
@@ -29,8 +38,8 @@ class VisitorLogView extends StatefulWidget {
 }
 
 class _VisitorLogViewState extends State<VisitorLogView> {
-  final List<String> items =
-      List.generate(50, (index) => 'Name Surname $index');
+  // final List<String> items =
+  //     List.generate(50, (index) => 'Name Surname $index');
   late String selectedId;
   String? selectedTime;
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
@@ -43,276 +52,352 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     'Building C',
   ];
 
+  final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
+    VisitorLogUsecase(
+      VisitorLogRepositoryImpl(
+        RemoteDataSource(
+          DioSingleton.instance1,
+          DioSingleton.instance2,
+          DioSingleton.instance3,
+        ),
+      ),
+    ),
+  );
+
   @override
   void initState() {
     super.initState();
     selectedId = widget.id;
+    switch (widget.id) {
+      case "In Out Book":
+        _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
+        break;
+      case "Visitor In":
+        _visitorLogBloc.add(FetchCheckInLogEvent(DateTime.now()));
+        break;
+      case "Visitor Out":
+        _visitorLogBloc.add(FetchCheckOutLogEvent(DateTime.now()));
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
-      isScrollable: false,
-      // pageTitle: widget.id,
-      pageTitleWidget: Hero(
-        tag: 'page_title',
-        child: Text(
-          widget.id,
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-      ),
-      hasBackButton: true,
-      pageBody: Column(
-        children: [
-          CustomForm.textField(
-            widget.selectedBuilding ?? 'Search',
-            titleColor: Theme.of(context).colorScheme.onBackground,
-            hintColor: Theme.of(context).colorScheme.onPrimary,
-            // "Search" ?? ,
-            hintText: 'Search Visitor',
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.search,
-            onFieldSubmitted: (value) {
-              if (kDebugMode) {
-                print(value);
-              }
-            },
-            prefixIcon: IconButton(
-              onPressed: () {},
-              icon: Icon(
-                Ionicons.search_outline,
-                color: Theme.of(context).colorScheme.onBackground,
+    return BlocConsumer<VisitorLogBloc, VisitorLogState>(
+      bloc: _visitorLogBloc,
+      listenWhen: (previous, current) => current is VisitorLogActionState,
+      buildWhen: (previous, current) => current is! VisitorLogActionState,
+      listener: (context, state) {},
+      builder: (context, state) {
+        switch (state.runtimeType) {
+          case VisitorLogLoadingState:
+            return LoaderView();
+          case VisitorLogSuccessState:
+            final successState = state as VisitorLogSuccessState;
+            final visitorLogs = successState.visitorLogs;
+            return MyScrollView(
+              isScrollable: false,
+              // pageTitle: widget.id,
+              pageTitleWidget: Hero(
+                tag: 'page_title',
+                child: Text(
+                  widget.id,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
               ),
-            ),
-            suffixIcon: ButtonBar(
-              alignment: MainAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: () {},
-                  icon: CircleAvatar(
-                    backgroundColor: const Color(0xffFFEBE6),
-                    radius: 20,
-                    child: Icon(
-                      size: 22,
-                      Ionicons.mic_outline,
-                      color: Theme.of(context).colorScheme.onBackground,
+              hasBackButton: true,
+              pageBody: Column(
+                children: [
+                  CustomForm.textField(
+                    widget.selectedBuilding ?? 'Search',
+                    titleColor: Theme.of(context).colorScheme.onBackground,
+                    hintColor: Theme.of(context).colorScheme.onPrimary,
+                    // "Search" ?? ,
+                    hintText: 'Search Visitor',
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.search,
+                    onFieldSubmitted: (value) {
+                      if (kDebugMode) {
+                        print(value);
+                      }
+                    },
+                    prefixIcon: IconButton(
+                      onPressed: () {},
+                      icon: Icon(
+                        Ionicons.search_outline,
+                        color: Theme.of(context).colorScheme.onBackground,
+                      ),
                     ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    _showLogBookConfigBottomSheet(context);
-                  },
-                  icon: Icon(
-                    Ionicons.funnel_outline,
-                    color: Theme.of(context).colorScheme.onBackground,
-                    size: 28,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ChipsChoice<String>.single(
-            padding: EdgeInsets.only(right: 20),
-            scrollToSelectedOnChanged: true,
-            spacing: 20,
-            choiceStyle: C2ChipStyle.outlined(
-              borderWidth: 1,
-              color: Colors.grey.shade700,
-              selectedStyle: C2ChipStyle.filled(
-                foregroundColor: Color(0xFFC08261),
-              ),
-              height: 40,
-            ),
-            choiceCheckmark: true,
-            value: selectedTime,
-            scrollPhysics: BouncingScrollPhysics(),
-            onChanged: (value) {
-              setState(() {
-                selectedTime = value;
-              });
-            },
-            choiceItems: C2Choice.listFrom<String, String>(
-              source: options,
-              value: (i, v) => v,
-              label: (i, v) => v,
-            ),
-          ),
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Card(
-                    elevation: 2,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    suffixIcon: ButtonBar(
+                      alignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 2,
-                          ),
-                          leading: CircleAvatar(
-                            child: RandomAvatar(
-                              DateTime.now().toIso8601String(),
-                              trBackground: false,
+                        IconButton(
+                          onPressed: () {},
+                          icon: CircleAvatar(
+                            backgroundColor: const Color(0xffFFEBE6),
+                            radius: 20,
+                            child: Icon(
+                              size: 22,
+                              Ionicons.mic_outline,
+                              color: Theme.of(context).colorScheme.onBackground,
                             ),
-                          ),
-                          title: Text(
-                            items[index],
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 5),
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  const WidgetSpan(
-                                    child: Icon(
-                                      Symbols.apartment,
-                                      color: Color(0xffFFB080),
-                                    ),
-                                  ),
-                                  TextSpan(
-                                      text: ' A/201, +4',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall),
-                                  WidgetSpan(
-                                    child: Container(
-                                      margin: const EdgeInsets.only(left: 8),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 7,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xffFFEBE6),
-                                        borderRadius: BorderRadius.circular(8),
-                                        // border: Border.all(
-                                        //   color: Colors.black,
-                                        // ),
-                                      ),
-                                      child: const Text(
-                                        'Guest',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          trailing: const Icon(
-                            Ionicons.call_outline,
-                            color: Colors.green,
                           ),
                         ),
-                        Divider(
-                          indent: 16,
-                          endIndent: 16,
-                          color: Colors.grey[200],
-                        ),
-                        ListTile(
-                          title: RichText(
-                            text: TextSpan(
-                              children: [
-                                const WidgetSpan(
-                                  child: Icon(
-                                    Symbols.directions_walk_rounded,
-                                    color: Colors.green,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: ' 04:00 AM',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium!
-                                      .merge(
-                                        const TextStyle(
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                ),
-                              ],
-                            ),
+                        IconButton(
+                          onPressed: () {
+                            _showLogBookConfigBottomSheet(context);
+                          },
+                          icon: Icon(
+                            Ionicons.funnel_outline,
+                            color: Theme.of(context).colorScheme.onBackground,
+                            size: 28,
                           ),
-                          trailing: (index % 2 == 0)
-                              ? ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    Fluttertoast.showToast(
-                                      msg: "User Checked Out Successfully",
-                                      toastLength: Toast.LENGTH_SHORT,
-                                      gravity: ToastGravity.CENTER,
-                                      timeInSecForIosWeb: 1,
-                                      backgroundColor: Colors.red,
-                                      textColor: Colors.white,
-                                      fontSize: 16.0,
-                                    );
-                                    Navigator.pop(context);
-                                  },
-                                  child: Text(
-                                    'CheckOut',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall!
-                                        .merge(
-                                          const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14),
-                                        ),
-                                  ),
-                                )
-                              : RichText(
-                                  text: TextSpan(
-                                    children: [
-                                      const WidgetSpan(
-                                        child: Icon(
-                                          Symbols.directions_walk_rounded,
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: ' 09:00 PM',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium!
-                                            .merge(
-                                              const TextStyle(
-                                                color: Colors.red,
-                                              ),
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                         ),
                       ],
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(
-            height: 100,
-          ),
-        ],
-      ),
+                  ChipsChoice<String>.single(
+                    padding: EdgeInsets.only(right: 20),
+                    scrollToSelectedOnChanged: true,
+                    spacing: 20,
+                    choiceStyle: C2ChipStyle.outlined(
+                      borderWidth: 1,
+                      color: Colors.grey.shade700,
+                      selectedStyle: C2ChipStyle.filled(
+                        foregroundColor: Color(0xFFC08261),
+                      ),
+                      height: 40,
+                    ),
+                    choiceCheckmark: true,
+                    value: selectedTime,
+                    scrollPhysics: BouncingScrollPhysics(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedTime = value;
+                      });
+                    },
+                    choiceItems: C2Choice.listFrom<String, String>(
+                      source: options,
+                      value: (i, v) => v,
+                      label: (i, v) => v,
+                    ),
+                  ),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: visitorLogs!.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Card(
+                            elevation: 2,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 2,
+                                  ),
+                                  leading: CircleAvatar(
+                                      child: visitorLogs[index]
+                                                      .visitor!
+                                                      .visitor_image !=
+                                                  null &&
+                                              visitorLogs[index]
+                                                  .visitor!
+                                                  .visitor_image
+                                                  .isNotEmpty
+                                          ? Text(
+                                              visitorLogs[index]
+                                                  .visitor!
+                                                  .mobile
+                                                  .substring(0, 1),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            )
+                                          : RandomAvatar(
+                                              DateTime.now().toIso8601String(),
+                                              trBackground: false,
+                                            )),
+                                  title: Text(
+                                    visitorLogs[index].visitor!.name,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 5),
+                                    child: RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          const WidgetSpan(
+                                            child: Icon(
+                                              Symbols.apartment,
+                                              color: Color(0xffFFB080),
+                                            ),
+                                          ),
+                                          TextSpan(
+                                              text: visitorLogs[index]
+                                                  .visitor_building_assignment![
+                                                      0]
+                                                  .unit_id
+                                                  .toString(),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelSmall),
+                                          WidgetSpan(
+                                            child: Container(
+                                              margin: const EdgeInsets.only(
+                                                  left: 8),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 7,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xffFFEBE6),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                // border: Border.all(
+                                                //   color: Colors.black,
+                                                // ),
+                                              ),
+                                              child: const Text(
+                                                'Guest',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w500,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    Ionicons.call_outline,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                                Divider(
+                                  indent: 16,
+                                  endIndent: 16,
+                                  color: Colors.grey[200],
+                                ),
+                                ListTile(
+                                  title: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        const WidgetSpan(
+                                          child: Icon(
+                                            Symbols.directions_walk_rounded,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: Utils.convertDateTimeFormat(
+                                              visitorLogs[index]
+                                                  .visitor_check_in),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium!
+                                              .merge(
+                                                const TextStyle(
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  trailing: (visitorLogs[index]
+                                              .visitor_check_out
+                                              .toString()
+                                              .isEmpty ||
+                                          visitorLogs[index]
+                                                  .visitor_check_out
+                                                  .toString() ==
+                                              'null')
+                                      ? ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            Fluttertoast.showToast(
+                                              msg:
+                                                  "User Checked Out Successfully",
+                                              toastLength: Toast.LENGTH_SHORT,
+                                              gravity: ToastGravity.CENTER,
+                                              timeInSecForIosWeb: 1,
+                                              backgroundColor: Colors.red,
+                                              textColor: Colors.white,
+                                              fontSize: 16.0,
+                                            );
+                                            Navigator.pop(context);
+                                          },
+                                          child: Text(
+                                            'CheckOut',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelSmall!
+                                                .merge(
+                                                  const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 14),
+                                                ),
+                                          ),
+                                        )
+                                      : RichText(
+                                          text: TextSpan(
+                                            children: [
+                                              const WidgetSpan(
+                                                child: Icon(
+                                                  Symbols
+                                                      .directions_walk_rounded,
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text: ' 09:00 PM',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelMedium!
+                                                    .merge(
+                                                      const TextStyle(
+                                                        color: Colors.red,
+                                                      ),
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 100,
+                  ),
+                ],
+              ),
+            );
+          default:
+            return Container();
+        }
+      },
     );
   }
 

@@ -19,6 +19,7 @@ class GatekeeperDashboardBloc
     on<GatekeeperDashboardEvent>((event, emit) {});
     on<GDOnMobileNumberEnteredEvent>(onMobileNumberEnteredEvent);
     on<InputPutViewNextClickedEvent>(onInputPutViewNextClickedEvent);
+    on<PurposeNextButtonClickedEvent>(onPurposeNextButtonClickedEvent);
   }
 
   FutureOr<void> onMobileNumberEnteredEvent(GDOnMobileNumberEnteredEvent event,
@@ -26,9 +27,9 @@ class GatekeeperDashboardBloc
     emit(GatekeeperDashboardLoadingState());
     try {
       final response = await _visitorUsecase.searchVisitor(event.mobileNumber);
-      if (response != null) {
-        emit(SaveSearchedVisitorState(visitor: response));
-      }
+
+      emit(SaveSearchedVisitorState(visitor: response));
+
       emit(GatekeeperDashboardInitial());
     } catch (e) {
       print(e.toString());
@@ -52,6 +53,26 @@ class GatekeeperDashboardBloc
       print(e.toString());
       final purpose = await _visitorUsecase.fetchPurposeCategory();
       emit(OpenPurposeDialogState(purposeCategories: purpose));
+      emit(
+        GatekeeperDashboardErrorState(
+          message: e.toString(),
+        ),
+      );
+    }
+  }
+
+  FutureOr<void> onPurposeNextButtonClickedEvent(
+      PurposeNextButtonClickedEvent event,
+      Emitter<GatekeeperDashboardState> emit) async {
+    emit(GatekeeperDashboardLoadingState());
+    try {
+      emit(NavigateToVisitorDetailsState(
+        event.purpose,
+        event.mobile,
+        visitor: event.searchedVisitor,
+      ));
+    } catch (e) {
+      print(e.toString());
       emit(
         GatekeeperDashboardErrorState(
           message: e.toString(),

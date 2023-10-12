@@ -26,3 +26,9 @@ class VIEDecrementGuestCountButtonPressedState
     extends VisitorInEntryActionState {}
 
 class VIEGuestFormSubmitButtonPressedState extends VisitorInEntryActionState {}
+
+class VIENavigateToUnitSelectionState extends VisitorInEntryActionState {
+  final Visitor visitor;
+  final PurposeCategory purposeCategory;
+  VIENavigateToUnitSelectionState(this.visitor, this.purposeCategory);
+}

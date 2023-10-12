@@ -13,4 +13,8 @@ class VisitorUsecase {
   Future<List<PurposeCategory>?>? fetchPurposeCategory() async {
     return await _repository.fetchPurposeCategory();
   }
+
+  Future<Visitor?> createVisitor(Visitor visitor) async {
+    return await _repository.createVisitor(visitor);
+  }
 }

@@ -12,13 +12,11 @@ import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admi
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:one_theme/theme.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 
-import 'presentation/features/app_intro/ui/app_intro_view.dart';
-import 'presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
-import 'presentation/features/self_entry/ui/self_profile_view.dart';
 
 void main() async {
   String appId = "onegate";

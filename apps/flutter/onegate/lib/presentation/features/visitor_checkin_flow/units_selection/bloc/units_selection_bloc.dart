@@ -1,13 +1,77 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
+import 'package:flutter_onegate/domain/entities/society/building.dart';
+import 'package:flutter_onegate/domain/entities/society/member.dart';
+import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
+import 'package:flutter_onegate/domain/use_cases/society_usecase.dart';
 import 'package:meta/meta.dart';
 
 part 'units_selection_event.dart';
 part 'units_selection_state.dart';
 
-class UnitsSelectionBloc extends Bloc<UnitsSelectionEvent, UnitsSelectionState> {
-  UnitsSelectionBloc() : super(UnitsSelectionInitial()) {
-    on<UnitsSelectionEvent>((event, emit) {
-      // TODO: implement event handler
-    });
+class UnitsSelectionBloc extends Bloc<UnitSelectionEvent, UnitsSelectionState> {
+  final SocietyUseCase societyUseCase;
+  UnitsSelectionBloc(this.societyUseCase) : super(UnitsSelectionInitial()) {
+    on<UnitSelectionInitialEvent>(unitSelectionInitialEvent);
+    on<BuildingChipClickedEvent>(buildingChipClickedEvent);
+    on<UnitSelectedEvent>(unitSelectedEvent);
+    on<NextButtonClickedEvent>(nextButtonClickedEvent);
+  }
+
+  FutureOr<void> unitSelectionInitialEvent(UnitSelectionInitialEvent event,
+      Emitter<UnitsSelectionState> emit) async {
+    emit(UnitsSelectionLoadingState());
+    try {
+      List<Building>? buildings = await societyUseCase.getBuildings(412);
+      if (buildings != null) {
+        List<MemberUnits>? units =
+            await societyUseCase.getUnits(412, buildings[0].id);
+        emit(UnitSelectionSuccessState(buildings[0], units: units, buildings: buildings));
+      } else {
+        emit(UnitsSelectionErrorState(message: "Error"));
+      }
+    } catch (e) {
+      print(e.toString());
+      emit(UnitsSelectionErrorState(message: e.toString()));
+    }
+  }
+
+  FutureOr<void> buildingChipClickedEvent(
+      BuildingChipClickedEvent event, Emitter<UnitsSelectionState> emit) async {
+    emit(UnitsSelectionLoadingState());
+    try {
+      List<MemberUnits>? units =
+          await societyUseCase.getUnits(412, event.building.id);
+      emit(UnitSelectionSuccessState(event.building, units: units, buildings: event.buildings));
+    } catch (e) {
+      print(e.toString());
+      emit(UnitsSelectionErrorState(message: e.toString()));
+    }
+  }
+
+  FutureOr<void> unitSelectedEvent(UnitSelectedEvent event, Emitter<UnitsSelectionState> emit) async{
+    
+    try {
+      List<Member>? member = await societyUseCase.getMembers(412, event.unit.id);
+      if(member != null){
+        emit(MemberFetchedState(member));
+      }else{
+        emit(UnitsSelectionErrorState(message: "Error"));
+      }
+    } catch (e) {
+      print(e.toString());
+      emit(UnitsSelectionErrorState(message: e.toString()));
+    }
+  }
+
+  FutureOr<void> nextButtonClickedEvent(NextButtonClickedEvent event, Emitter<UnitsSelectionState> emit) async{
+    emit(UnitsSelectionLoadingState());
+    try {
+      emit(NavigateToRequestPermissionState(unit: event.unit));
+    } catch (e) {
+      print(e.toString());
+      emit(UnitsSelectionErrorState(message: e.toString()));
+    }
   }
 }

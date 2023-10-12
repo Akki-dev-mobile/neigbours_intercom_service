@@ -14,9 +14,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 
-import 'dart:math' as math;
 
-import '../../../visitor_log/ui/visitor_log_view.dart';
 import '../../commons/ui/dashboard_commons.dart';
 import '../../gatekeeper/pages/gatekeeper_dashboard_view.dart';
 

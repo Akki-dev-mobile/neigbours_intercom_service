@@ -2,20 +2,30 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/admin_dash_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/gate_repo_impl.dart';
+import 'package:flutter_onegate/data/repositories/society_repo_impl.dart';
+import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/domain/repositories/admin_dash_repo.dart';
 import 'package:flutter_onegate/domain/repositories/auth_repo.dart';
 import 'package:flutter_onegate/domain/repositories/gate_repo.dart';
+import 'package:flutter_onegate/domain/repositories/society_repo.dart';
+import 'package:flutter_onegate/domain/repositories/visitor_log_repo.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
 import 'package:flutter_onegate/domain/use_cases/admin_dash_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
+import 'package:flutter_onegate/domain/use_cases/society_usecase.dart';
+import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/auth/bloc/login_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/bloc/gate_selection_bloc.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/bloc/units_selection_bloc.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/bloc/visitor_in_entry_bloc.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 
 import 'package:get_it/get_it.dart';
@@ -80,9 +90,32 @@ void setupLocator() {
   locator.registerLazySingleton(
       () => VisitorUsecase(locator<VisitorRepository>()));
 
-  // Register AdminDashboardBloc
   locator.registerFactory(
       () => GatekeeperDashboardBloc(locator<VisitorUsecase>()));
+
+  locator.registerFactory(() => VisitorInEntryBloc(
+      locator<VisitorUsecase>(), locator<VisitorLogUsecase>()));
+
+  locator.registerLazySingleton<SocietyRepository>(
+    () => SocietyRepositoryImpl(locator<RemoteDataSource>()),
+  );
+
+  locator.registerLazySingleton(
+      () => SocietyUseCase(locator<SocietyRepository>()));
+
+  locator.registerFactory(() => UnitsSelectionBloc(locator<SocietyUseCase>()));
+
+
+  locator.registerFactory(() => RequestPermissionBloc(locator<VisitorLogUsecase>()));
+  locator.registerFactory(() => VisitorLogBloc(locator<VisitorLogUsecase>()));
+
+  locator.registerLazySingleton<VisitorLogRepository>(
+    () => VisitorLogRepositoryImpl(locator<RemoteDataSource>()),
+  );
+
+  locator.registerLazySingleton(
+      () => VisitorLogUsecase(locator<VisitorLogRepository>()));
+
 }
 
 void setupDependencies() async {

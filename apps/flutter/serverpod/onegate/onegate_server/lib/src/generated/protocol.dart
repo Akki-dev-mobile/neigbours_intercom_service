@@ -61,6 +61,12 @@ class Protocol extends _i1.SerializationManagerServer {
           dartType: 'int?',
         ),
         _i2.ColumnDefinition(
+          name: 'company_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
           name: 'building_id',
           columnType: _i2.ColumnType.integer,
           isNullable: false,
@@ -70,7 +76,7 @@ class Protocol extends _i1.SerializationManagerServer {
           name: 'unit_id',
           columnType: _i2.ColumnType.json,
           isNullable: false,
-          dartType: 'List<int>',
+          dartType: 'List<String>',
         ),
       ],
       foreignKeys: [
@@ -487,10 +493,10 @@ class Protocol extends _i1.SerializationManagerServer {
           columnDefault: 'nextval(\'visitor_log_id_seq\'::regclass)',
         ),
         _i2.ColumnDefinition(
-          name: 'visitor',
-          columnType: _i2.ColumnType.json,
+          name: 'visitor_id',
+          columnType: _i2.ColumnType.integer,
           isNullable: false,
-          dartType: 'protocol:Visitor',
+          dartType: 'int',
         ),
         _i2.ColumnDefinition(
           name: 'visitor_purpose_category_id',
@@ -501,20 +507,8 @@ class Protocol extends _i1.SerializationManagerServer {
         _i2.ColumnDefinition(
           name: 'visitor_purpose_sub_category_id',
           columnType: _i2.ColumnType.integer,
-          isNullable: false,
-          dartType: 'int',
-        ),
-        _i2.ColumnDefinition(
-          name: 'visitor_building_assignment',
-          columnType: _i2.ColumnType.json,
-          isNullable: false,
-          dartType: 'List<protocol:BuildingAssignment>',
-        ),
-        _i2.ColumnDefinition(
-          name: 'visitor_image',
-          columnType: _i2.ColumnType.text,
-          isNullable: false,
-          dartType: 'String',
+          isNullable: true,
+          dartType: 'int?',
         ),
         _i2.ColumnDefinition(
           name: 'visitor_count',
@@ -531,20 +525,26 @@ class Protocol extends _i1.SerializationManagerServer {
         _i2.ColumnDefinition(
           name: 'visitor_check_out',
           columnType: _i2.ColumnType.timestampWithoutTimeZone,
-          isNullable: false,
-          dartType: 'DateTime',
+          isNullable: true,
+          dartType: 'DateTime?',
         ),
         _i2.ColumnDefinition(
           name: 'visitor_card_number',
           columnType: _i2.ColumnType.text,
-          isNullable: false,
-          dartType: 'String',
+          isNullable: true,
+          dartType: 'String?',
+        ),
+        _i2.ColumnDefinition(
+          name: 'visitor_coming_from',
+          columnType: _i2.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
         ),
         _i2.ColumnDefinition(
           name: 'visitor_card_id',
           columnType: _i2.ColumnType.integer,
-          isNullable: false,
-          dartType: 'int',
+          isNullable: true,
+          dartType: 'int?',
         ),
         _i2.ColumnDefinition(
           name: 'company_id',
@@ -556,6 +556,16 @@ class Protocol extends _i1.SerializationManagerServer {
       foreignKeys: [
         _i2.ForeignKeyDefinition(
           constraintName: 'visitor_log_fk_0',
+          columns: ['visitor_id'],
+          referenceTable: 'visitor',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: null,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+        _i2.ForeignKeyDefinition(
+          constraintName: 'visitor_log_fk_1',
           columns: ['visitor_purpose_category_id'],
           referenceTable: 'purpose_category',
           referenceTableSchema: 'public',
@@ -565,7 +575,7 @@ class Protocol extends _i1.SerializationManagerServer {
           matchType: null,
         ),
         _i2.ForeignKeyDefinition(
-          constraintName: 'visitor_log_fk_1',
+          constraintName: 'visitor_log_fk_2',
           columns: ['visitor_purpose_sub_category_id'],
           referenceTable: 'purpose_sub_category',
           referenceTableSchema: 'public',
@@ -575,7 +585,7 @@ class Protocol extends _i1.SerializationManagerServer {
           matchType: null,
         ),
         _i2.ForeignKeyDefinition(
-          constraintName: 'visitor_log_fk_2',
+          constraintName: 'visitor_log_fk_3',
           columns: ['visitor_card_id'],
           referenceTable: 'visitor_card',
           referenceTableSchema: 'public',
@@ -679,13 +689,21 @@ class Protocol extends _i1.SerializationManagerServer {
     if (t == _i1.getType<_i12.VisitorLog?>()) {
       return (data != null ? _i12.VisitorLog.fromJson(data, this) : null) as T;
     }
-    if (t == List<int>) {
-      return (data as List).map((e) => deserialize<int>(e)).toList() as dynamic;
+    if (t == List<String>) {
+      return (data as List).map((e) => deserialize<String>(e)).toList()
+          as dynamic;
     }
     if (t == List<_i13.BuildingAssignment>) {
       return (data as List)
           .map((e) => deserialize<_i13.BuildingAssignment>(e))
           .toList() as dynamic;
+    }
+    if (t == _i1.getType<List<_i13.BuildingAssignment>?>()) {
+      return (data != null
+          ? (data as List)
+              .map((e) => deserialize<_i13.BuildingAssignment>(e))
+              .toList()
+          : null) as dynamic;
     }
     if (t == List<_i14.PurposeCategory>) {
       return (data as List)

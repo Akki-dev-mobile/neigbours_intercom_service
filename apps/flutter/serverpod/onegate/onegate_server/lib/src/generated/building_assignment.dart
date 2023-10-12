@@ -12,6 +12,7 @@ class BuildingAssignment extends _i1.TableRow {
   BuildingAssignment({
     int? id,
     this.visitor_id,
+    required this.company_id,
     required this.building_id,
     required this.unit_id,
   }) : super(id);
@@ -24,10 +25,12 @@ class BuildingAssignment extends _i1.TableRow {
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
       visitor_id: serializationManager
           .deserialize<int?>(jsonSerialization['visitor_id']),
+      company_id: serializationManager
+          .deserialize<int>(jsonSerialization['company_id']),
       building_id: serializationManager
           .deserialize<int>(jsonSerialization['building_id']),
       unit_id: serializationManager
-          .deserialize<List<int>>(jsonSerialization['unit_id']),
+          .deserialize<List<String>>(jsonSerialization['unit_id']),
     );
   }
 
@@ -35,9 +38,11 @@ class BuildingAssignment extends _i1.TableRow {
 
   int? visitor_id;
 
+  int company_id;
+
   int building_id;
 
-  List<int> unit_id;
+  List<String> unit_id;
 
   @override
   String get tableName => 'building_assignment';
@@ -46,6 +51,7 @@ class BuildingAssignment extends _i1.TableRow {
     return {
       'id': id,
       'visitor_id': visitor_id,
+      'company_id': company_id,
       'building_id': building_id,
       'unit_id': unit_id,
     };
@@ -56,6 +62,7 @@ class BuildingAssignment extends _i1.TableRow {
     return {
       'id': id,
       'visitor_id': visitor_id,
+      'company_id': company_id,
       'building_id': building_id,
       'unit_id': unit_id,
     };
@@ -66,6 +73,7 @@ class BuildingAssignment extends _i1.TableRow {
     return {
       'id': id,
       'visitor_id': visitor_id,
+      'company_id': company_id,
       'building_id': building_id,
       'unit_id': unit_id,
     };
@@ -82,6 +90,9 @@ class BuildingAssignment extends _i1.TableRow {
         return;
       case 'visitor_id':
         visitor_id = value;
+        return;
+      case 'company_id':
+        company_id = value;
         return;
       case 'building_id':
         building_id = value;
@@ -216,6 +227,8 @@ class BuildingAssignmentTable extends _i1.Table {
 
   final visitor_id = _i1.ColumnInt('visitor_id');
 
+  final company_id = _i1.ColumnInt('company_id');
+
   final building_id = _i1.ColumnInt('building_id');
 
   final unit_id = _i1.ColumnSerializable('unit_id');
@@ -224,6 +237,7 @@ class BuildingAssignmentTable extends _i1.Table {
   List<_i1.Column> get columns => [
         id,
         visitor_id,
+        company_id,
         building_id,
         unit_id,
       ];

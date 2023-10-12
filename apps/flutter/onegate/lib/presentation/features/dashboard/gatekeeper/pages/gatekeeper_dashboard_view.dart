@@ -25,10 +25,8 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:common_widgets/loading_view.dart';
 
-import 'dart:math' as math;
 
 import 'id_input_view.dart';
-import 'scan_qr.dart';
 
 class GateDashboardView extends StatefulWidget {
   const GateDashboardView({super.key});

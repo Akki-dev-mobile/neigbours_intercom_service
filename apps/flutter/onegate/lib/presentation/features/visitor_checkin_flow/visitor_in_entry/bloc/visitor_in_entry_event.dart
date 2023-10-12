@@ -14,4 +14,19 @@ class VIEIncrementGuestCountButtonPressedEvent extends VisitorInEntryEvent {}
 
 class VIEDecrementGuestCountButtonPressedEvent extends VisitorInEntryEvent {}
 
-class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {}
+class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
+  final Visitor? searchedVisitor;
+  final String? guestName;
+  final String? guestComingFrom;
+  final int? guestCount;
+  final PurposeCategory purposeCategory;
+  final String mobile;
+
+  VIEGuestFormSubmitButtonPressedEvent(
+      {this.searchedVisitor,
+      this.guestName,
+      this.guestComingFrom,
+      this.guestCount,
+      required this.purposeCategory,
+      required this.mobile});
+}

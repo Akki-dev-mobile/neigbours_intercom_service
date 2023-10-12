@@ -1,14 +1,16 @@
 class: VisitorLog
 table: visitor_log
 fields:
-  visitor: Visitor
+  visitor_id: int, parent=visitor
+  visitor: Visitor?,api
   visitor_purpose_category_id: int, parent=purpose_category
-  visitor_purpose_sub_category_id: int, parent=purpose_sub_category
-  visitor_building_assignment: List<BuildingAssignment>
-  visitor_image: String
+  visitor_purpose_sub_category_id: int?, parent=purpose_sub_category
+  visitor_building_assignment: List<BuildingAssignment>?,api
   visitor_count: int
   visitor_check_in: DateTime
-  visitor_check_out: DateTime
-  visitor_card_number: String
-  visitor_card_id: int, parent=visitor_card
+  visitor_check_out: DateTime?
+  visitor_card_number: String?
+  visitor_coming_from: String?
+  visitor_card_id: int?, parent=visitor_card
   company_id: int
+

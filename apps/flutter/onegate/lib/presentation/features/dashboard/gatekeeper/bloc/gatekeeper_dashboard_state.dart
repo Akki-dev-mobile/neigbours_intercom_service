@@ -44,3 +44,10 @@ class SaveSearchedVisitorState extends GatekeeperDashboardActionState {
   SaveSearchedVisitorState({required this.visitor});
 }
 
+class NavigateToVisitorDetailsState extends GatekeeperDashboardActionState {
+  final Visitor? visitor;
+  final PurposeCategory purpose;
+  final String mobile;
+  NavigateToVisitorDetailsState(this.purpose, this.mobile, {required this.visitor});
+}
+

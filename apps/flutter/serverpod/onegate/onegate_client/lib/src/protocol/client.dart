@@ -11,8 +11,9 @@ import 'dart:async' as _i2;
 import 'package:onegate_client/src/protocol/purpose_category.dart' as _i3;
 import 'package:onegate_client/src/protocol/visitor.dart' as _i4;
 import 'package:onegate_client/src/protocol/visitor_log.dart' as _i5;
-import 'dart:io' as _i6;
-import 'protocol.dart' as _i7;
+import 'package:onegate_client/src/protocol/building_assignment.dart' as _i6;
+import 'dart:io' as _i7;
+import 'protocol.dart' as _i8;
 
 class _EndpointExample extends _i1.EndpointRef {
   _EndpointExample(_i1.EndpointCaller caller) : super(caller);
@@ -75,28 +76,30 @@ class _EndpointVisitorLog extends _i1.EndpointRef {
         {'visitorLog': visitorLog},
       );
 
-  _i2.Future<List<_i5.VisitorLog>> fetchCheckInVisitorLog(
-    int companyId,
-    DateTime dateTime,
-  ) =>
+  _i2.Future<_i6.BuildingAssignment> createBuildingAssignment(
+          _i6.BuildingAssignment buildingAssignment) =>
+      caller.callServerEndpoint<_i6.BuildingAssignment>(
+        'visitorLog',
+        'createBuildingAssignment',
+        {'buildingAssignment': buildingAssignment},
+      );
+
+  _i2.Future<List<_i5.VisitorLog>> fetchAllLogs(String dateTime) =>
       caller.callServerEndpoint<List<_i5.VisitorLog>>(
         'visitorLog',
-        'fetchCheckInVisitorLog',
-        {
-          'companyId': companyId,
-          'dateTime': dateTime,
-        },
+        'fetchAllLogs',
+        {'dateTime': dateTime},
       );
 }
 
 class Client extends _i1.ServerpodClient {
   Client(
     String host, {
-    _i6.SecurityContext? context,
+    _i7.SecurityContext? context,
     _i1.AuthenticationKeyManager? authenticationKeyManager,
   }) : super(
           host,
-          _i7.Protocol(),
+          _i8.Protocol(),
           context: context,
           authenticationKeyManager: authenticationKeyManager,
         ) {

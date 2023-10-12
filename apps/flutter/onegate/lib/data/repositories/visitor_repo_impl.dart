@@ -17,12 +17,22 @@ class VisitorRepoImpl extends VisitorRepository {
   }
   
   @override
-  Future<List<PurposeCategory>?>? fetchPurposeCategory() {
+  Future<List<PurposeCategory>?>? fetchPurposeCategory() async{
     try{
-      final response = _remoteDataSource.fetchPurpose();
+      final response = await _remoteDataSource.fetchPurpose();
       return response;
     }catch(error){
       return null;
     } 
+  }
+  
+  @override
+  Future<Visitor?> createVisitor(Visitor visitor) async {
+   try{
+    final response = await _remoteDataSource.createVisitor(visitor);
+    return response;
+   }catch(error){
+     return null;
+   }
   }
 }

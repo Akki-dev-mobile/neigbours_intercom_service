@@ -115,6 +115,7 @@ ALTER TABLE ONLY "visitor"
 CREATE TABLE "building_assignment" (
   "id" serial,
   "visitor_id" integer,
+  "company_id" integer NOT NULL,
   "building_id" integer NOT NULL,
   "unit_id" json NOT NULL
 );
@@ -148,16 +149,15 @@ ALTER TABLE ONLY "visitor_card"
 
 CREATE TABLE "visitor_log" (
   "id" serial,
-  "visitor" json NOT NULL,
+  "visitor_id" integer NOT NULL,
   "visitor_purpose_category_id" integer NOT NULL,
-  "visitor_purpose_sub_category_id" integer NOT NULL,
-  "visitor_building_assignment" json NOT NULL,
-  "visitor_image" text NOT NULL,
+  "visitor_purpose_sub_category_id" integer,
   "visitor_count" integer NOT NULL,
   "visitor_check_in" timestamp without time zone NOT NULL,
-  "visitor_check_out" timestamp without time zone NOT NULL,
-  "visitor_card_number" text NOT NULL,
-  "visitor_card_id" integer NOT NULL,
+  "visitor_check_out" timestamp without time zone,
+  "visitor_card_number" text,
+  "visitor_coming_from" text,
+  "visitor_card_id" integer,
   "company_id" integer NOT NULL
 );
 
@@ -166,16 +166,21 @@ ALTER TABLE ONLY "visitor_log"
 
 ALTER TABLE ONLY "visitor_log"
   ADD CONSTRAINT visitor_log_fk_0
+    FOREIGN KEY("visitor_id")
+      REFERENCES visitor(id)
+        ON DELETE CASCADE;
+ALTER TABLE ONLY "visitor_log"
+  ADD CONSTRAINT visitor_log_fk_1
     FOREIGN KEY("visitor_purpose_category_id")
       REFERENCES purpose_category(id)
         ON DELETE CASCADE;
 ALTER TABLE ONLY "visitor_log"
-  ADD CONSTRAINT visitor_log_fk_1
+  ADD CONSTRAINT visitor_log_fk_2
     FOREIGN KEY("visitor_purpose_sub_category_id")
       REFERENCES purpose_sub_category(id)
         ON DELETE CASCADE;
 ALTER TABLE ONLY "visitor_log"
-  ADD CONSTRAINT visitor_log_fk_2
+  ADD CONSTRAINT visitor_log_fk_3
     FOREIGN KEY("visitor_card_id")
       REFERENCES visitor_card(id)
         ON DELETE CASCADE;

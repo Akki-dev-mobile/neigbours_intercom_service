@@ -67,6 +67,7 @@ class _IdInputViewState extends State<IdInputView> {
   @override
   void dispose() {
     _focusNode.dispose();
+    mobileController.clear();
     super.dispose();
   }
 
@@ -79,6 +80,7 @@ class _IdInputViewState extends State<IdInputView> {
       buildWhen: (previous, current) =>
           current is! GatekeeperDashboardActionState,
       listener: (context, state) {
+        print("${state.runtimeType}");
         switch (state.runtimeType) {
           case GatekeeperDashboardErrorState:
             final errorState = state as GatekeeperDashboardErrorState;
@@ -105,12 +107,28 @@ class _IdInputViewState extends State<IdInputView> {
               backgroundColor: Theme.of(context).colorScheme.background,
               context: context,
               builder: (context) => ImageGridBottomSheet(
-                  purposeCategories: dialogState.purposeCategories!),
+                  purposeCategories: dialogState.purposeCategories!,
+                  searchedVisitor: searchedVisitor,gatekeeperDashboardBloc: gateDashboardBloc,),
             );
             break;
           case SaveSearchedVisitorState:
             final saveVisitorState = state as SaveSearchedVisitorState;
             searchedVisitor = saveVisitorState.visitor;
+            break;
+          case NavigateToVisitorDetailsState:
+            final navigateToVisitorDetailsState =
+                state as NavigateToVisitorDetailsState;
+                mobileController.clear();
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: VisitorsInEntry(
+                    selectedValue: navigateToVisitorDetailsState.purpose,
+                    searchedVisitor: navigateToVisitorDetailsState.visitor,
+                    mobile: navigateToVisitorDetailsState.mobile),
+              ),
+            );
             break;
         }
       },
@@ -361,8 +379,10 @@ class _IdInputViewState extends State<IdInputView> {
 
 class ImageGridBottomSheet extends StatefulWidget {
   final List<PurposeCategory> purposeCategories;
+  final GatekeeperDashboardBloc gatekeeperDashboardBloc;
   Visitor? searchedVisitor;
-  ImageGridBottomSheet({super.key, required this.purposeCategories,this.searchedVisitor});
+  ImageGridBottomSheet(
+      {super.key, required this.purposeCategories, this.searchedVisitor, required this.gatekeeperDashboardBloc});
 
   @override
   _ImageGridBottomSheetState createState() => _ImageGridBottomSheetState();
@@ -518,18 +538,16 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
             child: CustomLargeBtn(
               text: 'Next',
               onPressed: () {
+                if (searchedVisitor != null) {}
                 if (selectedImageIndex != -1) {
-                  String selectedValue = widget
-                      .purposeCategories[selectedImageIndex]
-                      .purpose_category_name;
-                  Navigator.pop(context, selectedValue,);
-                  Navigator.push(
+                  PurposeCategory selectedValue = widget
+                      .purposeCategories[selectedImageIndex];
+                  Navigator.pop(
                     context,
-                    PageTransition(
-                      type: PageTransitionType.rightToLeft,
-                      child: VisitorsInEntry(selectedValue: selectedValue),
-                    ),
+                    selectedValue,
                   );
+                  widget.gatekeeperDashboardBloc.add(
+                      PurposeNextButtonClickedEvent(selectedValue, searchedVisitor, mobileController.text));
                 }
               },
             ),

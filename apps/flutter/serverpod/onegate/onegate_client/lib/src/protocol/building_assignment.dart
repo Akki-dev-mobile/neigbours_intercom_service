@@ -12,6 +12,7 @@ class BuildingAssignment extends _i1.SerializableEntity {
   BuildingAssignment({
     this.id,
     this.visitor_id,
+    required this.company_id,
     required this.building_id,
     required this.unit_id,
   });
@@ -24,10 +25,12 @@ class BuildingAssignment extends _i1.SerializableEntity {
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
       visitor_id: serializationManager
           .deserialize<int?>(jsonSerialization['visitor_id']),
+      company_id: serializationManager
+          .deserialize<int>(jsonSerialization['company_id']),
       building_id: serializationManager
           .deserialize<int>(jsonSerialization['building_id']),
       unit_id: serializationManager
-          .deserialize<List<int>>(jsonSerialization['unit_id']),
+          .deserialize<List<String>>(jsonSerialization['unit_id']),
     );
   }
 
@@ -38,15 +41,18 @@ class BuildingAssignment extends _i1.SerializableEntity {
 
   int? visitor_id;
 
+  int company_id;
+
   int building_id;
 
-  List<int> unit_id;
+  List<String> unit_id;
 
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'visitor_id': visitor_id,
+      'company_id': company_id,
       'building_id': building_id,
       'unit_id': unit_id,
     };

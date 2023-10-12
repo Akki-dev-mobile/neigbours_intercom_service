@@ -116,13 +116,21 @@ class Protocol extends _i1.SerializationManager {
     if (t == _i1.getType<_i11.VisitorLog?>()) {
       return (data != null ? _i11.VisitorLog.fromJson(data, this) : null) as T;
     }
-    if (t == List<int>) {
-      return (data as List).map((e) => deserialize<int>(e)).toList() as dynamic;
+    if (t == List<String>) {
+      return (data as List).map((e) => deserialize<String>(e)).toList()
+          as dynamic;
     }
     if (t == List<_i12.BuildingAssignment>) {
       return (data as List)
           .map((e) => deserialize<_i12.BuildingAssignment>(e))
           .toList() as dynamic;
+    }
+    if (t == _i1.getType<List<_i12.BuildingAssignment>?>()) {
+      return (data != null
+          ? (data as List)
+              .map((e) => deserialize<_i12.BuildingAssignment>(e))
+              .toList()
+          : null) as dynamic;
     }
     if (t == List<_i13.PurposeCategory>) {
       return (data as List)

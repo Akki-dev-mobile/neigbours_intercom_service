@@ -12,16 +12,17 @@ import 'protocol.dart' as _i2;
 class VisitorLog extends _i1.TableRow {
   VisitorLog({
     int? id,
-    required this.visitor,
+    required this.visitor_id,
+    this.visitor,
     required this.visitor_purpose_category_id,
-    required this.visitor_purpose_sub_category_id,
-    required this.visitor_building_assignment,
-    required this.visitor_image,
+    this.visitor_purpose_sub_category_id,
+    this.visitor_building_assignment,
     required this.visitor_count,
     required this.visitor_check_in,
-    required this.visitor_check_out,
-    required this.visitor_card_number,
-    required this.visitor_card_id,
+    this.visitor_check_out,
+    this.visitor_card_number,
+    this.visitor_coming_from,
+    this.visitor_card_id,
     required this.company_id,
   }) : super(id);
 
@@ -31,27 +32,29 @@ class VisitorLog extends _i1.TableRow {
   ) {
     return VisitorLog(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
+      visitor_id: serializationManager
+          .deserialize<int>(jsonSerialization['visitor_id']),
       visitor: serializationManager
-          .deserialize<_i2.Visitor>(jsonSerialization['visitor']),
+          .deserialize<_i2.Visitor?>(jsonSerialization['visitor']),
       visitor_purpose_category_id: serializationManager
           .deserialize<int>(jsonSerialization['visitor_purpose_category_id']),
-      visitor_purpose_sub_category_id: serializationManager.deserialize<int>(
+      visitor_purpose_sub_category_id: serializationManager.deserialize<int?>(
           jsonSerialization['visitor_purpose_sub_category_id']),
       visitor_building_assignment:
-          serializationManager.deserialize<List<_i2.BuildingAssignment>>(
+          serializationManager.deserialize<List<_i2.BuildingAssignment>?>(
               jsonSerialization['visitor_building_assignment']),
-      visitor_image: serializationManager
-          .deserialize<String>(jsonSerialization['visitor_image']),
       visitor_count: serializationManager
           .deserialize<int>(jsonSerialization['visitor_count']),
       visitor_check_in: serializationManager
           .deserialize<DateTime>(jsonSerialization['visitor_check_in']),
       visitor_check_out: serializationManager
-          .deserialize<DateTime>(jsonSerialization['visitor_check_out']),
+          .deserialize<DateTime?>(jsonSerialization['visitor_check_out']),
       visitor_card_number: serializationManager
-          .deserialize<String>(jsonSerialization['visitor_card_number']),
+          .deserialize<String?>(jsonSerialization['visitor_card_number']),
+      visitor_coming_from: serializationManager
+          .deserialize<String?>(jsonSerialization['visitor_coming_from']),
       visitor_card_id: serializationManager
-          .deserialize<int>(jsonSerialization['visitor_card_id']),
+          .deserialize<int?>(jsonSerialization['visitor_card_id']),
       company_id: serializationManager
           .deserialize<int>(jsonSerialization['company_id']),
     );
@@ -59,25 +62,27 @@ class VisitorLog extends _i1.TableRow {
 
   static final t = VisitorLogTable();
 
-  _i2.Visitor visitor;
+  int visitor_id;
+
+  _i2.Visitor? visitor;
 
   int visitor_purpose_category_id;
 
-  int visitor_purpose_sub_category_id;
+  int? visitor_purpose_sub_category_id;
 
-  List<_i2.BuildingAssignment> visitor_building_assignment;
-
-  String visitor_image;
+  List<_i2.BuildingAssignment>? visitor_building_assignment;
 
   int visitor_count;
 
   DateTime visitor_check_in;
 
-  DateTime visitor_check_out;
+  DateTime? visitor_check_out;
 
-  String visitor_card_number;
+  String? visitor_card_number;
 
-  int visitor_card_id;
+  String? visitor_coming_from;
+
+  int? visitor_card_id;
 
   int company_id;
 
@@ -87,15 +92,16 @@ class VisitorLog extends _i1.TableRow {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'visitor_id': visitor_id,
       'visitor': visitor,
       'visitor_purpose_category_id': visitor_purpose_category_id,
       'visitor_purpose_sub_category_id': visitor_purpose_sub_category_id,
       'visitor_building_assignment': visitor_building_assignment,
-      'visitor_image': visitor_image,
       'visitor_count': visitor_count,
       'visitor_check_in': visitor_check_in,
       'visitor_check_out': visitor_check_out,
       'visitor_card_number': visitor_card_number,
+      'visitor_coming_from': visitor_coming_from,
       'visitor_card_id': visitor_card_id,
       'company_id': company_id,
     };
@@ -105,15 +111,14 @@ class VisitorLog extends _i1.TableRow {
   Map<String, dynamic> toJsonForDatabase() {
     return {
       'id': id,
-      'visitor': visitor,
+      'visitor_id': visitor_id,
       'visitor_purpose_category_id': visitor_purpose_category_id,
       'visitor_purpose_sub_category_id': visitor_purpose_sub_category_id,
-      'visitor_building_assignment': visitor_building_assignment,
-      'visitor_image': visitor_image,
       'visitor_count': visitor_count,
       'visitor_check_in': visitor_check_in,
       'visitor_check_out': visitor_check_out,
       'visitor_card_number': visitor_card_number,
+      'visitor_coming_from': visitor_coming_from,
       'visitor_card_id': visitor_card_id,
       'company_id': company_id,
     };
@@ -123,15 +128,16 @@ class VisitorLog extends _i1.TableRow {
   Map<String, dynamic> allToJson() {
     return {
       'id': id,
+      'visitor_id': visitor_id,
       'visitor': visitor,
       'visitor_purpose_category_id': visitor_purpose_category_id,
       'visitor_purpose_sub_category_id': visitor_purpose_sub_category_id,
       'visitor_building_assignment': visitor_building_assignment,
-      'visitor_image': visitor_image,
       'visitor_count': visitor_count,
       'visitor_check_in': visitor_check_in,
       'visitor_check_out': visitor_check_out,
       'visitor_card_number': visitor_card_number,
+      'visitor_coming_from': visitor_coming_from,
       'visitor_card_id': visitor_card_id,
       'company_id': company_id,
     };
@@ -146,20 +152,14 @@ class VisitorLog extends _i1.TableRow {
       case 'id':
         id = value;
         return;
-      case 'visitor':
-        visitor = value;
+      case 'visitor_id':
+        visitor_id = value;
         return;
       case 'visitor_purpose_category_id':
         visitor_purpose_category_id = value;
         return;
       case 'visitor_purpose_sub_category_id':
         visitor_purpose_sub_category_id = value;
-        return;
-      case 'visitor_building_assignment':
-        visitor_building_assignment = value;
-        return;
-      case 'visitor_image':
-        visitor_image = value;
         return;
       case 'visitor_count':
         visitor_count = value;
@@ -172,6 +172,9 @@ class VisitorLog extends _i1.TableRow {
         return;
       case 'visitor_card_number':
         visitor_card_number = value;
+        return;
+      case 'visitor_coming_from':
+        visitor_coming_from = value;
         return;
       case 'visitor_card_id':
         visitor_card_id = value;
@@ -303,18 +306,13 @@ class VisitorLogTable extends _i1.Table {
   /// the id will be null.
   final id = _i1.ColumnInt('id');
 
-  final visitor = _i1.ColumnSerializable('visitor');
+  final visitor_id = _i1.ColumnInt('visitor_id');
 
   final visitor_purpose_category_id =
       _i1.ColumnInt('visitor_purpose_category_id');
 
   final visitor_purpose_sub_category_id =
       _i1.ColumnInt('visitor_purpose_sub_category_id');
-
-  final visitor_building_assignment =
-      _i1.ColumnSerializable('visitor_building_assignment');
-
-  final visitor_image = _i1.ColumnString('visitor_image');
 
   final visitor_count = _i1.ColumnInt('visitor_count');
 
@@ -324,6 +322,8 @@ class VisitorLogTable extends _i1.Table {
 
   final visitor_card_number = _i1.ColumnString('visitor_card_number');
 
+  final visitor_coming_from = _i1.ColumnString('visitor_coming_from');
+
   final visitor_card_id = _i1.ColumnInt('visitor_card_id');
 
   final company_id = _i1.ColumnInt('company_id');
@@ -331,15 +331,14 @@ class VisitorLogTable extends _i1.Table {
   @override
   List<_i1.Column> get columns => [
         id,
-        visitor,
+        visitor_id,
         visitor_purpose_category_id,
         visitor_purpose_sub_category_id,
-        visitor_building_assignment,
-        visitor_image,
         visitor_count,
         visitor_check_in,
         visitor_check_out,
         visitor_card_number,
+        visitor_coming_from,
         visitor_card_id,
         company_id,
       ];

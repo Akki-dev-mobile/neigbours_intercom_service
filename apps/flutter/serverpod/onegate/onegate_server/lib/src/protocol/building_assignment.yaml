@@ -2,5 +2,6 @@ class: BuildingAssignment
 table: building_assignment
 fields:
   visitor_id: int?, parent=visitor
+  company_id: int,
   building_id: int
-  unit_id: List<int>
+  unit_id: List<String>

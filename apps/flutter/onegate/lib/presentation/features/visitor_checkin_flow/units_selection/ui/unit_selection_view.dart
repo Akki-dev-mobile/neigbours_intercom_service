@@ -3,26 +3,45 @@
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/repositories/society_repo_impl.dart';
+import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/society/building.dart';
+import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
+import 'package:flutter_onegate/domain/repositories/society_repo.dart';
+import 'package:flutter_onegate/domain/use_cases/society_usecase.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/bloc/units_selection_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/units_list.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:onegate_client/onegate_client.dart';
 
 import '../../request_permission/ui/request_permission_view.dart';
 
 class UnitSelectionView extends StatefulWidget {
-  const UnitSelectionView({Key? key}) : super(key: key);
+  final Visitor visitor;
+  final PurposeCategory purposeCategory;
+  final String? comingFrom;
+  final int? guestCount;
+  const UnitSelectionView(
+      {Key? key,
+      required this.visitor,
+      required this.purposeCategory,
+      this.comingFrom,
+      this.guestCount})
+      : super(key: key);
 
   @override
   State<UnitSelectionView> createState() => _UnitSelectionViewState();
 }
 
 class _UnitSelectionViewState extends State<UnitSelectionView> {
-  List<String> selectedUnits = [];
-  List<String> items = buildingA;
+  List<MemberUnits> selectedUnits = [];
+  late Building selectedBuilding;
 
-  List<String> anotherList = [];
-  // late String itemCount;
+  List<MemberUnits> anotherList = [];
 
   String getSelectedItemsText() {
     final itemCount = anotherList.length;
@@ -45,310 +64,360 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return anotherList.join(', ');
   }
 
-  String? selectedBuilding;
-  List<String> options = ['Building A', 'Building B', 'Building C'];
+  final UnitsSelectionBloc unitsSelectionBloc = UnitsSelectionBloc(
+      SocietyUseCase(SocietyRepositoryImpl(RemoteDataSource(
+          DioSingleton.instance1,
+          DioSingleton.instance2,
+          DioSingleton.instance3))));
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    selectedBuilding = 'Building A';
-
-    // Update the items list based on the selected building
-    if (selectedBuilding == 'Building A') {
-      items = buildingA;
-    } else if (selectedBuilding == 'Building B') {
-      items = buildingB;
-    } else if (selectedBuilding == 'Building C') {
-      items = buildingC;
-    }
+    unitsSelectionBloc.add(UnitSelectionInitialEvent());
   }
 
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
-      isScrollable: false,
-      pageTitle: 'Select Units/Members',
-      pageBody: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DefaultTabController(
-            length: unitTypeTabs.length,
-            child: Column(
-              children: [
-                TabBar(
-                  tabs: unitTypeTabs,
-                  indicatorColor: Color(0xffC08261),
-                  labelColor: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.7),
-                  unselectedLabelColor: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.7),
-                  dividerColor: Colors.transparent,
-                  labelStyle: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height,
-                  child: TabBarView(
-                    physics: NeverScrollableScrollPhysics(),
-                    children: [
-                      Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 15,
-                            ),
-                            child: ChipsChoice<String>.single(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
-                              scrollToSelectedOnChanged: true,
-                              spacing: 20,
-                              choiceStyle: C2ChipStyle.outlined(
-                                borderWidth: 1,
-                                color: Colors.grey.shade700,
-                                selectedStyle: C2ChipStyle.filled(
-                                  foregroundColor: Color(0xFFC08261),
-                                ),
-                                height: 40,
-                              ),
-                              choiceCheckmark: true,
-                              value: selectedBuilding,
-                              scrollPhysics: BouncingScrollPhysics(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedBuilding = value;
+    return BlocConsumer<UnitsSelectionBloc, UnitsSelectionState>(
+      bloc: unitsSelectionBloc,
+      listenWhen: (previous, current) => current is UnitsSelectionActionState,
+      buildWhen: (previous, current) => current is! UnitsSelectionActionState,
+      listener: (context, state) {
+        switch (state.runtimeType) {
+          case MemberFetchedState:
+            final memberState = state as MemberFetchedState;
+            for (MemberUnits index in selectedUnits) {
+              if (index.id == memberState.members![0].fkUnitId) {
+                index.members = memberState.members;
+              }
+            }
+            break;
+          case NavigateToRequestPermissionState:
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RequestPermissionView(
+                  gridData: (state as NavigateToRequestPermissionState).unit,
+                  visitor: widget.visitor,
+                  purposeCategory: widget.purposeCategory,
+                  comingFrom: widget.comingFrom,
+                  guestCount: widget.guestCount,
+              ),
+            ));
+            
+            break;
+        }
+      },
+      builder: (context, state) {
+        switch (state.runtimeType) {
+          case UnitsSelectionLoadingState:
+            return Center(child: CircularProgressIndicator());
+          case UnitSelectionSuccessState:
+            List<MemberUnits>? unit;
 
-                                  selectedBuilding = value;
+            final successState = state as UnitSelectionSuccessState;
+            selectedBuilding = successState.selectedBuilding!;
+            unit = successState.units;
 
-                                  if (selectedBuilding == 'Building A') {
-                                    items = buildingA;
-                                  } else if (selectedBuilding == 'Building B') {
-                                    items = buildingB;
-                                  } else if (selectedBuilding == 'Building C') {
-                                    items = buildingC;
-                                  }
-                                });
-                              },
-                              choiceItems: C2Choice.listFrom<String, String>(
-                                source: options,
-                                value: (i, v) => v,
-                                label: (i, v) => v,
-                              ),
-                            ),
+            return MyScrollView(
+              isScrollable: false,
+              pageTitle: 'Select Units/Members',
+              pageBody: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DefaultTabController(
+                    length: unitTypeTabs.length,
+                    child: Column(
+                      children: [
+                        TabBar(
+                          tabs: unitTypeTabs,
+                          indicatorColor: Color(0xffC08261),
+                          labelColor: Theme.of(context)
+                              .colorScheme
+                              .onBackground
+                              .withOpacity(0.7),
+                          unselectedLabelColor: Theme.of(context)
+                              .colorScheme
+                              .onBackground
+                              .withOpacity(0.7),
+                          dividerColor: Colors.transparent,
+                          labelStyle: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                          Expanded(
-                            child: GridView.builder(
-                              padding: EdgeInsets.only(
-                                bottom: 150,
+                        ),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          height: MediaQuery.of(context).size.height,
+                          child: TabBarView(
+                            physics: NeverScrollableScrollPhysics(),
+                            children: [
+                              Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 15,
+                                    ),
+                                    child: ChipsChoice<String>.single(
+                                      padding:
+                                          EdgeInsets.symmetric(horizontal: 20),
+                                      scrollToSelectedOnChanged: true,
+                                      spacing: 20,
+                                      choiceStyle: C2ChipStyle.outlined(
+                                        borderWidth: 1,
+                                        color: Colors.grey.shade700,
+                                        selectedStyle: C2ChipStyle.filled(
+                                          foregroundColor: Color(0xFFC08261),
+                                        ),
+                                        height: 40,
+                                      ),
+                                      choiceCheckmark: true,
+                                      value: selectedBuilding.socBuildingName,
+                                      scrollPhysics: BouncingScrollPhysics(),
+                                      onChanged: (value) {
+                                        for (Building building
+                                            in successState.buildings!) {
+                                          if (building.socBuildingName ==
+                                              value) {
+                                            selectedBuilding = building;
+                                          }
+                                        }
+                                        unitsSelectionBloc.add(
+                                            BuildingChipClickedEvent(
+                                                selectedBuilding,
+                                                successState.buildings!));
+                                      },
+                                      choiceItems: C2Choice.listFrom(
+                                          source: successState.buildings!,
+                                          value: (index, item) => successState
+                                              .buildings![index]
+                                              .socBuildingName,
+                                          label: (index, item) =>
+                                              item.socBuildingName),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: GridView.builder(
+                                      padding: EdgeInsets.only(
+                                        bottom: 150,
+                                      ),
+                                      shrinkWrap: true,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        childAspectRatio: 2,
+                                        crossAxisCount: 3,
+                                        crossAxisSpacing: 10.0,
+                                        mainAxisSpacing: 10.0,
+                                      ),
+                                      itemCount: unit!.length,
+                                      itemBuilder:
+                                          (BuildContext context, int index) {
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              if (selectedUnits
+                                                  .contains(unit![index])) {
+                                                selectedUnits
+                                                    .remove(unit[index]);
+                                              } else {
+                                                selectedUnits.add(unit[index]);
+                                                unitsSelectionBloc.add(
+                                                    UnitSelectedEvent(
+                                                        unit[index]));
+                                              }
+                                              if (kDebugMode) {
+                                                print(
+                                                    'Selected Indices: $selectedUnits');
+                                              }
+                                              anotherList.clear();
+                                              for (MemberUnits index
+                                                  in selectedUnits) {
+                                                // if (index >= 0 &&
+                                                //     index < items.length) {
+                                                anotherList.add(index);
+                                                //}
+                                              }
+                                              if (kDebugMode) {
+                                                print(
+                                                    'Another List: $anotherList');
+                                              }
+                                            });
+                                          },
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              color: selectedUnits
+                                                      .contains(unit![index])
+                                                  ? Color(0x10C08261)
+                                                  : Colors.transparent,
+                                              border: Border.all(
+                                                color: selectedUnits
+                                                        .contains(unit[index])
+                                                    ? Color(0xffC08261)
+                                                    : Colors.grey.shade400,
+                                                width: selectedUnits
+                                                        .contains(unit[index])
+                                                    ? 2
+                                                    : 1,
+                                              ),
+                                            ),
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                unit[index].unitFlatNumber,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 22,
+                                                  color: selectedUnits
+                                                          .contains(unit[index])
+                                                      ? Color(0xffC08261)
+                                                      : Colors.grey.shade700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(height: 120),
+                                ],
                               ),
-                              shrinkWrap: true,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                childAspectRatio: 2,
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 10.0,
-                                mainAxisSpacing: 10.0,
-                              ),
-                              itemCount: items.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      if (selectedUnits
-                                          .contains(items[index])) {
-                                        selectedUnits.remove(items[index]);
-                                      } else {
-                                        selectedUnits.add(items[index]);
-                                      }
-                                      if (kDebugMode) {
-                                        print(
-                                            'Selected Indices: $selectedUnits');
-                                      }
-                                      anotherList.clear();
-                                      for (String index in selectedUnits) {
-                                        // if (index >= 0 &&
-                                        //     index < items.length) {
-                                        anotherList.add(index);
-                                        //}
-                                      }
-                                      if (kDebugMode) {
-                                        print('Another List: $anotherList');
-                                      }
-                                    });
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color:
-                                          selectedUnits.contains(items[index])
-                                              ? Color(0x10C08261)
-                                              : Colors.transparent,
-                                      border: Border.all(
-                                        color:
-                                            selectedUnits.contains(items[index])
-                                                ? Color(0xffC08261)
-                                                : Colors.grey.shade400,
-                                        width:
-                                            selectedUnits.contains(items[index])
-                                                ? 2
-                                                : 1,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  CustomForm.textField(
+                                    "Search",
+                                    titleColor: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground,
+                                    hintColor:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                    hintText: 'Search Members/Units',
+                                    textCapitalization:
+                                        TextCapitalization.words,
+                                    prefixIcon: IconButton(
+                                      onPressed: () {},
+                                      icon: Icon(
+                                        Ionicons.search,
+                                        size: 26,
                                       ),
                                     ),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        items[index],
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 22,
-                                          color: selectedUnits
-                                                  .contains(items[index])
-                                              ? Color(0xffC08261)
-                                              : Colors.grey.shade700,
-                                        ),
+                                    suffixIcon: IconButton(
+                                      onPressed: () {},
+                                      icon: Icon(
+                                        Ionicons.mic_outline,
+                                        size: 28,
                                       ),
                                     ),
                                   ),
-                                );
-                              },
-                            ),
+                                  Lottie.network(
+                                    'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/search_members_692a406814.json?updated_at=2023-08-23T06:28:52.176Z',
+                                    width: double.infinity,
+                                    height: 300,
+                                  ),
+                                  Text(
+                                    'No Members Found.\nSearch members by their name or flat',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onBackground
+                                          .withOpacity(0.5),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 120),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          CustomForm.textField(
-                            "Search",
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            hintText: 'Search Members/Units',
-                            textCapitalization: TextCapitalization.words,
-                            prefixIcon: IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Ionicons.search,
-                                size: 26,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              floatingActionButton: Container(
+                width: double.infinity,
+                margin: EdgeInsets.all(16),
+                child: FloatingActionButton(
+                  elevation: 0.5,
+                  onPressed: () {
+                    (selectedUnits.length == 1)
+                        ? unitsSelectionBloc.add(NextButtonClickedEvent(
+                            unit: selectedUnits))
+                        : showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                                topRight: Radius.circular(20),
                               ),
                             ),
-                            suffixIcon: IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Ionicons.mic_outline,
-                                size: 28,
-                              ),
+                            builder: (context) => SelectedUnitsBottomSheet(
+                              selectedIndices: selectedUnits,unitsSelectionBloc: unitsSelectionBloc,
                             ),
-                          ),
-                          Lottie.network(
-                            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/search_members_692a406814.json?updated_at=2023-08-23T06:28:52.176Z',
-                            width: double.infinity,
-                            height: 300,
-                          ),
-                          Text(
-                            'No Members Found.\nSearch members by their name or flat',
-                            style: TextStyle(
+                          );
+                  },
+                  child: Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Color(0xffFFEBE6),
+                    ),
+                    child: ListTile(
+                        contentPadding: EdgeInsets.only(left: 16),
+                        title: Text(
+                          getSelectedItemsText(),
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onBackground
-                                  .withOpacity(0.5),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ],
+                              color:
+                                  Theme.of(context).colorScheme.onBackground),
+                        ),
+                        trailing: (selectedUnits.isEmpty)
+                            ? SizedBox()
+                            : Container(
+                                margin: EdgeInsets.all(5),
+                                height: 75,
+                                width: 70,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    selectedUnits.length == 1 ? 'Next' : 'View',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              )),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: Container(
-        width: double.infinity,
-        margin: EdgeInsets.all(16),
-        child: FloatingActionButton(
-          elevation: 0.5,
-          onPressed: () {
-            (selectedUnits.length == 1)
-                ? Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RequestPermissionView(
-                        gridData: selectedUnits,
-                      ),
-                    ),
-                  )
-                : showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    builder: (context) => SelectedUnitsBottomSheet(
-                      selectedIndices: selectedUnits,
-                    ),
-                  );
-          },
-          child: Container(
-            height: 80,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Color(0xffFFEBE6),
-            ),
-            child: ListTile(
-                contentPadding: EdgeInsets.only(left: 16),
-                title: Text(
-                  getSelectedItemsText(),
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 18,
-                      color: Theme.of(context).colorScheme.onBackground),
-                ),
-                trailing: (selectedUnits.isEmpty)
-                    ? SizedBox()
-                    : Container(
-                        margin: EdgeInsets.all(5),
-                        height: 75,
-                        width: 70,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                        child: Center(
-                          child: Text(
-                            selectedUnits.length == 1 ? 'Next' : 'View',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      )),
-          ),
-        ),
-      ),
+              ),
+            );
+          default:
+            return Container();
+        }
+      },
     );
   }
 }
 
 class SelectedUnitsBottomSheet extends StatefulWidget {
-  List<String>? selectedIndices = [];
-  SelectedUnitsBottomSheet({super.key, this.selectedIndices});
+  List<MemberUnits>? selectedIndices = [];
+  final UnitsSelectionBloc unitsSelectionBloc;
+  SelectedUnitsBottomSheet({super.key, this.selectedIndices, required this.unitsSelectionBloc});
 
   @override
   State<SelectedUnitsBottomSheet> createState() =>
@@ -422,13 +491,9 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                             Theme.of(context).colorScheme.onBackground,
                       ),
                       onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RequestPermissionView(
-                                gridData: widget.selectedIndices!,
-                              ),
-                            ));
+                        Navigator.pop(context);
+                       widget.unitsSelectionBloc.add(NextButtonClickedEvent(
+                            unit: widget.selectedIndices!));
                       },
                       icon: Icon(
                         Ionicons.arrow_forward_outline,
@@ -468,8 +533,8 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                           // Navigator.pop(context);
                         },
                       ),
-                      title: Text('Shubham Bane'),
-                      subtitle: Text(item),
+                      title: Text(item.members![0].memberName),
+                      subtitle: Text(item.unitFlatNumber),
                     );
                   },
                   separatorBuilder: (context, index) {
