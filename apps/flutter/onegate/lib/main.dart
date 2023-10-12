@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
+// ignore_for_file: prefer_const_constructors
 
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
@@ -53,22 +53,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    startKioskMode();
+    // startKioskMode();
     return DevicePreview(
-        enabled: !kReleaseMode,
+        enabled: kReleaseMode,
         builder: (context) {
           return MaterialApp(
             useInheritedMediaQuery: true,
             debugShowCheckedModeBanner: false,
             theme: ThemeManager.lightTheme.copyWith(
               pageTransitionsTheme: PageTransitionsTheme(
-                builders: <TargetPlatform, PageTransitionsBuilder>{
+                builders: const <TargetPlatform, PageTransitionsBuilder>{
                   TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
                   TargetPlatform.android: ZoomPageTransitionsBuilder(),
                 },
               ),
             ),
-            home: SelfEntryView(),
+            home: LoginView(),
+            // home: VisitorsInEntry(
+            //   selectedValue: 'GUEST',
+            // ),
           );
         });
   }

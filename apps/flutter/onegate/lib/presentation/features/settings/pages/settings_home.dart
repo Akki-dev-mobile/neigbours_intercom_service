@@ -8,6 +8,7 @@ import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_sel
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -450,12 +451,21 @@ class _SettingsHomeState extends State<SettingsHome> {
             title: 'Self Entry Settings',
             subtitle: 'Enable/Disable Self Entry',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SelfEntryView(),
-                ),
+              Fluttertoast.showToast(
+                msg: "self tap in, coming soon",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.CENTER,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.black,
+                textColor: Colors.white,
+                fontSize: 16.0,
               );
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (context) => SelfEntryView(),
+              //   ),
+              // );
             },
           ),
           PrimarySettingsTile(

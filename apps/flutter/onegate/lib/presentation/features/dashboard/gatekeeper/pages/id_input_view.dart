@@ -2,6 +2,7 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:country_code_picker/country_code_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -147,7 +148,9 @@ class _IdInputViewState extends State<IdInputView> {
                       setState(() {
                         _currentIndex = index!;
                       });
-                      print('Switched to: $_currentIndex');
+                      if (kDebugMode) {
+                        print('Switched to: $_currentIndex');
+                      }
                     },
                   ),
                   SizedBox(height: 20),
@@ -362,7 +365,8 @@ class _IdInputViewState extends State<IdInputView> {
 class ImageGridBottomSheet extends StatefulWidget {
   final List<PurposeCategory> purposeCategories;
   Visitor? searchedVisitor;
-  ImageGridBottomSheet({super.key, required this.purposeCategories,this.searchedVisitor});
+  ImageGridBottomSheet(
+      {super.key, required this.purposeCategories, this.searchedVisitor});
 
   @override
   _ImageGridBottomSheetState createState() => _ImageGridBottomSheetState();
@@ -522,7 +526,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                   String selectedValue = widget
                       .purposeCategories[selectedImageIndex]
                       .purpose_category_name;
-                  Navigator.pop(context, selectedValue,);
+                  Navigator.pop(
+                    context,
+                    selectedValue,
+                  );
                   Navigator.push(
                     context,
                     PageTransition(

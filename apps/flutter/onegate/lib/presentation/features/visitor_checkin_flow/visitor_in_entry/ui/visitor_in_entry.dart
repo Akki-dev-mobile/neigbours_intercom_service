@@ -228,24 +228,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           suffixIcon: VoiceToTextButton(
                             targetController: TextEditingController(),
                           ),
-                          // suffixIcon: IconButton(
-                          //   onPressed: () {
-                          //     _speechToText.isNotListening
-                          //         ? _startListening()
-                          //         : _stopListening();
-                          //   },
-                          //   icon: CircleAvatar(
-                          //     backgroundColor: _speechToText.isNotListening
-                          //         ? Color(0xffFFEBE6)
-                          //         : Color(0xffCAF1D1),
-                          //     radius: 20,
-                          //     child: Icon(
-                          //       size: 22,
-                          //       Ionicons.mic_outline,
-                          //       color: Colors.black,
-                          //     ),
-                          //   ),
-                          // ),
                         ),
                         CustomForm.textField(
                           titleColor:
@@ -390,13 +372,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               ),
               floatingActionButton: CustomLargeBtn(
                 onPressed: () {
-                  // Navigator.push(
-                  //   context,
-                  //   PageTransition(
-                  //     type: PageTransitionType.leftToRightWithFade,
-                  //     child: UnitSelectionView(),
-                  //   ),
-                  // );
                   _captureImageFromCamera();
                 },
                 text: 'Next',

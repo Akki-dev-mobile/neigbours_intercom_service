@@ -5,7 +5,10 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 class VoiceToTextButton extends StatelessWidget {
   final TextEditingController targetController;
 
-  VoiceToTextButton({required this.targetController});
+  VoiceToTextButton({
+    super.key,
+    required this.targetController,
+  });
 
   final stt.SpeechToText _speech = stt.SpeechToText();
 
@@ -25,12 +28,6 @@ class VoiceToTextButton extends StatelessWidget {
         ),
       ),
     );
-    // return IconButton(
-    //   icon: Icon(Icons.mic),
-    //   onPressed: () {
-    //     onSpeechToText(targetController);
-    //   },
-    // );
   }
 
   Future<void> onSpeechToText(TextEditingController controller) async {
@@ -52,7 +49,7 @@ class VoiceToTextButton extends StatelessWidget {
         },
       );
 
-      if (result.finalResult == false) {
+      if (result != null && result.finalResult == false) {
         print('Speech recognition could not understand speech.');
       }
     } else {
