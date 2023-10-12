@@ -104,7 +104,17 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     )),
                 actions: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Fluttertoast.showToast(
+                        msg: "jaate raaho, coming soon",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.black,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                    },
                     icon: Icon(
                       Symbols.alarm_rounded,
                       color: Theme.of(context).colorScheme.onBackground,
@@ -113,20 +123,14 @@ class _GateDashboardViewState extends State<GateDashboardView>
                   IconButton(
                     onPressed: () {
                       Fluttertoast.showToast(
-                        msg: "test for different types of scenarios",
+                        msg: "missed approvals, coming soon",
                         toastLength: Toast.LENGTH_SHORT,
                         gravity: ToastGravity.CENTER,
                         timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.red,
+                        backgroundColor: Colors.black,
                         textColor: Colors.white,
                         fontSize: 16.0,
                       );
-                      // showModalBottomSheet(
-                      //   backgroundColor:
-                      //       Theme.of(context).colorScheme.background,
-                      //   context: context,
-                      //   builder: (context) => ApprovalsView(),
-                      // );
                     },
                     icon: Icon(
                       Symbols.phone_missed_rounded,
@@ -141,15 +145,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
                           type: PageTransitionType.rightToLeft,
                           child: SettingsHome(),
                         ),
-                      );
-                      Fluttertoast.showToast(
-                        msg: "Test Switch to Admin Dashboard",
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.CENTER,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.red,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
                       );
                     },
                     icon: Icon(
@@ -173,11 +168,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             title: 'Intercom',
                             onTap: () {
                               Fluttertoast.showToast(
-                                msg: "will be redirecting to crm payment page",
+                                msg: "Intercom, coming soon",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.CENTER,
                                 timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.red,
+                                backgroundColor: Colors.black,
                                 textColor: Colors.white,
                                 fontSize: 16.0,
                               );
@@ -190,7 +185,17 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             title: 'Parcel',
                             isPremium: false,
                             isVisible: true,
-                            onTap: () {},
+                            onTap: () {
+                              Fluttertoast.showToast(
+                                msg: "Parcel, coming soon",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.CENTER,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.black,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                            },
                           ),
                           DashboardShortcut(
                             isPremium: false,
@@ -198,13 +203,15 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             icon: Symbols.qr_code_scanner_rounded,
                             title: 'Scan',
                             onTap: () {
-                              // Navigator.push(
-                              //   context,
-                              //   PageTransition(
-                              //     type: PageTransitionType.rightToLeft,
-                              //     child: QRScan(),
-                              //   ),
-                              // );
+                              Fluttertoast.showToast(
+                                msg: "Scan qr, coming soon",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.CENTER,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.black,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
                             },
                           ),
                         ],

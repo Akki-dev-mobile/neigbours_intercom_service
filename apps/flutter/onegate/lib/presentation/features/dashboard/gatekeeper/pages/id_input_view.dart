@@ -2,6 +2,7 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:country_code_picker/country_code_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -67,7 +68,6 @@ class _IdInputViewState extends State<IdInputView> {
   @override
   void dispose() {
     _focusNode.dispose();
-    mobileController.clear();
     super.dispose();
   }
 
@@ -80,7 +80,6 @@ class _IdInputViewState extends State<IdInputView> {
       buildWhen: (previous, current) =>
           current is! GatekeeperDashboardActionState,
       listener: (context, state) {
-        print("${state.runtimeType}");
         switch (state.runtimeType) {
           case GatekeeperDashboardErrorState:
             final errorState = state as GatekeeperDashboardErrorState;
@@ -107,28 +106,12 @@ class _IdInputViewState extends State<IdInputView> {
               backgroundColor: Theme.of(context).colorScheme.background,
               context: context,
               builder: (context) => ImageGridBottomSheet(
-                  purposeCategories: dialogState.purposeCategories!,
-                  searchedVisitor: searchedVisitor,gatekeeperDashboardBloc: gateDashboardBloc,),
+                  purposeCategories: dialogState.purposeCategories!),
             );
             break;
           case SaveSearchedVisitorState:
             final saveVisitorState = state as SaveSearchedVisitorState;
             searchedVisitor = saveVisitorState.visitor;
-            break;
-          case NavigateToVisitorDetailsState:
-            final navigateToVisitorDetailsState =
-                state as NavigateToVisitorDetailsState;
-                mobileController.clear();
-            Navigator.push(
-              context,
-              PageTransition(
-                type: PageTransitionType.rightToLeft,
-                child: VisitorsInEntry(
-                    selectedValue: navigateToVisitorDetailsState.purpose,
-                    searchedVisitor: navigateToVisitorDetailsState.visitor,
-                    mobile: navigateToVisitorDetailsState.mobile),
-              ),
-            );
             break;
         }
       },
@@ -165,7 +148,9 @@ class _IdInputViewState extends State<IdInputView> {
                       setState(() {
                         _currentIndex = index!;
                       });
-                      print('Switched to: $_currentIndex');
+                      if (kDebugMode) {
+                        print('Switched to: $_currentIndex');
+                      }
                     },
                   ),
                   SizedBox(height: 20),
@@ -379,10 +364,9 @@ class _IdInputViewState extends State<IdInputView> {
 
 class ImageGridBottomSheet extends StatefulWidget {
   final List<PurposeCategory> purposeCategories;
-  final GatekeeperDashboardBloc gatekeeperDashboardBloc;
   Visitor? searchedVisitor;
   ImageGridBottomSheet(
-      {super.key, required this.purposeCategories, this.searchedVisitor, required this.gatekeeperDashboardBloc});
+      {super.key, required this.purposeCategories, this.searchedVisitor});
 
   @override
   _ImageGridBottomSheetState createState() => _ImageGridBottomSheetState();
