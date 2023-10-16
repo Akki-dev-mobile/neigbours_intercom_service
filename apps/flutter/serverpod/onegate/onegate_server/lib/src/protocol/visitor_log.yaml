@@ -13,4 +13,5 @@ fields:
   visitor_coming_from: String?
   visitor_card_id: int?, parent=visitor_card
   company_id: int
+  is_checked_out: bool
 

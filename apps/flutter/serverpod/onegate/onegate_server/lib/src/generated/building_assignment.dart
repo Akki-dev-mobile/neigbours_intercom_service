@@ -12,6 +12,7 @@ class BuildingAssignment extends _i1.TableRow {
   BuildingAssignment({
     int? id,
     this.visitor_id,
+    this.visitor_log_id,
     required this.company_id,
     required this.building_id,
     required this.unit_id,
@@ -25,6 +26,8 @@ class BuildingAssignment extends _i1.TableRow {
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
       visitor_id: serializationManager
           .deserialize<int?>(jsonSerialization['visitor_id']),
+      visitor_log_id: serializationManager
+          .deserialize<int?>(jsonSerialization['visitor_log_id']),
       company_id: serializationManager
           .deserialize<int>(jsonSerialization['company_id']),
       building_id: serializationManager
@@ -37,6 +40,8 @@ class BuildingAssignment extends _i1.TableRow {
   static final t = BuildingAssignmentTable();
 
   int? visitor_id;
+
+  int? visitor_log_id;
 
   int company_id;
 
@@ -51,6 +56,7 @@ class BuildingAssignment extends _i1.TableRow {
     return {
       'id': id,
       'visitor_id': visitor_id,
+      'visitor_log_id': visitor_log_id,
       'company_id': company_id,
       'building_id': building_id,
       'unit_id': unit_id,
@@ -62,6 +68,7 @@ class BuildingAssignment extends _i1.TableRow {
     return {
       'id': id,
       'visitor_id': visitor_id,
+      'visitor_log_id': visitor_log_id,
       'company_id': company_id,
       'building_id': building_id,
       'unit_id': unit_id,
@@ -73,6 +80,7 @@ class BuildingAssignment extends _i1.TableRow {
     return {
       'id': id,
       'visitor_id': visitor_id,
+      'visitor_log_id': visitor_log_id,
       'company_id': company_id,
       'building_id': building_id,
       'unit_id': unit_id,
@@ -90,6 +98,9 @@ class BuildingAssignment extends _i1.TableRow {
         return;
       case 'visitor_id':
         visitor_id = value;
+        return;
+      case 'visitor_log_id':
+        visitor_log_id = value;
         return;
       case 'company_id':
         company_id = value;
@@ -227,6 +238,8 @@ class BuildingAssignmentTable extends _i1.Table {
 
   final visitor_id = _i1.ColumnInt('visitor_id');
 
+  final visitor_log_id = _i1.ColumnInt('visitor_log_id');
+
   final company_id = _i1.ColumnInt('company_id');
 
   final building_id = _i1.ColumnInt('building_id');
@@ -237,6 +250,7 @@ class BuildingAssignmentTable extends _i1.Table {
   List<_i1.Column> get columns => [
         id,
         visitor_id,
+        visitor_log_id,
         company_id,
         building_id,
         unit_id,

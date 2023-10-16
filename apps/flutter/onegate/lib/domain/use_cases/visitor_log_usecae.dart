@@ -16,4 +16,12 @@ class VisitorLogUsecase{
   Future<bool> checkOut(VisitorLog visitorLog) async{
     return await _repository.checkOut(visitorLog);
   }
+
+  Future<List<VisitorLog>?> fetchAllLogs(int companyId, String dateTime) async{
+    return await _repository.fetchAllVisitorLog(companyId, dateTime);
+  }
+
+  Future<List<VisitorLog>?> fetchCheckOutLogs(int companyId, String dateTime) async{
+    return await _repository.fetchCheckOutVisitorLog(companyId, dateTime);
+  }
 }

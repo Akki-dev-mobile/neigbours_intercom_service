@@ -91,7 +91,7 @@ void setupLocator() {
       () => VisitorUsecase(locator<VisitorRepository>()));
 
   locator.registerFactory(
-      () => GatekeeperDashboardBloc(locator<VisitorUsecase>()));
+      () => GatekeeperDashboardBloc(locator<VisitorUsecase>(),locator<VisitorLogUsecase>()));
 
   locator.registerFactory(() => VisitorInEntryBloc(
       locator<VisitorUsecase>(), locator<VisitorLogUsecase>()));

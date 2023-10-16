@@ -97,6 +97,20 @@ class _EndpointVisitorLog extends _i1.EndpointRef {
         'fetchAllLogs',
         {'dateTime': dateTime},
       );
+
+  _i2.Future<List<_i5.VisitorLog>> fetchCheckInLogs(String dateTime) =>
+      caller.callServerEndpoint<List<_i5.VisitorLog>>(
+        'visitorLog',
+        'fetchCheckInLogs',
+        {'dateTime': dateTime},
+      );
+
+  _i2.Future<List<_i5.VisitorLog>> fetchCheckOutLogs(String dateTime) =>
+      caller.callServerEndpoint<List<_i5.VisitorLog>>(
+        'visitorLog',
+        'fetchCheckOutLogs',
+        {'dateTime': dateTime},
+      );
 }
 
 class Client extends _i1.ServerpodClient {

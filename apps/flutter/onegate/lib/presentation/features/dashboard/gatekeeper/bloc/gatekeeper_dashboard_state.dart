@@ -8,7 +8,13 @@ class GatekeeperDashboardInitial extends GatekeeperDashboardState {}
 
 class GatekeeperDashboardLoadingState extends GatekeeperDashboardState {}
 
-class GatekeeperDashboardSuccessState extends GatekeeperDashboardActionState {}
+class GatekeeperDashboardSuccessState extends GatekeeperDashboardState {
+  final int? inBook;
+  final int? outBook;
+
+  GatekeeperDashboardSuccessState({required this.inBook, required this.outBook});
+  
+}
 
 class GatekeeperDashboardErrorState extends GatekeeperDashboardActionState {
   final String? message;

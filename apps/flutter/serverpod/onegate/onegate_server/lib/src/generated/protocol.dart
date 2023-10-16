@@ -61,6 +61,12 @@ class Protocol extends _i1.SerializationManagerServer {
           dartType: 'int?',
         ),
         _i2.ColumnDefinition(
+          name: 'visitor_log_id',
+          columnType: _i2.ColumnType.integer,
+          isNullable: true,
+          dartType: 'int?',
+        ),
+        _i2.ColumnDefinition(
           name: 'company_id',
           columnType: _i2.ColumnType.integer,
           isNullable: false,
@@ -89,7 +95,17 @@ class Protocol extends _i1.SerializationManagerServer {
           onUpdate: null,
           onDelete: _i2.ForeignKeyAction.cascade,
           matchType: null,
-        )
+        ),
+        _i2.ForeignKeyDefinition(
+          constraintName: 'building_assignment_fk_1',
+          columns: ['visitor_log_id'],
+          referenceTable: 'visitor_log',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: null,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
       ],
       indexes: [
         _i2.IndexDefinition(
@@ -551,6 +567,12 @@ class Protocol extends _i1.SerializationManagerServer {
           columnType: _i2.ColumnType.integer,
           isNullable: false,
           dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'is_checked_out',
+          columnType: _i2.ColumnType.boolean,
+          isNullable: false,
+          dartType: 'bool',
         ),
       ],
       foreignKeys: [

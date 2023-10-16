@@ -20,3 +20,9 @@ class VisitorLogErrorState extends VisitorLogActionState {
 
   VisitorLogErrorState(this.message);
 }
+
+class VisitorLogCheckOutSuccessState extends VisitorLogActionState {
+  final bool? isCheckOut;
+
+  VisitorLogCheckOutSuccessState(this.isCheckOut);
+}

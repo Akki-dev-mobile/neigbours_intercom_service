@@ -12,6 +12,7 @@ class BuildingAssignment extends _i1.SerializableEntity {
   BuildingAssignment({
     this.id,
     this.visitor_id,
+    this.visitor_log_id,
     required this.company_id,
     required this.building_id,
     required this.unit_id,
@@ -25,6 +26,8 @@ class BuildingAssignment extends _i1.SerializableEntity {
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
       visitor_id: serializationManager
           .deserialize<int?>(jsonSerialization['visitor_id']),
+      visitor_log_id: serializationManager
+          .deserialize<int?>(jsonSerialization['visitor_log_id']),
       company_id: serializationManager
           .deserialize<int>(jsonSerialization['company_id']),
       building_id: serializationManager
@@ -41,6 +44,8 @@ class BuildingAssignment extends _i1.SerializableEntity {
 
   int? visitor_id;
 
+  int? visitor_log_id;
+
   int company_id;
 
   int building_id;
@@ -52,6 +57,7 @@ class BuildingAssignment extends _i1.SerializableEntity {
     return {
       'id': id,
       'visitor_id': visitor_id,
+      'visitor_log_id': visitor_log_id,
       'company_id': company_id,
       'building_id': building_id,
       'unit_id': unit_id,

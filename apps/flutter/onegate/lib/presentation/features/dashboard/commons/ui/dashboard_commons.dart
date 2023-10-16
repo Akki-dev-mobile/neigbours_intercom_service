@@ -6,7 +6,10 @@ import 'dart:math' as math;
 import '../../../visitor_log/ui/visitor_log_view.dart';
 
 class DashboardBlocks extends StatelessWidget {
-  const DashboardBlocks({super.key});
+  final int? inBook;
+  final int? outBook;
+  const DashboardBlocks({super.key, this.inBook, this.outBook});
+
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +127,7 @@ class DashboardBlocks extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '74',
+                                inBook.toString(),
                                 textAlign: TextAlign.center,
                                 style:
                                     Theme.of(context).textTheme.displayMedium,
@@ -206,7 +209,7 @@ class DashboardBlocks extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '74',
+                                outBook.toString(),
                                 textAlign: TextAlign.center,
                                 style:
                                     Theme.of(context).textTheme.displayMedium,

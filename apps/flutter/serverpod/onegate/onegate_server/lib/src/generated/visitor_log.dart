@@ -24,6 +24,7 @@ class VisitorLog extends _i1.TableRow {
     this.visitor_coming_from,
     this.visitor_card_id,
     required this.company_id,
+    required this.is_checked_out,
   }) : super(id);
 
   factory VisitorLog.fromJson(
@@ -57,6 +58,8 @@ class VisitorLog extends _i1.TableRow {
           .deserialize<int?>(jsonSerialization['visitor_card_id']),
       company_id: serializationManager
           .deserialize<int>(jsonSerialization['company_id']),
+      is_checked_out: serializationManager
+          .deserialize<bool>(jsonSerialization['is_checked_out']),
     );
   }
 
@@ -86,6 +89,8 @@ class VisitorLog extends _i1.TableRow {
 
   int company_id;
 
+  bool is_checked_out;
+
   @override
   String get tableName => 'visitor_log';
   @override
@@ -104,6 +109,7 @@ class VisitorLog extends _i1.TableRow {
       'visitor_coming_from': visitor_coming_from,
       'visitor_card_id': visitor_card_id,
       'company_id': company_id,
+      'is_checked_out': is_checked_out,
     };
   }
 
@@ -121,6 +127,7 @@ class VisitorLog extends _i1.TableRow {
       'visitor_coming_from': visitor_coming_from,
       'visitor_card_id': visitor_card_id,
       'company_id': company_id,
+      'is_checked_out': is_checked_out,
     };
   }
 
@@ -140,6 +147,7 @@ class VisitorLog extends _i1.TableRow {
       'visitor_coming_from': visitor_coming_from,
       'visitor_card_id': visitor_card_id,
       'company_id': company_id,
+      'is_checked_out': is_checked_out,
     };
   }
 
@@ -181,6 +189,9 @@ class VisitorLog extends _i1.TableRow {
         return;
       case 'company_id':
         company_id = value;
+        return;
+      case 'is_checked_out':
+        is_checked_out = value;
         return;
       default:
         throw UnimplementedError();
@@ -328,6 +339,8 @@ class VisitorLogTable extends _i1.Table {
 
   final company_id = _i1.ColumnInt('company_id');
 
+  final is_checked_out = _i1.ColumnBool('is_checked_out');
+
   @override
   List<_i1.Column> get columns => [
         id,
@@ -341,6 +354,7 @@ class VisitorLogTable extends _i1.Table {
         visitor_coming_from,
         visitor_card_id,
         company_id,
+        is_checked_out,
       ];
 }
 

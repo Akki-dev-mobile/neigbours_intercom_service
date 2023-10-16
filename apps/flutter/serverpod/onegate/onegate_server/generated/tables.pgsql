@@ -109,27 +109,6 @@ ALTER TABLE ONLY "visitor"
 
 
 --
--- Class BuildingAssignment as table building_assignment
---
-
-CREATE TABLE "building_assignment" (
-  "id" serial,
-  "visitor_id" integer,
-  "company_id" integer NOT NULL,
-  "building_id" integer NOT NULL,
-  "unit_id" json NOT NULL
-);
-
-ALTER TABLE ONLY "building_assignment"
-  ADD CONSTRAINT building_assignment_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY "building_assignment"
-  ADD CONSTRAINT building_assignment_fk_0
-    FOREIGN KEY("visitor_id")
-      REFERENCES visitor(id)
-        ON DELETE CASCADE;
-
---
 -- Class VisitorCard as table visitor_card
 --
 
@@ -158,7 +137,8 @@ CREATE TABLE "visitor_log" (
   "visitor_card_number" text,
   "visitor_coming_from" text,
   "visitor_card_id" integer,
-  "company_id" integer NOT NULL
+  "company_id" integer NOT NULL,
+  "is_checked_out" boolean NOT NULL
 );
 
 ALTER TABLE ONLY "visitor_log"
@@ -183,5 +163,32 @@ ALTER TABLE ONLY "visitor_log"
   ADD CONSTRAINT visitor_log_fk_3
     FOREIGN KEY("visitor_card_id")
       REFERENCES visitor_card(id)
+        ON DELETE CASCADE;
+
+--
+-- Class BuildingAssignment as table building_assignment
+--
+
+CREATE TABLE "building_assignment" (
+  "id" serial,
+  "visitor_id" integer,
+  "visitor_log_id" integer,
+  "company_id" integer NOT NULL,
+  "building_id" integer NOT NULL,
+  "unit_id" json NOT NULL
+);
+
+ALTER TABLE ONLY "building_assignment"
+  ADD CONSTRAINT building_assignment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY "building_assignment"
+  ADD CONSTRAINT building_assignment_fk_0
+    FOREIGN KEY("visitor_id")
+      REFERENCES visitor(id)
+        ON DELETE CASCADE;
+ALTER TABLE ONLY "building_assignment"
+  ADD CONSTRAINT building_assignment_fk_1
+    FOREIGN KEY("visitor_log_id")
+      REFERENCES visitor_log(id)
         ON DELETE CASCADE;
 

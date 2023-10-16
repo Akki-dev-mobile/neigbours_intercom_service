@@ -6,8 +6,10 @@ import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
@@ -57,6 +59,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
       RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
           DioSingleton.instance3),
     ),
+  ),VisitorLogUsecase(
+    VisitorLogRepositoryImpl(
+      RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+          DioSingleton.instance3),
+    ),
   ));
   @override
   void initState() {
@@ -66,6 +73,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
     Future.delayed(Duration(milliseconds: 200), () {
       FocusScope.of(context).requestFocus(_focusNode);
     });
+    gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
   }
 
   @override
@@ -89,7 +97,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
         switch (state.runtimeType) {
           case GatekeeperDashboardLoadingState:
             return LoaderView();
-          default:
+          case GatekeeperDashboardSuccessState:
+          final successState = state as GatekeeperDashboardSuccessState;
             return WillPopScope(
               onWillPop: () async {
                 return false;
@@ -217,7 +226,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         ],
                       ),
                     ),
-                    DashboardBlocks(),
+                    DashboardBlocks(inBook: successState.inBook, outBook: successState.outBook),
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -294,6 +303,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 ),
               ),
             );
+            default:
+            return Container();
         }
       },
     );

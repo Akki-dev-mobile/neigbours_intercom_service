@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -13,10 +14,11 @@ part 'gatekeeper_dashboard_state.dart';
 class GatekeeperDashboardBloc
     extends Bloc<GatekeeperDashboardEvent, GatekeeperDashboardState> {
   final VisitorUsecase _visitorUsecase;
+  final VisitorLogUsecase _visitorLogUsecase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
-  GatekeeperDashboardBloc(this._visitorUsecase)
+  GatekeeperDashboardBloc(this._visitorUsecase, this._visitorLogUsecase)
       : super(GatekeeperDashboardInitial()) {
-    on<GatekeeperDashboardEvent>((event, emit) {});
+    on<GatekeeperDashboardInitialEvent>(onInitialEvent);
     on<GDOnMobileNumberEnteredEvent>(onMobileNumberEnteredEvent);
     on<InputPutViewNextClickedEvent>(onInputPutViewNextClickedEvent);
     on<PurposeNextButtonClickedEvent>(onPurposeNextButtonClickedEvent);
@@ -79,5 +81,20 @@ class GatekeeperDashboardBloc
         ),
       );
     }
+  }
+
+  FutureOr<void> onInitialEvent(GatekeeperDashboardInitialEvent event, Emitter<GatekeeperDashboardState> emit) async{
+    try{
+      emit(GatekeeperDashboardLoadingState());
+        final List<VisitorLog>? checkedInVisitors=await _visitorLogUsecase.fetchCheckInVisitorLog(412,DateTime.now().toString());
+        final int inBook = checkedInVisitors!.length;
+
+        final List<VisitorLog>? checkedOutVisitors=await _visitorLogUsecase.fetchCheckOutLogs(412,DateTime.now().toString());
+        final int outBook = checkedOutVisitors!.length;
+
+        emit(GatekeeperDashboardSuccessState(inBook: inBook,outBook: outBook));
+    }catch(e){
+      print(e.toString());
+    } 
   }
 }

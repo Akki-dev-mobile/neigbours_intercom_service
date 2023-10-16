@@ -4,6 +4,7 @@ import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
+//var client = Client('http://onegate.cubeone.in:8080/')
 var client = Client('http://localhost:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
@@ -98,6 +99,7 @@ class RemoteDataSource {
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       for (BuildingAssignment buildingAssignment
           in visitorLog.visitor_building_assignment!) {
+            buildingAssignment.visitor_log_id = result.id;
         await createBuildingAssignment(buildingAssignment);
       }
       print("checkIn: ${result.toString()}");
@@ -107,6 +109,7 @@ class RemoteDataSource {
     }
     return null;
   }
+
 
   Future<List<dynamic>> getBuilding(int companyId) async {
     try {
@@ -153,6 +156,28 @@ class RemoteDataSource {
     try {
       final visitor_log =
           await client.visitorLog.fetchAllLogs(dateTime);
+      return visitor_log;
+    } catch (e) {
+      print('Error fetching buildings: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<VisitorLog>> fetchCheckInLogs(int companyId, String dateTime) async {
+    try {
+      final visitor_log =
+          await client.visitorLog.fetchCheckInLogs(dateTime);
+      return visitor_log;
+    } catch (e) {
+      print('Error fetching buildings: $e');
+      rethrow;
+    }
+  }
+
+   Future<List<VisitorLog>> fetchCheckOutLogs(int companyId, String dateTime) async {
+    try {
+      final visitor_log =
+          await client.visitorLog.fetchCheckOutLogs(dateTime);
       return visitor_log;
     } catch (e) {
       print('Error fetching buildings: $e');

@@ -33,9 +33,11 @@ class RequestPermissionBloc
           visitor_purpose_category_id: event.purposeCategory.id!,
           visitor_check_in: DateTime.now(),
           visitor_coming_from: event.comingFrom,
-          visitor: event.visitor,);
+          visitor: event.visitor,
+          is_checked_out: false);
 
       await visitorLogUsecase.createVisitorLog(visitorLog);
+
       emit(RequestPermissionInitial());
       emit(RPVisitorCheckedInSuccessState());
     } catch (e) {

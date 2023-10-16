@@ -204,6 +204,44 @@ class Endpoints extends _i1.EndpointDispatch {
             params['dateTime'],
           ),
         ),
+        'fetchCheckInLogs': _i1.MethodConnector(
+          name: 'fetchCheckInLogs',
+          params: {
+            'dateTime': _i1.ParameterDescription(
+              name: 'dateTime',
+              type: _i1.getType<String>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
+                  .fetchCheckInLogs(
+            session,
+            params['dateTime'],
+          ),
+        ),
+        'fetchCheckOutLogs': _i1.MethodConnector(
+          name: 'fetchCheckOutLogs',
+          params: {
+            'dateTime': _i1.ParameterDescription(
+              name: 'dateTime',
+              type: _i1.getType<String>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
+                  .fetchCheckOutLogs(
+            session,
+            params['dateTime'],
+          ),
+        ),
       },
     );
   }

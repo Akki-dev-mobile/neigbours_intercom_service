@@ -14,6 +14,8 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
   VisitorLogBloc(this.visitorLogUseCase) : super(VisitorLogInitial()) {
     on<FetchVisitorLogEvent>(fetchVisitorLogEvent);
     on<CheckOutEvent>(checkOutEvent);
+    on<FetchCheckInLogEvent>(fetchCheckInLogEvent);
+    on<FetchCheckOutLogEvent>(fetchCheckOutLogEvent);
   }
   String getFormattedDate(DateTime date) {
     return DateFormat('yyyy-MM-dd').format(date);
@@ -28,7 +30,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       // Get today's date in the desired format (yyyy-MM-dd)
       String formattedDate = getFormattedDate(today);
       final visitorLogs =
-          await visitorLogUseCase.fetchCheckInVisitorLog(412, formattedDate);
+          await visitorLogUseCase.fetchAllLogs(412, formattedDate);
       emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));
@@ -42,10 +44,40 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       final response = await visitorLogUseCase.checkOut(event.visitorLog);
       if (response) {
         DateTime today = DateTime.now();
-        FetchVisitorLogEvent( today);
+        emit(VisitorLogCheckOutSuccessState(true));
       }else{
         emit(VisitorLogErrorState('Something went wrong'));
       }
+    } catch (error) {
+      emit(VisitorLogErrorState(error.toString()));
+    }
+  }
+
+  FutureOr<void> fetchCheckInLogEvent(FetchCheckInLogEvent event, Emitter<VisitorLogState> emit) async{
+    try {
+      emit(VisitorLogLoadingState());
+      DateTime today = DateTime.now();
+
+      // Get today's date in the desired format (yyyy-MM-dd)
+      String formattedDate = getFormattedDate(today);
+      final visitorLogs =
+          await visitorLogUseCase.fetchCheckInVisitorLog(412, formattedDate);
+      emit(VisitorLogSuccessState(visitorLogs));
+    } catch (error) {
+      emit(VisitorLogErrorState(error.toString()));
+    }
+  }
+
+  FutureOr<void> fetchCheckOutLogEvent(FetchCheckOutLogEvent event, Emitter<VisitorLogState> emit) async{
+    try {
+      emit(VisitorLogLoadingState());
+      DateTime today = DateTime.now();
+
+      // Get today's date in the desired format (yyyy-MM-dd)
+      String formattedDate = getFormattedDate(today);
+      final visitorLogs =
+          await visitorLogUseCase.fetchCheckOutLogs(412, formattedDate);
+      emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));
     }

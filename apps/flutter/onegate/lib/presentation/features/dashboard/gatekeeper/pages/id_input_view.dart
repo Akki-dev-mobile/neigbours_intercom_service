@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -60,6 +62,11 @@ class _IdInputViewState extends State<IdInputView> {
 
   final gateDashboardBloc = GatekeeperDashboardBloc(VisitorUsecase(
     VisitorRepoImpl(
+      RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+          DioSingleton.instance3),
+    ),
+  ),VisitorLogUsecase(
+    VisitorLogRepositoryImpl(
       RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
           DioSingleton.instance3),
     ),

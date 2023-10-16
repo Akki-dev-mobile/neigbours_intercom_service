@@ -24,6 +24,7 @@ class VisitorLog extends _i1.SerializableEntity {
     this.visitor_coming_from,
     this.visitor_card_id,
     required this.company_id,
+    required this.is_checked_out,
   });
 
   factory VisitorLog.fromJson(
@@ -57,6 +58,8 @@ class VisitorLog extends _i1.SerializableEntity {
           .deserialize<int?>(jsonSerialization['visitor_card_id']),
       company_id: serializationManager
           .deserialize<int>(jsonSerialization['company_id']),
+      is_checked_out: serializationManager
+          .deserialize<bool>(jsonSerialization['is_checked_out']),
     );
   }
 
@@ -89,6 +92,8 @@ class VisitorLog extends _i1.SerializableEntity {
 
   int company_id;
 
+  bool is_checked_out;
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -105,6 +110,7 @@ class VisitorLog extends _i1.SerializableEntity {
       'visitor_coming_from': visitor_coming_from,
       'visitor_card_id': visitor_card_id,
       'company_id': company_id,
+      'is_checked_out': is_checked_out,
     };
   }
 }

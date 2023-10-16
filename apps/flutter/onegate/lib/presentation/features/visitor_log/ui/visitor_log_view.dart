@@ -42,6 +42,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   //     List.generate(50, (index) => 'Name Surname $index');
   late String selectedId;
   String? selectedTime;
+  String? _searchText = "";
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
 
   String? selectedBuilding;
@@ -87,7 +88,25 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       bloc: _visitorLogBloc,
       listenWhen: (previous, current) => current is VisitorLogActionState,
       buildWhen: (previous, current) => current is! VisitorLogActionState,
-      listener: (context, state) {},
+      listener: (context, state) {
+        switch (state.runtimeType) {
+          case VisitorLogCheckOutSuccessState:
+            final successState = state as VisitorLogCheckOutSuccessState;
+            if (successState.isCheckOut!) {
+              Fluttertoast.showToast(
+                msg: "User Checked Out Successfully",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.CENTER,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0,
+              );
+              _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
+            }
+            break;
+        }
+      },
       builder: (context, state) {
         switch (state.runtimeType) {
           case VisitorLogLoadingState:
@@ -95,6 +114,14 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
             final visitorLogs = successState.visitorLogs;
+            List<VisitorLog> filteredVisitors = visitorLogs!
+                .where((visitorLog) => visitorLog.visitor!.name
+                    .toLowerCase()
+                    .contains(_searchText!.toLowerCase()))
+                .toList();
+            if (filteredVisitors.isEmpty) {
+              filteredVisitors = visitorLogs;
+            }
             return MyScrollView(
               isScrollable: false,
               // pageTitle: widget.id,
@@ -120,6 +147,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       if (kDebugMode) {
                         print(value);
                       }
+                    },
+                    onChanged: (value) {
+                      setState(() {
+                        _searchText = value;
+                      });
                     },
                     prefixIcon: IconButton(
                       onPressed: () {},
@@ -187,7 +219,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     height: MediaQuery.of(context).size.height * 0.7,
                     child: ListView.builder(
                       shrinkWrap: true,
-                      itemCount: visitorLogs!.length,
+                      itemCount: filteredVisitors.length,
                       itemBuilder: (context, index) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
@@ -202,16 +234,16 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                     vertical: 2,
                                   ),
                                   leading: CircleAvatar(
-                                      child: visitorLogs[index]
+                                      child: filteredVisitors[index]
                                                       .visitor!
                                                       .visitor_image !=
                                                   null &&
-                                              visitorLogs[index]
+                                              filteredVisitors[index]
                                                   .visitor!
                                                   .visitor_image
                                                   .isNotEmpty
                                           ? Text(
-                                              visitorLogs[index]
+                                              filteredVisitors[index]
                                                   .visitor!
                                                   .mobile
                                                   .substring(0, 1),
@@ -224,7 +256,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                               trBackground: false,
                                             )),
                                   title: Text(
-                                    visitorLogs[index].visitor!.name,
+                                    filteredVisitors[index].visitor!.name,
                                     style:
                                         Theme.of(context).textTheme.bodyMedium,
                                   ),
@@ -240,7 +272,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                             ),
                                           ),
                                           TextSpan(
-                                              text: visitorLogs[index]
+                                              text: filteredVisitors[index]
                                                   .visitor_building_assignment![
                                                       0]
                                                   .unit_id
@@ -301,7 +333,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         ),
                                         TextSpan(
                                           text: Utils.convertDateTimeFormat(
-                                              visitorLogs[index]
+                                              filteredVisitors[index]
                                                   .visitor_check_in),
                                           style: Theme.of(context)
                                               .textTheme
@@ -315,11 +347,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                       ],
                                     ),
                                   ),
-                                  trailing: (visitorLogs[index]
+                                  trailing: (filteredVisitors[index]
                                               .visitor_check_out
                                               .toString()
                                               .isEmpty ||
-                                          visitorLogs[index]
+                                          filteredVisitors[index]
                                                   .visitor_check_out
                                                   .toString() ==
                                               'null')
@@ -332,22 +364,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                             ),
                                           ),
                                           onPressed: () {
-                                            // Fluttertoast.showToast(
-                                            //   msg:
-                                            //       "User Checked Out Successfully",
-                                            //   toastLength: Toast.LENGTH_SHORT,
-                                            //   gravity: ToastGravity.CENTER,
-                                            //   timeInSecForIosWeb: 1,
-                                            //   backgroundColor: Colors.red,
-                                            //   textColor: Colors.white,
-                                            //   fontSize: 16.0,
-                                            // );
-                                            // Navigator.pop(context);
-                                            visitorLogs[index]
+                                            filteredVisitors[index]
                                                     .visitor_check_out =
                                                 DateTime.now();
+                                            filteredVisitors[index]
+                                                .is_checked_out = true;
                                             _visitorLogBloc.add(CheckOutEvent(
-                                                visitorLogs[index]));
+                                                filteredVisitors[index]));
                                           },
                                           child: Text(
                                             'CheckOut',
@@ -372,7 +395,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                                 ),
                                               ),
                                               TextSpan(
-                                                text: ' 09:00 PM',
+                                                text:
+                                                    Utils.convertDateTimeFormat(
+                                                        filteredVisitors[index]
+                                                            .visitor_check_out!),
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .labelMedium!
