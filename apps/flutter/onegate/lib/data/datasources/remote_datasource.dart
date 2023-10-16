@@ -159,4 +159,19 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
+  Future<bool> checkOut(VisitorLog visitorLog) async {
+    try {
+      final result = await client.visitorLog.checkOut(visitorLog);
+      print("checkOut: ${result.toString()}");
+      return result;
+    } catch (e) {
+      print(e.toString());
+    }
+    return false;
+  }
+
+
+
+
 }

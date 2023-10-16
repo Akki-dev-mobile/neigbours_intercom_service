@@ -84,6 +84,13 @@ class _EndpointVisitorLog extends _i1.EndpointRef {
         {'buildingAssignment': buildingAssignment},
       );
 
+  _i2.Future<bool> checkOut(_i5.VisitorLog visitorLog) =>
+      caller.callServerEndpoint<bool>(
+        'visitorLog',
+        'checkOut',
+        {'visitorLog': visitorLog},
+      );
+
   _i2.Future<List<_i5.VisitorLog>> fetchAllLogs(String dateTime) =>
       caller.callServerEndpoint<List<_i5.VisitorLog>>(
         'visitorLog',

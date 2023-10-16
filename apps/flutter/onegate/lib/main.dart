@@ -56,7 +56,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // startKioskMode();
     return DevicePreview(
-        enabled: kReleaseMode,
+        enabled: !kReleaseMode,
         builder: (context) {
           return MaterialApp(
             useInheritedMediaQuery: true,
@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
                 },
               ),
             ),
-            home: LoginView(),
+            home: GateDashboardView(),
             // home: VisitorsInEntry(
             //   selectedValue: 'GUEST',
             // ),

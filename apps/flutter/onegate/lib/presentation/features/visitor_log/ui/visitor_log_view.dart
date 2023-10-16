@@ -332,17 +332,22 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                             ),
                                           ),
                                           onPressed: () {
-                                            Fluttertoast.showToast(
-                                              msg:
-                                                  "User Checked Out Successfully",
-                                              toastLength: Toast.LENGTH_SHORT,
-                                              gravity: ToastGravity.CENTER,
-                                              timeInSecForIosWeb: 1,
-                                              backgroundColor: Colors.red,
-                                              textColor: Colors.white,
-                                              fontSize: 16.0,
-                                            );
-                                            Navigator.pop(context);
+                                            // Fluttertoast.showToast(
+                                            //   msg:
+                                            //       "User Checked Out Successfully",
+                                            //   toastLength: Toast.LENGTH_SHORT,
+                                            //   gravity: ToastGravity.CENTER,
+                                            //   timeInSecForIosWeb: 1,
+                                            //   backgroundColor: Colors.red,
+                                            //   textColor: Colors.white,
+                                            //   fontSize: 16.0,
+                                            // );
+                                            // Navigator.pop(context);
+                                            visitorLogs[index]
+                                                    .visitor_check_out =
+                                                DateTime.now();
+                                            _visitorLogBloc.add(CheckOutEvent(
+                                                visitorLogs[index]));
                                           },
                                           child: Text(
                                             'CheckOut',

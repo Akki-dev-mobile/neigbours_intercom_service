@@ -14,6 +14,11 @@ class VisitorLogEndpoint extends Endpoint {
     return buildingAssignment;
   }
 
+  Future<bool> checkOut(Session session, VisitorLog visitorLog) async {
+    return await session.db.update(visitorLog);
+    
+  }
+
   Future<List<VisitorLog>> fetchAllLogs(
       Session session, String dateTime) async {
     List<VisitorLog> visitorLog = await VisitorLog.find(session);

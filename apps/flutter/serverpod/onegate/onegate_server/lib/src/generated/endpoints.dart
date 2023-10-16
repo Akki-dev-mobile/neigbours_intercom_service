@@ -168,6 +168,24 @@ class Endpoints extends _i1.EndpointDispatch {
             params['buildingAssignment'],
           ),
         ),
+        'checkOut': _i1.MethodConnector(
+          name: 'checkOut',
+          params: {
+            'visitorLog': _i1.ParameterDescription(
+              name: 'visitorLog',
+              type: _i1.getType<_i7.VisitorLog>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint).checkOut(
+            session,
+            params['visitorLog'],
+          ),
+        ),
         'fetchAllLogs': _i1.MethodConnector(
           name: 'fetchAllLogs',
           params: {

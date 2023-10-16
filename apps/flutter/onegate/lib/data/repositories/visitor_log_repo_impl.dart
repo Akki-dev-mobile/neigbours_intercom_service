@@ -25,4 +25,14 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
       return null;
     }
   }
+  
+  @override
+  Future<bool> checkOut(VisitorLog visitorLog) {
+    try{
+      final response = _remoteDataSource.checkOut(visitorLog);
+      return response;
+    }catch(error){
+      return Future.value(false);
+    }
+  }
 }

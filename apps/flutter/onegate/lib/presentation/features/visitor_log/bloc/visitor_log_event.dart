@@ -20,3 +20,9 @@ class FetchVisitorLogEvent extends VisitorLogEvent {
 
   FetchVisitorLogEvent(this.dateTime);
 }
+
+class CheckOutEvent extends VisitorLogEvent {
+  final VisitorLog visitorLog;
+
+  CheckOutEvent(this.visitorLog);
+}
