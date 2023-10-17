@@ -71,13 +71,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     selectedId = widget.id;
     switch (widget.id) {
       case "In Out Book":
-        _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
+        _visitorLogBloc.add(FetchVisitorLogEvent(Utils.getCurrentTime()));
         break;
       case "Visitor In":
-        _visitorLogBloc.add(FetchCheckInLogEvent(DateTime.now()));
+        _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
       case "Visitor Out":
-        _visitorLogBloc.add(FetchCheckOutLogEvent(DateTime.now()));
+        _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
         break;
     }
   }
@@ -105,6 +105,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
             }
             break;
+          case VisitorCheckInLogSuccessState:
+            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
+            break;  
         }
       },
       builder: (context, state) {
@@ -124,6 +127,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             }
             return MyScrollView(
               isScrollable: false,
+              hasBackButton: false,
               // pageTitle: widget.id,
               pageTitleWidget: Hero(
                 tag: 'page_title',
@@ -132,7 +136,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
-              hasBackButton: true,
               pageBody: Column(
                 children: [
                   CustomForm.textField(
@@ -366,11 +369,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                           onPressed: () {
                                             filteredVisitors[index]
                                                     .visitor_check_out =
-                                                DateTime.now();
+                                                Utils.getCurrentTime();
                                             filteredVisitors[index]
                                                 .is_checked_out = true;
                                             _visitorLogBloc.add(CheckOutEvent(
-                                                filteredVisitors[index]));
+                                                filteredVisitors[index],
+                                                widget.id));
                                           },
                                           child: Text(
                                             'CheckOut',

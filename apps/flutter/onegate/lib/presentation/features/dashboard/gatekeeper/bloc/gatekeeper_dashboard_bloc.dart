@@ -22,6 +22,9 @@ class GatekeeperDashboardBloc
     on<GDOnMobileNumberEnteredEvent>(onMobileNumberEnteredEvent);
     on<InputPutViewNextClickedEvent>(onInputPutViewNextClickedEvent);
     on<PurposeNextButtonClickedEvent>(onPurposeNextButtonClickedEvent);
+    on<GDInAndOutButtonPressedEvent>(onInAndOutButtonPressedEvent);
+    on<GDVisitorsInButtonPressedEvent>(onVisitorsInButtonPressedEvent);
+    on<GDVisitorsOutButtonPressedEvent>(onVisitorsOutButtonPressedEvent);
   }
 
   FutureOr<void> onMobileNumberEnteredEvent(GDOnMobileNumberEnteredEvent event,
@@ -50,11 +53,12 @@ class GatekeeperDashboardBloc
     try {
       final purpose = await _visitorUsecase.fetchPurposeCategory();
       emit(GatekeeperDashboardInitial());
-      emit(OpenPurposeDialogState(purposeCategories: purpose));
+      emit(InputPutViewNextClickedState());
+      //emit(OpenPurposeDialogState(purposeCategories: purpose));
     } catch (e) {
       print(e.toString());
       final purpose = await _visitorUsecase.fetchPurposeCategory();
-      emit(OpenPurposeDialogState(purposeCategories: purpose));
+      //emit(OpenPurposeDialogState(purposeCategories: purpose));
       emit(
         GatekeeperDashboardErrorState(
           message: e.toString(),
@@ -96,5 +100,17 @@ class GatekeeperDashboardBloc
     }catch(e){
       print(e.toString());
     } 
+  }
+
+  FutureOr<void> onInAndOutButtonPressedEvent(GDInAndOutButtonPressedEvent event, Emitter<GatekeeperDashboardState> emit) async{
+    emit(GDInAndOutButtonPressedState());
+  }
+
+  FutureOr<void> onVisitorsInButtonPressedEvent(GDVisitorsInButtonPressedEvent event, Emitter<GatekeeperDashboardState> emit) async{
+    emit(GDVisitorsInButtonPressedState());
+  }
+
+  FutureOr<void> onVisitorsOutButtonPressedEvent(GDVisitorsOutButtonPressedEvent event, Emitter<GatekeeperDashboardState> emit) async{
+    emit(GDVisitorsOutButtonPressedState());
   }
 }

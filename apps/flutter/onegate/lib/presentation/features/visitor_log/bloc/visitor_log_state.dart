@@ -15,6 +15,14 @@ class VisitorLogSuccessState extends VisitorLogState {
   VisitorLogSuccessState(this.visitorLogs);
 }
 
+class VisitorCheckInLogSuccessState extends VisitorLogActionState {
+  
+}
+
+class VisitorCheckOutLogSuccessState extends VisitorLogActionState {
+  
+}
+
 class VisitorLogErrorState extends VisitorLogActionState {
   final String? message;
 

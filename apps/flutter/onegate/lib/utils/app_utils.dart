@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class Utils {
   static String convertDateTimeFormat(DateTime inputDateTime) {
@@ -25,5 +26,19 @@ class Utils {
     }
 
     return formattedDateTime;
+  }
+
+
+
+  static DateTime getCurrentDateTimeInIndianTimeZone() {
+    final now = DateTime.now().toUtc(); // Get current UTC time
+    final indianTimeZoneOffset = Duration(hours: 5, minutes: 30); // Indian Standard Time (IST) offset
+    final indianDateTime = now.add(indianTimeZoneOffset); // Add the offset to get IST
+    return indianDateTime;
+  }
+
+  static DateTime getCurrentTime() {
+    DateTime indianDateTime = getCurrentDateTimeInIndianTimeZone();
+    return indianDateTime;
   }
 }

@@ -23,6 +23,7 @@ class FetchVisitorLogEvent extends VisitorLogEvent {
 
 class CheckOutEvent extends VisitorLogEvent {
   final VisitorLog visitorLog;
+  final String screenType;
 
-  CheckOutEvent(this.visitorLog);
+  CheckOutEvent(this.visitorLog, this.screenType);
 }

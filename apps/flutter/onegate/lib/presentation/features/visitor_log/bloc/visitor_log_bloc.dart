@@ -43,8 +43,11 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       emit(VisitorLogLoadingState());
       final response = await visitorLogUseCase.checkOut(event.visitorLog);
       if (response) {
-        DateTime today = DateTime.now();
-        emit(VisitorLogCheckOutSuccessState(true));
+        if(event.screenType == 'Visitor In'){
+          emit(VisitorCheckInLogSuccessState());
+        }else{
+          emit(VisitorCheckOutLogSuccessState());
+        }
       }else{
         emit(VisitorLogErrorState('Something went wrong'));
       }

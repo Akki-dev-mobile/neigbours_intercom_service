@@ -117,7 +117,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                         ),
                       ],
                     ),
-                    DashboardBlocks(),
+                   // DashboardBlocks(),
                   ],
                 ),
               ),

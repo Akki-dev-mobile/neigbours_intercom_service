@@ -59,6 +59,7 @@ dependencies:
   numpad_layout: ^0.0.3
   speech_to_text: ^6.3.0
   flutter_otp_text_field: ^1.1.1
+  timezone: ^0.7.0
   
 
 

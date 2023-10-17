@@ -38,6 +38,10 @@ class GDInputFieldPressedState extends GatekeeperDashboardActionState {}
 
 class GatekeeperSearchVisitorState extends GatekeeperDashboardState {}
 
+class InputPutViewNextClickedState extends GatekeeperDashboardActionState {
+  
+}
+
 class OpenPurposeDialogState extends GatekeeperDashboardActionState {
   final List<PurposeCategory>? purposeCategories;
 

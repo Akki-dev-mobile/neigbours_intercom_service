@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
+import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:meta/meta.dart';
 import 'package:onegate_client/onegate_client.dart';
 
@@ -25,13 +26,14 @@ class RequestPermissionBloc
       for (BuildingAssignment buildingAssignment in buildingAssignments) {
         buildingAssignment.visitor_id = event.visitor.id;
       }
+      print("${Utils.getCurrentTime().toUtc().toString()}");
       VisitorLog visitorLog = VisitorLog(
           company_id: 412,
           visitor_building_assignment: buildingAssignments,
           visitor_id: event.visitor.id!,
           visitor_count: event.guestCount == null ? 1 : event.guestCount!,
           visitor_purpose_category_id: event.purposeCategory.id!,
-          visitor_check_in: DateTime.now(),
+          visitor_check_in: Utils.getCurrentTime().toUtc(),
           visitor_coming_from: event.comingFrom,
           visitor: event.visitor,
           is_checked_out: false);

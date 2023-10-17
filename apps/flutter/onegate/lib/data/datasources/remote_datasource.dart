@@ -4,8 +4,8 @@ import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
-//var client = Client('http://onegate.cubeone.in:8080/')
-var client = Client('http://localhost:8080/')
+var client = Client('http://onegate.cubeone.in:8080/')
+//var client = Client('http://localhost:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
 class RemoteDataSource {

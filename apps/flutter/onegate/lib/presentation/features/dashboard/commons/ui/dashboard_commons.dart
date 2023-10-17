@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:page_transition/page_transition.dart';
 import 'dart:math' as math;
 
@@ -8,7 +10,8 @@ import '../../../visitor_log/ui/visitor_log_view.dart';
 class DashboardBlocks extends StatelessWidget {
   final int? inBook;
   final int? outBook;
-  const DashboardBlocks({super.key, this.inBook, this.outBook});
+  final GatekeeperDashboardBloc bloc ;
+  DashboardBlocks({super.key, this.inBook, this.outBook, required this.bloc});
 
 
   @override
@@ -30,20 +33,7 @@ class DashboardBlocks extends StatelessWidget {
                 splashColor: Color.fromARGB(255, 255, 226, 172),
                 autofocus: true,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    PageTransition(
-                      type: PageTransitionType.leftToRight,
-                      child: VisitorLogView(
-                        id: 'In Out Book',
-                        logList: const [
-                          "In Out Book",
-                          "Visitor In",
-                          "Visitor Out",
-                        ],
-                      ),
-                    ),
-                  );
+                  bloc.add(GDInAndOutButtonPressedEvent());
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -101,20 +91,7 @@ class DashboardBlocks extends StatelessWidget {
                     splashColor: const Color.fromARGB(255, 98, 255, 127),
                     autofocus: true,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.topToBottom,
-                          child: VisitorLogView(
-                            id: 'Visitor In',
-                            logList: const [
-                              "In Out Book",
-                              "Visitor In",
-                              "Visitor Out",
-                            ],
-                          ),
-                        ),
-                      );
+                     bloc.add(GDVisitorsInButtonPressedEvent());
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(
@@ -183,20 +160,7 @@ class DashboardBlocks extends StatelessWidget {
                     splashColor: const Color.fromARGB(255, 237, 131, 109),
                     autofocus: true,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.rightToLeft,
-                          child: VisitorLogView(
-                            id: 'Visitor Out',
-                            logList: const [
-                              "In Out Book",
-                              "Visitor In",
-                              "Visitor Out",
-                            ],
-                          ),
-                        ),
-                      );
+                      bloc.add(GDVisitorsOutButtonPressedEvent());
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(
