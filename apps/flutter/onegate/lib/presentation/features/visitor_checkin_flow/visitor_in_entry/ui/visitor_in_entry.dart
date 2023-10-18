@@ -303,39 +303,52 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             //   ),
                             // ),
                             ),
-                        CustomForm.textField("Guest Count",
-                            textController: _guestCountController,
-                            hintText: 'Guest Count',
-                            keyboardType: TextInputType.number,
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            length: 2, onChanged: (value) {
-                          setState(() {
-                            _guestCount = int.tryParse(value) ?? 1;
-                          });
-                        },
-                            suffixIcon: ButtonBar(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: _incrementGuestCount,
-                                  icon: Icon(
-                                    Ionicons.add_circle_outline,
-                                    size: 32,
-                                    color: Colors.green,
-                                  ),
+                        CustomForm.textField(
+                          "Guest Count",
+                          textController: _guestCountController,
+                          hintText: 'Guest Count',
+                          keyboardType: TextInputType.number,
+                          titleColor:
+                              Theme.of(context).colorScheme.onBackground,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          length: 2,
+                          onChanged: (value) {
+                            setState(() {
+                              _guestCount = int.tryParse(value) ?? 1;
+                            });
+                          },
+                          suffixIcon: ButtonBar(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: _incrementGuestCount,
+                                icon: Icon(
+                                  Ionicons.add_circle_outline,
+                                  size: 32,
+                                  color: Colors.green,
                                 ),
-                                IconButton(
-                                  onPressed: _decrementGuestCount,
-                                  icon: Icon(
-                                    Ionicons.remove_circle_outline,
-                                    color: Colors.red,
-                                    size: 32,
-                                  ),
+                              ),
+                              IconButton(
+                                onPressed: _decrementGuestCount,
+                                icon: Icon(
+                                  Ionicons.remove_circle_outline,
+                                  color: Colors.red,
+                                  size: 32,
                                 ),
-                              ],
-                            )),
+                              ),
+                              CustomForm.textField(
+                                titleColor:
+                                    Theme.of(context).colorScheme.onBackground,
+                                hintColor:
+                                    Theme.of(context).colorScheme.onPrimary,
+                                "Enter your ID",
+                                hintText: 'Request from Security',
+                                keyboardType: TextInputType.text,
+                                length: 4,
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   if (widget.selectedValue.purpose_category_name == 'STAFF')

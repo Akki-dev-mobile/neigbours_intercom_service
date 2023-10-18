@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:intl/intl.dart';
@@ -11,7 +13,9 @@ part 'visitor_log_state.dart';
 
 class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
   final VisitorLogUsecase visitorLogUseCase;
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   VisitorLogBloc(this.visitorLogUseCase) : super(VisitorLogInitial()) {
+    
     on<FetchVisitorLogEvent>(fetchVisitorLogEvent);
     on<CheckOutEvent>(checkOutEvent);
     on<FetchCheckInLogEvent>(fetchCheckInLogEvent);
@@ -30,7 +34,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       // Get today's date in the desired format (yyyy-MM-dd)
       String formattedDate = getFormattedDate(today);
       final visitorLogs =
-          await visitorLogUseCase.fetchAllLogs(412, formattedDate);
+          await visitorLogUseCase.fetchAllLogs(_preferenceUtils.getSelectedCompany()!.companyId, formattedDate);
       emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));
@@ -64,7 +68,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       // Get today's date in the desired format (yyyy-MM-dd)
       String formattedDate = getFormattedDate(today);
       final visitorLogs =
-          await visitorLogUseCase.fetchCheckInVisitorLog(412, formattedDate);
+          await visitorLogUseCase.fetchCheckInVisitorLog(_preferenceUtils.getSelectedCompany()!.companyId, formattedDate);
       emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));
@@ -79,7 +83,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       // Get today's date in the desired format (yyyy-MM-dd)
       String formattedDate = getFormattedDate(today);
       final visitorLogs =
-          await visitorLogUseCase.fetchCheckOutLogs(412, formattedDate);
+          await visitorLogUseCase.fetchCheckOutLogs(_preferenceUtils.getSelectedCompany()!.companyId, formattedDate);
       emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));

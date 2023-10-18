@@ -4,7 +4,7 @@ import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
-var client = Client('http://onegate.cubeone.in:8080/')
+var client = Client('https://gateapi.cubeone.in/')
 //var client = Client('http://localhost:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
@@ -114,7 +114,7 @@ class RemoteDataSource {
   Future<List<dynamic>> getBuilding(int companyId) async {
     try {
       final response = await _dio2.get('/api/admin/building/list',
-          queryParameters: {'company_id': 412});
+          queryParameters: {'company_id': companyId});
       return response.data['data'];
     } catch (e) {
       print('Error fetching buildings: $e');
@@ -126,7 +126,7 @@ class RemoteDataSource {
     try {
       final response = await _dio2.get('/api/admin/units/list',
           queryParameters: {
-            'company_id': 412,
+            'company_id': companyId,
             'building_id': buildingId,
             'per_page': 1000
           });
@@ -141,7 +141,7 @@ class RemoteDataSource {
     try {
       final response = await _dio2.get('/api/admin/member/list',
           queryParameters: {
-            'company_id': 412,
+            'company_id': companyId,
             'unit_id': unitId,
             'current_tab': 'approved'
           });

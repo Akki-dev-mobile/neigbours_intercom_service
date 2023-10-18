@@ -90,10 +90,10 @@ class GatekeeperDashboardBloc
   FutureOr<void> onInitialEvent(GatekeeperDashboardInitialEvent event, Emitter<GatekeeperDashboardState> emit) async{
     try{
       emit(GatekeeperDashboardLoadingState());
-        final List<VisitorLog>? checkedInVisitors=await _visitorLogUsecase.fetchCheckInVisitorLog(412,DateTime.now().toString());
+        final List<VisitorLog>? checkedInVisitors=await _visitorLogUsecase.fetchCheckInVisitorLog(_preferenceUtils.getSelectedCompany()!.companyId,DateTime.now().toString());
         final int inBook = checkedInVisitors!.length;
 
-        final List<VisitorLog>? checkedOutVisitors=await _visitorLogUsecase.fetchCheckOutLogs(412,DateTime.now().toString());
+        final List<VisitorLog>? checkedOutVisitors=await _visitorLogUsecase.fetchCheckOutLogs(_preferenceUtils.getSelectedCompany()!.companyId,DateTime.now().toString());
         final int outBook = checkedOutVisitors!.length;
 
         emit(GatekeeperDashboardSuccessState(inBook: inBook,outBook: outBook));

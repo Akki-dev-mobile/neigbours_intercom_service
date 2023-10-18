@@ -60,17 +60,19 @@ class _IdInputViewState extends State<IdInputView> {
     });
   }
 
-  final gateDashboardBloc = GatekeeperDashboardBloc(VisitorUsecase(
-    VisitorRepoImpl(
-      RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
-          DioSingleton.instance3),
-    ),
-  ),VisitorLogUsecase(
-    VisitorLogRepositoryImpl(
-      RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
-          DioSingleton.instance3),
-    ),
-  ));
+  final gateDashboardBloc = GatekeeperDashboardBloc(
+      VisitorUsecase(
+        VisitorRepoImpl(
+          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+              DioSingleton.instance3),
+        ),
+      ),
+      VisitorLogUsecase(
+        VisitorLogRepositoryImpl(
+          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+              DioSingleton.instance3),
+        ),
+      ));
 
   @override
   void dispose() {
@@ -121,10 +123,13 @@ class _IdInputViewState extends State<IdInputView> {
             final saveVisitorState = state as SaveSearchedVisitorState;
             searchedVisitor = saveVisitorState.visitor;
             break;
-            case InputPutViewNextClickedState:
-              gateDashboardBloc.add(
-                      PurposeNextButtonClickedEvent(PurposeCategory(id: 1,purpose_category_name: 'GUEST',purpose_img: ''),
-                          searchedVisitor, mobileController.text));
+          case InputPutViewNextClickedState:
+            gateDashboardBloc.add(PurposeNextButtonClickedEvent(
+                PurposeCategory(
+                    id: 1, purpose_category_name: 'GUEST', purpose_img: ''),
+                searchedVisitor,
+                mobileController.text));
+            break;
           case NavigateToVisitorDetailsState:
             final navigateToVisitorDetailsState =
                 state as NavigateToVisitorDetailsState;

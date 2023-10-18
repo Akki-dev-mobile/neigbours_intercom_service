@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
                 },
               ),
             ),
-            home: GateDashboardView(),
+            home: AppIntroView(),
             // home: VisitorsInEntry(
             //   selectedValue: 'GUEST',
             // ),
