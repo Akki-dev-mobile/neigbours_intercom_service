@@ -336,7 +336,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                                   size: 32,
                                 ),
                               ),
-                              CustomForm.textField(
+                              
+                            ],
+                          ),
+                        ),
+                        CustomForm.textField(
                                 titleColor:
                                     Theme.of(context).colorScheme.onBackground,
                                 hintColor:
@@ -345,10 +349,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                                 hintText: 'Request from Security',
                                 keyboardType: TextInputType.text,
                                 length: 4,
-                              ),
-                            ],
-                          ),
-                        ),
+                              )
                       ],
                     ),
                   if (widget.selectedValue.purpose_category_name == 'STAFF')

@@ -51,9 +51,9 @@ class MyHomePageState extends State<MyHomePage> {
   // is successful.
   void _callHello() async {
     try {
-      final result = await client.example.hello(_textEditingController.text);
+      //final result = await client..hello(_textEditingController.text);
       setState(() {
-        _resultMessage = result;
+        //_resultMessage = result;
       });
     } catch (e) {
       setState(() {

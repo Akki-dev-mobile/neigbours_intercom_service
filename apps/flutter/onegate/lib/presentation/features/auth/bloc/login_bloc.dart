@@ -90,42 +90,47 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   FutureOr<void> roleSelectionButtonPressedEvent(
       RoleSelectionButtonPressedEvent event, Emitter<LoginState> emit) async {
-        _preferenceUtils.setIsAdmin(event.isAdmin);
-    if (event.isAdmin) {
-      final List<Gate> gates = await _preferenceUtils.getGatesList();
-      if (gates.isEmpty) {
-        emit(LoginLoadingState());
-        final response = await _gateUseCase.gateList(
-            _preferenceUtils.getSelectedCompany()!.companyId);
-        final List<Gate> gates = response!;
-        emit(LoginInitial());
-        if (response.length == 1) {
-          _preferenceUtils.setSelectedGate(response[0]);
-          emit(NavigateToAdminDashboardState());
-          return;
+    try {
+      _preferenceUtils.setIsAdmin(event.isAdmin);
+      if (event.isAdmin) {
+        final List<Gate> gates = await _preferenceUtils.getGatesList();
+        if (gates.isEmpty) {
+          emit(LoginLoadingState());
+          final response = await _gateUseCase
+              .gateList(_preferenceUtils.getSelectedCompany()!.companyId);
+          final List<Gate> gates = response!;
+          emit(LoginInitial());
+          if (response.length == 1) {
+            _preferenceUtils.setSelectedGate(response[0]);
+            emit(NavigateToAdminDashboardState());
+            return;
+          } else {
+            emit(GateSelectionState(gates));
+          }
         } else {
-          emit(GateSelectionState(gates));
+          emit(NavigateToAdminDashboardState());
         }
       } else {
-        emit(NavigateToAdminDashboardState());
+        Gate? selectedGate = _preferenceUtils.getSelectedGate();
+        if (selectedGate != null) {
+          emit(NavigateToGatekeeperDashboardState());
+        } else {
+          emit(LoginErrorState(message: "Please info admin to select gate"));
+        }
       }
-    } else {
-      Gate? selectedGate = _preferenceUtils.getSelectedGate();
-      if (selectedGate != null) {
-        emit(NavigateToGatekeeperDashboardState());
-      } else {
-        emit(LoginErrorState(message: "Please info admin to select gate"));
-      }
+    } catch (e) {
+      emit(LoginErrorState(message: e.toString()));
     }
 
     //emit(RoleSelectionState(_preferenceUtils.getRoles()));
   }
 
-  FutureOr<void> gateSelectionButtonPressedEvent(GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) {
+  FutureOr<void> gateSelectionButtonPressedEvent(
+      GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) {
     _preferenceUtils.setSelectedGate(event.gate);
-    if(_preferenceUtils.getIsAdmin()!){
+    if (_preferenceUtils.getIsAdmin()!) {
       emit(NavigateToAdminDashboardState());
-    }else{
+    } else {
       emit(NavigateToGatekeeperDashboardState());
     }
   }

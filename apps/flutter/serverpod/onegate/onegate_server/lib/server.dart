@@ -4,6 +4,8 @@ import 'package:onegate_server/src/web/routes/root.dart';
 
 import 'src/generated/protocol.dart';
 import 'src/generated/endpoints.dart';
+import 'package:serverpod_cloud_storage_s3/serverpod_cloud_storage_s3.dart'
+    as s3;
 
 // This is the starting point of your Serverpod server. In most cases, you will
 // only need to make additions to this file if you add future calls,  are
@@ -28,6 +30,15 @@ void run(List<String> args) async {
     RouteStaticDirectory(serverDirectory: 'static', basePath: '/'),
     '/*',
   );
+
+  pod.addCloudStorage(s3.S3CloudStorage(
+  serverpod: pod,
+  storageId: 'public',
+  public: true,
+  region: 'us-west-2',
+  bucket: 'my-bucket-name',
+  publicHost: 'storage.myapp.com',
+));
 
   // Start the server.
   await pod.start();
