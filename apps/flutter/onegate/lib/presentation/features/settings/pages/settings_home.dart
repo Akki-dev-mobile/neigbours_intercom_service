@@ -507,6 +507,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               title: 'Logout',
               subtitle: 'Logout from the app',
               onTap: () {
+                _preferenceUtils.setIsLogin(false);
                 Navigator.push(
                   context,
                   MaterialPageRoute(

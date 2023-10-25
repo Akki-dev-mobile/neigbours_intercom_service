@@ -79,7 +79,7 @@ void setupLocator() {
 
   // Register AdminDashboardBloc
   locator.registerFactory(
-      () => AdminDashboardBloc(locator<AdminDashboardUseCase>()));
+      () => AdminDashboardBloc(locator<AdminDashboardUseCase>(),locator<VisitorLogUsecase>()));
 
   // Register VisitorRepository
   locator.registerLazySingleton<VisitorRepository>(

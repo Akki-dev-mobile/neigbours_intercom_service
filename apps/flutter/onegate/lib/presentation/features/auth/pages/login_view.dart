@@ -226,8 +226,7 @@ class _LoginViewState extends State<LoginView> {
             );
             break;
           case NavigateToAdminDashboardState:
-            //Navigator.pop(context);
-            // Future.delayed(Duration(milliseconds: 100), () {
+           _preferenceUtils.setIsLogin(true);
             Navigator.pushReplacement(
               context,
               PageTransition(
@@ -238,8 +237,7 @@ class _LoginViewState extends State<LoginView> {
             //});
             break;
           case NavigateToGatekeeperDashboardState:
-            // Navigator.pop(context);
-            //Future.delayed(Duration(milliseconds: 100), () {
+            _preferenceUtils.setIsLogin(true);
             Navigator.pushReplacement(
               context,
               PageTransition(

@@ -13,7 +13,9 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get_it/get_it.dart';
 import 'package:one_theme/theme.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 
@@ -25,6 +27,7 @@ import 'presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_i
 void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
+
   setupDependencies();
   setupLocator();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -50,11 +53,24 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+  MyApp({super.key});
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   @override
   Widget build(BuildContext context) {
-    // startKioskMode();
+    Widget initialScreen;
+    if (!_preferenceUtils.getIsAppIntroShown()!) {
+      initialScreen = AppIntroView();
+    } else {
+      if (_preferenceUtils.getIsLogin()!) {
+        if (_preferenceUtils.getIsAdmin()!) {
+          initialScreen = AdminDashboardView();
+        } else {
+          initialScreen = GateDashboardView();
+        }
+      } else {
+        initialScreen = LoginView();
+      }
+    }
     return DevicePreview(
         enabled: kReleaseMode,
         builder: (context) {
@@ -69,7 +85,7 @@ class MyApp extends StatelessWidget {
                 },
               ),
             ),
-            home: AppIntroView(),
+            home: initialScreen,
             // home: VisitorsInEntry(
             //   selectedValue: 'GUEST',
             // ),

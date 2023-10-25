@@ -2,6 +2,8 @@
 
 import 'package:concentric_transition/concentric_transition.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../auth/pages/login_view.dart';
@@ -32,7 +34,8 @@ final pages = [
 ];
 
 class AppIntroView extends StatelessWidget {
-  const AppIntroView({Key? key}) : super(key: key);
+  AppIntroView({Key? key}) : super(key: key);
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +54,7 @@ class AppIntroView extends StatelessWidget {
         ),
         physics: NeverScrollableScrollPhysics(),
         onFinish: () {
+          _preferenceUtils.setIsAppIntroShown(true);
           Navigator.push(
             context,
             MaterialPageRoute(

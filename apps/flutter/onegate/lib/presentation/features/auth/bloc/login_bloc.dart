@@ -102,17 +102,20 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           emit(LoginInitial());
           if (response.length == 1) {
             _preferenceUtils.setSelectedGate(response[0]);
+            _preferenceUtils.setIsLogin(true);
             emit(NavigateToAdminDashboardState());
             return;
           } else {
             emit(GateSelectionState(gates));
           }
         } else {
+          _preferenceUtils.setIsLogin(true);
           emit(NavigateToAdminDashboardState());
         }
       } else {
         Gate? selectedGate = _preferenceUtils.getSelectedGate();
         if (selectedGate != null) {
+          _preferenceUtils.setIsLogin(true);
           emit(NavigateToGatekeeperDashboardState());
         } else {
           emit(LoginErrorState(message: "Please info admin to select gate"));
@@ -134,41 +137,43 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(NavigateToGatekeeperDashboardState());
     }
   }
-}
 
-void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
-    PreferenceUtils preferenceUtils) {
-  try {
-    final List<Company> companiesWithAccessToGate = [];
+  void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
+      PreferenceUtils preferenceUtils) {
+    try {
+      final List<Company> companiesWithAccessToGate = [];
 
-    response!.userInfo.companies.forEach((key, companyList) {
-      final filteredCompanies =
-          companyList.where((company) => company.accessTo.contains(5)).toList();
-      companiesWithAccessToGate.addAll(filteredCompanies);
-    });
+      response!.userInfo.companies.forEach((key, companyList) {
+        final filteredCompanies = companyList
+            .where((company) => company.accessTo.contains(5))
+            .toList();
+        companiesWithAccessToGate.addAll(filteredCompanies);
+      });
 
-    preferenceUtils.saveAccessTokenResponse(response);
-    preferenceUtils.saveUserInfo(response.userInfo);
-    emit(LoginInitial());
-    if (preferenceUtils.getSelectedCompany() == null) {
-      emit(SocietySelectionState(companiesWithAccessToGate));
-    } else {
-      Company selectedCompany = preferenceUtils.getSelectedCompany()!;
-      final List<String> roles = [];
-      for (final app in selectedCompany.apps) {
-        roles.addAll(app.roles);
-      }
-      preferenceUtils.saveRoles(roles);
-      if (roles.contains("master")) {
-        emit(RoleSelectionState(roles));
-      } else if (roles.contains("gatekeeper")) {
-        emit(NavigateToGatekeeperDashboardState());
+      preferenceUtils.saveAccessTokenResponse(response);
+      preferenceUtils.saveUserInfo(response.userInfo);
+      emit(LoginInitial());
+      if (preferenceUtils.getSelectedCompany() == null) {
+        emit(SocietySelectionState(companiesWithAccessToGate));
       } else {
-        emit(NavigateToAdminDashboardState());
+        Company selectedCompany = preferenceUtils.getSelectedCompany()!;
+        final List<String> roles = [];
+        for (final app in selectedCompany.apps) {
+          roles.addAll(app.roles);
+        }
+        preferenceUtils.saveRoles(roles);
+        if (roles.contains("master")) {
+          emit(RoleSelectionState(roles));
+        } else if (roles.contains("gatekeeper")) {
+          _preferenceUtils.setIsLogin(true);
+          emit(NavigateToGatekeeperDashboardState());
+        } else {
+          emit(NavigateToAdminDashboardState());
+        }
       }
+    } catch (e) {
+      emit(LoginInitial());
+      emit(LoginErrorState(message: e.toString()));
     }
-  } catch (e) {
-    emit(LoginInitial());
-    emit(LoginErrorState(message: e.toString()));
   }
 }

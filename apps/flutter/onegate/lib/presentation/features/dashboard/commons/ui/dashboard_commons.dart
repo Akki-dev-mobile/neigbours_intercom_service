@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:page_transition/page_transition.dart';
@@ -10,7 +11,7 @@ import '../../../visitor_log/ui/visitor_log_view.dart';
 class DashboardBlocks extends StatelessWidget {
   final int? inBook;
   final int? outBook;
-  final GatekeeperDashboardBloc bloc ;
+  final Bloc bloc ;
   DashboardBlocks({super.key, this.inBook, this.outBook, required this.bloc});
 
 
@@ -33,6 +34,7 @@ class DashboardBlocks extends StatelessWidget {
                 splashColor: Color.fromARGB(255, 255, 226, 172),
                 autofocus: true,
                 onTap: () {
+                  
                   bloc.add(GDInAndOutButtonPressedEvent());
                 },
                 child: Column(
