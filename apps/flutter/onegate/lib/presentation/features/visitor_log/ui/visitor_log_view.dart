@@ -107,7 +107,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             break;
           case VisitorCheckInLogSuccessState:
             _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
-            break;  
+            break;
         }
       },
       builder: (context, state) {
@@ -128,6 +128,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             return MyScrollView(
               isScrollable: false,
               hasBackButton: false,
+              backButtonPressed: () {},
               // pageTitle: widget.id,
               pageTitleWidget: Hero(
                 tag: 'page_title',

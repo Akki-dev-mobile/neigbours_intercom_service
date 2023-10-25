@@ -15,6 +15,7 @@ class MyScrollView extends StatelessWidget {
     this.bottomSheet,
     this.controller,
     this.hasBackButton = true,
+    this.backButtonPressed,
     this.isScrollable = true,
     this.actions,
   });
@@ -28,6 +29,7 @@ class MyScrollView extends StatelessWidget {
   final bool hasBackButton;
   final bool isScrollable;
   final List<Widget>? actions;
+  final Function()? backButtonPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +54,7 @@ class MyScrollView extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onBackground,
                     ),
                     onPressed: () {
-                      Navigator.pop(context);
+                      backButtonPressed ?? Navigator.pop(context);
                     },
                   )
                 : null,

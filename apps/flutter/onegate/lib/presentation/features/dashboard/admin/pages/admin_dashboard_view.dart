@@ -39,12 +39,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
           DioSingleton.instance2,
           DioSingleton.instance3))));
 
-          @override
+  @override
   void initState() {
     // TODO: implement initState
     super.initState();
     adminDashboardBloc.add(AdminDashboardInitialEvent());
   }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AdminDashboardBloc, AdminDashboardState>(
@@ -67,7 +68,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
       builder: (context, state) {
         switch (state.runtimeType) {
           case AdminDashboardSuccessState:
-          final successState=state.runtimeType as AdminDashboardSuccessState;
+            final successState =
+                state.runtimeType as AdminDashboardSuccessState;
             return WillPopScope(
               onWillPop: () async {
                 return false;
@@ -130,7 +132,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                       ],
                     ),
                     DashboardBlocks(
-                        inBook: successState.inBook, outBook: successState.outBook, bloc: adminDashboardBloc),
+                        inBook: successState.inBook,
+                        outBook: successState.outBook,
+                        bloc: adminDashboardBloc),
                   ],
                 ),
               ),
