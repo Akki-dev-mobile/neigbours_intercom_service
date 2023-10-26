@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:page_transition/page_transition.dart';
@@ -11,9 +12,8 @@ import '../../../visitor_log/ui/visitor_log_view.dart';
 class DashboardBlocks extends StatelessWidget {
   final int? inBook;
   final int? outBook;
-  final Bloc bloc ;
+  final Bloc bloc;
   DashboardBlocks({super.key, this.inBook, this.outBook, required this.bloc});
-
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,9 @@ class DashboardBlocks extends StatelessWidget {
                 splashColor: Color.fromARGB(255, 255, 226, 172),
                 autofocus: true,
                 onTap: () {
-                  
+                  bloc is GatekeeperDashboardBloc
+                      ? bloc.add(GDInAndOutButtonPressedEvent())
+                      : bloc.add(ADInAndOutButtonPressedEvent());
                   bloc.add(GDInAndOutButtonPressedEvent());
                 },
                 child: Column(
@@ -93,7 +95,9 @@ class DashboardBlocks extends StatelessWidget {
                     splashColor: const Color.fromARGB(255, 98, 255, 127),
                     autofocus: true,
                     onTap: () {
-                     bloc.add(GDVisitorsInButtonPressedEvent());
+                      bloc is GatekeeperDashboardBloc
+                          ? bloc.add(GDVisitorsInButtonPressedEvent())
+                          : bloc.add(ADVisitorsInButtonPressedEvent());
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(
@@ -162,7 +166,9 @@ class DashboardBlocks extends StatelessWidget {
                     splashColor: const Color.fromARGB(255, 237, 131, 109),
                     autofocus: true,
                     onTap: () {
-                      bloc.add(GDVisitorsOutButtonPressedEvent());
+                      bloc is GatekeeperDashboardBloc
+                          ? bloc.add(GDVisitorsOutButtonPressedEvent())
+                          : bloc.add(ADVisitorsOutButtonPressedEvent());
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(

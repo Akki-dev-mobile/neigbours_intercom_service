@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -12,8 +11,10 @@ import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log_view.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:common_widgets/loading_view.dart';
 
 import '../../commons/ui/dashboard_commons.dart';
 import '../../gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -41,7 +42,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     adminDashboardBloc.add(AdminDashboardInitialEvent());
   }
@@ -63,13 +63,62 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
               ),
             );
             break;
+          case ADInAndOutButtonPressedState:
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.leftToRight,
+                child: VisitorLogView(
+                  id: 'In Out Book',
+                  logList: const [
+                    "In Out Book",
+                    "Visitor In",
+                    "Visitor Out",
+                  ],
+                ),
+              ),
+            );
+            break;
+          case ADVisitorsInButtonPressedState:
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.topToBottom,
+                child: VisitorLogView(
+                  id: 'Visitor In',
+                  logList: const [
+                    "In Out Book",
+                    "Visitor In",
+                    "Visitor Out",
+                  ],
+                ),
+              ),
+            );
+            break;
+          case ADVisitorsOutButtonPressedState:
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: VisitorLogView(
+                  id: 'Visitor Out',
+                  logList: const [
+                    "In Out Book",
+                    "Visitor In",
+                    "Visitor Out",
+                  ],
+                ),
+              ),
+            );
+            break;
         }
       },
       builder: (context, state) {
         switch (state.runtimeType) {
+          case AdminDashboardLoadingState:
+            return LoaderView();
           case AdminDashboardSuccessState:
-            final successState =
-                state.runtimeType as AdminDashboardSuccessState;
+            
             return WillPopScope(
               onWillPop: () async {
                 return false;
@@ -132,8 +181,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                       ],
                     ),
                     DashboardBlocks(
-                        inBook: successState.inBook,
-                        outBook: successState.outBook,
+                        inBook: (state as AdminDashboardSuccessState).inBook,
+                        outBook: (state as AdminDashboardSuccessState).outBook,
                         bloc: adminDashboardBloc),
                   ],
                 ),

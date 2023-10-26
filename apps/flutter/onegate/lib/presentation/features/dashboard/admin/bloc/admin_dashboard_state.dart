@@ -17,3 +17,9 @@ class AdminDashboardSuccessState extends AdminDashboardState {
 
   AdminDashboardSuccessState({required this.inBook, required this.outBook});
 }
+
+class ADInAndOutButtonPressedState extends AdminDashboardActionState {}
+
+class ADVisitorsInButtonPressedState extends AdminDashboardActionState {}
+
+class ADVisitorsOutButtonPressedState extends AdminDashboardActionState {}
