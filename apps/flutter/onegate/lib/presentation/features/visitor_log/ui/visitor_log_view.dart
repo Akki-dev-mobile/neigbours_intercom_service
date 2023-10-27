@@ -20,6 +20,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:random_avatar/random_avatar.dart';
+import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 
 import '../../gate_selection/ui/gate_selection_view.dart';
 
@@ -383,9 +384,18 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                       ),
                                     ),
                                   ),
-                                  trailing: const Icon(
-                                    Ionicons.call_outline,
-                                    color: Colors.green,
+                                  trailing: IconButton(
+                                    onPressed: () {
+                                      FlutterPhoneDirectCaller.callNumber(
+                                          visitorLogs[index]
+                                              .visitor!
+                                              .mobile
+                                              .toString());
+                                    },
+                                    icon: Icon(
+                                      Ionicons.call_outline,
+                                      color: Colors.green,
+                                    ),
                                   ),
                                 ),
                                 Divider(
