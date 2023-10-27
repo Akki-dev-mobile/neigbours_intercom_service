@@ -77,7 +77,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (roles.contains("master")) {
       emit(RoleSelectionState(roles));
     } else if (roles.contains("gatekeeper")) {
-      emit(NavigateToGatekeeperDashboardState());
+      if (_preferenceUtils.getUserInfo()!.userId ==
+          _preferenceUtils.getSelectedGate()!.userId) {
+        emit(NavigateToGatekeeperDashboardState());
+      } else {
+        emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+      }
     } else {
       emit(NavigateToAdminDashboardState());
     }
@@ -116,7 +121,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         Gate? selectedGate = _preferenceUtils.getSelectedGate();
         if (selectedGate != null) {
           _preferenceUtils.setIsLogin(true);
-          emit(NavigateToGatekeeperDashboardState());
+          if (_preferenceUtils.getUserInfo()!.userId ==
+              _preferenceUtils.getSelectedGate()!.userId) {
+            emit(NavigateToGatekeeperDashboardState());
+          } else {
+            emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+          }
         } else {
           emit(LoginErrorState(message: "Please info admin to select gate"));
         }
@@ -134,7 +144,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (_preferenceUtils.getIsAdmin()!) {
       emit(NavigateToAdminDashboardState());
     } else {
-      emit(NavigateToGatekeeperDashboardState());
+      if (_preferenceUtils.getUserInfo()!.userId ==
+          _preferenceUtils.getSelectedGate()!.userId) {
+        emit(NavigateToGatekeeperDashboardState());
+      } else {
+        emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+      }
     }
   }
 
@@ -166,7 +181,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           emit(RoleSelectionState(roles));
         } else if (roles.contains("gatekeeper")) {
           _preferenceUtils.setIsLogin(true);
-          emit(NavigateToGatekeeperDashboardState());
+          if (_preferenceUtils.getUserInfo()!.userId ==
+              _preferenceUtils.getSelectedGate()!.userId) {
+            emit(NavigateToGatekeeperDashboardState());
+          } else {
+            emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+          }
         } else {
           emit(NavigateToAdminDashboardState());
         }
