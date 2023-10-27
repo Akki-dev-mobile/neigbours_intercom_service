@@ -41,6 +41,7 @@ void main() async {
     ),
   );
   await ThemeManager.initializeWithAppId(appId);
+  startKioskMode();
   runApp(
     ScreenUtilInit(
       fontSizeResolver: (num size, ScreenUtil _) => 0.5,
@@ -55,6 +56,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   MyApp({super.key});
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+
   @override
   Widget build(BuildContext context) {
     Widget initialScreen;
@@ -72,7 +74,7 @@ class MyApp extends StatelessWidget {
       }
     }
     return DevicePreview(
-        enabled: kReleaseMode,
+        enabled: !kDebugMode,
         builder: (context) {
           return MaterialApp(
             useInheritedMediaQuery: true,
