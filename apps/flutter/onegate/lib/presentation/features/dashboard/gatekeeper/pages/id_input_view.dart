@@ -124,11 +124,11 @@ class _IdInputViewState extends State<IdInputView> {
             searchedVisitor = saveVisitorState.visitor;
             break;
           case InputPutViewNextClickedState:
-            gateDashboardBloc.add(PurposeNextButtonClickedEvent(
-                PurposeCategory(
-                    id: 1, purpose_category_name: 'GUEST', purpose_img: ''),
-                searchedVisitor,
-                mobileController.text));
+            // gateDashboardBloc.add(PurposeNextButtonClickedEvent(
+            //     PurposeCategory(
+            //         id: 1, purpose_category_name: 'GUEST', purpose_img: ''),
+            //     searchedVisitor,
+            //     mobileController.text));
             break;
           case NavigateToVisitorDetailsState:
             final navigateToVisitorDetailsState =

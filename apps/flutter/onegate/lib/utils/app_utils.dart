@@ -12,17 +12,17 @@ class Utils {
         inputDateTime.month == today.month &&
         inputDateTime.day == today.day) {
       // Today's date
-      formattedDateTime = DateFormat('HH:mm a').format(inputDateTime);
+      formattedDateTime = DateFormat('hh:mm a').format(inputDateTime);
     } else if (inputDateTime.year == yesterday.year &&
         inputDateTime.month == yesterday.month &&
         inputDateTime.day == yesterday.day) {
       // Yesterday's date
-      formattedDateTime = DateFormat('HH:mm a').format(inputDateTime) +
-          ' ' +
-          DateFormat('dd-MM').format(inputDateTime);
+      formattedDateTime = DateFormat('hh:mm a').format(inputDateTime) ;
+          // ' ' +
+          // DateFormat('dd-MM').format(inputDateTime);
     } else {
       // Any other date
-      formattedDateTime = DateFormat('HH:mm a dd-MM').format(inputDateTime);
+      formattedDateTime = DateFormat('hh:mm a').format(inputDateTime);
     }
 
     return formattedDateTime;

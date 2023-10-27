@@ -53,12 +53,12 @@ class GatekeeperDashboardBloc
     try {
       final purpose = await _visitorUsecase.fetchPurposeCategory();
       emit(GatekeeperDashboardInitial());
-      emit(InputPutViewNextClickedState());
-      //emit(OpenPurposeDialogState(purposeCategories: purpose));
+      //emit(InputPutViewNextClickedState());
+      emit(OpenPurposeDialogState(purposeCategories: purpose));
     } catch (e) {
       print(e.toString());
       final purpose = await _visitorUsecase.fetchPurposeCategory();
-      //emit(OpenPurposeDialogState(purposeCategories: purpose));
+      emit(OpenPurposeDialogState(purposeCategories: purpose));
       emit(
         GatekeeperDashboardErrorState(
           message: e.toString(),

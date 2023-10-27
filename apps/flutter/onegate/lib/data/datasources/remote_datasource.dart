@@ -156,7 +156,7 @@ class RemoteDataSource {
     try {
       final visitor_log =
           await client.visitorLog.fetchAllLogs(dateTime);
-      return visitor_log;
+      return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
@@ -167,7 +167,7 @@ class RemoteDataSource {
     try {
       final visitor_log =
           await client.visitorLog.fetchCheckInLogs(dateTime);
-      return visitor_log;
+      return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
@@ -178,7 +178,7 @@ class RemoteDataSource {
     try {
       final visitor_log =
           await client.visitorLog.fetchCheckOutLogs(dateTime);
-      return visitor_log;
+      return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;

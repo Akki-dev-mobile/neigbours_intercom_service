@@ -509,7 +509,7 @@ class _LoginViewState extends State<LoginView> {
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 5.0),
                       child: Text(
-                        'Kindly, select your society linked with +91-*******101',
+                        'Kindly, select your society linked with +${_preferenceUtils.getUserInfo()!.mobile}',
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                     ),

@@ -2,6 +2,7 @@
 
 import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -187,18 +188,18 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       alignment: MainAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: CircleAvatar(
-                            backgroundColor: const Color(0xffFFEBE6),
-                            radius: 20,
-                            child: Icon(
-                              size: 22,
-                              Ionicons.mic_outline,
-                              color: Theme.of(context).colorScheme.onBackground,
-                            ),
-                          ),
-                        ),
+                        // IconButton(
+                        //   onPressed: () {},
+                        //   icon: CircleAvatar(
+                        //     backgroundColor: const Color(0xffFFEBE6),
+                        //     radius: 20,
+                        //     child: Icon(
+                        //       size: 22,
+                        //       Ionicons.mic_outline,
+                        //       color: Theme.of(context).colorScheme.onBackground,
+                        //     ),
+                        //   ),
+                        // ),
                         IconButton(
                           onPressed: () {
                             _showLogBookConfigBottomSheet(context);
@@ -206,44 +207,48 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           icon: Icon(
                             Ionicons.funnel_outline,
                             color: Theme.of(context).colorScheme.onBackground,
-                            size: 28,
+                            size: 24,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  ChipsChoice<String>.single(
-                    padding: EdgeInsets.only(right: 20),
-                    scrollToSelectedOnChanged: true,
-                    spacing: 20,
-                    choiceStyle: C2ChipStyle.outlined(
-                      borderWidth: 1,
-                      color: Colors.grey.shade700,
-                      selectedStyle: C2ChipStyle.filled(
-                        foregroundColor: Color(0xFFC08261),
-                      ),
-                      height: 40,
-                    ),
-                    choiceCheckmark: true,
-                    value: selectedTime,
-                    scrollPhysics: BouncingScrollPhysics(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedTime = value;
-                      });
-                    },
-                    choiceItems: C2Choice.listFrom<String, String>(
-                      source: options,
-                      value: (i, v) => v,
-                      label: (i, v) => v,
-                    ),
-                  ),
+                  // ChipsChoice<String>.single(
+                  //   padding: EdgeInsets.only(right: 20),
+                  //   scrollToSelectedOnChanged: true,
+                  //   spacing: 20,
+                  //   choiceStyle: C2ChipStyle.outlined(
+                  //     borderWidth: 1,
+                  //     color: Colors.grey.shade700,
+                  //     selectedStyle: C2ChipStyle.filled(
+                  //       foregroundColor: Color(0xFFC08261),
+                  //     ),
+                  //     height: 40,
+                  //   ),
+                  //   choiceCheckmark: true,
+                  //   value: selectedTime,
+                  //   scrollPhysics: BouncingScrollPhysics(),
+                  //   onChanged: (value) {
+                  //     setState(() {
+                  //       selectedTime = value;
+                  //     });
+                  //   },
+                  //   choiceItems: C2Choice.listFrom<String, String>(
+                  //     source: options,
+                  //     value: (i, v) => v,
+                  //     label: (i, v) => v,
+                  //   ),
+                  // ),
                   SizedBox(
                     height: MediaQuery.of(context).size.height * 0.7,
                     child: ListView.builder(
                       shrinkWrap: true,
                       itemCount: filteredVisitors.length,
                       itemBuilder: (context, index) {
+                        String unitList = filteredVisitors[index]
+                            .visitor_building_assignment![0].unit_id
+                            .map((units) => units.toString())
+                            .join(', ');
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: Card(
@@ -343,11 +348,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                             ),
                                           ),
                                           TextSpan(
-                                              text: filteredVisitors[index]
-                                                  .visitor_building_assignment![
-                                                      0]
-                                                  .unit_id
-                                                  .toString(),
+                                              text: unitList,
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .labelSmall),
@@ -538,32 +539,32 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           ),
                     ),
                   ),
-                  ChipsChoice<String>.single(
-                    padding: EdgeInsets.only(right: 20),
-                    scrollToSelectedOnChanged: true,
-                    spacing: 20,
-                    choiceStyle: C2ChipStyle.outlined(
-                      borderWidth: 1,
-                      color: Colors.grey.shade700,
-                      selectedStyle: C2ChipStyle.filled(
-                        foregroundColor: Color(0xFFC08261),
-                      ),
-                      height: 40,
-                    ),
-                    choiceCheckmark: true,
-                    value: selectedBuilding,
-                    scrollPhysics: BouncingScrollPhysics(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedBuilding = value;
-                      });
-                    },
-                    choiceItems: C2Choice.listFrom<String, String>(
-                      source: selectedBuildingOptions,
-                      value: (i, v) => v,
-                      label: (i, v) => v,
-                    ),
-                  ),
+                  // ChipsChoice<String>.single(
+                  //   padding: EdgeInsets.only(right: 20),
+                  //   scrollToSelectedOnChanged: true,
+                  //   spacing: 20,
+                  //   choiceStyle: C2ChipStyle.outlined(
+                  //     borderWidth: 1,
+                  //     color: Colors.grey.shade700,
+                  //     selectedStyle: C2ChipStyle.filled(
+                  //       foregroundColor: Color(0xFFC08261),
+                  //     ),
+                  //     height: 40,
+                  //   ),
+                  //   choiceCheckmark: true,
+                  //   value: selectedBuilding,
+                  //   scrollPhysics: BouncingScrollPhysics(),
+                  //   onChanged: (value) {
+                  //     setState(() {
+                  //       selectedBuilding = value;
+                  //     });
+                  //   },
+                  //   choiceItems: C2Choice.listFrom<String, String>(
+                  //     source: selectedBuildingOptions,
+                  //     value: (i, v) => v,
+                  //     label: (i, v) => v,
+                  //   ),
+                  // ),
                   Expanded(
                     child: ListView.builder(
                       itemCount: widget.logList.length,
