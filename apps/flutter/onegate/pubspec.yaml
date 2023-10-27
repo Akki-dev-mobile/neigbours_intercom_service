@@ -60,6 +60,7 @@ dependencies:
   speech_to_text: ^6.3.0
   flutter_otp_text_field: ^1.1.1
   timezone: ^0.7.0
+  flutter_phone_direct_caller: ^2.1.1
   
 
 
