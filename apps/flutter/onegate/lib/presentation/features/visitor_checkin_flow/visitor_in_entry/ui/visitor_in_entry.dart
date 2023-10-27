@@ -42,7 +42,7 @@ class VisitorsInEntry extends StatefulWidget {
 class _VisitorsInEntryState extends State<VisitorsInEntry> {
   SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
-  String _lastWords = '';
+  String _speechTextControllerId = '';
   late TextEditingController _guestCountController;
   final VisitorInEntryBloc visitorInEntryBloc = VisitorInEntryBloc(
       VisitorUsecase(VisitorRepoImpl(RemoteDataSource(DioSingleton.instance1,
@@ -61,7 +61,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     super.initState();
     _guestCountController = TextEditingController(text: _guestCount.toString());
     if (widget.searchedVisitor != null) {
-      _lastWords = widget.searchedVisitor!.name;
+      //_lastWords = widget.searchedVisitor!.name;
       guestName.text = widget.searchedVisitor!.name;
     }
     _initSpeech();
@@ -72,8 +72,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     setState(() {});
   }
 
-  void _startListening() async {
-    await _speechToText.listen(onResult: _onSpeechResult);
+  void _startListening(String textControllerId) async {
+    _speechTextControllerId = textControllerId;
+    await _speechToText.listen(
+      onResult: _onSpeechResult,
+    );
     setState(() {});
   }
 
@@ -84,7 +87,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   void _onSpeechResult(SpeechRecognitionResult result) {
     setState(() {
-      _lastWords = result.recognizedWords;
+      switch (_speechTextControllerId) {
+        case 'guestName':
+          guestName.text = result.recognizedWords;
+          break;
+        case 'guestComingFrom':
+          guestComingFrom.text = result.recognizedWords;
+          break;
+      }
     });
   }
 
@@ -106,12 +116,16 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   PickedFile? _imageFile;
 
-  Future<void> _captureImageFromCamera() async {
+  Future<void> _captureImageFromCamera(
+    Visitor visitor,
+    PurposeCategory purposeCategory,
+  ) async {
     final picker = ImagePicker();
 
     try {
       final image = await picker.pickImage(
         source: ImageSource.camera,
+        // preferredCameraDevice: CameraDevice.front,
       );
 
       if (image == null) {
@@ -122,12 +136,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         _imageFile = PickedFile(image.path);
       });
 
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => UnitSelectionView(),
-      //   ),
-      // );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UnitSelectionView(
+            purposeCategory: purposeCategory,
+            visitor: visitor,
+            comingFrom: guestComingFrom.text,
+            guestCount: _guestCount,
+          ),
+        ),
+      );
     } catch (e) {
       print('Error capturing image from camera: $e');
     }
@@ -143,17 +162,21 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         switch (state.runtimeType) {
           case VIENavigateToUnitSelectionState:
             final unitSelectionState = state as VIENavigateToUnitSelectionState;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UnitSelectionView(
-                  purposeCategory: unitSelectionState.purposeCategory,
-                  visitor: unitSelectionState.visitor,
-                  comingFrom: guestComingFrom.text,
-                  guestCount: _guestCount,
-                ),
-              ),
+            _captureImageFromCamera(
+              unitSelectionState.visitor,
+              unitSelectionState.purposeCategory,
             );
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => UnitSelectionView(
+          //       purposeCategory: unitSelectionState.purposeCategory,
+          //       visitor: unitSelectionState.visitor,
+          //       comingFrom: guestComingFrom.text,
+          //       guestCount: _guestCount,
+          //     ),
+          //   ),
+          // );
         }
       },
       builder: (context, state) {
@@ -166,6 +189,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             );
           default:
             return MyScrollView(
+              isScrollable: true,
               pageTitle: '${widget.selectedValue.purpose_category_name} Entry',
               pageBody: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -254,55 +278,64 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   if (widget.selectedValue.purpose_category_name == 'GUEST')
                     Column(
                       children: [
-                        Text(_lastWords),
                         CustomForm.textField(
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            "Guest Name",
-                            hintText: 'Enter Name',
-                            textCapitalization: TextCapitalization.words,
-                            textController: guestName
-                            // suffixIcon: IconButton(
-                            //   onPressed: () {
-                            //     _speechToText.isNotListening
-                            //         ? _startListening()
-                            //         : _stopListening();
-                            //   },
-                            //   icon: CircleAvatar(
-                            //     backgroundColor: _speechToText.isNotListening
-                            //         ? Color(0xffFFEBE6)
-                            //         : Color(0xffCAF1D1),
-                            //     radius: 20,
-                            //     child: Icon(
-                            //       size: 22,
-                            //       Ionicons.mic_outline,
-                            //       color: Colors.black,
-                            //     ),
-                            //   ),
-                            // ),
+                          titleColor:
+                              Theme.of(context).colorScheme.onBackground,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          "Guest Name",
+                          hintText: 'Enter Name',
+                          textCapitalization: TextCapitalization.words,
+                          textController: guestName,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              _speechToText.isNotListening
+                                  ? _startListening('guestName')
+                                  : _stopListening();
+                            },
+                            icon: CircleAvatar(
+                              backgroundColor:
+                                  _speechTextControllerId == 'guestName' &&
+                                          _speechToText.isListening
+                                      ? Color(0xffCAF1D1)
+                                      : Color(0xffFFEBE6),
+                              radius: 20,
+                              child: Icon(
+                                size: 22,
+                                Ionicons.mic_outline,
+                                color: Colors.black,
+                              ),
                             ),
+                          ),
+                        ),
                         CustomForm.textField(
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            "Coming From",
-                            hintText: 'Enter Coming From',
-                            textCapitalization: TextCapitalization.characters,
-                            textController: guestComingFrom
-                            // suffixIcon: IconButton(
-                            //   onPressed: () {},
-                            //   icon: CircleAvatar(
-                            //     backgroundColor: Color(0xffFFEBE6),
-                            //     radius: 20,
-                            //     child: Icon(
-                            //       size: 22,
-                            //       Ionicons.mic_outline,
-                            //       color: Colors.black,
-                            //     ),
-                            //   ),
-                            // ),
+                          titleColor:
+                              Theme.of(context).colorScheme.onBackground,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          "Coming From",
+                          hintText: 'Enter Coming From',
+                          textCapitalization: TextCapitalization.characters,
+                          textController: guestComingFrom,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              _speechToText.isNotListening
+                                  ? _startListening('guestComingFrom')
+                                  : _stopListening();
+                            },
+                            icon: CircleAvatar(
+                              backgroundColor: _speechTextControllerId ==
+                                          'guestComingFrom' &&
+                                      _speechToText.isListening
+                                  ? Color(0xffCAF1D1)
+                                  : Color(0xffFFEBE6),
+                              radius: 20,
+                              child: Icon(
+                                size: 22,
+                                Ionicons.mic_outline,
+                                color: Colors.black,
+                              ),
                             ),
+                          ),
+                        ),
                         CustomForm.textField(
                           "Guest Count",
                           textController: _guestCountController,
@@ -336,20 +369,19 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                                   size: 32,
                                 ),
                               ),
-                              
                             ],
                           ),
                         ),
                         CustomForm.textField(
-                                titleColor:
-                                    Theme.of(context).colorScheme.onBackground,
-                                hintColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                "Enter your ID",
-                                hintText: 'Request from Security',
-                                keyboardType: TextInputType.text,
-                                length: 4,
-                              )
+                          titleColor:
+                              Theme.of(context).colorScheme.onBackground,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          "Enter your ID",
+                          hintText: 'Request from Security',
+                          keyboardType: TextInputType.text,
+                          length: 4,
+                        ),
+                        SizedBox(height: 150),
                       ],
                     ),
                   if (widget.selectedValue.purpose_category_name == 'STAFF')

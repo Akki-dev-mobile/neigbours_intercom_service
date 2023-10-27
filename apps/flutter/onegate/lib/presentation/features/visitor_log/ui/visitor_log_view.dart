@@ -8,6 +8,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -137,6 +138,24 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 10.0),
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GateDashboardView(),
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.home,
+                    ),
+                  ),
+                ),
+              ],
               pageBody: Column(
                 children: [
                   CustomForm.textField(
@@ -259,10 +278,58 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                               DateTime.now().toIso8601String(),
                                               trBackground: false,
                                             )),
-                                  title: Text(
-                                    filteredVisitors[index].visitor!.name,
-                                    style:
-                                        Theme.of(context).textTheme.bodyMedium,
+                                  // title: Text(
+                                  //   filteredVisitors[index].visitor!.name,
+                                  //   style:
+                                  //       Theme.of(context).textTheme.bodyMedium,
+                                  // ),
+                                  title: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: filteredVisitors[index]
+                                              .visitor!
+                                              .name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium,
+                                        ),
+                                        WidgetSpan(
+                                          child: visitorLogs[index]
+                                                      .visitor_count
+                                                      .toString() !=
+                                                  '1'
+                                              ? Container(
+                                                  margin: const EdgeInsets.only(
+                                                      left: 8),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 2,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        const Color(0xffFFEBE6),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    // border: Border.all(
+                                                    //   color: Colors.black,
+                                                    // ),
+                                                  ),
+                                                  child: Text(
+                                                    "+ ${visitorLogs[index].visitor_count.toString()}",
+                                                    style: TextStyle(
+                                                      color: Colors.black,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ))
+                                              : SizedBox(),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                   subtitle: Padding(
                                     padding: const EdgeInsets.only(top: 5),
