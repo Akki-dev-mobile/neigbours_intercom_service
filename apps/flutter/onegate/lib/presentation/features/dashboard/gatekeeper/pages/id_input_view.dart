@@ -78,6 +78,7 @@ class _IdInputViewState extends State<IdInputView> {
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+    mobileController.text='';
   }
 
   @override
@@ -133,6 +134,7 @@ class _IdInputViewState extends State<IdInputView> {
           case NavigateToVisitorDetailsState:
             final navigateToVisitorDetailsState =
                 state as NavigateToVisitorDetailsState;
+                mobileController.text='';
             Navigator.push(
                 context,
                 MaterialPageRoute(

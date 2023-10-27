@@ -63,7 +63,7 @@ class RemoteDataSource {
     try {
       final result = await client.purposeCategory.fetchPurposeCategory();
       print("fetchPurpose: ${result.toString()}");
-      return result;
+      return result.reversed.toList();
     } catch (e) {
       print(e.toString());
     }
