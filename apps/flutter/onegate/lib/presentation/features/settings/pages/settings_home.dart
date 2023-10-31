@@ -451,21 +451,21 @@ class _SettingsHomeState extends State<SettingsHome> {
             title: 'Self Entry Settings',
             subtitle: 'Enable/Disable Self Entry',
             onTap: () {
-              Fluttertoast.showToast(
-                msg: "self tap in, coming soon",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.black,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (context) => SelfEntryView(),
-              //   ),
+              // Fluttertoast.showToast(
+              //   msg: "self tap in, coming soon",
+              //   toastLength: Toast.LENGTH_SHORT,
+              //   gravity: ToastGravity.CENTER,
+              //   timeInSecForIosWeb: 1,
+              //   backgroundColor: Colors.black,
+              //   textColor: Colors.white,
+              //   fontSize: 16.0,
               // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SelfEntryView(),
+                ),
+              );
             },
           ),
           PrimarySettingsTile(

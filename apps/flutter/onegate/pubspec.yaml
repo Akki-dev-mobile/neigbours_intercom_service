@@ -93,6 +93,7 @@ flutter:
     - assets/onegate/theme.json
     - assets/json/gates_mock.json
     - assets/json/media.json
+    - assets/json/idcard.json
 
 
 flutter_native_splash:

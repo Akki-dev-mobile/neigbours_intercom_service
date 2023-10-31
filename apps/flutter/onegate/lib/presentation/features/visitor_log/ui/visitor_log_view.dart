@@ -14,6 +14,7 @@ import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_l
 import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
@@ -247,7 +248,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       itemCount: filteredVisitors.length,
                       itemBuilder: (context, index) {
                         String unitList = filteredVisitors[index]
-                            .visitor_building_assignment![0].unit_id
+                            .visitor_building_assignment![0]
+                            .unit_id
                             .map((units) => units.toString())
                             .join(', ');
                         return Padding(
@@ -403,97 +405,161 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   endIndent: 16,
                                   color: Colors.grey[200],
                                 ),
-                                ListTile(
-                                  title: RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        const WidgetSpan(
-                                          child: Icon(
-                                            Symbols.directions_walk_rounded,
-                                            color: Colors.green,
-                                          ),
-                                        ),
-                                        TextSpan(
-                                          text: Utils.convertDateTimeFormat(
-                                              filteredVisitors[index]
-                                                  .visitor_check_in),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelMedium!
-                                              .merge(
-                                                const TextStyle(
-                                                  color: Colors.green,
-                                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      bottom: 14.0, top: 8),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            const WidgetSpan(
+                                              child: Icon(
+                                                Symbols.directions_walk_rounded,
+                                                color: Colors.green,
                                               ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  trailing: (filteredVisitors[index]
-                                              .visitor_check_out
-                                              .toString()
-                                              .isEmpty ||
-                                          filteredVisitors[index]
-                                                  .visitor_check_out
-                                                  .toString() ==
-                                              'null')
-                                      ? ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
                                             ),
-                                          ),
-                                          onPressed: () {
-                                            filteredVisitors[index]
-                                                    .visitor_check_out =
-                                                Utils.getCurrentTime();
-                                            filteredVisitors[index]
-                                                .is_checked_out = true;
-                                            _visitorLogBloc.add(CheckOutEvent(
-                                                filteredVisitors[index],
-                                                widget.id));
-                                          },
-                                          child: Text(
-                                            'CheckOut',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelSmall!
-                                                .merge(
-                                                  const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 14),
-                                                ),
-                                          ),
-                                        )
-                                      : RichText(
-                                          text: TextSpan(
-                                            children: [
-                                              const WidgetSpan(
-                                                child: Icon(
-                                                  Symbols
-                                                      .directions_walk_rounded,
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                              TextSpan(
-                                                text:
-                                                    Utils.convertDateTimeFormat(
-                                                        filteredVisitors[index]
-                                                            .visitor_check_out!),
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .labelMedium!
-                                                    .merge(
-                                                      const TextStyle(
-                                                        color: Colors.red,
-                                                      ),
+                                            TextSpan(
+                                              text: Utils.convertDateTimeFormat(
+                                                  filteredVisitors[index]
+                                                      .visitor_check_in),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium!
+                                                  .merge(
+                                                    const TextStyle(
+                                                      color: Colors.green,
                                                     ),
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 8),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 2, horizontal: 10),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: const [
+                                              Color.fromRGBO(
+                                                255,
+                                                236,
+                                                158,
+                                                0.8,
+                                              ),
+                                              Color.fromRGBO(
+                                                255,
+                                                190,
+                                                168,
+                                                0.8,
                                               ),
                                             ],
+                                            begin: Alignment.topRight,
+                                            end: Alignment.bottomLeft,
+                                          ),
+                                          // color: const Color(0xffFFEBE6),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Color.fromRGBO(
+                                                255, 190, 168, 1),
                                           ),
                                         ),
+                                        child: Row(
+                                          children: [
+                                            Lottie.asset(
+                                              'assets/json/idcard.json',
+                                              width: 30,
+                                              height: 30,
+                                              fit: BoxFit.cover,
+                                              animate: true,
+                                            ),
+                                            SizedBox(
+                                              width: 5,
+                                            ),
+                                            Text(
+                                              "V-110",
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      (filteredVisitors[index]
+                                                  .visitor_check_out
+                                                  .toString()
+                                                  .isEmpty ||
+                                              filteredVisitors[index]
+                                                      .visitor_check_out
+                                                      .toString() ==
+                                                  'null')
+                                          ? ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                filteredVisitors[index]
+                                                        .visitor_check_out =
+                                                    Utils.getCurrentTime();
+                                                filteredVisitors[index]
+                                                    .is_checked_out = true;
+                                                _visitorLogBloc.add(
+                                                    CheckOutEvent(
+                                                        filteredVisitors[index],
+                                                        widget.id));
+                                              },
+                                              child: Text(
+                                                'CheckOut',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelSmall!
+                                                    .merge(
+                                                      const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14),
+                                                    ),
+                                              ),
+                                            )
+                                          : RichText(
+                                              text: TextSpan(
+                                                children: [
+                                                  const WidgetSpan(
+                                                    child: Icon(
+                                                      Symbols
+                                                          .directions_walk_rounded,
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                                  TextSpan(
+                                                    text: Utils
+                                                        .convertDateTimeFormat(
+                                                            filteredVisitors[
+                                                                    index]
+                                                                .visitor_check_out!),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .labelMedium!
+                                                        .merge(
+                                                          const TextStyle(
+                                                            color: Colors.red,
+                                                          ),
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
