@@ -129,449 +129,463 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             if (filteredVisitors.isEmpty) {
               filteredVisitors = visitorLogs;
             }
-            return MyScrollView(
-              isScrollable: false,
-              hasBackButton: false,
-              backButtonPressed: () {},
-              // pageTitle: widget.id,
-              pageTitleWidget: Hero(
-                tag: 'page_title',
-                child: Text(
-                  widget.id,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 10.0),
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GateDashboardView(),
-                        ),
-                      );
-                    },
-                    icon: Icon(
-                      Icons.home,
-                    ),
+            return WillPopScope(
+              onWillPop: () async {
+                return false;
+              },
+              child: MyScrollView(
+                isScrollable: false,
+                hasBackButton: false,
+                backButtonPressed: () {},
+                // pageTitle: widget.id,
+                pageTitleWidget: Hero(
+                  tag: 'page_title',
+                  child: Text(
+                    widget.id,
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
-              ],
-              pageBody: Column(
-                children: [
-                  CustomForm.textField(
-                    widget.selectedBuilding ?? 'Search',
-                    titleColor: Theme.of(context).colorScheme.onBackground,
-                    hintColor: Theme.of(context).colorScheme.onPrimary,
-                    // "Search" ?? ,
-                    hintText: 'Search Visitor',
-                    textCapitalization: TextCapitalization.words,
-                    textInputAction: TextInputAction.search,
-                    onFieldSubmitted: (value) {
-                      if (kDebugMode) {
-                        print(value);
-                      }
-                    },
-                    onChanged: (value) {
-                      setState(() {
-                        _searchText = value;
-                      });
-                    },
-                    prefixIcon: IconButton(
-                      onPressed: () {},
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10.0),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GateDashboardView(),
+                          ),
+                        );
+                      },
                       icon: Icon(
-                        Ionicons.search_outline,
-                        color: Theme.of(context).colorScheme.onBackground,
+                        Icons.home,
                       ),
                     ),
-                    suffixIcon: ButtonBar(
-                      alignment: MainAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // IconButton(
-                        //   onPressed: () {},
-                        //   icon: CircleAvatar(
-                        //     backgroundColor: const Color(0xffFFEBE6),
-                        //     radius: 20,
-                        //     child: Icon(
-                        //       size: 22,
-                        //       Ionicons.mic_outline,
-                        //       color: Theme.of(context).colorScheme.onBackground,
-                        //     ),
-                        //   ),
-                        // ),
-                        IconButton(
-                          onPressed: () {
-                            _showLogBookConfigBottomSheet(context);
-                          },
-                          icon: Icon(
-                            Ionicons.funnel_outline,
-                            color: Theme.of(context).colorScheme.onBackground,
-                            size: 24,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                  // ChipsChoice<String>.single(
-                  //   padding: EdgeInsets.only(right: 20),
-                  //   scrollToSelectedOnChanged: true,
-                  //   spacing: 20,
-                  //   choiceStyle: C2ChipStyle.outlined(
-                  //     borderWidth: 1,
-                  //     color: Colors.grey.shade700,
-                  //     selectedStyle: C2ChipStyle.filled(
-                  //       foregroundColor: Color(0xFFC08261),
-                  //     ),
-                  //     height: 40,
-                  //   ),
-                  //   choiceCheckmark: true,
-                  //   value: selectedTime,
-                  //   scrollPhysics: BouncingScrollPhysics(),
-                  //   onChanged: (value) {
-                  //     setState(() {
-                  //       selectedTime = value;
-                  //     });
-                  //   },
-                  //   choiceItems: C2Choice.listFrom<String, String>(
-                  //     source: options,
-                  //     value: (i, v) => v,
-                  //     label: (i, v) => v,
-                  //   ),
-                  // ),
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.7,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: filteredVisitors.length,
-                      itemBuilder: (context, index) {
-                        String unitList = filteredVisitors[index]
-                            .visitor_building_assignment![0]
-                            .unit_id
-                            .map((units) => units.toString())
-                            .join(', ');
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Card(
-                            elevation: 2,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 2,
-                                  ),
-                                  leading: CircleAvatar(
-                                      child: filteredVisitors[index]
-                                                      .visitor!
-                                                      .visitor_image !=
-                                                  null &&
-                                              filteredVisitors[index]
-                                                  .visitor!
-                                                  .visitor_image
-                                                  .isNotEmpty
-                                          ? Text(
-                                              filteredVisitors[index]
-                                                  .visitor!
-                                                  .mobile
-                                                  .substring(0, 1),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium,
-                                            )
-                                          : RandomAvatar(
-                                              DateTime.now().toIso8601String(),
-                                              trBackground: false,
-                                            )),
-                                  // title: Text(
-                                  //   filteredVisitors[index].visitor!.name,
-                                  //   style:
-                                  //       Theme.of(context).textTheme.bodyMedium,
-                                  // ),
-                                  title: RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: filteredVisitors[index]
-                                              .visitor!
-                                              .name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium,
-                                        ),
-                                        WidgetSpan(
-                                          child: visitorLogs[index]
-                                                      .visitor_count
-                                                      .toString() !=
-                                                  '1'
-                                              ? Container(
-                                                  margin: const EdgeInsets.only(
-                                                      left: 8),
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 7,
-                                                    vertical: 2,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        const Color(0xffFFEBE6),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    // border: Border.all(
-                                                    //   color: Colors.black,
-                                                    // ),
-                                                  ),
-                                                  child: Text(
-                                                    "+ ${visitorLogs[index].visitor_count.toString()}",
-                                                    style: TextStyle(
-                                                      color: Colors.black,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      fontSize: 14,
-                                                    ),
-                                                  ))
-                                              : SizedBox(),
-                                        ),
-                                      ],
+                ],
+                pageBody: Column(
+                  children: [
+                    CustomForm.textField(
+                      widget.selectedBuilding ?? 'Search',
+                      titleColor: Theme.of(context).colorScheme.onBackground,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
+                      // "Search" ?? ,
+                      hintText: 'Search Visitor',
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.search,
+                      onFieldSubmitted: (value) {
+                        if (kDebugMode) {
+                          print(value);
+                        }
+                      },
+                      onChanged: (value) {
+                        setState(() {
+                          _searchText = value;
+                        });
+                      },
+                      prefixIcon: IconButton(
+                        onPressed: () {},
+                        icon: Icon(
+                          Ionicons.search_outline,
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                      ),
+                      suffixIcon: ButtonBar(
+                        alignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // IconButton(
+                          //   onPressed: () {},
+                          //   icon: CircleAvatar(
+                          //     backgroundColor: const Color(0xffFFEBE6),
+                          //     radius: 20,
+                          //     child: Icon(
+                          //       size: 22,
+                          //       Ionicons.mic_outline,
+                          //       color: Theme.of(context).colorScheme.onBackground,
+                          //     ),
+                          //   ),
+                          // ),
+                          IconButton(
+                            onPressed: () {
+                              _showLogBookConfigBottomSheet(context);
+                            },
+                            icon: Icon(
+                              Ionicons.funnel_outline,
+                              color: Theme.of(context).colorScheme.onBackground,
+                              size: 24,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // ChipsChoice<String>.single(
+                    //   padding: EdgeInsets.only(right: 20),
+                    //   scrollToSelectedOnChanged: true,
+                    //   spacing: 20,
+                    //   choiceStyle: C2ChipStyle.outlined(
+                    //     borderWidth: 1,
+                    //     color: Colors.grey.shade700,
+                    //     selectedStyle: C2ChipStyle.filled(
+                    //       foregroundColor: Color(0xFFC08261),
+                    //     ),
+                    //     height: 40,
+                    //   ),
+                    //   choiceCheckmark: true,
+                    //   value: selectedTime,
+                    //   scrollPhysics: BouncingScrollPhysics(),
+                    //   onChanged: (value) {
+                    //     setState(() {
+                    //       selectedTime = value;
+                    //     });
+                    //   },
+                    //   choiceItems: C2Choice.listFrom<String, String>(
+                    //     source: options,
+                    //     value: (i, v) => v,
+                    //     label: (i, v) => v,
+                    //   ),
+                    // ),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.7,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filteredVisitors.length,
+                        itemBuilder: (context, index) {
+                          String unitList = filteredVisitors[index]
+                              .visitor_building_assignment![0]
+                              .unit_id
+                              .map((units) => units.toString())
+                              .join(', ');
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Card(
+                              elevation: 2,
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 2,
                                     ),
-                                  ),
-                                  subtitle: Padding(
-                                    padding: const EdgeInsets.only(top: 5),
-                                    child: RichText(
+                                    leading: CircleAvatar(
+                                        child: filteredVisitors[index]
+                                                        .visitor!
+                                                        .visitor_image !=
+                                                    null &&
+                                                filteredVisitors[index]
+                                                    .visitor!
+                                                    .visitor_image
+                                                    .isNotEmpty
+                                            ? Text(
+                                                filteredVisitors[index]
+                                                    .visitor!
+                                                    .mobile
+                                                    .substring(0, 1),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium,
+                                              )
+                                            : RandomAvatar(
+                                                DateTime.now()
+                                                    .toIso8601String(),
+                                                trBackground: false,
+                                              )),
+                                    // title: Text(
+                                    //   filteredVisitors[index].visitor!.name,
+                                    //   style:
+                                    //       Theme.of(context).textTheme.bodyMedium,
+                                    // ),
+                                    title: RichText(
                                       text: TextSpan(
                                         children: [
-                                          const WidgetSpan(
-                                            child: Icon(
-                                              Symbols.apartment,
-                                              color: Color(0xffFFB080),
-                                            ),
-                                          ),
                                           TextSpan(
-                                              text: unitList,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelSmall),
+                                            text: filteredVisitors[index]
+                                                .visitor!
+                                                .name,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium,
+                                          ),
                                           WidgetSpan(
-                                            child: Container(
-                                              margin: const EdgeInsets.only(
-                                                  left: 8),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 7,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xffFFEBE6),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                // border: Border.all(
-                                                //   color: Colors.black,
-                                                // ),
-                                              ),
-                                              child: const Text(
-                                                'Guest',
-                                                style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ),
+                                            child: visitorLogs[index]
+                                                        .visitor_count
+                                                        .toString() !=
+                                                    '1'
+                                                ? Container(
+                                                    margin:
+                                                        const EdgeInsets.only(
+                                                            left: 8),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 7,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                          0xffFFEBE6),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      // border: Border.all(
+                                                      //   color: Colors.black,
+                                                      // ),
+                                                    ),
+                                                    child: Text(
+                                                      "+ ${visitorLogs[index].visitor_count.toString()}",
+                                                      style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ))
+                                                : SizedBox(),
                                           ),
                                         ],
                                       ),
                                     ),
-                                  ),
-                                  trailing: IconButton(
-                                    onPressed: () {
-                                      FlutterPhoneDirectCaller.callNumber(
-                                          visitorLogs[index]
-                                              .visitor!
-                                              .mobile
-                                              .toString());
-                                    },
-                                    icon: Icon(
-                                      Ionicons.call_outline,
-                                      color: Colors.green,
-                                    ),
-                                  ),
-                                ),
-                                Divider(
-                                  indent: 16,
-                                  endIndent: 16,
-                                  color: Colors.grey[200],
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      bottom: 14.0, top: 8),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      RichText(
+                                    subtitle: Padding(
+                                      padding: const EdgeInsets.only(top: 5),
+                                      child: RichText(
                                         text: TextSpan(
                                           children: [
                                             const WidgetSpan(
                                               child: Icon(
-                                                Symbols.directions_walk_rounded,
-                                                color: Colors.green,
+                                                Symbols.apartment,
+                                                color: Color(0xffFFB080),
                                               ),
                                             ),
                                             TextSpan(
-                                              text: Utils.convertDateTimeFormat(
-                                                  filteredVisitors[index]
-                                                      .visitor_check_in),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelMedium!
-                                                  .merge(
-                                                    const TextStyle(
-                                                      color: Colors.green,
-                                                    ),
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(left: 8),
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 2, horizontal: 10),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: const [
-                                              Color.fromRGBO(
-                                                255,
-                                                236,
-                                                158,
-                                                0.8,
-                                              ),
-                                              Color.fromRGBO(
-                                                255,
-                                                190,
-                                                168,
-                                                0.8,
-                                              ),
-                                            ],
-                                            begin: Alignment.topRight,
-                                            end: Alignment.bottomLeft,
-                                          ),
-                                          // color: const Color(0xffFFEBE6),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: Color.fromRGBO(
-                                                255, 190, 168, 1),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Lottie.asset(
-                                              'assets/json/idcard.json',
-                                              width: 30,
-                                              height: 30,
-                                              fit: BoxFit.cover,
-                                              animate: true,
-                                            ),
-                                            SizedBox(
-                                              width: 5,
-                                            ),
-                                            Text(
-                                              "V-110",
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      (filteredVisitors[index]
-                                                  .visitor_check_out
-                                                  .toString()
-                                                  .isEmpty ||
-                                              filteredVisitors[index]
-                                                      .visitor_check_out
-                                                      .toString() ==
-                                                  'null')
-                                          ? ElevatedButton(
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                              onPressed: () {
-                                                filteredVisitors[index]
-                                                        .visitor_check_out =
-                                                    Utils.getCurrentTime();
-                                                filteredVisitors[index]
-                                                    .is_checked_out = true;
-                                                _visitorLogBloc.add(
-                                                    CheckOutEvent(
-                                                        filteredVisitors[index],
-                                                        widget.id));
-                                              },
-                                              child: Text(
-                                                'CheckOut',
+                                                text: unitList,
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .labelSmall!
-                                                    .merge(
-                                                      const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 14),
-                                                    ),
-                                              ),
-                                            )
-                                          : RichText(
-                                              text: TextSpan(
-                                                children: [
-                                                  const WidgetSpan(
-                                                    child: Icon(
-                                                      Symbols
-                                                          .directions_walk_rounded,
-                                                      color: Colors.red,
-                                                    ),
+                                                    .labelSmall),
+                                            WidgetSpan(
+                                              child: Container(
+                                                margin: const EdgeInsets.only(
+                                                    left: 8),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 7,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      const Color(0xffFFEBE6),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  // border: Border.all(
+                                                  //   color: Colors.black,
+                                                  // ),
+                                                ),
+                                                child: const Text(
+                                                  'Guest',
+                                                  style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 14,
                                                   ),
-                                                  TextSpan(
-                                                    text: Utils
-                                                        .convertDateTimeFormat(
-                                                            filteredVisitors[
-                                                                    index]
-                                                                .visitor_check_out!),
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .labelMedium!
-                                                        .merge(
-                                                          const TextStyle(
-                                                            color: Colors.red,
-                                                          ),
-                                                        ),
-                                                  ),
-                                                ],
+                                                ),
                                               ),
                                             ),
-                                    ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    trailing: IconButton(
+                                      onPressed: () {
+                                        FlutterPhoneDirectCaller.callNumber(
+                                            visitorLogs[index]
+                                                .visitor!
+                                                .mobile
+                                                .toString());
+                                      },
+                                      icon: Icon(
+                                        Ionicons.call_outline,
+                                        color: Colors.green,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  Divider(
+                                    indent: 16,
+                                    endIndent: 16,
+                                    color: Colors.grey[200],
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 14.0, top: 8),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        RichText(
+                                          text: TextSpan(
+                                            children: [
+                                              const WidgetSpan(
+                                                child: Icon(
+                                                  Symbols
+                                                      .directions_walk_rounded,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text:
+                                                    Utils.convertDateTimeFormat(
+                                                        filteredVisitors[index]
+                                                            .visitor_check_in),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelMedium!
+                                                    .merge(
+                                                      const TextStyle(
+                                                        color: Colors.green,
+                                                      ),
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Container(
+                                          margin:
+                                              const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 2, horizontal: 10),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: const [
+                                                Color.fromRGBO(
+                                                  255,
+                                                  236,
+                                                  158,
+                                                  0.8,
+                                                ),
+                                                Color.fromRGBO(
+                                                  255,
+                                                  190,
+                                                  168,
+                                                  0.8,
+                                                ),
+                                              ],
+                                              begin: Alignment.topRight,
+                                              end: Alignment.bottomLeft,
+                                            ),
+                                            // color: const Color(0xffFFEBE6),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Color.fromRGBO(
+                                                  255, 190, 168, 1),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Lottie.asset(
+                                                'assets/json/idcard.json',
+                                                width: 30,
+                                                height: 30,
+                                                fit: BoxFit.cover,
+                                                animate: true,
+                                              ),
+                                              SizedBox(
+                                                width: 5,
+                                              ),
+                                              Text(
+                                                "V-110",
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        (filteredVisitors[index]
+                                                    .visitor_check_out
+                                                    .toString()
+                                                    .isEmpty ||
+                                                filteredVisitors[index]
+                                                        .visitor_check_out
+                                                        .toString() ==
+                                                    'null')
+                                            ? ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.red,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  filteredVisitors[index]
+                                                          .visitor_check_out =
+                                                      Utils.getCurrentTime();
+                                                  filteredVisitors[index]
+                                                      .is_checked_out = true;
+                                                  _visitorLogBloc.add(
+                                                      CheckOutEvent(
+                                                          filteredVisitors[
+                                                              index],
+                                                          widget.id));
+                                                },
+                                                child: Text(
+                                                  'CheckOut',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .labelSmall!
+                                                      .merge(
+                                                        const TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 14),
+                                                      ),
+                                                ),
+                                              )
+                                            : RichText(
+                                                text: TextSpan(
+                                                  children: [
+                                                    const WidgetSpan(
+                                                      child: Icon(
+                                                        Symbols
+                                                            .directions_walk_rounded,
+                                                        color: Colors.red,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text: Utils
+                                                          .convertDateTimeFormat(
+                                                              filteredVisitors[
+                                                                      index]
+                                                                  .visitor_check_out!),
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .labelMedium!
+                                                          .merge(
+                                                            const TextStyle(
+                                                              color: Colors.red,
+                                                            ),
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(
-                    height: 100,
-                  ),
-                ],
+                    const SizedBox(
+                      height: 100,
+                    ),
+                  ],
+                ),
               ),
             );
           default:

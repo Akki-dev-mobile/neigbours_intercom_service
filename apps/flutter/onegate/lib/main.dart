@@ -74,7 +74,7 @@ class MyApp extends StatelessWidget {
       }
     }
     return DevicePreview(
-        enabled: kDebugMode,
+        enabled: !kDebugMode,
         builder: (context) {
           return MaterialApp(
             useInheritedMediaQuery: true,

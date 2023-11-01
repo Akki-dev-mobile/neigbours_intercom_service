@@ -14,6 +14,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:provider/provider.dart';
+import '../../self_entry/self_home_view.dart';
 import '../../self_entry/ui/self_entry_view.dart';
 import 'settings_gate.dart';
 
@@ -463,7 +464,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => SelfEntryView(),
+                  builder: (context) => SelfHomeView(),
                 ),
               );
             },

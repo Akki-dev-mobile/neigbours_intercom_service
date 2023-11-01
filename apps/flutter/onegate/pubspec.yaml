@@ -90,6 +90,7 @@ flutter:
 
   assets:
     - assets/
+    - assets/media/images/
     - assets/onegate/theme.json
     - assets/json/gates_mock.json
     - assets/json/media.json
