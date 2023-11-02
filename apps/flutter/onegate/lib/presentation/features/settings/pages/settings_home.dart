@@ -14,6 +14,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:provider/provider.dart';
+import '../../self_entry/self_home_view.dart';
 import '../../self_entry/ui/self_entry_view.dart';
 import 'settings_gate.dart';
 
@@ -451,21 +452,21 @@ class _SettingsHomeState extends State<SettingsHome> {
             title: 'Self Entry Settings',
             subtitle: 'Enable/Disable Self Entry',
             onTap: () {
-              Fluttertoast.showToast(
-                msg: "self tap in, coming soon",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.black,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (context) => SelfEntryView(),
-              //   ),
+              // Fluttertoast.showToast(
+              //   msg: "self tap in, coming soon",
+              //   toastLength: Toast.LENGTH_SHORT,
+              //   gravity: ToastGravity.CENTER,
+              //   timeInSecForIosWeb: 1,
+              //   backgroundColor: Colors.black,
+              //   textColor: Colors.white,
+              //   fontSize: 16.0,
               // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SelfHomeView(),
+                ),
+              );
             },
           ),
           PrimarySettingsTile(

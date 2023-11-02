@@ -41,7 +41,7 @@ void main() async {
     ),
   );
   await ThemeManager.initializeWithAppId(appId);
-  //startKioskMode();
+  // startKioskMode();
   runApp(
     ScreenUtilInit(
       fontSizeResolver: (num size, ScreenUtil _) => 0.5,
@@ -61,8 +61,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget initialScreen;
     if (!_preferenceUtils.getIsAppIntroShown()!) {
-      // initialScreen = AppIntroView();
-      initialScreen = GateDashboardView();
+      initialScreen = AppIntroView();
     } else {
       if (_preferenceUtils.getIsLogin()!) {
         if (_preferenceUtils.getIsAdmin()!) {
@@ -72,11 +71,10 @@ class MyApp extends StatelessWidget {
         }
       } else {
         initialScreen = LoginView();
-        //initialScreen = GateDashboardView();
       }
     }
     return DevicePreview(
-        enabled: kDebugMode,
+        enabled: !kDebugMode,
         builder: (context) {
           return MaterialApp(
             useInheritedMediaQuery: true,
