@@ -32,3 +32,9 @@ class VIENavigateToUnitSelectionState extends VisitorInEntryActionState {
   final PurposeCategory purposeCategory;
   VIENavigateToUnitSelectionState(this.visitor, this.purposeCategory);
 }
+
+class VIENavigateToCameraState extends VisitorInEntryActionState {
+  final Visitor visitor;
+  final PurposeCategory purposeCategory;
+  VIENavigateToCameraState(this.visitor, this.purposeCategory);
+}

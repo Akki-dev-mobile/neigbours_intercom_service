@@ -115,39 +115,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
   }
 
-  PickedFile? _imageFile;
+  //PickedFile? _imageFile;
 
-  Future<void> _captureImageFromCamera(
-    Visitor visitor,
-    PurposeCategory purposeCategory,
-  ) async {
+  Future<XFile?> _captureImageFromCamera() async {
     final picker = ImagePicker();
-
     try {
       final image = await picker.pickImage(
         source: ImageSource.camera,
-        // preferredCameraDevice: CameraDevice.front,
       );
 
       if (image == null) {
-        return;
+        return image;
       }
-
-      setState(() {
-        _imageFile = PickedFile(image.path);
-      });
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => UnitSelectionView(
-            purposeCategory: purposeCategory,
-            visitor: visitor,
-            comingFrom: guestComingFrom.text,
-            guestCount: _guestCount,
-          ),
-        ),
-      );
     } catch (e) {
       print('Error capturing image from camera: $e');
     }
@@ -159,25 +138,36 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       bloc: visitorInEntryBloc,
       listenWhen: (previous, current) => current is VisitorInEntryActionState,
       buildWhen: (previous, current) => current is! VisitorInEntryActionState,
-      listener: (context, state) {
+      listener: (context, state) async {
         switch (state.runtimeType) {
           case VIENavigateToUnitSelectionState:
             final unitSelectionState = state as VIENavigateToUnitSelectionState;
-            _captureImageFromCamera(
-              unitSelectionState.visitor,
-              unitSelectionState.purposeCategory,
-            );
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (context) => UnitSelectionView(
-          //       purposeCategory: unitSelectionState.purposeCategory,
-          //       visitor: unitSelectionState.visitor,
-          //       comingFrom: guestComingFrom.text,
-          //       guestCount: _guestCount,
-          //     ),
-          //   ),
-          // );
+            // _captureImageFromCamera(
+            //   unitSelectionState.visitor,
+            //   unitSelectionState.purposeCategory,
+            // );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UnitSelectionView(
+                purposeCategory: unitSelectionState.purposeCategory,
+                visitor: unitSelectionState.visitor,
+                comingFrom: guestComingFrom.text,
+                guestCount: _guestCount,
+              ),
+            ),
+          );
+          break;
+          case VIENavigateToCameraState:
+            final cameraState = state as VIENavigateToCameraState;
+              final imageFile=await _captureImageFromCamera();
+              if(imageFile!=null){
+                visitorInEntryBloc.add(VIECameraButtonPressedEvent(
+                  imageFile: imageFile,
+                  visitor: cameraState.visitor,
+                ));
+              }
+            break;
         }
       },
       builder: (context, state) {

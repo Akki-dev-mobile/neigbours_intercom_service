@@ -6,6 +6,7 @@ import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:meta/meta.dart';
 import 'package:onegate_client/onegate_client.dart';
 
@@ -32,6 +33,7 @@ class VisitorInEntryBloc
         vieDecrementGuestCountButtonPressedEvent);
     on<VIEGuestFormSubmitButtonPressedEvent>(
         vieGuestFormSubmitButtonPressedEvent);
+    on<VIECameraButtonPressedEvent>(vieCameraButtonPressedEvent);
   }
 
   FutureOr<void> visitorInEntryInitialEvent(
@@ -58,10 +60,25 @@ class VisitorInEntryBloc
       Emitter<VisitorInEntryState> emit) async {
     Visitor? selectedVisitor = event.searchedVisitor;
     emit(VisitorInEntryLoadingState());
-    selectedVisitor ??= await _visitorUsecase.createVisitor(Visitor(
-        name: event.guestName!, mobile: event.mobile, visitor_image: ''));
-    emit(VIENavigateToUnitSelectionState(
-        selectedVisitor!, event.purposeCategory));
+    if (selectedVisitor!.visitor_image.isNotEmpty) {
+      emit(VIENavigateToCameraState(selectedVisitor, event.purposeCategory));
+    } else {
+      // selectedVisitor ??= await _visitorUsecase.createVisitor(Visitor(
+      //     name: event.guestName!, mobile: event.mobile, visitor_image: ''));
+      emit(VIENavigateToUnitSelectionState(
+          selectedVisitor, event.purposeCategory));
+    }
+
     emit(VisitorInEntryInitial());
+  }
+
+  FutureOr<void> vieCameraButtonPressedEvent(VIECameraButtonPressedEvent event,
+      Emitter<VisitorInEntryState> emit) async {
+    emit(VisitorInEntryLoadingState());
+    final imageUrl = await _visitorUsecase.uploadImage(
+        event.imageFile!,
+        event.visitor!.mobile,
+        _preferenceUtils.getSelectedCompany()!.companyId);
+        
   }
 }

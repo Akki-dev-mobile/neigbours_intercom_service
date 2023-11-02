@@ -214,32 +214,32 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       ],
                     ),
                   ),
-                  // ChipsChoice<String>.single(
-                  //   padding: EdgeInsets.only(right: 20),
-                  //   scrollToSelectedOnChanged: true,
-                  //   spacing: 20,
-                  //   choiceStyle: C2ChipStyle.outlined(
-                  //     borderWidth: 1,
-                  //     color: Colors.grey.shade700,
-                  //     selectedStyle: C2ChipStyle.filled(
-                  //       foregroundColor: Color(0xFFC08261),
-                  //     ),
-                  //     height: 40,
-                  //   ),
-                  //   choiceCheckmark: true,
-                  //   value: selectedTime,
-                  //   scrollPhysics: BouncingScrollPhysics(),
-                  //   onChanged: (value) {
-                  //     setState(() {
-                  //       selectedTime = value;
-                  //     });
-                  //   },
-                  //   choiceItems: C2Choice.listFrom<String, String>(
-                  //     source: options,
-                  //     value: (i, v) => v,
-                  //     label: (i, v) => v,
-                  //   ),
-                  // ),
+                  ChipsChoice<String>.single(
+                    padding: EdgeInsets.only(right: 20),
+                    scrollToSelectedOnChanged: true,
+                    spacing: 20,
+                    choiceStyle: C2ChipStyle.outlined(
+                      borderWidth: 1,
+                      color: Colors.grey.shade700,
+                      selectedStyle: C2ChipStyle.filled(
+                        foregroundColor: Color(0xFFC08261),
+                      ),
+                      height: 40,
+                    ),
+                    choiceCheckmark: true,
+                    value: selectedTime,
+                    scrollPhysics: BouncingScrollPhysics(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedTime = value;
+                      });
+                    },
+                    choiceItems: C2Choice.listFrom<String, String>(
+                      source: options,
+                      value: (i, v) => v,
+                      label: (i, v) => v,
+                    ),
+                  ),
                   SizedBox(
                     height: MediaQuery.of(context).size.height * 0.7,
                     child: ListView.builder(

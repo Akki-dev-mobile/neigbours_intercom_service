@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_onegate/domain/entities/society/building.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
@@ -99,7 +102,7 @@ class RemoteDataSource {
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       for (BuildingAssignment buildingAssignment
           in visitorLog.visitor_building_assignment!) {
-            buildingAssignment.visitor_log_id = result.id;
+        buildingAssignment.visitor_log_id = result.id;
         await createBuildingAssignment(buildingAssignment);
       }
       print("checkIn: ${result.toString()}");
@@ -109,7 +112,6 @@ class RemoteDataSource {
     }
     return null;
   }
-
 
   Future<List<dynamic>> getBuilding(int companyId) async {
     try {
@@ -154,8 +156,7 @@ class RemoteDataSource {
 
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
-      final visitor_log =
-          await client.visitorLog.fetchAllLogs(dateTime);
+      final visitor_log = await client.visitorLog.fetchAllLogs(dateTime);
       return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
@@ -163,10 +164,10 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckInLogs(int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckInLogs(
+      int companyId, String dateTime) async {
     try {
-      final visitor_log =
-          await client.visitorLog.fetchCheckInLogs(dateTime);
+      final visitor_log = await client.visitorLog.fetchCheckInLogs(dateTime);
       return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
@@ -174,10 +175,10 @@ class RemoteDataSource {
     }
   }
 
-   Future<List<VisitorLog>> fetchCheckOutLogs(int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckOutLogs(
+      int companyId, String dateTime) async {
     try {
-      final visitor_log =
-          await client.visitorLog.fetchCheckOutLogs(dateTime);
+      final visitor_log = await client.visitorLog.fetchCheckOutLogs(dateTime);
       return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
@@ -196,7 +197,31 @@ class RemoteDataSource {
     return false;
   }
 
+  Future<String> uploadFile(XFile file,String userMobile,int companyId) async {
+    
+      Map<String, dynamic> headers = {
+        'uuid': userMobile,
+        'service_id': '5',
+        'company_id': companyId.toString(),
+        'path': 'test/onegate/image',
+      };
 
+      try {
+        FormData formData = FormData.fromMap({
+          'file': await MultipartFile.fromFile(file.path),
+        });
 
-
+        Response response = await _dio3.post(
+          '/api/file-upload',
+          data: formData,
+          options: Options(headers: headers),
+        );
+        print('Response status: ${response.statusCode}');
+        print('Response data: ${response.data}');
+        return response.data['data'];
+      } catch (e) {
+        print('Error uploading image: $e');
+        rethrow;
+      }
+  }
 }
