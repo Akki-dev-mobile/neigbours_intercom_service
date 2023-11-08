@@ -148,7 +148,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                         SelfTapOption(
                           fTitle: 'Scan',
                           sTitle: 'QR',
-                          image: 'assets/media/images/Space.png',
+                          image: 'assets/media/images/standing2.png',
                         ),
                         SelfTapOption(
                           fTitle: 'NFC',

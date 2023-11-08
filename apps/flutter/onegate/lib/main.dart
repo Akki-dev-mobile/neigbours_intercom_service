@@ -11,6 +11,7 @@ import 'package:common_widgets/phone_number.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -61,7 +62,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget initialScreen;
     if (!_preferenceUtils.getIsAppIntroShown()!) {
-      initialScreen = GateDashboardView();
+      initialScreen = SelfHomeView();
     } else {
       if (_preferenceUtils.getIsLogin()!) {
         if (_preferenceUtils.getIsAdmin()!) {
@@ -70,11 +71,11 @@ class MyApp extends StatelessWidget {
           initialScreen = GateDashboardView();
         }
       } else {
-        initialScreen = GateDashboardView();
+        initialScreen = SelfHomeView();
       }
     }
     return DevicePreview(
-        enabled: !kDebugMode,
+        enabled: kDebugMode,
         builder: (context) {
           return MaterialApp(
             useInheritedMediaQuery: true,
