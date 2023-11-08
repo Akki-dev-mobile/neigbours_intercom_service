@@ -23,6 +23,7 @@ class PreferenceUtils {
   static const String _isAdmin='is_admin';
   static const String _isLogin='is_login';
   static const String _isAppIntroShown = 'is_app_intro_shown';
+  static const String _isSelfTapIn = 'is_self_tap_in';
 
   Future<void> setIsAppIntroShown(bool isAppIntroShown) async {
     _preferences.setBool(_isAppIntroShown, isAppIntroShown);
@@ -71,6 +72,10 @@ class PreferenceUtils {
     _preferences.setBool(_isAdmin, isAdmin);
   }
 
+  Future<void> setIsSelfTapIn(bool isSelfTapIn) async {
+    await _preferences.setBool(_isSelfTapIn,isSelfTapIn);
+  }
+
   bool? getIsAppIntroShown() {
     final isAppIntroShown = _preferences.getBool(_isAppIntroShown);
     if (isAppIntroShown != null) {
@@ -83,6 +88,14 @@ class PreferenceUtils {
     final isAdmin = _preferences.getBool(_isAdmin);
     if (isAdmin != null) {
       return isAdmin;
+    }
+    return false;
+  }
+
+  bool? getIsSelfTapIn(){
+    final isSelfTapIn = _preferences.getBool(_isSelfTapIn);
+    if (isSelfTapIn != null) {
+      return isSelfTapIn;
     }
     return false;
   }

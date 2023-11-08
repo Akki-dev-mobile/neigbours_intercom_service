@@ -93,6 +93,24 @@ class Endpoints extends _i1.EndpointDispatch {
             params['visitor'],
           ),
         ),
+        'updateVisitor': _i1.MethodConnector(
+          name: 'updateVisitor',
+          params: {
+            'visitor': _i1.ParameterDescription(
+              name: 'visitor',
+              type: _i1.getType<_i5.Visitor>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitor'] as _i3.VisitorEndpoint).updateVisitor(
+            session,
+            params['visitor'],
+          ),
+        ),
       },
     );
     connectors['visitorLog'] = _i1.EndpointConnector(

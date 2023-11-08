@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
@@ -58,27 +59,67 @@ class VisitorInEntryBloc
   FutureOr<void> vieGuestFormSubmitButtonPressedEvent(
       VIEGuestFormSubmitButtonPressedEvent event,
       Emitter<VisitorInEntryState> emit) async {
-    Visitor? selectedVisitor = event.searchedVisitor;
+    final visitor = Visitor(
+      name: event.guestName!,
+      mobile: event.mobile,
+      visitor_image: "",
+    );
+
     emit(VisitorInEntryLoadingState());
-    if (selectedVisitor!.visitor_image.isNotEmpty) {
-      emit(VIENavigateToCameraState(selectedVisitor, event.purposeCategory));
+
+    if (event.searchedVisitor == null ||
+        event.searchedVisitor!.visitor_image.isEmpty) {
+      emit(VIENavigateToCameraState(
+        event.searchedVisitor ?? visitor,
+        event.purposeCategory,
+        event.searchedVisitor == null ? 'new_visitor' : 'update_image',
+      ));
     } else {
-      // selectedVisitor ??= await _visitorUsecase.createVisitor(Visitor(
-      //     name: event.guestName!, mobile: event.mobile, visitor_image: ''));
       emit(VIENavigateToUnitSelectionState(
-          selectedVisitor, event.purposeCategory));
+        event.searchedVisitor!,
+        event.purposeCategory,
+      ));
     }
 
     emit(VisitorInEntryInitial());
   }
 
-  FutureOr<void> vieCameraButtonPressedEvent(VIECameraButtonPressedEvent event,
+  Future<void> vieCameraButtonPressedEvent(VIECameraButtonPressedEvent event,
       Emitter<VisitorInEntryState> emit) async {
-    emit(VisitorInEntryLoadingState());
-    final imageUrl = await _visitorUsecase.uploadImage(
+    try {
+      emit(VisitorInEntryLoadingState());
+
+      final imageUrl = await _visitorUsecase.uploadImage(
         event.imageFile!,
         event.visitor!.mobile,
-        _preferenceUtils.getSelectedCompany()!.companyId);
-        
+        _preferenceUtils.getSelectedCompany()!.companyId,
+      );
+      if (imageUrl == null || imageUrl.isEmpty) {
+        emit(VisitorInEntryErrorState(message: "Error uploading image"));
+        return;
+      }
+
+      if (event.operation == "new_visitor") {
+        final visitor = await _visitorUsecase.createVisitor(event.visitor!);
+        emit(VIENavigateToUnitSelectionState(
+          visitor!,
+          event.purposeCategory!,
+        ));
+      } else {
+        event.visitor!.visitor_image = imageUrl!;
+        final isUpdated = await _visitorUsecase.updateVisitor(event.visitor!);
+
+        if (!isUpdated) {
+          emit(VisitorInEntryErrorState(message: "Error uploading image"));
+        } else {
+          emit(VIENavigateToUnitSelectionState(
+            event.visitor!,
+            event.purposeCategory!,
+          ));
+        }
+      }
+    } catch (error) {
+      emit(VisitorInEntryErrorState(message: error.toString()));
+    }
   }
 }

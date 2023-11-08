@@ -48,6 +48,13 @@ class _EndpointVisitor extends _i1.EndpointRef {
         'createVisitor',
         {'visitor': visitor},
       );
+
+  _i2.Future<bool> updateVisitor(_i4.Visitor visitor) =>
+      caller.callServerEndpoint<bool>(
+        'visitor',
+        'updateVisitor',
+        {'visitor': visitor},
+      );
 }
 
 class _EndpointVisitorLog extends _i1.EndpointRef {

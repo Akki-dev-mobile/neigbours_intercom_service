@@ -10,8 +10,12 @@ class VisitorInEntryInitial extends VisitorInEntryState {}
 class VisitorInEntryLoadingState extends VisitorInEntryState {}
 
 class VisitorInEntrySuccessState extends VisitorInEntryActionState {}
+class VisitorInEntryErrorState extends VisitorInEntryActionState {
+  final String message;
 
-class VisitorInEntryErrorState extends VisitorInEntryActionState {}
+  VisitorInEntryErrorState({required this.message});
+  
+}
 
 class VIEGuestNameMicrophoneButtonPressedState
     extends VisitorInEntryActionState {}
@@ -36,5 +40,9 @@ class VIENavigateToUnitSelectionState extends VisitorInEntryActionState {
 class VIENavigateToCameraState extends VisitorInEntryActionState {
   final Visitor visitor;
   final PurposeCategory purposeCategory;
-  VIENavigateToCameraState(this.visitor, this.purposeCategory);
+  final String operation;
+  VIENavigateToCameraState(this.visitor, this.purposeCategory, this.operation);
 }
+
+
+

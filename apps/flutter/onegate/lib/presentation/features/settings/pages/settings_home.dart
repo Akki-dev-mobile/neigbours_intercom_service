@@ -461,6 +461,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               //   textColor: Colors.white,
               //   fontSize: 16.0,
               // );
+              _preferenceUtils.setIsSelfTapIn(true);
               Navigator.push(
                 context,
                 MaterialPageRoute(

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
+import 'package:http/http.dart' as http;
 
 var client = Client('https://gateapi.cubeone.in/')
 //var client = Client('http://localhost:8080/')
@@ -197,31 +199,85 @@ class RemoteDataSource {
     return false;
   }
 
-  Future<String> uploadFile(XFile file,String userMobile,int companyId) async {
-    
-      Map<String, dynamic> headers = {
-        'uuid': userMobile,
+  Future<bool> updateVisitor(Visitor visitor) async {
+    try {
+      final result = await client.visitor.updateVisitor(visitor);
+      print("visitor update: ${result.toString()}");
+      return result;
+    } catch (e) {
+      print(e.toString());
+    }
+    return false;
+  }
+
+  Future<String> uploadFile(
+      File file, String userMobile, int companyId) async {
+    try {
+      print('File path: ${file.path}');
+      
+      var data = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path,
+            filename: '$userMobile.jpg'),
         'service_id': '5',
-        'company_id': companyId.toString(),
-        'path': 'test/onegate/image',
-      };
+        'company_id': '412',
+        'uuid': userMobile,
+        'path': 'test/onegate/image'
+      });
 
-      try {
-        FormData formData = FormData.fromMap({
-          'file': await MultipartFile.fromFile(file.path),
-        });
+      Options options = Options(
+        contentType: 'multipart/form-data',
+      );
 
-        Response response = await _dio3.post(
-          '/api/file-upload',
-          data: formData,
-          options: Options(headers: headers),
-        );
-        print('Response status: ${response.statusCode}');
-        print('Response data: ${response.data}');
+      var dio = Dio();
+      var response = await dio.request(
+        'http://192.168.1.135:8088/api/file-upload',
+        options: Options(
+          method: 'POST',
+          contentType: 'multipart/form-data',
+          headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        ),
+        data: data,
+        
+      );
+
+      if (response.statusCode == 200) {
+        print(json.encode(response.data));
         return response.data['data'];
-      } catch (e) {
-        print('Error uploading image: $e');
-        rethrow;
+      } else {
+        print(response.statusMessage);
+        return '';
       }
+    } catch (e) {
+      print('Error uploading image: $e');
+      rethrow;
+    }
+  }
+
+  Future<String?> sendOTP(String mobileNumber) async {
+    try {
+      final response = await _dio1.get('/sms/verification-code',
+          queryParameters: {'phoneNumber': '91$mobileNumber'});
+      print(response.data['data'].toString());
+      if (response.statusCode == 200) {
+        return response.data['data']['expires_in'];
+      }
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  Future<String?> verifyOTP(String mobileNumber, String otp) async {
+    try {
+      final response = await _dio1.post('/sms/verify',
+          data: {'phoneNumber': '91$mobileNumber', "otp": otp});
+      print(response.data['data'].toString());
+      if (response.statusCode == 200) {
+        return response.data['message'];
+      }
+    } catch (e) {
+      return e.toString();
+    }
   }
 }

@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:chips_choice/chips_choice.dart';
@@ -21,6 +23,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:common_widgets/loading_view.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
@@ -117,7 +120,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   //PickedFile? _imageFile;
 
-  Future<XFile?> _captureImageFromCamera() async {
+  // ignore: body_might_complete_normally_nullable
+  Future<File?> _captureImageFromCamera() async {
+    // final picker = ImagePicker();
+    // try {
+    //   final image = await picker.pickImage(
+    //     source: ImageSource.camera,
+    //   );
+    //   return image;
+    // } catch (e) {
+    //   print('Error capturing image from camera: $e');
+    // }
     final picker = ImagePicker();
     try {
       final image = await picker.pickImage(
@@ -125,10 +138,21 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       );
 
       if (image == null) {
-        return image;
+        return null;
       }
+
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final appDocPath = appDocDir.path;
+
+      final File localImage =
+          File('$appDocPath/${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+      await localImage.writeAsBytes(await image.readAsBytes());
+
+      return localImage;
     } catch (e) {
-      print('Error capturing image from camera: $e');
+      print('Error capturing and saving image from camera: $e');
+      return null;
     }
   }
 
@@ -146,27 +170,28 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             //   unitSelectionState.visitor,
             //   unitSelectionState.purposeCategory,
             // );
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UnitSelectionView(
-                purposeCategory: unitSelectionState.purposeCategory,
-                visitor: unitSelectionState.visitor,
-                comingFrom: guestComingFrom.text,
-                guestCount: _guestCount,
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UnitSelectionView(
+                  purposeCategory: unitSelectionState.purposeCategory,
+                  visitor: unitSelectionState.visitor,
+                  comingFrom: guestComingFrom.text,
+                  guestCount: _guestCount,
+                ),
               ),
-            ),
-          );
-          break;
+            );
+            break;
           case VIENavigateToCameraState:
             final cameraState = state as VIENavigateToCameraState;
-              final imageFile=await _captureImageFromCamera();
-              if(imageFile!=null){
-                visitorInEntryBloc.add(VIECameraButtonPressedEvent(
+            final imageFile = await _captureImageFromCamera();
+            if (imageFile != null) {
+              visitorInEntryBloc.add(VIECameraButtonPressedEvent(
+                  purposeCategory: cameraState.purposeCategory,
                   imageFile: imageFile,
                   visitor: cameraState.visitor,
-                ));
-              }
+                  operation: cameraState.operation));
+            }
             break;
         }
       },
@@ -454,7 +479,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       guestCount: _guestCount,
                       purposeCategory: widget.selectedValue,
                       mobile: widget.mobile));
-                  //_captureImageFromCamera();
                 },
                 text: 'Next',
               ),
