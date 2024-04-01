@@ -36,6 +36,7 @@ class StaffSubCategory extends _i1.TableRow {
 
   @override
   String get tableName => 'staff_sub_categories';
+
   @override
   Map<String, dynamic> toJson() {
     return {

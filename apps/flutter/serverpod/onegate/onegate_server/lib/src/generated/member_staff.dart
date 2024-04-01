@@ -67,6 +67,7 @@ class MemberStaff extends _i1.TableRow {
 
   @override
   String get tableName => 'member_staff';
+
   @override
   Map<String, dynamic> toJson() {
     return {

@@ -7,21 +7,21 @@
 # Configuration for the main API server.
 apiServer:
   port: 8080
-  publicHost: api.examplepod.com
+  publicHost: gateapi.cubeone.in
   publicPort: 443
   publicScheme: https
 
 # Configuration for the Insights server.
 insightsServer:
   port: 8081
-  publicHost: insights.examplepod.com
+  publicHost: insights.cubeone.in
   publicPort: 443
   publicScheme: https
 
 # Configuration for the web server.
 webServer:
   port: 8082
-  publicHost: app.examplepod.com
+  publicHost: onegate.cubeone.in
   publicPort: 443
   publicScheme: https
 
@@ -30,9 +30,9 @@ webServer:
 # If you are connecting on a public IP (e.g. on AWS or Google Cloud Run), you
 # connect on the public IP of the database e.g. database.examplepod.com.
 database:
-  host: database.private-production.examplepod.com
+  host: 35.154.15.6
   port: 5432
-  name: serverpod
+  name: onegate
   user: postgres
 
 # This is the setup for Redis. The default for the Google Cloud Engine Terraform

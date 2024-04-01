@@ -36,6 +36,7 @@ class PurposeCategory extends _i1.TableRow {
 
   @override
   String get tableName => 'purpose_category';
+
   @override
   Map<String, dynamic> toJson() {
     return {

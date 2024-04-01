@@ -36,6 +36,7 @@ class VisitorCard extends _i1.TableRow {
 
   @override
   String get tableName => 'visitor_card';
+
   @override
   Map<String, dynamic> toJson() {
     return {

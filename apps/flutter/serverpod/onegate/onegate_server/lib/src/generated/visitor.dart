@@ -40,6 +40,7 @@ class Visitor extends _i1.TableRow {
 
   @override
   String get tableName => 'visitor';
+
   @override
   Map<String, dynamic> toJson() {
     return {

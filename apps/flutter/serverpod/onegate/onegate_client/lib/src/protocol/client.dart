@@ -145,6 +145,7 @@ class Client extends _i1.ServerpodClient {
         'visitor': visitor,
         'visitorLog': visitorLog,
       };
+
   @override
   Map<String, _i1.ModuleEndpointCaller> get moduleLookup => {};
 }

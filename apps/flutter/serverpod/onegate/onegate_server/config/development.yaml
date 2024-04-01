@@ -9,27 +9,26 @@
 # Configuration for the main API server.
 apiServer:
   port: 8080
-  publicHost: localhost
-  publicPort: 8080
-  publicScheme: http
+  publicHost: gateapi.cubeone.in
+  publicPort: 443
+  publicScheme: https
 
 # Configuration for the Insights server.
 insightsServer:
   port: 8081
-  publicHost: localhost
-  publicPort: 8081
-  publicScheme: http
+  publicHost: insights.cubeone.in
+  publicPort: 443
+  publicScheme: https
 
 # Configuration for the web server.
 webServer:
   port: 8082
-  publicHost: localhost
-  publicPort: 8082
-  publicScheme: http
+  publicHost: onegate.cubeone.in
+  publicPort: 443
+  publicScheme: https
 
-# This is the database setup for your server.
 database:
-  host: localhost
+  host: 35.154.15.6
   port: 5432
   name: onegate
   user: postgres
