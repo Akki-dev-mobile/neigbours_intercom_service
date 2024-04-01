@@ -224,12 +224,12 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                       child: _getLottieAnimation(requestType),
                     ),
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GateDashboardView(),
-                        ),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => GateDashboardView(),
+                      //   ),
+                      // );
                     },
                   ),
                   Row(

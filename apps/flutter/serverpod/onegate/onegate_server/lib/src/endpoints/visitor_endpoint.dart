@@ -11,4 +11,8 @@ class VisitorEndpoint extends Endpoint{
     await Visitor.insert(session, visitor);
     return visitor;
   }
+
+  Future<bool> updateVisitor(Session session, Visitor visitor) async {
+    return await session.db.update(visitor);
+  }
 }

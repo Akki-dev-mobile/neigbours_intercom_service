@@ -30,3 +30,14 @@ class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
       required this.purposeCategory,
       required this.mobile});
 }
+
+class VIECameraButtonPressedEvent extends VisitorInEntryEvent {
+  final File? imageFile;
+  final Visitor? visitor;
+  final PurposeCategory? purposeCategory;
+  final String? operation;
+
+  VIECameraButtonPressedEvent( {this.imageFile, this.visitor,this.operation,this.purposeCategory});
+}
+
+

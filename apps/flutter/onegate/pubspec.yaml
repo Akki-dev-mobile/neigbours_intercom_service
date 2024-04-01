@@ -60,6 +60,7 @@ dependencies:
   speech_to_text: ^6.3.0
   flutter_otp_text_field: ^1.1.1
   timezone: ^0.7.0
+  flutter_phone_direct_caller: ^2.1.1
   
 
 
@@ -70,17 +71,16 @@ dev_dependencies:
     path: ../../../libs/flutter/common/one-theme
   common_widgets:
     path: ../../../libs/flutter/common/common-widgets
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/media/images/oneapp_logo.png"
+  adaptive_icon_foreground: "assets/media/images/oneapp_logo.png"
+  adaptive_icon_background: "#FFACAC"
 
-# The following section is specific to Flutter packages.
 flutter:
 
   # The following line ensures that the Material Icons font is
@@ -90,9 +90,11 @@ flutter:
 
   assets:
     - assets/
+    - assets/media/images/
     - assets/onegate/theme.json
     - assets/json/gates_mock.json
     - assets/json/media.json
+    - assets/json/idcard.json
 
 
 flutter_native_splash:

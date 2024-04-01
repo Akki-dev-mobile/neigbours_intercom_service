@@ -7,67 +7,36 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
-import '../endpoints/example_endpoint.dart' as _i2;
-import '../endpoints/purpose_endpoint.dart' as _i3;
-import '../endpoints/visitor_endpoint.dart' as _i4;
-import '../endpoints/visitor_log_endpoint.dart' as _i5;
-import 'package:onegate_server/src/generated/visitor.dart' as _i6;
-import 'package:onegate_server/src/generated/visitor_log.dart' as _i7;
-import 'package:onegate_server/src/generated/building_assignment.dart' as _i8;
+import '../endpoints/purpose_endpoint.dart' as _i2;
+import '../endpoints/visitor_endpoint.dart' as _i3;
+import '../endpoints/visitor_log_endpoint.dart' as _i4;
+import 'package:onegate_server/src/generated/visitor.dart' as _i5;
+import 'package:onegate_server/src/generated/visitor_log.dart' as _i6;
+import 'package:onegate_server/src/generated/building_assignment.dart' as _i7;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
   void initializeEndpoints(_i1.Server server) {
     var endpoints = <String, _i1.Endpoint>{
-      'example': _i2.ExampleEndpoint()
-        ..initialize(
-          server,
-          'example',
-          null,
-        ),
-      'purposeCategory': _i3.PurposeCategoryEndpoint()
+      'purposeCategory': _i2.PurposeCategoryEndpoint()
         ..initialize(
           server,
           'purposeCategory',
           null,
         ),
-      'visitor': _i4.VisitorEndpoint()
+      'visitor': _i3.VisitorEndpoint()
         ..initialize(
           server,
           'visitor',
           null,
         ),
-      'visitorLog': _i5.VisitorLogEndpoint()
+      'visitorLog': _i4.VisitorLogEndpoint()
         ..initialize(
           server,
           'visitorLog',
           null,
         ),
     };
-    connectors['example'] = _i1.EndpointConnector(
-      name: 'example',
-      endpoint: endpoints['example']!,
-      methodConnectors: {
-        'hello': _i1.MethodConnector(
-          name: 'hello',
-          params: {
-            'name': _i1.ParameterDescription(
-              name: 'name',
-              type: _i1.getType<String>(),
-              nullable: false,
-            )
-          },
-          call: (
-            _i1.Session session,
-            Map<String, dynamic> params,
-          ) async =>
-              (endpoints['example'] as _i2.ExampleEndpoint).hello(
-            session,
-            params['name'],
-          ),
-        )
-      },
-    );
     connectors['purposeCategory'] = _i1.EndpointConnector(
       name: 'purposeCategory',
       endpoint: endpoints['purposeCategory']!,
@@ -79,7 +48,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['purposeCategory'] as _i3.PurposeCategoryEndpoint)
+              (endpoints['purposeCategory'] as _i2.PurposeCategoryEndpoint)
                   .fetchPurposeCategory(session),
         )
       },
@@ -101,7 +70,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['visitor'] as _i4.VisitorEndpoint).fetchVisitor(
+              (endpoints['visitor'] as _i3.VisitorEndpoint).fetchVisitor(
             session,
             params['mobileNo'],
           ),
@@ -111,7 +80,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'visitor': _i1.ParameterDescription(
               name: 'visitor',
-              type: _i1.getType<_i6.Visitor>(),
+              type: _i1.getType<_i5.Visitor>(),
               nullable: false,
             )
           },
@@ -119,7 +88,25 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['visitor'] as _i4.VisitorEndpoint).createVisitor(
+              (endpoints['visitor'] as _i3.VisitorEndpoint).createVisitor(
+            session,
+            params['visitor'],
+          ),
+        ),
+        'updateVisitor': _i1.MethodConnector(
+          name: 'updateVisitor',
+          params: {
+            'visitor': _i1.ParameterDescription(
+              name: 'visitor',
+              type: _i1.getType<_i5.Visitor>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['visitor'] as _i3.VisitorEndpoint).updateVisitor(
             session,
             params['visitor'],
           ),
@@ -135,7 +122,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'visitorLog': _i1.ParameterDescription(
               name: 'visitorLog',
-              type: _i1.getType<_i7.VisitorLog>(),
+              type: _i1.getType<_i6.VisitorLog>(),
               nullable: false,
             )
           },
@@ -143,7 +130,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
+              (endpoints['visitorLog'] as _i4.VisitorLogEndpoint)
                   .createVisitorLog(
             session,
             params['visitorLog'],
@@ -154,7 +141,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'buildingAssignment': _i1.ParameterDescription(
               name: 'buildingAssignment',
-              type: _i1.getType<_i8.BuildingAssignment>(),
+              type: _i1.getType<_i7.BuildingAssignment>(),
               nullable: false,
             )
           },
@@ -162,7 +149,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
+              (endpoints['visitorLog'] as _i4.VisitorLogEndpoint)
                   .createBuildingAssignment(
             session,
             params['buildingAssignment'],
@@ -173,7 +160,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'visitorLog': _i1.ParameterDescription(
               name: 'visitorLog',
-              type: _i1.getType<_i7.VisitorLog>(),
+              type: _i1.getType<_i6.VisitorLog>(),
               nullable: false,
             )
           },
@@ -181,7 +168,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint).checkOut(
+              (endpoints['visitorLog'] as _i4.VisitorLogEndpoint).checkOut(
             session,
             params['visitorLog'],
           ),
@@ -199,7 +186,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint).fetchAllLogs(
+              (endpoints['visitorLog'] as _i4.VisitorLogEndpoint).fetchAllLogs(
             session,
             params['dateTime'],
           ),
@@ -217,7 +204,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
+              (endpoints['visitorLog'] as _i4.VisitorLogEndpoint)
                   .fetchCheckInLogs(
             session,
             params['dateTime'],
@@ -236,7 +223,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['visitorLog'] as _i5.VisitorLogEndpoint)
+              (endpoints['visitorLog'] as _i4.VisitorLogEndpoint)
                   .fetchCheckOutLogs(
             session,
             params['dateTime'],

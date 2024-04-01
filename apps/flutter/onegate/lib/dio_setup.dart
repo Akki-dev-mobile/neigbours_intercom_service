@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 
 class DioSingleton {
   static final Dio instance1 = Dio(BaseOptions(baseUrl: 'http://13.200.100.161:8048/api'));
-  static final Dio instance2 = Dio(BaseOptions(baseUrl: 'http://13.233.71.222:8051'));
-  static final Dio instance3 = Dio(BaseOptions(baseUrl: 'http://gateapi.cubeone.biz'));
+  // static final Dio instance2 = Dio(BaseOptions(baseUrl: 'http://13.233.71.222:8051'));
+  static final Dio instance2 = Dio(BaseOptions(baseUrl: 'http://192.168.1.165:8051'));
+  static final Dio instance3 = Dio(BaseOptions(baseUrl: 'http://192.168.1.135:8088'));
+  //static final Dio instance3 = Dio(BaseOptions(baseUrl: 'http://gateapi.cubeone.biz'));
 }
 
 // Export the Dio instance

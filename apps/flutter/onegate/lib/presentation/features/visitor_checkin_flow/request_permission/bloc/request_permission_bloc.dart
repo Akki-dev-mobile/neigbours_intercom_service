@@ -4,6 +4,8 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
 import 'package:onegate_client/onegate_client.dart';
 
@@ -13,6 +15,7 @@ part 'request_permission_state.dart';
 class RequestPermissionBloc
     extends Bloc<RequestPermissionEvent, RequestPermissionState> {
   final VisitorLogUsecase visitorLogUsecase;
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   RequestPermissionBloc(this.visitorLogUsecase)
       : super(RequestPermissionInitial()) {
     on<AllowButtonClickedEvent>(allowButtonClickedEvent);
@@ -22,13 +25,13 @@ class RequestPermissionBloc
       Emitter<RequestPermissionState> emit) async {
     try {
       List<BuildingAssignment> buildingAssignments =
-          createBuildingAssignments(event.memberUnits,412);
+          createBuildingAssignments(event.memberUnits,_preferenceUtils.getSelectedCompany()!.companyId);
       for (BuildingAssignment buildingAssignment in buildingAssignments) {
         buildingAssignment.visitor_id = event.visitor.id;
       }
       print("${Utils.getCurrentTime().toUtc().toString()}");
       VisitorLog visitorLog = VisitorLog(
-          company_id: 412,
+          company_id: _preferenceUtils.getSelectedCompany()!.companyId,
           visitor_building_assignment: buildingAssignments,
           visitor_id: event.visitor.id!,
           visitor_count: event.guestCount == null ? 1 : event.guestCount!,

@@ -22,6 +22,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/bloc/gate_selection_bloc.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/bloc/self_entry_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/bloc/units_selection_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/bloc/visitor_in_entry_bloc.dart';
@@ -78,8 +79,8 @@ void setupLocator() {
       () => AdminDashboardUseCase(locator<AdminDashboardRepository>()));
 
   // Register AdminDashboardBloc
-  locator.registerFactory(
-      () => AdminDashboardBloc(locator<AdminDashboardUseCase>()));
+  locator.registerFactory(() => AdminDashboardBloc(
+      locator<AdminDashboardUseCase>(), locator<VisitorLogUsecase>()));
 
   // Register VisitorRepository
   locator.registerLazySingleton<VisitorRepository>(
@@ -90,8 +91,8 @@ void setupLocator() {
   locator.registerLazySingleton(
       () => VisitorUsecase(locator<VisitorRepository>()));
 
-  locator.registerFactory(
-      () => GatekeeperDashboardBloc(locator<VisitorUsecase>(),locator<VisitorLogUsecase>()));
+  locator.registerFactory(() => GatekeeperDashboardBloc(
+      locator<VisitorUsecase>(), locator<VisitorLogUsecase>()));
 
   locator.registerFactory(() => VisitorInEntryBloc(
       locator<VisitorUsecase>(), locator<VisitorLogUsecase>()));
@@ -105,8 +106,8 @@ void setupLocator() {
 
   locator.registerFactory(() => UnitsSelectionBloc(locator<SocietyUseCase>()));
 
-
-  locator.registerFactory(() => RequestPermissionBloc(locator<VisitorLogUsecase>()));
+  locator.registerFactory(
+      () => RequestPermissionBloc(locator<VisitorLogUsecase>()));
   locator.registerFactory(() => VisitorLogBloc(locator<VisitorLogUsecase>()));
 
   locator.registerLazySingleton<VisitorLogRepository>(
@@ -116,6 +117,8 @@ void setupLocator() {
   locator.registerLazySingleton(
       () => VisitorLogUsecase(locator<VisitorLogRepository>()));
 
+  locator.registerFactory(
+      () => SelfEntryBloc(locator<VisitorUsecase>()));
 }
 
 void setupDependencies() async {

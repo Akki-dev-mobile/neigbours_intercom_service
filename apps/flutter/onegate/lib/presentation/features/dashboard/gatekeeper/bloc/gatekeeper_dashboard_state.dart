@@ -1,8 +1,10 @@
 part of 'gatekeeper_dashboard_bloc.dart';
 
 @immutable
- class GatekeeperDashboardState {}
- abstract class GatekeeperDashboardActionState extends GatekeeperDashboardState {}
+class GatekeeperDashboardState {}
+
+abstract class GatekeeperDashboardActionState
+    extends GatekeeperDashboardState {}
 
 class GatekeeperDashboardInitial extends GatekeeperDashboardState {}
 
@@ -12,8 +14,8 @@ class GatekeeperDashboardSuccessState extends GatekeeperDashboardState {
   final int? inBook;
   final int? outBook;
 
-  GatekeeperDashboardSuccessState({required this.inBook, required this.outBook});
-  
+  GatekeeperDashboardSuccessState(
+      {required this.inBook, required this.outBook});
 }
 
 class GatekeeperDashboardErrorState extends GatekeeperDashboardActionState {
@@ -38,9 +40,7 @@ class GDInputFieldPressedState extends GatekeeperDashboardActionState {}
 
 class GatekeeperSearchVisitorState extends GatekeeperDashboardState {}
 
-class InputPutViewNextClickedState extends GatekeeperDashboardActionState {
-  
-}
+class InputPutViewNextClickedState extends GatekeeperDashboardActionState {}
 
 class OpenPurposeDialogState extends GatekeeperDashboardActionState {
   final List<PurposeCategory>? purposeCategories;
@@ -58,6 +58,6 @@ class NavigateToVisitorDetailsState extends GatekeeperDashboardActionState {
   final Visitor? visitor;
   final PurposeCategory purpose;
   final String mobile;
-  NavigateToVisitorDetailsState(this.purpose, this.mobile, {required this.visitor});
+  NavigateToVisitorDetailsState(this.purpose, this.mobile,
+      {required this.visitor});
 }
-

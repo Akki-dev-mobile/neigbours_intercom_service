@@ -15,19 +15,6 @@ import 'package:onegate_client/src/protocol/building_assignment.dart' as _i6;
 import 'dart:io' as _i7;
 import 'protocol.dart' as _i8;
 
-class _EndpointExample extends _i1.EndpointRef {
-  _EndpointExample(_i1.EndpointCaller caller) : super(caller);
-
-  @override
-  String get name => 'example';
-
-  _i2.Future<String> hello(String name) => caller.callServerEndpoint<String>(
-        'example',
-        'hello',
-        {'name': name},
-      );
-}
-
 class _EndpointPurposeCategory extends _i1.EndpointRef {
   _EndpointPurposeCategory(_i1.EndpointCaller caller) : super(caller);
 
@@ -59,6 +46,13 @@ class _EndpointVisitor extends _i1.EndpointRef {
       caller.callServerEndpoint<_i4.Visitor>(
         'visitor',
         'createVisitor',
+        {'visitor': visitor},
+      );
+
+  _i2.Future<bool> updateVisitor(_i4.Visitor visitor) =>
+      caller.callServerEndpoint<bool>(
+        'visitor',
+        'updateVisitor',
         {'visitor': visitor},
       );
 }
@@ -124,13 +118,10 @@ class Client extends _i1.ServerpodClient {
           context: context,
           authenticationKeyManager: authenticationKeyManager,
         ) {
-    example = _EndpointExample(this);
     purposeCategory = _EndpointPurposeCategory(this);
     visitor = _EndpointVisitor(this);
     visitorLog = _EndpointVisitorLog(this);
   }
-
-  late final _EndpointExample example;
 
   late final _EndpointPurposeCategory purposeCategory;
 
@@ -140,7 +131,6 @@ class Client extends _i1.ServerpodClient {
 
   @override
   Map<String, _i1.EndpointRef> get endpointRefLookup => {
-        'example': example,
         'purposeCategory': purposeCategory,
         'visitor': visitor,
         'visitorLog': visitorLog,

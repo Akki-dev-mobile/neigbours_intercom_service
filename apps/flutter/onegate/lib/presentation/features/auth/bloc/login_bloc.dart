@@ -77,7 +77,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (roles.contains("master")) {
       emit(RoleSelectionState(roles));
     } else if (roles.contains("gatekeeper")) {
-      emit(NavigateToGatekeeperDashboardState());
+      if (_preferenceUtils.getUserInfo()!.userId ==
+          _preferenceUtils.getSelectedGate()!.userId) {
+        emit(NavigateToGatekeeperDashboardState());
+      } else {
+        emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+      }
     } else {
       emit(NavigateToAdminDashboardState());
     }
@@ -90,80 +95,105 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   FutureOr<void> roleSelectionButtonPressedEvent(
       RoleSelectionButtonPressedEvent event, Emitter<LoginState> emit) async {
-        _preferenceUtils.setIsAdmin(event.isAdmin);
-    if (event.isAdmin) {
-      final List<Gate> gates = await _preferenceUtils.getGatesList();
-      if (gates.isEmpty) {
-        emit(LoginLoadingState());
-        final response = await _gateUseCase.gateList(
-            _preferenceUtils.getSelectedCompany()!.companyId);
-        final List<Gate> gates = response!;
-        emit(LoginInitial());
-        if (response.length == 1) {
-          _preferenceUtils.setSelectedGate(response[0]);
-          emit(NavigateToAdminDashboardState());
-          return;
+    try {
+      _preferenceUtils.setIsAdmin(event.isAdmin);
+      if (event.isAdmin) {
+        final List<Gate> gates = await _preferenceUtils.getGatesList();
+        if (gates.isEmpty) {
+          emit(LoginLoadingState());
+          final response = await _gateUseCase
+              .gateList(_preferenceUtils.getSelectedCompany()!.companyId);
+          final List<Gate> gates = response!;
+          emit(LoginInitial());
+          if (response.length == 1) {
+            _preferenceUtils.setSelectedGate(response[0]);
+            _preferenceUtils.setIsLogin(true);
+            emit(NavigateToAdminDashboardState());
+            return;
+          } else {
+            emit(GateSelectionState(gates));
+          }
         } else {
-          emit(GateSelectionState(gates));
+          _preferenceUtils.setIsLogin(true);
+          emit(NavigateToAdminDashboardState());
         }
       } else {
-        emit(NavigateToAdminDashboardState());
+        Gate? selectedGate = _preferenceUtils.getSelectedGate();
+        if (selectedGate != null) {
+          _preferenceUtils.setIsLogin(true);
+          if (_preferenceUtils.getUserInfo()!.userId ==
+              _preferenceUtils.getSelectedGate()!.userId) {
+            emit(NavigateToGatekeeperDashboardState());
+          } else {
+            emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+          }
+        } else {
+          emit(LoginErrorState(message: "Please info admin to select gate"));
+        }
       }
-    } else {
-      Gate? selectedGate = _preferenceUtils.getSelectedGate();
-      if (selectedGate != null) {
-        emit(NavigateToGatekeeperDashboardState());
-      } else {
-        emit(LoginErrorState(message: "Please info admin to select gate"));
-      }
+    } catch (e) {
+      emit(LoginErrorState(message: e.toString()));
     }
 
     //emit(RoleSelectionState(_preferenceUtils.getRoles()));
   }
 
-  FutureOr<void> gateSelectionButtonPressedEvent(GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) {
+  FutureOr<void> gateSelectionButtonPressedEvent(
+      GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) {
     _preferenceUtils.setSelectedGate(event.gate);
-    if(_preferenceUtils.getIsAdmin()!){
+    if (_preferenceUtils.getIsAdmin()!) {
       emit(NavigateToAdminDashboardState());
-    }else{
-      emit(NavigateToGatekeeperDashboardState());
-    }
-  }
-}
-
-void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
-    PreferenceUtils preferenceUtils) {
-  try {
-    final List<Company> companiesWithAccessToGate = [];
-
-    response!.userInfo.companies.forEach((key, companyList) {
-      final filteredCompanies =
-          companyList.where((company) => company.accessTo.contains(5)).toList();
-      companiesWithAccessToGate.addAll(filteredCompanies);
-    });
-
-    preferenceUtils.saveAccessTokenResponse(response);
-    preferenceUtils.saveUserInfo(response.userInfo);
-    emit(LoginInitial());
-    if (preferenceUtils.getSelectedCompany() == null) {
-      emit(SocietySelectionState(companiesWithAccessToGate));
     } else {
-      Company selectedCompany = preferenceUtils.getSelectedCompany()!;
-      final List<String> roles = [];
-      for (final app in selectedCompany.apps) {
-        roles.addAll(app.roles);
-      }
-      preferenceUtils.saveRoles(roles);
-      if (roles.contains("master")) {
-        emit(RoleSelectionState(roles));
-      } else if (roles.contains("gatekeeper")) {
+      if (_preferenceUtils.getUserInfo()!.userId ==
+          _preferenceUtils.getSelectedGate()!.userId) {
         emit(NavigateToGatekeeperDashboardState());
       } else {
-        emit(NavigateToAdminDashboardState());
+        emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
       }
     }
-  } catch (e) {
-    emit(LoginInitial());
-    emit(LoginErrorState(message: e.toString()));
+  }
+
+  void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
+      PreferenceUtils preferenceUtils) {
+    try {
+      final List<Company> companiesWithAccessToGate = [];
+
+      response!.userInfo.companies.forEach((key, companyList) {
+        final filteredCompanies = companyList
+            .where((company) => company.accessTo.contains(5))
+            .toList();
+        companiesWithAccessToGate.addAll(filteredCompanies);
+      });
+
+      preferenceUtils.saveAccessTokenResponse(response);
+      preferenceUtils.saveUserInfo(response.userInfo);
+      emit(LoginInitial());
+      if (preferenceUtils.getSelectedCompany() == null) {
+        emit(SocietySelectionState(companiesWithAccessToGate));
+      } else {
+        Company selectedCompany = preferenceUtils.getSelectedCompany()!;
+        final List<String> roles = [];
+        for (final app in selectedCompany.apps) {
+          roles.addAll(app.roles);
+        }
+        preferenceUtils.saveRoles(roles);
+        if (roles.contains("master")) {
+          emit(RoleSelectionState(roles));
+        } else if (roles.contains("gatekeeper")) {
+          _preferenceUtils.setIsLogin(true);
+          if (_preferenceUtils.getUserInfo()!.userId ==
+              _preferenceUtils.getSelectedGate()!.userId) {
+            emit(NavigateToGatekeeperDashboardState());
+          } else {
+            emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+          }
+        } else {
+          emit(NavigateToAdminDashboardState());
+        }
+      }
+    } catch (e) {
+      emit(LoginInitial());
+      emit(LoginErrorState(message: e.toString()));
+    }
   }
 }

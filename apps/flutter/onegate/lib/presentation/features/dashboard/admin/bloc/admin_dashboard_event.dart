@@ -6,3 +6,9 @@ abstract class AdminDashboardEvent {}
 class AdminDashboardInitialEvent extends AdminDashboardEvent {}
 
 class AdminDashboardSettingsPressedEvent extends AdminDashboardEvent {}
+
+class ADInAndOutButtonPressedEvent extends AdminDashboardEvent {}
+
+class ADVisitorsInButtonPressedEvent extends AdminDashboardEvent {}
+
+class ADVisitorsOutButtonPressedEvent extends AdminDashboardEvent {}

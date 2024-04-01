@@ -22,7 +22,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
   void initState() {
     super.initState();
 
-    const totalDurationInSeconds = 150;
+    const totalDurationInSeconds = 15;
     const updateDurationInMilliseconds = 100;
 
     _timer = Timer(Duration(seconds: totalDurationInSeconds), () {

@@ -17,6 +17,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:onegate_client/onegate_client.dart';
+import 'package:common_widgets/loading_view.dart';
 
 import '../../request_permission/ui/request_permission_view.dart';
 
@@ -112,7 +113,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       builder: (context, state) {
         switch (state.runtimeType) {
           case UnitsSelectionLoadingState:
-            return Center(child: CircularProgressIndicator());
+            return  LoaderView();
           case UnitSelectionSuccessState:
             List<MemberUnits>? unit;
 

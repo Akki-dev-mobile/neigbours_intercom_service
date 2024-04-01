@@ -1,10 +1,19 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_onegate/domain/entities/society/building.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
+import 'package:http/http.dart' as http;
 
+<<<<<<< HEAD
 var client = Client('https://gateapi.cubeone.in')
+=======
+var client = Client('https://gateapi.cubeone.in/')
+>>>>>>> 6e78b749989df5bc2963974486ecf7a49c0286e9
 //var client = Client('http://localhost:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
@@ -63,7 +72,7 @@ class RemoteDataSource {
     try {
       final result = await client.purposeCategory.fetchPurposeCategory();
       print("fetchPurpose: ${result.toString()}");
-      return result;
+      return result.reversed.toList();
     } catch (e) {
       print(e.toString());
     }
@@ -99,7 +108,7 @@ class RemoteDataSource {
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       for (BuildingAssignment buildingAssignment
           in visitorLog.visitor_building_assignment!) {
-            buildingAssignment.visitor_log_id = result.id;
+        buildingAssignment.visitor_log_id = result.id;
         await createBuildingAssignment(buildingAssignment);
       }
       print("checkIn: ${result.toString()}");
@@ -110,11 +119,10 @@ class RemoteDataSource {
     return null;
   }
 
-
   Future<List<dynamic>> getBuilding(int companyId) async {
     try {
       final response = await _dio2.get('/api/admin/building/list',
-          queryParameters: {'company_id': 412});
+          queryParameters: {'company_id': companyId});
       return response.data['data'];
     } catch (e) {
       print('Error fetching buildings: $e');
@@ -126,7 +134,7 @@ class RemoteDataSource {
     try {
       final response = await _dio2.get('/api/admin/units/list',
           queryParameters: {
-            'company_id': 412,
+            'company_id': companyId,
             'building_id': buildingId,
             'per_page': 1000
           });
@@ -141,7 +149,7 @@ class RemoteDataSource {
     try {
       final response = await _dio2.get('/api/admin/member/list',
           queryParameters: {
-            'company_id': 412,
+            'company_id': companyId,
             'unit_id': unitId,
             'current_tab': 'approved'
           });
@@ -154,31 +162,30 @@ class RemoteDataSource {
 
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
-      final visitor_log =
-          await client.visitorLog.fetchAllLogs(dateTime);
-      return visitor_log;
+      final visitor_log = await client.visitorLog.fetchAllLogs(dateTime);
+      return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckInLogs(int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckInLogs(
+      int companyId, String dateTime) async {
     try {
-      final visitor_log =
-          await client.visitorLog.fetchCheckInLogs(dateTime);
-      return visitor_log;
+      final visitor_log = await client.visitorLog.fetchCheckInLogs(dateTime);
+      return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
     }
   }
 
-   Future<List<VisitorLog>> fetchCheckOutLogs(int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckOutLogs(
+      int companyId, String dateTime) async {
     try {
-      final visitor_log =
-          await client.visitorLog.fetchCheckOutLogs(dateTime);
-      return visitor_log;
+      final visitor_log = await client.visitorLog.fetchCheckOutLogs(dateTime);
+      return visitor_log.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
@@ -196,7 +203,85 @@ class RemoteDataSource {
     return false;
   }
 
+  Future<bool> updateVisitor(Visitor visitor) async {
+    try {
+      final result = await client.visitor.updateVisitor(visitor);
+      print("visitor update: ${result.toString()}");
+      return result;
+    } catch (e) {
+      print(e.toString());
+    }
+    return false;
+  }
 
+  Future<String> uploadFile(
+      File file, String userMobile, int companyId) async {
+    try {
+      print('File path: ${file.path}');
+      
+      var data = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path,
+            filename: '$userMobile.jpg'),
+        'service_id': '5',
+        'company_id': '412',
+        'uuid': userMobile,
+        'path': 'test/onegate/image'
+      });
 
+      Options options = Options(
+        contentType: 'multipart/form-data',
+      );
 
+      var dio = Dio();
+      var response = await dio.request(
+        'http://192.168.1.135:8088/api/file-upload',
+        options: Options(
+          method: 'POST',
+          contentType: 'multipart/form-data',
+          headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        ),
+        data: data,
+        
+      );
+
+      if (response.statusCode == 200) {
+        print(json.encode(response.data));
+        return response.data['data'];
+      } else {
+        print(response.statusMessage);
+        return '';
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      rethrow;
+    }
+  }
+
+  Future<String?> sendOTP(String mobileNumber) async {
+    try {
+      final response = await _dio1.get('/sms/verification-code',
+          queryParameters: {'phoneNumber': '91$mobileNumber'});
+      print(response.data['data'].toString());
+      if (response.statusCode == 200) {
+        return response.data['data']['expires_in'];
+      }
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  Future<String?> verifyOTP(String mobileNumber, String otp) async {
+    try {
+      final response = await _dio1.post('/sms/verify',
+          data: {'phoneNumber': '91$mobileNumber', "otp": otp});
+      print(response.data['data'].toString());
+      if (response.statusCode == 200) {
+        return response.data['message'];
+      }
+    } catch (e) {
+      return e.toString();
+    }
+  }
 }
