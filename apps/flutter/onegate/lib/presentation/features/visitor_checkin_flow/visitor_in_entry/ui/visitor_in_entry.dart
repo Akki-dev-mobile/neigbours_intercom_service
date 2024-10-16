@@ -2,9 +2,10 @@
 
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
+// import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:chips_choice/chips_choice.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
@@ -12,18 +13,12 @@ import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:onegate_client/onegate_client.dart';
-import 'package:page_transition/page_transition.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import 'package:common_widgets/loading_view.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
@@ -553,26 +548,26 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: CachedNetworkImage(
-                    maxHeightDiskCache: 80,
-                    maxWidthDiskCache: 80,
-                    height: 60,
-                    width: 60,
-                    filterQuality: FilterQuality.high,
-                    fit: BoxFit.contain,
-                    imageUrl: imagePaths[index],
-                    placeholder: (context, url) =>
-                        const CircularProgressIndicator(),
-                    errorWidget: (context, url, error) => const Icon(
-                      Icons.error,
-                      color: Colors.red,
-                    ),
-                    fadeOutDuration: const Duration(seconds: 1),
-                    fadeInDuration: const Duration(seconds: 3),
-                  ),
-                ),
+                // ClipRRect(
+                //   borderRadius: BorderRadius.circular(15),
+                //   child: CachedNetworkImage(
+                //     maxHeightDiskCache: 80,
+                //     maxWidthDiskCache: 80,
+                //     height: 60,
+                //     width: 60,
+                //     filterQuality: FilterQuality.high,
+                //     fit: BoxFit.contain,
+                //     imageUrl: imagePaths[index],
+                //     placeholder: (context, url) =>
+                //         const CircularProgressIndicator(),
+                //     errorWidget: (context, url, error) => const Icon(
+                //       Icons.error,
+                //       color: Colors.red,
+                //     ),
+                //     fadeOutDuration: const Duration(seconds: 1),
+                //     fadeInDuration: const Duration(seconds: 3),
+                //   ),
+                // ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(

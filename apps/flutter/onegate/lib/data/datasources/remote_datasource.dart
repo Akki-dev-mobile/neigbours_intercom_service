@@ -2,18 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_onegate/domain/entities/society/building.dart';
-import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
-import 'package:http/http.dart' as http;
 
-<<<<<<< HEAD
 var client = Client('https://gateapi.cubeone.in')
-=======
-var client = Client('https://gateapi.cubeone.in/')
->>>>>>> 6e78b749989df5bc2963974486ecf7a49c0286e9
 //var client = Client('http://localhost:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
@@ -214,11 +206,10 @@ class RemoteDataSource {
     return false;
   }
 
-  Future<String> uploadFile(
-      File file, String userMobile, int companyId) async {
+  Future<String> uploadFile(File file, String userMobile, int companyId) async {
     try {
       print('File path: ${file.path}');
-      
+
       var data = FormData.fromMap({
         'file': await MultipartFile.fromFile(file.path,
             filename: '$userMobile.jpg'),
@@ -238,12 +229,9 @@ class RemoteDataSource {
         options: Options(
           method: 'POST',
           contentType: 'multipart/form-data',
-          headers: {
-          'Content-Type': 'multipart/form-data'
-        },
+          headers: {'Content-Type': 'multipart/form-data'},
         ),
         data: data,
-        
       );
 
       if (response.statusCode == 200) {
