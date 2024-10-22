@@ -55,7 +55,9 @@ class HasOfflineLoginButtonPressedState extends LoginActionState {}
 
 class NotHasOfflineLoginButtonPressedState extends LoginActionState {}
 
-class NavigateToAdminDashboardState extends LoginActionState {}
+class NavigateToAdminDashboardState extends LoginActionState {
+
+}
 
 class NavigateToGatekeeperDashboardState extends LoginActionState {}
 

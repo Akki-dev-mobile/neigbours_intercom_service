@@ -21,7 +21,8 @@ class RemoteDataSource {
     try {
       final response = await _dio1.post('/login',
           data: {'username': "91$username", 'password': password});
-
+  var data = response.data;
+  print('Loginnnn$data');
       return response.data['data'];
     } catch (e) {
       print(e.toString());
