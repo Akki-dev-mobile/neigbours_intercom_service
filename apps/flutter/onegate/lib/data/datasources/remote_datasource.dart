@@ -5,16 +5,18 @@ import 'package:dio/dio.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
-var client = Client('https://gateapi.cubeone.in')
-//var client = Client('http://localhost:8080/')
+
+
+// var client = Client('https://gateapi.cubeone.in')
+var client = Client('http://localhost:8082/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
 class RemoteDataSource {
   final Dio _dio1;
   final Dio _dio2;
   final Dio _dio3;
+  RemoteDataSource(this._dio1, this._dio2, this._dio3,);
 
-  RemoteDataSource(this._dio1, this._dio2, this._dio3);
 
   Future<Map<String, dynamic>> loginUser(
       String username, String password, String method) async {
@@ -35,7 +37,7 @@ class RemoteDataSource {
       final queryParams = {'company_id': companyId};
       final response = await _dio2.get('/api/admin/gates/list',
           queryParameters: queryParams);
-      print(response.data['data'].toString());
+      print("Company IDDD${response.data['data'].toString()}");
       if (response.statusCode == 200) {
         return response.data['data'];
       } else {
@@ -49,14 +51,39 @@ class RemoteDataSource {
       rethrow;
     }
   }
+  //   try {
+  //     final response = await _dio2.get('/api/admin/building/list',
+  //         queryParameters: {'company_id': companyId});
+  //
+  //     // Check if response data is null
+  //     if (response.data != null) {
+  //       return response.data['data'];
+  //     } else {
+  //       print('Response data is null');
+  //       return [];
+  //     }
+  //   } catch (e) {
+  //     print('Error fetching buildings: $e');
+  //     rethrow;
+  //   }
+  // }
 
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
+      // final result = await client.visitor.fetchVisitor(mobileNumber);
+      // print("searchVisitor: ${result.toString()}");
+      // return result!;
+
       final result = await client.visitor.fetchVisitor(mobileNumber);
-      print("searchVisitor: ${result.toString()}");
-      return result!;
+      if (result != null) {
+        print("searchVisitor: ${result.toString()}");
+        return result;
+      } else {
+        print("No visitor found for mobile number: $mobileNumber");
+        return null;
+      }
     } catch (e) {
-      print(e.toString());
+      print('Error fetching visitor: $e');
     }
     return null;
   }
@@ -273,4 +300,9 @@ class RemoteDataSource {
       return e.toString();
     }
   }
+  // void disableSSLCertificateVerification() {
+  //   HttpClient httpClient = HttpClient();
+  //   httpClient.badCertificateCallback =
+  //       (X509Certificate cert, String host, int port) => true; // Use with caution!
+  // }
 }

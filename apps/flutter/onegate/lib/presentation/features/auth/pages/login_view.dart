@@ -227,9 +227,9 @@ class _LoginViewState extends State<LoginView> {
             break;
           case NavigateToAdminDashboardState:
            _preferenceUtils.setIsLogin(true);
-           print("ninad bsdk");
+           print("Check 1");
            print(
-                "ninad bsdk ${_preferenceUtils.getUserInfo()!.userId} ${_preferenceUtils.getSelectedGate()!.userId}"
+                "Check 1 ${_preferenceUtils.getUserInfo()!.userId} ${_preferenceUtils.getSelectedGate()!.userId}"
            );
             Navigator.pushReplacement(
               context,

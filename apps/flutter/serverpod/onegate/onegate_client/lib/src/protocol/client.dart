@@ -71,7 +71,7 @@ class _EndpointVisitorLog extends _i1.EndpointRef {
       );
 
   _i2.Future<_i6.BuildingAssignment> createBuildingAssignment(
-          _i6.BuildingAssignment buildingAssignment) =>
+      _i6.BuildingAssignment buildingAssignment) =>
       caller.callServerEndpoint<_i6.BuildingAssignment>(
         'visitorLog',
         'createBuildingAssignment',
@@ -109,15 +109,15 @@ class _EndpointVisitorLog extends _i1.EndpointRef {
 
 class Client extends _i1.ServerpodClient {
   Client(
-    String host, {
-    _i7.SecurityContext? context,
-    _i1.AuthenticationKeyManager? authenticationKeyManager,
-  }) : super(
-          host,
-          _i8.Protocol(),
-          context: context,
-          authenticationKeyManager: authenticationKeyManager,
-        ) {
+      String host, {
+        // _i7.SecurityContext? securityContext,
+        _i1.AuthenticationKeyManager? authenticationKeyManager,
+      }) : super(
+    host,
+    _i8.Protocol(),
+    // securityContext: securityContext,
+    authenticationKeyManager: authenticationKeyManager,
+  ) {
     purposeCategory = _EndpointPurposeCategory(this);
     visitor = _EndpointVisitor(this);
     visitorLog = _EndpointVisitorLog(this);
@@ -131,10 +131,10 @@ class Client extends _i1.ServerpodClient {
 
   @override
   Map<String, _i1.EndpointRef> get endpointRefLookup => {
-        'purposeCategory': purposeCategory,
-        'visitor': visitor,
-        'visitorLog': visitorLog,
-      };
+    'purposeCategory': purposeCategory,
+    'visitor': visitor,
+    'visitorLog': visitorLog,
+  };
 
   @override
   Map<String, _i1.ModuleEndpointCaller> get moduleLookup => {};

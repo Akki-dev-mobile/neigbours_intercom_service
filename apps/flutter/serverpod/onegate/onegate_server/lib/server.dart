@@ -31,9 +31,9 @@ void run(List<String> args) async {
       serverpod: pod,
       storageId: 'public',
       public: true,
-      region: 'us-west-2',
-      bucket: 'my-bucket-name',
-      publicHost: 'storage.myapp.com',
+      region: 'ap-south-1',
+      bucket: 'fstech-serverpod',
+      // publicHost: 'storage.myapp.com',
     ));
     print('S3 Cloud Storage configured successfully.');
   } catch (e) {

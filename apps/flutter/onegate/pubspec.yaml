@@ -47,7 +47,7 @@ dependencies:
   path_provider: ^2.1.4
   concentric_transition: ^1.0.3
   flutter_animated_button: ^2.0.3
-  serverpod_flutter: ^1.1.1
+  serverpod_flutter: ^1.2.0
   onegate_client:
     path: ../serverpod/onegate/onegate_client
   random_avatar: ^0.0.8
