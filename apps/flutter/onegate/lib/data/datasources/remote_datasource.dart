@@ -3,12 +3,13 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:onegate_client/onegate_client.dart';
+
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 
 
 // var client = Client('https://gateapi.cubeone.in')
-var client = Client('http://localhost:8082/')
+var client = Client('http://192.168.1.35:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
 class RemoteDataSource {
@@ -39,7 +40,12 @@ class RemoteDataSource {
           queryParameters: queryParams);
       print("Company IDDD${response.data['data'].toString()}");
       if (response.statusCode == 200) {
-        return response.data['data'];
+        if(response.data['data'] == null){
+          print('#############Response data is null');
+          return [];
+        }else{
+          return response.data['data'];
+        }
       } else {
         throw DioError(
             requestOptions: response.requestOptions,
