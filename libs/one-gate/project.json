@@ -1,0 +1,114 @@
+{
+  "name": "one-gate",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/one-gate/src",
+  "projectType": "library",
+  "targets": {
+    "analyze": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter analyze",
+        "cwd": "libs/one-gate"
+      }
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter clean",
+        "cwd": "libs/one-gate"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter format libs/one-gate/*",
+        "cwd": "libs/one-gate"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter test",
+        "cwd": "libs/one-gate"
+      }
+    },
+    "doctor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter doctor",
+        "cwd": "libs/one-gate"
+      }
+    },
+    "build-aar": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build aar",
+        "cwd": "libs/one-gate"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/one-gate/build"
+      ]
+    },
+    "build-apk": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build apk",
+        "cwd": "libs/one-gate"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/one-gate/build"
+      ]
+    },
+    "build-appbundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build appbundle",
+        "cwd": "libs/one-gate"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/one-gate/build"
+      ]
+    },
+    "build-bundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build bundle",
+        "cwd": "libs/one-gate"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/one-gate/build"
+      ]
+    },
+    "build-ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ios",
+        "cwd": "libs/one-gate"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/one-gate/build"
+      ]
+    },
+    "build-ios-framework": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ios-framework",
+        "cwd": "libs/one-gate"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/one-gate/build"
+      ]
+    },
+    "build-ipa": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "fvm flutter build ipa",
+        "cwd": "libs/one-gate"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/one-gate/build"
+      ]
+    }
+  },
+  "tags": []
+}

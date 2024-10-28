@@ -3,29 +3,29 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:onegate_client/onegate_client.dart';
-
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
-
-
 // var client = Client('https://gateapi.cubeone.in')
-var client = Client('http://192.168.1.35:8080/')
+var client = Client('http://192.168.1.137:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
 class RemoteDataSource {
   final Dio _dio1;
   final Dio _dio2;
   final Dio _dio3;
-  RemoteDataSource(this._dio1, this._dio2, this._dio3,);
-
+  RemoteDataSource(
+    this._dio1,
+    this._dio2,
+    this._dio3,
+  );
 
   Future<Map<String, dynamic>> loginUser(
       String username, String password, String method) async {
     try {
       final response = await _dio1.post('/login',
           data: {'username': "91$username", 'password': password});
-  var data = response.data;
-  print('Loginnnn$data');
+      var data = response.data;
+      print('Loginnnn$data');
       return response.data['data'];
     } catch (e) {
       print(e.toString());
@@ -40,10 +40,10 @@ class RemoteDataSource {
           queryParameters: queryParams);
       print("Company IDDD${response.data['data'].toString()}");
       if (response.statusCode == 200) {
-        if(response.data['data'] == null){
+        if (response.data['data'] == null) {
           print('#############Response data is null');
           return [];
-        }else{
+        } else {
           return response.data['data'];
         }
       } else {

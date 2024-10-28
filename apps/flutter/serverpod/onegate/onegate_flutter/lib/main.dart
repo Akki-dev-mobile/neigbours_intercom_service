@@ -1,5 +1,5 @@
-import 'package:onegate_client/onegate_client.dart';
 import 'package:flutter/material.dart';
+import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 // Sets up a singleton client object that can be used to talk to the server from
@@ -7,7 +7,7 @@ import 'package:serverpod_flutter/serverpod_flutter.dart';
 // The client is set up to connect to a Serverpod running on a local server on
 // the default port. You will need to modify this to connect to staging or
 // production servers.
-var client = Client('http://localhost:8080/')
+var client = Client('http://192.168.1.137:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
 void main() {
