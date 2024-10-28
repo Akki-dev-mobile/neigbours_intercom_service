@@ -16,16 +16,17 @@ class RemoteDataSource {
   final Dio _dio1;
   final Dio _dio2;
   final Dio _dio3;
+
   RemoteDataSource(this._dio1, this._dio2, this._dio3,);
 
 
-  Future<Map<String, dynamic>> loginUser(
-      String username, String password, String method) async {
+  Future<Map<String, dynamic>> loginUser(String username, String password,
+      String method) async {
     try {
       final response = await _dio1.post('/login',
           data: {'username': "91$username", 'password': password});
-  var data = response.data;
-  print('Loginnnn$data');
+      var data = response.data;
+      print('Loginnnn$data');
       return response.data['data'];
     } catch (e) {
       print(e.toString());
@@ -40,10 +41,10 @@ class RemoteDataSource {
           queryParameters: queryParams);
       print("Company IDDD${response.data['data'].toString()}");
       if (response.statusCode == 200) {
-        if(response.data['data'] == null){
+        if (response.data['data'] == null) {
           print('#############Response data is null');
           return [];
-        }else{
+        } else {
           return response.data['data'];
         }
       } else {
@@ -57,6 +58,7 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
   //   try {
   //     final response = await _dio2.get('/api/admin/building/list',
   //         queryParameters: {'company_id': companyId});
@@ -120,7 +122,7 @@ class RemoteDataSource {
       BuildingAssignment buildingAssignment) async {
     try {
       final result =
-          await client.visitorLog.createBuildingAssignment(buildingAssignment);
+      await client.visitorLog.createBuildingAssignment(buildingAssignment);
       print("createBuildingAssignment: ${result.toString()}");
       return result;
     } catch (e) {
@@ -133,7 +135,7 @@ class RemoteDataSource {
     try {
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       for (BuildingAssignment buildingAssignment
-          in visitorLog.visitor_building_assignment!) {
+      in visitorLog.visitor_building_assignment!) {
         buildingAssignment.visitor_log_id = result.id;
         await createBuildingAssignment(buildingAssignment);
       }
@@ -196,8 +198,8 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckInLogs(
-      int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckInLogs(int companyId,
+      String dateTime) async {
     try {
       final visitor_log = await client.visitorLog.fetchCheckInLogs(dateTime);
       return visitor_log.reversed.toList();
@@ -207,8 +209,8 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckOutLogs(
-      int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckOutLogs(int companyId,
+      String dateTime) async {
     try {
       final visitor_log = await client.visitorLog.fetchCheckOutLogs(dateTime);
       return visitor_log.reversed.toList();
@@ -306,9 +308,20 @@ class RemoteDataSource {
       return e.toString();
     }
   }
-  // void disableSSLCertificateVerification() {
-  //   HttpClient httpClient = HttpClient();
-  //   httpClient.badCertificateCallback =
-  //       (X509Certificate cert, String host, int port) => true; // Use with caution!
+
+  // Future<String> fetchMemberDetails(String mobileNumber) async {
+  //   try {
+  //     final response = await _dio1.get('api/admin/member/list',
+  //         queryParameters: {'mobile_number': mobileNumber});
+  //     print("MemberIDDD:$response.data['data']");
+  //     if (response.statusCode == 200) {
+  //       return response.data['data'];
+  //     }
+  //   } catch (e) {
+  //     return e.toString();
+  //   }
+  //   return '';
   // }
+
+
 }
