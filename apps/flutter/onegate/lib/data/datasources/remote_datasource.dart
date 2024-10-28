@@ -193,6 +193,7 @@ class RemoteDataSource {
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
+      rethrow;
     }
   }
 
@@ -281,6 +282,48 @@ class RemoteDataSource {
     }
   }
 
+  Future<List<dynamic>> getUnitsList(int companyId) async {
+    try {
+      final response =
+          await _dio2.get('/api/admin/units/list', queryParameters: {
+        'company_id': companyId,
+      });
+      print("Units List: ${response.data['data']}");
+      return response.data['data'] ?? [];
+    } catch (e) {
+      print('Error fetching units list: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getBuildingsList(int companyId) async {
+    try {
+      final response =
+          await _dio2.get('/api/admin/building/list', queryParameters: {
+        'company_id': companyId,
+      });
+      print("Buildings List: ${response.data['data']}");
+      return response.data['data'] ?? [];
+    } catch (e) {
+      print('Error fetching buildings list: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getMembersList(int companyId) async {
+    try {
+      final response =
+          await _dio2.get('/api/admin/member/list', queryParameters: {
+        'company_id': companyId,
+      });
+      print("Members List: ${response.data['data']}");
+      return response.data['data'] ?? [];
+    } catch (e) {
+      print('Error fetching members list: $e');
+      rethrow;
+    }
+  }
+
   Future<String?> sendOTP(String mobileNumber) async {
     try {
       final response = await _dio1.get('/sms/verification-code',
@@ -306,9 +349,4 @@ class RemoteDataSource {
       return e.toString();
     }
   }
-  // void disableSSLCertificateVerification() {
-  //   HttpClient httpClient = HttpClient();
-  //   httpClient.badCertificateCallback =
-  //       (X509Certificate cert, String host, int port) => true; // Use with caution!
-  // }
 }
