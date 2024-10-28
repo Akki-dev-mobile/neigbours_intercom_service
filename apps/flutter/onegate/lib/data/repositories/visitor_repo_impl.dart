@@ -70,10 +70,10 @@ class VisitorRepoImpl extends VisitorRepository {
 
   @override
   Future<String?> uploadImage(
-      File file, String userMobile, int companyId) async {
+      File file, String userMobile, int? companyId) async {
     try {
       final response =
-          await _remoteDataSource.uploadFile(file, userMobile, companyId);
+          await _remoteDataSource.uploadFile(file, userMobile, companyId ?? 0);
       return response;
     } catch (error) {
       return null;

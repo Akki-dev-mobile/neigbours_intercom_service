@@ -1,6 +1,8 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:chips_choice/chips_choice.dart';
+import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,17 +11,12 @@ import 'package:flutter_onegate/data/repositories/society_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/society/building.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
-import 'package:flutter_onegate/domain/repositories/society_repo.dart';
 import 'package:flutter_onegate/domain/use_cases/society_usecase.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/bloc/units_selection_bloc.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/units_list.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:onegate_client/onegate_client.dart';
-import 'package:common_widgets/loading_view.dart';
-
-import '../../request_permission/ui/request_permission_view.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final Visitor visitor;
@@ -96,27 +93,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             break;
           case NavigateToRequestPermissionState:
             Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionView(
-                  gridData: (state as NavigateToRequestPermissionState).unit,
-                  visitor: widget.visitor,
-                  purposeCategory: widget.purposeCategory,
-                  comingFrom: widget.comingFrom,
-                  guestCount: widget.guestCount,
-              ),
-            ));
-            
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RequestPermissionView(
+                    gridData: (state as NavigateToRequestPermissionState).unit,
+                    visitor: widget.visitor,
+                    purposeCategory: widget.purposeCategory,
+                    comingFrom: widget.comingFrom,
+                    guestCount: widget.guestCount,
+                  ),
+                ));
+
             break;
         }
       },
       builder: (context, state) {
         switch (state.runtimeType) {
           case UnitsSelectionLoadingState:
-            return  LoaderView();
+            return LoaderView();
           case UnitSelectionSuccessState:
             List<MemberUnits>? unit;
-
+            print(" here i am $unit");
             final successState = state as UnitSelectionSuccessState;
             selectedBuilding = successState.selectedBuilding!;
             unit = successState.units;
@@ -211,7 +208,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                         crossAxisSpacing: 10.0,
                                         mainAxisSpacing: 10.0,
                                       ),
-                                      itemCount: unit!.length,
+                                      itemCount: unit?.length ?? 1,
                                       itemBuilder:
                                           (BuildContext context, int index) {
                                         return GestureDetector(
@@ -249,17 +246,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                             decoration: BoxDecoration(
                                               borderRadius:
                                                   BorderRadius.circular(8),
-                                              color: selectedUnits
-                                                      .contains(unit![index])
+                                              color: selectedUnits.contains(
+                                                      unit?[index] ?? [])
                                                   ? Color(0x10C08261)
                                                   : Colors.transparent,
                                               border: Border.all(
                                                 color: selectedUnits
-                                                        .contains(unit[index])
+                                                        .contains(unit?[index])
                                                     ? Color(0xffC08261)
                                                     : Colors.grey.shade400,
                                                 width: selectedUnits
-                                                        .contains(unit[index])
+                                                        .contains(unit?[index])
                                                     ? 2
                                                     : 1,
                                               ),
@@ -267,12 +264,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                             child: FittedBox(
                                               fit: BoxFit.scaleDown,
                                               child: Text(
-                                                unit[index].unitFlatNumber,
+                                                unit?[index].unitFlatNumber,
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 22,
-                                                  color: selectedUnits
-                                                          .contains(unit[index])
+                                                  color: selectedUnits.contains(
+                                                          unit?[index])
                                                       ? Color(0xffC08261)
                                                       : Colors.grey.shade700,
                                                 ),
@@ -348,8 +345,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   elevation: 0.5,
                   onPressed: () {
                     (selectedUnits.length == 1)
-                        ? unitsSelectionBloc.add(NextButtonClickedEvent(
-                            unit: selectedUnits))
+                        ? unitsSelectionBloc
+                            .add(NextButtonClickedEvent(unit: selectedUnits))
                         : showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -361,7 +358,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               ),
                             ),
                             builder: (context) => SelectedUnitsBottomSheet(
-                              selectedIndices: selectedUnits,unitsSelectionBloc: unitsSelectionBloc,
+                              selectedIndices: selectedUnits,
+                              unitsSelectionBloc: unitsSelectionBloc,
                             ),
                           );
                   },
@@ -418,7 +416,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 class SelectedUnitsBottomSheet extends StatefulWidget {
   List<MemberUnits>? selectedIndices = [];
   final UnitsSelectionBloc unitsSelectionBloc;
-  SelectedUnitsBottomSheet({super.key, this.selectedIndices, required this.unitsSelectionBloc});
+  SelectedUnitsBottomSheet(
+      {super.key, this.selectedIndices, required this.unitsSelectionBloc});
 
   @override
   State<SelectedUnitsBottomSheet> createState() =>
@@ -493,7 +492,7 @@ class _SelectedUnitsBottomSheetState extends State<SelectedUnitsBottomSheet>
                       ),
                       onPressed: () {
                         Navigator.pop(context);
-                       widget.unitsSelectionBloc.add(NextButtonClickedEvent(
+                        widget.unitsSelectionBloc.add(NextButtonClickedEvent(
                             unit: widget.selectedIndices!));
                       },
                       icon: Icon(

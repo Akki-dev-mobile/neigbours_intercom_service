@@ -1,11 +1,11 @@
-import 'dart:convert';
+// var client = Client('https://gateapi.cubeone.in')
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:onegate_client/onegate_client.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
-// var client = Client('https://gateapi.cubeone.in')
 var client = Client('http://192.168.1.137:8080/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
@@ -145,20 +145,22 @@ class RemoteDataSource {
     return null;
   }
 
-  Future<List<dynamic>> getBuilding(int companyId) async {
+  Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
-      final response = await _dio2.get('/api/admin/building/list',
+      final response = await _dio2.get(
+          'https://societybackend.cubeone.in/api/admin/building/list',
           queryParameters: {'company_id': companyId});
-      return response.data['data'];
+      return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
     }
   }
 
-  Future<List<dynamic>> getMemberUnit(int companyId, int buildingId) async {
+  Future<List<dynamic>> getMemberUnit(int? companyId, int? buildingId) async {
     try {
-      final response = await _dio2.get('/api/admin/units/list',
+      final response = await _dio2.get(
+          'https://societybackend.cubeone.in/api/admin/units/list',
           queryParameters: {
             'company_id': companyId,
             'building_id': buildingId,
@@ -173,7 +175,8 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getMember(int companyId, int unitId) async {
     try {
-      final response = await _dio2.get('/api/admin/member/list',
+      final response = await _dio2.get(
+          'https://societybackend.cubeone.in/api/admin/member/list',
           queryParameters: {
             'company_id': companyId,
             'unit_id': unitId,
@@ -243,43 +246,54 @@ class RemoteDataSource {
 
   Future<String> uploadFile(File file, String userMobile, int companyId) async {
     try {
-      print('File path: ${file.path}');
-
-      var data = FormData.fromMap({
-        'file': await MultipartFile.fromFile(file.path,
-            filename: '$userMobile.jpg'),
-        'service_id': '5',
-        'company_id': '412',
-        'uuid': userMobile,
-        'path': 'test/onegate/image'
-      });
-
-      Options options = Options(
-        contentType: 'multipart/form-data',
-      );
-
-      var dio = Dio();
-      var response = await dio.request(
-        'http://192.168.1.135:8088/api/file-upload',
-        options: Options(
-          method: 'POST',
-          contentType: 'multipart/form-data',
-          headers: {'Content-Type': 'multipart/form-data'},
-        ),
-        data: data,
-      );
-
-      if (response.statusCode == 200) {
-        print(json.encode(response.data));
-        return response.data['data'];
-      } else {
-        print(response.statusMessage);
-        return '';
-      }
+      final directory = await getApplicationDocumentsDirectory();
+      final localFile = File('${directory.path}/$userMobile.jpg');
+      await file.copy(localFile.path);
+      print('Image saved locally at: ${localFile.path}');
+      return localFile.path;
     } catch (e) {
-      print('Error uploading image: $e');
-      rethrow;
+      print('Failed to save image locally: $e');
+      return '';
     }
+
+    // try {
+    //   print('File path: ${file.path}');
+    //
+    //   var data = FormData.fromMap({
+    //     'file': await MultipartFile.fromFile(file.path,
+    //         filename: '$userMobile.jpg'),
+    //     'service_id': '5',
+    //     'company_id': '412',
+    //     'uuid': userMobile,
+    //     'path': 'test/onegate/image'
+    //   });
+    //
+    //   Options options = Options(
+    //     contentType: 'multipart/form-data',
+    //   );
+    //
+    //   var dio = Dio();
+    //   var response = await dio.request(
+    //     'http://192.168.1.135:8088/api/file-upload',
+    //     options: Options(
+    //       method: 'POST',
+    //       contentType: 'multipart/form-data',
+    //       headers: {'Content-Type': 'multipart/form-data'},
+    //     ),
+    //     data: data,
+    //   );
+    //
+    //   if (response.statusCode == 200) {
+    //     print(json.encode(response.data));
+    //     return response.data['data'];
+    //   } else {
+    //     print(response.statusMessage);
+    //     return '';
+    //   }
+    // } catch (e) {
+    //   print('Error uploading image: $e');
+    //   rethrow;
+    // }
   }
 
   Future<List<dynamic>> getUnitsList(int companyId) async {

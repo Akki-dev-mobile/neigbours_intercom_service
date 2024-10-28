@@ -1,7 +1,7 @@
 class Member {
-  int id;
+  int? id;
   dynamic memberId;
-  int fkUnitId;
+  int? fkUnitId;
   dynamic salute;
   dynamic memberName;
   dynamic memberEmailId;
@@ -17,29 +17,35 @@ class Member {
   dynamic approved;
 
   Member({
-    required this.id,
-    required this.memberId,
-    required this.fkUnitId,
-    required this.salute,
-    required this.memberName,
-    required this.memberEmailId,
-    required this.memberMobileNumber,
-    required this.memberEffectiveDate,
-    required this.memberTypeName,
-    required this.memberIntercom,
-    required this.memberStatus,
-    required this.status,
-    required this.socBuildingName,
-    required this.unitFlatNumber,
-    required this.buildingUnit,
-    required this.approved,
+    this.id,
+    this.memberId,
+    this.fkUnitId,
+    this.salute,
+    this.memberName,
+    this.memberEmailId,
+    this.memberMobileNumber,
+    this.memberEffectiveDate,
+    this.memberTypeName,
+    this.memberIntercom,
+    this.memberStatus,
+    this.status,
+    this.socBuildingName,
+    this.unitFlatNumber,
+    this.buildingUnit,
+    this.approved,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) {
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
     return Member(
-      id: json['id'],
+      id: parseInt(json['id']),
       memberId: json['member_id'],
-      fkUnitId: json['fk_unit_id'],
+      fkUnitId: parseInt(json['fk_unit_id']),
       salute: json['salute'],
       memberName: json['member_name'],
       memberEmailId: json['member_email_id'],
@@ -57,6 +63,8 @@ class Member {
   }
 
   static List<Member> fromJsonList(List<dynamic> jsonList) {
-    return jsonList.map((json) => Member.fromJson(json)).toList();
+    return jsonList
+        .map((json) => Member.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 }

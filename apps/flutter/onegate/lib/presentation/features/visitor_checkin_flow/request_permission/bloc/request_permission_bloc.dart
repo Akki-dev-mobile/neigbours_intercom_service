@@ -24,8 +24,8 @@ class RequestPermissionBloc
   FutureOr<void> allowButtonClickedEvent(AllowButtonClickedEvent event,
       Emitter<RequestPermissionState> emit) async {
     try {
-      List<BuildingAssignment> buildingAssignments =
-          createBuildingAssignments(event.memberUnits,_preferenceUtils.getSelectedCompany()!.companyId);
+      List<BuildingAssignment> buildingAssignments = createBuildingAssignments(
+          event.memberUnits, _preferenceUtils.getSelectedCompany()!.companyId);
       for (BuildingAssignment buildingAssignment in buildingAssignments) {
         buildingAssignment.visitor_id = event.visitor.id;
       }
@@ -52,7 +52,7 @@ class RequestPermissionBloc
   }
 
   List<BuildingAssignment> createBuildingAssignments(
-      List<MemberUnits> memberUnits,int companyId) {
+      List<MemberUnits> memberUnits, int companyId) {
     List<BuildingAssignment> buildingAssignments = [];
 
     // Create a map to store the building IDs and their respective units
@@ -60,7 +60,7 @@ class RequestPermissionBloc
 
     // Iterate over the memberUnits list
     for (MemberUnits memberUnit in memberUnits) {
-      int buildingId = memberUnit.socBuildingId;
+      int buildingId = memberUnit.socBuildingId ?? 0;
       String unitId = memberUnit.unitFlatNumber;
 
       // Check if the building ID already exists in the map

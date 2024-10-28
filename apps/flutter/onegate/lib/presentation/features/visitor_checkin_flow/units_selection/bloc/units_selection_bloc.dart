@@ -26,11 +26,14 @@ class UnitsSelectionBloc extends Bloc<UnitSelectionEvent, UnitsSelectionState> {
       Emitter<UnitsSelectionState> emit) async {
     emit(UnitsSelectionLoadingState());
     try {
-      List<Building>? buildings = await societyUseCase.getBuildings(_preferenceUtils.getSelectedCompany()!.companyId);
+      List<Building>? buildings = await societyUseCase
+          .getBuildings(_preferenceUtils.getSelectedCompany()!.companyId);
       if (buildings != null) {
-        List<MemberUnits>? units =
-            await societyUseCase.getUnits(_preferenceUtils.getSelectedCompany()!.companyId, buildings[0].id);
-        emit(UnitSelectionSuccessState(buildings[0], units: units, buildings: buildings));
+        List<MemberUnits>? units = await societyUseCase.getUnits(
+            _preferenceUtils.getSelectedCompany()!.companyId,
+            buildings[0].id ?? 1);
+        emit(UnitSelectionSuccessState(buildings[0],
+            units: units, buildings: buildings));
       } else {
         emit(UnitsSelectionErrorState(message: "Error"));
       }
@@ -44,22 +47,25 @@ class UnitsSelectionBloc extends Bloc<UnitSelectionEvent, UnitsSelectionState> {
       BuildingChipClickedEvent event, Emitter<UnitsSelectionState> emit) async {
     emit(UnitsSelectionLoadingState());
     try {
-      List<MemberUnits>? units =
-          await societyUseCase.getUnits(_preferenceUtils.getSelectedCompany()!.companyId, event.building.id);
-      emit(UnitSelectionSuccessState(event.building, units: units, buildings: event.buildings));
+      List<MemberUnits>? units = await societyUseCase.getUnits(
+          _preferenceUtils.getSelectedCompany()!.companyId,
+          event.building.id ?? 1);
+      emit(UnitSelectionSuccessState(event.building,
+          units: units, buildings: event.buildings));
     } catch (e) {
       print(e.toString());
       emit(UnitsSelectionErrorState(message: e.toString()));
     }
   }
 
-  FutureOr<void> unitSelectedEvent(UnitSelectedEvent event, Emitter<UnitsSelectionState> emit) async{
-    
+  FutureOr<void> unitSelectedEvent(
+      UnitSelectedEvent event, Emitter<UnitsSelectionState> emit) async {
     try {
-      List<Member>? member = await societyUseCase.getMembers(_preferenceUtils.getSelectedCompany()!.companyId, event.unit.id);
-      if(member != null){
+      List<Member>? member = await societyUseCase.getMembers(
+          _preferenceUtils.getSelectedCompany()!.companyId, event.unit.id ?? 1);
+      if (member != null) {
         emit(MemberFetchedState(member));
-      }else{
+      } else {
         emit(UnitsSelectionErrorState(message: "Error"));
       }
     } catch (e) {
@@ -68,7 +74,8 @@ class UnitsSelectionBloc extends Bloc<UnitSelectionEvent, UnitsSelectionState> {
     }
   }
 
-  FutureOr<void> nextButtonClickedEvent(NextButtonClickedEvent event, Emitter<UnitsSelectionState> emit) async{
+  FutureOr<void> nextButtonClickedEvent(
+      NextButtonClickedEvent event, Emitter<UnitsSelectionState> emit) async {
     emit(UnitsSelectionLoadingState());
     try {
       emit(NavigateToRequestPermissionState(unit: event.unit));
