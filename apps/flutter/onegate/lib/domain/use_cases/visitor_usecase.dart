@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:onegate_client/onegate_client.dart';
 
 class VisitorUsecase {
@@ -15,6 +14,18 @@ class VisitorUsecase {
 
   Future<List<PurposeCategory>?>? fetchPurposeCategory() async {
     return await _repository.fetchPurposeCategory();
+  }
+
+  Future<List<dynamic>?>? getMembersList(int companyId) async {
+    return await _repository.getMembersList(companyId);
+  }
+
+  Future<List<dynamic>?>? getUnitList(int companyId) async {
+    return await _repository.getUnitList(companyId);
+  }
+
+  Future<List<dynamic>?>? getBuildingList(int companyId) async {
+    return await _repository.getBuildingList(companyId);
   }
 
   Future<Visitor?> createVisitor(Visitor visitor) async {
@@ -35,6 +46,6 @@ class VisitorUsecase {
   }
 
   Future<String?> verifyOTP(String mobileNumber, String otp) async {
-    return await _repository.verifyOTP(mobileNumber,otp);
+    return await _repository.verifyOTP(mobileNumber, otp);
   }
 }

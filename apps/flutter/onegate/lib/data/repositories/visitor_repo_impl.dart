@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:onegate_client/onegate_client.dart';
 
 class VisitorRepoImpl extends VisitorRepository {
@@ -30,6 +29,36 @@ class VisitorRepoImpl extends VisitorRepository {
   }
 
   @override
+  Future<List<dynamic>?>? getUnitList(int companyId) async {
+    try {
+      final response = await _remoteDataSource.getUnitsList(companyId);
+      return response;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<dynamic>?>? getBuildingList(int companyId) async {
+    try {
+      final response = await _remoteDataSource.getBuildingsList(companyId);
+      return response;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<dynamic>?>? getMembersList(int companyId) async {
+    try {
+      final response = await _remoteDataSource.getMembersList(companyId);
+      return response;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  @override
   Future<Visitor?> createVisitor(Visitor visitor) async {
     try {
       final response = await _remoteDataSource.createVisitor(visitor);
@@ -41,10 +70,10 @@ class VisitorRepoImpl extends VisitorRepository {
 
   @override
   Future<String?> uploadImage(
-      File file, String userMobile, int companyId) async {
+      File file, String userMobile, int? companyId) async {
     try {
       final response =
-          await _remoteDataSource.uploadFile(file, userMobile, companyId);
+          await _remoteDataSource.uploadFile(file, userMobile, companyId ?? 0);
       return response;
     } catch (error) {
       return null;
@@ -70,16 +99,14 @@ class VisitorRepoImpl extends VisitorRepository {
       return error.toString();
     }
   }
-  
+
   @override
-  Future<String?> verifyOTP(String mobileNumber, String otp) async{
+  Future<String?> verifyOTP(String mobileNumber, String otp) async {
     try {
-      final response = await _remoteDataSource.verifyOTP(mobileNumber,otp);
+      final response = await _remoteDataSource.verifyOTP(mobileNumber, otp);
       return response;
     } catch (error) {
       return error.toString();
     }
   }
-
-
 }

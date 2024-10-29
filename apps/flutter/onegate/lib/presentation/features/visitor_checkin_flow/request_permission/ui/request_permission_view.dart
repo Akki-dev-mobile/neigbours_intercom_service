@@ -92,6 +92,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
 
           case RequestPermissionInitial:
             return MyScrollView(
+              hasBackButton: true,
               pageTitle: 'Permission',
               pageBody: Column(
                 mainAxisAlignment: MainAxisAlignment.start,

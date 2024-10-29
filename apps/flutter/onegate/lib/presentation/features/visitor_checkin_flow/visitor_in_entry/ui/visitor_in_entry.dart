@@ -4,7 +4,9 @@ import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-// import 'package:cached_network_image/cached_network_image.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+
+// import 'package:cached_network_image/cached_networ k_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -295,9 +297,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           textController: guestName,
                           suffixIcon: IconButton(
                             onPressed: () {
+
+                              showDialog(context: context, builder: (context) => ListeningDialog());
                               _speechToText.isNotListening
                                   ? _startListening('guestName')
                                   : _stopListening();
+
                             },
                             icon: CircleAvatar(
                               backgroundColor:
@@ -324,10 +329,15 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           textController: guestComingFrom,
                           suffixIcon: IconButton(
                             onPressed: () {
+
                               _speechToText.isNotListening
                                   ? _startListening('guestComingFrom')
                                   : _stopListening();
                             },
+
+
+
+
                             icon: CircleAvatar(
                               backgroundColor: _speechTextControllerId ==
                                           'guestComingFrom' &&
@@ -582,6 +592,125 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
           ),
         );
       },
+    );
+  }
+}
+
+
+class ListeningDialog extends StatefulWidget {
+  @override
+  _ListeningDialogState createState() => _ListeningDialogState();
+}
+
+class _ListeningDialogState extends State<ListeningDialog>
+    with SingleTickerProviderStateMixin {
+  late stt.SpeechToText _speechToText;
+  bool _isListening = false;
+  String recognizedText = 'Listening...';
+
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _speechToText = stt.SpeechToText();
+
+    // Animation for pulsing mic icon
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _startListening('guestComingFrom'); // Automatically start listening when dialog opens
+  }
+
+  // Toggle between listening and not listening
+  void _toggleListening(String contextLabel) {
+    if (!_isListening) {
+      _startListening(contextLabel);
+    } else {
+      _stopListening();
+    }
+  }
+
+  // Start listening
+  Future<void> _startListening(String contextLabel) async {
+    bool available = await _speechToText.initialize(
+      onStatus: (status) {
+        if (status == 'done' || status == 'notListening') {
+          setState(() => _isListening = false);
+        }
+      },
+      onError: (error) => print('Error: $error'),
+    );
+
+    if (available) {
+      setState(() => _isListening = true);
+      _speechToText.listen(
+        onResult: (result) {
+          setState(() => recognizedText = result.recognizedWords);
+        },
+      );
+    }
+  }
+
+  // Stop listening
+  void _stopListening() {
+    _speechToText.stop();
+    setState(() => _isListening = false);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _speechToText.stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              recognizedText,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) => Transform.scale(
+                scale: _animation.value,
+                child: IconButton(
+                  icon: Icon(
+                    _isListening ? Icons.mic : Icons.mic_none,
+                    size: 50,
+                    color: Colors.red,
+                  ),
+                  onPressed: () => _toggleListening('guestComingFrom'),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                _stopListening(); // Ensure it stops listening on exit
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

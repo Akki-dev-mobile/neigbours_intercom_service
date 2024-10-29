@@ -1,27 +1,26 @@
-import 'dart:convert';
+// var client = Client('https://gateapi.cubeone.in')
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:onegate_client/onegate_client.dart';
-
+import 'package:path_provider/path_provider.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
-
-
-// var client = Client('https://gateapi.cubeone.in')
-var client = Client('http://192.168.1.35:8080/')
+var client = Client('https://onegate.cubeone.in/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
 class RemoteDataSource {
   final Dio _dio1;
   final Dio _dio2;
   final Dio _dio3;
+  RemoteDataSource(
+    this._dio1,
+    this._dio2,
+    this._dio3,
+  );
 
-  RemoteDataSource(this._dio1, this._dio2, this._dio3,);
-
-
-  Future<Map<String, dynamic>> loginUser(String username, String password,
-      String method) async {
+  Future<Map<String, dynamic>> loginUser(
+      String username, String password, String method) async {
     try {
       final response = await _dio1.post('/login',
           data: {'username': "91$username", 'password': password});
@@ -58,7 +57,6 @@ class RemoteDataSource {
       rethrow;
     }
   }
-
   //   try {
   //     final response = await _dio2.get('/api/admin/building/list',
   //         queryParameters: {'company_id': companyId});
@@ -122,7 +120,7 @@ class RemoteDataSource {
       BuildingAssignment buildingAssignment) async {
     try {
       final result =
-      await client.visitorLog.createBuildingAssignment(buildingAssignment);
+          await client.visitorLog.createBuildingAssignment(buildingAssignment);
       print("createBuildingAssignment: ${result.toString()}");
       return result;
     } catch (e) {
@@ -135,7 +133,7 @@ class RemoteDataSource {
     try {
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       for (BuildingAssignment buildingAssignment
-      in visitorLog.visitor_building_assignment!) {
+          in visitorLog.visitor_building_assignment!) {
         buildingAssignment.visitor_log_id = result.id;
         await createBuildingAssignment(buildingAssignment);
       }
@@ -147,20 +145,22 @@ class RemoteDataSource {
     return null;
   }
 
-  Future<List<dynamic>> getBuilding(int companyId) async {
+  Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
-      final response = await _dio2.get('/api/admin/building/list',
+      final response = await _dio2.get(
+          'https://societybackend.cubeone.in/api/admin/building/list',
           queryParameters: {'company_id': companyId});
-      return response.data['data'];
+      return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
     }
   }
 
-  Future<List<dynamic>> getMemberUnit(int companyId, int buildingId) async {
+  Future<List<dynamic>> getMemberUnit(int? companyId, int? buildingId) async {
     try {
-      final response = await _dio2.get('/api/admin/units/list',
+      final response = await _dio2.get(
+          'https://societybackend.cubeone.in/api/admin/units/list',
           queryParameters: {
             'company_id': companyId,
             'building_id': buildingId,
@@ -175,7 +175,8 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getMember(int companyId, int unitId) async {
     try {
-      final response = await _dio2.get('/api/admin/member/list',
+      final response = await _dio2.get(
+          'https://societybackend.cubeone.in/api/admin/member/list',
           queryParameters: {
             'company_id': companyId,
             'unit_id': unitId,
@@ -195,11 +196,12 @@ class RemoteDataSource {
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
+      rethrow;
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckInLogs(int companyId,
-      String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckInLogs(
+      int companyId, String dateTime) async {
     try {
       final visitor_log = await client.visitorLog.fetchCheckInLogs(dateTime);
       return visitor_log.reversed.toList();
@@ -209,8 +211,8 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckOutLogs(int companyId,
-      String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckOutLogs(
+      int companyId, String dateTime) async {
     try {
       final visitor_log = await client.visitorLog.fetchCheckOutLogs(dateTime);
       return visitor_log.reversed.toList();
@@ -244,41 +246,94 @@ class RemoteDataSource {
 
   Future<String> uploadFile(File file, String userMobile, int companyId) async {
     try {
-      print('File path: ${file.path}');
-
-      var data = FormData.fromMap({
-        'file': await MultipartFile.fromFile(file.path,
-            filename: '$userMobile.jpg'),
-        'service_id': '5',
-        'company_id': '412',
-        'uuid': userMobile,
-        'path': 'test/onegate/image'
-      });
-
-      Options options = Options(
-        contentType: 'multipart/form-data',
-      );
-
-      var dio = Dio();
-      var response = await dio.request(
-        'http://192.168.1.135:8088/api/file-upload',
-        options: Options(
-          method: 'POST',
-          contentType: 'multipart/form-data',
-          headers: {'Content-Type': 'multipart/form-data'},
-        ),
-        data: data,
-      );
-
-      if (response.statusCode == 200) {
-        print(json.encode(response.data));
-        return response.data['data'];
-      } else {
-        print(response.statusMessage);
-        return '';
-      }
+      final directory = await getApplicationDocumentsDirectory();
+      final localFile = File('${directory.path}/$userMobile.jpg');
+      await file.copy(localFile.path);
+      print('Image saved locally at: ${localFile.path}');
+      return localFile.path;
     } catch (e) {
-      print('Error uploading image: $e');
+      print('Failed to save image locally: $e');
+      return '';
+    }
+
+    // try {
+    //   print('File path: ${file.path}');
+    //
+    //   var data = FormData.fromMap({
+    //     'file': await MultipartFile.fromFile(file.path,
+    //         filename: '$userMobile.jpg'),
+    //     'service_id': '5',
+    //     'company_id': '412',
+    //     'uuid': userMobile,
+    //     'path': 'test/onegate/image'
+    //   });
+    //
+    //   Options options = Options(
+    //     contentType: 'multipart/form-data',
+    //   );
+    //
+    //   var dio = Dio();
+    //   var response = await dio.request(
+    //     'http://192.168.1.135:8088/api/file-upload',
+    //     options: Options(
+    //       method: 'POST',
+    //       contentType: 'multipart/form-data',
+    //       headers: {'Content-Type': 'multipart/form-data'},
+    //     ),
+    //     data: data,
+    //   );
+    //
+    //   if (response.statusCode == 200) {
+    //     print(json.encode(response.data));
+    //     return response.data['data'];
+    //   } else {
+    //     print(response.statusMessage);
+    //     return '';
+    //   }
+    // } catch (e) {
+    //   print('Error uploading image: $e');
+    //   rethrow;
+    // }
+  }
+
+  Future<List<dynamic>> getUnitsList(int companyId) async {
+    try {
+      final response =
+          await _dio2.get('/api/admin/units/list', queryParameters: {
+        'company_id': companyId,
+      });
+      print("Units List: ${response.data['data']}");
+      return response.data['data'] ?? [];
+    } catch (e) {
+      print('Error fetching units list: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getBuildingsList(int companyId) async {
+    try {
+      final response =
+          await _dio2.get('/api/admin/building/list', queryParameters: {
+        'company_id': companyId,
+      });
+      print("Buildings List: ${response.data['data']}");
+      return response.data['data'] ?? [];
+    } catch (e) {
+      print('Error fetching buildings list: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getMembersList(int companyId) async {
+    try {
+      final response =
+          await _dio2.get('/api/admin/member/list', queryParameters: {
+        'company_id': companyId,
+      });
+      print("Members List: ${response.data['data']}");
+      return response.data['data'] ?? [];
+    } catch (e) {
+      print('Error fetching members list: $e');
       rethrow;
     }
   }
@@ -308,20 +363,4 @@ class RemoteDataSource {
       return e.toString();
     }
   }
-
-  // Future<String> fetchMemberDetails(String mobileNumber) async {
-  //   try {
-  //     final response = await _dio1.get('api/admin/member/list',
-  //         queryParameters: {'mobile_number': mobileNumber});
-  //     print("MemberIDDD:$response.data['data']");
-  //     if (response.statusCode == 200) {
-  //       return response.data['data'];
-  //     }
-  //   } catch (e) {
-  //     return e.toString();
-  //   }
-  //   return '';
-  // }
-
-
 }

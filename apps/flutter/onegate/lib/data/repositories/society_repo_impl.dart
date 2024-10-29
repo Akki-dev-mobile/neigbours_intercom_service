@@ -22,10 +22,10 @@ class SocietyRepositoryImpl implements SocietyRepository {
   }
 
   @override
-  Future<List<MemberUnits>?> getUnits(int companyId, int buildingId) async {
+  Future<List<MemberUnits>?> getUnits(int? companyId, int? buildingId) async {
     try {
-      final response =
-          await _remoteDataSource.getMemberUnit(companyId, buildingId);
+      final response = await _remoteDataSource.getMemberUnit(
+          companyId ?? 412, buildingId ?? 1);
       final unitList = MemberUnits.fromJsonList(response);
       return unitList;
     } catch (error) {

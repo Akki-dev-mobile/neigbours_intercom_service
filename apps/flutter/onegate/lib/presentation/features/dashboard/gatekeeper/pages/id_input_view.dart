@@ -1,9 +1,9 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chips_choice/chips_choice.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-// import 'package:cached_network_image/cached_network_image.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -463,76 +463,76 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                   onTap: () => selectImage(index),
                   child: Stack(
                     children: [
-                      // Container(
-                      //   height: 250,
-                      //   width: 200,
-                      //   /*padding:
-                      //       EdgeInsets.symmetric(vertical: 7, horizontal: 10),*/
-                      //   margin: EdgeInsets.all(3),
-                      //   decoration: BoxDecoration(
-                      //     color: selectedImageIndex == index
-                      //         ? Color(0x10C08261)
-                      //         : Colors.transparent,
-                      //     border: Border.all(
-                      //       color: selectedImageIndex == index
-                      //           ? Color(0xffC08261)
-                      //           : Colors.grey,
-                      //       width: selectedImageIndex == index ? 2 : 1,
-                      //     ),
-                      //     borderRadius: BorderRadius.circular(15),
-                      //   ),
-                      //   child: Column(
-                      //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      //     children: [
-                      //       Padding(
-                      //         padding: const EdgeInsets.only(top: 7),
-                      //         child: ClipRRect(
-                      //           borderRadius: BorderRadius.circular(15),
-                      //           child: CachedNetworkImage(
-                      //             maxHeightDiskCache: 90,
-                      //             maxWidthDiskCache: 90,
-                      //             height: 60,
-                      //             width: 60,
-                      //             fit: BoxFit.cover,
-                      //             imageUrl: widget
-                      //                 .purposeCategories[index].purpose_img,
-                      //             placeholder: (context, url) =>
-                      //                 const CircularProgressIndicator(),
-                      //             errorWidget: (context, url, error) =>
-                      //                 const Icon(
-                      //               Icons.error,
-                      //               color: Colors.red,
-                      //             ),
-                      //             fadeOutDuration:
-                      //                 const Duration(milliseconds: 300),
-                      //             fadeInDuration:
-                      //                 const Duration(milliseconds: 300),
-                      //           ),
-                      //         ),
-                      //       ),
-                      //       Padding(
-                      //         padding: const EdgeInsets.only(top: 4),
-                      //         child: FittedBox(
-                      //           fit: BoxFit.scaleDown,
-                      //           child: Text(
-                      //             widget.purposeCategories[index]
-                      //                 .purpose_category_name,
-                      //             style: TextStyle(
-                      //               color: selectedImageIndex == index
-                      //                   ? Color(0xffC08261)
-                      //                   : Theme.of(context)
-                      //                       .colorScheme
-                      //                       .onBackground,
-                      //               fontWeight: selectedImageIndex == index
-                      //                   ? FontWeight.bold
-                      //                   : FontWeight.normal,
-                      //             ),
-                      //           ),
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
+                      Container(
+                        height: 250,
+                        width: 200,
+                        /*padding:
+                            EdgeInsets.symmetric(vertical: 7, horizontal: 10),*/
+                        margin: EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: selectedImageIndex == index
+                              ? Color(0x10C08261)
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: selectedImageIndex == index
+                                ? Color(0xffC08261)
+                                : Colors.grey,
+                            width: selectedImageIndex == index ? 2 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 7),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(15),
+                                child: CachedNetworkImage(
+                                  maxHeightDiskCache: 90,
+                                  maxWidthDiskCache: 90,
+                                  height: 60,
+                                  width: 60,
+                                  fit: BoxFit.cover,
+                                  imageUrl: widget
+                                      .purposeCategories[index].purpose_img,
+                                  placeholder: (context, url) =>
+                                      const CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(
+                                    Icons.error,
+                                    color: Colors.red,
+                                  ),
+                                  fadeOutDuration:
+                                      const Duration(milliseconds: 300),
+                                  fadeInDuration:
+                                      const Duration(milliseconds: 300),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  widget.purposeCategories[index]
+                                      .purpose_category_name,
+                                  style: TextStyle(
+                                    color: selectedImageIndex == index
+                                        ? Color(0xffC08261)
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onBackground,
+                                    fontWeight: selectedImageIndex == index
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       selectedImageIndex == index
                           ? Positioned(
                               right: 10,

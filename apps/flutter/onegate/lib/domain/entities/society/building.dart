@@ -1,45 +1,52 @@
 class Building {
-  int id;
-  int socId;
+  int? id;
+  int? socId;
   dynamic vizlogBuildingId;
   dynamic socBuildingName;
   dynamic socBuildingFloors;
-  int unitsPerFloor;
+  int? unitsPerFloor;
   dynamic cancelDate;
   dynamic cancellationReason;
-  int status;
+  int? status;
   dynamic createdDate;
   dynamic createdBy;
   dynamic updatedDate;
   dynamic updatedBy;
 
   Building({
-    required this.id,
-    required this.socId,
-    required this.vizlogBuildingId,
-    required this.socBuildingName,
-    required this.socBuildingFloors,
-    required this.unitsPerFloor,
-    required this.cancelDate,
-    required this.cancellationReason,
-    required this.status,
-    required this.createdDate,
-    required this.createdBy,
-    required this.updatedDate,
-    required this.updatedBy,
+    this.id,
+    this.socId,
+    this.vizlogBuildingId,
+    this.socBuildingName,
+    this.socBuildingFloors,
+    this.unitsPerFloor,
+    this.cancelDate,
+    this.cancellationReason,
+    this.status,
+    this.createdDate,
+    this.createdBy,
+    this.updatedDate,
+    this.updatedBy,
   });
+
+  // Helper function to safely parse integers from dynamic types
+  static int? parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
 
   factory Building.fromJson(Map<String, dynamic> json) {
     return Building(
-      id: json['id'],
-      socId: json['soc_id'],
+      id: parseInt(json['id']),
+      socId: parseInt(json['soc_id']),
       vizlogBuildingId: json['vizlog_building_id'],
       socBuildingName: json['soc_building_name'],
       socBuildingFloors: json['soc_building_floors'],
-      unitsPerFloor: json['units_per_floor'],
+      unitsPerFloor: parseInt(json['units_per_floor']),
       cancelDate: json['cancel_date'],
       cancellationReason: json['cancellation_reason'],
-      status: json['status'],
+      status: parseInt(json['status']),
       createdDate: json['created_date'],
       createdBy: json['created_by'],
       updatedDate: json['updated_date'],
@@ -47,7 +54,7 @@ class Building {
     );
   }
 
-  static List<Building> fromJsonList(List<dynamic> jsonList) {
+  static List<Building> fromJsonList(List<Map<String, dynamic>> jsonList) {
     return jsonList.map((json) => Building.fromJson(json)).toList();
   }
 }
