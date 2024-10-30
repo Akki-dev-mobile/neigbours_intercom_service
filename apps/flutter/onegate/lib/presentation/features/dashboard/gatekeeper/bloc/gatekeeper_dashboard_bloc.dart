@@ -87,30 +87,43 @@ class GatekeeperDashboardBloc
     }
   }
 
-  FutureOr<void> onInitialEvent(GatekeeperDashboardInitialEvent event, Emitter<GatekeeperDashboardState> emit) async{
-    try{
+  FutureOr<void> onInitialEvent(GatekeeperDashboardInitialEvent event,
+      Emitter<GatekeeperDashboardState> emit) async {
+    try {
       emit(GatekeeperDashboardLoadingState());
-        final List<VisitorLog>? checkedInVisitors=await _visitorLogUsecase.fetchCheckInVisitorLog(_preferenceUtils.getSelectedCompany()!.companyId,DateTime.now().toString());
-        final int inBook = checkedInVisitors!.length;
+      final List<VisitorLog>? checkedInVisitors =
+          await _visitorLogUsecase.fetchCheckInVisitorLog(
+              _preferenceUtils.getSelectedCompany()!.companyId,
+              DateTime.now().toString());
+      final int inBook = checkedInVisitors!.length;
 
-        final List<VisitorLog>? checkedOutVisitors=await _visitorLogUsecase.fetchCheckOutLogs(_preferenceUtils.getSelectedCompany()!.companyId,DateTime.now().toString());
-        final int outBook = checkedOutVisitors!.length;
+      final List<VisitorLog>? checkedOutVisitors =
+          await _visitorLogUsecase.fetchCheckOutLogs(
+              _preferenceUtils.getSelectedCompany()!.companyId,
+              DateTime.now().toString());
+      final int outBook = checkedOutVisitors!.length;
 
-        emit(GatekeeperDashboardSuccessState(inBook: inBook,outBook: outBook));
-    }catch(e){
+      emit(GatekeeperDashboardSuccessState(inBook: inBook, outBook: outBook));
+    } catch (e) {
       print(e.toString());
-    } 
+    }
   }
 
-  FutureOr<void> onInAndOutButtonPressedEvent(GDInAndOutButtonPressedEvent event, Emitter<GatekeeperDashboardState> emit) async{
+  FutureOr<void> onInAndOutButtonPressedEvent(
+      GDInAndOutButtonPressedEvent event,
+      Emitter<GatekeeperDashboardState> emit) async {
     emit(GDInAndOutButtonPressedState());
   }
 
-  FutureOr<void> onVisitorsInButtonPressedEvent(GDVisitorsInButtonPressedEvent event, Emitter<GatekeeperDashboardState> emit) async{
+  FutureOr<void> onVisitorsInButtonPressedEvent(
+      GDVisitorsInButtonPressedEvent event,
+      Emitter<GatekeeperDashboardState> emit) async {
     emit(GDVisitorsInButtonPressedState());
   }
 
-  FutureOr<void> onVisitorsOutButtonPressedEvent(GDVisitorsOutButtonPressedEvent event, Emitter<GatekeeperDashboardState> emit) async{
+  FutureOr<void> onVisitorsOutButtonPressedEvent(
+      GDVisitorsOutButtonPressedEvent event,
+      Emitter<GatekeeperDashboardState> emit) async {
     emit(GDVisitorsOutButtonPressedState());
   }
 }

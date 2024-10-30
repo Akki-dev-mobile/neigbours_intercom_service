@@ -4,8 +4,6 @@ import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
-
 // import 'package:cached_network_image/cached_networ k_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +18,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
@@ -198,6 +197,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             return LoaderView();
           default:
             return MyScrollView(
+              backButtonPressed: () {
+                Navigator.pop(context);
+              },
               isScrollable: true,
               pageTitle: '${widget.selectedValue.purpose_category_name} Entry',
               pageBody: Column(
@@ -297,12 +299,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           textController: guestName,
                           suffixIcon: IconButton(
                             onPressed: () {
-
-                              showDialog(context: context, builder: (context) => ListeningDialog());
+                              showDialog(
+                                  context: context,
+                                  builder: (context) => ListeningDialog());
                               _speechToText.isNotListening
                                   ? _startListening('guestName')
                                   : _stopListening();
-
                             },
                             icon: CircleAvatar(
                               backgroundColor:
@@ -329,15 +331,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           textController: guestComingFrom,
                           suffixIcon: IconButton(
                             onPressed: () {
-
                               _speechToText.isNotListening
                                   ? _startListening('guestComingFrom')
                                   : _stopListening();
                             },
-
-
-
-
                             icon: CircleAvatar(
                               backgroundColor: _speechTextControllerId ==
                                           'guestComingFrom' &&
@@ -352,6 +349,15 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               ),
                             ),
                           ),
+                        ),
+                        CustomForm.textField(
+                          titleColor:
+                              Theme.of(context).colorScheme.onBackground,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          "Enter your ID",
+                          hintText: 'Request from Security',
+                          keyboardType: TextInputType.text,
+                          length: 4,
                         ),
                         CustomForm.textField(
                           "Guest Count",
@@ -371,14 +377,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                onPressed: _incrementGuestCount,
-                                icon: Icon(
-                                  Ionicons.add_circle_outline,
-                                  size: 32,
-                                  color: Colors.green,
-                                ),
-                              ),
-                              IconButton(
                                 onPressed: _decrementGuestCount,
                                 icon: Icon(
                                   Ionicons.remove_circle_outline,
@@ -386,17 +384,16 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                                   size: 32,
                                 ),
                               ),
+                              IconButton(
+                                onPressed: _incrementGuestCount,
+                                icon: Icon(
+                                  Ionicons.add_circle_outline,
+                                  size: 32,
+                                  color: Colors.green,
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                        CustomForm.textField(
-                          titleColor:
-                              Theme.of(context).colorScheme.onBackground,
-                          hintColor: Theme.of(context).colorScheme.onPrimary,
-                          "Enter your ID",
-                          hintText: 'Request from Security',
-                          keyboardType: TextInputType.text,
-                          length: 4,
                         ),
                         SizedBox(height: 150),
                       ],
@@ -596,7 +593,6 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
   }
 }
 
-
 class ListeningDialog extends StatefulWidget {
   @override
   _ListeningDialogState createState() => _ListeningDialogState();
@@ -626,7 +622,8 @@ class _ListeningDialogState extends State<ListeningDialog>
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
-    _startListening('guestComingFrom'); // Automatically start listening when dialog opens
+    _startListening(
+        'guestComingFrom'); // Automatically start listening when dialog opens
   }
 
   // Toggle between listening and not listening

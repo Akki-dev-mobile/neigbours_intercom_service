@@ -196,88 +196,97 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     ),
                                   ),
                                   Expanded(
-                                    child: GridView.builder(
-                                      padding: EdgeInsets.only(
-                                        bottom: 150,
-                                      ),
-                                      shrinkWrap: true,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                        childAspectRatio: 2,
-                                        crossAxisCount: 3,
-                                        crossAxisSpacing: 10.0,
-                                        mainAxisSpacing: 10.0,
-                                      ),
-                                      itemCount: unit?.length ?? 1,
-                                      itemBuilder:
-                                          (BuildContext context, int index) {
-                                        return GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              if (selectedUnits
-                                                  .contains(unit![index])) {
-                                                selectedUnits
-                                                    .remove(unit[index]);
-                                              } else {
-                                                selectedUnits.add(unit[index]);
-                                                unitsSelectionBloc.add(
-                                                    UnitSelectedEvent(
-                                                        unit[index]));
-                                              }
-                                              if (kDebugMode) {
-                                                print(
-                                                    'Selected Indices: $selectedUnits');
-                                              }
-                                              anotherList.clear();
-                                              for (MemberUnits index
-                                                  in selectedUnits) {
-                                                // if (index >= 0 &&
-                                                //     index < items.length) {
-                                                anotherList.add(index);
-                                                //}
-                                              }
-                                              if (kDebugMode) {
-                                                print(
-                                                    'Another List: $anotherList');
-                                              }
-                                            });
-                                          },
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: selectedUnits.contains(
-                                                      unit?[index] ?? [])
-                                                  ? Color(0x10C08261)
-                                                  : Colors.transparent,
-                                              border: Border.all(
-                                                color: selectedUnits
-                                                        .contains(unit?[index])
-                                                    ? Color(0xffC08261)
-                                                    : Colors.grey.shade400,
-                                                width: selectedUnits
-                                                        .contains(unit?[index])
-                                                    ? 2
-                                                    : 1,
-                                              ),
-                                            ),
-                                            child: FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                unit?[index].unitFlatNumber,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 22,
+                                    child: SingleChildScrollView(
+                                      padding: EdgeInsets.only(bottom: 150),
+                                      child: Wrap(
+                                        spacing:
+                                            10.0, // Horizontal spacing between items
+                                        runSpacing:
+                                            10.0, // Vertical spacing between rows
+                                        children: List.generate(
+                                          unit?.length ?? 1,
+                                          (index) {
+                                            return GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  if (selectedUnits
+                                                      .contains(unit![index])) {
+                                                    selectedUnits
+                                                        .remove(unit[index]);
+                                                  } else {
+                                                    selectedUnits
+                                                        .add(unit[index]);
+                                                    unitsSelectionBloc.add(
+                                                        UnitSelectedEvent(
+                                                            unit[index]));
+                                                  }
+                                                  if (kDebugMode) {
+                                                    print(
+                                                        'Selected Indices: $selectedUnits');
+                                                  }
+                                                  anotherList.clear();
+                                                  for (MemberUnits index
+                                                      in selectedUnits) {
+                                                    anotherList.add(index);
+                                                  }
+                                                  if (kDebugMode) {
+                                                    print(
+                                                        'Another List: $anotherList');
+                                                  }
+                                                });
+                                              },
+                                              child: Container(
+                                                width: MediaQuery.of(context)
+                                                            .size
+                                                            .width /
+                                                        3 -
+                                                    15, // Approximate width for three columns
+                                                height:
+                                                    100, // Set height based on the aspect ratio you want
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
                                                   color: selectedUnits.contains(
-                                                          unit?[index])
-                                                      ? Color(0xffC08261)
-                                                      : Colors.grey.shade700,
+                                                          unit?[index] ?? [])
+                                                      ? Color(0x10C08261)
+                                                      : Colors.transparent,
+                                                  border: Border.all(
+                                                    color: selectedUnits
+                                                            .contains(
+                                                                unit?[index])
+                                                        ? Color(0xffC08261)
+                                                        : Colors.grey.shade400,
+                                                    width:
+                                                        selectedUnits.contains(
+                                                                unit?[index])
+                                                            ? 2
+                                                            : 1,
+                                                  ),
+                                                ),
+                                                child: FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Text(
+                                                    unit?[index]
+                                                            .unitFlatNumber ??
+                                                        '',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 22,
+                                                      color: selectedUnits
+                                                              .contains(
+                                                                  unit?[index])
+                                                          ? Color(0xffC08261)
+                                                          : Colors
+                                                              .grey.shade700,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                            );
+                                          },
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   SizedBox(height: 120),
@@ -345,26 +354,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   elevation: 0.5,
                   onPressed: () {
                     (selectedUnits.length == 1)
-
                         ? showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      builder: (context) => SelectedUnitsBottomSheet(
-                        selectedIndices: selectedUnits,
-                        unitsSelectionBloc: unitsSelectionBloc,
-                      ),
-                    )
-                        :unitsSelectionBloc
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                                topRight: Radius.circular(20),
+                              ),
+                            ),
+                            builder: (context) => SelectedUnitsBottomSheet(
+                              selectedIndices: selectedUnits,
+                              unitsSelectionBloc: unitsSelectionBloc,
+                            ),
+                          )
+                        : unitsSelectionBloc
                             .add(NextButtonClickedEvent(unit: selectedUnits));
-
-
                   },
                   child: Container(
                     height: 80,

@@ -11,31 +11,40 @@ import 'package:onegate_client/onegate_client.dart';
 part 'admin_dashboard_event.dart';
 part 'admin_dashboard_state.dart';
 
-class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> {
+class AdminDashboardBloc
+    extends Bloc<AdminDashboardEvent, AdminDashboardState> {
   final AdminDashboardUseCase _adminDashboardUseCase;
   final VisitorLogUsecase _visitorLogUsecase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
-  AdminDashboardBloc(this._adminDashboardUseCase, this._visitorLogUsecase) : super(AdminDashboardInitial()) {
+  AdminDashboardBloc(this._adminDashboardUseCase, this._visitorLogUsecase)
+      : super(AdminDashboardInitial()) {
     on<AdminDashboardInitialEvent>(adminDashboardInitial);
     on<AdminDashboardSettingsPressedEvent>(adminDashboardSettingsPressedEvent);
   }
 
-  FutureOr<void> adminDashboardSettingsPressedEvent(AdminDashboardSettingsPressedEvent event, Emitter<AdminDashboardState> emit) {
-    
-  }
+  FutureOr<void> adminDashboardSettingsPressedEvent(
+      AdminDashboardSettingsPressedEvent event,
+      Emitter<AdminDashboardState> emit) {}
 
-  FutureOr<void> adminDashboardInitial(AdminDashboardInitialEvent event, Emitter<AdminDashboardState> emit) async{
-    try{
+  FutureOr<void> adminDashboardInitial(AdminDashboardInitialEvent event,
+      Emitter<AdminDashboardState> emit) async {
+    try {
       emit(AdminDashboardLoadingState());
-        final List<VisitorLog>? checkedInVisitors=await _visitorLogUsecase.fetchCheckInVisitorLog(_preferenceUtils.getSelectedCompany()!.companyId,DateTime.now().toString());
-        final int inBook = checkedInVisitors!.length;
+      final List<VisitorLog>? checkedInVisitors =
+          await _visitorLogUsecase.fetchCheckInVisitorLog(
+              _preferenceUtils.getSelectedCompany()!.companyId,
+              DateTime.now().toString());
+      final int inBook = checkedInVisitors!.length;
 
-        final List<VisitorLog>? checkedOutVisitors=await _visitorLogUsecase.fetchCheckOutLogs(_preferenceUtils.getSelectedCompany()!.companyId,DateTime.now().toString());
-        final int outBook = checkedOutVisitors!.length;
+      final List<VisitorLog>? checkedOutVisitors =
+          await _visitorLogUsecase.fetchCheckOutLogs(
+              _preferenceUtils.getSelectedCompany()!.companyId,
+              DateTime.now().toString());
+      final int outBook = checkedOutVisitors!.length;
 
-        emit(AdminDashboardSuccessState(inBook: inBook,outBook: outBook));
-    }catch(e){
+      emit(AdminDashboardSuccessState(inBook: inBook, outBook: outBook));
+    } catch (e) {
       print(e.toString());
-    } 
+    }
   }
 }
