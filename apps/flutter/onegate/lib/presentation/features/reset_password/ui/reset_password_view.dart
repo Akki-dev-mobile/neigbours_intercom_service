@@ -1,10 +1,10 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/reset_password/bloc/reset_password_bloc.dart';
 import 'package:lottie/lottie.dart';
-import 'package:common_widgets/common_widgets.dart';
 
 class ResetPasswordView extends StatefulWidget {
   const ResetPasswordView({super.key});
@@ -67,6 +67,9 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       },
       builder: (context, state) {
         return MyScrollView(
+          backButtonPressed: () {
+            Navigator.pop(context);
+          },
           hasBackButton: true,
           pageBody: Column(
             children: [

@@ -150,6 +150,9 @@ class _IdInputViewState extends State<IdInputView> {
             return LoaderView();
           default:
             return MyScrollView(
+              backButtonPressed: () {
+                Navigator.pop(context);
+              },
               hasBackButton: true,
               pageBody: Column(
                 mainAxisSize: MainAxisSize.min,

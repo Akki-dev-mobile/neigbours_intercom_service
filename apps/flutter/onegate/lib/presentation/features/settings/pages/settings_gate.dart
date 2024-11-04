@@ -1,9 +1,9 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:common_widgets/common_widgets.dart';
 
 class GateSettingView extends StatefulWidget {
   const GateSettingView({super.key});
@@ -21,6 +21,9 @@ class _GateSettingViewState extends State<GateSettingView> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
+      backButtonPressed: () {
+        Navigator.pop(context);
+      },
       pageTitle: 'Gate Settings',
       pageBody: Column(
         children: [

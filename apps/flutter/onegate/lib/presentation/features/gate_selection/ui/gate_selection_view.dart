@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -12,8 +14,6 @@ import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 
 import '../../dashboard/admin/pages/admin_dashboard_view.dart';
 
@@ -31,7 +31,8 @@ class _GateSelectionViewState extends State<GateSelectionView> {
   final GateSelectionBloc gateBloc = GateSelectionBloc(
     GateUseCase(
       GateRepositoryImpl(
-        RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2,DioSingleton.instance3),
+        RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+            DioSingleton.instance3),
       ),
     ),
   );
@@ -107,6 +108,9 @@ class _GateSelectionViewState extends State<GateSelectionView> {
             }
 
             return MyScrollView(
+              backButtonPressed: () {
+                Navigator.pop(context);
+              },
               pageTitle: 'Gate Selection',
               pageBody: Column(
                 children: [

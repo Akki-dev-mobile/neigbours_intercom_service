@@ -1,9 +1,10 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
-import 'package:common_widgets/common_widgets.dart';
+
 import '../bloc/request_gate_access_bloc.dart';
 
 class RequestGateAccess extends StatefulWidget {
@@ -72,6 +73,9 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
       },
       builder: (context, state) {
         return MyScrollView(
+          backButtonPressed: () {
+            Navigator.pop(context);
+          },
           pageBody: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.center,

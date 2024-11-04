@@ -22,8 +22,10 @@ class RemoteDataSource {
   Future<Map<String, dynamic>> loginUser(
       String username, String password, String method) async {
     try {
+      print(username);
       final response = await _dio1.post('/login',
           data: {'username': "91$username", 'password': password});
+
       var data = response.data;
       print('Loginnnn$data');
       return response.data['data'];

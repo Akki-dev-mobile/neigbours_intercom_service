@@ -1,8 +1,8 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
-import 'package:common_widgets/common_widgets.dart';
 
 class AppPermissions extends StatefulWidget {
   const AppPermissions({super.key});
@@ -18,6 +18,9 @@ class _AppPermissionsState extends State<AppPermissions> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
+      backButtonPressed: () {
+        Navigator.pop(context);
+      },
       pageTitle: 'Gate Settings',
       pageBody: Column(
         children: [

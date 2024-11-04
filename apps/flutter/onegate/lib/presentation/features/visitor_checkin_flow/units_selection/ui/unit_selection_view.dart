@@ -3,7 +3,6 @@
 import 'package:chips_choice/chips_choice.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -12,11 +11,12 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/society/building.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:flutter_onegate/domain/use_cases/society_usecase.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/bloc/units_selection_bloc.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:onegate_client/onegate_client.dart';
+
+import '../../request_permission/ui/request_permission_view.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final Visitor visitor;
@@ -113,12 +113,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             return LoaderView();
           case UnitSelectionSuccessState:
             List<MemberUnits>? unit;
-            print(" here i am $unit");
+
             final successState = state as UnitSelectionSuccessState;
             selectedBuilding = successState.selectedBuilding!;
             unit = successState.units;
 
             return MyScrollView(
+              backButtonPressed: () {
+                Navigator.pop(context);
+              },
               isScrollable: false,
               pageTitle: 'Select Units/Members',
               pageBody: Column(
@@ -196,16 +199,26 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     ),
                                   ),
                                   Expanded(
-                                    child: SingleChildScrollView(
-                                      padding: EdgeInsets.only(bottom: 150),
-                                      child: Wrap(
-                                        spacing:
-                                            10.0, // Horizontal spacing between items
-                                        runSpacing:
-                                            10.0, // Vertical spacing between rows
-                                        children: List.generate(
-                                          unit?.length ?? 1,
-                                          (index) {
+                                    child: Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 120.0),
+                                      child: Container(
+                                        constraints: BoxConstraints(
+                                            minHeight: 100,
+                                            maxHeight:
+                                                400), // Set constraints if necessary
+                                        child: GridView.builder(
+                                          shrinkWrap: true,
+                                          gridDelegate:
+                                              SliverGridDelegateWithFixedCrossAxisCount(
+                                            childAspectRatio: 2,
+                                            crossAxisCount: 3,
+                                            crossAxisSpacing: 10.0,
+                                            mainAxisSpacing: 10.0,
+                                          ),
+                                          itemCount: unit!.length,
+                                          itemBuilder: (BuildContext context,
+                                              int index) {
                                             return GestureDetector(
                                               onTap: () {
                                                 setState(() {
@@ -220,66 +233,46 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                         UnitSelectedEvent(
                                                             unit[index]));
                                                   }
-                                                  if (kDebugMode) {
-                                                    print(
-                                                        'Selected Indices: $selectedUnits');
-                                                  }
                                                   anotherList.clear();
-                                                  for (MemberUnits index
+                                                  for (MemberUnits selectedUnit
                                                       in selectedUnits) {
-                                                    anotherList.add(index);
-                                                  }
-                                                  if (kDebugMode) {
-                                                    print(
-                                                        'Another List: $anotherList');
+                                                    anotherList
+                                                        .add(selectedUnit);
                                                   }
                                                 });
                                               },
                                               child: Container(
-                                                width: MediaQuery.of(context)
-                                                            .size
-                                                            .width /
-                                                        3 -
-                                                    15, // Approximate width for three columns
-                                                height:
-                                                    100, // Set height based on the aspect ratio you want
+                                                alignment: Alignment.center,
                                                 decoration: BoxDecoration(
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                   color: selectedUnits.contains(
-                                                          unit?[index] ?? [])
+                                                          unit![index])
                                                       ? Color(0x10C08261)
                                                       : Colors.transparent,
                                                   border: Border.all(
                                                     color: selectedUnits
                                                             .contains(
-                                                                unit?[index])
+                                                                unit[index])
                                                         ? Color(0xffC08261)
                                                         : Colors.grey.shade400,
                                                     width:
                                                         selectedUnits.contains(
-                                                                unit?[index])
+                                                                unit[index])
                                                             ? 2
                                                             : 1,
                                                   ),
                                                 ),
-                                                child: FittedBox(
-                                                  fit: BoxFit.scaleDown,
-                                                  child: Text(
-                                                    unit?[index]
-                                                            .unitFlatNumber ??
-                                                        '',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize: 22,
-                                                      color: selectedUnits
-                                                              .contains(
-                                                                  unit?[index])
-                                                          ? Color(0xffC08261)
-                                                          : Colors
-                                                              .grey.shade700,
-                                                    ),
+                                                child: Text(
+                                                  unit[index].unitFlatNumber,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 22,
+                                                    color: selectedUnits
+                                                            .contains(
+                                                                unit[index])
+                                                        ? Color(0xffC08261)
+                                                        : Colors.grey.shade700,
                                                   ),
                                                 ),
                                               ),
@@ -354,7 +347,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   elevation: 0.5,
                   onPressed: () {
                     (selectedUnits.length == 1)
-                        ? showModalBottomSheet(
+                        ? unitsSelectionBloc
+                            .add(NextButtonClickedEvent(unit: selectedUnits))
+                        : showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
                             useSafeArea: true,
@@ -368,9 +363,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               selectedIndices: selectedUnits,
                               unitsSelectionBloc: unitsSelectionBloc,
                             ),
-                          )
-                        : unitsSelectionBloc
-                            .add(NextButtonClickedEvent(unit: selectedUnits));
+                          );
                   },
                   child: Container(
                     height: 80,

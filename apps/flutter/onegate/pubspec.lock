@@ -605,7 +605,7 @@ packages:
     source: hosted
     version: "0.19.0"
   ionicons:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: ionicons
       sha256: "5496bc65a16115ecf05b15b78f494ee4a8869504357668f0a11d689e970523cf"

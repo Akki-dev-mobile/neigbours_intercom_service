@@ -5,7 +5,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-class MyScrollView extends StatelessWidget {
+class MyScrollView extends StatelessWidget  {
   const MyScrollView({
     Key? key,
     required this.pageBody,
@@ -29,8 +29,7 @@ class MyScrollView extends StatelessWidget {
   final bool hasBackButton;
   final bool isScrollable;
   final List<Widget>? actions;
-  final Function()? backButtonPressed;
-
+  final VoidCallback? backButtonPressed;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,9 +52,10 @@ class MyScrollView extends StatelessWidget {
                       Ionicons.arrow_back_outline,
                       color: Theme.of(context).colorScheme.onBackground,
                     ),
-                    onPressed: () {
-                      backButtonPressed ?? Navigator.pop(context);
-                    },
+              onPressed: backButtonPressed ??
+                      () {
+                    Navigator.pop(context);
+                  },
                   )
                 : null,
             pinned: true,

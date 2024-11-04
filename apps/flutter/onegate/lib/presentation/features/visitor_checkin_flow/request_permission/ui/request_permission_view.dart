@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -8,10 +9,8 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/request_gate_access/bloc/request_gate_access_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
 import 'package:lottie/lottie.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:onegate_client/onegate_client.dart';
 
 class RequestPermissionView extends StatefulWidget {
@@ -92,6 +91,9 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
 
           case RequestPermissionInitial:
             return MyScrollView(
+              backButtonPressed: () {
+                Navigator.pop(context);
+              },
               hasBackButton: true,
               pageTitle: 'Permission',
               pageBody: Column(
