@@ -1,24 +1,24 @@
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
 
 class UserInfo {
-  final int userId;
-  final String firstName;
-  final String lastName;
-  final String username;
-  final String mobile;
-  final String email;
-  final Map<String, List<Company>> companies;
-  final String uuid;
+  final int? userId;
+  final String? firstName;
+  final String? lastName;
+  final String? username;
+  final String? mobile;
+  final String? email;
+  final Map<String, List<Company>>? companies;
+  final String? uuid;
 
   UserInfo({
-    required this.userId,
-    required this.firstName,
-    required this.lastName,
-    required this.username,
-    required this.mobile,
-    required this.email,
-    required this.companies,
-    required this.uuid,
+     this.userId,
+     this.firstName,
+     this.lastName,
+     this.username,
+     this.mobile,
+     this.email,
+     this.companies,
+     this.uuid,
   });
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {

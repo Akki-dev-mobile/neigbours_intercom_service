@@ -159,7 +159,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       final List<Company> companiesWithAccessToGate = [];
 
-      response!.userInfo.companies.forEach((key, companyList) {
+      response!.userInfo!.companies?.forEach((key, companyList) {
         final filteredCompanies = companyList
             .where((company) => company.accessTo.contains(5))
             .toList();
@@ -167,7 +167,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       });
 
       preferenceUtils.saveAccessTokenResponse(response);
-      preferenceUtils.saveUserInfo(response.userInfo);
+      if (response.userInfo != null) {
+        preferenceUtils.saveUserInfo(response.userInfo!);
+      } else {
+        throw Exception("UserInfo is null");
+      }
       emit(LoginInitial());
       if (preferenceUtils.getSelectedCompany() == null) {
         emit(SocietySelectionState(companiesWithAccessToGate));

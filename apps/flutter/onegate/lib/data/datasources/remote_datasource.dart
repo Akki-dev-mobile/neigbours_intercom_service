@@ -22,7 +22,11 @@ class RemoteDataSource {
   Future<Map<String, dynamic>> loginUser(
       String username, String password, String method) async {
     try {
-      print(username);
+      print("loginUser URL: ${_dio1.options.baseUrl}");
+      print("loginUser params: ${{
+        'username': "91$username",
+        'password': password
+      }}");
       final response = await _dio1.post('/login',
           data: {'username': "91$username", 'password': password});
 
@@ -35,17 +39,17 @@ class RemoteDataSource {
     return {};
   }
 
-    Future<List<dynamic>> fetchGates(int companyId) async {
+  Future<List<dynamic>> fetchGates(int companyId) async {
     try {
       print("Company IDDD URL: ${companyId}");
-  
+
       final queryParams = {'company_id': companyId};
       final response = await _dio2.get('/api/admin/gates/list',
           queryParameters: queryParams);
       // print url
       print("Company IDDD URL: ${response.requestOptions.uri}");
       print("Company IDDD${response.data['data'].toString()}");
-  
+
       if (response.statusCode == 200) {
         if (response.data != null && response.data['data'] != null) {
           return response.data['data'];

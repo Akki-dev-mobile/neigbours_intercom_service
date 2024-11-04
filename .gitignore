@@ -39,4 +39,4 @@ testem.log
 Thumbs.db
 
 # Flutter project specific
-apps/flutter/onegate/android/gradle.properties
+/apps/flutter/onegate/android/gradle.properties

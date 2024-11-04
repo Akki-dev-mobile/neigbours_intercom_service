@@ -1,28 +1,28 @@
 import 'package:flutter_onegate/domain/entities/auth/user_info.dart';
 
 class AccessTokenResponse {
-  final String accessToken;
-  final int expires_in;
-  final int refresh_expires_in;
-  final String refresh_token;
-  final String token_type;
-  final String id_token;
-  final int not_before_policy;
-  final String session_state;
-  final String scope;
-  final UserInfo userInfo;
+  final String? accessToken;
+  final int? expires_in;
+  final int? refresh_expires_in;
+  final String? refresh_token;
+  final String? token_type;
+  final String? id_token;
+  final int? not_before_policy;
+  final String? session_state;
+  final String? scope;
+  final UserInfo? userInfo;
 
   AccessTokenResponse({
-    required this.accessToken,
-    required this.expires_in,
-    required this.refresh_expires_in,
-    required this.refresh_token,
-    required this.token_type,
-    required this.id_token,
-    required this.not_before_policy,
-    required this.session_state,
-    required this.scope,
-    required this.userInfo,
+     this.accessToken,
+     this.expires_in,
+     this.refresh_expires_in,
+     this.refresh_token,
+     this.token_type,
+     this.id_token,
+     this.not_before_policy,
+     this.session_state,
+     this.scope,
+     this.userInfo,
   });
 
   factory AccessTokenResponse.fromJson(Map<String, dynamic> json) {
@@ -51,7 +51,7 @@ class AccessTokenResponse {
       'not-before-policy': not_before_policy,
       'session_state': session_state,
       'scope': scope,
-      'user_info': userInfo.toJson(),
+      'user_info': userInfo?.toJson(),
     };
   }
 }
