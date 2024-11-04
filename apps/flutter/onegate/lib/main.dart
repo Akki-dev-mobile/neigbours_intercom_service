@@ -20,8 +20,8 @@ void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
 
-  setupDependencies();
-  setupLocator();
+  await setupDependencies();
+  await setupLocator();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

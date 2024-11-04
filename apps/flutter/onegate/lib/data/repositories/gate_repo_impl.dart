@@ -10,10 +10,13 @@ class GateRepositoryImpl implements GateRepository {
 
   @override
   Future<List<Gate>?> gateList(int companyId) async {
+          print("Company IDDD GateRepositoryImpl companyId response: $companyId");
+
     try {
       final response =
           await _remoteDataSource.fetchGates(companyId);
       final gateListResponse = GateMapper.fromJsonList(response);
+      print("Company IDDD GateRepositoryImpl response: $gateListResponse");
       return gateListResponse;
     } catch (error) {
       return null; // Handle error or Gate failure

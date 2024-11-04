@@ -35,7 +35,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt locator = GetIt.instance;
 
-void setupLocator() {
+ setupLocator() {
   // Register Dio instance
   // You can configure Dio here
   final dioInstance = Dio();
@@ -121,8 +121,9 @@ void setupLocator() {
       () => SelfEntryBloc(locator<VisitorUsecase>()));
 }
 
-void setupDependencies() async {
+ setupDependencies() async {
   final preferencesInstance = await SharedPreferences.getInstance();
   final preferenceUtilsInstance = PreferenceUtils(preferencesInstance);
   locator.registerSingleton<PreferenceUtils>(preferenceUtilsInstance);
+  
 }
