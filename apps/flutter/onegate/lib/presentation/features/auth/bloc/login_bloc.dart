@@ -104,6 +104,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           final response = await _gateUseCase
               .gateList(_preferenceUtils.getSelectedCompany()!.companyId);
           final List<Gate> gates = response!;
+          print("Company IDDD Gates: $gates");
           emit(LoginInitial());
           if (response.length == 1) {
             _preferenceUtils.setSelectedGate(response[0]);

@@ -1,25 +1,25 @@
 class Gate {
-  int id;
-  int companyId;
-  String gateName;
-  String gateType;
-  dynamic userId;
-  int status;
-  String tag;
-  String createdAt;
-  String updatedAt;
+  int? id;
+  int? companyId;
+  String? gateName;
+  String? gateType;
+  int? userId;
+  int? status;
+  String? tag;
+  String? createdAt;
+  String? updatedAt;
   bool isSelected;
 
   Gate({
-    required this.id,
-    required this.companyId,
-    required this.gateName,
-    required this.gateType,
-    required this.userId,
-    required this.status,
-    required this.tag,
-    required this.createdAt,
-    required this.updatedAt,
+    this.id,
+    this.companyId,
+    this.gateName,
+    this.gateType,
+    this.userId,
+    this.status,
+    this.tag,
+    this.createdAt,
+    this.updatedAt,
     this.isSelected = false,
   });
 

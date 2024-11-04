@@ -23,6 +23,7 @@ class GateSelectionBloc extends Bloc<GateSelectionEvent, GateSelectionState> {
     emit(GateSelectionLoadingState());
     try {
       final response = await _gateUseCase.gateList(_preferenceUtils.getSelectedCompany()!.companyId);
+      print("Company IDDD response: $response");
       final List<Gate> gates = response!;
       emit(GateSelectionSuccessState(gates));
     } catch (e) {

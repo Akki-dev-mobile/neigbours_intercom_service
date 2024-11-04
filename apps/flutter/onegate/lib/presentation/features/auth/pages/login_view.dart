@@ -65,12 +65,14 @@ class _LoginViewState extends State<LoginView> {
   final LoginBloc loginBloc = LoginBloc(
       LoginUseCase(
         AuthenticationRepositoryImpl(
-          RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2,DioSingleton.instance3),
+          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+              DioSingleton.instance3),
         ),
       ),
       GateUseCase(
         GateRepositoryImpl(
-          RemoteDataSource(DioSingleton.instance1,DioSingleton.instance2,DioSingleton.instance3),
+          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
+              DioSingleton.instance3),
         ),
       ));
 
@@ -184,9 +186,10 @@ class _LoginViewState extends State<LoginView> {
             break;
           case LoginErrorState:
             final errorState = state as LoginErrorState;
+            print("Login Error: ${errorState.message}");
             Fluttertoast.showToast(
-              msg: errorState.message!,
-              toastLength: Toast.LENGTH_SHORT,
+              msg: "Login Error: ${errorState.message}",
+              toastLength: Toast.LENGTH_LONG,
               gravity: ToastGravity.BOTTOM,
               timeInSecForIosWeb: 1,
               backgroundColor: Colors.red,
@@ -226,11 +229,10 @@ class _LoginViewState extends State<LoginView> {
             );
             break;
           case NavigateToAdminDashboardState:
-           _preferenceUtils.setIsLogin(true);
-           print("Check 1");
-           print(
-                "Check 1 ${_preferenceUtils.getUserInfo()!.userId} ${_preferenceUtils.getSelectedGate()!.userId}"
-           );
+            _preferenceUtils.setIsLogin(true);
+            print("Check 1");
+            print(
+                "Check 1 ${_preferenceUtils.getUserInfo()!.userId} ${_preferenceUtils.getSelectedGate()!.userId}");
             Navigator.pushReplacement(
               context,
               PageTransition(
@@ -775,7 +777,7 @@ class _LoginViewState extends State<LoginView> {
                           selectedGate = gatesList[index];
                         })
                       },
-                      title: gatesList[index]!.gateName,
+                      title: gatesList[index]!.gateName ?? 'Unknown Gate',
                       subtitle: 'Enable/Disable ${gatesList[index]!.gateName}',
                       // leadingIcon: Ionicons.grid_outline,
                       leadingIcon: Symbols.gate,
