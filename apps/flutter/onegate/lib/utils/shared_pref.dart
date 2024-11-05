@@ -120,7 +120,9 @@ class PreferenceUtils {
     final userInfoJson = _preferences.getString(_userInfoKey);
     if (userInfoJson != null) {
       final userInfoMap = jsonDecode(userInfoJson);
+      print("User Info UserInfo.fromJson(userInfoMap) ${UserInfo}");
       return UserInfo.fromJson(userInfoMap);
+      
     }
     return null;
   }
@@ -129,6 +131,7 @@ class PreferenceUtils {
     final selectedCompanyJson = _preferences.getString(_selectedCompanyKey);
     if (selectedCompanyJson != null) {
       final selectedCompanyMap = jsonDecode(selectedCompanyJson);
+      print( "Selected Gate selectedCompanyMap ${Company.fromJson(selectedCompanyMap)}");
       return Company.fromJson(selectedCompanyMap);
     }
     return null;
@@ -148,6 +151,7 @@ class PreferenceUtils {
     final selectedGateJson = _preferences.getString('selected_gate');
     if (selectedGateJson != null) {
       final selectedGateMap = jsonDecode(selectedGateJson);
+      print( " Selected Gate ${Gate.fromJson(selectedGateMap)}");
       return Gate.fromJson(selectedGateMap);
     }
     return null;

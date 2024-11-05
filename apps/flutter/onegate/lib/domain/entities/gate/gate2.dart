@@ -4,6 +4,8 @@ class Gate {
   String? gateName;
   String? gateType;
   int? userId;
+  int? oldSsoUserId;
+
   int? status;
   String? tag;
   String? createdAt;
@@ -16,6 +18,7 @@ class Gate {
     this.gateName,
     this.gateType,
     this.userId,
+    this.oldSsoUserId,
     this.status,
     this.tag,
     this.createdAt,
@@ -29,7 +32,8 @@ class Gate {
       companyId: json['company_id'],
       gateName: json['gate_name'],
       gateType: json['gate_type'],
-      userId: json['user_id'],
+      userId: json['gate_user_id'],
+      oldSsoUserId: json['old_sso_user_id'],
       status: json['status'],
       tag: json['tag'],
       createdAt: json['created_at'],
@@ -43,11 +47,17 @@ class Gate {
       'company_id': companyId,
       'gate_name': gateName,
       'gate_type': gateType,
-      'user_id': userId,
+      'gate_user_id': userId,
+      'old_sso_user_id': oldSsoUserId,
       'status': status,
       'tag': tag,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
+  }
+
+  @override
+  String toString() {
+    return 'Gate(id: $id, companyId: $companyId, gateName: $gateName, gateType: $gateType, userId: $userId, status: $status, tag: $tag, createdAt: $createdAt, updatedAt: $updatedAt,)';
   }
 }

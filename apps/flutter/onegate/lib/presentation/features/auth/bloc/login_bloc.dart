@@ -81,7 +81,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           _preferenceUtils.getSelectedGate()!.userId) {
         emit(NavigateToGatekeeperDashboardState());
       } else {
-        emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+        emit(LoginErrorState(
+            message: "Gate Mismatch: Reach out to admin for gate correction."));
       }
     } else {
       emit(NavigateToAdminDashboardState());
@@ -104,7 +105,17 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           final response = await _gateUseCase
               .gateList(_preferenceUtils.getSelectedCompany()!.companyId);
           final List<Gate> gates = response!;
-          print("Company IDDD Gates: $gates");
+          print(
+              "Company Selected Gate IDDD: ${_preferenceUtils.getSelectedCompany()}");
+          print("Company Selected Gate IDDD Response: $response");
+          print("Company Selected Gate IDDD Gates: $gates");
+          print("Company Selected Gate IDDD Gates length: $gates.length");
+          print(
+              "Company Selected Gate IDDD Gates toString: ${gates.toString()}");
+          for (var gate in gates) {
+            print("Company Selected Gate loop: $gate");
+          }
+
           emit(LoginInitial());
           if (response.length == 1) {
             _preferenceUtils.setSelectedGate(response[0]);
@@ -120,13 +131,24 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         }
       } else {
         Gate? selectedGate = _preferenceUtils.getSelectedGate();
+        print("Selected Gate: $selectedGate");
         if (selectedGate != null) {
           _preferenceUtils.setIsLogin(true);
+          print(
+            " Company Selected Gate NavigateToGatekeeperDashboardState getUserInfo: ${_preferenceUtils.getUserInfo()!.userId} getSelectedGate()!.userId: ${_preferenceUtils.getSelectedGate()!.userId} getSelectedGate()!.oldSsoUserId ${_preferenceUtils.getSelectedGate()!.oldSsoUserId}",
+          );
+
           if (_preferenceUtils.getUserInfo()!.userId ==
               _preferenceUtils.getSelectedGate()!.userId) {
             emit(NavigateToGatekeeperDashboardState());
+          } else if (_preferenceUtils.getUserInfo()!.userId ==
+              _preferenceUtils.getSelectedGate()!.oldSsoUserId) {
+ 
+            emit(NavigateToGatekeeperDashboardState());
           } else {
-            emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+            emit(LoginErrorState(
+                message:
+                    "Gate Mismatch: Reach out to admin for gate correction."));
           }
         } else {
           emit(LoginErrorState(message: "Please info admin to select gate"));
@@ -149,7 +171,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           _preferenceUtils.getSelectedGate()!.userId) {
         emit(NavigateToGatekeeperDashboardState());
       } else {
-        emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+        emit(LoginErrorState(
+            message: "Gate Mismatch: Reach out to admin for gate correction."));
       }
     }
   }
@@ -190,7 +213,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
               _preferenceUtils.getSelectedGate()!.userId) {
             emit(NavigateToGatekeeperDashboardState());
           } else {
-            emit(LoginErrorState(message: "Gate Mismatch: Reach out to admin for gate correction."));
+            emit(LoginErrorState(
+                message:
+                    "Gate Mismatch: Reach out to admin for gate correction."));
           }
         } else {
           emit(NavigateToAdminDashboardState());

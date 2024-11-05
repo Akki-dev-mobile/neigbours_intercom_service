@@ -752,49 +752,52 @@ class _LoginViewState extends State<LoginView> {
                 color: Theme.of(context).colorScheme.background,
               ),
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      'Select your gate',
-                      style: Theme.of(context).textTheme.displaySmall!.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Select your gate',
+                        style: Theme.of(context).textTheme.displaySmall!.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
                     ),
-                  ),
-                  ...List.generate(gatesList.length, (index) {
-                    return GateSettingListTile(
-                      switchValue: gatesList[index]!.isSelected,
-                      onChanged: (value) => {
-                        setState(() {
-                          for (var gate in gatesList) {
-                            gate!.isSelected = false;
-                            print(gate.isSelected);
-                          }
-                          gatesList[index]!.isSelected = true;
-                          selectedGate = gatesList[index];
-                        })
-                      },
-                      title: gatesList[index]!.gateName ?? 'Unknown Gate',
-                      subtitle: 'Enable/Disable ${gatesList[index]!.gateName}',
-                      // leadingIcon: Ionicons.grid_outline,
-                      leadingIcon: Symbols.gate,
-                    );
-                  }),
-                  SizedBox(
-                    height: 30,
-                  ),
-                  CustomLargeBtn(
-                    text: 'Confirm',
-                    onPressed: () {
-                      loginBloc.add(
-                        GateSelectionButtonPressedEvent(selectedGate!),
+                    ...List.generate(gatesList.length, (index) {
+                      return GateSettingListTile(
+                        
+                        switchValue: gatesList[index]!.isSelected,
+                        onChanged: (value) => {
+                          setState(() {
+                            for (var gate in gatesList) {
+                              gate!.isSelected = false;
+                              print(gate.isSelected);
+                            }
+                            gatesList[index]!.isSelected = true;
+                            selectedGate = gatesList[index];
+                          })
+                        },
+                        title: gatesList[index]!.gateName ?? 'Unknown Gate',
+                        subtitle: 'Enable/Disable ${gatesList[index]!.gateName}',
+                        // leadingIcon: Ionicons.grid_outline,
+                        leadingIcon: Symbols.gate,
                       );
-                    },
-                  ),
-                ],
+                    }),
+                    SizedBox(
+                      height: 30,
+                    ),
+                    CustomLargeBtn(
+                      text: 'Confirm',
+                      onPressed: () {
+                        loginBloc.add(
+                          GateSelectionButtonPressedEvent(selectedGate!),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             );
           },

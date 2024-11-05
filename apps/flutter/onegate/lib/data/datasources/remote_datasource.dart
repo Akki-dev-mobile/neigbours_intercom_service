@@ -39,24 +39,14 @@ class RemoteDataSource {
     return {};
   }
 
-  Future<List<dynamic>> fetchGates(int companyId) async {
+   Future<List<dynamic>> fetchGates(int companyId) async {
     try {
-      print("Company IDDD URL: ${companyId}");
-
       final queryParams = {'company_id': companyId};
       final response = await _dio2.get('/api/admin/gates/list',
           queryParameters: queryParams);
-      // print url
-      print("Company IDDD URL: ${response.requestOptions.uri}");
-      print("Company IDDD${response.data['data'].toString()}");
-
+      print(response.data['data'].toString());
       if (response.statusCode == 200) {
-        if (response.data != null && response.data['data'] != null) {
-          return response.data['data'];
-        } else {
-          print('#############Response data is null or missing "data" key');
-          return [];
-        }
+        return response.data['data'];
       } else {
         throw DioError(
             requestOptions: response.requestOptions,
@@ -64,15 +54,11 @@ class RemoteDataSource {
             type: DioErrorType.response);
       }
     } catch (e) {
-      if (e is DioError) {
-        print('DioError: ${e.message}');
-        throw e;
-      } else {
-        print('Unexpected error: ${e.toString()}');
-        throw Exception('Unexpected error occurred');
-      }
+      print('Error fetching gates: $e');
+      rethrow;
     }
   }
+
   //   try {
   //     final response = await _dio2.get('/api/admin/building/list',
   //         queryParameters: {'company_id': companyId});
