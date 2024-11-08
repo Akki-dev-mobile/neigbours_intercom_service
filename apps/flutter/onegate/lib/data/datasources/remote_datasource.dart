@@ -1,7 +1,7 @@
-// var client = Client('https://gateapi.cubeone.in')
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
@@ -39,7 +39,7 @@ class RemoteDataSource {
     return {};
   }
 
-   Future<List<dynamic>> fetchGates(int companyId) async {
+  Future<List<dynamic>> fetchGates(int companyId) async {
     try {
       final queryParams = {'company_id': companyId};
       final response = await _dio2.get('/api/admin/gates/list',
@@ -196,7 +196,9 @@ class RemoteDataSource {
       final visitor_log = await client.visitorLog.fetchAllLogs(dateTime);
       return visitor_log.reversed.toList();
     } catch (e) {
-      print('Error fetching buildings: $e');
+      if (kDebugMode) {
+        print('Error fetching buildings: $e');
+      }
       rethrow;
       rethrow;
     }
@@ -357,7 +359,9 @@ class RemoteDataSource {
     try {
       final response = await _dio1.post('/sms/verify',
           data: {'phoneNumber': '91$mobileNumber', "otp": otp});
-      print(response.data['data'].toString());
+      if (kDebugMode) {
+        print(response.data['data'].toString());
+      }
       if (response.statusCode == 200) {
         return response.data['message'];
       }

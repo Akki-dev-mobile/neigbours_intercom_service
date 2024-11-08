@@ -19,10 +19,11 @@ class GateSelectionBloc extends Bloc<GateSelectionEvent, GateSelectionState> {
   }
 
   FutureOr<void> gateSelectionInitialEvent(
-      GateSelectionInitialEvent event, Emitter<GateSelectionState> emit) async{
+      GateSelectionInitialEvent event, Emitter<GateSelectionState> emit) async {
     emit(GateSelectionLoadingState());
     try {
-      final response = await _gateUseCase.gateList(_preferenceUtils.getSelectedCompany()!.companyId);
+      final response = await _gateUseCase
+          .gateList(_preferenceUtils.getSelectedCompany()?.companyId ?? 0);
       print("Company IDDD response: $response");
       final List<Gate> gates = response!;
       emit(GateSelectionSuccessState(gates));
@@ -31,11 +32,13 @@ class GateSelectionBloc extends Bloc<GateSelectionEvent, GateSelectionState> {
     }
   }
 
-  FutureOr<void> gateSelectionConfirmEvent(GateSelectionConfirmEvent event, Emitter<GateSelectionState> emit) {
+  FutureOr<void> gateSelectionConfirmEvent(
+      GateSelectionConfirmEvent event, Emitter<GateSelectionState> emit) {
     emit(GateSelectionLoadingState());
     try {
       _preferenceUtils.saveGatesList(event.gates);
-      final selectedGate = event.gates.firstWhere((gate) => gate.isSelected == true);
+      final selectedGate =
+          event.gates.firstWhere((gate) => gate.isSelected == true);
       _preferenceUtils.setSelectedGate(selectedGate);
       emit(GateSelectionNavigateToAdminDashActionState());
     } catch (e) {

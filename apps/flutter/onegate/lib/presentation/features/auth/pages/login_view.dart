@@ -1,11 +1,10 @@
 // ignore_for_file: prefer_const_constructors
-import 'package:country_code_picker/country_code_picker.dart';
-import 'package:dio/dio.dart';
-import 'package:email_validator/email_validator.dart';
-import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-
+import 'package:country_code_picker/country_code_picker.dart';
+import 'package:email_validator/email_validator.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/gate_repo_impl.dart';
@@ -14,21 +13,19 @@ import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
-import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:libphonenumber/libphonenumber.dart';
 import 'package:lottie/lottie.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
+
 import '../../dashboard/admin/pages/admin_dashboard_view.dart';
 import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import '../../gate_selection/ui/gate_selection_view.dart';
-import '../../request_gate_access/ui/request_gate_access_view.dart';
 import '../bloc/login_bloc.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -111,7 +108,8 @@ class _LoginViewState extends State<LoginView> {
   void _submitForm() {
     if (_loginFormKey.currentState?.validate() ?? false) {
       loginBloc.add(
-        LoginButtonPressedEvent(usernameTextCtrl!.text, passwordTextCtrl!.text),
+        LoginButtonPressedEvent(
+            usernameTextCtrl?.text ?? "", passwordTextCtrl?.text ?? ""),
       );
     }
   }
@@ -168,22 +166,6 @@ class _LoginViewState extends State<LoginView> {
       listener: (context, state) {
         print(state.runtimeType.toString());
         switch (state.runtimeType) {
-          case SocietySelectionState:
-            final societyState = state as SocietySelectionState;
-            _showSelectSocietyBottomSheet(
-              context,
-              societyState.companiesWithAccessToGate,
-            );
-            break;
-          case GateSelectionState:
-            final gateState = state as GateSelectionState;
-            _showGateSelectionBottomSheet(context, gateState.gates);
-            break;
-          case RoleSelectionState:
-            final roleState = state as RoleSelectionState;
-
-            _roleSelectionBottomSheet(context);
-            break;
           case LoginErrorState:
             final errorState = state as LoginErrorState;
             print("Login Error: ${errorState.message}");
@@ -197,42 +179,23 @@ class _LoginViewState extends State<LoginView> {
               fontSize: 16.0,
             );
             break;
-          case SignUpButtonPressedState:
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) => RequestGateAccess(),
-            //   ),
-            // );
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (BuildContext context) {
-                  return const RequestGateAccess();
-                },
-              ),
-            );
-            // Navigator.push(
-            //   context,
-            //   PageTransition(
-            //     type: PageTransitionType.leftToRightWithFade,
-            //     child: RequestGateAccess(),
-            //   ),
-            // );
-            break;
-          case ForgotPasswordButtonPressedState:
-            Navigator.push(
-              context,
-              PageTransition(
-                type: PageTransitionType.bottomToTop,
-                child: ResetPasswordView(),
-              ),
-            );
-            break;
+
           case NavigateToAdminDashboardState:
             _preferenceUtils.setIsLogin(true);
-            print("Check 1");
-            print(
-                "Check 1 ${_preferenceUtils.getUserInfo()!.userId} ${_preferenceUtils.getSelectedGate()!.userId}");
+            final userInfo = _preferenceUtils.getUserInfo();
+            final selectedGate = _preferenceUtils.getSelectedGate();
+
+            if (userInfo == null || selectedGate == null) {
+              print("Error: User info or selected gate is null");
+              Fluttertoast.showToast(
+                msg:
+                    "User information or gate data is missing. Contact support.",
+                backgroundColor: Colors.red,
+              );
+              break; // Do not proceed if data is missing
+            }
+
+            print("Navigating to admin dashboard for user ${userInfo.userId}");
             Navigator.pushReplacement(
               context,
               PageTransition(
@@ -240,8 +203,8 @@ class _LoginViewState extends State<LoginView> {
                 child: AdminDashboardView(),
               ),
             );
-            //});
             break;
+
           case NavigateToGatekeeperDashboardState:
             _preferenceUtils.setIsLogin(true);
             Navigator.pushReplacement(
@@ -581,7 +544,7 @@ class _LoginViewState extends State<LoginView> {
                               SizedBox(
                                 width: MediaQuery.of(context).size.width * 0.6,
                                 child: Text(
-                                  value!.companyName,
+                                  value?.companyName ?? "",
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
                                   style: TextStyle(
@@ -760,14 +723,14 @@ class _LoginViewState extends State<LoginView> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         'Select your gate',
-                        style: Theme.of(context).textTheme.displaySmall!.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.displaySmall!.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                     ),
                     ...List.generate(gatesList.length, (index) {
                       return GateSettingListTile(
-                        
                         switchValue: gatesList[index]!.isSelected,
                         onChanged: (value) => {
                           setState(() {
@@ -780,7 +743,8 @@ class _LoginViewState extends State<LoginView> {
                           })
                         },
                         title: gatesList[index]!.gateName ?? 'Unknown Gate',
-                        subtitle: 'Enable/Disable ${gatesList[index]!.gateName}',
+                        subtitle:
+                            'Enable/Disable ${gatesList[index]!.gateName}',
                         // leadingIcon: Ionicons.grid_outline,
                         leadingIcon: Symbols.gate,
                       );

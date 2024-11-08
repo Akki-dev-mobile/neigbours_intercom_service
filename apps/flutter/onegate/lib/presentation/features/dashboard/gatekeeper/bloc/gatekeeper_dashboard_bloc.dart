@@ -93,13 +93,13 @@ class GatekeeperDashboardBloc
       emit(GatekeeperDashboardLoadingState());
       final List<VisitorLog>? checkedInVisitors =
           await _visitorLogUsecase.fetchCheckInVisitorLog(
-              _preferenceUtils.getSelectedCompany()!.companyId,
+              _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
               DateTime.now().toString());
       final int inBook = checkedInVisitors!.length;
 
       final List<VisitorLog>? checkedOutVisitors =
           await _visitorLogUsecase.fetchCheckOutLogs(
-              _preferenceUtils.getSelectedCompany()!.companyId,
+              _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
               DateTime.now().toString());
       final int outBook = checkedOutVisitors!.length;
 

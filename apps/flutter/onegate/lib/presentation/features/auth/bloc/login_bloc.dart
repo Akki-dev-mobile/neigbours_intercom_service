@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
@@ -10,7 +11,6 @@ import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
 
 part 'login_event.dart';
-
 part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
@@ -70,15 +70,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     // );
     Company selectedCompany = _preferenceUtils.getSelectedCompany()!;
     final List<String> roles = [];
-    for (final app in selectedCompany.apps) {
-      roles.addAll(app.roles);
+    for (final app in selectedCompany.apps ?? []) {
+      roles.addAll(app.roles ?? []);
     }
     _preferenceUtils.saveRoles(roles);
     if (roles.contains("master")) {
       emit(RoleSelectionState(roles));
     } else if (roles.contains("gatekeeper")) {
-      if (_preferenceUtils.getUserInfo()!.userId ==
-          _preferenceUtils.getSelectedGate()!.userId) {
+      if (_preferenceUtils.getUserInfo()?.userId ==
+          _preferenceUtils.getSelectedGate()?.userId) {
         emit(NavigateToGatekeeperDashboardState());
       } else {
         emit(LoginErrorState(
@@ -103,7 +103,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         if (gates.isEmpty) {
           emit(LoginLoadingState());
           final response = await _gateUseCase
-              .gateList(_preferenceUtils.getSelectedCompany()!.companyId);
+              .gateList(_preferenceUtils.getSelectedCompany()?.companyId ?? 0);
           final List<Gate> gates = response!;
           print(
               "Company Selected Gate IDDD: ${_preferenceUtils.getSelectedCompany()}");
@@ -143,7 +143,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             emit(NavigateToGatekeeperDashboardState());
           } else if (_preferenceUtils.getUserInfo()!.userId ==
               _preferenceUtils.getSelectedGate()!.oldSsoUserId) {
- 
             emit(NavigateToGatekeeperDashboardState());
           } else {
             emit(LoginErrorState(
@@ -182,9 +181,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       final List<Company> companiesWithAccessToGate = [];
 
-      response!.userInfo!.companies?.forEach((key, companyList) {
+      response!.userInfo?.companies?.forEach((key, companyList) {
         final filteredCompanies = companyList
-            .where((company) => company.accessTo.contains(5))
+            .where((company) => company.accessTo!.contains(5))
             .toList();
         companiesWithAccessToGate.addAll(filteredCompanies);
       });
@@ -201,8 +200,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else {
         Company selectedCompany = preferenceUtils.getSelectedCompany()!;
         final List<String> roles = [];
-        for (final app in selectedCompany.apps) {
-          roles.addAll(app.roles);
+        for (final app in selectedCompany.apps ?? []) {
+          roles.addAll(app.roles ?? []);
         }
         preferenceUtils.saveRoles(roles);
         if (roles.contains("master")) {

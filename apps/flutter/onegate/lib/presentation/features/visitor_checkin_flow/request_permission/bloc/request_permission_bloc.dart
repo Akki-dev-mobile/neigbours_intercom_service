@@ -25,13 +25,14 @@ class RequestPermissionBloc
       Emitter<RequestPermissionState> emit) async {
     try {
       List<BuildingAssignment> buildingAssignments = createBuildingAssignments(
-          event.memberUnits, _preferenceUtils.getSelectedCompany()!.companyId);
+          event.memberUnits,
+          _preferenceUtils.getSelectedCompany()?.companyId ?? 0);
       for (BuildingAssignment buildingAssignment in buildingAssignments) {
         buildingAssignment.visitor_id = event.visitor.id;
       }
       print("${Utils.getCurrentTime().toUtc().toString()}");
       VisitorLog visitorLog = VisitorLog(
-          company_id: _preferenceUtils.getSelectedCompany()!.companyId,
+          company_id: _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
           visitor_building_assignment: buildingAssignments,
           visitor_id: event.visitor.id!,
           visitor_count: event.guestCount == null ? 1 : event.guestCount!,

@@ -86,7 +86,7 @@ class VisitorInEntryBloc
       final imageUrl = await _visitorUsecase.uploadImage(
         event.imageFile!,
         event.visitor!.mobile,
-        _preferenceUtils.getSelectedCompany()!.companyId,
+        _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
       );
 
       if (imageUrl == null || imageUrl.isEmpty) {

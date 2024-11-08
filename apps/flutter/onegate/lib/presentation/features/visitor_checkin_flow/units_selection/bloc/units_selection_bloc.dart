@@ -27,10 +27,10 @@ class UnitsSelectionBloc extends Bloc<UnitSelectionEvent, UnitsSelectionState> {
     emit(UnitsSelectionLoadingState());
     try {
       List<Building>? buildings = await societyUseCase
-          .getBuildings(_preferenceUtils.getSelectedCompany()!.companyId);
+          .getBuildings(_preferenceUtils.getSelectedCompany()?.companyId ?? 0);
       if (buildings != null) {
         List<MemberUnits>? units = await societyUseCase.getUnits(
-            _preferenceUtils.getSelectedCompany()!.companyId,
+            _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
             buildings[0].id ?? 1);
         emit(UnitSelectionSuccessState(buildings[0],
             units: units, buildings: buildings));
@@ -48,7 +48,7 @@ class UnitsSelectionBloc extends Bloc<UnitSelectionEvent, UnitsSelectionState> {
     emit(UnitsSelectionLoadingState());
     try {
       List<MemberUnits>? units = await societyUseCase.getUnits(
-          _preferenceUtils.getSelectedCompany()!.companyId,
+          _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
           event.building.id ?? 1);
       emit(UnitSelectionSuccessState(event.building,
           units: units, buildings: event.buildings));
@@ -62,7 +62,8 @@ class UnitsSelectionBloc extends Bloc<UnitSelectionEvent, UnitsSelectionState> {
       UnitSelectedEvent event, Emitter<UnitsSelectionState> emit) async {
     try {
       List<Member>? member = await societyUseCase.getMembers(
-          _preferenceUtils.getSelectedCompany()!.companyId, event.unit.id ?? 1);
+          _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
+          event.unit.id ?? 1);
       if (member != null) {
         emit(MemberFetchedState(member));
       } else {

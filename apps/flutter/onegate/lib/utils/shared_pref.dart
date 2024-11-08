@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/auth/user_info.dart';
@@ -20,8 +21,8 @@ class PreferenceUtils {
   static const String _selectedCompanyKey = 'selected_company';
   static const String _roles = 'roles';
   static const String _gatesList = 'gates_list';
-  static const String _isAdmin='is_admin';
-  static const String _isLogin='is_login';
+  static const String _isAdmin = 'is_admin';
+  static const String _isLogin = 'is_login';
   static const String _isAppIntroShown = 'is_app_intro_shown';
   static const String _isSelfTapIn = 'is_self_tap_in';
 
@@ -68,12 +69,12 @@ class PreferenceUtils {
     return null;
   }
 
-  Future<void>setIsAdmin(bool isAdmin)async {
+  Future<void> setIsAdmin(bool isAdmin) async {
     _preferences.setBool(_isAdmin, isAdmin);
   }
 
   Future<void> setIsSelfTapIn(bool isSelfTapIn) async {
-    await _preferences.setBool(_isSelfTapIn,isSelfTapIn);
+    await _preferences.setBool(_isSelfTapIn, isSelfTapIn);
   }
 
   bool? getIsAppIntroShown() {
@@ -92,7 +93,7 @@ class PreferenceUtils {
     return false;
   }
 
-  bool? getIsSelfTapIn(){
+  bool? getIsSelfTapIn() {
     final isSelfTapIn = _preferences.getBool(_isSelfTapIn);
     if (isSelfTapIn != null) {
       return isSelfTapIn;
@@ -117,23 +118,42 @@ class PreferenceUtils {
   }
 
   UserInfo? getUserInfo() {
-    final userInfoJson = _preferences.getString(_userInfoKey);
-    if (userInfoJson != null) {
-      final userInfoMap = jsonDecode(userInfoJson);
-      print("User Info UserInfo.fromJson(userInfoMap) ${UserInfo}");
-      return UserInfo.fromJson(userInfoMap);
-      
+    try {
+      final userInfoJson = _preferences.getString(_userInfoKey);
+
+      if (userInfoJson != null) {
+        final userInfoMap = jsonDecode(userInfoJson);
+        return UserInfo.fromJson(userInfoMap);
+      }
+    } catch (e) {
+      print(
+          "Error retrieving user info: $e"); // Log the error for troubleshooting
     }
-    return null;
+
+    return null; // Return null if any error occurs
   }
 
   Company? getSelectedCompany() {
-    final selectedCompanyJson = _preferences.getString(_selectedCompanyKey);
-    if (selectedCompanyJson != null) {
-      final selectedCompanyMap = jsonDecode(selectedCompanyJson);
-      print( "Selected Gate selectedCompanyMap ${Company.fromJson(selectedCompanyMap)}");
-      return Company.fromJson(selectedCompanyMap);
+    try {
+      final selectedCompanyJson = _preferences.getString(_selectedCompanyKey);
+
+      if (selectedCompanyJson != null) {
+        final selectedCompanyMap = jsonDecode(selectedCompanyJson);
+
+        // Ensure selectedCompanyMap is a valid Map before creating the Company object
+        if (selectedCompanyMap is Map<String, dynamic>) {
+          return Company.fromJson(selectedCompanyMap);
+        } else {
+          print(
+              "Error: Expected a Map<String, dynamic> for selected company data.");
+        }
+      }
+    } catch (error) {
+      // Log or handle the error gracefully if JSON parsing fails
+      print("Error retrieving selected company: $error");
     }
+
+    // Return null if something goes wrong or data is not found
     return null;
   }
 
@@ -143,17 +163,22 @@ class PreferenceUtils {
       final gatesListData = json.decode(gatesListJson) as List<dynamic>;
       return gatesListData.map((data) => Gate.fromJson(data)).toList();
     } else {
-      return []; // Return an empty list if no data is found
+      return [];
     }
   }
 
   Gate? getSelectedGate() {
-    final selectedGateJson = _preferences.getString('selected_gate');
-    if (selectedGateJson != null) {
-      final selectedGateMap = jsonDecode(selectedGateJson);
-      print( " Selected Gate ${Gate.fromJson(selectedGateMap)}");
-      return Gate.fromJson(selectedGateMap);
+    try {
+      final selectedGateJson = _preferences.getString('selected_gate');
+
+      if (selectedGateJson != null) {
+        final selectedGateMap = jsonDecode(selectedGateJson);
+        return Gate.fromJson(selectedGateMap);
+      }
+    } catch (e) {
+      print("Error decoding selected gate: $e"); // Log the error for debugging
     }
-    return null;
+
+    return null; // Return null if any error occurs
   }
 }
