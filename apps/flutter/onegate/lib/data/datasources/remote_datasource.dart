@@ -31,7 +31,7 @@ class RemoteDataSource {
           data: {'username': "91$username", 'password': password});
 
       var data = response.data;
-      print('Loginnnn$data');
+      print('Loginnnn${data['data']["user_info"]['companies']}');
       return response.data['data'];
     } catch (e) {
       print(e.toString());

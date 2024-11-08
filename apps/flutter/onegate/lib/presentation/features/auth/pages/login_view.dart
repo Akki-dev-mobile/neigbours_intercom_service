@@ -13,6 +13,8 @@ import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
+import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
+import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
@@ -166,6 +168,22 @@ class _LoginViewState extends State<LoginView> {
       listener: (context, state) {
         print(state.runtimeType.toString());
         switch (state.runtimeType) {
+          case SocietySelectionState:
+            final societyState = state as SocietySelectionState;
+            _showSelectSocietyBottomSheet(
+              context,
+              societyState.companiesWithAccessToGate,
+            );
+            break;
+          case GateSelectionState:
+            final gateState = state as GateSelectionState;
+            _showGateSelectionBottomSheet(context, gateState.gates);
+            break;
+          case RoleSelectionState:
+            final roleState = state as RoleSelectionState;
+
+            _roleSelectionBottomSheet(context);
+            break;
           case LoginErrorState:
             final errorState = state as LoginErrorState;
             print("Login Error: ${errorState.message}");
@@ -179,23 +197,42 @@ class _LoginViewState extends State<LoginView> {
               fontSize: 16.0,
             );
             break;
-
+          case SignUpButtonPressedState:
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (context) => RequestGateAccess(),
+            //   ),
+            // );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (BuildContext context) {
+                  return const RequestGateAccess();
+                },
+              ),
+            );
+            // Navigator.push(
+            //   context,
+            //   PageTransition(
+            //     type: PageTransitionType.leftToRightWithFade,
+            //     child: RequestGateAccess(),
+            //   ),
+            // );
+            break;
+          case ForgotPasswordButtonPressedState:
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.bottomToTop,
+                child: ResetPasswordView(),
+              ),
+            );
+            break;
           case NavigateToAdminDashboardState:
             _preferenceUtils.setIsLogin(true);
-            final userInfo = _preferenceUtils.getUserInfo();
-            final selectedGate = _preferenceUtils.getSelectedGate();
-
-            if (userInfo == null || selectedGate == null) {
-              print("Error: User info or selected gate is null");
-              Fluttertoast.showToast(
-                msg:
-                    "User information or gate data is missing. Contact support.",
-                backgroundColor: Colors.red,
-              );
-              break; // Do not proceed if data is missing
-            }
-
-            print("Navigating to admin dashboard for user ${userInfo.userId}");
+            print("Check 1");
+            print(
+                "Check 1 ${_preferenceUtils.getUserInfo()!.userId} ${_preferenceUtils.getSelectedGate()!.userId}");
             Navigator.pushReplacement(
               context,
               PageTransition(
@@ -203,8 +240,8 @@ class _LoginViewState extends State<LoginView> {
                 child: AdminDashboardView(),
               ),
             );
+            //});
             break;
-
           case NavigateToGatekeeperDashboardState:
             _preferenceUtils.setIsLogin(true);
             Navigator.pushReplacement(
@@ -478,7 +515,7 @@ class _LoginViewState extends State<LoginView> {
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 5.0),
                       child: Text(
-                        'Kindly, select your society linked with +${_preferenceUtils.getUserInfo()!.mobile}',
+                        'Kindly, select your society linked with +${_preferenceUtils.getUserInfo()?.mobile}',
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                     ),
