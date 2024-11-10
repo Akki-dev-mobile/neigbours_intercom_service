@@ -1,0 +1,1 @@
+library flutter_commons_theme_manager;

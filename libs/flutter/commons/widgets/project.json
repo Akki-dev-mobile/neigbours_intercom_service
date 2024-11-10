@@ -1,0 +1,114 @@
+{
+  "name": "flutter-commons-widgets",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/flutter/commons/widgets/src",
+  "projectType": "library",
+  "targets": {
+    "analyze": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter analyze",
+        "cwd": "libs/flutter/commons/widgets"
+      }
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter clean",
+        "cwd": "libs/flutter/commons/widgets"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter format libs/flutter/commons/widgets/*",
+        "cwd": "libs/flutter/commons/widgets"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter test",
+        "cwd": "libs/flutter/commons/widgets"
+      }
+    },
+    "doctor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter doctor",
+        "cwd": "libs/flutter/commons/widgets"
+      }
+    },
+    "build-aar": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build aar",
+        "cwd": "libs/flutter/commons/widgets"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/commons/widgets/build"
+      ]
+    },
+    "build-apk": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build apk",
+        "cwd": "libs/flutter/commons/widgets"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/commons/widgets/build"
+      ]
+    },
+    "build-appbundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build appbundle",
+        "cwd": "libs/flutter/commons/widgets"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/commons/widgets/build"
+      ]
+    },
+    "build-bundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build bundle",
+        "cwd": "libs/flutter/commons/widgets"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/commons/widgets/build"
+      ]
+    },
+    "build-ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build ios",
+        "cwd": "libs/flutter/commons/widgets"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/commons/widgets/build"
+      ]
+    },
+    "build-ios-framework": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build ios-framework",
+        "cwd": "libs/flutter/commons/widgets"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/commons/widgets/build"
+      ]
+    },
+    "build-ipa": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build ipa",
+        "cwd": "libs/flutter/commons/widgets"
+      },
+      "outputs": [
+        "{workspaceRoot}/libs/flutter/commons/widgets/build"
+      ]
+    }
+  },
+  "tags": []
+}

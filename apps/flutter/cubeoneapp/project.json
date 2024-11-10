@@ -1,0 +1,156 @@
+{
+  "name": "flutter--cubeoneapp",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/flutter//cubeoneapp/src",
+  "projectType": "application",
+  "targets": {
+    "analyze": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter analyze",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter clean",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter format apps/flutter//cubeoneapp/*",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter test",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "doctor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter doctor",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "assemble": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter assemble",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "attach": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter attach",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "drive": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter drive",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "gen-l10n": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter gen-l10n",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "install": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter install",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter run",
+        "cwd": "apps/flutter//cubeoneapp"
+      }
+    },
+    "build-aar": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build aar",
+        "cwd": "apps/flutter//cubeoneapp"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter//cubeoneapp/build"
+      ]
+    },
+    "build-apk": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build apk",
+        "cwd": "apps/flutter//cubeoneapp"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter//cubeoneapp/build"
+      ]
+    },
+    "build-appbundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build appbundle",
+        "cwd": "apps/flutter//cubeoneapp"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter//cubeoneapp/build"
+      ]
+    },
+    "build-bundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build bundle",
+        "cwd": "apps/flutter//cubeoneapp"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter//cubeoneapp/build"
+      ]
+    },
+    "build-ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build ios",
+        "cwd": "apps/flutter//cubeoneapp"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter//cubeoneapp/build"
+      ]
+    },
+    "build-ios-framework": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build ios-framework",
+        "cwd": "apps/flutter//cubeoneapp"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter//cubeoneapp/build"
+      ]
+    },
+    "build-ipa": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build ipa",
+        "cwd": "apps/flutter//cubeoneapp"
+      },
+      "outputs": [
+        "{workspaceRoot}/apps/flutter//cubeoneapp/build"
+      ]
+    }
+  },
+  "tags": []
+}

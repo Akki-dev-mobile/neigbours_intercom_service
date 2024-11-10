@@ -1,8 +1,8 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:chips_choice/chips_choice.dart';
+import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -18,10 +18,7 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 import 'package:random_avatar/random_avatar.dart';
-import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 
 import '../../gate_selection/ui/gate_selection_view.dart';
 
@@ -167,7 +164,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   children: [
                     CustomForm.textField(
                       widget.selectedBuilding ?? 'Search',
-                      titleColor: Theme.of(context).colorScheme.onBackground,
+                      titleColor: Theme.of(context).colorScheme.onSurface,
                       hintColor: Theme.of(context).colorScheme.onPrimary,
                       // "Search" ?? ,
                       hintText: 'Search Visitor',
@@ -187,12 +184,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         onPressed: () {},
                         icon: Icon(
                           Ionicons.search_outline,
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
-                      suffixIcon: ButtonBar(
+                      suffixIcon: OverflowBar(
                         alignment: MainAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
+                        // mainAxisSize: MainAxisSize.min,
                         children: [
                           // IconButton(
                           //   onPressed: () {},
@@ -212,7 +209,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             },
                             icon: Icon(
                               Ionicons.funnel_outline,
-                              color: Theme.of(context).colorScheme.onBackground,
+                              color: Theme.of(context).colorScheme.onSurface,
                               size: 24,
                             ),
                           ),
@@ -271,13 +268,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                     ),
                                     leading: CircleAvatar(
                                         child: filteredVisitors[index]
-                                                        .visitor!
-                                                        .visitor_image !=
-                                                    null &&
-                                                filteredVisitors[index]
-                                                    .visitor!
-                                                    .visitor_image
-                                                    .isNotEmpty
+                                                .visitor!
+                                                .visitor_image
+                                                .isNotEmpty
                                             ? Text(
                                                 filteredVisitors[index]
                                                     .visitor!
@@ -396,11 +389,26 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                     ),
                                     trailing: IconButton(
                                       onPressed: () {
-                                        FlutterPhoneDirectCaller.callNumber(
-                                            visitorLogs[index]
-                                                .visitor!
-                                                .mobile
-                                                .toString());
+                                        SnackBar(
+                                          content: Text(
+                                            'Calling ${visitorLogs[index].visitor!.mobile}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelMedium,
+                                          ),
+                                          action: SnackBarAction(
+                                            label: 'Close',
+                                            onPressed: () {
+                                              ScaffoldMessenger.of(context)
+                                                  .hideCurrentSnackBar();
+                                            },
+                                          ),
+                                        );
+                                        // FlutterPhoneDirectCaller.callNumber(
+                                        //     visitorLogs[index]
+                                        //         .visitor!
+                                        //         .mobile
+                                        //         .toString());
                                       },
                                       icon: Icon(
                                         Ionicons.call_outline,
@@ -614,7 +622,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
               padding: const EdgeInsets.all(16.0),
               child: Column(
