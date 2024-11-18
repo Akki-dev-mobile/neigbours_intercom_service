@@ -73,31 +73,66 @@ class LoadingScreen extends StatelessWidget {
       );
 }
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  static int userID = 0;
+  String statusMessage = "Press Login to authenticate";
 
   // Login using the given configuration.
   Future<void> login() async {
-    // Login using Keycloak wrapper
-    final isLoggedIn = await keycloakWrapper.login();
+    try {
+      final isLoggedIn = await keycloakWrapper.login();
 
-    if (keycloakWrapper.accessToken != null) {
-      log('Login successful, Access Token: ${keycloakWrapper.accessToken}');
-      log('Login successful, Access Token: ${keycloakWrapper.accessToken}');
-      log('Login successful Refresh Token: ${keycloakWrapper.refreshToken}');
-      log('Login successful ID Token: ${keycloakWrapper.idToken}');
-      log('Login successful User Info: ${await keycloakWrapper.getUserInfo()}');
-    } else {
-      log('Login failed');
+      if (keycloakWrapper.accessToken != null) {
+        log('Login successful, Access Token: ${keycloakWrapper.accessToken}');
+        log('Login successful Refresh Token: ${keycloakWrapper.refreshToken}');
+        log('Login successful ID Token: ${keycloakWrapper.idToken}');
+        final userInfo = await keycloakWrapper.getUserInfo();
+        log('Login successful User Info: $userInfo');
+
+        setState(() {
+          userID = userInfo?['group_access']
+              ['id']; // Assuming `getUserInfo` returns a map with an `id` key
+          statusMessage = "Welcome, User ID: $userID";
+        });
+      } else {
+        setState(() {
+          statusMessage = "Login failed. Please try again.";
+        });
+        log('Login failed');
+      }
+    } catch (e) {
+      setState(() {
+        statusMessage = "An error occurred during login: $e";
+      });
+      log('Login error: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Login Screen')),
         body: Center(
-          child: TextButton(
-            onPressed: login,
-            child: const Text('Login'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                statusMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: login,
+                child: const Text('Login'),
+              ),
+            ],
           ),
         ),
       );
