@@ -12,6 +12,7 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
 import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_password_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -296,8 +297,7 @@ class _LoginViewState extends State<LoginView> {
                       child: Column(
                         children: [
                           CustomForm.textField(
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
+                            titleColor: Theme.of(context).colorScheme.onSurface,
                             hintColor: Theme.of(context).colorScheme.onPrimary,
                             focusNode: _mobileFocusNode,
                             isEmailMode ? 'Email Address' : 'Mobile Number',
@@ -314,43 +314,41 @@ class _LoginViewState extends State<LoginView> {
                               },
                               icon: Icon(
                                 userNameInputIcon,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             prefixIcon: !isEmailMode
                                 ? CountryCodePicker(
                                     initialSelection: 'IN',
-                                    favorite: ['IN'],
+                                    favorite: const ['IN'],
                                     showFlagMain: true,
                                     showFlagDialog: true,
                                     boxDecoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .background,
+                                      color:
+                                          Theme.of(context).colorScheme.surface,
                                     ),
                                     barrierColor: Theme.of(context)
                                         .colorScheme
-                                        .background
+                                        .surface
                                         .withOpacity(0.5),
                                     closeIcon: Icon(
                                       Icons.close,
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .onBackground,
+                                          .onSurface,
                                     ),
                                     searchDecoration: InputDecoration(
                                       prefixIcon: Icon(
                                         Icons.search,
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .onBackground,
+                                            .onSurface,
                                       ),
                                       hintText: 'Search',
                                       hintStyle: TextStyle(
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .onBackground,
+                                            .onSurface,
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(15),
@@ -358,7 +356,7 @@ class _LoginViewState extends State<LoginView> {
                                           style: BorderStyle.solid,
                                           color: Theme.of(context)
                                               .colorScheme
-                                              .onBackground,
+                                              .onSurface,
                                         ),
                                       ),
                                       enabledBorder: OutlineInputBorder(
@@ -367,20 +365,20 @@ class _LoginViewState extends State<LoginView> {
                                           style: BorderStyle.solid,
                                           color: Theme.of(context)
                                               .colorScheme
-                                              .onBackground,
+                                              .onSurface,
                                         ),
                                       ),
                                     ),
                                     textStyle: TextStyle(
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .onBackground,
+                                          .onSurface,
                                       fontSize: 18,
                                     ),
                                     dialogTextStyle: TextStyle(
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .onBackground,
+                                          .onSurface,
                                     ),
                                     onChanged: (CountryCode countryCode) {
                                       setState(() {
@@ -424,12 +422,10 @@ class _LoginViewState extends State<LoginView> {
                                 passwordVisibility
                                     ? Icons.visibility_off
                                     : Icons.visibility,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
+                            titleColor: Theme.of(context).colorScheme.onSurface,
                           ),
                         ],
                       ),
@@ -438,7 +434,13 @@ class _LoginViewState extends State<LoginView> {
                     CustomLargeBtn(
                       text: 'Login',
                       onPressed: () {
-                        _submitForm();
+                        // _submitForm();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MyAppLogin(),
+                          ),
+                        );
                       },
                     ),
                     Padding(
@@ -496,7 +498,7 @@ class _LoginViewState extends State<LoginView> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
               padding: EdgeInsets.all(16.0),
               child: Column(
@@ -573,7 +575,7 @@ class _LoginViewState extends State<LoginView> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
               padding: EdgeInsets.all(12.0),
               child: Column(
@@ -588,7 +590,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                     ),
                   ),
-                  Container(
+                  SizedBox(
                     // fit: BoxFit.scaleDown,
                     width: double.infinity,
                     child: Row(
@@ -682,7 +684,7 @@ class _LoginViewState extends State<LoginView> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
               padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
@@ -745,7 +747,7 @@ class _LoginViewState extends State<LoginView> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          surfaceTintColor: Theme.of(context).colorScheme.background,
+          surfaceTintColor: Theme.of(context).colorScheme.surface,
           title: Text(
             'Do you want to allow offline login?',
             style: Theme.of(context).textTheme.bodySmall,
