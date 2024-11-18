@@ -1,4 +1,4 @@
-import 'package:flutter_onegate/domain/entities/auth/app.dart';
+import 'app.dart';
 
 class Company {
   final int? companyId; // Made nullable to handle missing values

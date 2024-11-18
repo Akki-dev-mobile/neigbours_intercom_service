@@ -9,7 +9,6 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/gate_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
@@ -18,7 +17,6 @@ import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_pa
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:libphonenumber/libphonenumber.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -478,7 +476,7 @@ class _LoginViewState extends State<LoginView> {
   }
 
   void _showSelectSocietyBottomSheet(
-      BuildContext context, List<Company?> companiesWithAccessToGate) async {
+      BuildContext context, var companiesWithAccessToGate) async {
     showModalBottomSheet(
       isScrollControlled: true,
       useSafeArea: true,
@@ -520,82 +518,17 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                   ),
-                  DropdownButtonFormField<Company>(
-                    enableFeedback: true,
-                    onChanged: (Company? value) {
-                      setState(() {
-                        dropdownValue = value;
+                  // Button to print the companies list
+                  ElevatedButton(
+                    onPressed: () {
+                      print("Companies List:");
+                      companiesWithAccessToGate.forEach((company) {
+                        print('Company Name: ${company?.companyName}');
+                        print('Company ID: ${company?.companyId}');
+                        print('Access To: ${company?.accessTo}');
                       });
                     },
-                    borderRadius: BorderRadius.circular(12),
-                    dropdownColor: Theme.of(context).colorScheme.background,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Theme.of(context).colorScheme.onBackground,
-                    ),
-                    decoration: InputDecoration(
-                      counterText: '',
-                      contentPadding: EdgeInsets.symmetric(
-                        vertical: 15,
-                        horizontal: 10,
-                      ),
-                      hintText: 'Select Society',
-                      hintStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          style: BorderStyle.solid,
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(
-                          style: BorderStyle.solid,
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(
-                          style: BorderStyle.solid,
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                      ),
-                    ),
-                    items: companiesWithAccessToGate
-                        .map<DropdownMenuItem<Company>>(
-                      (Company? value) {
-                        return DropdownMenuItem<Company>(
-                          value: value,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Ionicons.home_outline,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
-                              ),
-                              SizedBox(width: 10),
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.6,
-                                child: Text(
-                                  value?.companyName ?? "",
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ).toList(),
+                    child: Text('Print Companies'),
                   ),
                   SizedBox(
                     height: 30,
@@ -603,11 +536,11 @@ class _LoginViewState extends State<LoginView> {
                   CustomLargeBtn(
                     text: 'Confirm',
                     onPressed: () {
-                      Navigator.pop(context);
-
-                      loginBloc.add(
-                        SocietySelectionButtonEvent(dropdownValue),
-                      );
+                      // Navigator.pop(context);
+                      // // Trigger your event here if needed
+                      // loginBloc.add(
+                      //   SocietySelectionButtonEvent(),
+                      // );
                     },
                   ),
                   SizedBox(height: 50.0),

@@ -1,13 +1,24 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 var client = Client('https://onegate.cubeone.in/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
+
+final keycloakConfig = KeycloakConfig(
+  bundleIdentifier: 'com.example.keyclockflutter',
+  clientId: 'onegate-sso',
+  frontendUrl: 'https://stgsso.cubeone.in',
+  realm: 'fstech',
+  clientSecret: 'zXpmFL8WzkDoL379FesFl2pgm8vxPa58',
+);
+final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
 
 class RemoteDataSource {
   final Dio _dio1;
@@ -19,30 +30,48 @@ class RemoteDataSource {
     this._dio3,
   );
 
-  Future<Map<String, dynamic>> loginUser(
-      String username, String password, String method) async {
+  Future<Map<String, dynamic>> loginUser() async {
     try {
-      print("loginUser URL: ${_dio2.options.baseUrl}");
-      print("loginUser params: ${{
-        'username': "91$username",
-        'password': password
-      }}");
-      final response = await _dio2.post('/api/gatelogin',
-          data: {'username': "91$username", 'password': password});
+      // Step 1: Login using Keycloak Wrapper
+      bool isLoggedIn = await keycloakWrapper.login();
 
-      var data = response.data;
-      print('Loginnnn${data['data']["user_info"]['companies']}');
-      return response.data['data'];
+      // Step 2: Check if login was successful and access token is available
+      if (isLoggedIn && keycloakWrapper.accessToken != null) {
+        log('Keycloak login successful. Access Token: ${keycloakWrapper.accessToken}');
+
+        // Step 3: Use Keycloak access token to call your backend API
+        final response = await _dio2.post(
+          '/api/gatelogin',
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+              'Content-Type': 'application/json',
+            },
+          ),
+        );
+
+        // Step 4: Handle the response
+        if (response.statusCode == 200) {
+          var data = response.data['data'];
+          log('Login response: $data');
+          return data;
+        } else {
+          throw Exception('Failed to log in: ${response.statusCode}');
+        }
+      } else {
+        throw Exception('Keycloak login failed.');
+      }
     } catch (e) {
-      print(e.toString());
+      log('Error during login: $e');
+      return {};
     }
-    return {};
   }
 
   Future<List<dynamic>> fetchGates(int companyId) async {
     try {
       final queryParams = {'company_id': companyId};
-      final response = await _dio2.get('/api/admin/gates/list',
+      final response = await _dio2.get(
+          'http://192.168.1.34:8000/api/admin/companies/list/',
           queryParameters: queryParams);
       print(response.data['data'].toString());
       if (response.statusCode == 200) {

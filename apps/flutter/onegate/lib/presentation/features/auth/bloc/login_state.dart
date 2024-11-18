@@ -14,16 +14,15 @@ class LoginSuccessState extends LoginActionState {
   final List<Company?> companiesWithAccessToGate;
 
   LoginSuccessState(this.accessTokenResponse, this.companiesWithAccessToGate);
-
 }
 
-class SocietySelectionState extends LoginActionState{
-  final List<Company?> companiesWithAccessToGate;
+class SocietySelectionState extends LoginActionState {
+  var companiesWithAccessToGate;
 
   SocietySelectionState(this.companiesWithAccessToGate);
 }
 
-class GateSelectionState extends LoginActionState{
+class GateSelectionState extends LoginActionState {
   final List<Gate?> gates;
 
   GateSelectionState(this.gates);
@@ -55,9 +54,6 @@ class HasOfflineLoginButtonPressedState extends LoginActionState {}
 
 class NotHasOfflineLoginButtonPressedState extends LoginActionState {}
 
-class NavigateToAdminDashboardState extends LoginActionState {
-
-}
+class NavigateToAdminDashboardState extends LoginActionState {}
 
 class NavigateToGatekeeperDashboardState extends LoginActionState {}
-

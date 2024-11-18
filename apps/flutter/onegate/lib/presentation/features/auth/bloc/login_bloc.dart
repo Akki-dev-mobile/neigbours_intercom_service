@@ -70,9 +70,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     // );
     Company selectedCompany = _preferenceUtils.getSelectedCompany()!;
     final List<String> roles = [];
-    for (final app in selectedCompany.apps ?? []) {
-      roles.addAll(app.roles ?? []);
-    }
+    // for (final app in selectedCompany.apps ?? []) {
+    //   roles.addAll(app.roles ?? []);
+    // }
     _preferenceUtils.saveRoles(roles);
     if (roles.contains("master")) {
       emit(RoleSelectionState(roles));
@@ -103,7 +103,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         if (gates.isEmpty) {
           emit(LoginLoadingState());
           final response = await _gateUseCase
-              .gateList(_preferenceUtils.getSelectedCompany()?.companyId ?? 0);
+              .gateList(_preferenceUtils.getUserInfo()?.userId ?? 0);
           final List<Gate> gates = response!;
           print(
               "Company Selected Gate IDDD: ${_preferenceUtils.getSelectedCompany()}");
@@ -179,15 +179,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
       PreferenceUtils preferenceUtils) {
     try {
-      final List<Company> companiesWithAccessToGate = [];
+      var companiesWithAccessToGate = [];
 
+// Iterate over the list of companies
       response!.userInfo?.companies?.forEach((key, companyList) {
-        final filteredCompanies = companyList
-            .where((company) => company.accessTo!.contains(5))
-            .toList();
-        companiesWithAccessToGate.addAll(filteredCompanies);
+        // Iterate over each company in the list
+        companyList.forEach((company) {
+          // Filter companies that have access to gate (accessTo contains 5)
+          if (company.accessTo != null && company.accessTo!.contains(5)) {
+            companiesWithAccessToGate.add(company);
+          }
+        });
       });
-
       preferenceUtils.saveAccessTokenResponse(response);
       if (response.userInfo != null) {
         preferenceUtils.saveUserInfo(response.userInfo!);
@@ -200,9 +203,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else {
         Company selectedCompany = preferenceUtils.getSelectedCompany()!;
         final List<String> roles = [];
-        for (final app in selectedCompany.apps ?? []) {
-          roles.addAll(app.roles ?? []);
-        }
+        // for (final app in selectedCompany.apps ?? []) {
+        //   roles.addAll(app.roles ?? []);
+        // }
         preferenceUtils.saveRoles(roles);
         if (roles.contains("master")) {
           emit(RoleSelectionState(roles));

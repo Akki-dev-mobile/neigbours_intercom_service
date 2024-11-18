@@ -12,8 +12,7 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
   Future<AccessTokenResponse?> login(
       String username, String password, String method) async {
     try {
-      final response =
-          await _remoteDataSource.loginUser(username, password, method);
+      final response = await _remoteDataSource.loginUser();
       final accessTokenResponse = AccessTokenResponseMapper.fromJson(response);
       return accessTokenResponse;
     } catch (error) {
