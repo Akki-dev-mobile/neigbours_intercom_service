@@ -47,6 +47,10 @@ android {
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+               manifestPlaceholders = [
+            appAuthRedirectScheme: 'com.cubeonebiz.gate', // Replace with your app's bundle identifier
+            applicationName: 'io.flutter.app.FlutterApplication' // Default Flutter application class
+                ]
     }
 
     buildTypes {
