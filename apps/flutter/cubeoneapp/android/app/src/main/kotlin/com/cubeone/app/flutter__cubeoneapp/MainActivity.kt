@@ -1,4 +1,4 @@
-package com.cubeone.app.flutter__cubeoneapp
+package com.cubeone.app.flutter_cubeoneapp
 
 import io.flutter.embedding.android.FlutterActivity
 

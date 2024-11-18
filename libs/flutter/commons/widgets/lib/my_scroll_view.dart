@@ -102,7 +102,6 @@ class _MyScrollViewState extends State<MyScrollView> {
                     ],
                   ),
                 ),
-                // child: CustomTextField(hintText: 'Search here',),
               ),
             ),
             actions: (widget.actions != null)

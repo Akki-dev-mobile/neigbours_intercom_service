@@ -1,4 +1,4 @@
-# flutter__cubeoneapp
+# flutter_cubeoneapp
 
 A new Flutter project.
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter__cubeoneapp/temp_dashboard.dart';
+import 'package:flutter_cubeoneapp/temp_dashboard.dart';
 import 'package:flutter_commons_theme_manager/theme.dart';
 
 class MyApp extends StatefulWidget {
