@@ -29,7 +29,12 @@ import '../../gate_selection/ui/gate_selection_view.dart';
 import '../bloc/login_bloc.dart';
 
 class LoginView extends StatefulWidget {
-  const LoginView({super.key});
+  final int? oldSsoUserId;
+
+  const LoginView({
+    super.key,
+    this.oldSsoUserId,
+  });
 
   @override
   State<LoginView> createState() => _LoginViewState();
