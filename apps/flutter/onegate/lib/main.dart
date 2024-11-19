@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
-import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
@@ -64,7 +64,7 @@ class MyApp extends StatelessWidget {
               : GateDashboardView();
         }
       } else {
-        initialScreen = LoginView();
+        initialScreen = MyAppLogin();
       }
     }
     return DevicePreview(

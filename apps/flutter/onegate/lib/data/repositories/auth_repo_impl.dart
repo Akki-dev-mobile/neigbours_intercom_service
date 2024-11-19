@@ -13,7 +13,7 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
       String username, String password, String method) async {
     try {
       final response = await _remoteDataSource.loginUser();
-      final accessTokenResponse = AccessTokenResponseMapper.fromJson(response);
+      final accessTokenResponse = AccessTokenResponseMapper.fromJson(response!);
       return accessTokenResponse;
     } catch (error) {
       return null; // Handle error or authentication failure
