@@ -1,9 +1,10 @@
-import 'dart:developer';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
-import 'package:http/http.dart' as http;
 
 final keycloakConfig = KeycloakConfig(
   bundleIdentifier: 'com.cubeonebiz.gate',
@@ -12,10 +13,13 @@ final keycloakConfig = KeycloakConfig(
   realm: 'fstech',
   clientSecret: 'zXpmFL8WzkDoL379FesFl2pgm8vxPa58',
 );
+
 final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class MyAppLogin extends StatefulWidget {
+  static int userId = 0;
+
   const MyAppLogin({super.key});
 
   @override
@@ -23,6 +27,8 @@ class MyAppLogin extends StatefulWidget {
 }
 
 class _MyAppLoginState extends State<MyAppLogin> {
+  String statusMessage = "Press Login to authenticate";
+
   @override
   void initState() {
     super.initState();
@@ -30,76 +36,53 @@ class _MyAppLoginState extends State<MyAppLogin> {
   }
 
   void initializeKeycloak() {
-    // Initialize the plugin at the start of your app.
     keycloakWrapper.initialize();
-    // Listen to the errors caught by the plugin.
     keycloakWrapper.onError = (message, _, __) {
-      // Display the error message inside a snackbar.
       scaffoldMessengerKey.currentState
         ?..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(message)));
     };
   }
 
-  @override
-  Widget build(BuildContext context) => MaterialApp(
-        home: Scaffold(
-          key: scaffoldMessengerKey,
-          body: StreamBuilder<bool>(
-            initialData: false,
-            stream: keycloakWrapper.authenticationStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const LoadingScreen();
-              } else if (snapshot.data!) {
-                return const HomeScreen();
-              } else {
-                return const LoginScreen();
-              }
-            },
-          ),
-        ),
-      );
-}
-
-class LoadingScreen extends StatelessWidget {
-  const LoadingScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) => const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator.adaptive(),
-        ),
-      );
-}
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  static int userID = 0;
-  String statusMessage = "Press Login to authenticate";
-
-  // Login using the given configuration.
   Future<void> login() async {
     try {
       final isLoggedIn = await keycloakWrapper.login();
 
       if (keycloakWrapper.accessToken != null) {
-        log('Login successful, Access Token: ${keycloakWrapper.accessToken}');
-        log('Login successful Refresh Token: ${keycloakWrapper.refreshToken}');
-        log('Login successful ID Token: ${keycloakWrapper.idToken}');
-        final userInfo = await keycloakWrapper.getUserInfo();
-        log('Login successful User Info: $userInfo');
+        log('Login successful. Access Token: ${keycloakWrapper.accessToken}');
 
+        // Fetch user information
+        final userInfo = await keycloakWrapper.getUserInfo();
+        log('User Info: $userInfo');
+
+        // Parse and process group access
+        final groupAccessRaw = userInfo?['group_access'] ?? '{}';
+        final groupAccess = json.decode(groupAccessRaw) as Map<String, dynamic>;
+
+        bool isMaster = false;
+        bool isGatekeeper = false;
+
+        groupAccess.forEach((key, value) {
+          final roles = (value['vizlog'] ?? '').split(',');
+          if (roles.contains('master')) isMaster = true;
+          if (roles.contains('gatekeeper')) isGatekeeper = true;
+        });
+
+        // Navigate based on roles
+        if (isMaster) {
+          navigateToAdminDashboard();
+        } else if (isGatekeeper) {
+          navigateToGatekeeperDashboard();
+        } else {
+          showGateSelectionBottomSheet(context);
+        }
+
+        // Update state with user ID
         setState(() {
-          userID = userInfo?['group_access']
-              ['id']; // Assuming `getUserInfo` returns a map with an `id` key
-          statusMessage = "Welcome, User ID: $userID";
+          MyAppLogin.userId =
+              int.tryParse(userInfo?['old_sso_user_id']?.toString() ?? '0') ??
+                  0;
+          statusMessage = "Welcome, User ID: ${MyAppLogin.userId}";
         });
       } else {
         setState(() {
@@ -115,9 +98,68 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void navigateToAdminDashboard() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AdminDashboardView()),
+    );
+  }
+
+  void navigateToGatekeeperDashboard() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const GateDashboardView()),
+    );
+  }
+
+  void showGateSelectionBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Select your gate',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  // Replace this with your dynamic list of gates
+                  ListTile(
+                    title: const Text('Gate 1'),
+                    subtitle: const Text('Enable/Disable Gate 1'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      log("Gate 1 Selected");
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Gate 2'),
+                    subtitle: const Text('Enable/Disable Gate 2'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      log("Gate 2 Selected");
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Login Screen')),
+        appBar: AppBar(title: const Text('Keycloak Login')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -128,104 +170,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: const TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 20),
-              TextButton(
+              ElevatedButton(
                 onPressed: login,
                 child: const Text('Login'),
               ),
             ],
           ),
-        ),
-      );
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  Future<List<dynamic>> fetchUserGroups() async {
-    final realm = keycloakConfig.realm;
-    final baseUrl = keycloakConfig.frontendUrl;
-    const userId = '4a928944-dbd6-43b9-b581-c8bc4d78615c';
-    final url = Uri.parse('$baseUrl/admin/realms/$realm/users/$userId/groups');
-    final response = await http.get(url, headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
-    });
-
-    if (response.statusCode == 200) {
-      log('User groups: ${response.body}');
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to load user groups ${response.statusCode}');
-    }
-  }
-
-  Future<void> logout() async {
-    await keycloakWrapper.logout();
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar.medium(
-              title: const Text('Keycloak Example'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: logout,
-                ),
-              ],
-            ),
-            SliverToBoxAdapter(
-              child: FutureBuilder(
-                future: keycloakWrapper.getUserInfo(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (snapshot.hasData) {
-                    final name = snapshot.data?['name'] ?? 'No name available';
-                    return Center(child: Text('Hello, $name'));
-                  } else {
-                    return const Center(
-                        child: Text('No user information available'));
-                  }
-                },
-              ),
-            ),
-            FutureBuilder<List<dynamic>>(
-              future: fetchUserGroups(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                } else if (snapshot.hasError) {
-                  return SliverFillRemaining(
-                    child: Center(child: Text('Error: ${snapshot.error}')),
-                  );
-                } else if (snapshot.hasData) {
-                  final groups = snapshot.data!;
-                  return SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final group = groups[index];
-                        return ListTile(
-                          title: Text(group['name'] ?? 'No name'),
-                        );
-                      },
-                      childCount: groups.length,
-                    ),
-                  );
-                } else {
-                  return const SliverFillRemaining(
-                    child: Center(child: Text('No groups available')),
-                  );
-                }
-              },
-            ),
-          ],
         ),
       );
 }

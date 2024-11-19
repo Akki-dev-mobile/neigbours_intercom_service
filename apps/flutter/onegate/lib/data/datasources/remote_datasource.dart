@@ -70,7 +70,7 @@ class RemoteDataSource {
     }
   }
 
-  final int user_ID = LoginScreen.userID;
+  final int user_ID = MyAppLogin.userId;
 
   Future<List<dynamic>> fetchGates(int companyId) async {
     try {
