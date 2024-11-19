@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,6 +25,7 @@ class RemoteDataSource {
   final Dio _dio1;
   final Dio _dio2;
   final Dio _dio3;
+  var userID;
   RemoteDataSource(
     this._dio1,
     this._dio2,
@@ -54,6 +56,7 @@ class RemoteDataSource {
         if (response.statusCode == 200) {
           var data = response.data['data'];
           log('Login response: $data');
+
           return data;
         } else {
           throw Exception('Failed to log in: ${response.statusCode}');
@@ -67,9 +70,11 @@ class RemoteDataSource {
     }
   }
 
+  final int user_ID = LoginScreen.userID;
+
   Future<List<dynamic>> fetchGates(int companyId) async {
     try {
-      final queryParams = {'company_id': companyId};
+      final queryParams = {'company_id': user_ID};
       final response = await _dio2.get(
           'http://192.168.1.34:8000/api/admin/companies/list/',
           queryParameters: queryParams);
@@ -222,8 +227,8 @@ class RemoteDataSource {
 
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
-      final visitor_log = await client.visitorLog.fetchAllLogs(dateTime);
-      return visitor_log.reversed.toList();
+      final visitorLog = await client.visitorLog.fetchAllLogs(dateTime);
+      return visitorLog.reversed.toList();
     } catch (e) {
       if (kDebugMode) {
         print('Error fetching buildings: $e');
@@ -236,8 +241,8 @@ class RemoteDataSource {
   Future<List<VisitorLog>> fetchCheckInLogs(
       int companyId, String dateTime) async {
     try {
-      final visitor_log = await client.visitorLog.fetchCheckInLogs(dateTime);
-      return visitor_log.reversed.toList();
+      final visitorLog = await client.visitorLog.fetchCheckInLogs(dateTime);
+      return visitorLog.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
@@ -247,8 +252,8 @@ class RemoteDataSource {
   Future<List<VisitorLog>> fetchCheckOutLogs(
       int companyId, String dateTime) async {
     try {
-      final visitor_log = await client.visitorLog.fetchCheckOutLogs(dateTime);
-      return visitor_log.reversed.toList();
+      final visitorLog = await client.visitorLog.fetchCheckOutLogs(dateTime);
+      return visitorLog.reversed.toList();
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
@@ -382,6 +387,7 @@ class RemoteDataSource {
     } catch (e) {
       return e.toString();
     }
+    return null;
   }
 
   Future<String?> verifyOTP(String mobileNumber, String otp) async {
@@ -397,5 +403,6 @@ class RemoteDataSource {
     } catch (e) {
       return e.toString();
     }
+    return null;
   }
 }
