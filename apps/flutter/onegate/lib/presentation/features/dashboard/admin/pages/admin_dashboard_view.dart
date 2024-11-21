@@ -118,7 +118,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
           case AdminDashboardLoadingState:
             return LoaderView();
           case AdminDashboardSuccessState:
-            
             return WillPopScope(
               onWillPop: () async {
                 return false;
@@ -131,7 +130,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                     onPressed: () {},
                     icon: Icon(
                       Symbols.notifications,
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   IconButton(
@@ -146,7 +145,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                     },
                     icon: Icon(
                       Symbols.settings,
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -182,7 +181,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                     ),
                     DashboardBlocks(
                         inBook: (state as AdminDashboardSuccessState).inBook,
-                        outBook: (state as AdminDashboardSuccessState).outBook,
+                        outBook: (state).outBook,
                         bloc: adminDashboardBloc),
                   ],
                 ),

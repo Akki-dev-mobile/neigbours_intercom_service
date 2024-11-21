@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -58,6 +60,8 @@ class _MyAppLoginState extends State<MyAppLogin> {
       _showSnackbar("Failed to initialize Keycloak: $e");
     }
   }
+
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
 
   Future<void> login(BuildContext context) async {
     setState(() {
