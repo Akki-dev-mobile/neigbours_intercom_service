@@ -5,16 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
-import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
+import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 import 'package:one_theme/theme.dart';
-
-import 'presentation/features/app_intro/ui/app_intro_view.dart';
 
 void main() async {
   String appId = "onegate";
@@ -51,22 +46,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget initialScreen;
-    if (!_preferenceUtils.getIsAppIntroShown()!) {
-      initialScreen = AppIntroView();
-    } else {
-      if (_preferenceUtils.getIsLogin()!) {
-        if (_preferenceUtils.getIsAdmin()!) {
-          initialScreen = AdminDashboardView();
-        } else {
-          initialScreen = _preferenceUtils.getIsSelfTapIn()!
-              ? SelfHomeView()
-              : GateDashboardView();
-        }
-      } else {
-        initialScreen = MyAppLogin();
-      }
-    }
+    Widget initialScreen = LoginView();
+
     return DevicePreview(
         enabled: !kDebugMode,
         builder: (context) {

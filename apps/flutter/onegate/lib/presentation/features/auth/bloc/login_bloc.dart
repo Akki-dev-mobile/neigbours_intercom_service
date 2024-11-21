@@ -77,13 +77,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (roles.contains("master")) {
       emit(RoleSelectionState(roles));
     } else if (roles.contains("gatekeeper")) {
-      if (_preferenceUtils.getUserInfo()?.userId ==
-          _preferenceUtils.getSelectedGate()?.userId) {
-        emit(NavigateToGatekeeperDashboardState());
-      } else {
-        emit(LoginErrorState(
-            message: "Gate Mismatch: Reach out to admin for gate correction."));
-      }
+      emit(NavigateToGatekeeperDashboardState());
+      // if (_preferenceUtils.getUserInfo()?.userId ==
+      //     _preferenceUtils.getSelectedGate()?.userId) {
+      //
+      // }
+      //
+      // else {
+      //   emit(LoginErrorState(
+      //       message: "Gate Mismatch: Reach out to admin for gate correction."));
+      // }
     } else {
       emit(NavigateToAdminDashboardState());
     }
@@ -102,8 +105,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         final List<Gate> gates = await _preferenceUtils.getGatesList();
         if (gates.isEmpty) {
           emit(LoginLoadingState());
-          final response = await _gateUseCase
-              .gateList(_preferenceUtils.getUserInfo()?.userId ?? 0);
+          final response =
+              await _gateUseCase.gateList(int.parse("MyAppLogin.userId"));
           final List<Gate> gates = response!;
           print(
               "Company Selected Gate IDDD: ${_preferenceUtils.getSelectedCompany()}");
@@ -138,9 +141,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             " Company Selected Gate NavigateToGatekeeperDashboardState getUserInfo: ${_preferenceUtils.getUserInfo()!.userId} getSelectedGate()!.userId: ${_preferenceUtils.getSelectedGate()!.userId} getSelectedGate()!.oldSsoUserId ${_preferenceUtils.getSelectedGate()!.oldSsoUserId}",
           );
 
+          emit(NavigateToGatekeeperDashboardState());
           if (_preferenceUtils.getUserInfo()!.userId ==
               _preferenceUtils.getSelectedGate()!.userId) {
-            emit(NavigateToGatekeeperDashboardState());
           } else if (_preferenceUtils.getUserInfo()!.userId ==
               _preferenceUtils.getSelectedGate()!.oldSsoUserId) {
             emit(NavigateToGatekeeperDashboardState());

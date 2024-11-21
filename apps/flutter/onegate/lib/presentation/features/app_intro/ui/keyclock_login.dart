@@ -15,19 +15,16 @@ final keycloakConfig = KeycloakConfig(
 );
 
 final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
-final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class MyAppLogin extends StatefulWidget {
-  static int userId = 0;
-
-  const MyAppLogin({super.key});
+  const MyAppLogin({Key? key}) : super(key: key);
 
   @override
-  _MyAppLoginState createState() => _MyAppLoginState();
+  State<MyAppLogin> createState() => _MyAppLoginState();
 }
 
 class _MyAppLoginState extends State<MyAppLogin> {
-  String statusMessage = "Press Login to authenticate";
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -35,147 +32,131 @@ class _MyAppLoginState extends State<MyAppLogin> {
     initializeKeycloak();
   }
 
-  void initializeKeycloak() {
-    keycloakWrapper.initialize();
-    keycloakWrapper.onError = (message, _, __) {
-      scaffoldMessengerKey.currentState
-        ?..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(message)));
-    };
+  Future<void> initializeKeycloak() async {
+    try {
+      keycloakWrapper.initialize();
+    } catch (e) {
+      log('Error initializing Keycloak: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to initialize Keycloak: $e")),
+      );
+    }
   }
 
-  Future<void> login() async {
+  Future<void> login(BuildContext context) async {
+    setState(() {
+      isLoading = true;
+    });
+
     try {
+      if (!keycloakWrapper.isInitialized) {
+        log('Keycloak is not initialized');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Keycloak is not initialized. Please try again.")),
+        );
+        return;
+      }
+
       final isLoggedIn = await keycloakWrapper.login();
 
       if (keycloakWrapper.accessToken != null) {
         log('Login successful. Access Token: ${keycloakWrapper.accessToken}');
 
-        // Fetch user information
+        // Fetch user info
         final userInfo = await keycloakWrapper.getUserInfo();
         log('User Info: $userInfo');
 
-        // Parse and process group access
+        // Handle navigation based on user roles or other data
         final groupAccessRaw = userInfo?['group_access'] ?? '{}';
         final groupAccess = json.decode(groupAccessRaw) as Map<String, dynamic>;
 
-        bool isMaster = false;
-        bool isGatekeeper = false;
-
-        groupAccess.forEach((key, value) {
-          final roles = (value['vizlog'] ?? '').split(',');
-          if (roles.contains('master')) isMaster = true;
-          if (roles.contains('gatekeeper')) isGatekeeper = true;
-        });
-
-        // Navigate based on roles
-        if (isMaster) {
-          navigateToAdminDashboard();
-        } else if (isGatekeeper) {
-          navigateToGatekeeperDashboard();
-        } else {
-          showGateSelectionBottomSheet(context);
-        }
-
-        // Update state with user ID
-        setState(() {
-          MyAppLogin.userId =
-              int.tryParse(userInfo?['old_sso_user_id']?.toString() ?? '0') ??
-                  0;
-          statusMessage = "Welcome, User ID: ${MyAppLogin.userId}";
-        });
+        handleNavigation(context, userInfo, groupAccess);
       } else {
-        setState(() {
-          statusMessage = "Login failed. Please try again.";
-        });
-        log('Login failed');
+        log('Login failed.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Login failed. Please try again.")),
+        );
       }
     } catch (e) {
-      setState(() {
-        statusMessage = "An error occurred during login: $e";
-      });
       log('Login error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An error occurred during login: $e")),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
-  void navigateToAdminDashboard() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminDashboardView()),
-    );
+  void handleNavigation(BuildContext context, Map<String, dynamic>? userInfo,
+      Map<String, dynamic> groupAccess) {
+    _roleSelectionBottomSheet(context);
   }
 
-  void navigateToGatekeeperDashboard() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const GateDashboardView()),
-    );
-  }
-
-  void showGateSelectionBottomSheet(BuildContext context) {
+  void _roleSelectionBottomSheet(BuildContext context) {
     showModalBottomSheet(
+      context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      context: context,
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Select your gate',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  // Replace this with your dynamic list of gates
-                  ListTile(
-                    title: const Text('Gate 1'),
-                    subtitle: const Text('Enable/Disable Gate 1'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      log("Gate 1 Selected");
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('Gate 2'),
-                    subtitle: const Text('Enable/Disable Gate 2'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      log("Gate 2 Selected");
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(title: Text('Select Role')),
+            ListTile(
+              title: const Text('Admin'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const AdminDashboardView()),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Gatekeeper'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const GateDashboardView()),
+                );
+              },
+            ),
+          ],
         );
       },
     );
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Keycloak Login')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                statusMessage,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Keycloak Login')),
+      body: Center(
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Press Login to authenticate',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => login(context),
+                    child: const Text('Login'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: login,
-                child: const Text('Login'),
-              ),
-            ],
-          ),
-        ),
-      );
+      ),
+    );
+  }
 }
