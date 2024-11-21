@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 final keycloakConfig = KeycloakConfig(
   bundleIdentifier: 'com.cubeonebiz.gate',
@@ -33,6 +34,21 @@ class _MyAppLoginState extends State<MyAppLogin> {
   void initState() {
     super.initState();
     initializeKeycloak();
+    requestLocationPermission();
+  }
+
+  Future<void> requestLocationPermission() async {
+    var status = await Permission.location.request();
+
+    if (status.isGranted) {
+      print("Location permission granted");
+    } else if (status.isDenied) {
+      print("Location permission denied");
+    } else if (status.isPermanentlyDenied) {
+      print(
+          "Location permission is permanently denied. Redirecting to settings...");
+      openAppSettings();
+    }
   }
 
   void initializeKeycloak() {
