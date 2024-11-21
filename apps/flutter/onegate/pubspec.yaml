@@ -65,6 +65,7 @@ dependencies:
   timezone: ^0.7.0
   ionicons: ^0.2.1
   keycloak_wrapper: ^1.4.4
+  permission_handler: ^11.3.1
 
 
 dev_dependencies:
