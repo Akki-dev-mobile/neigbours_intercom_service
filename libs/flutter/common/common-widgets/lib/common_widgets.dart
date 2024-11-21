@@ -5,9 +5,9 @@ import 'package:ionicons/ionicons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-class MyScrollView extends StatelessWidget  {
+class MyScrollView extends StatelessWidget {
   const MyScrollView({
-    Key? key,
+    super.key,
     required this.pageBody,
     this.pageTitle,
     this.pageTitleWidget,
@@ -35,7 +35,7 @@ class MyScrollView extends StatelessWidget  {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       extendBody: true,
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: CustomScrollView(
         controller: controller,
         physics: isScrollable
@@ -43,19 +43,19 @@ class MyScrollView extends StatelessWidget  {
             : const NeverScrollableScrollPhysics(),
         slivers: <Widget>[
           SliverAppBar(
-            backgroundColor: Theme.of(context).colorScheme.background,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             elevation: 1,
             automaticallyImplyLeading: false,
             leading: hasBackButton
                 ? IconButton(
                     icon: Icon(
                       Ionicons.arrow_back_outline,
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-              onPressed: backButtonPressed ??
-                      () {
-                    Navigator.pop(context);
-                  },
+                    onPressed: backButtonPressed ??
+                        () {
+                          Navigator.pop(context);
+                        },
                   )
                 : null,
             pinned: true,
@@ -75,7 +75,7 @@ class MyScrollView extends StatelessWidget  {
                     end: Alignment.bottomCenter,
                     colors: [
                       Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.background,
+                      Theme.of(context).colorScheme.surface,
                     ],
                   ),
                 ),
@@ -249,21 +249,21 @@ class CustomLargeBtn extends StatelessWidget {
           // overlayColor: MaterialStateProperty.all<Color>(
           //   Color(0xFF61677A),
           // ),
-          foregroundColor: MaterialStateProperty.all<Color>(
+          foregroundColor: WidgetStateProperty.all<Color>(
             Color(0xFF7D7C7C),
           ),
-          backgroundColor: MaterialStateProperty.all<Color>(
-            Theme.of(context).colorScheme.onBackground,
+          backgroundColor: WidgetStateProperty.all<Color>(
+            Theme.of(context).colorScheme.onSurface,
           ),
-          elevation: MaterialStateProperty.resolveWith<double>(
-            (Set<MaterialState> states) {
-              if (states.contains(MaterialState.pressed)) {
+          elevation: WidgetStateProperty.resolveWith<double>(
+            (Set<WidgetState> states) {
+              if (states.contains(WidgetState.pressed)) {
                 return 8;
               }
               return 0;
             },
           ),
-          shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+          shape: WidgetStateProperty.all<RoundedRectangleBorder>(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
@@ -275,7 +275,7 @@ class CustomLargeBtn extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.background,
+              color: Theme.of(context).colorScheme.surface,
               fontSize: 22,
               wordSpacing: 1.2,
               fontWeight: FontWeight.w500,

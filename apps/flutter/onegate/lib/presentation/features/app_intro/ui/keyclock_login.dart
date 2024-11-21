@@ -4,6 +4,8 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -58,6 +60,8 @@ class _MyAppLoginState extends State<MyAppLogin> {
       );
     }
   }
+
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
 
   Future<void> login(BuildContext context) async {
     setState(() {
@@ -153,6 +157,8 @@ class _MyAppLoginState extends State<MyAppLogin> {
             ListTile(
               title: const Text('Admin'),
               onTap: () {
+                _preferenceUtils.setIsAdmin(true);
+
                 Navigator.pop(ctx);
                 _showGateSelectionBottomSheet(context);
               },
@@ -194,7 +200,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
                     MaterialPageRoute(
                         builder: (context) => gate == "Admin"
                             ? const AdminDashboardView()
-                            : const GateDashboardView()),
+                            : const AdminDashboardView()),
                   );
                 },
               );
