@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'dart:developer';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -26,6 +26,8 @@ class MyAppLogin extends StatefulWidget {
 
 class _MyAppLoginState extends State<MyAppLogin> {
   bool isLoading = false;
+  String? userId;
+  int? selectedSocietyId;
 
   @override
   void initState() {
@@ -35,15 +37,14 @@ class _MyAppLoginState extends State<MyAppLogin> {
   }
 
   Future<void> requestLocationPermission() async {
-    var status = await Permission.location.request();
+    final status = await Permission.location.request();
 
     if (status.isGranted) {
-      print("Location permission granted");
+      log("Location permission granted");
     } else if (status.isDenied) {
-      print("Location permission denied");
+      log("Location permission denied");
     } else if (status.isPermanentlyDenied) {
-      print(
-          "Location permission is permanently denied. Redirecting to settings...");
+      log("Location permission permanently denied. Redirecting to settings...");
       openAppSettings();
     }
   }
@@ -51,11 +52,10 @@ class _MyAppLoginState extends State<MyAppLogin> {
   Future<void> initializeKeycloak() async {
     try {
       keycloakWrapper.initialize();
+      log("Keycloak initialized successfully");
     } catch (e) {
       log('Error initializing Keycloak: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to initialize Keycloak: $e")),
-      );
+      _showSnackbar("Failed to initialize Keycloak: $e");
     }
   }
 
@@ -67,10 +67,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
     try {
       if (!keycloakWrapper.isInitialized) {
         log('Keycloak is not initialized');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("Keycloak is not initialized. Please try again.")),
-        );
+        _showSnackbar("Keycloak is not initialized. Please try again.");
         return;
       }
 
@@ -79,26 +76,24 @@ class _MyAppLoginState extends State<MyAppLogin> {
       if (keycloakWrapper.accessToken != null) {
         log('Login successful. Access Token: ${keycloakWrapper.accessToken}');
 
-        // Fetch user info
         final userInfo = await keycloakWrapper.getUserInfo();
         log('User Info: $userInfo');
 
-        // Handle navigation through society, role, and gate selections
-        final groupAccessRaw = userInfo?['group_access'] ?? '{}';
-        final groupAccess = json.decode(groupAccessRaw) as Map<String, dynamic>;
+        userId = userInfo?["old_sso_user_id"];
 
-        handleNavigation(context, userInfo, groupAccess);
+        final societies = await fetchSocieties(userId!);
+        if (societies.isNotEmpty) {
+          _showSocietySelection(context, societies);
+        } else {
+          _showSnackbar("No societies found for this user.");
+        }
       } else {
         log('Login failed.');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login failed. Please try again.")),
-        );
+        _showSnackbar("Login failed. Please try again.");
       }
     } catch (e) {
       log('Login error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("An error occurred during login: $e")),
-      );
+      _showSnackbar("An error occurred during login: $e");
     } finally {
       setState(() {
         isLoading = false;
@@ -106,12 +101,45 @@ class _MyAppLoginState extends State<MyAppLogin> {
     }
   }
 
-  void handleNavigation(BuildContext context, Map<String, dynamic>? userInfo,
-      Map<String, dynamic> groupAccess) {
-    _showSelectSocietyBottomSheet(context, groupAccess.keys.toList());
+  Future<List<dynamic>> fetchSocieties(String userId) async {
+    try {
+      final response = await Dio().get(
+        'http://192.168.1.34:8000/api/admin/companies/list/$userId',
+      );
+
+      if (response.statusCode == 200) {
+        log('Societies fetched: ${response.data['data']}');
+        return response.data['data'];
+      } else {
+        throw Exception('Failed to load societies');
+      }
+    } catch (e) {
+      log('Error in fetchSocieties: $e');
+      rethrow;
+    }
   }
 
-  void _showSelectSocietyBottomSheet(BuildContext context, List societies) {
+  Future<List<dynamic>> fetchGates(int societyId) async {
+    try {
+      final queryParams = {
+        'company_id': societyId
+      }; // Ensure `societyId` is an int
+      final response = await Dio().get(
+        'http://192.168.1.34:8000/api/admin/gates/list',
+        queryParameters: queryParams,
+      );
+      if (response.statusCode == 200) {
+        return response.data['data'];
+      } else {
+        throw Exception('Failed to load gates');
+      }
+    } catch (e) {
+      log('Error fetching gates: $e');
+      rethrow;
+    }
+  }
+
+  void _showSocietySelection(BuildContext context, List<dynamic> societies) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -124,11 +152,14 @@ class _MyAppLoginState extends State<MyAppLogin> {
           children: [
             const ListTile(title: Text('Select Society')),
             ...societies.map((society) {
+              final societyId = society['company_id'];
+              final societyName = society['company_name'];
               return ListTile(
-                title: Text(society.toString()),
+                title: Text(societyName ?? 'Unknown Society'),
                 onTap: () {
+                  selectedSocietyId = societyId;
                   Navigator.pop(ctx);
-                  _roleSelectionBottomSheet(context);
+                  _showRoleSelection(context);
                 },
               );
             }).toList(),
@@ -138,7 +169,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
     );
   }
 
-  void _roleSelectionBottomSheet(BuildContext context) {
+  void _showRoleSelection(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -152,16 +183,31 @@ class _MyAppLoginState extends State<MyAppLogin> {
             const ListTile(title: Text('Select Role')),
             ListTile(
               title: const Text('Admin'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showGateSelectionBottomSheet(context);
+              onTap: () async {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const AdminDashboardView()),
+                );
+                // Navigator.pop(ctx);
+                // final gates = await fetchGates(selectedSocietyId!);
+                // if (gates.isNotEmpty) {
+                //   _showGateSelection(context, gates);
+                // } else {
+                //   _showSnackbar("No gates found for the selected society.");
+                // }
               },
             ),
             ListTile(
               title: const Text('Gatekeeper'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(ctx);
-                _showGateSelectionBottomSheet(context);
+                final gates = await fetchGates(selectedSocietyId!);
+                if (gates.isNotEmpty) {
+                  _showGateSelection(context, gates);
+                } else {
+                  _showSnackbar("No gates found for the selected society.");
+                }
               },
             ),
           ],
@@ -170,9 +216,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
     );
   }
 
-  void _showGateSelectionBottomSheet(BuildContext context) {
-    final List gates = ["Gate 1", "Gate 2", "Gate 3"]; // Example gate list
-
+  void _showGateSelection(BuildContext context, List<dynamic> gates) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -185,16 +229,18 @@ class _MyAppLoginState extends State<MyAppLogin> {
           children: [
             const ListTile(title: Text('Select Gate')),
             ...gates.map((gate) {
+              final gateName = gate['gate_name'] ?? 'Unknown Gate';
               return ListTile(
-                title: Text(gate.toString()),
+                title: Text(gateName),
                 onTap: () {
                   Navigator.pop(ctx);
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => gate == "Admin"
-                            ? const AdminDashboardView()
-                            : const GateDashboardView()),
+                      builder: (context) => gateName == "Admin"
+                          ? const AdminDashboardView()
+                          : const GateDashboardView(),
+                    ),
                   );
                 },
               );
@@ -202,6 +248,12 @@ class _MyAppLoginState extends State<MyAppLogin> {
           ],
         );
       },
+    );
+  }
+
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
