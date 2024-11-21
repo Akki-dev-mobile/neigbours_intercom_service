@@ -71,8 +71,8 @@ class RemoteDataSource {
     try {
       final queryParams = {'company_id': companyId};
       final response = await _dio2.get(
-          'http://192.168.1.34:8000/api/admin/companies/list/',
-          queryParameters: queryParams);
+        'http://192.168.1.34:8000/api/admin/companies/list/$companyId',
+      );
       print(response.data['data'].toString());
       if (response.statusCode == 200) {
         return response.data['data'];

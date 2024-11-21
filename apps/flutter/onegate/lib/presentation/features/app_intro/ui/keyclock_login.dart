@@ -83,7 +83,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
         final userInfo = await keycloakWrapper.getUserInfo();
         log('User Info: $userInfo');
 
-        // Handle navigation based on user roles or other data
+        // Handle navigation through society, role, and gate selections
         final groupAccessRaw = userInfo?['group_access'] ?? '{}';
         final groupAccess = json.decode(groupAccessRaw) as Map<String, dynamic>;
 
@@ -108,7 +108,34 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
   void handleNavigation(BuildContext context, Map<String, dynamic>? userInfo,
       Map<String, dynamic> groupAccess) {
-    _roleSelectionBottomSheet(context);
+    _showSelectSocietyBottomSheet(context, groupAccess.keys.toList());
+  }
+
+  void _showSelectSocietyBottomSheet(BuildContext context, List societies) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(title: Text('Select Society')),
+            ...societies.map((society) {
+              return ListTile(
+                title: Text(society.toString()),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _roleSelectionBottomSheet(context);
+                },
+              );
+            }).toList(),
+          ],
+        );
+      },
+    );
   }
 
   void _roleSelectionBottomSheet(BuildContext context) {
@@ -127,24 +154,51 @@ class _MyAppLoginState extends State<MyAppLogin> {
               title: const Text('Admin'),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const AdminDashboardView()),
-                );
+                _showGateSelectionBottomSheet(context);
               },
             ),
             ListTile(
               title: const Text('Gatekeeper'),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const GateDashboardView()),
-                );
+                _showGateSelectionBottomSheet(context);
               },
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showGateSelectionBottomSheet(BuildContext context) {
+    final List gates = ["Gate 1", "Gate 2", "Gate 3"]; // Example gate list
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(title: Text('Select Gate')),
+            ...gates.map((gate) {
+              return ListTile(
+                title: Text(gate.toString()),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => gate == "Admin"
+                            ? const AdminDashboardView()
+                            : const GateDashboardView()),
+                  );
+                },
+              );
+            }).toList(),
           ],
         );
       },
