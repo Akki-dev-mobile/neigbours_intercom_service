@@ -31,7 +31,7 @@ void main() async {
     ),
   );
   await ThemeManager.initializeWithAppId(appId);
-  // startKioskMode();
+
   runApp(
     ScreenUtilInit(
       fontSizeResolver: (num size, ScreenUtil _) => 0.5,
@@ -43,37 +43,70 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  late final AmqpReceiver _amqpReceiver;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
 
   @override
-  Widget build(BuildContext context) {
-    // Initialize the AMQP receiver
-    AmqpReceiver(navigatorKey).startListening();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
+    // Initialize and start the AMQP receiver
+    _amqpReceiver = AmqpReceiver(navigatorKey);
+    _amqpReceiver.startListening();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed) {
+      // Resume listening when the app is reopened
+      _amqpReceiver.startListening();
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      // Stop listening when the app is inactive or paused
+      _amqpReceiver.stopListening();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _amqpReceiver.stopListening();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     Widget initialScreen = LoginView();
 
     return DevicePreview(
-        enabled: !kDebugMode,
-        builder: (context) {
-          return MaterialApp(
-            navigatorKey: navigatorKey,
-            useInheritedMediaQuery: true,
-            debugShowCheckedModeBanner: false,
-            theme: ThemeManager.lightTheme.copyWith(
-              pageTransitionsTheme: PageTransitionsTheme(
-                builders: const <TargetPlatform, PageTransitionsBuilder>{
-                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                  TargetPlatform.android: ZoomPageTransitionsBuilder(),
-                },
-              ),
+      enabled: !kDebugMode,
+      builder: (context) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          useInheritedMediaQuery: true,
+          debugShowCheckedModeBanner: false,
+          theme: ThemeManager.lightTheme.copyWith(
+            pageTransitionsTheme: PageTransitionsTheme(
+              builders: const <TargetPlatform, PageTransitionsBuilder>{
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.android: ZoomPageTransitionsBuilder(),
+              },
             ),
-            home: initialScreen,
-            // home: VisitorsInEntry(
-            //   selectedValue: 'GUEST',
-            // ),
-          );
-        });
+          ),
+          home: initialScreen,
+        );
+      },
+    );
   }
 }

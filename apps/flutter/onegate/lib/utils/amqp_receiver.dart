@@ -4,9 +4,9 @@ import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 
 class AmqpReceiver {
-  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
-
   final GlobalKey<NavigatorState> navigatorKey;
+  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  Client? _client;
 
   AmqpReceiver(this.navigatorKey);
 
@@ -14,50 +14,25 @@ class AmqpReceiver {
     print('Starting AMQP receiver');
     if (_preferenceUtils.getIsAdmin() == true) {
       print('AMQP User is an admin');
-      Client client = Client(
+      _client = Client(
         settings: ConnectionSettings(
           host: '192.168.1.34',
           authProvider: const PlainAuthenticator('guest', 'guest'),
         ),
       );
-      print('Connecting to AMQP RabbitMQ server');
 
       try {
-        Channel channel = await client.channel();
+        Channel channel = await _client!.channel();
         Exchange exchange = await channel.exchange("logs", ExchangeType.FANOUT);
         Queue queue = await channel.queue(
           "approval_requests_8191",
           durable: true,
         );
 
-        await queue.bind(exchange, ""); // Bind the queue to the exchange
+        await queue.bind(exchange, "");
         Consumer consumer = await queue.consume();
         consumer.listen((AmqpMessage message) {
-          // Get the payload as a string
           print("AMQP [x] Received string: ${message.payloadAsString}");
-
-          // Or unserialize to json
-          print("AMQP [x] Received json: ${message.payloadAsJson}");
-
-          // Or just get the raw data as a Uint8List
-          print("AMQP [x] Received raw: ${message.payload}");
-
-          // The message object contains helper methods for
-          // replying, ack-ing and rejecting
-          // Remove the reply line or handle the absence of the reply-to property
-          // message.reply("AMQP world");
-          queue.publish(
-            mandatory: true,
-            immediate: true,
-            "Hello, world!",
-            properties: MessageProperties()..replyTo = consumer.queue.name,
-          );
-          print("AMQP [x] replyTo' to ${consumer.queue.name}");
-          print(
-              "AMQP [x] Sent 'Hello, world!' to ${message.properties!.replyTo}");
-          message.ack();
-          // message.reply("AMQP world");
-
           _showBottomSheet(message.payloadAsString);
         });
       } catch (e) {
@@ -66,6 +41,11 @@ class AmqpReceiver {
     } else {
       print('AMQP User is not an admin');
     }
+  }
+
+  void stopListening() {
+    print('Stopping AMQP receiver');
+    _client?.close();
   }
 
   void _showBottomSheet(String message) {
@@ -94,14 +74,12 @@ class AmqpReceiver {
                       title: const Text('Accept'),
                       onTap: () {
                         Navigator.pop(context);
-                        // Handle accept action
                       },
                     ),
                     ListTile(
                       title: const Text('Reject'),
                       onTap: () {
                         Navigator.pop(context);
-                        // Handle reject action
                       },
                     ),
                   ],
