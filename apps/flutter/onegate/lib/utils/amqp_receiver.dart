@@ -24,8 +24,13 @@ class AmqpReceiver {
 
       try {
         Channel channel = await client.channel();
-        Queue queue =
-            await channel.queue("approval_requests_8196", durable: true);
+        Exchange exchange = await channel.exchange("logs", ExchangeType.FANOUT);
+        Queue queue = await channel.queue(
+          "approval_requests_8191",
+          durable: true,
+        );
+
+        await queue.bind(exchange, ""); // Bind the queue to the exchange
         Consumer consumer = await queue.consume();
         consumer.listen((AmqpMessage message) {
           // Get the payload as a string
@@ -41,6 +46,18 @@ class AmqpReceiver {
           // replying, ack-ing and rejecting
           // Remove the reply line or handle the absence of the reply-to property
           // message.reply("AMQP world");
+          queue.publish(
+            mandatory: true,
+            immediate: true,
+            "Hello, world!",
+            properties: MessageProperties()..replyTo = consumer.queue.name,
+          );
+          print("AMQP [x] replyTo' to ${consumer.queue.name}");
+          print(
+              "AMQP [x] Sent 'Hello, world!' to ${message.properties!.replyTo}");
+          message.ack();
+          // message.reply("AMQP world");
+
           _showBottomSheet(message.payloadAsString);
         });
       } catch (e) {

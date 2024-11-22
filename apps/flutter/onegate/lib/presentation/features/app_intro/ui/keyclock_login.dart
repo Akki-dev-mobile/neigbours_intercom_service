@@ -192,6 +192,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
             ListTile(
               title: const Text('Admin'),
               onTap: () async {
+                _preferenceUtils.setIsAdmin(true);
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -261,9 +262,12 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
   Future<void> sendMesg(String gateName, String userId, int societyId) async {
     try {
-      // Prepare the message
-      String message =
-          "user_name: $gateName, user_id: $userId, company_id: $societyId";
+      // Prepare the message as a JSON object
+      Map<String, dynamic> message = {
+        "user_name": gateName,
+        "user_id": userId,
+        "company_id": societyId,
+      };
 
       // Log the message
       log("Sending message: $message");
@@ -282,7 +286,12 @@ class _MyAppLoginState extends State<MyAppLogin> {
         ExchangeType.FANOUT,
         durable: false,
       );
-      exchange.publish(message, null);
+      exchange.publish(
+        message,
+        null,
+        properties: MessageProperties.persistentMessage()
+          ..replyTo = 'approval_requests_8191',
+      );
 
       log("Message sent successfully.");
     } catch (e) {

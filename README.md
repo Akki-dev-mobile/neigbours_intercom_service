@@ -55,3 +55,8 @@ Nx comes with local caching already built-in (check your `nx.json`). On CI you m
 - [Join the community](https://nx.dev/community)
 - [Subscribe to the Nx Youtube Channel](https://www.youtube.com/@nxdevtools)
 - [Follow us on Twitter](https://twitter.com/nxdevtools)
+
+ Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package
+com.cubeonebiz.gate.flutter_onegate signatures do not match newer version; ignoring!]
+
+adb shell pm uninstall com.cubeonebiz.gate.flutter_onegate

@@ -175,7 +175,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                           isVisible: false,
                           icon: Symbols.badge_rounded,
                           title: 'Staff',
-                          onTap: () {},
+                          onTap: () {
+                            setState(() {});
+                          },
                         ),
                       ],
                     ),
