@@ -1,5 +1,5 @@
-import 'dart:developer';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +9,8 @@ import 'package:get_it/get_it.dart';
 class AmqpReceiver {
   final GlobalKey<NavigatorState> navigatorKey;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  final ValueNotifier<bool> _isLoadingNotifier =
+      ValueNotifier<bool>(true); // Tracks loading state
   Client? _client;
 
   AmqpReceiver(this.navigatorKey);
@@ -16,52 +18,39 @@ class AmqpReceiver {
   void startListening() async {
     print('Starting AMQP receiver');
 
-    print('AMQP User is an admin');
     _client = Client(
       settings: ConnectionSettings(
         host: '192.168.1.34',
         authProvider: const PlainAuthenticator('guest', 'guest'),
       ),
     );
-    if (_preferenceUtils.getIsAdmin() == true) {
-      try {
-        Channel channel = await _client!.channel();
-        Exchange exchange = await channel.exchange("logs", ExchangeType.FANOUT);
-        Queue queue = await channel.queue(
-          "approval_requests_8191",
-          durable: true,
-        );
 
-        await queue.bind(exchange, "");
-        Consumer consumer = await queue.consume();
-        consumer.listen((AmqpMessage message) {
-          print("AMQP [x] Received string: ${message.payloadAsString}");
-          _showBottomSheet(
-              message.payloadAsString, message.properties?.replyTo);
-        });
-      } catch (e) {
-        print('Failed to connect to AMQP RabbitMQ server: $e');
-      }
-    } else {
-      print('AMQP User is not an admin');
-      try {
-        Channel channel = await _client!.channel();
-        Exchange exchange = await channel.exchange("logs", ExchangeType.FANOUT);
-        Queue queue = await channel.queue(
-          "approval_response_8191",
-          durable: true,
-        );
+    bool isAdmin = _preferenceUtils.getIsAdmin() ?? false;
 
-        await queue.bind(exchange, "");
-        Consumer consumer = await queue.consume();
-        consumer.listen((AmqpMessage message) {
-          print("AMQP [x] Received string: ${message.payloadAsString}");
-          _showBottomSheet(
-              message.payloadAsString, message.properties?.replyTo);
-        });
-      } catch (e) {
-        print('Failed to connect to AMQP RabbitMQ server: $e');
-      }
+    try {
+      Channel channel = await _client!.channel();
+      Exchange exchange = await channel.exchange("logs", ExchangeType.FANOUT);
+      Queue queue = await channel.queue(
+        isAdmin ? "approval_requests_8191" : "approval_response_8191",
+        durable: true,
+      );
+
+      await queue.bind(exchange, "");
+      Consumer consumer = await queue.consume();
+
+      consumer.listen((AmqpMessage message) {
+        String payload = message.payloadAsString;
+        print("AMQP [x] Received string: $payload");
+
+        if (!isAdmin &&
+            (payload.contains("accepted") || payload.contains("rejected"))) {
+          _isLoadingNotifier.value = false; // Stop loading on admin response
+        }
+
+        _showBottomSheet(payload, message.properties?.replyTo);
+      });
+    } catch (e) {
+      print('Failed to connect to AMQP RabbitMQ server: $e');
     }
   }
 
@@ -72,24 +61,20 @@ class AmqpReceiver {
 
   Future<void> sendMesg(String status, int userId, int societyId) async {
     try {
-      // Prepare the message as a JSON object
       Map<String, dynamic> message = {
         "status": status,
         "user_id": userId,
         "company_id": societyId,
       };
 
-      // Log the message
       log("Sending message: $message");
 
-      // RabbitMQ connection settings
       ConnectionSettings settings = ConnectionSettings(
         host: "192.168.1.34",
         authProvider: const PlainAuthenticator("guest", "guest"),
       );
       Client client = Client(settings: settings);
 
-      // Publish the message
       Channel channel = await client.channel();
       Exchange exchange = await channel.exchange(
         "logs",
@@ -110,6 +95,8 @@ class AmqpReceiver {
   }
 
   void _showBottomSheet(String message, String? replyTo) {
+    bool isAdmin = _preferenceUtils.getIsAdmin() ?? false;
+
     navigatorKey.currentState?.push(
       PageRouteBuilder(
         opaque: false,
@@ -131,28 +118,50 @@ class AmqpReceiver {
                       title: const Text('Message Received'),
                       subtitle: Text(message),
                     ),
-                    ListTile(
-                      title: const Text('Accept'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        sendMesg(
-                          "accepted",
-                          85134,
-                          8191,
-                        );
-                      },
-                    ),
-                    ListTile(
-                      title: const Text('Reject'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        sendMesg(
-                          "rejected",
-                          85134,
-                          8191,
-                        );
-                      },
-                    ),
+                    if (isAdmin) ...[
+                      ListTile(
+                        title: const Text('Accept'),
+                        onTap: () {
+                          Navigator.pop(context); // Close the popup
+                          sendMesg(
+                            "accepted",
+                            85134, // Replace with dynamic user ID
+                            8191, // Replace with dynamic society ID
+                          );
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('Reject'),
+                        onTap: () {
+                          Navigator.pop(context); // Close the popup
+                          sendMesg(
+                            "rejected",
+                            85134,
+                            8191,
+                          );
+                        },
+                      ),
+                    ] else
+                      ValueListenableBuilder<bool>(
+                        valueListenable: _isLoadingNotifier,
+                        builder: (context, isLoading, child) {
+                          // Automatically dismiss the popup when status is received
+                          if (!isLoading) {
+                            Future.microtask(() => Navigator.pop(context));
+                          }
+                          return ListTile(
+                            title: const Text('Approval Status'),
+                            subtitle: Text(
+                              isLoading
+                                  ? 'Waiting for approval...'
+                                  : 'Your request has been ${message.contains('accepted') ? 'accepted' : 'rejected'}.',
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
