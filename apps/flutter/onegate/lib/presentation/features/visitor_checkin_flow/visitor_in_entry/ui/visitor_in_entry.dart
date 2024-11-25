@@ -115,38 +115,32 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
   }
 
-  //PickedFile? _imageFile;
-
-  // ignore: body_might_complete_normally_nullable
-  Future<File?> _captureImageFromCamera() async {
-    // final picker = ImagePicker();
-    // try {
-    //   final image = await picker.pickImage(
-    //     source: ImageSource.camera,
-    //   );
-    //   return image;
-    // } catch (e) {
-    //   print('Error capturing image from camera: $e');
-    // }
+  Future<XFile?> _captureImageFromCamera() async {
     final picker = ImagePicker();
     try {
-      final image = await picker.pickImage(
-        source: ImageSource.camera,
-      );
+      // Capture the image from the camera
+      final XFile? image = await picker.pickImage(source: ImageSource.camera);
 
       if (image == null) {
+        // User canceled the capture
         return null;
       }
 
-      final appDocDir = await getApplicationDocumentsDirectory();
-      final appDocPath = appDocDir.path;
+      // Get the application's document directory
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String appDocPath = appDocDir.path;
 
-      final File localImage =
-          File('$appDocPath/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      // Create a new file path for saving the image
+      final String localImagePath =
+          '$appDocPath/${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      await localImage.writeAsBytes(await image.readAsBytes());
+      // Save the captured image to the new path
+      final File savedImage = await File(localImagePath).writeAsBytes(
+        await image.readAsBytes(),
+      );
 
-      return localImage;
+      print('Image saved at: $localImagePath');
+      return XFile(savedImage.path);
     } catch (e) {
       print('Error capturing and saving image from camera: $e');
       return null;

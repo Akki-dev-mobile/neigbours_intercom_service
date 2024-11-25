@@ -86,7 +86,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           case MemberFetchedState:
             final memberState = state as MemberFetchedState;
             for (MemberUnits index in selectedUnits) {
-              if (index.id == memberState.members![0].fkUnitId) {
+              if (index.id == memberState.members?[0].fkUnitId) {
                 index.members = memberState.members;
               }
             }

@@ -87,6 +87,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
         log('User Info: $userInfo');
 
         userId = userInfo?["old_sso_user_id"];
+
         username = userInfo?["preferred_username"];
 
         final societies = await fetchSocieties(userId!);
@@ -117,6 +118,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
       if (response.statusCode == 200) {
         log('Societies fetched: ${response.data['data']}');
+
         return response.data['data'];
       } else {
         throw Exception('Failed to load societies');
@@ -166,6 +168,11 @@ class _MyAppLoginState extends State<MyAppLogin> {
                 title: Text(societyName ?? 'Unknown Society'),
                 onTap: () {
                   selectedSocietyId = societyId;
+                  if (societyId != null) {
+                    GlobalUser.setUserId(societyId ?? "");
+                    log("User ID set: $societyId");
+                  }
+
                   Navigator.pop(ctx);
                   _showRoleSelection(context);
                 },
@@ -331,5 +338,17 @@ class _MyAppLoginState extends State<MyAppLogin> {
                     ),
             ),
     );
+  }
+}
+
+class GlobalUser {
+  static int? userId;
+
+  static void setUserId(int id) {
+    userId = id;
+  }
+
+  static int? getUserId() {
+    return userId;
   }
 }

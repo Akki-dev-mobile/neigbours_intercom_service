@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
@@ -178,9 +180,13 @@ class RemoteDataSource {
 
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
+      final userId = GlobalUser.getUserId();
+      if (userId == null) {
+        throw Exception("Company ID (userId) is null");
+      }
       final response = await _dio2.get(
           'https://societybackend.cubeone.in/api/admin/building/list',
-          queryParameters: {'company_id': companyId});
+          queryParameters: {'company_id': userId});
       return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (e) {
       print('Error fetching buildings: $e');
@@ -190,10 +196,14 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getMemberUnit(int? companyId, int? buildingId) async {
     try {
+      final userId = GlobalUser.getUserId();
+      if (userId == null) {
+        throw Exception("Company ID (userId) is null");
+      }
       final response = await _dio2.get(
           'https://societybackend.cubeone.in/api/admin/units/list',
           queryParameters: {
-            'company_id': companyId,
+            'company_id': userId,
             'building_id': buildingId,
             'per_page': 1000
           });
@@ -206,10 +216,14 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getMember(int companyId, int unitId) async {
     try {
+      final userId = GlobalUser.getUserId();
+      if (userId == null) {
+        throw Exception("Company ID (userId) is null");
+      }
       final response = await _dio2.get(
           'https://societybackend.cubeone.in/api/admin/member/list',
           queryParameters: {
-            'company_id': companyId,
+            'company_id': userId,
             'unit_id': unitId,
             'current_tab': 'approved'
           });
@@ -277,18 +291,24 @@ class RemoteDataSource {
     return false;
   }
 
-  Future<String> uploadFile(File file, String userMobile, int companyId) async {
+  Future<String> uploadFile(
+      XFile file, String userMobile, int companyId) async {
     try {
+      // Get the application's document directory
       final directory = await getApplicationDocumentsDirectory();
-      final localFile = File('${directory.path}/$userMobile.jpg');
-      await file.copy(localFile.path);
+
+      // Define the local file path
+      final localFilePath = '${directory.path}/$userMobile.jpg';
+
+      // Convert XFile to File and copy it to the new location
+      final localFile = await File(file.path).copy(localFilePath);
+
       print('Image saved locally at: ${localFile.path}');
       return localFile.path;
     } catch (e) {
       print('Failed to save image locally: $e');
       return '';
     }
-
     // try {
     //   print('File path: ${file.path}');
     //
@@ -331,9 +351,13 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getUnitsList(int companyId) async {
     try {
+      final userId = GlobalUser.getUserId();
+      if (userId == null) {
+        throw Exception("Company ID (userId) is null");
+      }
       final response =
           await _dio2.get('/api/admin/units/list', queryParameters: {
-        'company_id': companyId,
+        'company_id': userId,
       });
       print("Units List: ${response.data['data']}");
       return response.data['data'] ?? [];
@@ -345,9 +369,13 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getBuildingsList(int companyId) async {
     try {
+      final userId = GlobalUser.getUserId();
+      if (userId == null) {
+        throw Exception("Company ID (userId) is null");
+      }
       final response =
           await _dio2.get('/api/admin/building/list', queryParameters: {
-        'company_id': companyId,
+        'company_id': userId,
       });
       print("Buildings List: ${response.data['data']}");
       return response.data['data'] ?? [];
@@ -359,9 +387,14 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getMembersList(int companyId) async {
     try {
+      final userId = GlobalUser.getUserId();
+      if (userId == null) {
+        throw Exception("Company ID (userId) is null");
+      }
+
       final response =
           await _dio2.get('/api/admin/member/list', queryParameters: {
-        'company_id': companyId,
+        'company_id': userId,
       });
       print("Members List: ${response.data['data']}");
       return response.data['data'] ?? [];
