@@ -87,7 +87,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
         log('User Info: $userInfo');
 
         userId = userInfo?["old_sso_user_id"];
-
+        GlobalUser.setsocId(userId ?? "");
         username = userInfo?["preferred_username"];
 
         final societies = await fetchSocieties(userId!);
@@ -350,5 +350,14 @@ class GlobalUser {
 
   static int? getUserId() {
     return userId;
+  }
+
+  static String? socId;
+  static void setsocId(String id) {
+    socId = id;
+  }
+
+  static String? getsocId() {
+    return socId;
   }
 }

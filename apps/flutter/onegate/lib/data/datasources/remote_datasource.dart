@@ -229,7 +229,7 @@ class RemoteDataSource {
           });
       return response.data['data'];
     } catch (e) {
-      print('Error fetching buildings: $e');
+      print('Error fetching members: $e');
       rethrow;
     }
   }
