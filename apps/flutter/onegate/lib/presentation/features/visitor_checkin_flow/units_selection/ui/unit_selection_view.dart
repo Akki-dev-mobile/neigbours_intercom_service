@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
@@ -149,9 +150,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
+        onPressed: () async {
           if (selectedUnit != null || selectedMember != null) {
-            postSelection();
+            print("Selected Unit: $selectedUnit");
+            print("Selected Member: $selectedMember");
+            await postSelection();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => GateDashboardView()),
+            );
           } else {
             print("No selection made");
           }
@@ -364,19 +371,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final String guestName =
           widget.guestname.isNotEmpty ? widget.guestname : "Unknown";
       print("Guest Name: $guestName");
-      String socId = (GlobalUser.getUserId()).toString();
-      print(socId);
-      String userId = (GlobalUser.getsocId().toString());
 
       final data = {
-        'company_id': "412", // Convert to string
+        'company_id': GlobalUser.getUserId()?.toString() ?? "412",
         'name': guestName,
-        'mobile': mobileNumber, // Already a string
+        'mobile': mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': "3729", // Convert to string
-        'visitor_count':
-            widget.guestCount?.toString() ?? "1", // Convert to string
+        'user_id': GlobalUser.getsocId()?.toString() ?? "3729",
+        'visitor_count': widget.guestCount?.toString() ?? "1",
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",
       };

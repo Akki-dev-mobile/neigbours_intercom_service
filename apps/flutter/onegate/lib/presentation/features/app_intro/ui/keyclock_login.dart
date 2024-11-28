@@ -1,14 +1,17 @@
 import 'dart:developer';
 
 import 'package:dart_amqp/dart_amqp.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final keycloakConfig = KeycloakConfig(
   bundleIdentifier: 'com.cubeonebiz.gate',
@@ -29,11 +32,12 @@ class MyAppLogin extends StatefulWidget {
 
 class _MyAppLoginState extends State<MyAppLogin> {
   bool isLoading = false;
-  bool isSending = false; // Track message sending status
+  bool isSending = false;
   String? userId;
   int? selectedSocietyId;
   String? username;
-
+  final remoteDataSource = RemoteDataSource(
+      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
   @override
   void initState() {
     super.initState();
@@ -81,7 +85,13 @@ class _MyAppLoginState extends State<MyAppLogin> {
       final isLoggedIn = await keycloakWrapper.login();
 
       if (keycloakWrapper.accessToken != null) {
-        log('Login successful. Access Token: ${keycloakWrapper.accessToken}');
+        final accessToken = keycloakWrapper.accessToken!;
+        log('Login successful. Access Token: $accessToken');
+
+        // Store the access token in SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('access_token', accessToken);
+        log('Access Token stored in SharedPreferences.');
 
         final userInfo = await keycloakWrapper.getUserInfo();
         log('User Info: $userInfo');
@@ -90,7 +100,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
         GlobalUser.setsocId(userId ?? "");
         username = userInfo?["preferred_username"];
 
-        final societies = await fetchSocieties(userId!);
+        final societies = await remoteDataSource.fetchSocieties(userId!);
         if (societies.isNotEmpty) {
           _showSocietySelection(context, societies);
         } else {
@@ -110,42 +120,21 @@ class _MyAppLoginState extends State<MyAppLogin> {
     }
   }
 
-  Future<List<dynamic>> fetchSocieties(String userId) async {
-    try {
-      final response = await Dio().get(
-        'http://192.168.1.34:8000/api/admin/companies/list/$userId',
-      );
+  Future<void> makeApiCall(String url) async {
+    final token = await keycloakWrapper.accessToken;
 
-      if (response.statusCode == 200) {
-        log('Societies fetched: ${response.data['data']}');
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
-        return response.data['data'];
-      } else {
-        throw Exception('Failed to load societies');
-      }
-    } catch (e) {
-      log('Error in fetchSocieties: $e');
-      rethrow;
-    }
-  }
-
-  Future<List<dynamic>> fetchGates(int societyId) async {
-    try {
-      final queryParams = {
-        'company_id': societyId
-      }; // Ensure `societyId` is an int
-      final response = await Dio().get(
-        'http://192.168.1.34:8000/api/admin/gates/list',
-        queryParameters: queryParams,
-      );
-      if (response.statusCode == 200) {
-        return response.data['data'];
-      } else {
-        throw Exception('Failed to load gates');
-      }
-    } catch (e) {
-      log('Error fetching gates: $e');
-      rethrow;
+    if (response.statusCode == 200) {
+      print('Response: ${response.body}');
+    } else {
+      print('Error: ${response.statusCode}');
     }
   }
 
@@ -211,7 +200,8 @@ class _MyAppLoginState extends State<MyAppLogin> {
               title: const Text('Gatekeeper'),
               onTap: () async {
                 Navigator.pop(ctx);
-                final gates = await fetchGates(selectedSocietyId!);
+                final gates =
+                    await remoteDataSource.fetchGates(selectedSocietyId!);
                 if (gates.isNotEmpty) {
                   _showGateSelection(context, gates);
                 } else {

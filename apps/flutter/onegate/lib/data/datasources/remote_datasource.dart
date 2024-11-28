@@ -9,6 +9,7 @@ import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 var client = Client('https://onegate.cubeone.in/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
@@ -16,16 +17,16 @@ var client = Client('https://onegate.cubeone.in/')
 final keycloakConfig = KeycloakConfig(
   bundleIdentifier: 'com.example.keyclockflutter',
   clientId: 'onegate-sso',
-  frontendUrl: 'https://stgsso.cubeone.in',
+  frontendUrl: 'http://stgsso.cubeone.in',
   realm: 'fstech',
   clientSecret: 'zXpmFL8WzkDoL379FesFl2pgm8vxPa58',
 );
 final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
 
 class RemoteDataSource {
-  final Dio _dio1;
-  final Dio _dio2;
-  final Dio _dio3;
+  final Dio? _dio1;
+  final Dio? _dio2;
+  final Dio? _dio3;
   RemoteDataSource(
     this._dio1,
     this._dio2,
@@ -42,7 +43,7 @@ class RemoteDataSource {
         log('Keycloak login successful. Access Token: ${keycloakWrapper.accessToken}');
 
         // Step 3: Use Keycloak access token to call your backend API
-        final response = await _dio2.post(
+        final response = await _dio2?.post(
           '/api/gatelogin',
           options: Options(
             headers: {
@@ -53,12 +54,12 @@ class RemoteDataSource {
         );
 
         // Step 4: Handle the response
-        if (response.statusCode == 200) {
-          var data = response.data['data'];
+        if (response?.statusCode == 200) {
+          var data = response?.data?['data'];
           log('Login response: $data');
           return data;
         } else {
-          throw Exception('Failed to log in: ${response.statusCode}');
+          throw Exception('Failed to log in: ${response?.statusCode}');
         }
       } else {
         throw Exception('Keycloak login failed.');
@@ -69,34 +70,81 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<dynamic>> fetchGates(int companyId) async {
+  Future<List<dynamic>> fetchGates(int societyId) async {
     try {
-      final queryParams = {'company_id': companyId};
-      final response = await _dio2.get(
-        'http://192.168.1.34:8000/api/admin/companies/list/$companyId',
+      // Retrieve the access token from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
+
+      final queryParams = {
+        'company_id': GlobalUser.getUserId(),
+      }; // Ensure `societyId` is an int
+
+      final response = await Dio().get(
+        'http://192.168.1.34:8000/api/admin/gates/list',
+        queryParameters: queryParams,
+        options: Options(
+          headers: {
+            'Authorization':
+                'Bearer $accessToken', // Pass the access token here
+          },
+        ),
       );
-      print(response.data['data'].toString());
+
       if (response.statusCode == 200) {
         return response.data['data'];
       } else {
-        throw DioError(
-            requestOptions: response.requestOptions,
-            response: response,
-            type: DioErrorType.response);
+        throw Exception('Failed to load gates: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching gates: $e');
+      log('Error fetching gates: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> fetchSocieties(String userId) async {
+    try {
+      var id = GlobalUser.socId;
+      print("id  $id");
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
+      final response = await Dio().get(
+        'http://192.168.1.34:8000/api/admin/companies/list/$id',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+          },
+        ),
+      );
+
+      if (response?.statusCode == 200) {
+        log('Societies fetched: ${response?.data?['data']}');
+
+        return response?.data?['data'];
+      } else {
+        throw Exception('Failed to load societies');
+      }
+    } catch (e) {
+      log('Error in fetchSocieties: $e');
       rethrow;
     }
   }
 
   //   try {
-  //     final response = await _dio2.get('/api/admin/building/list',
+  //     final response = await _dio2?.get('/api/admin/building/list',
   //         queryParameters: {'company_id': companyId});
   //
   //     // Check if response data is null
-  //     if (response.data != null) {
-  //       return response.data['data'];
+  //     if (response?.data != null) {
+  //       return response?.data?['data'];
   //     } else {
   //       print('Response data is null');
   //       return [];
@@ -181,13 +229,26 @@ class RemoteDataSource {
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
       final userId = GlobalUser.getUserId();
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
-      final response = await _dio2.get(
-          'https://societybackend.cubeone.in/api/admin/building/list',
-          queryParameters: {'company_id': userId});
-      return List<Map<String, dynamic>>.from(response.data['data']);
+      final response = await _dio2?.get(
+        'http://societybackend.cubeone.in/api/admin/building/list',
+        queryParameters: {'company_id': userId},
+        options: Options(
+          headers: {
+            'Authorization':
+                'Bearer $accessToken', // Pass the access token here
+          },
+        ),
+      );
+      return List<Map<String, dynamic>>.from(response?.data['data']);
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
@@ -200,14 +261,28 @@ class RemoteDataSource {
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
-      final response = await _dio2.get(
-          'https://societybackend.cubeone.in/api/admin/units/list',
-          queryParameters: {
-            'company_id': userId,
-            'building_id': buildingId,
-            'per_page': 1000
-          });
-      return response.data['data'];
+
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
+      final response = await _dio2?.get(
+        'http://societybackend.cubeone.in/api/admin/units/list',
+        queryParameters: {
+          'company_id': userId,
+          'building_id': buildingId,
+          'per_page': 1000
+        },
+        options: Options(
+          headers: {
+            'Authorization':
+                'Bearer $accessToken', // Pass the access token here
+          },
+        ),
+      );
+      return response?.data?['data'];
     } catch (e) {
       print('Error fetching buildings: $e');
       rethrow;
@@ -220,14 +295,27 @@ class RemoteDataSource {
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
-      final response = await _dio2.get(
-          'https://societybackend.cubeone.in/api/admin/member/list',
-          queryParameters: {
-            'company_id': userId,
-            'unit_id': unitId,
-            'current_tab': 'approved'
-          });
-      return response.data['data'];
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
+      final response = await _dio2?.get(
+        'http://societybackend.cubeone.in/api/admin/member/list',
+        queryParameters: {
+          'company_id': userId,
+          'unit_id': unitId,
+          'current_tab': 'approved'
+        },
+        options: Options(
+          headers: {
+            'Authorization':
+                'Bearer $accessToken', // Pass the access token here
+          },
+        ),
+      );
+      return response?.data?['data'];
     } catch (e) {
       print('Error fetching members: $e');
       rethrow;
@@ -240,7 +328,7 @@ class RemoteDataSource {
       return visitor_log.reversed.toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching buildings: $e');
+        print('client.visitorLog.fetchAllLogs $e');
       }
       rethrow;
       rethrow;
@@ -253,7 +341,7 @@ class RemoteDataSource {
       final visitor_log = await client.visitorLog.fetchCheckInLogs(dateTime);
       return visitor_log.reversed.toList();
     } catch (e) {
-      print('Error fetching buildings: $e');
+      print('visitorLog.fetchCheckInLogs $e');
       rethrow;
     }
   }
@@ -264,7 +352,7 @@ class RemoteDataSource {
       final visitor_log = await client.visitorLog.fetchCheckOutLogs(dateTime);
       return visitor_log.reversed.toList();
     } catch (e) {
-      print('Error fetching buildings: $e');
+      print('Eclient.visitorLog.fetchCheckOutLogs $e');
       rethrow;
     }
   }
@@ -336,11 +424,11 @@ class RemoteDataSource {
     //     data: data,
     //   );
     //
-    //   if (response.statusCode == 200) {
-    //     print(json.encode(response.data));
-    //     return response.data['data'];
+    //   if (response?.statusCode == 200) {
+    //     print(json.encode(response?.data));
+    //     return response?.data?['data'];
     //   } else {
-    //     print(response.statusMessage);
+    //     print(response?.statusMessage);
     //     return '';
     //   }
     // } catch (e) {
@@ -356,11 +444,11 @@ class RemoteDataSource {
         throw Exception("Company ID (userId) is null");
       }
       final response =
-          await _dio2.get('/api/admin/units/list', queryParameters: {
+          await _dio2?.get('/api/admin/units/list', queryParameters: {
         'company_id': userId,
       });
-      print("Units List: ${response.data['data']}");
-      return response.data['data'] ?? [];
+      print("Units List: ${response?.data?['data']}");
+      return response?.data?['data'] ?? [];
     } catch (e) {
       print('Error fetching units list: $e');
       rethrow;
@@ -373,12 +461,26 @@ class RemoteDataSource {
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
-      final response =
-          await _dio2.get('/api/admin/building/list', queryParameters: {
-        'company_id': userId,
-      });
-      print("Buildings List: ${response.data['data']}");
-      return response.data['data'] ?? [];
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
+      final response = await _dio2?.get(
+        '/api/admin/building/list',
+        queryParameters: {
+          'company_id': userId,
+        },
+        options: Options(
+          headers: {
+            'Authorization':
+                'Bearer $accessToken', // Pass the access token here
+          },
+        ),
+      );
+      print("Buildings List: ${response?.data?['data']}");
+      return response?.data?['data'] ?? [];
     } catch (e) {
       print('Error fetching buildings list: $e');
       rethrow;
@@ -391,13 +493,26 @@ class RemoteDataSource {
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
 
-      final response =
-          await _dio2.get('/api/admin/member/list', queryParameters: {
-        'company_id': userId,
-      });
-      print("Members List: ${response.data['data']}");
-      return response.data['data'] ?? [];
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
+      final response = await _dio2?.get(
+        '/api/admin/member/list',
+        queryParameters: {
+          'company_id': userId,
+        },
+        options: Options(
+          headers: {
+            'Authorization':
+                'Bearer $accessToken', // Pass the access token here
+          },
+        ),
+      );
+      print("Members List: ${response?.data?['data']}");
+      return response?.data?['data'] ?? [];
     } catch (e) {
       print('Error fetching members list: $e');
       rethrow;
@@ -406,11 +521,11 @@ class RemoteDataSource {
 
   Future<String?> sendOTP(String mobileNumber) async {
     try {
-      final response = await _dio1.get('/sms/verification-code',
+      final response = await _dio1?.get('/sms/verification-code',
           queryParameters: {'phoneNumber': '91$mobileNumber'});
-      print(response.data['data'].toString());
-      if (response.statusCode == 200) {
-        return response.data['data']['expires_in'];
+      print(response?.data?['data'].toString());
+      if (response?.statusCode == 200) {
+        return response?.data?['data']['expires_in'];
       }
     } catch (e) {
       return e.toString();
@@ -419,13 +534,13 @@ class RemoteDataSource {
 
   Future<String?> verifyOTP(String mobileNumber, String otp) async {
     try {
-      final response = await _dio1.post('/sms/verify',
+      final response = await _dio1?.post('/sms/verify',
           data: {'phoneNumber': '91$mobileNumber', "otp": otp});
       if (kDebugMode) {
-        print(response.data['data'].toString());
+        print(response?.data?['data'].toString());
       }
-      if (response.statusCode == 200) {
-        return response.data['message'];
+      if (response?.statusCode == 200) {
+        return response?.data?['message'];
       }
     } catch (e) {
       return e.toString();
