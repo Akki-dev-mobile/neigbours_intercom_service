@@ -4,7 +4,6 @@ import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_logi
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:lottie/lottie.dart';
 import 'package:onegate_client/onegate_client.dart';
 
 class UnitSelectionView extends StatefulWidget {
@@ -253,17 +252,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       future: getMember(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          // Do nothing while waiting for data
+          return Container();
         } else if (snapshot.hasError) {
+          // Show error message if there's an error
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          // Handle case when no members are found
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Lottie.network(
-                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/search_members_692a406814.json',
-                height: 200,
-              ),
               Text(
                 'No Members Found.\nSearch members by their name or flat',
                 textAlign: TextAlign.center,
@@ -275,6 +273,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             ],
           );
         } else {
+          // Populate the members list
           if (_allMembers.isEmpty) {
             _allMembers = snapshot.data!;
             _filteredMembers = _allMembers;
@@ -284,35 +283,38 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    setState(() {
-                      _filteredMembers = _allMembers.where((member) {
-                        final memberName = member['member_name']
-                            ?.toLowerCase()
-                            .contains(value.toLowerCase());
-                        final unitNumber = member['unit_flat_number']
-                            ?.toLowerCase()
-                            .contains(value.toLowerCase());
-                        return memberName || unitNumber;
-                      }).toList();
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search Members/Units',
-                    border: OutlineInputBorder(),
-                    prefixIcon: const Icon(Ionicons.search),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Ionicons.close),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search Members/Units',
+                          border: OutlineInputBorder(),
+                          prefixIcon: const Icon(Ionicons.search),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
                       onPressed: () {
-                        _searchController.clear();
+                        final query =
+                            _searchController.text.trim().toLowerCase();
                         setState(() {
-                          _filteredMembers = _allMembers;
+                          _filteredMembers = _allMembers.where((member) {
+                            final memberName = member['member_name']
+                                ?.toLowerCase()
+                                .contains(query);
+                            final unitNumber = member['unit_flat_number']
+                                ?.toLowerCase()
+                                .contains(query);
+                            return memberName || unitNumber;
+                          }).toList();
                         });
                       },
+                      child: const Text('Search'),
                     ),
-                  ),
+                  ],
                 ),
               ),
               Expanded(
@@ -351,34 +353,51 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> postSelection() async {
-    if (selectedUnit == null && selectedMember == null) {
-      print("No selection made");
-      return;
-    }
-
     print("Mobile number from widget: ${widget.mobileNumber}");
 
     try {
+      // Validate and format the time
       String formattedInTime =
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
+      // Validate the mobile number
       final String mobileNumber = widget.mobileNumber.trim();
       if (!RegExp(r'^\d{10,15}$').hasMatch(mobileNumber)) {
         print("Invalid mobile number: $mobileNumber");
         return;
       }
 
+      String? userId;
+
+      if (selectedUnit != null) {
+        userId = units
+            .firstWhere(
+                (unit) => unit['unit_flat_number'] == selectedUnit)['id']
+            .toString();
+      } else if (selectedMember != null) {
+        userId = _allMembers
+            .firstWhere(
+                (member) => member['member_name'] == selectedMember)['id']
+            .toString();
+      } else {
+        print("No unit or member selected for user_id");
+        return;
+      }
+
+      print("Selected user_id: $userId");
+
       final String guestName =
           widget.guestname.isNotEmpty ? widget.guestname : "Unknown";
       print("Guest Name: $guestName");
 
+      // Prepare request data
       final data = {
-        'company_id': GlobalUser.getUserId()?.toString() ?? "412",
+        'company_id': GlobalUser.getUserId(),
         'name': guestName,
         'mobile': mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': GlobalUser.getsocId()?.toString() ?? "3729",
+        'user_id': userId == "7",
         'visitor_count': widget.guestCount?.toString() ?? "1",
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",
@@ -386,8 +405,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       print("Request Data: $data");
 
+      // Make the API call
       final response = await _dio.post(
-        'http://192.168.1.34:8000/api/send-fcm-notification',
+        'https://gateapi.cubeone.in/api/send-fcm-notification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: data,
       );
