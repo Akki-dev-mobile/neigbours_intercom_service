@@ -9,7 +9,6 @@ import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_logi
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart' as c;
-// import 'package:onegate_client/onegate_client.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final c.Visitor visitor;
@@ -44,66 +43,105 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   List<dynamic> buildings = [];
   List<dynamic> units = [];
   late Client amqpClient;
-
+  String? approvalStatus; // Holds approval/decline message
+  bool isWaitingForApproval = false; // Shows waiting state
   bool isLoading = true;
   bool isUnitsLoading = false;
   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _filteredMembers = [];
   List<dynamic> _allMembers = [];
-  String? approvalStatus;
 
   @override
   void initState() {
     super.initState();
     fetchBuildings();
     setupAMQPReceiver(); // Initialize AMQP receiver
+    print("rohit${widget.mobileNumber}");
   }
 
   @override
   void dispose() {
-    amqpClient.close(); // Close AMQP client when the widget is disposed
+    amqpClient.close(); // Close AMQP client
     super.dispose();
   }
 
   Future<void> setupAMQPReceiver() async {
     try {
-      log("Setting up AMQP Receiver");
+      log("Initializing AMQP Receiver...");
 
+      // Initialize AMQP client with connection settings
       amqpClient = Client(
         settings: ConnectionSettings(
-          host: "192.168.1.145",
-          port: 15672,
-          authProvider: const PlainAuthenticator("quest", "guest"),
+          host: "65.1.230.119",
+          authProvider:
+              const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
         ),
       );
 
+      log("Connecting to RabbitMQ server...");
+      await amqpClient.connect();
+      log("Connection to RabbitMQ server established successfully.");
+
+      // Define the queue name dynamically based on the mobile number
+      final queueName = "visitor_approval_77525_${widget.mobileNumber}";
+      log("Queue Name: $queueName");
+
+      // Access the channel and declare the queue
       Channel channel = await amqpClient.channel();
-      Queue queue = await channel.queue(
-        "visitor_approval_77525_${widget.visitorId}",
+      log("Channel opened.");
+
+      Queue queue = await channel.queue(queueName, durable: false);
+      log("Queue declared: $queueName");
+
+      // Bind the queue to an exchange (if required)
+      // Note: Replace "exchange_name" and "routing_key" with actual values if applicable
+      const String exchangeName = "logs"; // Example exchange name
+      final Exchange exchange = await channel.exchange(
+        exchangeName,
+        ExchangeType.FANOUT,
         durable: false,
       );
+      log("Exchange bound: $exchangeName");
 
-      log("Waiting for messages...");
+      await queue.bind(exchange, "routing_key_placeholder");
+      log("Queue bound to exchange with routing key.");
 
-      // Await the Consumer and then listen
-      Consumer consumer = await queue.consume(consumerTag: "visitor_response");
+      // Start consuming messages from the queue
+      Consumer consumer = await queue.consume();
+
+      log("Consumer registered for queue. Waiting for messages...");
+
+      // Listen for messages on the queue
       consumer.listen((AmqpMessage message) {
-        final response = String.fromCharCodes(message.payload as List<int>);
-        log("Received message: $response");
+        log("Message received from queue.");
 
-        // Example response processing
-        final responseData = jsonDecode(response);
-        final status = responseData['status']; // e.g., "Approved" or "Rejected"
+        try {
+          // Decode the message payload
+          final payload = utf8.decode(message.payload as List<int>);
+          log("Raw Message Payload: $payload");
 
-        setState(() {
-          approvalStatus = status;
-        });
+          // Parse the message as JSON
+          final response = jsonDecode(payload);
+          log("Decoded Message: $response");
 
-        log("Approval Status: $status");
-        message.ack();
+          // Extract the approval status from the message
+          final status = response['status'];
+          log("Approval Status: $status");
+
+          // Update the UI with the approval status
+          setState(() {
+            approvalStatus = status;
+            isWaitingForApproval = false;
+          });
+
+          // Acknowledge the message
+          message.ack();
+        } catch (e) {
+          log("Error processing message: $e");
+        }
       });
     } catch (e) {
-      log("Error in AMQP Receiver: $e");
+      log("Error setting up AMQP Receiver: $e");
     }
   }
 
@@ -116,7 +154,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       }
       final response = await _dio.get(
         'https://societybackend.cubeone.in/api/admin/building/list',
-        queryParameters: {'company_id': userId},
       );
       setState(() {
         buildings = response.data['data'];
@@ -191,14 +228,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         length: 2,
         child: Column(
           children: [
-            if (approvalStatus != null)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  "Approval Status: $approvalStatus",
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ),
+            // if (approvalStatus != null)
+            //   Padding(
+            //     padding: const EdgeInsets.all(16.0),
+            //     child: Text(
+            //       "Approval Status: $approvalStatus",
+            //       style: Theme.of(context).textTheme.headlineSmall,
+            //     ),
+            //   ),
             const TabBar(
               tabs: [
                 Tab(text: 'Units'),
@@ -221,12 +258,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           if (selectedUnit != null || selectedMember != null) {
             print("Selected Unit: $selectedUnit");
             print("Selected Member: $selectedMember");
-            await postSelection();
+            await postSelection(context);
             print("success");
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(builder: (context) => GateDashboardView()),
-            // );
           } else {
             print("No selection made");
           }
@@ -421,19 +454,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Future<void> postSelection() async {
-    print("Mobile number from widget: ${widget.mobileNumber}");
-
+  Future<void> postSelection(BuildContext context) async {
     try {
       String formattedInTime =
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-      final String mobileNumber = widget.mobileNumber.trim();
-
-      if (!RegExp(r'^\d{10,15}$').hasMatch(mobileNumber)) {
-        print("Invalid mobile number: $mobileNumber");
-        return;
-      }
-
       String? userId;
 
       if (selectedUnit != null) {
@@ -451,16 +475,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         return;
       }
 
-      print("Selected user_id: $userId");
-
-      final String guestName =
-          widget.guestname.isNotEmpty ? widget.guestname : "Unknown";
-      print("Guest Name: $guestName");
-
       final data = {
         'company_id': "8191",
-        'name': "shubham bane",
-        'mobile': "8452060059",
+        'name': widget.guestname,
+        'mobile': widget.mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
         'user_id': "77525",
@@ -471,7 +489,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       print("Request Data: $data");
 
-      final response = await _dio.post(
+      final response = await Dio().post(
         'https://gateapi.cubeone.in/api/send-fcm-notification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: data,
@@ -479,21 +497,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       if (response.statusCode == 200) {
         print("FCM notification sent successfully: ${response.data}");
+        setState(() {
+          isWaitingForApproval = true; // Show waiting state
+        });
+
+        setupAMQPReceiver(); // Start listening for approval
       } else {
         print("Failed to send FCM notification: ${response.statusCode}");
-        print("Response: ${response.data}");
       }
     } catch (e) {
-      if (e is DioError) {
-        print(
-            "Error during posting or sending notification: ${e.response?.data}");
-        print("Request Data: ${e.response?.requestOptions.data}");
-        if (e.response?.statusCode == 400) {
-          print("Validation error or bad request.");
-        }
-      } else {
-        print("Error during posting or sending notification: $e");
-      }
+      log("Error during posting or sending notification: $e");
     }
   }
 }

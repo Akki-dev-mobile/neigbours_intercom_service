@@ -271,9 +271,10 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
       // RabbitMQ connection settings
       ConnectionSettings settings = ConnectionSettings(
-        host: "192.168.1.145",
-        port: 15672,
-        authProvider: const PlainAuthenticator("guest", "guest"),
+        host: "65.1.230.119",
+        // port: 5672,
+        authProvider:
+            const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
       );
       Client client = Client(settings: settings);
 

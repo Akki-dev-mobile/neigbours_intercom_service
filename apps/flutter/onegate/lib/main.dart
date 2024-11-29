@@ -1,9 +1,8 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
-
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/utils/amqp_receiver.dart';
@@ -11,6 +10,7 @@ import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 import 'package:one_theme/theme.dart';
+import 'package:provider/provider.dart'; // Import the provider package
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -38,7 +38,14 @@ void main() async {
       designSize: const Size(360, 690),
       minTextAdapt: true,
       splitScreenMode: true,
-      builder: (_, child) => MyApp(),
+      builder: (_, child) => MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ApprovalStatusProvider>(
+            create: (_) => ApprovalStatusProvider(), // Initialize your provider
+          ),
+        ],
+        child: MyApp(),
+      ),
     ),
   );
 }
