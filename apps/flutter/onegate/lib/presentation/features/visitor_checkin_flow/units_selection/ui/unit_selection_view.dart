@@ -5,6 +5,7 @@ import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 // import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
@@ -43,7 +44,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   List<dynamic> buildings = [];
   List<dynamic> units = [];
   late Client amqpClient;
-  String? approvalStatus; // Holds approval/decline message
+  String? approvalStatus =
+      "Waiting for approval..."; // Holds approval/decline message
   bool isWaitingForApproval = false; // Shows waiting state
   bool isLoading = true;
   bool isUnitsLoading = false;
@@ -55,7 +57,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   void initState() {
     super.initState();
     fetchBuildings();
-    setupAMQPReceiver(); // Initialize AMQP receiver
+    // setupAMQPReceiver(); // Initialize AMQP receiver
     print("rohit${widget.mobileNumber}");
   }
 
@@ -127,12 +129,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           // Extract the approval status from the message
           final status = response['status'];
           log("Approval Status: $status");
+          showApprovalDialog(status);
 
-          // Update the UI with the approval status
-          setState(() {
-            approvalStatus = status;
-            isWaitingForApproval = false;
-          });
+          // Update the dialog dynamically
+          // setState(() {
+          //   approvalStatus = status;
+          // });
 
           // Acknowledge the message
           message.ack();
@@ -145,6 +147,61 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
+  Future<void> showApprovalDialog(approvalStatusNew) async {
+    // Ensure `approvalStatus` starts with "Waiting for approval..."
+    // setState(() {
+    //   approvalStatus = "Waiting for approval...";
+    // });
+
+    await setupAMQPReceiver();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing the dialog
+      builder: (_) {
+        return AlertDialog(
+          title: const Text("Approval Status"),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (approvalStatus == "Waiting for approval...")
+                    const CircularProgressIndicator(),
+                  const SizedBox(height: 20),
+                  Text(
+                    approvalStatusNew,
+                    style: const TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            if (approvalStatus == "Approved" || approvalStatus == "Rejected")
+              TextButton(
+                onPressed: () {
+                  // Clear `approvalStatus` and close the dialog
+                  setState(() {
+                    approvalStatus = null;
+                  });
+                  Navigator.pop(context);
+                },
+                child: const Text("Close"),
+              ),
+          ],
+        );
+      },
+    ).then((_) {
+      // Ensure `approvalStatus` is cleared if the dialog is dismissed in other ways
+      setState(() {
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => GateDashboardView()));
+      });
+    });
+  }
+
   Future<void> fetchBuildings() async {
     try {
       setState(() => isLoading = true);
@@ -153,7 +210,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         throw Exception("Company ID (userId) is null");
       }
       final response = await _dio.get(
-        'https://societybackend.cubeone.in/api/admin/building/list',
+        'https://societybackend.cubeone.in/api/admin/building/list?company_id=$userId',
       );
       setState(() {
         buildings = response.data['data'];
@@ -259,7 +316,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             print("Selected Unit: $selectedUnit");
             print("Selected Member: $selectedMember");
             await postSelection(context);
-            print("success");
+            showApprovalDialog('Waiting for approval......');
           } else {
             print("No selection made");
           }
@@ -500,8 +557,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         setState(() {
           isWaitingForApproval = true; // Show waiting state
         });
-
-        setupAMQPReceiver(); // Start listening for approval
+        await showApprovalDialog(approvalStatus);
+        setupAMQPReceiver();
+        // Start listening for approval
       } else {
         print("Failed to send FCM notification: ${response.statusCode}");
       }
