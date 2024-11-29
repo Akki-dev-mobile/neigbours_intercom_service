@@ -157,6 +157,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               context,
               MaterialPageRoute(
                 builder: (context) => UnitSelectionView(
+                  visitorId: widget.searchedVisitor?.id,
                   guestname: guestName.text,
                   mobileNumber: widget.mobile,
                   purposeCategory: state.purposeCategory,

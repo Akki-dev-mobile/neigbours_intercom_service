@@ -1,16 +1,23 @@
+import 'dart:convert';
+import 'dart:developer';
+
+import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+// import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:onegate_client/onegate_client.dart';
+import 'package:onegate_client/onegate_client.dart' as c;
+// import 'package:onegate_client/onegate_client.dart';
 
 class UnitSelectionView extends StatefulWidget {
-  final Visitor visitor;
-  final PurposeCategory purposeCategory;
+  final c.Visitor visitor;
+  final c.PurposeCategory purposeCategory;
   final String? comingFrom;
   final int? guestCount;
+  final int? visitorId;
+
   final String guestname;
   final String mobileNumber;
 
@@ -20,6 +27,7 @@ class UnitSelectionView extends StatefulWidget {
       required this.purposeCategory,
       this.comingFrom,
       this.guestCount,
+      this.visitorId,
       required this.guestname,
       required this.mobileNumber})
       : super(key: key);
@@ -35,16 +43,68 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   String selectedBuilding = '';
   List<dynamic> buildings = [];
   List<dynamic> units = [];
+  late Client amqpClient;
+
   bool isLoading = true;
   bool isUnitsLoading = false;
   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _filteredMembers = [];
   List<dynamic> _allMembers = [];
+  String? approvalStatus;
 
   @override
   void initState() {
     super.initState();
     fetchBuildings();
+    setupAMQPReceiver(); // Initialize AMQP receiver
+  }
+
+  @override
+  void dispose() {
+    amqpClient.close(); // Close AMQP client when the widget is disposed
+    super.dispose();
+  }
+
+  Future<void> setupAMQPReceiver() async {
+    try {
+      log("Setting up AMQP Receiver");
+
+      amqpClient = Client(
+        settings: ConnectionSettings(
+          host: "192.168.1.145",
+          port: 15672,
+          authProvider: const PlainAuthenticator("quest", "guest"),
+        ),
+      );
+
+      Channel channel = await amqpClient.channel();
+      Queue queue = await channel.queue(
+        "visitor_approval_77525_${widget.visitorId}",
+        durable: false,
+      );
+
+      log("Waiting for messages...");
+
+      // Await the Consumer and then listen
+      Consumer consumer = await queue.consume(consumerTag: "visitor_response");
+      consumer.listen((AmqpMessage message) {
+        final response = String.fromCharCodes(message.payload as List<int>);
+        log("Received message: $response");
+
+        // Example response processing
+        final responseData = jsonDecode(response);
+        final status = responseData['status']; // e.g., "Approved" or "Rejected"
+
+        setState(() {
+          approvalStatus = status;
+        });
+
+        log("Approval Status: $status");
+        message.ack();
+      });
+    } catch (e) {
+      log("Error in AMQP Receiver: $e");
+    }
   }
 
   Future<void> fetchBuildings() async {
@@ -131,6 +191,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         length: 2,
         child: Column(
           children: [
+            if (approvalStatus != null)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Approval Status: $approvalStatus",
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
             const TabBar(
               tabs: [
                 Tab(text: 'Units'),
@@ -154,10 +222,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             print("Selected Unit: $selectedUnit");
             print("Selected Member: $selectedMember");
             await postSelection();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => GateDashboardView()),
-            );
+            print("success");
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(builder: (context) => GateDashboardView()),
+            // );
           } else {
             print("No selection made");
           }
@@ -356,12 +425,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     print("Mobile number from widget: ${widget.mobileNumber}");
 
     try {
-      // Validate and format the time
       String formattedInTime =
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-
-      // Validate the mobile number
       final String mobileNumber = widget.mobileNumber.trim();
+
       if (!RegExp(r'^\d{10,15}$').hasMatch(mobileNumber)) {
         print("Invalid mobile number: $mobileNumber");
         return;
@@ -390,14 +457,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           widget.guestname.isNotEmpty ? widget.guestname : "Unknown";
       print("Guest Name: $guestName");
 
-      // Prepare request data
       final data = {
-        'company_id': GlobalUser.getUserId(),
-        'name': guestName,
-        'mobile': mobileNumber,
+        'company_id': "8191",
+        'name': "shubham bane",
+        'mobile': "8452060059",
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': userId == "7",
+        'user_id': "77525",
         'visitor_count': widget.guestCount?.toString() ?? "1",
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",
@@ -405,7 +471,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       print("Request Data: $data");
 
-      // Make the API call
       final response = await _dio.post(
         'https://gateapi.cubeone.in/api/send-fcm-notification',
         options: Options(headers: {"Content-Type": "application/json"}),
