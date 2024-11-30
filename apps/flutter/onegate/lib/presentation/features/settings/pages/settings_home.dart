@@ -1,21 +1,17 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
-import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:common_widgets/common_widgets.dart';
-import 'package:chips_choice/chips_choice.dart';
-import 'package:provider/provider.dart';
+
 import '../../self_entry/self_home_view.dart';
-import '../../self_entry/ui/self_entry_view.dart';
 import 'settings_gate.dart';
 
 class SettingsHome extends StatefulWidget {
@@ -68,7 +64,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
               padding: EdgeInsets.all(16.0),
               child: Column(
@@ -87,7 +83,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _cameraItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        fillColor: MaterialStateProperty.all(
+                        fillColor: WidgetStateProperty.all(
                           Colors.red,
                         ),
                         title: Text(
@@ -143,7 +139,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
               padding: EdgeInsets.all(16.0),
               child: Column(
@@ -162,7 +158,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _languageItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        fillColor: MaterialStateProperty.all(
+                        fillColor: WidgetStateProperty.all(
                           Colors.red,
                         ),
                         title: Text(
@@ -218,7 +214,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
               padding: EdgeInsets.all(16.0),
               child: Column(
@@ -238,7 +234,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _visitorApprovalTimeItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        fillColor: MaterialStateProperty.all(
+                        fillColor: WidgetStateProperty.all(
                           Colors.red,
                         ),
                         title: Text(
@@ -294,7 +290,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
               padding: EdgeInsets.all(16.0),
               child: Column(
@@ -313,7 +309,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _dataStorageItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        fillColor: MaterialStateProperty.all(
+                        fillColor: WidgetStateProperty.all(
                           Colors.red,
                         ),
                         title: Text(
@@ -513,7 +509,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => LoginView(),
+                    builder: (context) => MyAppLogin(),
+                    // LoginView(),
                   ),
                 );
               }),
@@ -525,6 +522,7 @@ class _SettingsHomeState extends State<SettingsHome> {
 
 class PrimarySettingsTile extends StatelessWidget {
   const PrimarySettingsTile({
+    super.key,
     this.icon,
     required this.title,
     this.subtitle,
@@ -551,7 +549,7 @@ class PrimarySettingsTile extends StatelessWidget {
         child: Icon(
           icon,
           size: 22,
-          color: Theme.of(context).colorScheme.onBackground,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
       title: Text(
@@ -605,6 +603,7 @@ List<MultiSelectItem<String>> _visitorApprovalTimeItems = [
 
 class SecondarySettingsTile extends StatelessWidget {
   const SecondarySettingsTile({
+    super.key,
     required this.title,
   });
   final String title;

@@ -1,25 +1,22 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'dart:async';
+
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:common_widgets/common_widgets.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
-import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/bloc/self_entry_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'dart:async';
-import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
-import 'package:numpad_layout/extension/numbers.dart';
 import 'package:numpad_layout/numpad.dart';
-import 'package:numpad_layout/widgets/num_button.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:page_transition/page_transition.dart';
 
@@ -44,10 +41,10 @@ class _SelfEntryViewState extends State<SelfEntryView>
   final TextEditingController _purposeController = TextEditingController();
   final TextEditingController _hostController = TextEditingController();
 
-  FocusNode _nameFocusNode = FocusNode();
-  FocusNode _locationFocusNode = FocusNode();
-  FocusNode _purposeFocusNode = FocusNode();
-  FocusNode _hostFocusNode = FocusNode();
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _locationFocusNode = FocusNode();
+  final FocusNode _purposeFocusNode = FocusNode();
+  final FocusNode _hostFocusNode = FocusNode();
 
   final SelfEntryBloc selfEntryBloc = SelfEntryBloc(VisitorUsecase(
       VisitorRepoImpl(RemoteDataSource(DioSingleton.instance1,
@@ -285,9 +282,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               children: [
                                 Form(
                                   child: CustomForm.textField(
-                                    titleColor: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
+                                    titleColor:
+                                        Theme.of(context).colorScheme.onSurface,
                                     hintColor:
                                         Theme.of(context).colorScheme.onPrimary,
                                     "Visitor Mobile Number",
@@ -301,30 +297,30 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                       boxDecoration: BoxDecoration(
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .background,
+                                            .surface,
                                       ),
                                       barrierColor: Theme.of(context)
                                           .colorScheme
-                                          .background
+                                          .surface
                                           .withOpacity(0.5),
                                       closeIcon: Icon(
                                         Icons.close,
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .onBackground,
+                                            .onSurface,
                                       ),
                                       searchDecoration: InputDecoration(
                                         prefixIcon: Icon(
                                           Icons.search,
                                           color: Theme.of(context)
                                               .colorScheme
-                                              .onBackground,
+                                              .onSurface,
                                         ),
                                         hintText: 'Search',
                                         hintStyle: TextStyle(
                                           color: Theme.of(context)
                                               .colorScheme
-                                              .onBackground,
+                                              .onSurface,
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius:
@@ -333,7 +329,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                             style: BorderStyle.solid,
                                             color: Theme.of(context)
                                                 .colorScheme
-                                                .onBackground,
+                                                .onSurface,
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
@@ -343,20 +339,20 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                             style: BorderStyle.solid,
                                             color: Theme.of(context)
                                                 .colorScheme
-                                                .onBackground,
+                                                .onSurface,
                                           ),
                                         ),
                                       ),
                                       textStyle: TextStyle(
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .onBackground,
+                                            .onSurface,
                                         fontSize: 18,
                                       ),
                                       dialogTextStyle: TextStyle(
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .onBackground,
+                                            .onSurface,
                                       ),
                                       onChanged: (CountryCode countryCode) {
                                         setState(() {
@@ -433,7 +429,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => LoginView(),
+                                            builder: (context) => MyAppLogin(),
+                                            // LoginView(),
                                           ),
                                         );
                                       } else {
@@ -453,9 +450,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               children: [
                                 Form(
                                   child: CustomForm.textField(
-                                    titleColor: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
+                                    titleColor:
+                                        Theme.of(context).colorScheme.onSurface,
                                     hintColor:
                                         Theme.of(context).colorScheme.onPrimary,
                                     "Enter OTP sent to your mobile number",
@@ -532,9 +528,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               child: Column(
                                 children: [
                                   CustomForm.textField(
-                                    titleColor: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
+                                    titleColor:
+                                        Theme.of(context).colorScheme.onSurface,
                                     hintColor:
                                         Theme.of(context).colorScheme.onPrimary,
                                     "Your Name",
@@ -564,9 +559,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                     ),
                                   ),
                                   CustomForm.textField(
-                                    titleColor: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
+                                    titleColor:
+                                        Theme.of(context).colorScheme.onSurface,
                                     hintColor:
                                         Theme.of(context).colorScheme.onPrimary,
                                     "Coming From",
@@ -602,9 +596,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               child: Column(
                                 children: [
                                   CustomForm.textField(
-                                    titleColor: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
+                                    titleColor:
+                                        Theme.of(context).colorScheme.onSurface,
                                     hintColor:
                                         Theme.of(context).colorScheme.onPrimary,
                                     "Purpose of visit",
@@ -635,9 +628,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                     ),
                                   ),
                                   CustomForm.textField(
-                                    titleColor: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
+                                    titleColor:
+                                        Theme.of(context).colorScheme.onSurface,
                                     hintColor:
                                         Theme.of(context).colorScheme.onPrimary,
                                     "Select Host",

@@ -1,15 +1,18 @@
 import 'dart:developer';
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -121,7 +124,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
   }
 
   Future<void> makeApiCall(String url) async {
-    final token = await keycloakWrapper.accessToken;
+    final token = keycloakWrapper.accessToken;
 
     final response = await http.get(
       Uri.parse(url),
@@ -307,9 +310,83 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Keycloak Login')),
-      body: isSending
+    return MyScrollView(
+      isScrollable: false,
+      hasBackButton: false,
+      pageBody: GestureDetector(
+        onTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Lottie.network(
+                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
+                height: MediaQuery.of(context).size.height * 0.3,
+                width: double.infinity,
+              ),
+              ListTile(
+                contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
+                title: Text(
+                  'Login',
+                  style: Theme.of(context).textTheme.displayLarge,
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Text(
+                    "Welcome back! Let's dive in.",
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.1,
+              ),
+              CustomLargeBtn(
+                text: 'Login',
+                onPressed: () {
+                  // _submitForm();
+                  login(context);
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RequestGateAccess(),
+                      ),
+                    );
+                  },
+                  child: Hero(
+                    tag: 'signUpHero',
+                    child: Text(
+                      'Sign Up',
+                      style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                            fontSize: 20,
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(
+                height: 30,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    MyScrollView(
+      hasBackButton: false,
+      pageTitle: 'Login',
+      pageBody: isSending
           ? const Center(child: CircularProgressIndicator())
           : Center(
               child: isLoading

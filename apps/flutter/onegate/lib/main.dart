@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
-import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/utils/amqp_receiver.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -44,14 +44,14 @@ void main() async {
             create: (_) => ApprovalStatusProvider(), // Initialize your provider
           ),
         ],
-        child: MyApp(),
+        child: const MyApp(),
       ),
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
-  MyApp({super.key});
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -94,7 +94,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    Widget initialScreen = LoginView();
+    Widget initialScreen = const MyAppLogin();
+    // LoginView();
 
     return DevicePreview(
       enabled: !kDebugMode,
@@ -104,8 +105,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           useInheritedMediaQuery: true,
           debugShowCheckedModeBanner: false,
           theme: ThemeManager.lightTheme.copyWith(
-            pageTransitionsTheme: PageTransitionsTheme(
-              builders: const <TargetPlatform, PageTransitionsBuilder>{
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: <TargetPlatform, PageTransitionsBuilder>{
                 TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
                 TargetPlatform.android: ZoomPageTransitionsBuilder(),
               },

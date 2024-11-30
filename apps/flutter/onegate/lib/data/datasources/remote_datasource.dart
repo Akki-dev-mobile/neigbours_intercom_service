@@ -85,7 +85,7 @@ class RemoteDataSource {
       }; // Ensure `societyId` is an int
 
       final response = await Dio().get(
-        'http://192.168.1.34:8000/api/admin/gates/list',
+        'https://societybackend.cubeone.in/api/admin/gates/list',
         queryParameters: queryParams,
         options: Options(
           headers: {
@@ -117,7 +117,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
       final response = await Dio().get(
-        'http://192.168.1.34:8000/api/admin/companies/list/$id',
+        'https://societybackend.cubeone.in/api/admin/companies/list/$id',
         options: Options(
           headers: {
             'Authorization': 'Bearer $accessToken',
@@ -125,12 +125,13 @@ class RemoteDataSource {
         ),
       );
 
-      if (response?.statusCode == 200) {
-        log('Societies fetched: ${response?.data?['data']}');
+      if (response.statusCode == 200) {
+        log('Societies fetched: ${response.data?['data']}');
 
-        return response?.data?['data'];
+        return response.data?['data'];
       } else {
-        throw Exception('Failed to load societies');
+        throw Exception(
+            'Failed to load societies fetchSocieties: ${response.statusCode}');
       }
     } catch (e) {
       log('Error in fetchSocieties: $e');
@@ -324,8 +325,8 @@ class RemoteDataSource {
 
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
-      final visitor_log = await client.visitorLog.fetchAllLogs(dateTime);
-      return visitor_log.reversed.toList();
+      final visitorLog = await client.visitorLog.fetchAllLogs(dateTime);
+      return visitorLog.reversed.toList();
     } catch (e) {
       if (kDebugMode) {
         print('client.visitorLog.fetchAllLogs $e');
@@ -338,8 +339,8 @@ class RemoteDataSource {
   Future<List<VisitorLog>> fetchCheckInLogs(
       int companyId, String dateTime) async {
     try {
-      final visitor_log = await client.visitorLog.fetchCheckInLogs(dateTime);
-      return visitor_log.reversed.toList();
+      final visitorLog = await client.visitorLog.fetchCheckInLogs(dateTime);
+      return visitorLog.reversed.toList();
     } catch (e) {
       print('visitorLog.fetchCheckInLogs $e');
       rethrow;
@@ -349,8 +350,8 @@ class RemoteDataSource {
   Future<List<VisitorLog>> fetchCheckOutLogs(
       int companyId, String dateTime) async {
     try {
-      final visitor_log = await client.visitorLog.fetchCheckOutLogs(dateTime);
-      return visitor_log.reversed.toList();
+      final visitorLog = await client.visitorLog.fetchCheckOutLogs(dateTime);
+      return visitorLog.reversed.toList();
     } catch (e) {
       print('Eclient.visitorLog.fetchCheckOutLogs $e');
       rethrow;
@@ -530,6 +531,7 @@ class RemoteDataSource {
     } catch (e) {
       return e.toString();
     }
+    return null;
   }
 
   Future<String?> verifyOTP(String mobileNumber, String otp) async {
@@ -545,5 +547,6 @@ class RemoteDataSource {
     } catch (e) {
       return e.toString();
     }
+    return null;
   }
 }
