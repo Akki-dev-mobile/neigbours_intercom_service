@@ -40,7 +40,7 @@ class VisitorsInEntry extends StatefulWidget {
 }
 
 class _VisitorsInEntryState extends State<VisitorsInEntry> {
-  SpeechToText _speechToText = SpeechToText();
+  final SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
   String _speechTextControllerId = '';
   late TextEditingController _guestCountController;
@@ -147,6 +147,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
   }
 
+  @override
   Widget build(BuildContext context) {
     return BlocConsumer<VisitorInEntryBloc, VisitorInEntryState>(
         bloc: visitorInEntryBloc,
@@ -214,11 +215,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             ),
                           ),
                         ),
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                       ),
                       CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Cab Number",
                         hintText: 'MH 12 AB 1234',
@@ -244,7 +245,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Delivery Person Name",
                         hintText: 'Enter Name',
@@ -276,7 +277,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   Column(
                     children: [
                       CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Guest Name",
                         hintText: 'Enter Name',
@@ -307,11 +308,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         ),
                       ),
                       CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Coming From",
                         hintText: 'Enter Coming From',
-                        textCapitalization: TextCapitalization.characters,
+                        textCapitalization: TextCapitalization.words,
                         textController: guestComingFrom,
                         suffixIcon: IconButton(
                           onPressed: () {
@@ -335,7 +336,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         ),
                       ),
                       CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Enter your ID",
                         hintText: 'Request from Security',
@@ -347,7 +348,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         textController: _guestCountController,
                         hintText: 'Guest Count',
                         keyboardType: TextInputType.number,
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         length: 2,
                         onChanged: (value) {
@@ -355,8 +356,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             _guestCount = int.tryParse(value) ?? 1;
                           });
                         },
-                        suffixIcon: ButtonBar(
-                          mainAxisSize: MainAxisSize.min,
+                        suffixIcon: OverflowBar(
+                          // mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               onPressed: _decrementGuestCount,
@@ -384,7 +385,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   Column(
                     children: [
                       CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Staff Name",
                         hintText: 'Enter Name',
@@ -419,7 +420,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   Column(
                     children: [
                       CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onBackground,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Vendor Name",
                         hintText: 'Enter Name',
@@ -572,6 +573,8 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
 }
 
 class ListeningDialog extends StatefulWidget {
+  const ListeningDialog({super.key});
+
   @override
   _ListeningDialogState createState() => _ListeningDialogState();
 }
@@ -643,6 +646,7 @@ class _ListeningDialogState extends State<ListeningDialog>
   @override
   void dispose() {
     _controller.dispose();
+
     _speechToText.stop();
     super.dispose();
   }

@@ -1,11 +1,9 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:chips_choice/chips_choice.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -17,9 +15,7 @@ import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
-import 'package:toggle_switch/toggle_switch.dart';
 
 import '../../../visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 
@@ -35,7 +31,7 @@ final mobileControllerFormKey = GlobalKey<FormState>();
 final passcodeControllerFormKey = GlobalKey<FormState>();
 TextEditingController mobileController = TextEditingController();
 TextEditingController passcodeController = TextEditingController();
-int _currentIndex = 0;
+int _currentIndex = 1;
 List<String> _labels = ['Mobile', 'Pass Code'];
 String? selectedPassAlpha = 'A';
 String selectedCountryCode = 'IN';
@@ -111,7 +107,7 @@ class _IdInputViewState extends State<IdInputView> {
                   topRight: Radius.circular(20),
                 ),
               ),
-              backgroundColor: Theme.of(context).colorScheme.background,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               context: context,
               builder: (context) => ImageGridBottomSheet(
                   purposeCategories: dialogState.purposeCategories!,
@@ -157,226 +153,214 @@ class _IdInputViewState extends State<IdInputView> {
               pageBody: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ToggleSwitch(
-                    cornerRadius: 20.0,
-                    borderWidth: 0.5,
-                    minWidth: MediaQuery.of(context).size.width * 0.8,
-                    minHeight: 50.0,
-                    fontSize: 18.0,
-                    changeOnTap: true,
-                    initialLabelIndex: _currentIndex,
-                    activeBgColor: [
-                      Theme.of(context).colorScheme.onBackground,
-                    ],
-                    activeFgColor: Theme.of(context).colorScheme.background,
-                    borderColor: [
-                      Theme.of(context).colorScheme.onBackground,
-                    ],
-                    inactiveBgColor: Theme.of(context).colorScheme.background,
-                    inactiveFgColor: Theme.of(context).colorScheme.onPrimary,
-                    totalSwitches: 2,
-                    labels: _labels,
-                    onToggle: (index) {
-                      setState(() {
-                        _currentIndex = index!;
-                      });
-                      if (kDebugMode) {
-                        print('Switched to: $_currentIndex');
-                      }
-                    },
-                  ),
+                  // ToggleSwitch(
+                  //   cornerRadius: 20.0,
+                  //   borderWidth: 0.5,
+                  //   minWidth: MediaQuery.of(context).size.width * 0.8,
+                  //   minHeight: 50.0,
+                  //   fontSize: 18.0,
+                  //   changeOnTap: true,
+                  //   initialLabelIndex: _currentIndex,
+                  //   activeBgColor: [
+                  //     Theme.of(context).colorScheme.onBackground,
+                  //   ],
+                  //   activeFgColor: Theme.of(context).colorScheme.background,
+                  //   borderColor: [
+                  //     Theme.of(context).colorScheme.onBackground,
+                  //   ],
+                  //   inactiveBgColor: Theme.of(context).colorScheme.background,
+                  //   inactiveFgColor: Theme.of(context).colorScheme.onPrimary,
+                  //   totalSwitches: 2,
+                  //   labels: _labels,
+                  //   onToggle: (index) {
+                  //     setState(() {
+                  //       _currentIndex = index!;
+                  //     });
+                  //     if (kDebugMode) {
+                  //       print('Switched to: $_currentIndex');
+                  //     }
+                  //   },
+                  // ),
                   SizedBox(height: 20),
-                  (_currentIndex == 0)
-                      ? Form(
-                          key: mobileControllerFormKey,
-                          child: CustomForm.textField(
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            focusNode: _focusNode,
-                            "Visitor Mobile Number",
-                            hintText: '0123456789',
-                            prefixIcon: CountryCodePicker(
-                              initialSelection: 'IN',
-                              favorite: ['IN'],
-                              showFlagMain: true,
-                              showFlagDialog: true,
-                              boxDecoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.background,
-                              ),
-                              barrierColor: Theme.of(context)
-                                  .colorScheme
-                                  .background
-                                  .withOpacity(0.5),
-                              closeIcon: Icon(
-                                Icons.close,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
-                              ),
-                              searchDecoration: InputDecoration(
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
-                                ),
-                                hintText: 'Search',
-                                hintStyle: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    style: BorderStyle.solid,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    style: BorderStyle.solid,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
-                                  ),
-                                ),
-                              ),
-                              textStyle: TextStyle(
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
-                                fontSize: 18,
-                              ),
-                              dialogTextStyle: TextStyle(
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
-                              ),
-                              onChanged: (CountryCode countryCode) {
-                                setState(() {
-                                  selectedCountryCode = countryCode.code!;
-                                });
-                              },
-                            ),
-                            textController: mobileController,
-                            keyboardType: TextInputType.number,
-                            length: 10,
-                            onChanged: (value) {
-                              if (value.length == 10) {
-                                gateDashboardBloc.add(
-                                    GDOnMobileNumberEnteredEvent(
-                                        mobileController.text));
-                              }
-                            },
-                            // validator: (value) {
-                            //   if (value!.isEmpty) {
-                            //     return 'Mobile number is required';
-                            //   } else if (value.length != 10) {
-                            //     return 'Please enter a 10-digit number';
-                            //   }
-                            //   return null;
-                            // },
-                          ),
-                        )
-                      : Column(
-                          children: [
-                            Form(
-                              key: passcodeControllerFormKey,
-                              child: CustomForm.textField(
-                                titleColor:
-                                    Theme.of(context).colorScheme.onBackground,
-                                hintColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                "Visitor Passcode",
-                                hintText: '123456',
-                                textController: passcodeController,
-                                textCapitalization:
-                                    TextCapitalization.characters,
-                                length: 6,
-                                keyboardType: TextInputType.number,
-                                prefixIcon: Padding(
-                                  padding: EdgeInsets.only(
-                                    left: 10,
-                                    right: 20,
-                                  ),
-                                  child: CircleAvatar(
-                                    backgroundColor: Color(0xffFFEBE6),
-                                    child: Text(
-                                      selectedPassAlpha ?? 'A',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                suffixIcon: IconButton(
-                                  onPressed: () {
-                                    if (passcodeControllerFormKey.currentState!
-                                        .validate()) {
-                                      // showModalBottomSheet(
-                                      //   useSafeArea: true,
-                                      //   shape: RoundedRectangleBorder(
-                                      //     borderRadius: BorderRadius.only(
-                                      //       topLeft: Radius.circular(20),
-                                      //       topRight: Radius.circular(20),
-                                      //     ),
-                                      //   ),
-                                      //   backgroundColor: Theme.of(context)
-                                      //       .colorScheme
-                                      //       .background,
-                                      //   context: context,
-                                      //   builder: (context) =>
-                                      //       ImageGridBottomSheet(),
-                                      // );
-                                    }
-                                  },
-                                  icon: Icon(
-                                    Symbols.done_rounded,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value!.isEmpty) {
-                                    return 'Passcode is required';
-                                  } else if (value.length != 6) {
-                                    return 'Please enter a 6-digit passcode';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                            ChipsChoice<String>.single(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
-                              spacing: 20,
-                              choiceStyle: C2ChipStyle.outlined(
-                                borderWidth: 1,
-                                color: Colors.grey,
-                                selectedStyle: C2ChipStyle.outlined(
-                                  overlayColor: Color(0x90C08261),
-                                  color: Color(0xff0c08261),
-                                ),
-                              ),
-                              choiceCheckmark: true,
-                              value: selectedPassAlpha,
-                              scrollPhysics: BouncingScrollPhysics(),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedPassAlpha = value;
-                                });
-                              },
-                              choiceItems: C2Choice.listFrom<String, String>(
-                                source: listPassAlpha,
-                                value: (i, v) => v,
-                                label: (i, v) => v,
-                              ),
-                            ),
-                          ],
+                  // (_currentIndex == 0)
+                  //     ?
+                  Form(
+                    key: mobileControllerFormKey,
+                    child: CustomForm.textField(
+                      titleColor: Theme.of(context).colorScheme.onSurface,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
+                      focusNode: _focusNode,
+                      "Visitor Mobile Number",
+                      hintText: '0123456789',
+                      prefixIcon: CountryCodePicker(
+                        initialSelection: 'IN',
+                        favorite: ['IN'],
+                        showFlagMain: true,
+                        showFlagDialog: true,
+                        boxDecoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
                         ),
+                        barrierColor: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withOpacity(0.5),
+                        closeIcon: Icon(
+                          Icons.close,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        searchDecoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          hintText: 'Search',
+                          hintStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(
+                              style: BorderStyle.solid,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(
+                              style: BorderStyle.solid,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        textStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 18,
+                        ),
+                        dialogTextStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        onChanged: (CountryCode countryCode) {
+                          setState(() {
+                            selectedCountryCode = countryCode.code!;
+                          });
+                        },
+                      ),
+                      textController: mobileController,
+                      keyboardType: TextInputType.number,
+                      length: 10,
+                      onChanged: (value) {
+                        if (value.length == 10) {
+                          gateDashboardBloc.add(GDOnMobileNumberEnteredEvent(
+                              mobileController.text));
+                        }
+                      },
+                      // validator: (value) {
+                      //   if (value!.isEmpty) {
+                      //     return 'Mobile number is required';
+                      //   } else if (value.length != 10) {
+                      //     return 'Please enter a 10-digit number';
+                      //   }
+                      //   return null;
+                      // },
+                    ),
+                  ),
+
+                  // : Column(
+                  //     children: [
+                  //       Form(
+                  //         key: passcodeControllerFormKey,
+                  //         child: CustomForm.textField(
+                  //           titleColor:
+                  //               Theme.of(context).colorScheme.onSurface,
+                  //           hintColor:
+                  //               Theme.of(context).colorScheme.onPrimary,
+                  //           "Visitor Passcode",
+                  //           hintText: '123456',
+                  //           textController: passcodeController,
+                  //           textCapitalization:
+                  //               TextCapitalization.characters,
+                  //           length: 6,
+                  //           keyboardType: TextInputType.number,
+                  //           prefixIcon: Padding(
+                  //             padding: EdgeInsets.only(
+                  //               left: 10,
+                  //               right: 20,
+                  //             ),
+                  //             child: CircleAvatar(
+                  //               backgroundColor: Color(0xffFFEBE6),
+                  //               child: Text(
+                  //                 selectedPassAlpha ?? 'A',
+                  //                 style: TextStyle(
+                  //                   color: Colors.black,
+                  //                   fontWeight: FontWeight.bold,
+                  //                 ),
+                  //               ),
+                  //             ),
+                  //           ),
+                  //           suffixIcon: IconButton(
+                  //             onPressed: () {
+                  //               if (passcodeControllerFormKey.currentState!
+                  //                   .validate()) {
+                  //                 // showModalBottomSheet(
+                  //                 //   useSafeArea: true,
+                  //                 //   shape: RoundedRectangleBorder(
+                  //                 //     borderRadius: BorderRadius.only(
+                  //                 //       topLeft: Radius.circular(20),
+                  //                 //       topRight: Radius.circular(20),
+                  //                 //     ),
+                  //                 //   ),
+                  //                 //   backgroundColor: Theme.of(context)
+                  //                 //       .colorScheme
+                  //                 //       .background,
+                  //                 //   context: context,
+                  //                 //   builder: (context) =>
+                  //                 //       ImageGridBottomSheet(),
+                  //                 // );
+                  //               }
+                  //             },
+                  //             icon: Icon(
+                  //               Symbols.done_rounded,
+                  //               color:
+                  //                   Theme.of(context).colorScheme.onSurface,
+                  //             ),
+                  //           ),
+                  //           validator: (value) {
+                  //             if (value!.isEmpty) {
+                  //               return 'Passcode is required';
+                  //             } else if (value.length != 6) {
+                  //               return 'Please enter a 6-digit passcode';
+                  //             }
+                  //             return null;
+                  //           },
+                  //         ),
+                  //       ),
+                  //       ChipsChoice<String>.single(
+                  //         padding: EdgeInsets.symmetric(horizontal: 20),
+                  //         spacing: 20,
+                  //         choiceStyle: C2ChipStyle.outlined(
+                  //           borderWidth: 1,
+                  //           color: Colors.grey,
+                  //           selectedStyle: C2ChipStyle.outlined(
+                  //             overlayColor: Color(0x90C08261),
+                  //             color: Color(0xff0c08261),
+                  //           ),
+                  //         ),
+                  //         choiceCheckmark: true,
+                  //         value: selectedPassAlpha,
+                  //         scrollPhysics: BouncingScrollPhysics(),
+                  //         onChanged: (value) {
+                  //           setState(() {
+                  //             selectedPassAlpha = value;
+                  //           });
+                  //         },
+                  //         choiceItems: C2Choice.listFrom<String, String>(
+                  //           source: listPassAlpha,
+                  //           value: (i, v) => v,
+                  //           label: (i, v) => v,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
                 ],
               ),
               floatingActionButton: CustomLargeBtn(
@@ -428,7 +412,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
-        color: Theme.of(context).colorScheme.background,
+        color: Theme.of(context).colorScheme.surface,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -525,7 +509,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                         ? Color(0xffC08261)
                                         : Theme.of(context)
                                             .colorScheme
-                                            .onBackground,
+                                            .onSurface,
                                     fontWeight: selectedImageIndex == index
                                         ? FontWeight.bold
                                         : FontWeight.normal,

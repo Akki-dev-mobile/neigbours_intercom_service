@@ -313,99 +313,69 @@ class _MyAppLoginState extends State<MyAppLogin> {
     return MyScrollView(
       isScrollable: false,
       hasBackButton: false,
-      pageBody: GestureDetector(
-        onTap: () {
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Lottie.network(
-                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
-                height: MediaQuery.of(context).size.height * 0.3,
-                width: double.infinity,
+      pageBody: SizedBox(
+        height: MediaQuery.of(context).size.height,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Lottie.network(
+              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
+              height: MediaQuery.of(context).size.height * 0.3,
+              width: double.infinity,
+            ),
+            ListTile(
+              contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
+              title: Text(
+                'Login',
+                style: Theme.of(context).textTheme.displayLarge,
               ),
-              ListTile(
-                contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
-                title: Text(
-                  'Login',
-                  style: Theme.of(context).textTheme.displayLarge,
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Text(
-                    "Welcome back! Let's dive in.",
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: Text(
+                  "Welcome back! Let's dive in.",
+                  style: Theme.of(context).textTheme.labelMedium,
                 ),
               ),
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.1,
-              ),
-              CustomLargeBtn(
-                text: 'Login',
+            ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.1,
+            ),
+            CustomLargeBtn(
+              text: 'Login',
+              onPressed: () {
+                // _submitForm();
+                login(context);
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: TextButton(
                 onPressed: () {
-                  // _submitForm();
-                  login(context);
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RequestGateAccess(),
-                      ),
-                    );
-                  },
-                  child: Hero(
-                    tag: 'signUpHero',
-                    child: Text(
-                      'Sign Up',
-                      style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                            fontSize: 20,
-                          ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RequestGateAccess(),
                     ),
+                  );
+                },
+                child: Hero(
+                  tag: 'signUpHero',
+                  child: Text(
+                    'Sign Up',
+                    style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                          fontSize: 20,
+                        ),
                   ),
                 ),
               ),
-              const SizedBox(
-                height: 30,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(
+              height: 30,
+            ),
+          ],
         ),
       ),
-    );
-
-    MyScrollView(
-      hasBackButton: false,
-      pageTitle: 'Login',
-      pageBody: isSending
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Press Login to authenticate',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => login(context),
-                          child: const Text('Login'),
-                        ),
-                      ],
-                    ),
-            ),
     );
   }
 }

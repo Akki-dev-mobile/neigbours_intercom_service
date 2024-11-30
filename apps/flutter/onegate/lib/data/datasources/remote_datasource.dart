@@ -85,12 +85,11 @@ class RemoteDataSource {
       }; // Ensure `societyId` is an int
 
       final response = await Dio().get(
-        'https://societybackend.cubeone.in/api/admin/gates/list',
+        'https://gateapi.cubeone.in/api/admin/gates/list',
         queryParameters: queryParams,
         options: Options(
           headers: {
-            'Authorization':
-                'Bearer $accessToken', // Pass the access token here
+            'Authorization': 'Bearer $accessToken',
           },
         ),
       );
@@ -116,8 +115,11 @@ class RemoteDataSource {
       if (accessToken == null) {
         throw Exception('Access token not found. Please log in again.');
       }
+      print(
+        'https://gateapi.cubeone.in/api/admin/companies/list/$id',
+      );
       final response = await Dio().get(
-        'https://societybackend.cubeone.in/api/admin/companies/list/$id',
+        'https://gateapi.cubeone.in/api/admin/companies/list/$id',
         options: Options(
           headers: {
             'Authorization': 'Bearer $accessToken',

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final Dio _dio = Dio();
   String? selectedUnit;
   String? selectedMember;
+  Set<String> selectedMembers = {};
   String selectedBuilding = '';
   List<dynamic> buildings = [];
   List<dynamic> units = [];
@@ -52,18 +54,47 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _filteredMembers = [];
   List<dynamic> _allMembers = [];
+  final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
+      ValueNotifier([]);
+  final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
 
   @override
   void initState() {
     super.initState();
     fetchBuildings();
+    _searchController.addListener(_filterMembers);
+
     // setupAMQPReceiver(); // Initialize AMQP receiver
     print("rohit${widget.mobileNumber}");
+  }
+
+  Future<void> _initializeMembers() async {
+    final members = await getMember();
+    _allMembers = members;
+    _filteredMembersNotifier.value = members;
+  }
+
+  void _filterMembers() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.length >= 3) {
+      _filteredMembersNotifier.value = _allMembers.where((member) {
+        final memberName =
+            member['member_name']?.toLowerCase().contains(query) ?? false;
+        final unitNumber =
+            member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
+        return memberName || unitNumber;
+      }).toList();
+    } else {
+      _filteredMembersNotifier.value = _allMembers;
+    }
   }
 
   @override
   void dispose() {
     amqpClient.close(); // Close AMQP client
+    _filteredMembersNotifier.dispose();
+    _selectedMembersNotifier.dispose();
+
     super.dispose();
   }
 
@@ -197,7 +228,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       // Ensure `approvalStatus` is cleared if the dialog is dismissed in other ways
       setState(() {
         Navigator.push(context,
-            MaterialPageRoute(builder: (context) => GateDashboardView()));
+            MaterialPageRoute(builder: (context) => const GateDashboardView()));
       });
     });
   }
@@ -277,39 +308,67 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select Units/Members'),
-      ),
-      body: DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            // if (approvalStatus != null)
-            //   Padding(
-            //     padding: const EdgeInsets.all(16.0),
-            //     child: Text(
-            //       "Approval Status: $approvalStatus",
-            //       style: Theme.of(context).textTheme.headlineSmall,
-            //     ),
-            //   ),
-            const TabBar(
-              tabs: [
-                Tab(text: 'Units'),
-                Tab(text: 'Members'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
+    return MyScrollView(
+      isScrollable: false,
+      pageTitle: 'Select Units/Members',
+      pageBody: FutureBuilder<void>(
+        future: _initializeMembers(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: Column(
                 children: [
-                  buildUnitsTab(),
-                  buildMembersTab(),
+                  _buildSearchField(context),
+                  Expanded(child: _buildMemberList(context)),
                 ],
               ),
-            ),
-          ],
-        ),
+            );
+          }
+        },
       ),
+
+      // pageBody: DefaultTabController(
+      //   length: 2,
+      //   child: SizedBox(
+      //     height: MediaQuery.of(context).size.height,
+      //     child: Column(
+      //       children: [
+      //         // if (approvalStatus != null)
+      //         //   Padding(
+      //         //     padding: const EdgeInsets.all(16.0),
+      //         //     child: Text(
+      //         //       "Approval Status: $approvalStatus",
+      //         //       style: Theme.of(context).textTheme.headlineSmall,
+      //         //     ),
+      //         //   ),
+      //         TabBar(
+      //           labelStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+      //                 fontWeight: FontWeight.bold,
+      //               ),
+      //           indicatorColor: Colors.red,
+      //           tabs: const [
+      //             Tab(text: 'Units'),
+      //             Tab(text: 'Members'),
+      //           ],
+      //         ),
+      //         Expanded(
+      //           child: TabBarView(
+      //             // physics: const NeverScrollableScrollPhysics(),
+      //             children: [
+      //               buildUnitsTab(),
+      //               buildMembersTab(),
+      //             ],
+      //           ),
+      //         ),
+      //       ],
+      //     ),
+      //   ),
+      // ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           if (selectedUnit != null || selectedMember != null) {
@@ -330,6 +389,101 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         ),
         icon: const Icon(Icons.navigate_next),
       ),
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context) {
+    return CustomForm.textField(
+      'Search Members',
+      titleColor: Theme.of(context).colorScheme.onSurface,
+      hintColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      hintText: 'Search Members',
+      textController: _searchController,
+      onChanged: (_) {
+        _searchController.text.trim().length >= 3
+            ? _filterMembers()
+            : _filteredMembersNotifier.value = _allMembers;
+      },
+      suffixIcon: _searchController.text.isNotEmpty
+          ? IconButton(
+              icon: Icon(
+                Ionicons.close,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              onPressed: () {
+                _searchController.clear();
+                _filteredMembersNotifier.value = _allMembers;
+              },
+            )
+          : null,
+    );
+  }
+
+  Widget _buildMemberList(BuildContext context) {
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _selectedMembersNotifier,
+      builder: (context, selectedMembers, child) {
+        return ValueListenableBuilder<List<dynamic>>(
+          valueListenable: _filteredMembersNotifier,
+          builder: (context, filteredMembers, child) {
+            if (filteredMembers.isEmpty) {
+              return Center(
+                child: Text(
+                  'No Members Found.\nSearch members by their name or flat',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: filteredMembers.length,
+              itemBuilder: (context, index) {
+                final member = filteredMembers[index];
+                final isSelected =
+                    selectedMembers.contains(member['member_name']);
+
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    member['unit_flat_number'],
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                  ),
+                  subtitle: Text(
+                    member['member_name'],
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(
+                      isSelected
+                          ? Ionicons.checkmark_circle
+                          : Ionicons.add_circle_outline,
+                      color: isSelected ? Colors.green : null,
+                    ),
+                    onPressed: () {
+                      // Update the selected members in the ValueNotifier
+                      final updatedMembers = Set<String>.from(selectedMembers);
+                      if (isSelected) {
+                        updatedMembers.remove(member['member_name']);
+                      } else {
+                        updatedMembers.add(member['member_name']);
+                      }
+                      _selectedMembersNotifier.value = updatedMembers;
+                    },
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -361,7 +515,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         else
           Expanded(
             child: GridView.builder(
-              padding: const EdgeInsets.all(16),
+              shrinkWrap: true,
+              padding: EdgeInsets.fromLTRB(
+                12,
+                16,
+                12,
+                MediaQuery.of(context).size.height * 0.25,
+              ),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 10,
@@ -380,6 +540,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     });
                   },
                   child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                    ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color:
@@ -390,11 +553,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      unit,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.orange : Colors.black,
+                    child: FittedBox(
+                      child: Text(
+                        unit,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.orange : Colors.black,
+                        ),
                       ),
                     ),
                   ),
@@ -411,100 +576,111 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       future: getMember(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Do nothing while waiting for data
-          return Container();
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          // Show error message if there's an error
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          // Handle case when no members are found
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'No Members Found.\nSearch members by their name or flat',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+          return Center(
+            child: Text(
+              'No Members Found.\nSearch members by their name or flat',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
               ),
-            ],
+            ),
           );
         } else {
-          // Populate the members list
           if (_allMembers.isEmpty) {
             _allMembers = snapshot.data!;
             _filteredMembers = _allMembers;
           }
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search Members/Units',
-                          border: OutlineInputBorder(),
-                          prefixIcon: const Icon(Ionicons.search),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        final query =
-                            _searchController.text.trim().toLowerCase();
-                        setState(() {
-                          _filteredMembers = _allMembers.where((member) {
-                            final memberName = member['member_name']
-                                ?.toLowerCase()
-                                .contains(query);
-                            final unitNumber = member['unit_flat_number']
-                                ?.toLowerCase()
-                                .contains(query);
-                            return memberName || unitNumber;
-                          }).toList();
-                        });
-                      },
-                      child: const Text('Search'),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _filteredMembers.length,
-                  itemBuilder: (context, index) {
-                    final member = _filteredMembers[index];
-                    final isSelected = selectedMember == member['member_name'];
-                    return ListTile(
-                      title: Text(member['member_name']),
-                      subtitle: Text(member['unit_flat_number']),
-                      trailing: IconButton(
+          return SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: Column(
+              children: [
+                CustomForm.textField(
+                  'Search Members',
+                  titleColor: Theme.of(context).colorScheme.onSurface,
+                  hintColor:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  hintText: 'Search Members',
+                  textController: _searchController,
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
                         icon: Icon(
-                          isSelected
-                              ? Ionicons.checkmark_circle
-                              : Ionicons.add_circle_outline,
-                          color: isSelected ? Colors.green : null,
+                          Ionicons.search,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         onPressed: () {
+                          final query =
+                              _searchController.text.trim().toLowerCase();
                           setState(() {
-                            selectedMember = member['member_name'];
-                            selectedUnit = null;
+                            _filteredMembers = _allMembers.where((member) {
+                              final memberName = member['member_name']
+                                  ?.toLowerCase()
+                                  .contains(query);
+                              final unitNumber = member['unit_flat_number']
+                                  ?.toLowerCase()
+                                  .contains(query);
+                              return memberName || unitNumber;
+                            }).toList();
                           });
                         },
                       ),
-                    );
-                  },
+                      _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(
+                                Ionicons.close,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _filteredMembers = _allMembers;
+                                });
+                              },
+                            )
+                          : const SizedBox.shrink(),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _filteredMembers.length,
+                    itemBuilder: (context, index) {
+                      final member = _filteredMembers[index];
+                      final isSelected =
+                          selectedMember == member['member_name'];
+                      return ListTile(
+                        title: Text(
+                          member['member_name'],
+                        ),
+                        subtitle: Text(member['unit_flat_number']),
+                        trailing: IconButton(
+                          icon: Icon(
+                            isSelected
+                                ? Ionicons.checkmark_circle
+                                : Ionicons.add_circle_outline,
+                            color: isSelected ? Colors.green : null,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              selectedMember = member['member_name'];
+                              selectedUnit = null;
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           );
         }
       },

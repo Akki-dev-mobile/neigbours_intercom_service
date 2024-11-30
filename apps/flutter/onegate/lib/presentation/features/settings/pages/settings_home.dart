@@ -539,18 +539,11 @@ class PrimarySettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      horizontalTitleGap: 0,
       contentPadding: EdgeInsets.zero,
-      leading: Padding(
-        padding: EdgeInsets.only(
-          top: 7,
-          left: 3,
-        ),
-        child: Icon(
-          icon,
-          size: 22,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
+      leading: Icon(
+        icon,
+        size: 22,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
       title: Text(
         title,
@@ -558,9 +551,12 @@ class PrimarySettingsTile extends StatelessWidget {
       ),
       subtitle: Text(
         subtitle ?? '',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onPrimary,
-        ),
+        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(
+                    0.6,
+                  ),
+            ),
       ),
       onTap: onTap,
       trailing: trailing,
@@ -617,7 +613,9 @@ class SecondarySettingsTile extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: Theme.of(context).textTheme.bodyLarge,
+        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
       ),
     );
   }
