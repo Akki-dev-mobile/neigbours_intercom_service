@@ -1,5 +1,6 @@
+import 'dart:io';
+
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:onegate_client/onegate_client.dart';
 
 class VisitorUsecase {
@@ -32,7 +33,7 @@ class VisitorUsecase {
   }
 
   Future<String?> uploadImage(
-      XFile file, String userMobile, int companyId) async {
+      File file, String userMobile, int companyId) async {
     return await _repository.uploadImage(file, userMobile, companyId);
   }
 

@@ -13,6 +13,7 @@ import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart';
@@ -26,8 +27,9 @@ import '../bloc/visitor_in_entry_bloc.dart';
 
 class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory selectedValue;
-  Visitor? searchedVisitor;
+  final Visitor? searchedVisitor;
   final String mobile;
+  final int companyId = GlobalUser.getUserId() ?? 55275;
   VisitorsInEntry(
       {Key? key,
       required this.selectedValue,
@@ -115,32 +117,46 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
   }
 
-  Future<XFile?> _captureImageFromCamera() async {
+  //PickedFile? _imageFile;
+
+  // ignore: body_might_complete_normally_nullable
+  Future<File?> _captureImageFromCamera() async {
+    // final picker = ImagePicker();
+    // try {
+    //   final image = await picker.pickImage(
+    //     source: ImageSource.camera,
+    //   );
+    //   return image;
+    // } catch (e) {
+    //   print('Error capturing image from camera: $e');
+    // }
     final picker = ImagePicker();
     try {
-      // Capture the image from the camera
-      final XFile? image = await picker.pickImage(source: ImageSource.camera);
+      final image = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 25,
+      );
 
       if (image == null) {
         // User canceled the capture
         return null;
       }
 
-      // Get the application's document directory
-      final Directory appDocDir = await getApplicationDocumentsDirectory();
-      final String appDocPath = appDocDir.path;
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final appDocPath = appDocDir.path;
 
-      // Create a new file path for saving the image
-      final String localImagePath =
-          '$appDocPath/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final File localImage =
+          File('$appDocPath/${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-      // Save the captured image to the new path
-      final File savedImage = await File(localImagePath).writeAsBytes(
-        await image.readAsBytes(),
-      );
+      await localImage.writeAsBytes(await image.readAsBytes());
 
-      print('Image saved at: $localImagePath');
-      return XFile(savedImage.path);
+      final visitorUsecase = VisitorUsecase(VisitorRepoImpl(RemoteDataSource(
+          DioSingleton.instance1,
+          DioSingleton.instance2,
+          DioSingleton.instance3)));
+      visitorUsecase.uploadImage(localImage, widget.mobile, widget.companyId);
+
+      return localImage;
     } catch (e) {
       print('Error capturing and saving image from camera: $e');
       return null;
@@ -312,7 +328,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Coming From",
                         hintText: 'Enter Coming From',
-                        textCapitalization: TextCapitalization.words,
+                        textCapitalization: TextCapitalization.characters,
                         textController: guestComingFrom,
                         suffixIcon: IconButton(
                           onPressed: () {
@@ -455,13 +471,15 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             ),
             floatingActionButton: CustomLargeBtn(
               onPressed: () {
-                visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
-                    searchedVisitor: widget.searchedVisitor,
-                    guestName: guestName.text,
-                    guestComingFrom: guestComingFrom.text,
-                    guestCount: _guestCount,
-                    purposeCategory: widget.selectedValue,
-                    mobile: widget.mobile));
+                _captureImageFromCamera();
+
+                // visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
+                //     searchedVisitor: widget.searchedVisitor,
+                //     guestName: guestName.text,
+                //     guestComingFrom: guestComingFrom.text,
+                //     guestCount: _guestCount,
+                //     purposeCategory: widget.selectedValue,
+                //     mobile: widget.mobile));
               },
               text: 'Next',
             ),
@@ -576,10 +594,10 @@ class ListeningDialog extends StatefulWidget {
   const ListeningDialog({super.key});
 
   @override
-  _ListeningDialogState createState() => _ListeningDialogState();
+  ListeningDialogState createState() => ListeningDialogState();
 }
 
-class _ListeningDialogState extends State<ListeningDialog>
+class ListeningDialogState extends State<ListeningDialog>
     with SingleTickerProviderStateMixin {
   late stt.SpeechToText _speechToText;
   bool _isListening = false;
@@ -646,7 +664,6 @@ class _ListeningDialogState extends State<ListeningDialog>
   @override
   void dispose() {
     _controller.dispose();
-
     _speechToText.stop();
     super.dispose();
   }

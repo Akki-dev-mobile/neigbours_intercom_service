@@ -1,13 +1,12 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -382,62 +381,52 @@ class RemoteDataSource {
     return false;
   }
 
-  Future<String> uploadFile(
-      XFile file, String userMobile, int companyId) async {
+  Future<String?> uploadFile(
+      File file, String userMobile, int companyId) async {
     try {
-      // Get the application's document directory
-      final directory = await getApplicationDocumentsDirectory();
+      log('File path: ${file.path}');
 
-      // Define the local file path
-      final localFilePath = '${directory.path}/$userMobile.jpg';
+      // Prepare the form data
+      var data = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: '$userMobile.jpg',
+        ),
+        'company_id': '$companyId',
+        'uuid': userMobile,
+        'path': file.path,
+      });
 
-      // Convert XFile to File and copy it to the new location
-      final localFile = await File(file.path).copy(localFilePath);
+      // Create Dio instance and set content type
+      var dio = Dio();
+      var response = await dio.post(
+        'http://35.154.173.226:8005/api/uploadfile',
+        data: data,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
 
-      print('Image saved locally at: ${localFile.path}');
-      return localFile.path;
+      // Check the response
+      if (response.statusCode == 200) {
+        log('Successfully uploaded: ${json.encode(response.data)}');
+
+        // Safely extract the file path from response
+        var filePath = response.data['data']?['file_path'];
+        if (filePath != null && filePath is String) {
+          return filePath;
+        } else {
+          log('Unexpected response format: ${response.data}');
+          return '';
+        }
+      } else {
+        log('Upload failed: ${response.statusMessage}');
+        return '';
+      }
     } catch (e) {
-      print('Failed to save image locally: $e');
-      return '';
+      log('Error uploading image: $e');
+      rethrow;
     }
-    // try {
-    //   print('File path: ${file.path}');
-    //
-    //   var data = FormData.fromMap({
-    //     'file': await MultipartFile.fromFile(file.path,
-    //         filename: '$userMobile.jpg'),
-    //     'service_id': '5',
-    //     'company_id': '412',
-    //     'uuid': userMobile,
-    //     'path': 'test/onegate/image'
-    //   });
-    //
-    //   Options options = Options(
-    //     contentType: 'multipart/form-data',
-    //   );
-    //
-    //   var dio = Dio();
-    //   var response = await dio.request(
-    //     'http://192.168.1.135:8088/api/file-upload',
-    //     options: Options(
-    //       method: 'POST',
-    //       contentType: 'multipart/form-data',
-    //       headers: {'Content-Type': 'multipart/form-data'},
-    //     ),
-    //     data: data,
-    //   );
-    //
-    //   if (response?.statusCode == 200) {
-    //     print(json.encode(response?.data));
-    //     return response?.data?['data'];
-    //   } else {
-    //     print(response?.statusMessage);
-    //     return '';
-    //   }
-    // } catch (e) {
-    //   print('Error uploading image: $e');
-    //   rethrow;
-    // }
   }
 
   Future<List<dynamic>> getUnitsList(int companyId) async {

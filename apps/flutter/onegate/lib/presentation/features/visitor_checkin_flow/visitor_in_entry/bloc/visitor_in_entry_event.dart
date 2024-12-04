@@ -32,7 +32,7 @@ class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
 }
 
 class VIECameraButtonPressedEvent extends VisitorInEntryEvent {
-  final XFile? imageFile;
+  final File? imageFile;
   final Visitor? visitor;
   final PurposeCategory? purposeCategory;
   final String? operation;

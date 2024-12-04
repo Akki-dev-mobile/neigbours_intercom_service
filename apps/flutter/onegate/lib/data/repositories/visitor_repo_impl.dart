@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:onegate_client/onegate_client.dart';
 
 class VisitorRepoImpl extends VisitorRepository {
@@ -69,10 +70,15 @@ class VisitorRepoImpl extends VisitorRepository {
 
   @override
   Future<String?> uploadImage(
-      XFile file, String userMobile, int? companyId) async {
+      File file, String userMobile, int companyId) async {
     try {
-      final response =
-          await _remoteDataSource.uploadFile(file, userMobile, companyId ?? 0);
+      final response = await _remoteDataSource.uploadFile(
+        file,
+        userMobile,
+        companyId,
+      );
+      print("ResponseImage::: $response");
+
       return response;
     } catch (error) {
       return null;
