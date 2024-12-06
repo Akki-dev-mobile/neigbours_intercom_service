@@ -54,6 +54,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           DioSingleton.instance2,
           DioSingleton.instance3))));
 
+
   int _guestCount = 1;
   TextEditingController guestComingFrom = TextEditingController();
   TextEditingController guestName = TextEditingController();
@@ -473,13 +474,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               onPressed: () {
                 _captureImageFromCamera();
 
-                // visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
-                //     searchedVisitor: widget.searchedVisitor,
-                //     guestName: guestName.text,
-                //     guestComingFrom: guestComingFrom.text,
-                //     guestCount: _guestCount,
-                //     purposeCategory: widget.selectedValue,
-                //     mobile: widget.mobile));
+                visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(  
+                    searchedVisitor: widget.searchedVisitor,
+                    guestName: guestName.text,
+                    guestComingFrom: guestComingFrom.text,
+                    guestCount: _guestCount,
+                    purposeCategory: widget.selectedValue,
+                    mobile: widget.mobile));
               },
               text: 'Next',
             ),

@@ -291,7 +291,7 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<dynamic>> getMember(int companyId, int unitId) async {
+  Future<List<dynamic>> getMember(int companyId,) async {
     try {
       final userId = GlobalUser.getUserId();
       if (userId == null) {
@@ -307,7 +307,7 @@ class RemoteDataSource {
         'http://societybackend.cubeone.in/api/admin/member/list',
         queryParameters: {
           'company_id': userId,
-          'unit_id': unitId,
+          // 'unit_id': unitId,
           'current_tab': 'approved'
         },
         options: Options(

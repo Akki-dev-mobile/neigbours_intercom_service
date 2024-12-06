@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
@@ -41,6 +42,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final Dio _dio = Dio();
   String? selectedUnit;
   String? selectedMember;
+  File? image;
   Set<String> selectedMembers = {};
   String selectedBuilding = '';
   List<dynamic> buildings = [];
@@ -295,6 +297,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             'unit_id': null,
             'current_tab': 'approved'
           });
+          log("response:::$response");
       return response.data['data'];
     } catch (e) {
       print('Error fetching members: $e');
@@ -445,10 +448,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               itemBuilder: (context, index) {
                 final member = filteredMembers[index];
                 final isSelected =
-                    selectedMembers.contains(member['member_name']);
+                    selectedMembers.contains(member['member_details']);
 
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
+                return ExpansionTile(
+                  // contentPadding: EdgeInsets.zero,
                   title: Text(
                     member['unit_flat_number'],
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
@@ -468,14 +471,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       color: isSelected ? Colors.green : null,
                     ),
                     onPressed: () {
+                      print("Selected Member: ${member['member_name']}");
                       // Update the selected members in the ValueNotifier
                       final updatedMembers = Set<String>.from(selectedMembers);
+                      print("update:::$updatedMembers");
                       if (isSelected) {
                         updatedMembers.remove(member['member_name']);
                       } else {
                         updatedMembers.add(member['member_name']);
                       }
                       _selectedMembersNotifier.value = updatedMembers;
+                      print("Members:::$updatedMembers");
                     },
                   ),
                 );
@@ -709,12 +715,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       }
 
       final data = {
-        'company_id': "8191",
+        'company_id': "8196",
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': "77525",
+        'user_id': "5",
         'visitor_count': widget.guestCount?.toString() ?? "1",
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",

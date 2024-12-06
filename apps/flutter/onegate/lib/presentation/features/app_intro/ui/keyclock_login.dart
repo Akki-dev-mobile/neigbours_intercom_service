@@ -156,6 +156,8 @@ class _MyAppLoginState extends State<MyAppLogin> {
             ...societies.map((society) {
               final societyId = society['company_id'];
               final societyName = society['company_name'];
+
+              print('Society ID: $societyId, Society Name: $societyName');
               return ListTile(
                 title: Text(societyName ?? 'Unknown Society'),
                 onTap: () {

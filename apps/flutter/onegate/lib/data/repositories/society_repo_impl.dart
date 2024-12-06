@@ -32,12 +32,12 @@ class SocietyRepositoryImpl implements SocietyRepository {
       print(error.toString());
       return null;
     }
-  }
+  } 
 
   @override
   Future<List<Member>?> getMembers(int companyId, int unitId) async {
     try {
-      final response = await _remoteDataSource.getMember(companyId, unitId);
+      final response = await _remoteDataSource.getMember(companyId,);
       final memberList = Member.fromJsonList(response);
       return memberList;
     } catch (error) {

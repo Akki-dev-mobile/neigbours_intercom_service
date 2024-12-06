@@ -78,6 +78,7 @@ class VisitorRepoImpl extends VisitorRepository {
         companyId,
       );
       print("ResponseImage::: $response");
+      
 
       return response;
     } catch (error) {
