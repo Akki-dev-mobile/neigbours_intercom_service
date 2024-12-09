@@ -14,6 +14,8 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart';
@@ -44,6 +46,7 @@ class VisitorsInEntry extends StatefulWidget {
 class _VisitorsInEntryState extends State<VisitorsInEntry> {
   final SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
+  final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   String _speechTextControllerId = '';
   late TextEditingController _guestCountController;
   final VisitorInEntryBloc visitorInEntryBloc = VisitorInEntryBloc(
@@ -53,7 +56,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           DioSingleton.instance1,
           DioSingleton.instance2,
           DioSingleton.instance3))));
-
 
   int _guestCount = 1;
   TextEditingController guestComingFrom = TextEditingController();
@@ -298,6 +300,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Guest Name",
                         hintText: 'Enter Name',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter guest name';
+                          }
+                          return null;
+                        },
                         textCapitalization: TextCapitalization.words,
                         textController: guestName,
                         suffixIcon: IconButton(
@@ -329,17 +337,26 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Coming From",
                         hintText: 'Enter Coming From',
-                        textCapitalization: TextCapitalization.characters,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter coming from';
+                          }
+                          return null;
+                        },
+                        textCapitalization: TextCapitalization.words,
                         textController: guestComingFrom,
                         suffixIcon: IconButton(
                           onPressed: () {
+                            showDialog(
+                                context: context,
+                                builder: (context) => ListeningDialog());
                             _speechToText.isNotListening
-                                ? _startListening('guestComingFrom')
+                                ? _startListening('comingFrom')
                                 : _stopListening();
                           },
                           icon: CircleAvatar(
                             backgroundColor:
-                                _speechTextControllerId == 'guestComingFrom' &&
+                                _speechTextControllerId == 'comingFrom' &&
                                         _speechToText.isListening
                                     ? Color(0xffCAF1D1)
                                     : Color(0xffFFEBE6),
@@ -352,14 +369,22 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                         ),
                       ),
-                      CustomForm.textField(
-                        titleColor: Theme.of(context).colorScheme.onSurface,
-                        hintColor: Theme.of(context).colorScheme.onPrimary,
-                        "Enter your ID",
-                        hintText: 'Request from Security',
-                        keyboardType: TextInputType.text,
-                        length: 4,
-                      ),
+                      if (preferenceUtils.getTooglevalue() == true ||
+                          preferenceUtils.getTooglevalue() == null)
+                        CustomForm.textField(
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your ID';
+                            }
+                            return null;
+                          },
+                          titleColor: Theme.of(context).colorScheme.onSurface,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          "Enter your ID",
+                          hintText: 'Request from Security',
+                          keyboardType: TextInputType.text,
+                          length: 4,
+                        ),
                       CustomForm.textField(
                         "Guest Count",
                         textController: _guestCountController,
@@ -472,15 +497,36 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             ),
             floatingActionButton: CustomLargeBtn(
               onPressed: () {
-                _captureImageFromCamera();
+                if (guestName.text.isEmpty || guestComingFrom.text.isEmpty) {
+                  // Show validation errors
+                  if (guestName.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Please enter guest name')),
+                    );
+                  }
+                  if (guestComingFrom.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Coming from is mandatory field')),
+                    );
+                  }
+                } else {
+                  // Navigate to camera
+                  visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
+                      searchedVisitor: widget.searchedVisitor,
+                      guestName: guestName.text,
+                      guestComingFrom: guestComingFrom.text,
+                      guestCount: _guestCount,
+                      purposeCategory: widget.selectedValue,
+                      mobile: widget.mobile));
+                }
 
-                visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(  
-                    searchedVisitor: widget.searchedVisitor,
-                    guestName: guestName.text,
-                    guestComingFrom: guestComingFrom.text,
-                    guestCount: _guestCount,
-                    purposeCategory: widget.selectedValue,
-                    mobile: widget.mobile));
+                // visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
+                //     searchedVisitor: widget.searchedVisitor,
+                //     guestName: guestName.text,
+                //     guestComingFrom: guestComingFrom.text,
+                //     guestCount: _guestCount,
+                //     purposeCategory: widget.selectedValue,
+                //     mobile: widget.mobile));
               },
               text: 'Next',
             ),

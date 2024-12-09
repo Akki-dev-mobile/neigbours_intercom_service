@@ -3,6 +3,7 @@
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
 
 class VisitorSettingsView extends StatefulWidget {
   const VisitorSettingsView({super.key});
@@ -40,7 +41,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
             switchValue: _visitorsAddress,
             onChanged: (value) {
               setState(() {
-                _visitorsAddress = value;
+                _visitorsAddress = true;
               });
             },
             title: "Visitor's Address",
@@ -49,13 +50,20 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
           GateSettingListTile(
             switchValue: _visitorsPurpose,
             onChanged: (value) {
-              setState(() {
+                setState(() {
                 _visitorsPurpose = value;
-              });
-            },
-            title: "Visitor's Purpose",
-            subtitle: "Set visitor's purpose as mandatory",
-          ),
+                });
+                if (value == true) {
+                PreferenceUtils.getInstance().then((prefs) {
+                  prefs.setIsSelfTapIn(true);
+                });
+                }
+              },
+              title: "Visitor's Purpose",
+            subtitle: "Set visitor's purpose as mandatory",),
+
+            
+          
           GateSettingListTile(
             switchValue: _membersApproval,
             onChanged: (value) {

@@ -84,6 +84,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             member['member_name']?.toLowerCase().contains(query) ?? false;
         final unitNumber =
             member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
+
+            final unitID = member['fk_unit_id']?.toString().toLowerCase().contains(query) ?? false;
+            
+
         return memberName || unitNumber;
       }).toList();
     } else {
@@ -287,6 +291,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<List<dynamic>> getMember() async {
     try {
       final userId = GlobalUser.getUserId();
+
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
@@ -297,7 +302,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             'unit_id': null,
             'current_tab': 'approved'
           });
-          log("response:::$response");
+      log("response:::$response");
       return response.data['data'];
     } catch (e) {
       print('Error fetching members: $e');
@@ -372,25 +377,56 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       //     ),
       //   ),
       // ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          if (selectedUnit != null || selectedMember != null) {
-            print("Selected Unit: $selectedUnit");
-            print("Selected Member: $selectedMember");
-            await postSelection(context);
-            showApprovalDialog('Waiting for approval......');
-          } else {
-            print("No selection made");
-          }
+      // floatingActionButton: FloatingActionButton.extended(
+      //   onPressed: () async {
+      //     if (selectedUnit != null || selectedMember != null) {
+      //       print("Selected Unit: $selectedUnit");
+      //       print("Selected Member: $selectedMember");
+      //       await postSelection(context);
+      //       showApprovalDialog('Waiting for approval......');
+      //     } else {
+      //       print("No selection made");
+      //     }
+      //   },
+      //   label: Text(
+      //     selectedUnit != null
+      //         ? "Selected Unit: $selectedUnit"
+      //         : selectedMember != null
+      //             ? "Selected Member: $selectedMember"
+      //             : "No Selection",
+      //   ),
+      //   icon: const Icon(Icons.navigate_next),
+      // ),
+
+      floatingActionButton: ValueListenableBuilder<Set<String>>(
+        valueListenable: _selectedMembersNotifier,
+        builder: (context, selectedMember, child) {
+          return FloatingActionButton.extended(
+            onPressed: () async {
+              print("FloatingActionButtonunitId Selected Member: $selectedMember");
+
+              print("unitId:::$selectedUnit");
+
+              if (selectedUnit != null || selectedMember != null) {
+                print("Selected Unit: $selectedUnit");
+                print("Selected Member: $selectedMember");
+                print("Post Selection:::");
+                await postSelection(context);
+                showApprovalDialog('Waiting for approval......');
+              } else {
+                print("No selection made");
+              }
+            },
+            label: Text(
+              selectedUnit != null
+                  ? "Selected Unit: $selectedUnit"
+                  : selectedMember != null
+                      ? "Selected Member: $selectedMember"
+                      : "No Selection",
+            ),
+            icon: Icon(Icons.navigate_next),
+          );
         },
-        label: Text(
-          selectedUnit != null
-              ? "Selected Unit: $selectedUnit"
-              : selectedMember != null
-                  ? "Selected Member: $selectedMember"
-                  : "No Selection",
-        ),
-        icon: const Icon(Icons.navigate_next),
       ),
     );
   }
@@ -422,6 +458,185 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
+//   Widget _buildMemberList(BuildContext context) {
+//     return ValueListenableBuilder<Set<String>>(
+//       valueListenable: _selectedMembersNotifier,
+//       builder: (context, selectedMembers, child) {
+//         return ValueListenableBuilder<List<dynamic>>(
+//           valueListenable: _filteredMembersNotifier,
+//           builder: (context, filteredMembers, child) {
+//             if (filteredMembers.isEmpty) {
+//               return Center(
+//                 child: Text(
+//                   'No Members Found.\nSearch members by their name or flat',
+//                   textAlign: TextAlign.center,
+//                   style: TextStyle(
+//                     fontSize: 16,
+//                     color: Colors.grey[600],
+//                   ),
+//                 ),
+//               );
+//             }
+//           ListView.builder(
+//   padding: const EdgeInsets.all(16),
+//   itemCount: filteredMembers.length,
+//   itemBuilder: (context, index) {
+//     if (filteredMembers.isEmpty || index >= filteredMembers.length) {
+//       // Safeguard in case data is empty or index is out of bounds
+//       return const SizedBox.shrink(); // Return an empty widget
+//     }
+
+//     final member = filteredMembers[index];
+//     final isSelected = selectedMembers.contains(member['unit_flat_number']);
+
+//     return ExpansionTile(
+//       title: Text(
+//         member['unit_flat_number'] ?? 'N/A',
+//         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+//               fontWeight: FontWeight.bold,
+//               fontSize: 16,
+//             ),
+//       ),
+//       children: (member['member_details'] as List<dynamic>?)
+//               ?.map<Widget>((detail) {
+//             final firstName = detail['member_first_name'] ?? 'N/A';
+//             final userId = detail['user_id']?.toString() ?? 'N/A';
+
+//             return ListTile(
+//               title: Text(
+//                 'First Name: $firstName',
+//                 style: Theme.of(context).textTheme.bodyMedium,
+//               ),
+//               subtitle: Text(
+//                 'User ID: $userId',
+//                 style: Theme.of(context).textTheme.bodySmall,
+//               ),
+//               trailing: IconButton(
+//                 icon: Icon(
+//                   isSelected
+//                       ? Ionicons.checkmark_circle
+//                       : Ionicons.add_circle_outline,
+//                   color: isSelected ? Colors.green : null,
+//                 ),
+//                 onPressed: () {
+//                   // Update the selection logic
+//                   final updatedMembers = Set<String>.from(selectedMembers);
+//                   if (isSelected) {
+//                     updatedMembers.remove(member['unit_flat_number']);
+//                   } else {
+//                     updatedMembers.add(member['unit_flat_number']);
+//                   }
+//                   _selectedMembersNotifier.value = updatedMembers;
+//                 },
+//               ),
+//             );
+//           }).toList() ??
+//           [const Text('No details available')], // Fallback if details are null
+//     );
+//   },
+// );
+
+//             // return ListView.builder(
+//             //   padding: const EdgeInsets.all(16),
+//             //   itemCount: filteredMembers.length,
+//             //   itemBuilder: (context, index) {
+//             //     final member = filteredMembers[index];
+//             //     final isSelected = selectedMembers.contains(member['member_name'][0]);
+
+//             //     return ExpansionTile(
+//             //       title: Text(
+//             //       member['unit_flat_number'],
+//             //       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+//             //           fontWeight: FontWeight.w900,
+//             //           fontSize: 14,
+//             //         ),
+//             //       ),
+//             //       children: [
+//             //       ListTile(
+//             //         title: Text(
+//             //         member['member_name'],
+//             //         style: Theme.of(context).textTheme.bodyMedium,
+//             //         ),
+//             //         subtitle: Text(
+//             //         'Name: ${member['member_detials'] ?? 'N/A'}\nEmail: ${member['member_email_id'] ?? 'N/A'}\nName: ${member['member_first_name'] ?? 'N/A'}',
+//             //         style: Theme.of(context).textTheme.bodySmall,
+//             //         ),
+//             //         trailing: IconButton(
+//             //         icon: Icon(
+//             //           isSelected
+//             //             ? Ionicons.checkmark_circle
+//             //             : Ionicons.add_circle_outline,
+//             //           color: isSelected ? Colors.green : null,
+//             //         ),
+//             //         onPressed: () {
+//             //           print("Selected Member: ${member['member_name']}");
+//             //           final updatedMembers = Set<String>.from(selectedMembers);
+//             //           if (isSelected) {
+//             //           updatedMembers.remove(member['member_name']);
+//             //           } else {
+//             //           updatedMembers.add(member['member_name']);
+//             //           }
+//             //           _selectedMembersNotifier.value = updatedMembers;
+//             //         },
+//             //         ),
+//             //       ),
+//             //       ],
+//             //     );
+//             //     // final member = filteredMembers[index];
+//             //     // final isSelected =
+//             //     //     selectedMembers.contains(member['member_name']);
+
+//             //     // return ExpansionTile(
+//             //     //   // contentPadding: EdgeInsets.zero,
+//             //     //   title: Text(
+//             //     //     member['unit_flat_number'],
+//             //     //     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+//             //     //           fontWeight: FontWeight.w900,
+//             //     //           fontSize: 14,
+//             //     //         ),
+//             //     //   ),
+//             //     //   children: [
+//             //     //     Text(
+//             //     //     member['member_name'],
+//             //     //     style: Theme.of(context).textTheme.bodyMedium,
+//             //     //   ),
+
+//             //     //   ],
+//             //     //   // subtitle: Text(
+//             //     //   //   member['member_name'],
+//             //     //   //   style: Theme.of(context).textTheme.bodyMedium,
+//             //     //   // ),
+//             //     //   trailing: IconButton(
+//             //     //     icon: Icon(
+//             //     //       isSelected
+//             //     //           ? Ionicons.checkmark_circle
+//             //     //           : Ionicons.add_circle_outline,
+//             //     //       color: isSelected ? Colors.green : null,
+//             //     //     ),
+//             //     //     onPressed: () {
+//             //     //       print("Selected Member: ${member['member_name']}");
+//             //     //       // Update the selected members in the ValueNotifier
+//             //     //       final updatedMembers = Set<String>.from(selectedMembers);
+//             //     //       print("update:::$updatedMembers");
+//             //     //       if (isSelected) {
+//             //     //         updatedMembers.remove(member['member_name']);
+//             //     //       } else {
+//             //     //         updatedMembers.add(member['member_name']);
+//             //     //       }
+//             //     //       _selectedMembersNotifier.value = updatedMembers;
+//             //     //       print("Members:::$updatedMembers");
+//             //     //     },
+//             //     //   ),
+//             //     // );
+//             //   },
+//             // );
+
+//           },
+//         );
+//       },
+//     );
+//   }
+
   Widget _buildMemberList(BuildContext context) {
     return ValueListenableBuilder<Set<String>>(
       valueListenable: _selectedMembersNotifier,
@@ -430,6 +645,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           valueListenable: _filteredMembersNotifier,
           builder: (context, filteredMembers, child) {
             if (filteredMembers.isEmpty) {
+              // Display a message when no members are found
               return Center(
                 child: Text(
                   'No Members Found.\nSearch members by their name or flat',
@@ -442,48 +658,75 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               );
             }
 
+            // Return the ListView.builder
             return ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: filteredMembers.length,
               itemBuilder: (context, index) {
                 final member = filteredMembers[index];
+                final unitId = member['fk_unit_id']?.toString() ?? 'N/A';
+                // print("unitId:::$unitId");
                 final isSelected =
-                    selectedMembers.contains(member['member_details']);
+                    selectedMembers.contains(member['unit_flat_number']);
 
                 return ExpansionTile(
-                  // contentPadding: EdgeInsets.zero,
                   title: Text(
-                    member['unit_flat_number'],
+                    member['unit_flat_number'] ?? 'N/A',
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                   ),
-                  subtitle: Text(
-                    member['member_name'],
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(
-                      isSelected
-                          ? Ionicons.checkmark_circle
-                          : Ionicons.add_circle_outline,
-                      color: isSelected ? Colors.green : null,
-                    ),
-                    onPressed: () {
-                      print("Selected Member: ${member['member_name']}");
-                      // Update the selected members in the ValueNotifier
-                      final updatedMembers = Set<String>.from(selectedMembers);
-                      print("update:::$updatedMembers");
-                      if (isSelected) {
-                        updatedMembers.remove(member['member_name']);
-                      } else {
-                        updatedMembers.add(member['member_name']);
-                      }
-                      _selectedMembersNotifier.value = updatedMembers;
-                      print("Members:::$updatedMembers");
-                    },
-                  ),
+                  children: (member['member_details'] as List<dynamic>?)
+                          ?.map<Widget>((detail) {
+                        final firstName = detail['member_first_name'] ?? 'N/A';
+                        final userId = detail['user_id']?.toString() ?? 'N/A';
+                        final lastName =
+                            detail['member_last_name']?.toString() ?? 'N/A';
+
+                        return ListTile(
+                          title: Text(
+                            'First Name: $firstName',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          subtitle: Text(
+                            'Last Name: $lastName',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(
+                              isSelected
+                                  ? Ionicons.checkmark_circle
+                                  : Icons.add_circle_outline,
+                              color: isSelected ? Colors.green : null,
+                            ),
+                            onPressed: () {
+                              // print(
+                              //     "unitId Selected Member: ${member['unit_flat_number']}"
+                              // );
+
+                              // print("unitId:::$unitId");
+
+                              // Update the selection state for this specific member
+                              final updatedMembers =
+                                  Set<String>.from(selectedMembers);
+                              if (isSelected) {
+                                updatedMembers.remove(member[
+                                    'unit_flat_number']); // Remove only the tapped member
+                              } else {
+                                updatedMembers.add(member[
+                                    'unit_flat_number']); // Add only the tapped member
+                              }
+
+                              // Update the notifier with the modified set
+                              _selectedMembersNotifier.value = updatedMembers;
+                            },
+                          ),
+                        );
+                      }).toList() ??
+                      [
+                        const Text('No details available')
+                      ], // Fallback if details are null
                 );
               },
             );
@@ -677,7 +920,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           onPressed: () {
                             setState(() {
                               selectedMember = member['member_name'];
-                              selectedUnit = null;
+                              selectedUnit = member['fk_unit_id'].toString();
                             });
                           },
                         ),
@@ -694,16 +937,20 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> postSelection(BuildContext context) async {
+    print("Request Data Posting selection...");
     try {
       String formattedInTime =
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
       String? userId;
 
       if (selectedUnit != null) {
+print("selectedUnit:::$selectedUnit");
+
         userId = units
-            .firstWhere(
-                (unit) => unit['unit_flat_number'] == selectedUnit)['id']
+            .firstWhere((unit) => unit['unit_flat_number'] == selectedUnit)[
+                'fk_unit_id']
             .toString();
+            print("fk unit id:::$userId");
       } else if (selectedMember != null) {
         userId = _allMembers
             .firstWhere(
@@ -715,12 +962,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       }
 
       final data = {
-        'company_id': "8196",
+        'company_id': "8191",
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': "5",
+        'user_id': "$userId",
         'visitor_count': widget.guestCount?.toString() ?? "1",
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",

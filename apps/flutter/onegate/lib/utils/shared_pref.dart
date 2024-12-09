@@ -25,6 +25,7 @@ class PreferenceUtils {
   static const String _isLogin = 'is_login';
   static const String _isAppIntroShown = 'is_app_intro_shown';
   static const String _isSelfTapIn = 'is_self_tap_in';
+  static const String _tooglevalue ="false";
 
   Future<void> setIsAppIntroShown(bool isAppIntroShown) async {
     _preferences.setBool(_isAppIntroShown, isAppIntroShown);
@@ -75,6 +76,20 @@ class PreferenceUtils {
 
   Future<void> setIsSelfTapIn(bool isSelfTapIn) async {
     await _preferences.setBool(_isSelfTapIn, isSelfTapIn);
+  }
+
+
+Future<void> tooglevalue(bool tooglevalue) async {
+    await _preferences.setBool(_tooglevalue, tooglevalue);
+  }
+
+
+bool? getTooglevalue() {
+    final tooglevalue = _preferences.getBool(_tooglevalue);
+    if (tooglevalue != null) {
+      return tooglevalue;
+    }
+    return false;
   }
 
   bool? getIsAppIntroShown() {
