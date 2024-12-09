@@ -39,20 +39,9 @@ class VisitorLogView extends StatefulWidget {
 }
 
 class _VisitorLogViewState extends State<VisitorLogView> {
-  // final List<String> items =
-  //     List.generate(50, (index) => 'Name Surname $index');
   late String selectedId;
-  String? selectedTime;
   String? _searchText = "";
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
-
-  String? selectedBuilding;
-  List<String> selectedBuildingOptions = [
-    'All',
-    'Building A',
-    'Building B',
-    'Building C',
-  ];
 
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
@@ -123,18 +112,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     .toLowerCase()
                     .contains(_searchText!.toLowerCase()))
                 .toList();
-            if (filteredVisitors.isEmpty) {
-              filteredVisitors = visitorLogs;
-            }
-            return WillPopScope(
-              onWillPop: () async {
-                return false;
-              },
+            return PopScope(
+              canPop: false,
               child: MyScrollView(
                 isScrollable: false,
                 hasBackButton: false,
-                backButtonPressed: () {},
-                // pageTitle: widget.id,
                 pageTitleWidget: Hero(
                   tag: 'page_title',
                   child: Text(
@@ -165,8 +147,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     CustomForm.textField(
                       widget.selectedBuilding ?? 'Search',
                       titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      // "Search" ?? ,
+                      hintColor: Theme.of(context).colorScheme.onSurface,
                       hintText: 'Search Visitor',
                       textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.search,
@@ -187,61 +168,17 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
-                      suffixIcon: OverflowBar(
-                        alignment: MainAxisAlignment.end,
-                        // mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // IconButton(
-                          //   onPressed: () {},
-                          //   icon: CircleAvatar(
-                          //     backgroundColor: const Color(0xffFFEBE6),
-                          //     radius: 20,
-                          //     child: Icon(
-                          //       size: 22,
-                          //       Ionicons.mic_outline,
-                          //       color: Theme.of(context).colorScheme.onBackground,
-                          //     ),
-                          //   ),
-                          // ),
-                          IconButton(
-                            onPressed: () {
-                              _showLogBookConfigBottomSheet(context);
-                            },
-                            icon: Icon(
-                              Ionicons.funnel_outline,
-                              color: Theme.of(context).colorScheme.onSurface,
-                              size: 24,
-                            ),
-                          ),
-                        ],
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          _showLogBookConfigBottomSheet(context);
+                        },
+                        icon: Icon(
+                          Ionicons.funnel_outline,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          size: 24,
+                        ),
                       ),
                     ),
-                    // ChipsChoice<String>.single(
-                    //   padding: EdgeInsets.only(right: 20),
-                    //   scrollToSelectedOnChanged: true,
-                    //   spacing: 20,
-                    //   choiceStyle: C2ChipStyle.outlined(
-                    //     borderWidth: 1,
-                    //     color: Colors.grey.shade700,
-                    //     selectedStyle: C2ChipStyle.filled(
-                    //       foregroundColor: Color(0xFFC08261),
-                    //     ),
-                    //     height: 40,
-                    //   ),
-                    //   choiceCheckmark: true,
-                    //   value: selectedTime,
-                    //   scrollPhysics: BouncingScrollPhysics(),
-                    //   onChanged: (value) {
-                    //     setState(() {
-                    //       selectedTime = value;
-                    //     });
-                    //   },
-                    //   choiceItems: C2Choice.listFrom<String, String>(
-                    //     source: options,
-                    //     value: (i, v) => v,
-                    //     label: (i, v) => v,
-                    //   ),
-                    // ),
                     SizedBox(
                       height: MediaQuery.of(context).size.height * 0.7,
                       child: ListView.builder(
@@ -267,29 +204,26 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                       vertical: 2,
                                     ),
                                     leading: CircleAvatar(
-                                        child: filteredVisitors[index]
-                                                .visitor!
-                                                .visitor_image
-                                                .isNotEmpty
-                                            ? Text(
-                                                filteredVisitors[index]
-                                                    .visitor!
-                                                    .mobile
-                                                    .substring(0, 1),
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium,
-                                              )
-                                            : RandomAvatar(
-                                                DateTime.now()
-                                                    .toIso8601String(),
-                                                trBackground: false,
-                                              )),
-                                    // title: Text(
-                                    //   filteredVisitors[index].visitor!.name,
-                                    //   style:
-                                    //       Theme.of(context).textTheme.bodyMedium,
-                                    // ),
+                                      child: filteredVisitors[index]
+                                              .visitor!
+                                              .visitor_image
+                                              .isEmpty
+                                          ? Text(
+                                              filteredVisitors[index]
+                                                  .visitor!
+                                                  .name
+                                                  .substring(0, 1),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            )
+                                          : Image.network(
+                                              filteredVisitors[index]
+                                                  .visitor!
+                                                  .visitor_image,
+                                              fit: BoxFit.cover,
+                                            ),
+                                    ),
                                     title: RichText(
                                       text: TextSpan(
                                         children: [
@@ -321,9 +255,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               8),
-                                                      // border: Border.all(
-                                                      //   color: Colors.black,
-                                                      // ),
                                                     ),
                                                     child: Text(
                                                       "+ ${visitorLogs[index].visitor_count.toString()}",
@@ -369,9 +300,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                                       const Color(0xffFFEBE6),
                                                   borderRadius:
                                                       BorderRadius.circular(8),
-                                                  // border: Border.all(
-                                                  //   color: Colors.black,
-                                                  // ),
                                                 ),
                                                 child: const Text(
                                                   'Guest',
@@ -404,11 +332,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                             },
                                           ),
                                         );
-                                        // FlutterPhoneDirectCaller.callNumber(
-                                        //     visitorLogs[index]
-                                        //         .visitor!
-                                        //         .mobile
-                                        //         .toString());
                                       },
                                       icon: Icon(
                                         Ionicons.call_outline,
@@ -479,7 +402,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                               begin: Alignment.topRight,
                                               end: Alignment.bottomLeft,
                                             ),
-                                            // color: const Color(0xffFFEBE6),
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                             border: Border.all(
@@ -637,32 +559,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           ),
                     ),
                   ),
-                  // ChipsChoice<String>.single(
-                  //   padding: EdgeInsets.only(right: 20),
-                  //   scrollToSelectedOnChanged: true,
-                  //   spacing: 20,
-                  //   choiceStyle: C2ChipStyle.outlined(
-                  //     borderWidth: 1,
-                  //     color: Colors.grey.shade700,
-                  //     selectedStyle: C2ChipStyle.filled(
-                  //       foregroundColor: Color(0xFFC08261),
-                  //     ),
-                  //     height: 40,
-                  //   ),
-                  //   choiceCheckmark: true,
-                  //   value: selectedBuilding,
-                  //   scrollPhysics: BouncingScrollPhysics(),
-                  //   onChanged: (value) {
-                  //     setState(() {
-                  //       selectedBuilding = value;
-                  //     });
-                  //   },
-                  //   choiceItems: C2Choice.listFrom<String, String>(
-                  //     source: selectedBuildingOptions,
-                  //     value: (i, v) => v,
-                  //     label: (i, v) => v,
-                  //   ),
-                  // ),
                   Expanded(
                     child: ListView.builder(
                       itemCount: widget.logList.length,
@@ -698,7 +594,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           child: VisitorLogView(
                             id: widget.id,
                             logList: widget.logList,
-                            selectedBuilding: selectedBuilding,
+                            selectedBuilding: widget.selectedBuilding,
                           ),
                         ),
                       );

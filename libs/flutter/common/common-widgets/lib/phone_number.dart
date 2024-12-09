@@ -1,11 +1,15 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:country_code_picker/country_code_picker.dart';
-import 'package:libphonenumber/libphonenumber.dart';
+// import 'package:libphonenumber/libphonenumber.dart';
 import 'package:email_validator/email_validator.dart';
 
 class CombinedInputField extends StatefulWidget {
+  const CombinedInputField({super.key});
+
   @override
   _CombinedInputFieldState createState() => _CombinedInputFieldState();
 }
@@ -34,18 +38,22 @@ class _CombinedInputFieldState extends State<CombinedInputField> {
     if (isMobile) {
       final isoCode = selectedCountryCode;
       try {
-        final isValidNumber = await PhoneNumberUtil.isValidPhoneNumber(
-          phoneNumber: input,
-          isoCode: isoCode,
+        log(
+          'Validating mobile number: $input, ISO Code: $isoCode',
+          name: 'CombinedInputField',
         );
-        setState(() {
-          isValid = isValidNumber!;
-        });
-        if (isValidNumber!) {
-          print('Valid Mobile Number: $input');
-        } else {
-          print('Invalid Mobile Number: $input');
-        }
+        // final isValidNumber = await PhoneNumberUtil.isValidPhoneNumber(
+        //   phoneNumber: input,
+        //   isoCode: isoCode,
+        // );
+        // setState(() {
+        //   isValid = isValidNumber!;
+        // });
+        // if (isValidNumber!) {
+        //   print('Valid Mobile Number: $input');
+        // } else {
+        //   print('Invalid Mobile Number: $input');
+        // }
       } catch (e) {
         print('Error validating mobile number: $e');
       }
@@ -87,7 +95,7 @@ class _CombinedInputFieldState extends State<CombinedInputField> {
                       });
                     },
                     initialSelection: 'IN',
-                    favorite: ['IN'],
+                    favorite: const ['IN'],
                   ),
                 ),
               Container(
