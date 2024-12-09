@@ -1,4 +1,6 @@
 // ignore_for_file: prefer_const_constructors
+import 'dart:developer';
+
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
@@ -18,7 +20,6 @@ import 'package:flutter_onegate/presentation/features/reset_password/ui/reset_pa
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
-import 'package:libphonenumber/libphonenumber.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
@@ -123,17 +124,18 @@ class _LoginViewState extends State<LoginView> {
   Future<void> validateMobileNumber(String input) async {
     final isoCode = selectedCountryCode;
     try {
-      final isValidNumber = await PhoneNumberUtil.isValidPhoneNumber(
-        phoneNumber: input,
-        isoCode: isoCode,
-      );
-      setState(() {
-        if (isValidNumber!) {
-          mobileErrorText = null; // Valid mobile number
-        } else {
-          mobileErrorText = 'Invalid Mobile Number';
-        }
-      });
+      log("validateMobileNumber: $input");
+      // final isValidNumber = await PhoneNumberUtil.isValidPhoneNumber(
+      //   phoneNumber: input,
+      //   isoCode: isoCode,
+      // );
+      // setState(() {
+      //   if (isValidNumber!) {
+      //     mobileErrorText = null; // Valid mobile number
+      //   } else {
+      //     mobileErrorText = 'Invalid Mobile Number';
+      //   }
+      // });
     } catch (e) {
       print('Error validating mobile number: $e');
       setState(() {
