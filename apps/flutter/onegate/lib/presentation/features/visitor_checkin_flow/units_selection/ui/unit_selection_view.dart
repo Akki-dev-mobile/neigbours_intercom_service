@@ -43,12 +43,12 @@ class UnitSelectionView extends StatefulWidget {
 
 class _UnitSelectionViewState extends State<UnitSelectionView> {
   final Dio _dio = Dio();
-  String? selectedUnit;
-  String? selectedMember;
+  int? selectedUnit;
+  int? selectedMember;
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
 
   File? image;
-  Set<String> selectedMembers = {};
+  Set<int> selectedMembers = {};
   String selectedBuilding = '';
   List<dynamic> buildings = [];
   List<dynamic> units = [];
@@ -93,6 +93,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         final unitID =
             member['fk_unit_id']?.toString().toLowerCase().contains(query) ??
                 false;
+        print("unitID:::$unitID");
 
         return memberName || unitNumber;
       }).toList();
@@ -251,7 +252,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       setState(() => isLoading = true);
       final userId = GlobalUser.getUserId();
       print("Company IDDDDDD$userId");
-
 
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
@@ -427,7 +427,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
                 preferenceUtils.getTooglevalue() == true
                     ? showApprovalDialog('Waiting for approval......')
-                    : await postSelection(context);
+                    : await postSelection(
+                        context, selectedMember, selectedUnit);
               } else {
                 print("No selection made");
               }
@@ -673,14 +674,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               );
             }
 
-            // Return the ListView.builder
             return ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: filteredMembers.length,
               itemBuilder: (context, index) {
                 final member = filteredMembers[index];
                 final unitId = member['fk_unit_id']?.toString() ?? 'N/A';
-                // print("unitId:::$unitId");
+
                 final isSelected =
                     selectedMembers.contains(member['unit_flat_number']);
 
@@ -692,12 +692,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           fontSize: 16,
                         ),
                   ),
+                  subtitle: Text(
+                    'Unit ID: $unitId',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   children: (member['member_details'] as List<dynamic>?)
                           ?.map<Widget>((detail) {
                         final firstName = detail['member_first_name'] ?? 'N/A';
-                        final userId = detail['user_id']?.toString() ?? 'N/A';
                         final lastName =
                             detail['member_last_name']?.toString() ?? 'N/A';
+                        final userId = detail['user_id']?.toString() ?? 'N/A';
 
                         return ListTile(
                           title: Text(
@@ -705,7 +709,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           subtitle: Text(
-                            'Last Name: $lastName',
+                            'Last Name: $lastName\nUser ID: $userId',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           trailing: IconButton(
@@ -718,8 +722,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   : null,
                             ),
                             onPressed: () {
-                              final updatedMembers =
-                                  Set<String>.from(selectedMembers);
+                              // unitId
+                              print("ListView.builder unitId:::$unitId");
+
+                              final updatedMembers = Set<String>.from(selectedMembers);
                               if (selectedMembers.contains(firstName)) {
                                 updatedMembers.remove(firstName);
                               } else {
@@ -912,6 +918,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       final member = _filteredMembers[index];
                       final isSelected =
                           selectedMember == member['member_name'];
+                      final unitID = member['fk_unit_id'];
                       return ListTile(
                         title: Text(
                           member['member_name'],
@@ -927,7 +934,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           onPressed: () {
                             setState(() {
                               selectedMember = member['member_name'];
-                              selectedUnit = member['fk_unit_id'].toString();
+                              selectedUnit = unitID;
+
+                              print(
+                                  "Selected Member: $selectedMember, Selected Unit: $selectedUnit");
                             });
                           },
                         ),
@@ -943,13 +953,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Future<void> postSelection(BuildContext context) async {
+  Future<void> postSelection(
+    BuildContext context,
+    selectedMember,
+    selectedUnit,
+  ) async {
     print("Request Data Posting selection...");
+    print(
+        "postSlection:: selectedUnit:::$selectedUnit, selectedMember:::$selectedMember");
+
     try {
       String formattedInTime =
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
       String? userId;
-
+      print(
+          "postSlection:: selectedUnit:::$selectedUnit, selectedMember:::$selectedMember");
       if (selectedUnit != null) {
         print("selectedUnit:::$selectedUnit");
 
@@ -957,7 +975,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             .firstWhere((unit) => unit['unit_flat_number'] == selectedUnit)[
                 'fk_unit_id']
             .toString();
-        print("fk unit id:::$userId");
+        print("c::$userId");
       } else if (selectedMember != null) {
         userId = _allMembers
             .firstWhere(
@@ -969,7 +987,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       }
 
       final data = {
-        'company_id': widget.companyId?.toString() ?? "8191",
+        'company_id': GlobalUser.getUserId(),
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
@@ -993,7 +1011,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         setState(() {
           isWaitingForApproval = true; // Show waiting state
         });
-        
+
         await showApprovalDialog(approvalStatus);
         setupAMQPReceiver();
         // Start listening for approval

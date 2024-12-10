@@ -158,7 +158,10 @@ bool? getTooglevalue() {
 
         // Ensure selectedCompanyMap is a valid Map before creating the Company object
         if (selectedCompanyMap is Map<String, dynamic>) {
-          return Company.fromJson(selectedCompanyMap);
+          var companyId =  Company.fromJson(selectedCompanyMap);
+          print("Company ID: ${companyId.companyId}");
+          return companyId;
+
         } else {
           print(
               "Error: Expected a Map<String, dynamic> for selected company data.");
