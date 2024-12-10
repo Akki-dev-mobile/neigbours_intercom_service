@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:alarm/alarm.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ConfigureDutyAlarms extends StatefulWidget {
   const ConfigureDutyAlarms({super.key});
@@ -98,8 +99,6 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
             ),
             Expanded(
               child: ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
                 itemCount: log.length,
                 itemBuilder: (context, index) {
                   return ListTile(
@@ -149,37 +148,49 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
     );
   }
 
-  void setupAlarms() {
-    final now = TimeOfDay.now();
-    final start = DateTime(DateTime.now().year, DateTime.now().month,
-        DateTime.now().day, startTime!.hour, startTime!.minute);
-    final end = DateTime(DateTime.now().year, DateTime.now().month,
-        DateTime.now().day, endTime!.hour, endTime!.minute);
-    DateTime current = start;
-
-    while (current.isBefore(end)) {
-      Alarm.set(
-        alarmSettings: AlarmSettings(
-          id: current.hashCode,
-          dateTime: current,
-          assetAudioPath: 'assets/alarm.mp3',
-          loopAudio: true,
-          vibrate: true,
-          fadeDuration: 3.0,
-          warningNotificationOnKill: Platform.isIOS,
-          notificationSettings: const NotificationSettings(
-            title: 'This is the title',
-            body: 'This is the body',
-            stopButton: 'Stop the alarm',
-            icon: 'notification_icon',
-          ),
-        ),
-      );
-      current = current.add(interval!);
-      setState(() {
-        log.add('Alarm set for ${current.toLocal()}');
-      });
+  Future<void> checkAndroidScheduleExactAlarmPermission() async {
+    final status = await Permission.scheduleExactAlarm.status;
+    print('Schedule exact alarm permission: $status.');
+    if (status.isDenied) {
+      print('Requesting schedule exact alarm permission...');
+      final res = await Permission.scheduleExactAlarm.request();
+      print(
+          'Schedule exact alarm permission ${res.isGranted ? '' : 'not'} granted.');
     }
+  }
+
+  void setupAlarms() async {
+    await checkAndroidScheduleExactAlarmPermission();
+
+    final now = DateTime.now();
+    final testAlarmTime = now.add(
+        const Duration(seconds: 10)); // Set alarm to ring 10 seconds from now
+
+    print('Setting test alarm for ${testAlarmTime.toLocal()}');
+    print('Current time: ${now.toLocal()}');
+    print(testAlarmTime.hashCode);
+    await Alarm.set(
+      alarmSettings: AlarmSettings(
+        id: testAlarmTime.hashCode,
+        dateTime: testAlarmTime,
+        assetAudioPath: 'assets/media/audio/alarm.mp3',
+        androidFullScreenIntent: true,
+        loopAudio: true,
+        vibrate: true,
+        fadeDuration: 3.0,
+        // warningNotificationOnKill: Platform.isIOS,
+        notificationSettings: const NotificationSettings(
+          title: 'Test Alarm',
+          body: 'This is a test alarm',
+          stopButton: 'Stop the alarm',
+          icon: 'notification_icon',
+        ),
+      ),
+    );
+
+    setState(() {
+      log.add('Test alarm set for ${testAlarmTime.toLocal()}');
+    });
   }
 
   void deleteAllAlarms() {
