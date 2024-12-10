@@ -300,12 +300,19 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Guest Name",
                         hintText: 'Enter Name',
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter guest name';
-                          }
-                          return null;
-                        },
+                        validator: preferenceUtils.getTooglevalue() == true
+                            ? (value) {
+                                return 'Please enter coming from';
+                              }
+                            : null,
+
+                        //(value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return 'Please enter guest name';
+                        //   }
+                        //   return null;
+                        // },
+
                         textCapitalization: TextCapitalization.words,
                         textController: guestName,
                         suffixIcon: IconButton(
@@ -337,12 +344,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         hintColor: Theme.of(context).colorScheme.onPrimary,
                         "Coming From",
                         hintText: 'Enter Coming From',
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter coming from';
-                          }
-                          return null;
-                        },
+                        validator: preferenceUtils.getTooglevalue() == true
+                            ? (value) {
+                                return 'Please enter coming from';
+                              }
+                            : null,
                         textCapitalization: TextCapitalization.words,
                         textController: guestComingFrom,
                         suffixIcon: IconButton(
@@ -369,22 +375,24 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                         ),
                       ),
-                      if (preferenceUtils.getTooglevalue() == true ||
-                          preferenceUtils.getTooglevalue() == null)
-                        CustomForm.textField(
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your ID';
-                            }
-                            return null;
-                          },
-                          titleColor: Theme.of(context).colorScheme.onSurface,
-                          hintColor: Theme.of(context).colorScheme.onPrimary,
-                          "Enter your ID",
-                          hintText: 'Request from Security',
-                          keyboardType: TextInputType.text,
-                          length: 4,
-                        ),
+                      preferenceUtils.getTooglevalue() == true
+                          ? CustomForm.textField(
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your ID';
+                                }
+                                return null;
+                              },
+                              titleColor:
+                                  Theme.of(context).colorScheme.onSurface,
+                              hintColor:
+                                  Theme.of(context).colorScheme.onPrimary,
+                              "Enter your ID",
+                              hintText: 'Request from Security',
+                              keyboardType: TextInputType.text,
+                              length: 4,
+                            )
+                          : SizedBox(),
                       CustomForm.textField(
                         "Guest Count",
                         textController: _guestCountController,
@@ -497,20 +505,16 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             ),
             floatingActionButton: CustomLargeBtn(
               onPressed: () {
-                if (guestName.text.isEmpty || guestComingFrom.text.isEmpty) {
-                  // Show validation errors
-                  if (guestName.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Please enter guest name')),
-                    );
-                  }
-                  if (guestComingFrom.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Coming from is mandatory field')),
-                    );
-                  }
+                if (guestName.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter guest name')),
+                  );
+                } else if (preferenceUtils.getTooglevalue() == true &&
+                    guestComingFrom.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Coming from is mandatory field')),
+                  );
                 } else {
-                  // Navigate to camera
                   visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
                       searchedVisitor: widget.searchedVisitor,
                       guestName: guestName.text,
@@ -519,6 +523,21 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       purposeCategory: widget.selectedValue,
                       mobile: widget.mobile));
                 }
+
+                // if (guestComingFrom.text.isEmpty &&
+                //     preferenceUtils.getTooglevalue() == true) {
+                //   ScaffoldMessenger.of(context).showSnackBar(
+                //     SnackBar(content: Text('Coming from is mandatory field')),
+                //   );
+                // } else {
+                //   visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
+                //       searchedVisitor: widget.searchedVisitor,
+                //       guestName: guestName.text,
+                //       guestComingFrom: guestComingFrom.text,
+                //       guestCount: _guestCount,
+                //       purposeCategory: widget.selectedValue,
+                //       mobile: widget.mobile));
+                // }
 
                 // visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
                 //     searchedVisitor: widget.searchedVisitor,

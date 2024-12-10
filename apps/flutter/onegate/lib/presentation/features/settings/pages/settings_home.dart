@@ -42,6 +42,7 @@ class _SettingsHomeState extends State<SettingsHome> {
     // TODO: implement initState
     super.initState();
     selectedGateObj = _preferenceUtils.getSelectedGate();
+    _preferenceUtils.getTooglevalue();
   }
 
   void _showCameraSettings(BuildContext context) async {

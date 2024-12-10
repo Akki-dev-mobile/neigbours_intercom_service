@@ -79,8 +79,9 @@ class PreferenceUtils {
   }
 
 
-Future<void> tooglevalue(bool tooglevalue) async {
-    await _preferences.setBool(_tooglevalue, tooglevalue);
+Future<void> setToogleValue(bool tooglevalue) async {
+ var toogle =    await _preferences.setBool(_tooglevalue, tooglevalue);
+ print(toogle);
   }
 
 

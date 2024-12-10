@@ -8,6 +8,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:get_it/get_it.dart';
 // import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
@@ -19,7 +21,7 @@ class UnitSelectionView extends StatefulWidget {
   final String? comingFrom;
   final int? guestCount;
   final int? visitorId;
-
+  final int? companyId;
   final String guestname;
   final String mobileNumber;
 
@@ -29,6 +31,7 @@ class UnitSelectionView extends StatefulWidget {
       required this.purposeCategory,
       this.comingFrom,
       this.guestCount,
+      this.companyId,
       this.visitorId,
       required this.guestname,
       required this.mobileNumber})
@@ -42,6 +45,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final Dio _dio = Dio();
   String? selectedUnit;
   String? selectedMember;
+  final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
+
   File? image;
   Set<String> selectedMembers = {};
   String selectedBuilding = '';
@@ -85,8 +90,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         final unitNumber =
             member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
 
-            final unitID = member['fk_unit_id']?.toString().toLowerCase().contains(query) ?? false;
-            
+        final unitID =
+            member['fk_unit_id']?.toString().toLowerCase().contains(query) ??
+                false;
 
         return memberName || unitNumber;
       }).toList();
@@ -166,6 +172,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           // Extract the approval status from the message
           final status = response['status'];
           log("Approval Status: $status");
+
           showApprovalDialog(status);
 
           // Update the dialog dynamically
@@ -243,6 +250,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     try {
       setState(() => isLoading = true);
       final userId = GlobalUser.getUserId();
+      print("Company IDDDDDD$userId");
+
+
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
@@ -250,6 +260,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         'https://societybackend.cubeone.in/api/admin/building/list?company_id=$userId',
       );
       setState(() {
+        print("Company IDDDDDD");
         buildings = response.data['data'];
         if (buildings.isNotEmpty) {
           selectedBuilding = buildings[0]['soc_building_name'];
@@ -403,7 +414,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         builder: (context, selectedMember, child) {
           return FloatingActionButton.extended(
             onPressed: () async {
-              print("FloatingActionButtonunitId Selected Member: $selectedMember");
+              print(
+                  "FloatingActionButtonunitId Selected Member: $selectedMember");
 
               print("unitId:::$selectedUnit");
 
@@ -411,8 +423,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 print("Selected Unit: $selectedUnit");
                 print("Selected Member: $selectedMember");
                 print("Post Selection:::");
-                await postSelection(context);
-                showApprovalDialog('Waiting for approval......');
+                // await postSelection(context);
+
+                preferenceUtils.getTooglevalue() == true
+                    ? showApprovalDialog('Waiting for approval......')
+                    : await postSelection(context);
               } else {
                 print("No selection made");
               }
@@ -695,30 +710,22 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           ),
                           trailing: IconButton(
                             icon: Icon(
-                              isSelected
+                              selectedMembers.contains(firstName)
                                   ? Ionicons.checkmark_circle
                                   : Icons.add_circle_outline,
-                              color: isSelected ? Colors.green : null,
+                              color: selectedMembers.contains(firstName)
+                                  ? Colors.green
+                                  : null,
                             ),
                             onPressed: () {
-                              // print(
-                              //     "unitId Selected Member: ${member['unit_flat_number']}"
-                              // );
-
-                              // print("unitId:::$unitId");
-
-                              // Update the selection state for this specific member
                               final updatedMembers =
                                   Set<String>.from(selectedMembers);
-                              if (isSelected) {
-                                updatedMembers.remove(member[
-                                    'unit_flat_number']); // Remove only the tapped member
+                              if (selectedMembers.contains(firstName)) {
+                                updatedMembers.remove(firstName);
                               } else {
-                                updatedMembers.add(member[
-                                    'unit_flat_number']); // Add only the tapped member
+                                updatedMembers.add(firstName);
                               }
 
-                              // Update the notifier with the modified set
                               _selectedMembersNotifier.value = updatedMembers;
                             },
                           ),
@@ -944,13 +951,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       String? userId;
 
       if (selectedUnit != null) {
-print("selectedUnit:::$selectedUnit");
+        print("selectedUnit:::$selectedUnit");
 
         userId = units
             .firstWhere((unit) => unit['unit_flat_number'] == selectedUnit)[
                 'fk_unit_id']
             .toString();
-            print("fk unit id:::$userId");
+        print("fk unit id:::$userId");
       } else if (selectedMember != null) {
         userId = _allMembers
             .firstWhere(
@@ -962,12 +969,12 @@ print("selectedUnit:::$selectedUnit");
       }
 
       final data = {
-        'company_id': "8191",
+        'company_id': widget.companyId?.toString() ?? "8191",
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': "$userId",
+        'user_id': userId,
         'visitor_count': widget.guestCount?.toString() ?? "1",
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",
@@ -986,6 +993,7 @@ print("selectedUnit:::$selectedUnit");
         setState(() {
           isWaitingForApproval = true; // Show waiting state
         });
+        
         await showApprovalDialog(approvalStatus);
         setupAMQPReceiver();
         // Start listening for approval
