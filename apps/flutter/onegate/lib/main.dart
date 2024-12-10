@@ -1,3 +1,4 @@
+import 'package:alarm/alarm.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
+  await Alarm.init();
 
   await setupDependencies();
   await setupLocator();
