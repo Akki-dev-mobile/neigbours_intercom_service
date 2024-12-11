@@ -162,35 +162,72 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
   void setupAlarms() async {
     await checkAndroidScheduleExactAlarmPermission();
 
-    final now = DateTime.now();
-    final testAlarmTime = now.add(
-        const Duration(seconds: 10)); // Set alarm to ring 10 seconds from now
-
-    print('Setting test alarm for ${testAlarmTime.toLocal()}');
-    print('Current time: ${now.toLocal()}');
-    print(testAlarmTime.hashCode);
-    await Alarm.set(
-      alarmSettings: AlarmSettings(
-        id: testAlarmTime.hashCode,
-        dateTime: testAlarmTime,
-        assetAudioPath: 'assets/media/audio/alarm.mp3',
-        androidFullScreenIntent: true,
-        loopAudio: true,
-        vibrate: true,
-        fadeDuration: 3.0,
-        // warningNotificationOnKill: Platform.isIOS,
-        notificationSettings: const NotificationSettings(
-          title: 'Test Alarm',
-          body: 'This is a test alarm',
-          stopButton: 'Stop the alarm',
-          icon: 'notification_icon',
+    if (startTime == null || endTime == null || interval == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Values of all fields are required'),
         ),
-      ),
+      );
+      return;
+    }
+
+    final now = DateTime.now();
+    final startDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      startTime!.hour,
+      startTime!.minute,
+    );
+    final endDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      endTime!.hour,
+      endTime!.minute,
     );
 
-    setState(() {
-      log.add('Test alarm set for ${testAlarmTime.toLocal()}');
-    });
+    if (endDateTime.isBefore(startDateTime)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('End time must be after start time'),
+        ),
+      );
+      return;
+    }
+
+    DateTime alarmTime = startDateTime;
+    while (alarmTime.isBefore(endDateTime)) {
+      await Alarm.set(
+        alarmSettings: AlarmSettings(
+          id: alarmTime.hashCode,
+          dateTime: alarmTime,
+          assetAudioPath: 'assets/media/audio/alarm.mp3',
+          androidFullScreenIntent: true,
+          loopAudio: true,
+          vibrate: true,
+          fadeDuration: 3.0,
+          notificationSettings: const NotificationSettings(
+            title: 'Duty Alarm',
+            body: 'This is a duty alarm',
+            stopButton: 'Stop the alarm',
+            icon: 'notification_icon',
+          ),
+        ),
+      );
+
+      setState(() {
+        log.add('Alarm set for ${alarmTime.toLocal()}');
+      });
+
+      alarmTime = alarmTime.add(interval!);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All alarms have been set up'),
+      ),
+    );
   }
 
   void deleteAllAlarms() {
