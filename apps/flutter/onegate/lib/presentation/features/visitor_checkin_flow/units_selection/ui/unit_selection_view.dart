@@ -427,7 +427,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               if (selectedUnits != null || selectedMember != null) {
                 print("Selected Unit: $selectedUnits");
                 print("Selected Member: $selectedMember");
-                var userId = selectedMember['member_details']['user_id']
+
+                String?  userId ;
+                if (selectedUnits.isNotEmpty) {
+                  userId = selectedUnits.first.toString();
+                } else if (selectedMembers.isNotEmpty) {
+                  userId = _allMembers.firstWhere((member) => selectedMembers.contains(member['member_name']))['id'].toString();
+                }
                 print("Selected User ID: $userId");
 
                 print("Post Selection:::");
