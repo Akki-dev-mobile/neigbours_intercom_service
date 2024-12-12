@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
@@ -15,15 +16,8 @@ import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-final keycloakConfig = KeycloakConfig(
-  bundleIdentifier: 'com.cubeonebiz.gate',
-  clientId: 'onegate-sso',
-  frontendUrl: 'https://stgsso.cubeone.in',
-  realm: 'fstech',
-  clientSecret: 'zXpmFL8WzkDoL379FesFl2pgm8vxPa58',
-);
-
-final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
+final keycloakWrapper =
+    KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
 class MyAppLogin extends StatefulWidget {
   const MyAppLogin({Key? key}) : super(key: key);
