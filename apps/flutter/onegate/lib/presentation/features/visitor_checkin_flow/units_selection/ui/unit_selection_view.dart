@@ -65,6 +65,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
       ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
+  final ValueNotifier<Set<String>> _selectedUnitsNotifier = ValueNotifier({});
 
   @override
   void initState() {
@@ -417,18 +418,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           return FloatingActionButton.extended(
             onPressed: () async {
               print(
-                  "FloatingActionButtonunitId Selected Member: $selectedMember, Selected Unit: $selectedUnit");
+                  "FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
 
 
 
-              int unitId = preferenceUtils.getUnitId() as int;
-              print("unitId:::$unitId");
 
-              if (selectedUnit != null || selectedMember != null) {
-                print("Selected Unit: $unitId");
+
+              if (selectedUnits != null || selectedMember != null) {
+                print("Selected Unit: $selectedUnits");
                 print("Selected Member: $selectedMember");
                 print("Post Selection:::");
-                await postSelection(context,selectedMember,unitId);
+                await postSelection(context,selectedMember,selectedUnit);
 
                 // preferenceUtils.getTooglevalue() == true
                 //     ? showApprovalDialog('Waiting for approval......')
@@ -440,7 +440,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             },
             label: Text(
               selectedUnit != null
-                  ? "Selected Unit: $selectedUnits"
+                  ? "Selected Unit: $selectedUnit"
                   : selectedMember != null
                       ? "Selected Member: $selectedMember"
                       : "No Selection",
@@ -734,6 +734,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               await preferenceUtils.saveUnitId(unitId);
                              print("ListView Unit_IDDDDDDDDDD$unitId");
                               final updatedMembers = Set<String>.from(selectedMembers);
+                              final updateUnits = Set<String>.from(selectedUnits);
+                              if(selectedUnits.contains(unitId)){
+                                updateUnits.remove(unitId);
+                              }
+                              else{
+                                selectedUnits.add(unitId);
+
+                              }
                               if (selectedMembers.contains(firstName)) {
                                 updatedMembers.remove(firstName);
                               } else {
@@ -741,6 +749,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               }
 
                               _selectedMembersNotifier.value = updatedMembers;
+                              _selectedUnitsNotifier.value = updateUnits;
                             },
                           ),
                         );
@@ -801,11 +810,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               itemCount: units.length,
               itemBuilder: (context, index) {
                 final unit = units[index]['unit_flat_number'];
-                final isSelected = selectedUnits == unit;
+                final isSelected = selectedUnit == unit;
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      selectedUnits = unit;
+                      selectedUnit = unit;
                       selectedMember = null;
                     });
                   },
@@ -926,7 +935,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       final member = _filteredMembers[index];
                       final isSelected =
                           selectedMember == member['member_name'];
+
                       final unitID = member['fk_unit_id'];
+                      print("unitID:::$unitID");
                       return ListTile(
                         title: Text(
                           member['member_name'],
@@ -942,10 +953,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           onPressed: () {
                             setState(() {
                               selectedMember = member['member_name'];
-                              selectedUnits = unitID;
+                              selectedUnit = member['fk_unit_id'];
 
                               print(
-                                  "Selected Member: $selectedMember, Selected Unit: $unitID");
+                                  "Selected Member: $selectedMember, Selected Unit: $selectedUnit");
                             });
                           },
                         ),
@@ -968,16 +979,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   ) async {
     print("Request Data Posting selection...");
     print(
-        "postSlection:: selectedUnit:::$unitId, selectedMember:::$selectedMember");
+        "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
 
     try {
       String formattedInTime =
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
       String? userId;
       print(
-          "postSlection:: selectedUnit:::$unitId, selectedMember:::$selectedMember");
+          "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
       if (unitId != null) {
-        print("selectedUnit:::$unitId");
+        print("selectedUnit:::$selectedUnit");
 
         userId = units
             .firstWhere((unit) => unit['unit_flat_number'] == unitId)[
