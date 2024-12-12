@@ -8,6 +8,7 @@ import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -414,6 +415,14 @@ class _SettingsHomeState extends State<SettingsHome> {
             icon: Ionicons.alarm_outline,
             title: 'Configure Duty Alarms',
             subtitle: 'Enable/Disable Duty Alarms',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ConfigureDutyAlarms(),
+                ),
+              );
+            },
           ),
           SecondarySettingsTile(
             title: 'Applicaton Settings',

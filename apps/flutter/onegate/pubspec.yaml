@@ -66,6 +66,7 @@ dependencies:
   keycloak_wrapper: ^1.4.4
   permission_handler: ^11.3.1
   dart_amqp: ^0.3.1
+  alarm: ^4.1.1
 
 
 dev_dependencies:
@@ -99,6 +100,7 @@ flutter:
     - assets/json/gates_mock.json
     - assets/json/media.json
     - assets/json/idcard.json
+    - assets/media/audio/alarm.mp3
 
 
 flutter_native_splash:
