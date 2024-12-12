@@ -49,6 +49,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   File? image;
   Set<int> selectedMembers = {};
+  Set<int> selectedUnits = {};
   String selectedBuilding = '';
   List<dynamic> buildings = [];
   List<dynamic> units = [];
@@ -251,7 +252,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     try {
       setState(() => isLoading = true);
       final userId = GlobalUser.getUserId();
-      print("Company IDDDDDD$userId");
+      print("Company ID UserIDDD$userId");
 
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
@@ -262,6 +263,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       setState(() {
         print("Company IDDDDDD");
         buildings = response.data['data'];
+        // print("Company IDDDDDD$buildings");
         if (buildings.isNotEmpty) {
           selectedBuilding = buildings[0]['soc_building_name'];
           fetchUnits(buildings[0]['id']);
@@ -415,27 +417,30 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           return FloatingActionButton.extended(
             onPressed: () async {
               print(
-                  "FloatingActionButtonunitId Selected Member: $selectedMember");
+                  "FloatingActionButtonunitId Selected Member: $selectedMember, Selected Unit: $selectedUnit");
 
-              print("unitId:::$selectedUnit");
+
+
+              int unitId = preferenceUtils.getUnitId() as int;
+              print("unitId:::$unitId");
 
               if (selectedUnit != null || selectedMember != null) {
-                print("Selected Unit: $selectedUnit");
+                print("Selected Unit: $unitId");
                 print("Selected Member: $selectedMember");
                 print("Post Selection:::");
-                // await postSelection(context);
+                await postSelection(context,selectedMember,unitId);
 
-                preferenceUtils.getTooglevalue() == true
-                    ? showApprovalDialog('Waiting for approval......')
-                    : await postSelection(
-                        context, selectedMember, selectedUnit);
+                // preferenceUtils.getTooglevalue() == true
+                //     ? showApprovalDialog('Waiting for approval......')
+                //     : await postSelection(
+                //         context, selectedMember, unitId);
               } else {
                 print("No selection made");
               }
             },
             label: Text(
               selectedUnit != null
-                  ? "Selected Unit: $selectedUnit"
+                  ? "Selected Unit: $selectedUnits"
                   : selectedMember != null
                       ? "Selected Member: $selectedMember"
                       : "No Selection",
@@ -679,7 +684,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               itemCount: filteredMembers.length,
               itemBuilder: (context, index) {
                 final member = filteredMembers[index];
-                final unitId = member['fk_unit_id']?.toString() ?? 'N/A';
+                final unitId = member['fk_unit_id'] ?? 'N/A';
+
+
 
                 final isSelected =
                     selectedMembers.contains(member['unit_flat_number']);
@@ -721,10 +728,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   ? Colors.green
                                   : null,
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               // unitId
                               print("ListView.builder unitId:::$unitId");
-
+                              await preferenceUtils.saveUnitId(unitId);
+                             print("ListView Unit_IDDDDDDDDDD$unitId");
                               final updatedMembers = Set<String>.from(selectedMembers);
                               if (selectedMembers.contains(firstName)) {
                                 updatedMembers.remove(firstName);
@@ -793,11 +801,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               itemCount: units.length,
               itemBuilder: (context, index) {
                 final unit = units[index]['unit_flat_number'];
-                final isSelected = selectedUnit == unit;
+                final isSelected = selectedUnits == unit;
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      selectedUnit = unit;
+                      selectedUnits = unit;
                       selectedMember = null;
                     });
                   },
@@ -934,10 +942,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           onPressed: () {
                             setState(() {
                               selectedMember = member['member_name'];
-                              selectedUnit = unitID;
+                              selectedUnits = unitID;
 
                               print(
-                                  "Selected Member: $selectedMember, Selected Unit: $selectedUnit");
+                                  "Selected Member: $selectedMember, Selected Unit: $unitID");
                             });
                           },
                         ),
@@ -956,23 +964,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> postSelection(
     BuildContext context,
     selectedMember,
-    selectedUnit,
+    unitId,
   ) async {
     print("Request Data Posting selection...");
     print(
-        "postSlection:: selectedUnit:::$selectedUnit, selectedMember:::$selectedMember");
+        "postSlection:: selectedUnit:::$unitId, selectedMember:::$selectedMember");
 
     try {
       String formattedInTime =
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
       String? userId;
       print(
-          "postSlection:: selectedUnit:::$selectedUnit, selectedMember:::$selectedMember");
-      if (selectedUnit != null) {
-        print("selectedUnit:::$selectedUnit");
+          "postSlection:: selectedUnit:::$unitId, selectedMember:::$selectedMember");
+      if (unitId != null) {
+        print("selectedUnit:::$unitId");
 
         userId = units
-            .firstWhere((unit) => unit['unit_flat_number'] == selectedUnit)[
+            .firstWhere((unit) => unit['unit_flat_number'] == unitId)[
                 'fk_unit_id']
             .toString();
         print("c::$userId");
