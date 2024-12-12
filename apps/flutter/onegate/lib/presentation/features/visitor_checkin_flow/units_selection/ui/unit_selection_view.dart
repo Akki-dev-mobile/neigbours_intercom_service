@@ -63,9 +63,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   List<dynamic> _filteredMembers = [];
   List<dynamic> _allMembers = [];
   final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
-      ValueNotifier([]);
+  ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
-  final ValueNotifier<Set<String>> _selectedUnitsNotifier = ValueNotifier({});
+  final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
 
   @override
   void initState() {
@@ -122,7 +122,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         settings: ConnectionSettings(
           host: "65.1.230.119",
           authProvider:
-              const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
+          const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
         ),
       );
 
@@ -316,7 +316,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             'unit_id': null,
             'current_tab': 'approved'
           });
-      log("response:::$response");
+      // log("soc units list:::$response");
       return response.data['data'];
     } catch (e) {
       print('Error fetching members: $e');
@@ -342,7 +342,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
             return SizedBox(
-              height: MediaQuery.of(context).size.height,
+              height: MediaQuery
+                  .of(context)
+                  .size
+                  .height,
               child: Column(
                 children: [
                   _buildSearchField(context),
@@ -421,14 +424,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   "FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
 
 
-
-
-
               if (selectedUnits != null || selectedMember != null) {
                 print("Selected Unit: $selectedUnits");
                 print("Selected Member: $selectedMember");
                 print("Post Selection:::");
-                await postSelection(context,selectedMember,selectedUnit);
+                await postSelection(context, selectedMember, selectedUnits);
 
                 // preferenceUtils.getTooglevalue() == true
                 //     ? showApprovalDialog('Waiting for approval......')
@@ -442,8 +442,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               selectedUnit != null
                   ? "Selected Unit: $selectedUnit"
                   : selectedMember != null
-                      ? "Selected Member: $selectedMember"
-                      : "No Selection",
+                  ? "Selected Member: $selectedMember"
+                  : "No Selection",
             ),
             icon: Icon(Icons.navigate_next),
           );
@@ -455,26 +455,38 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Widget _buildSearchField(BuildContext context) {
     return CustomForm.textField(
       'Search Members',
-      titleColor: Theme.of(context).colorScheme.onSurface,
-      hintColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      titleColor: Theme
+          .of(context)
+          .colorScheme
+          .onSurface,
+      hintColor: Theme
+          .of(context)
+          .colorScheme
+          .onSurface
+          .withOpacity(0.5),
       hintText: 'Search Members',
       textController: _searchController,
       onChanged: (_) {
-        _searchController.text.trim().length >= 3
+        _searchController.text
+            .trim()
+            .length >= 3
             ? _filterMembers()
             : _filteredMembersNotifier.value = _allMembers;
       },
       suffixIcon: _searchController.text.isNotEmpty
           ? IconButton(
-              icon: Icon(
-                Ionicons.close,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              onPressed: () {
-                _searchController.clear();
-                _filteredMembersNotifier.value = _allMembers;
-              },
-            )
+        icon: Icon(
+          Ionicons.close,
+          color: Theme
+              .of(context)
+              .colorScheme
+              .onSurface,
+        ),
+        onPressed: () {
+          _searchController.clear();
+          _filteredMembersNotifier.value = _allMembers;
+        },
+      )
           : null,
     );
   }
@@ -687,73 +699,87 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 final unitId = member['fk_unit_id'] ?? 'N/A';
 
 
-
                 final isSelected =
-                    selectedMembers.contains(member['unit_flat_number']);
+                selectedMembers.contains(member['unit_flat_number']);
 
                 return ExpansionTile(
                   title: Text(
                     member['unit_flat_number'] ?? 'N/A',
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .bodyMedium!
+                        .copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                   subtitle: Text(
                     'Unit ID: $unitId',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .bodySmall,
                   ),
                   children: (member['member_details'] as List<dynamic>?)
-                          ?.map<Widget>((detail) {
-                        final firstName = detail['member_first_name'] ?? 'N/A';
-                        final lastName =
-                            detail['member_last_name']?.toString() ?? 'N/A';
-                        final userId = detail['user_id']?.toString() ?? 'N/A';
+                      ?.map<Widget>((detail) {
+                    final firstName = detail['member_first_name'] ?? 'N/A';
+                    final lastName =
+                        detail['member_last_name']?.toString() ?? 'N/A';
+                    final userId = detail['user_id']?.toString() ?? 'N/A';
 
-                        return ListTile(
-                          title: Text(
-                            'First Name: $firstName',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          subtitle: Text(
-                            'Last Name: $lastName\nUser ID: $userId',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          trailing: IconButton(
-                            icon: Icon(
-                              selectedMembers.contains(firstName)
-                                  ? Ionicons.checkmark_circle
-                                  : Icons.add_circle_outline,
-                              color: selectedMembers.contains(firstName)
-                                  ? Colors.green
-                                  : null,
-                            ),
-                            onPressed: () async {
-                              // unitId
-                              print("ListView.builder unitId:::$unitId");
-                              await preferenceUtils.saveUnitId(unitId);
-                             print("ListView Unit_IDDDDDDDDDD$unitId");
-                              final updatedMembers = Set<String>.from(selectedMembers);
-                              final updateUnits = Set<String>.from(selectedUnits);
-                              if(selectedUnits.contains(unitId)){
-                                updateUnits.remove(unitId);
-                              }
-                              else{
-                                selectedUnits.add(unitId);
+                    return ListTile(
+                      title: Text(
+                        'First Name: $firstName',
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .bodyMedium,
+                      ),
+                      subtitle: Text(
+                        'Last Name: $lastName\nUser ID: $userId',
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .bodySmall,
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(
+                          selectedMembers.contains(firstName)
+                              ? Ionicons.checkmark_circle
+                              : Icons.add_circle_outline,
+                          color: selectedMembers.contains(firstName)
+                              ? Colors.green
+                              : null,
+                        ),
+                        onPressed: () async {
+                          // unitId
+                          print("ListView.builder unitId:::$unitId");
+                          print(
+                              "ListView Unit_IDDDDDDDDDD $unitId, Type: ${unitId
+                                  .runtimeType}");
+                          final updatedMembers = Set<String>.from(
+                              selectedMembers);
+                          if (selectedMembers.contains(firstName)) {
+                            updatedMembers.remove(firstName);
+                          } else {
+                            updatedMembers.add(firstName);
+                          }
+                          _selectedMembersNotifier.value = updatedMembers;
 
-                              }
-                              if (selectedMembers.contains(firstName)) {
-                                updatedMembers.remove(firstName);
-                              } else {
-                                updatedMembers.add(firstName);
-                              }
+                          final updateUnits = Set<int>.from(selectedUnits);
+                          if (selectedUnits.contains(unitId)) {
+                            updateUnits.remove(unitId);
+                          }
+                          else {
+                            selectedUnits.add(unitId);
+                          }
 
-                              _selectedMembersNotifier.value = updatedMembers;
-                              _selectedUnitsNotifier.value = updateUnits;
-                            },
-                          ),
-                        );
-                      }).toList() ??
+                          _selectedUnitsNotifier.value = updateUnits;
+                        },
+                      ),
+                    );
+                  }).toList() ??
                       [
                         const Text('No details available')
                       ], // Fallback if details are null
@@ -783,7 +809,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               setState(() {
                 selectedBuilding = value!;
                 final buildingId = buildings.firstWhere(
-                    (building) => building['soc_building_name'] == value)['id'];
+                        (building) =>
+                    building['soc_building_name'] == value)['id'];
                 fetchUnits(buildingId);
               });
             },
@@ -799,7 +826,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 12,
                 16,
                 12,
-                MediaQuery.of(context).size.height * 0.25,
+                MediaQuery
+                    .of(context)
+                    .size
+                    .height * 0.25,
               ),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
@@ -825,7 +855,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color:
-                          isSelected ? Colors.orange[100] : Colors.transparent,
+                      isSelected ? Colors.orange[100] : Colors.transparent,
                       border: Border.all(
                         color: isSelected ? Colors.orange : Colors.grey,
                         width: 2,
@@ -876,14 +906,24 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           }
 
           return SizedBox(
-            height: MediaQuery.of(context).size.height,
+            height: MediaQuery
+                .of(context)
+                .size
+                .height,
             child: Column(
               children: [
                 CustomForm.textField(
                   'Search Members',
-                  titleColor: Theme.of(context).colorScheme.onSurface,
+                  titleColor: Theme
+                      .of(context)
+                      .colorScheme
+                      .onSurface,
                   hintColor:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  Theme
+                      .of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.5),
                   hintText: 'Search Members',
                   textController: _searchController,
                   suffixIcon: Row(
@@ -892,11 +932,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       IconButton(
                         icon: Icon(
                           Ionicons.search,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: Theme
+                              .of(context)
+                              .colorScheme
+                              .onSurface,
                         ),
                         onPressed: () {
                           final query =
-                              _searchController.text.trim().toLowerCase();
+                          _searchController.text.trim().toLowerCase();
                           setState(() {
                             _filteredMembers = _allMembers.where((member) {
                               final memberName = member['member_name']
@@ -912,17 +955,20 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       ),
                       _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: Icon(
-                                Ionicons.close,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {
-                                  _filteredMembers = _allMembers;
-                                });
-                              },
-                            )
+                        icon: Icon(
+                          Ionicons.close,
+                          color: Theme
+                              .of(context)
+                              .colorScheme
+                              .onSurface,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _filteredMembers = _allMembers;
+                          });
+                        },
+                      )
                           : const SizedBox.shrink(),
                     ],
                   ),
@@ -972,35 +1018,107 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Future<void> postSelection(
-    BuildContext context,
-    selectedMember,
-    unitId,
-  ) async {
+//   Future<void> postSelection(
+//     BuildContext context,
+//     selectedMember,
+//     unitId,
+//   ) async {
+//     print("Request Data Posting selection...");
+//     print(
+//         "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
+//
+//     try {
+//       String formattedInTime =
+//           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+//       String? userId;
+//       print(
+//           "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
+//       if (unitId != null) {
+//         print("selectedUnit:::$selectedUnit");
+//
+//         userId = units
+//             .firstWhere((unit) => unit['unit_flat_number'] == unitId)[
+//                 'fk_unit_id']
+//             .toString();
+//         print("c::$userId");
+//       } else if (selectedMember != null) {
+//         userId = _allMembers
+//             .firstWhere(
+//                 (member) => member['member_name'] == selectedMember)['id']
+//             .toString();
+//       } else {
+//         print("No unit or member selected for user_id");
+//         return;
+//       }
+//
+//       final data = {
+//         'company_id': GlobalUser.getUserId(),
+//         'name': widget.guestname,
+//         'mobile': widget.mobileNumber,
+//         'purpose': "meeting",
+//         'in_time': formattedInTime,
+//         'user_id': userId,
+//         'visitor_count': widget.guestCount?.toString() ?? "1",
+//         'purpose_details': "zomato",
+//         'coming_from': widget.comingFrom ?? "Unknown",
+//       };
+//
+//       print("Request Data: $data");
+//
+//       final response = await Dio().post(
+//         'https://gateapi.cubeone.in/api/send-fcm-notification',
+//         options: Options(headers: {"Content-Type": "application/json"}),
+//         data: data,
+//       );
+//
+//       if (response.statusCode == 200) {
+//         print("FCM notification sent successfully: ${response.data}");
+//         setState(() {
+//           isWaitingForApproval = true; // Show waiting state
+//         });
+//
+//         await showApprovalDialog(approvalStatus);
+//         setupAMQPReceiver();
+//         // Start listening for approval
+//       } else {
+//         print("Failed to send FCM notification: ${response.statusCode}");
+//       }
+//     } catch (e) {
+//       log("Error during posting or sending notification: $e");
+//     }
+//   }
+// }
+  Future<void> postSelection(BuildContext context,
+      Set<String> selectedMembers,
+      Set<int> selectedUnits,) async {
     print("Request Data Posting selection...");
     print(
-        "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
+        "postSlection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
 
     try {
-      String formattedInTime =
-          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-      String? userId;
-      print(
-          "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
-      if (unitId != null) {
-        print("selectedUnit:::$selectedUnit");
+      String formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(
+          DateTime.now());
+      List<String> userIds = [];
 
-        userId = units
-            .firstWhere((unit) => unit['unit_flat_number'] == unitId)[
-                'fk_unit_id']
-            .toString();
-        print("c::$userId");
-      } else if (selectedMember != null) {
-        userId = _allMembers
-            .firstWhere(
-                (member) => member['member_name'] == selectedMember)['id']
-            .toString();
-      } else {
+      // Collect user IDs from selected units
+      for (int unitId in selectedUnits) {
+        final unit = units.firstWhere((unit) => unit['fk_unit_id'] == unitId,
+            orElse: () => null);
+        if (unit != null) {
+          userIds.add(unit['fk_unit_id'].toString());
+        }
+      }
+
+      // Collect user IDs from selected members
+      for (String memberName in selectedMembers) {
+        final member = _allMembers.firstWhere((
+            member) => member['member_name'] == memberName, orElse: () => null);
+        if (member != null) {
+          userIds.add(member['id']);
+        }
+      }
+
+      if (userIds.isEmpty) {
         print("No unit or member selected for user_id");
         return;
       }
@@ -1011,7 +1129,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': userId,
+        'user_ids': userIds,
         'visitor_count': widget.guestCount?.toString() ?? "1",
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",
