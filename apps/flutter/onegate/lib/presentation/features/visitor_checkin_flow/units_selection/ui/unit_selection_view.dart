@@ -427,6 +427,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               if (selectedUnits != null || selectedMember != null) {
                 print("Selected Unit: $selectedUnits");
                 print("Selected Member: $selectedMember");
+                var userId = selectedMember['member_details']['user_id']
+                print("Selected User ID: $userId");
+
                 print("Post Selection:::");
                 await postSelection(context, selectedMember, selectedUnits);
 
@@ -1088,70 +1091,64 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 //     }
 //   }
 // }
-  Future<void> postSelection(BuildContext context,
-      Set<String> selectedMembers,
-      Set<int> selectedUnits,) async {
+  Future<void> postSelection(
+      BuildContext context, Set<String> selectedMembers, Set<int> selectedUnits) async {
     print("Request Data Posting selection...");
     print(
-        "postSlection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
+        "postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
 
     try {
-      String formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(
-          DateTime.now());
-      List<String> userIds = [];
-
-      // Collect user IDs from selected units
-      for (int unitId in selectedUnits) {
-        final unit = units.firstWhere((unit) => unit['fk_unit_id'] == unitId,
-            orElse: () => null);
-        if (unit != null) {
-          userIds.add(unit['fk_unit_id'].toString());
-        }
-      }
-
-      // Collect user IDs from selected members
-      for (String memberName in selectedMembers) {
-        final member = _allMembers.firstWhere((
-            member) => member['member_name'] == memberName, orElse: () => null);
-        if (member != null) {
-          userIds.add(member['id']);
-        }
-      }
-
-      if (userIds.isEmpty) {
-        print("No unit or member selected for user_id");
+      // Ensure only one unit is processed
+      if (selectedUnits.length != 1) {
+        print("Request skipped: Exactly one unit must be selected.");
+        print("Returning success as no posting is required.");
         return;
       }
 
+      // Extract the single unit ID
+      int unitId = selectedUnits.first;
+
+      String formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
+      // Prepare the request data
       final data = {
-        'company_id': GlobalUser.getUserId(),
+        'company_id':  GlobalUser.getUserId().toString(),
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_ids': userIds,
+        'user_id': "77525", // Single unit ID
         'visitor_count': widget.guestCount?.toString() ?? "1",
+        // widget.guestCount?.toString() ?? "1",
+
+
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",
       };
 
-      print("Request Data: $data");
+      print("Request Data:");
+      data.forEach((key, value) {
+        print("$key: $value (Type: ${value.runtimeType})");
+      });
 
+
+
+      // Send the request
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/send-fcm-notification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: data,
       );
 
+      // Handle response
       if (response.statusCode == 200) {
         print("FCM notification sent successfully: ${response.data}");
-        setState(() {
-          isWaitingForApproval = true; // Show waiting state
-        });
-
-        await showApprovalDialog(approvalStatus);
-        setupAMQPReceiver();
-        // Start listening for approval
+        // setState(() {
+        //   isWaitingForApproval = true; // Show waiting state
+        // });
+        //
+        // await showApprovalDialog(approvalStatus);
+        // setupAMQPReceiver(); // Start listening for approval
       } else {
         print("Failed to send FCM notification: ${response.statusCode}");
       }
@@ -1159,4 +1156,5 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       log("Error during posting or sending notification: $e");
     }
   }
+
 }
