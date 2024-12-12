@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
@@ -32,16 +32,15 @@ class RemoteDataSource {
     this._dio3,
   );
 
+  final gateStorage = GateStorage();
+
   Future<Map<String, dynamic>> loginUser() async {
     try {
-      // Step 1: Login using Keycloak Wrapper
       bool isLoggedIn = await keycloakWrapper.login();
 
-      // Step 2: Check if login was successful and access token is available
       if (isLoggedIn && keycloakWrapper.accessToken != null) {
         log('Keycloak login successful. Access Token: ${keycloakWrapper.accessToken}');
 
-        // Step 3: Use Keycloak access token to call your backend API
         final response = await _dio2?.post(
           '/api/gatelogin',
           options: Options(
@@ -52,7 +51,6 @@ class RemoteDataSource {
           ),
         );
 
-        // Step 4: Handle the response
         if (response?.statusCode == 200) {
           var data = response?.data?['data'];
           log('Login response: $data');
@@ -71,17 +69,16 @@ class RemoteDataSource {
 
   Future<List<dynamic>> fetchGates(int societyId) async {
     try {
-      // Retrieve the access token from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('access_token');
-
+      log("here i am2 ${gateStorage.getSocietyId()}");
       if (accessToken == null) {
         throw Exception('Access token not found. Please log in again.');
       }
 
       final queryParams = {
-        'company_id': GlobalUser.getUserId(),
-      }; // Ensure `societyId` is an int
+        'company_id': await gateStorage.getSocietyId(),
+      };
 
       final response = await Dio().get(
         'https://gateapi.cubeone.in/api/admin/gates/list',
@@ -106,8 +103,10 @@ class RemoteDataSource {
 
   Future<List<dynamic>> fetchSocieties(String userId) async {
     try {
-      var id = GlobalUser.socId;
-      print("id  $id");
+      // var id = gateStorage.getSocietyId();
+
+      // print("society id -- $id");
+      // print("id  $id");
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('access_token');
 
@@ -115,10 +114,10 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
       print(
-        'https://gateapi.cubeone.in/api/admin/companies/list/$id',
+        'https://gateapi.cubeone.in/api/admin/companies/list/$userId',
       );
       final response = await Dio().get(
-        'https://gateapi.cubeone.in/api/admin/companies/list/$id',
+        'https://gateapi.cubeone.in/api/admin/companies/list/$userId',
         options: Options(
           headers: {
             'Authorization': 'Bearer $accessToken',
@@ -230,7 +229,7 @@ class RemoteDataSource {
 
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
-      final userId = GlobalUser.getUserId();
+      final userId = gateStorage.getSocietyId();
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('access_token');
 
@@ -259,7 +258,7 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getMemberUnit(int? companyId, int? buildingId) async {
     try {
-      final userId = GlobalUser.getUserId();
+      final userId = gateStorage.getSocietyId();
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
@@ -291,9 +290,11 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<dynamic>> getMember(int companyId,) async {
+  Future<List<dynamic>> getMember(
+    int companyId,
+  ) async {
     try {
-      final userId = GlobalUser.getUserId();
+      final userId = gateStorage.getSocietyId();
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
@@ -431,7 +432,7 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getUnitsList(int companyId) async {
     try {
-      final userId = GlobalUser.getUserId();
+      final userId = gateStorage.getSocietyId();
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
@@ -449,7 +450,7 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getBuildingsList(int companyId) async {
     try {
-      final userId = GlobalUser.getUserId();
+      final userId = gateStorage.getSocietyId();
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
@@ -481,7 +482,7 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getMembersList(int companyId) async {
     try {
-      final userId = GlobalUser.getUserId();
+      final userId = gateStorage.getSocietyId();
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
@@ -498,8 +499,7 @@ class RemoteDataSource {
         },
         options: Options(
           headers: {
-            'Authorization':
-                'Bearer $accessToken', // Pass the access token here
+            'Authorization': 'Bearer $accessToken',
           },
         ),
       );
