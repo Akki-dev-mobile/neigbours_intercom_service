@@ -7,8 +7,11 @@ import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
 // import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
@@ -68,6 +71,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
   int? companyId;
+  final remoteDataSource = RemoteDataSource(
+      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
 
   @override
   void initState() {
@@ -932,149 +937,146 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-//   Future<void> postSelection(
-//     BuildContext context,
-//     selectedMember,
-//     unitId,
-//   ) async {
-//     print("Request Data Posting selection...");
-//     print(
-//         "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
-//
-//     try {
-//       String formattedInTime =
-//           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-//       String? userId;
-//       print(
-//           "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
-//       if (unitId != null) {
-//         print("selectedUnit:::$selectedUnit");
-//
-//         userId = units
-//             .firstWhere((unit) => unit['unit_flat_number'] == unitId)[
-//                 'fk_unit_id']
-//             .toString();
-//         print("c::$userId");
-//       } else if (selectedMember != null) {
-//         userId = _allMembers
-//             .firstWhere(
-//                 (member) => member['member_name'] == selectedMember)['id']
-//             .toString();
-//       } else {
-//         print("No unit or member selected for user_id");
-//         return;
-//       }
-//
-//       final data = {
-//         'company_id': GlobalUser.getUserId(),
-//         'name': widget.guestname,
-//         'mobile': widget.mobileNumber,
-//         'purpose': "meeting",
-//         'in_time': formattedInTime,
-//         'user_id': userId,
-//         'visitor_count': widget.guestCount?.toString() ?? "1",
-//         'purpose_details': "zomato",
-//         'coming_from': widget.comingFrom ?? "Unknown",
-//       };
-//
-//       print("Request Data: $data");
-//
-//       final response = await Dio().post(
-//         'https://gateapi.cubeone.in/api/send-fcm-notification',
-//         options: Options(headers: {"Content-Type": "application/json"}),
-//         data: data,
-//       );
-//
-//       if (response.statusCode == 200) {
-//         print("FCM notification sent successfully: ${response.data}");
-//         setState(() {
-//           isWaitingForApproval = true; // Show waiting state
-//         });
-//
-//         await showApprovalDialog(approvalStatus);
-//         setupAMQPReceiver();
-//         // Start listening for approval
-//       } else {
-//         print("Failed to send FCM notification: ${response.statusCode}");
-//       }
-//     } catch (e) {
-//       log("Error during posting or sending notification: $e");
-//     }
-//   }
-// }
   Future<void> postSelection(BuildContext context, Set<String> selectedMembers,
       Set<int> selectedUnits) async {
     print("Request Data Posting selection...");
     print(
         "postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
 
-    try {
-      // Ensure only one user ID is processed
-      if (selectedUserIds.length != 1) {
-        print("Request skipped: Exactly one user ID must be selected.");
-        print("Returning success as no posting is required.");
-
-        await _showApprovedDialog(context);
-        return;
-      }
-
-      // Ensure only one unit is processed
-      if (selectedUnits.length != 1) {
-        print("Request skipped: Exactly one unit must be selected.");
-        print("Returning success as no posting is required.");
-        return;
-      }
-
-      // Extract the single user ID and unit ID
-      String userId = selectedUserIds.first;
+    // Validation: Ensure exactly one user ID and one unit
+    if (selectedUserIds.length != 1) {
+      print("Request skipped: Exactly one user ID must be selected.");
+      print("Returning success as no posting is required.");
 
       String formattedInTime =
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
-      // Prepare the request data
-      final data = {
-        'company_id': companyId.toString(),
-        'name': widget.guestname,
-        'mobile': widget.mobileNumber,
-        'purpose': "meeting",
-        'in_time': formattedInTime,
-        'user_id': userId, // Single user ID
-        'visitor_count': widget.guestCount?.toString() ?? "1",
-        'purpose_details': "zomato",
-        'coming_from': widget.comingFrom ?? "Unknown",
-      };
+      // Create a VisitorLog object
+      final c.VisitorLog data = c.VisitorLog(
+        visitor_id:
+            selectedUserIds.isNotEmpty ? int.parse(selectedUserIds.first) : 0,
+        visitor_purpose_category_id: 1, // Example category ID
+        visitor_purpose_sub_category_id: null,
+        visitor_count: widget.guestCount ?? 1,
+        visitor_check_in: DateTime.now(),
+        visitor_check_out: null,
+        visitor_card_number: null,
+        visitor_coming_from: widget.comingFrom ?? "Unknown",
+        visitor_card_id: null,
+        company_id: companyId ?? 0,
+        is_checked_out: false,
+      );
 
-      print("Request Data:");
-      data.forEach((key, value) {
-        print("$key: $value (Type: ${value.runtimeType})");
-      });
+      await _showApprovedDialog(context, data);
+      return;
+    }
 
+    if (selectedUnits.length != 1) {
+      print("Request skipped: Exactly one unit must be selected.");
+      print("Returning success as no posting is required.");
+      return;
+    }
+
+    final String userId = selectedUserIds.first;
+    final String formattedInTime =
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
+    // Prepare the request data
+    final data = {
+      'company_id': companyId.toString(),
+      'name': widget.guestname,
+      'mobile': widget.mobileNumber,
+      'purpose': "meeting",
+      'in_time': formattedInTime,
+      'user_id': userId, // Single user ID
+      'visitor_count': widget.guestCount?.toString() ?? "1",
+      'purpose_details': "zomato",
+      'coming_from': widget.comingFrom ?? "Unknown",
+    };
+
+    print("Request Data:");
+    data.forEach((key, value) {
+      print("$key: $value (Type: ${value.runtimeType})");
+    });
+
+    try {
       // Send the request
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/send-fcm-notification',
         options: Options(headers: {"Content-Type": "application/json"}),
-        data: data,
+        data: data.toJson(), // Convert VisitorLog to JSON
       );
 
-      // Handle response
       if (response.statusCode == 200) {
         print("FCM notification sent successfully: ${response.data}");
 
         setState(() {
-          isWaitingForApproval = true; // Show waiting state
+          isWaitingForApproval = true;
         });
 
         await showApprovalDialog(approvalStatus);
         setupAMQPReceiver();
       } else {
-        print("Failed to send FCM notification: ${response.statusCode}");
+        print("Unhandled response status code: ${response.statusCode}");
+      }
+    } on DioError catch (e) {
+      if (e.response?.statusCode == 400) {
+        // Show toast message
+        Fluttertoast.showToast(
+          msg: "Not an oneapp user",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 2,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        // Create a VisitorLog object
+        final c.VisitorLog data = c.VisitorLog(
+          visitor_id:
+              selectedUserIds.isNotEmpty ? int.parse(selectedUserIds.first) : 0,
+          visitor_purpose_category_id: 1, // Example category ID
+          visitor_purpose_sub_category_id: null,
+          visitor_count: widget.guestCount ?? 1,
+          visitor_check_in: DateTime.now(),
+          visitor_check_out: null,
+          visitor_card_number: null,
+          visitor_coming_from: widget.comingFrom ?? "Unknown",
+          visitor_card_id: null,
+          company_id: companyId ?? 0,
+          is_checked_out: false,
+        );
+
+        await _showApprovedDialog(context, data);
+      } else {
+        log("Error during posting or sending notification: ${e.response?.statusCode} - ${e.response?.data}");
+        Fluttertoast.showToast(
+          msg:
+              "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 2,
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
       }
     } catch (e) {
-      log("Error during posting or sending notification: $e");
+      log("Unexpected error during posting or sending notification: $e");
+      Fluttertoast.showToast(
+        msg: "An unexpected error occurred. Please try again.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 2,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
   }
 
-  Future<void> _showApprovedDialog(BuildContext context) async {
+  Future<void> _showApprovedDialog(
+      BuildContext context, c.VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissal by tapping outside
@@ -1105,8 +1107,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 ),
                 const SizedBox(height: 16),
                 CustomLargeBtn(
-                    onPressed: () {
-                      Navigator.pop(dialogContext); // Close the dialog
+                    onPressed: () async {
+                      Navigator.pop(dialogContext);
+
+                      await remoteDataSource.checkIn(data);
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(

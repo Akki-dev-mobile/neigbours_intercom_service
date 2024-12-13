@@ -212,6 +212,7 @@ class RemoteDataSource {
   }
 
   Future<VisitorLog?> checkIn(VisitorLog visitorLog) async {
+    print("jfnjdnfdfdnn");
     try {
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       for (BuildingAssignment buildingAssignment
