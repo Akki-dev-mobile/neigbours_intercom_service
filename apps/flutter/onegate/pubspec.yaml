@@ -100,6 +100,7 @@ flutter:
     - assets/json/gates_mock.json
     - assets/json/media.json
     - assets/json/idcard.json
+    - assets/json/approved.json
     - assets/media/audio/alarm.mp3
 
 

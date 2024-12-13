@@ -13,6 +13,7 @@ import 'package:get_it/get_it.dart';
 // import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:lottie/lottie.dart';
 import 'package:onegate_client/onegate_client.dart' as c;
 
 class UnitSelectionView extends StatefulWidget {
@@ -46,8 +47,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   int? selectedUnit;
   int? selectedMember;
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
-  final gateStorage = GateStorage();
-
+  final GateStorage gateStorage = GateStorage();
   File? image;
   Set<int> selectedMembers = {};
   Set<int> selectedUnits = {};
@@ -67,6 +67,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
+  int? companyId;
 
   @override
   void initState() {
@@ -76,6 +77,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     // setupAMQPReceiver(); // Initialize AMQP receiver
     print("rohit${widget.mobileNumber}");
+    _fetchCompanyId();
   }
 
   Future<void> _initializeMembers() async {
@@ -84,30 +86,29 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _filteredMembersNotifier.value = members;
   }
 
+  Future<void> _fetchCompanyId() async {
+    companyId = await gateStorage.getSocietyId();
+    setState(() {});
+  }
+
   void _filterMembers() {
     final query = _searchController.text.trim().toLowerCase();
-
     if (query.length >= 3) {
-      setState(() {
-        _filteredMembersNotifier.value = _allMembers.where((member) {
-          final memberName =
-              member['member_name']?.toLowerCase().contains(query) ?? false;
-          final unitNumber =
-              member['unit_flat_number']?.toLowerCase().contains(query) ??
-                  false;
-          final unitID =
-              member['fk_unit_id']?.toString().toLowerCase().contains(query) ??
-                  false;
+      _filteredMembersNotifier.value = _allMembers.where((member) {
+        final memberName =
+            member['member_name']?.toLowerCase().contains(query) ?? false;
+        final unitNumber =
+            member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
 
-          print("unitID:::$unitID");
+        final unitID =
+            member['fk_unit_id']?.toString().toLowerCase().contains(query) ??
+                false;
+        print("unitID:::$unitID");
 
-          return memberName || unitNumber || unitID;
-        }).toList();
-      });
+        return memberName || unitNumber;
+      }).toList();
     } else {
-      setState(() {
-        _filteredMembersNotifier.value = _allMembers;
-      });
+      _filteredMembersNotifier.value = _allMembers;
     }
   }
 
@@ -259,14 +260,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> fetchBuildings() async {
     try {
       setState(() => isLoading = true);
-      final userId = gateStorage.getUserId();
-      print("Company IDDDDDD$userId");
 
-      if (userId == null) {
-        throw Exception("Company ID (userId) is null");
-      }
       final response = await _dio.get(
-        'https://societybackend.cubeone.in/api/admin/building/list?company_id=$userId',
+        'https://societybackend.cubeone.in/api/admin/building/list?company_id=$companyId',
       );
       setState(() {
         print("Company IDDDDDD");
@@ -286,14 +282,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> fetchUnits(int buildingId) async {
     try {
       setState(() => isUnitsLoading = true);
-      final userId = gateStorage.getUserId();
-      if (userId == null) {
-        throw Exception("Company ID (userId) is null");
-      }
+
       final response = await _dio.get(
         'https://societybackend.cubeone.in/api/admin/units/list',
         queryParameters: {
-          'company_id': userId,
+          'company_id': companyId,
           'building_id': buildingId,
           'per_page': 1000,
         },
@@ -311,15 +304,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<List<dynamic>> getMember() async {
     try {
-      final userId = gateStorage.getUserId();
-
-      if (userId == null) {
-        throw Exception("Company ID (userId) is null");
-      }
       final response = await _dio.get(
           'https://societybackend.cubeone.in/api/admin/member/list',
           queryParameters: {
-            'company_id': userId,
+            'company_id': companyId.toString(),
             'unit_id': null,
             'current_tab': 'approved'
           });
@@ -654,8 +642,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               itemCount: filteredMembers.length,
               itemBuilder: (context, index) {
                 final member = filteredMembers[index];
-                final unitId = member['fk_unit_id']?.toString() ?? 'N/A';
-                print("ninad nigga $unitId");
+                final unitId = member['fk_unit_id'] ?? 'N/A';
+
                 final isSelected =
                     selectedMembers.contains(member['unit_flat_number']);
 
@@ -673,7 +661,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   ),
                   children: (member['member_details'] as List<dynamic>?)
                           ?.map<Widget>((detail) {
-                        print(member['member_details']);
                         final firstName = detail['member_first_name'] ?? 'N/A';
                         final lastName =
                             detail['member_last_name']?.toString() ?? 'N/A';
@@ -697,10 +684,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   ? Colors.green
                                   : null,
                             ),
-                            onPressed: () {
-                              // unitId
-                              print("ListView.builder unitId:::$unitId");
-
+                            onPressed: () async {
+                              // Add/remove firstName in selectedMembers
                               final updatedMembers =
                                   Set<String>.from(selectedMembers);
                               if (selectedMembers.contains(firstName)) {
@@ -1028,8 +1013,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       if (selectedUserIds.length != 1) {
         print("Request skipped: Exactly one user ID must be selected.");
         print("Returning success as no posting is required.");
-        await Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const GateDashboardView()));
+
+        await _showApprovedDialog(context);
         return;
       }
 
@@ -1048,7 +1033,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       // Prepare the request data
       final data = {
-        'company_id': gateStorage.getUserId(),
+        'company_id': companyId.toString(),
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
@@ -1087,5 +1072,53 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     } catch (e) {
       log("Error during posting or sending notification: $e");
     }
+  }
+
+  Future<void> _showApprovedDialog(BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissal by tapping outside
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/json/approved.json',
+                  width: 150,
+                  height: 150,
+                  repeat: false,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "Approved!",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CustomLargeBtn(
+                    onPressed: () {
+                      Navigator.pop(dialogContext); // Close the dialog
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => GateDashboardView()),
+                      );
+                    },
+                    text: "Continue")
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
