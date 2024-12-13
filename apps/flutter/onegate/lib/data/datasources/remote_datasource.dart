@@ -212,18 +212,30 @@ class RemoteDataSource {
   }
 
   Future<VisitorLog?> checkIn(VisitorLog visitorLog) async {
-    print("jfnjdnfdfdnn");
+    print("Attempting check-in...");
     try {
+      print("VisitorLog Data: ${visitorLog.toJson()}");
+
       final result = await client.visitorLog.createVisitorLog(visitorLog);
-      for (BuildingAssignment buildingAssignment
-          in visitorLog.visitor_building_assignment!) {
-        buildingAssignment.visitor_log_id = result.id;
-        await createBuildingAssignment(buildingAssignment);
+      print("VisitorLog created: ${result.toJson()}");
+
+      if (visitorLog.visitor_building_assignment != null) {
+        for (BuildingAssignment buildingAssignment
+            in visitorLog.visitor_building_assignment!) {
+          buildingAssignment.visitor_log_id = result.id;
+          print("Creating BuildingAssignment: ${buildingAssignment.toJson()}");
+          await createBuildingAssignment(buildingAssignment);
+        }
       }
-      print("checkIn: ${result.toString()}");
+
+      print("Check-in successful: ${result.toString()}");
       return result;
+    } on ServerpodClientException catch (e) {
+      print("Failed call: ${e.message}");
+      print("Call log ID: ${e.message}");
+      print("Status Code: ${e.statusCode}");
     } catch (e) {
-      print(e.toString());
+      print("Unexpected error during check-in: $e");
     }
     return null;
   }

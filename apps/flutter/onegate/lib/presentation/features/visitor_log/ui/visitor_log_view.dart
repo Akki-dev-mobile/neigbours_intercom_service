@@ -10,6 +10,7 @@ import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -18,9 +19,6 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:random_avatar/random_avatar.dart';
-
-import '../../gate_selection/ui/gate_selection_view.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -185,11 +183,19 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         shrinkWrap: true,
                         itemCount: filteredVisitors.length,
                         itemBuilder: (context, index) {
-                          String unitList = filteredVisitors[index]
-                              .visitor_building_assignment![0]
-                              .unit_id
-                              .map((units) => units.toString())
-                              .join(', ');
+                          String unitList = '';
+                          if (filteredVisitors[index]
+                                      .visitor_building_assignment !=
+                                  null &&
+                              filteredVisitors[index]
+                                  .visitor_building_assignment!
+                                  .isNotEmpty) {
+                            unitList = filteredVisitors[index]
+                                .visitor_building_assignment![0]
+                                .unit_id
+                                .map((units) => units.toString())
+                                .join(', ');
+                          }
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: Card(
@@ -211,8 +217,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                           ? Text(
                                               filteredVisitors[index]
                                                   .visitor!
-                                                  .name
-                                                  .substring(0, 1),
+                                                  .name,
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodyMedium,
