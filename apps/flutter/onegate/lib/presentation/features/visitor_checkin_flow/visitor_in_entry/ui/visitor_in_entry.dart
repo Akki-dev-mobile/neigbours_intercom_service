@@ -3,7 +3,6 @@
 import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 // import 'package:cached_network_image/cached_networ k_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -205,11 +204,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           }
         },
         builder: (context, state) {
-          if (_isInitialLoad && state is VisitorInEntryLoadingState) {
-            return LoaderView();
-          }
-          _isInitialLoad = false; // Set to false after initial load
-
           return MyScrollView(
             backButtonPressed: () {
               Navigator.pop(context);

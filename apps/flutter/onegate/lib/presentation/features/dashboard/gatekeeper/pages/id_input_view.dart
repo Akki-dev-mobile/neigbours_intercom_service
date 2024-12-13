@@ -45,6 +45,20 @@ List<String> listPassAlpha = [
 ];
 
 class _IdInputViewState extends State<IdInputView> {
+  bool isLoading = false;
+
+  void startLoading() {
+    setState(() {
+      isLoading = true;
+    });
+  }
+
+  void stopLoading() {
+    setState(() {
+      isLoading = false;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -77,74 +91,70 @@ class _IdInputViewState extends State<IdInputView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
-      bloc: gateDashboardBloc,
-      listenWhen: (previous, current) =>
-          current is GatekeeperDashboardActionState,
-      buildWhen: (previous, current) =>
-          current is! GatekeeperDashboardActionState,
-      listener: (context, state) {
-        switch (state.runtimeType) {
-          case GatekeeperDashboardErrorState:
-            final errorState = state as GatekeeperDashboardErrorState;
-            Fluttertoast.showToast(
-              msg: errorState.message!,
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
-              timeInSecForIosWeb: 1,
-              backgroundColor: Colors.red,
-              textColor: Colors.white,
-              fontSize: 16.0,
-            );
-            break;
-          case OpenPurposeDialogState:
-            final dialogState = state as OpenPurposeDialogState;
-            showModalBottomSheet(
-              useSafeArea: true,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              context: context,
-              builder: (context) => ImageGridBottomSheet(
-                  purposeCategories: dialogState.purposeCategories!,
-                  gatekeeperDashboardBloc: gateDashboardBloc),
-            );
-            break;
-          case SaveSearchedVisitorState:
-            final saveVisitorState = state as SaveSearchedVisitorState;
-            searchedVisitor = saveVisitorState.visitor;
-            break;
-          case InputPutViewNextClickedState:
-            // gateDashboardBloc.add(PurposeNextButtonClickedEvent(
-            //     PurposeCategory(
-            //         id: 1, purpose_category_name: 'GUEST', purpose_img: ''),
-            //     searchedVisitor,
-            //     mobileController.text));
-            break;
-          case NavigateToVisitorDetailsState:
-            final navigateToVisitorDetailsState =
-                state as NavigateToVisitorDetailsState;
-            mobileController.text = '';
-            Navigator.push(
-                context,
-                MaterialPageRoute(
+    return Stack(
+      children: [
+        BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
+          bloc: gateDashboardBloc,
+          listenWhen: (previous, current) =>
+              current is GatekeeperDashboardActionState,
+          buildWhen: (previous, current) =>
+              current is! GatekeeperDashboardActionState,
+          listener: (context, state) {
+            switch (state.runtimeType) {
+              case GatekeeperDashboardErrorState:
+                final errorState = state as GatekeeperDashboardErrorState;
+                Fluttertoast.showToast(
+                  msg: errorState.message!,
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                  timeInSecForIosWeb: 1,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+                break;
+              case OpenPurposeDialogState:
+                final dialogState = state as OpenPurposeDialogState;
+                showModalBottomSheet(
+                  useSafeArea: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  context: context,
+                  builder: (context) => ImageGridBottomSheet(
+                      purposeCategories: dialogState.purposeCategories!,
+                      gatekeeperDashboardBloc: gateDashboardBloc),
+                );
+                break;
+              case SaveSearchedVisitorState:
+                final saveVisitorState = state as SaveSearchedVisitorState;
+                searchedVisitor = saveVisitorState.visitor;
+                break;
+              case InputPutViewNextClickedState:
+                // Example: Set loading state here if needed
+                break;
+              case NavigateToVisitorDetailsState:
+                final navigateToVisitorDetailsState =
+                    state as NavigateToVisitorDetailsState;
+                mobileController.text = '';
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
                     builder: (context) => VisitorsInEntry(
-                          selectedValue: navigateToVisitorDetailsState.purpose,
-                          searchedVisitor:
-                              navigateToVisitorDetailsState.visitor,
-                          mobile: navigateToVisitorDetailsState.mobile,
-                        )));
-        }
-      },
-      builder: (context, state) {
-        switch (state.runtimeType) {
-          case GatekeeperDashboardLoadingState:
-            return LoaderView();
-          default:
+                      selectedValue: navigateToVisitorDetailsState.purpose,
+                      searchedVisitor: navigateToVisitorDetailsState.visitor,
+                      mobile: navigateToVisitorDetailsState.mobile,
+                    ),
+                  ),
+                );
+                break;
+            }
+          },
+          builder: (context, state) {
             return MyScrollView(
               backButtonPressed: () {
                 Navigator.pop(context);
@@ -153,37 +163,7 @@ class _IdInputViewState extends State<IdInputView> {
               pageBody: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ToggleSwitch(
-                  //   cornerRadius: 20.0,
-                  //   borderWidth: 0.5,
-                  //   minWidth: MediaQuery.of(context).size.width * 0.8,
-                  //   minHeight: 50.0,
-                  //   fontSize: 18.0,
-                  //   changeOnTap: true,
-                  //   initialLabelIndex: _currentIndex,
-                  //   activeBgColor: [
-                  //     Theme.of(context).colorScheme.onBackground,
-                  //   ],
-                  //   activeFgColor: Theme.of(context).colorScheme.background,
-                  //   borderColor: [
-                  //     Theme.of(context).colorScheme.onBackground,
-                  //   ],
-                  //   inactiveBgColor: Theme.of(context).colorScheme.background,
-                  //   inactiveFgColor: Theme.of(context).colorScheme.onPrimary,
-                  //   totalSwitches: 2,
-                  //   labels: _labels,
-                  //   onToggle: (index) {
-                  //     setState(() {
-                  //       _currentIndex = index!;
-                  //     });
-                  //     if (kDebugMode) {
-                  //       print('Switched to: $_currentIndex');
-                  //     }
-                  //   },
-                  // ),
-                  SizedBox(height: 20),
-                  // (_currentIndex == 0)
-                  //     ?
+                  const SizedBox(height: 20),
                   Form(
                     key: mobileControllerFormKey,
                     child: CustomForm.textField(
@@ -254,113 +234,8 @@ class _IdInputViewState extends State<IdInputView> {
                               mobileController.text));
                         }
                       },
-                      // validator: (value) {
-                      //   if (value!.isEmpty) {
-                      //     return 'Mobile number is required';
-                      //   } else if (value.length != 10) {
-                      //     return 'Please enter a 10-digit number';
-                      //   }
-                      //   return null;
-                      // },
                     ),
                   ),
-
-                  // : Column(
-                  //     children: [
-                  //       Form(
-                  //         key: passcodeControllerFormKey,
-                  //         child: CustomForm.textField(
-                  //           titleColor:
-                  //               Theme.of(context).colorScheme.onSurface,
-                  //           hintColor:
-                  //               Theme.of(context).colorScheme.onPrimary,
-                  //           "Visitor Passcode",
-                  //           hintText: '123456',
-                  //           textController: passcodeController,
-                  //           textCapitalization:
-                  //               TextCapitalization.characters,
-                  //           length: 6,
-                  //           keyboardType: TextInputType.number,
-                  //           prefixIcon: Padding(
-                  //             padding: EdgeInsets.only(
-                  //               left: 10,
-                  //               right: 20,
-                  //             ),
-                  //             child: CircleAvatar(
-                  //               backgroundColor: Color(0xffFFEBE6),
-                  //               child: Text(
-                  //                 selectedPassAlpha ?? 'A',
-                  //                 style: TextStyle(
-                  //                   color: Colors.black,
-                  //                   fontWeight: FontWeight.bold,
-                  //                 ),
-                  //               ),
-                  //             ),
-                  //           ),
-                  //           suffixIcon: IconButton(
-                  //             onPressed: () {
-                  //               if (passcodeControllerFormKey.currentState!
-                  //                   .validate()) {
-                  //                 // showModalBottomSheet(
-                  //                 //   useSafeArea: true,
-                  //                 //   shape: RoundedRectangleBorder(
-                  //                 //     borderRadius: BorderRadius.only(
-                  //                 //       topLeft: Radius.circular(20),
-                  //                 //       topRight: Radius.circular(20),
-                  //                 //     ),
-                  //                 //   ),
-                  //                 //   backgroundColor: Theme.of(context)
-                  //                 //       .colorScheme
-                  //                 //       .background,
-                  //                 //   context: context,
-                  //                 //   builder: (context) =>
-                  //                 //       ImageGridBottomSheet(),
-                  //                 // );
-                  //               }
-                  //             },
-                  //             icon: Icon(
-                  //               Symbols.done_rounded,
-                  //               color:
-                  //                   Theme.of(context).colorScheme.onSurface,
-                  //             ),
-                  //           ),
-                  //           validator: (value) {
-                  //             if (value!.isEmpty) {
-                  //               return 'Passcode is required';
-                  //             } else if (value.length != 6) {
-                  //               return 'Please enter a 6-digit passcode';
-                  //             }
-                  //             return null;
-                  //           },
-                  //         ),
-                  //       ),
-                  //       ChipsChoice<String>.single(
-                  //         padding: EdgeInsets.symmetric(horizontal: 20),
-                  //         spacing: 20,
-                  //         choiceStyle: C2ChipStyle.outlined(
-                  //           borderWidth: 1,
-                  //           color: Colors.grey,
-                  //           selectedStyle: C2ChipStyle.outlined(
-                  //             overlayColor: Color(0x90C08261),
-                  //             color: Color(0xff0c08261),
-                  //           ),
-                  //         ),
-                  //         choiceCheckmark: true,
-                  //         value: selectedPassAlpha,
-                  //         scrollPhysics: BouncingScrollPhysics(),
-                  //         onChanged: (value) {
-                  //           setState(() {
-                  //             selectedPassAlpha = value;
-                  //           });
-                  //         },
-                  //         choiceItems: C2Choice.listFrom<String, String>(
-                  //           source: listPassAlpha,
-                  //           value: (i, v) => v,
-                  //           label: (i, v) => v,
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   ),
                 ],
               ),
               floatingActionButton: CustomLargeBtn(
@@ -372,8 +247,10 @@ class _IdInputViewState extends State<IdInputView> {
                 },
               ),
             );
-        }
-      },
+          },
+        ),
+        if (isLoading) const LoaderView(), // LoaderView overlay
+      ],
     );
   }
 }

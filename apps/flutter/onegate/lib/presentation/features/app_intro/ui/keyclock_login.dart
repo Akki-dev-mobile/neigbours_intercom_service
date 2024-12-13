@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
@@ -9,8 +10,6 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
-import 'package:flutter_onegate/utils/shared_pref.dart';
-import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:lottie/lottie.dart';
@@ -67,8 +66,6 @@ class _MyAppLoginState extends State<MyAppLogin> {
       _showSnackbar("Failed to initialize Keycloak: $e");
     }
   }
-
-  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
 
   Future<void> login(BuildContext context) async {
     setState(() {
@@ -169,7 +166,6 @@ class _MyAppLoginState extends State<MyAppLogin> {
                 title: Text(societyName ?? 'Unknown Society'),
                 onTap: () async {
                   try {
-                    // Show a loading indicator
                     showDialog(
                       context: context,
                       barrierDismissible: false,
@@ -179,7 +175,6 @@ class _MyAppLoginState extends State<MyAppLogin> {
                         );
                       },
                     );
-
                     selectedSocietyId =
                         societyId; // Ensure this is the resolved ID
                     log("Selected Society ID: $selectedSocietyId");
@@ -434,10 +429,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
             ),
           ),
         ),
-        if (isLoading)
-          Center(
-            child: CircularProgressIndicator(),
-          ),
+        if (isLoading) LoaderView()
       ],
     );
   }
