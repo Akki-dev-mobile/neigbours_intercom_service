@@ -1,15 +1,19 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'dart:developer';
+
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../self_entry/self_home_view.dart';
 import 'settings_gate.dart';
@@ -411,6 +415,14 @@ class _SettingsHomeState extends State<SettingsHome> {
             icon: Ionicons.alarm_outline,
             title: 'Configure Duty Alarms',
             subtitle: 'Enable/Disable Duty Alarms',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ConfigureDutyAlarms(),
+                ),
+              );
+            },
           ),
           SecondarySettingsTile(
             title: 'Applicaton Settings',
@@ -506,17 +518,22 @@ class _SettingsHomeState extends State<SettingsHome> {
               title: 'Logout',
               subtitle: 'Logout from the app',
               onTap: () {
-                _preferenceUtils.setIsLogin(false);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MyAppLogin(),
-                    // LoginView(),
-                  ),
-                );
+                logout(context);
               }),
         ],
       ),
+    );
+  }
+
+  Future<void> logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Clear all stored preferences
+
+    log("User logged out. Navigating to login screen.");
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MyAppLogin()),
     );
   }
 }

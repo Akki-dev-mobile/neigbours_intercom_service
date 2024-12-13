@@ -1,8 +1,10 @@
+import 'package:alarm/alarm.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/approval_Status.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/utils/amqp_receiver.dart';
@@ -17,7 +19,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
-
+  await GateStorage().init();
   await setupDependencies();
   await setupLocator();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

@@ -6,7 +6,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -46,6 +46,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   int? selectedUnit;
   int? selectedMember;
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
+  final gateStorage = GateStorage();
 
   File? image;
   Set<int> selectedMembers = {};
@@ -85,22 +86,28 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   void _filterMembers() {
     final query = _searchController.text.trim().toLowerCase();
+
     if (query.length >= 3) {
-      _filteredMembersNotifier.value = _allMembers.where((member) {
-        final memberName =
-            member['member_name']?.toLowerCase().contains(query) ?? false;
-        final unitNumber =
-            member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
+      setState(() {
+        _filteredMembersNotifier.value = _allMembers.where((member) {
+          final memberName =
+              member['member_name']?.toLowerCase().contains(query) ?? false;
+          final unitNumber =
+              member['unit_flat_number']?.toLowerCase().contains(query) ??
+                  false;
+          final unitID =
+              member['fk_unit_id']?.toString().toLowerCase().contains(query) ??
+                  false;
 
-        final unitID =
-            member['fk_unit_id']?.toString().toLowerCase().contains(query) ??
-                false;
-        print("unitID:::$unitID");
+          print("unitID:::$unitID");
 
-        return memberName || unitNumber;
-      }).toList();
+          return memberName || unitNumber || unitID;
+        }).toList();
+      });
     } else {
-      _filteredMembersNotifier.value = _allMembers;
+      setState(() {
+        _filteredMembersNotifier.value = _allMembers;
+      });
     }
   }
 
@@ -252,8 +259,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> fetchBuildings() async {
     try {
       setState(() => isLoading = true);
-      final userId = GlobalUser.getUserId();
-      print("Company ID UserIDDD$userId");
+      final userId = gateStorage.getUserId();
+      print("Company IDDDDDD$userId");
 
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
@@ -279,7 +286,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> fetchUnits(int buildingId) async {
     try {
       setState(() => isUnitsLoading = true);
-      final userId = GlobalUser.getUserId();
+      final userId = gateStorage.getUserId();
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
       }
@@ -304,7 +311,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<List<dynamic>> getMember() async {
     try {
-      final userId = GlobalUser.getUserId();
+      final userId = gateStorage.getUserId();
 
       if (userId == null) {
         throw Exception("Company ID (userId) is null");
@@ -647,8 +654,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               itemCount: filteredMembers.length,
               itemBuilder: (context, index) {
                 final member = filteredMembers[index];
-                final unitId = member['fk_unit_id'] ?? 'N/A';
-
+                final unitId = member['fk_unit_id']?.toString() ?? 'N/A';
+                print("ninad nigga $unitId");
                 final isSelected =
                     selectedMembers.contains(member['unit_flat_number']);
 
@@ -666,6 +673,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   ),
                   children: (member['member_details'] as List<dynamic>?)
                           ?.map<Widget>((detail) {
+                        print(member['member_details']);
                         final firstName = detail['member_first_name'] ?? 'N/A';
                         final lastName =
                             detail['member_last_name']?.toString() ?? 'N/A';
@@ -689,8 +697,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   ? Colors.green
                                   : null,
                             ),
-                            onPressed: () async {
-                              // Add/remove firstName in selectedMembers
+                            onPressed: () {
+                              // unitId
+                              print("ListView.builder unitId:::$unitId");
+
                               final updatedMembers =
                                   Set<String>.from(selectedMembers);
                               if (selectedMembers.contains(firstName)) {
@@ -1038,7 +1048,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       // Prepare the request data
       final data = {
-        'company_id': GlobalUser.getUserId().toString(),
+        'company_id': gateStorage.getUserId(),
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
