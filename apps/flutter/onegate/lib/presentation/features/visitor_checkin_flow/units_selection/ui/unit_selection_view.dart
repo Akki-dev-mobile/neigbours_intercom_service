@@ -679,6 +679,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 //     );
 //   }
 
+// Define a global variable to store user IDs
+  Set<String> selectedUserIds = {};
+
   Widget _buildMemberList(BuildContext context) {
     return ValueListenableBuilder<Set<String>>(
       valueListenable: _selectedMembersNotifier,
@@ -707,50 +710,35 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 final member = filteredMembers[index];
                 final unitId = member['fk_unit_id'] ?? 'N/A';
 
-
                 final isSelected =
                 selectedMembers.contains(member['unit_flat_number']);
 
                 return ExpansionTile(
                   title: Text(
                     member['unit_flat_number'] ?? 'N/A',
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .bodyMedium!
-                        .copyWith(
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
                   subtitle: Text(
                     'Unit ID: $unitId',
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .bodySmall,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                   children: (member['member_details'] as List<dynamic>?)
                       ?.map<Widget>((detail) {
                     final firstName = detail['member_first_name'] ?? 'N/A';
-                    final lastName =
-                        detail['member_last_name']?.toString() ?? 'N/A';
+                    final lastName = detail['member_last_name']?.toString() ?? 'N/A';
                     final userId = detail['user_id']?.toString() ?? 'N/A';
 
                     return ListTile(
                       title: Text(
                         'First Name: $firstName',
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       subtitle: Text(
                         'Last Name: $lastName\nUser ID: $userId',
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .bodySmall,
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                       trailing: IconButton(
                         icon: Icon(
@@ -762,29 +750,28 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               : null,
                         ),
                         onPressed: () async {
-                          // unitId
-                          print("ListView.builder unitId:::$unitId");
-                          print(
-                              "ListView Unit_IDDDDDDDDDD $unitId, Type: ${unitId
-                                  .runtimeType}");
-                          final updatedMembers = Set<String>.from(
-                              selectedMembers);
+                          // Add/remove firstName in selectedMembers
+                          final updatedMembers = Set<String>.from(selectedMembers);
                           if (selectedMembers.contains(firstName)) {
                             updatedMembers.remove(firstName);
+                            selectedUserIds.remove(userId); // Remove userId from global variable
                           } else {
                             updatedMembers.add(firstName);
+                            selectedUserIds.add(userId); // Add userId to global variable
                           }
                           _selectedMembersNotifier.value = updatedMembers;
 
+                          // Add/remove unitId in selectedUnits
                           final updateUnits = Set<int>.from(selectedUnits);
                           if (selectedUnits.contains(unitId)) {
                             updateUnits.remove(unitId);
-                          }
-                          else {
+                          } else {
                             selectedUnits.add(unitId);
                           }
-
                           _selectedUnitsNotifier.value = updateUnits;
+
+                          // Debugging logs
+                          print("Selected User IDs: $selectedUserIds");
                         },
                       ),
                     );
@@ -800,6 +787,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       },
     );
   }
+
 
   Widget buildUnitsTab() {
     return Column(
@@ -1104,6 +1092,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         "postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
 
     try {
+      // Ensure only one user ID is processed
+      if (selectedUserIds.length != 1) {
+        print("Request skipped: Exactly one user ID must be selected.");
+        print("Returning success as no posting is required.");
+       await Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const GateDashboardView()));
+        return;
+      }
+
       // Ensure only one unit is processed
       if (selectedUnits.length != 1) {
         print("Request skipped: Exactly one unit must be selected.");
@@ -1111,23 +1108,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         return;
       }
 
-      // Extract the single unit ID
-      int unitId = selectedUnits.first;
+      // Extract the single user ID and unit ID
+      String userId = selectedUserIds.first;
+
 
       String formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
       // Prepare the request data
       final data = {
-        'company_id':  GlobalUser.getUserId().toString(),
+        'company_id': GlobalUser.getUserId().toString(),
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': "77525", // Single unit ID
+        'user_id': userId, // Single user ID
         'visitor_count': widget.guestCount?.toString() ?? "1",
-        // widget.guestCount?.toString() ?? "1",
-
-
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",
       };
@@ -1136,8 +1131,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       data.forEach((key, value) {
         print("$key: $value (Type: ${value.runtimeType})");
       });
-
-
 
       // Send the request
       final response = await Dio().post(
@@ -1149,12 +1142,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       // Handle response
       if (response.statusCode == 200) {
         print("FCM notification sent successfully: ${response.data}");
-        // setState(() {
-        //   isWaitingForApproval = true; // Show waiting state
-        // });
-        //
-        // await showApprovalDialog(approvalStatus);
-        // setupAMQPReceiver(); // Start listening for approval
+
+        setState(() {
+          isWaitingForApproval = true; // Show waiting state
+        });
+
+        await showApprovalDialog(approvalStatus);
+        setupAMQPReceiver();
+
       } else {
         print("Failed to send FCM notification: ${response.statusCode}");
       }
@@ -1162,5 +1157,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       log("Error during posting or sending notification: $e");
     }
   }
+
 
 }
