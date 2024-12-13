@@ -50,6 +50,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   File? image;
   Set<int> selectedMembers = {};
+  Set<int> selectedUnits = {};
   String selectedBuilding = '';
   List<dynamic> buildings = [];
   List<dynamic> units = [];
@@ -65,6 +66,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
       ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
+  final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
 
   @override
   void initState() {
@@ -269,6 +271,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       setState(() {
         print("Company IDDDDDD");
         buildings = response.data['data'];
+        // print("Company IDDDDDD$buildings");
         if (buildings.isNotEmpty) {
           selectedBuilding = buildings[0]['soc_building_name'];
           fetchUnits(buildings[0]['id']);
@@ -320,7 +323,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             'unit_id': null,
             'current_tab': 'approved'
           });
-      log("response:::$response");
+      // log("soc units list:::$response");
       return response.data['data'];
     } catch (e) {
       print('Error fetching members: $e');
@@ -330,10 +333,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return MyScrollView(
       isScrollable: false,
       pageTitle: 'Select Units/Members',
@@ -341,9 +340,29 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         future: _initializeMembers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16), // Add spacing
+                  Text(
+                    "Loading Units and Members...",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            );
           } else {
             return SizedBox(
               height: MediaQuery.of(context).size.height,
@@ -357,85 +376,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           }
         },
       ),
-
-      // pageBody: DefaultTabController(
-      //   length: 2,
-      //   child: SizedBox(
-      //     height: MediaQuery.of(context).size.height,
-      //     child: Column(
-      //       children: [
-      //         // if (approvalStatus != null)
-      //         //   Padding(
-      //         //     padding: const EdgeInsets.all(16.0),
-      //         //     child: Text(
-      //         //       "Approval Status: $approvalStatus",
-      //         //       style: Theme.of(context).textTheme.headlineSmall,
-      //         //     ),
-      //         //   ),
-      //         TabBar(
-      //           labelStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-      //                 fontWeight: FontWeight.bold,
-      //               ),
-      //           indicatorColor: Colors.red,
-      //           tabs: const [
-      //             Tab(text: 'Units'),
-      //             Tab(text: 'Members'),
-      //           ],
-      //         ),
-      //         Expanded(
-      //           child: TabBarView(
-      //             // physics: const NeverScrollableScrollPhysics(),
-      //             children: [
-      //               buildUnitsTab(),
-      //               buildMembersTab(),
-      //             ],
-      //           ),
-      //         ),
-      //       ],
-      //     ),
-      //   ),
-      // ),
-      // floatingActionButton: FloatingActionButton.extended(
-      //   onPressed: () async {
-      //     if (selectedUnit != null || selectedMember != null) {
-      //       print("Selected Unit: $selectedUnit");
-      //       print("Selected Member: $selectedMember");
-      //       await postSelection(context);
-      //       showApprovalDialog('Waiting for approval......');
-      //     } else {
-      //       print("No selection made");
-      //     }
-      //   },
-      //   label: Text(
-      //     selectedUnit != null
-      //         ? "Selected Unit: $selectedUnit"
-      //         : selectedMember != null
-      //             ? "Selected Member: $selectedMember"
-      //             : "No Selection",
-      //   ),
-      //   icon: const Icon(Icons.navigate_next),
-      // ),
-
       floatingActionButton: ValueListenableBuilder<Set<String>>(
         valueListenable: _selectedMembersNotifier,
         builder: (context, selectedMember, child) {
           return FloatingActionButton.extended(
             onPressed: () async {
               print(
-                  "FloatingActionButtonunitId Selected Member: $selectedMember");
+                  "FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
 
-              print("unitId:::$selectedUnit");
-
-              if (selectedUnit != null || selectedMember != null) {
-                print("Selected Unit: $selectedUnit");
+              if (selectedUnits != null || selectedMember != null) {
+                print("Selected Unit: $selectedUnits");
                 print("Selected Member: $selectedMember");
-                print("Post Selection:::");
-                // await postSelection(context);
 
-                preferenceUtils.getTooglevalue() == true
-                    ? showApprovalDialog('Waiting for approval......')
-                    : await postSelection(
-                        context, selectedMember, selectedUnit);
+                String? userId;
+                if (selectedUnits.isNotEmpty) {
+                  userId = selectedUnits.first.toString();
+                } else if (selectedMembers.isNotEmpty) {
+                  userId = _allMembers
+                      .firstWhere((member) =>
+                          selectedMembers.contains(member['member_name']))['id']
+                      .toString();
+                }
+                print("Selected User ID: $userId");
+
+                print("Post Selection:::");
+                await postSelection(context, selectedMember, selectedUnits);
               } else {
                 print("No selection made");
               }
@@ -660,6 +625,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 //     );
 //   }
 
+// Define a global variable to store user IDs
+  Set<String> selectedUserIds = {};
+
   Widget _buildMemberList(BuildContext context) {
     return ValueListenableBuilder<Set<String>>(
       valueListenable: _selectedMembersNotifier,
@@ -737,11 +705,26 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   Set<String>.from(selectedMembers);
                               if (selectedMembers.contains(firstName)) {
                                 updatedMembers.remove(firstName);
+                                selectedUserIds.remove(
+                                    userId); // Remove userId from global variable
                               } else {
                                 updatedMembers.add(firstName);
+                                selectedUserIds.add(
+                                    userId); // Add userId to global variable
                               }
-
                               _selectedMembersNotifier.value = updatedMembers;
+
+                              // Add/remove unitId in selectedUnits
+                              final updateUnits = Set<int>.from(selectedUnits);
+                              if (selectedUnits.contains(unitId)) {
+                                updateUnits.remove(unitId);
+                              } else {
+                                selectedUnits.add(unitId);
+                              }
+                              _selectedUnitsNotifier.value = updateUnits;
+
+                              // Debugging logs
+                              print("Selected User IDs: $selectedUserIds");
                             },
                           ),
                         );
@@ -927,7 +910,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       final member = _filteredMembers[index];
                       final isSelected =
                           selectedMember == member['member_name'];
+
                       final unitID = member['fk_unit_id'];
+                      print("unitID:::$unitID");
                       return ListTile(
                         title: Text(
                           member['member_name'],
@@ -943,7 +928,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           onPressed: () {
                             setState(() {
                               selectedMember = member['member_name'];
-                              selectedUnit = unitID;
+                              selectedUnit = member['fk_unit_id'];
 
                               print(
                                   "Selected Member: $selectedMember, Selected Unit: $selectedUnit");
@@ -962,83 +947,134 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Future<void> postSelection(
-    BuildContext context,
-    selectedMember,
-    selectedUnit,
-  ) async {
+//   Future<void> postSelection(
+//     BuildContext context,
+//     selectedMember,
+//     unitId,
+//   ) async {
+//     print("Request Data Posting selection...");
+//     print(
+//         "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
+//
+//     try {
+//       String formattedInTime =
+//           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+//       String? userId;
+//       print(
+//           "postSlection:: selectedUnit:::$selectedUnits, selectedMember:::$selectedMember");
+//       if (unitId != null) {
+//         print("selectedUnit:::$selectedUnit");
+//
+//         userId = units
+//             .firstWhere((unit) => unit['unit_flat_number'] == unitId)[
+//                 'fk_unit_id']
+//             .toString();
+//         print("c::$userId");
+//       } else if (selectedMember != null) {
+//         userId = _allMembers
+//             .firstWhere(
+//                 (member) => member['member_name'] == selectedMember)['id']
+//             .toString();
+//       } else {
+//         print("No unit or member selected for user_id");
+//         return;
+//       }
+//
+//       final data = {
+//         'company_id': GlobalUser.getUserId(),
+//         'name': widget.guestname,
+//         'mobile': widget.mobileNumber,
+//         'purpose': "meeting",
+//         'in_time': formattedInTime,
+//         'user_id': userId,
+//         'visitor_count': widget.guestCount?.toString() ?? "1",
+//         'purpose_details': "zomato",
+//         'coming_from': widget.comingFrom ?? "Unknown",
+//       };
+//
+//       print("Request Data: $data");
+//
+//       final response = await Dio().post(
+//         'https://gateapi.cubeone.in/api/send-fcm-notification',
+//         options: Options(headers: {"Content-Type": "application/json"}),
+//         data: data,
+//       );
+//
+//       if (response.statusCode == 200) {
+//         print("FCM notification sent successfully: ${response.data}");
+//         setState(() {
+//           isWaitingForApproval = true; // Show waiting state
+//         });
+//
+//         await showApprovalDialog(approvalStatus);
+//         setupAMQPReceiver();
+//         // Start listening for approval
+//       } else {
+//         print("Failed to send FCM notification: ${response.statusCode}");
+//       }
+//     } catch (e) {
+//       log("Error during posting or sending notification: $e");
+//     }
+//   }
+// }
+  Future<void> postSelection(BuildContext context, Set<String> selectedMembers,
+      Set<int> selectedUnits) async {
     print("Request Data Posting selection...");
     print(
-        "postSelection:: selectedUnit: $selectedUnit, selectedMember: $selectedMember");
+        "postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
 
     try {
-      String formattedInTime =
-          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-      String? userId;
-
-      // Check and fetch the userId for selectedUnit or selectedMember
-      if (selectedUnit != null) {
-        print("Debug: selectedUnit is not null: $selectedUnit");
-
-        final unit = units.firstWhere(
-          (unit) => unit['unit_flat_number'] == selectedUnit,
-          orElse: () {
-            print("No matching unit found for selectedUnit: $selectedUnit");
-            return null;
-          },
-        );
-
-        if (unit != null) {
-          userId = unit['fk_unit_id']?.toString();
-          print("Debug: Found userId for unit: $userId");
-        } else {
-          print("Error: No unit found with the flat number $selectedUnit.");
-        }
-      } else if (selectedMember != null) {
-        final member = _allMembers.firstWhere(
-          (member) => member['member_name'] == selectedMember,
-          orElse: () {
-            print(
-                "No matching member found for selectedMember: $selectedMember");
-            return null;
-          },
-        );
-
-        if (member != null) {
-          userId = member['id']?.toString();
-          print("Debug: Found userId for member: $userId");
-        } else {
-          print("Error: No member found with the name $selectedMember.");
-        }
-      }
-
-      if (userId == null) {
-        print("Error: No unit or member selected for user_id.");
+      // Ensure only one user ID is processed
+      if (selectedUserIds.length != 1) {
+        print("Request skipped: Exactly one user ID must be selected.");
+        print("Returning success as no posting is required.");
+        await Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const GateDashboardView()));
         return;
       }
 
+      // Ensure only one unit is processed
+      if (selectedUnits.length != 1) {
+        print("Request skipped: Exactly one unit must be selected.");
+        print("Returning success as no posting is required.");
+        return;
+      }
+
+      // Extract the single user ID and unit ID
+      String userId = selectedUserIds.first;
+
+      String formattedInTime =
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
+      // Prepare the request data
       final data = {
         'company_id': gateStorage.getUserId(),
         'name': widget.guestname,
         'mobile': widget.mobileNumber,
         'purpose': "meeting",
         'in_time': formattedInTime,
-        'user_id': userId,
+        'user_id': userId, // Single user ID
         'visitor_count': widget.guestCount?.toString() ?? "1",
         'purpose_details': "zomato",
         'coming_from': widget.comingFrom ?? "Unknown",
       };
 
-      print("Request Data: $data");
+      print("Request Data:");
+      data.forEach((key, value) {
+        print("$key: $value (Type: ${value.runtimeType})");
+      });
 
+      // Send the request
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/send-fcm-notification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: data,
       );
 
+      // Handle response
       if (response.statusCode == 200) {
         print("FCM notification sent successfully: ${response.data}");
+
         setState(() {
           isWaitingForApproval = true; // Show waiting state
         });

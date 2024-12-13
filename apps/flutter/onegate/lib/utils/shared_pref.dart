@@ -27,6 +27,8 @@ class PreferenceUtils {
   static const String _isSelfTapIn = 'is_self_tap_in';
   static const String _tooglevalue ="false";
 
+
+
   Future<void> setIsAppIntroShown(bool isAppIntroShown) async {
     _preferences.setBool(_isAppIntroShown, isAppIntroShown);
   }
@@ -52,6 +54,10 @@ class PreferenceUtils {
         _selectedCompanyKey, jsonEncode(selectedCompany.toJson()));
   }
 
+  Future<int?> saveUnitId(int unitId) async {
+    _preferences.setInt('unit_id', unitId);
+    return unitId;
+  }
   Future<void> saveGatesList(List<Gate> gatesList) async {
     final gatesListJson = gatesList.map((gate) => gate.toJson()).toList();
     _preferences.setString(_gatesList, jsonEncode(gatesListJson));
@@ -133,6 +139,14 @@ bool? getTooglevalue() {
     return [];
   }
 
+
+  int? getUnitId() {
+    final unitId = _preferences.getInt('unit_id');
+    if (unitId != null) {
+      return unitId;
+    }
+    return null;
+  }
   UserInfo? getUserInfo() {
     try {
       final userInfoJson = _preferences.getString(_userInfoKey);
@@ -185,6 +199,7 @@ bool? getTooglevalue() {
       return [];
     }
   }
+
 
   Gate? getSelectedGate() {
     try {

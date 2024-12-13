@@ -72,7 +72,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
   Future<void> login(BuildContext context) async {
     setState(() {
-      isLoading = true;
+      isLoading = true; // Start showing a loader
     });
 
     try {
@@ -96,13 +96,18 @@ class _MyAppLoginState extends State<MyAppLogin> {
         await gateStorage.saveUserId(userInfo?["old_sso_user_id"] ?? "");
         await gateStorage.saveUsername(userInfo?["preferred_username"] ?? "");
 
-        log('Access Token and user details stored in GateStorage.');
+        // Fetch societies
+        setState(() {
+          isLoading = true; // Show loader while fetching societies
+        });
 
-        final societies =
-            await remoteDataSource.fetchSocieties(userInfo?["old_sso_user_id"]);
+        final societies = await remoteDataSource.fetchSocieties(userId!);
+
         if (societies.isNotEmpty) {
+          // Societies found, show selection
           _showSocietySelection(context, societies);
         } else {
+          // No societies found
           _showSnackbar("No societies found for this user.");
         }
       } else {
@@ -114,7 +119,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
       _showSnackbar("An error occurred during login: $e");
     } finally {
       setState(() {
-        isLoading = false;
+        isLoading = false; // Stop showing the loader
       });
     }
   }
@@ -267,14 +272,50 @@ class _MyAppLoginState extends State<MyAppLogin> {
             ListTile(
               title: const Text('Gatekeeper'),
               onTap: () async {
-                await gateStorage.saveRole('gatekeeper');
-                Navigator.pop(ctx);
-                final gates =
-                    await remoteDataSource.fetchGates(selectedSocietyId!);
-                if (gates.isNotEmpty) {
-                  _showGateSelection(context, gates);
-                } else {
-                  _showSnackbar("No gates found for the selected society.");
+                Navigator.pop(ctx); // Close the role selection modal
+
+                // Show loading dialog while fetching gates
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext dialogContext) {
+                    return Dialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            const SizedBox(width: 16),
+                            Text(
+                              "Loading gates...",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+
+                try {
+                  final gates =
+                      await remoteDataSource.fetchGates(selectedSocietyId!);
+
+                  Navigator.pop(context); // Dismiss the loading dialog
+
+                  if (gates.isNotEmpty) {
+                    _showGateSelection(context, gates); // Show gate selection
+                  } else {
+                    _showSnackbar("No gates found for the selected society.");
+                  }
+                } catch (e) {
+                  Navigator.pop(context); // Dismiss the loading dialog
+                  log("Error fetching gates: $e");
+                  _showSnackbar("Error fetching gates. Please try again.");
                 }
               },
             ),
@@ -324,72 +365,80 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
-      isScrollable: false,
-      hasBackButton: false,
-      pageBody: SizedBox(
-        height: MediaQuery.of(context).size.height,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Lottie.network(
-              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
-              height: MediaQuery.of(context).size.height * 0.3,
-              width: double.infinity,
-            ),
-            ListTile(
-              contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
-              title: Text(
-                'Login',
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 5),
-                child: Text(
-                  "Welcome back! Let's dive in.",
-                  style: Theme.of(context).textTheme.labelMedium,
+    return Stack(
+      children: [
+        MyScrollView(
+          isScrollable: false,
+          hasBackButton: false,
+          pageBody: SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Lottie.network(
+                  'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json?updated_at=2023-08-23T06:28:49.839Z',
+                  height: MediaQuery.of(context).size.height * 0.3,
+                  width: double.infinity,
                 ),
-              ),
-            ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.1,
-            ),
-            CustomLargeBtn(
-              text: 'Login',
-              onPressed: () {
-                // _submitForm();
-                login(context);
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const RequestGateAccess(),
+                ListTile(
+                  contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
+                  title: Text(
+                    'Login',
+                    style: Theme.of(context).textTheme.displayLarge,
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Text(
+                      "Welcome back! Let's dive in.",
+                      style: Theme.of(context).textTheme.labelMedium,
                     ),
-                  );
-                },
-                child: Hero(
-                  tag: 'signUpHero',
-                  child: Text(
-                    'Sign Up',
-                    style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                          fontSize: 20,
-                        ),
                   ),
                 ),
-              ),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.1,
+                ),
+                CustomLargeBtn(
+                  text: 'Login',
+                  onPressed: () {
+                    login(context);
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RequestGateAccess(),
+                        ),
+                      );
+                    },
+                    child: Hero(
+                      tag: 'signUpHero',
+                      child: Text(
+                        'Sign Up',
+                        style:
+                            Theme.of(context).textTheme.labelMedium!.copyWith(
+                                  fontSize: 20,
+                                ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 30,
+                ),
+              ],
             ),
-            const SizedBox(
-              height: 30,
-            ),
-          ],
+          ),
         ),
-      ),
+        if (isLoading)
+          Center(
+            child: CircularProgressIndicator(),
+          ),
+      ],
     );
   }
 }
