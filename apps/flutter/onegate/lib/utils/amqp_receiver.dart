@@ -6,14 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 
+import '../main.dart';
+
 class AmqpReceiver {
-  final GlobalKey<NavigatorState> navigatorKey;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   final ValueNotifier<bool> _isLoadingNotifier =
       ValueNotifier<bool>(true); // Tracks loading state
   Client? _client;
 
-  AmqpReceiver(this.navigatorKey);
+  AmqpReceiver();
 
   void startListening() async {
     print('Starting AMQP receiver');

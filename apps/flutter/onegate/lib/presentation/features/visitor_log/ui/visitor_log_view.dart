@@ -210,24 +210,34 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                       vertical: 2,
                                     ),
                                     leading: CircleAvatar(
+                                      backgroundImage: filteredVisitors[index]
+                                              .visitor!
+                                              .visitor_image
+                                              .isNotEmpty
+                                          ? NetworkImage(
+                                              filteredVisitors[index]
+                                                  .visitor!
+                                                  .visitor_image,
+                                            )
+                                          : null,
                                       child: filteredVisitors[index]
                                               .visitor!
                                               .visitor_image
                                               .isEmpty
                                           ? Text(
                                               filteredVisitors[index]
-                                                  .visitor!
-                                                  .name,
+                                                      .visitor!
+                                                      .name
+                                                      .isNotEmpty
+                                                  ? filteredVisitors[index]
+                                                      .visitor!
+                                                      .name[0]
+                                                  : '',
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodyMedium,
                                             )
-                                          : Image.network(
-                                              filteredVisitors[index]
-                                                  .visitor!
-                                                  .visitor_image,
-                                              fit: BoxFit.cover,
-                                            ),
+                                          : null,
                                     ),
                                     title: RichText(
                                       text: TextSpan(

@@ -5,6 +5,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
@@ -180,6 +181,7 @@ class _IdInputViewState extends State<IdInputView> {
                         boxDecoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                         ),
+
                         barrierColor: Theme.of(context)
                             .colorScheme
                             .surface
@@ -225,13 +227,16 @@ class _IdInputViewState extends State<IdInputView> {
                           });
                         },
                       ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                       textController: mobileController,
                       keyboardType: TextInputType.number,
                       length: 10,
                       onChanged: (value) {
                         if (value.length == 10) {
                           gateDashboardBloc.add(GDOnMobileNumberEnteredEvent(
-                              mobileController.text));
+                              mobileController.text,),);
                         }
                       },
                     ),

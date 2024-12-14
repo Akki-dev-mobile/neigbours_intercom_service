@@ -267,9 +267,9 @@ class _MyAppLoginState extends State<MyAppLogin> {
             ListTile(
               title: const Text('Gatekeeper'),
               onTap: () async {
-                Navigator.pop(ctx); // Close the role selection modal
+                Navigator.pop(ctx);
+                await gateStorage.saveRole('gatekeeper');
 
-                // Show loading dialog while fetching gates
                 showDialog(
                   context: context,
                   barrierDismissible: false,

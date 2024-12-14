@@ -1,6 +1,3 @@
-import 'package:alarm/alarm.dart';
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/approval_Status.dart';
@@ -69,7 +66,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     // Initialize and start the AMQP receiver
-    _amqpReceiver = AmqpReceiver(navigatorKey);
+    _amqpReceiver = AmqpReceiver();
     _amqpReceiver.startListening();
   }
 
@@ -99,24 +96,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Widget initialScreen = const MyAppLogin();
     // LoginView();
 
-    return DevicePreview(
-      enabled: !kDebugMode,
-      builder: (context) {
-        return MaterialApp(
-          navigatorKey: navigatorKey,
-          useInheritedMediaQuery: true,
-          debugShowCheckedModeBanner: false,
-          theme: ThemeManager.lightTheme.copyWith(
-            pageTransitionsTheme: const PageTransitionsTheme(
-              builders: <TargetPlatform, PageTransitionsBuilder>{
-                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                TargetPlatform.android: ZoomPageTransitionsBuilder(),
-              },
-            ),
-          ),
-          home: initialScreen,
-        );
-      },
+    return MaterialApp(
+      navigatorKey: navigatorKey,
+      debugShowCheckedModeBanner: false,
+      theme: ThemeManager.lightTheme.copyWith(
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: <TargetPlatform, PageTransitionsBuilder>{
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          },
+        ),
+      ),
+      home: initialScreen,
     );
   }
 }

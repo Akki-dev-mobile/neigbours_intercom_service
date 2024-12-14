@@ -8,6 +8,7 @@ class VisitorRepoImpl extends VisitorRepository {
   final RemoteDataSource _remoteDataSource;
 
   VisitorRepoImpl(this._remoteDataSource);
+
   @override
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
@@ -62,6 +63,7 @@ class VisitorRepoImpl extends VisitorRepository {
   Future<Visitor?> createVisitor(Visitor visitor) async {
     try {
       final response = await _remoteDataSource.createVisitor(visitor);
+      print("createVisitor visitor_repo_impl::: $response");
       return response;
     } catch (error) {
       return null;
@@ -78,7 +80,6 @@ class VisitorRepoImpl extends VisitorRepository {
         companyId,
       );
       print("ResponseImage::: $response");
-      
 
       return response;
     } catch (error) {

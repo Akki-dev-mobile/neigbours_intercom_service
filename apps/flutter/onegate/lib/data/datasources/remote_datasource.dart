@@ -26,6 +26,7 @@ class RemoteDataSource {
   final Dio? _dio1;
   final Dio? _dio2;
   final Dio? _dio3;
+
   RemoteDataSource(
     this._dio1,
     this._dio2,
@@ -191,6 +192,8 @@ class RemoteDataSource {
     try {
       final result = await client.visitor.createVisitor(visitor);
       print("createVisitor: ${result.toString()}");
+      print("createVisitor remote_datasrc ::: $result");
+
       return result;
     } catch (e) {
       print(e.toString());
@@ -220,13 +223,15 @@ class RemoteDataSource {
       print("VisitorLog created: ${result.toJson()}");
 
       if (visitorLog.visitor_building_assignment != null) {
+        print("Building Assignment found");
         for (BuildingAssignment buildingAssignment
             in visitorLog.visitor_building_assignment!) {
           buildingAssignment.visitor_log_id = result.id;
           print("Creating BuildingAssignment: ${buildingAssignment.toJson()}");
           await createBuildingAssignment(buildingAssignment);
         }
-      }
+      } else
+        print("No building assignment found");
 
       print("Check-in successful: ${result.toString()}");
       return result;
