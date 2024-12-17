@@ -1,6 +1,5 @@
 import 'dart:developer';
 import 'dart:io';
-import 'dart:ui' as myTextDirection;
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dio/dio.dart';
@@ -18,6 +17,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart' as c;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final c.Visitor visitor;
@@ -371,7 +371,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           }
         },
       ),
-      bottomNavigationBar: ValueListenableBuilder<Set<String>>(
+      floatingActionButton: ValueListenableBuilder<Set<String>>(
           valueListenable: _selectedMembersNotifier,
           builder: (context, selectedMember, child) {
             return (selectedMembers.isNotEmpty || selectedMember.isNotEmpty)
@@ -398,91 +398,87 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 color: Theme.of(context).colorScheme.surface,
                               ),
                         ),
-                        Directionality(
-                          textDirection: myTextDirection.TextDirection.rtl,
-                          child: ElevatedButton.icon(
-                            style: ButtonStyle(
-                              // overlayColor: MaterialStateProperty.all<Color>(
-                              //   Color(0xFF61677A),
-                              // ),
-                              foregroundColor: WidgetStateProperty.all<Color>(
-                                const Color(0xFF7D7C7C),
-                              ),
-                              backgroundColor: WidgetStateProperty.all<Color>(
-                                Theme.of(context).colorScheme.surface,
-                              ),
-                              elevation:
-                                  WidgetStateProperty.resolveWith<double>(
-                                (Set<WidgetState> states) {
-                                  if (states.contains(WidgetState.pressed)) {
-                                    return 8;
-                                  }
-                                  return 0;
-                                },
-                              ),
-                              shape: WidgetStateProperty.all<
-                                  RoundedRectangleBorder>(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              padding:
-                                  WidgetStateProperty.all<EdgeInsetsGeometry>(
-                                const EdgeInsets.symmetric(
-                                  horizontal: 36,
-                                  vertical: 16,
-                                ),
-                              ),
+                        ElevatedButton.icon(
+                          style: ButtonStyle(
+                            // overlayColor: MaterialStateProperty.all<Color>(
+                            //   Color(0xFF61677A),
+                            // ),
+                            foregroundColor: WidgetStateProperty.all<Color>(
+                              const Color(0xFF7D7C7C),
                             ),
-                            onPressed: () async {
-                              log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
-
-                              if (selectedUnits != null ||
-                                  selectedMember != null) {
-                                log("Selected Unit: $selectedUnits");
-                                log("Selected Member: $selectedMember");
-
-                                String? userId;
-                                if (selectedUnits.isNotEmpty) {
-                                  userId = selectedUnits.first.toString();
-                                } else if (selectedMembers.isNotEmpty) {
-                                  userId = _allMembers
-                                      .firstWhere(
-                                        (member) => selectedMembers.contains(
-                                          member['member_name'],
-                                        ),
-                                      )['id']
-                                      .toString();
+                            backgroundColor: WidgetStateProperty.all<Color>(
+                              Theme.of(context).colorScheme.surface,
+                            ),
+                            elevation: WidgetStateProperty.resolveWith<double>(
+                              (Set<WidgetState> states) {
+                                if (states.contains(WidgetState.pressed)) {
+                                  return 8;
                                 }
-                                log("Selected User ID: $userId");
+                                return 0;
+                              },
+                            ),
+                            shape:
+                                WidgetStateProperty.all<RoundedRectangleBorder>(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                            padding:
+                                WidgetStateProperty.all<EdgeInsetsGeometry>(
+                              const EdgeInsets.symmetric(
+                                horizontal: 36,
+                                vertical: 16,
+                              ),
+                            ),
+                          ),
+                          onPressed: () async {
+                            log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
 
-                                log("Post Selection:::");
-                                await postSelection(
-                                    context, selectedMember, selectedUnits);
+                            if (selectedUnits != null ||
+                                selectedMember != null) {
+                              log("Selected Unit: $selectedUnits");
+                              log("Selected Member: $selectedMember");
 
-                                // preferenceUtils.getTooglevalue() == true
-                                //     ? showApprovalDialog('Waiting for approval......')
-                                //     : await postSelection(
-                                //         context, selectedMember, unitId);
-                              } else {
-                                log("No selection made");
+                              String? userId;
+                              if (selectedUnits.isNotEmpty) {
+                                userId = selectedUnits.first.toString();
+                              } else if (selectedMembers.isNotEmpty) {
+                                userId = _allMembers
+                                    .firstWhere(
+                                      (member) => selectedMembers.contains(
+                                        member['member_name'],
+                                      ),
+                                    )['id']
+                                    .toString();
                               }
-                            },
-                            label: Text(
-                              (selectedMember.length > 1) ? "Allow" : "Next",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge!
-                                  .copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                            ),
-                            icon: Icon(
-                              Icons.navigate_before,
-                              size: 32,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                              log("Selected User ID: $userId");
+
+                              log("Post Selection:::");
+                              await postSelection(
+                                  context, selectedMember, selectedUnits);
+
+                              // preferenceUtils.getTooglevalue() == true
+                              //     ? showApprovalDialog('Waiting for approval......')
+                              //     : await postSelection(
+                              //         context, selectedMember, unitId);
+                            } else {
+                              log("No selection made");
+                            }
+                          },
+                          label: Text(
+                            (selectedMember.length > 1) ? "Allow" : "Next",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge!
+                                .copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                          ),
+                          icon: Icon(
+                            Icons.navigate_before,
+                            size: 32,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -833,6 +829,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       final isSelected =
                           selectedMember == member['member_name'];
 
+                      print("this is$selectedMember");
                       final unitID = member['fk_unit_id'];
                       print("unitID:::$unitID");
                       return ListTile(
@@ -847,7 +844,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 : Ionicons.add_circle_outline,
                             color: isSelected ? Colors.green : null,
                           ),
-                          onPressed: () {
+                          onPressed: () async {
                             setState(() {
                               selectedMember = member['member_name'];
                               selectedUnit = member['fk_unit_id'];
@@ -875,27 +872,38 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     print(
         "postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
 
-    // Validation: Ensure exactly one user ID and one unit
-    if (selectedUserIds.length != 1) {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? visitorId = prefs.getString('visitorId');
+    //
+    // if (visitorId == null) {
+    //   print("Visitor ID not found in SharedPreferences.");
+    //   Fluttertoast.showToast(
+    //     msg: "Visitor ID not found. Please try again.",
+    //     toastLength: Toast.LENGTH_SHORT,
+    //     gravity: ToastGravity.BOTTOM,
+    //     timeInSecForIosWeb: 2,
+    //     backgroundColor: Colors.red,
+    //     textColor: Colors.white,
+    //     fontSize: 16.0,
+    //   );
+    //   return;
+    // }
+
+    if (selectedMembers.length != 1) {
       print("Request skipped: Exactly one user ID must be selected.");
       print("Returning success as no posting is required.");
 
-      String formattedInTime =
-          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-
       final c.VisitorLog data = c.VisitorLog(
-        visitor_id: widget.visitorId ?? 0,
-        // int.parse(widget.visitorId.toString()),
+        visitor_id: widget.visitorId ?? int.parse(visitorId!),
         visitor_purpose_category_id: 1,
-        // Example category ID
         visitor_purpose_sub_category_id: null,
-        visitor_count: widget.guestCount ?? 1,
+        visitor_count: 1, // Example count
         visitor_check_in: DateTime.now(),
         visitor_check_out: null,
         visitor_card_number: null,
-        visitor_coming_from: widget.comingFrom ?? "Unknown",
+        visitor_coming_from: "Unknown",
         visitor_card_id: null,
-        company_id: companyId ?? 0,
+        company_id: companyId!,
         is_checked_out: false,
       );
 
@@ -909,34 +917,67 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       return;
     }
 
-    final String userId = selectedUserIds.first;
+    final String userId = selectedMembers.first;
     final String formattedInTime =
         DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
+    final int unitId = selectedUnits.first;
+
+    final String selectedMemberName = selectedMembers.first;
+    final int selectedUnitId = selectedUnits.first;
+
+    // Fetch the member details from _allMembers
+    final selectedMemberDetails = _allMembers.firstWhere(
+      (member) =>
+          member['member_name'] == selectedMemberName &&
+          member['fk_unit_id'] == selectedUnitId,
+      orElse: () => {},
+    );
+    print(selectedMemberDetails);
+    final String memberName = selectedMemberDetails['member_name'] ?? 'Unknown';
+    final String unitFlatNumber =
+        selectedMemberDetails['unit_flat_number'] ?? 'N/A';
+
+    print(
+        "Saving Member Details: member_name: $memberName, unit_id: $unitId, unit_flat_number: $unitFlatNumber");
+
+    // Save Selected Member Details to gateStorage
+    try {
+      await gateStorage.saveMemberDetails({
+        'member_name': memberName,
+        'unit_id': unitId,
+        'unit_flat_number': unitFlatNumber,
+      });
+      print("Saved to storage: Member - $memberName, Unit - $unitId");
+    } catch (e) {
+      print("Error saving member details: $e");
+      Fluttertoast.showToast(
+        msg: "Error saving member details.",
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      return;
+    }
+
     // Prepare the request data
     final data = {
-      'company_id': companyId.toString(),
+      'company_id': companyId,
       'name': widget.guestname,
       'mobile': widget.mobileNumber,
       'purpose': "meeting",
       'in_time': formattedInTime,
-      'user_id': userId, // Single user ID
+      'user_id': userId,
       'visitor_count': widget.guestCount?.toString() ?? "1",
       'purpose_details': "zomato",
       'coming_from': widget.comingFrom ?? "Unknown",
     };
 
-    print("Request Data:");
-    data.forEach((key, value) {
-      print("$key: $value (Type: ${value.runtimeType})");
-    });
-
     try {
       // Send the request
       final response = await Dio().post(
-        'https://gateapi.cubeone.in/api/send-fcm-notification',
+        'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
-        data: data.toJson(), // Convert VisitorLog to JSON
+        data: data,
       );
 
       if (response.statusCode == 200) {
@@ -946,16 +987,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           isWaitingForApproval = true;
         });
 
-        await showApprovalDialog(approvalStatus);
-        // setupAMQPReceiver();
+        await showApprovalDialog(true);
+
+        // Clear visitorId from SharedPreferences
+        // await prefs.remove('visitorId');
+        print("Visitor ID cleared from SharedPreferences.");
       } else {
         print("Unhandled response status code: ${response.statusCode}");
       }
     } on DioError catch (e) {
       if (e.response?.statusCode == 400) {
-        // Show toast message
         Fluttertoast.showToast(
-          msg: "Not an oneapp user",
+          msg: "Not a OneApp user",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 2,
@@ -963,19 +1006,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           textColor: Colors.white,
           fontSize: 16.0,
         );
-        // Create a VisitorLog object
+
         final c.VisitorLog data = c.VisitorLog(
-          visitor_id: int.parse(widget.visitorId.toString()),
+          visitor_id: widget.visitorId ?? int.parse(visitorId!),
           visitor_purpose_category_id: 1,
-          // Example category ID
           visitor_purpose_sub_category_id: null,
-          visitor_count: widget.guestCount ?? 1,
+          visitor_count: 1,
           visitor_check_in: DateTime.now(),
           visitor_check_out: null,
           visitor_card_number: null,
-          visitor_coming_from: widget.comingFrom ?? "Unknown",
+          visitor_coming_from: "Unknown",
           visitor_card_id: null,
-          company_id: companyId ?? 0,
+          company_id: companyId!,
           is_checked_out: false,
         );
 

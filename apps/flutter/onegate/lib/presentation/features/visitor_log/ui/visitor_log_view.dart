@@ -5,6 +5,7 @@ import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
@@ -40,6 +41,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   late String selectedId;
   String? _searchText = "";
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
+  final gateStorage = GateStorage();
+  final remoteDataSource = RemoteDataSource(
+      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
 
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
@@ -105,6 +109,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
             final visitorLogs = successState.visitorLogs;
+            print("here i am $visitorLogs");
             List<VisitorLog> filteredVisitors = visitorLogs!
                 .where((visitorLog) => visitorLog.visitor!.name
                     .toLowerCase()
@@ -136,6 +141,37 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       },
                       icon: Icon(
                         Icons.home,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10.0),
+                    child: IconButton(
+                      onPressed: () async {
+                        try {
+                          List<Map<String, dynamic>> visitorData =
+                              visitorLogs.map((visitor) {
+                            return {
+                              "visitor_name":
+                                  visitor.visitor?.name ?? "Unknown Visitor",
+                              "check_in_time":
+                                  visitor.visitor_check_in.toIso8601String() ??
+                                      "Unknown",
+                              "check_out_time": visitor.visitor_check_out
+                                      ?.toIso8601String() ??
+                                  "Not Checked Out",
+                              "visitor_count": visitor.visitor_count ?? 1,
+                            };
+                          }).toList();
+
+                          print("ninadkabaap$visitorData");
+                          await remoteDataSource.exportLogs(visitorData);
+                        } catch (e) {
+                          print(e);
+                        }
+                      },
+                      icon: Icon(
+                        Icons.download,
                       ),
                     ),
                   ),

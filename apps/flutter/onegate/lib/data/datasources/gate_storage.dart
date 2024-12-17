@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,6 +60,19 @@ class GateStorage {
     await prefs.setString(_roleKey, role);
   }
 
+  Future<void> saveSocietyDetails(int societyId, String societyName) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('societyId', societyId);
+    await prefs.setString('societyName', societyName);
+  }
+
+  Future<Map<String, dynamic>> getSocietyDetails() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final societyId = prefs.getInt('societyId');
+    final societyName = prefs.getString('societyName');
+    return {'societyId': societyId, 'societyName': societyName};
+  }
+
   Future<String?> getRole() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_roleKey);
@@ -73,6 +87,30 @@ class GateStorage {
     final id = _prefs?.getInt('societyId');
     log("Retrieved Society ID: $id");
     return id;
+  }
+
+  Future<void> saveMemberDetails(Map<String, dynamic> memberDetails) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selectedMemberDetails', jsonEncode(memberDetails));
+      print("Member details successfully saved to SharedPreferences");
+    } catch (e) {
+      print("Error saving member details to SharedPreferences: $e");
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getMemberDetails() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final details = prefs.getString('selectedMemberDetails');
+      if (details != null) {
+        return jsonDecode(details);
+      }
+    } catch (e) {
+      print("Error retrieving member details: $e");
+    }
+    return null;
   }
 
   Future<void> clearStorage() async {
