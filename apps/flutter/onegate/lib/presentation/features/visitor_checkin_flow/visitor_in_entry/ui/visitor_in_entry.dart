@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-// import 'package:cached_network_image/cached_networ k_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
@@ -62,6 +61,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   int _guestCount = 1;
   TextEditingController guestComingFrom = TextEditingController();
   TextEditingController guestName = TextEditingController();
+  TextEditingController visitorNumber = TextEditingController();
   bool _isInitialLoad = true;
   int? companyId;
 
@@ -70,7 +70,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     super.initState();
     _guestCountController = TextEditingController(text: _guestCount.toString());
     if (widget.searchedVisitor != null) {
-      //_lastWords = widget.searchedVisitor!.name;
       guestName.text = widget.searchedVisitor!.name;
     }
     _initSpeech();
@@ -401,6 +400,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               hintText: 'Request from Security',
                               keyboardType: TextInputType.text,
                               length: 4,
+                              // textController: visitorNumber
                             )
                           : SizedBox(),
                       CustomForm.textField(
@@ -531,7 +531,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       guestComingFrom: guestComingFrom.text,
                       guestCount: _guestCount,
                       purposeCategory: widget.selectedValue,
-                      mobile: widget.mobile));
+                      mobile: widget.mobile,
+                      visitorNumber: visitorNumber.text));
                 }
 
                 // if (guestComingFrom.text.isEmpty &&
@@ -628,26 +629,6 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // ClipRRect(
-                //   borderRadius: BorderRadius.circular(15),
-                //   child: CachedNetworkImage(
-                //     maxHeightDiskCache: 80,
-                //     maxWidthDiskCache: 80,
-                //     height: 60,
-                //     width: 60,
-                //     filterQuality: FilterQuality.high,
-                //     fit: BoxFit.contain,
-                //     imageUrl: imagePaths[index],
-                //     placeholder: (context, url) =>
-                //         const CircularProgressIndicator(),
-                //     errorWidget: (context, url, error) => const Icon(
-                //       Icons.error,
-                //       color: Colors.red,
-                //     ),
-                //     fadeOutDuration: const Duration(seconds: 1),
-                //     fadeInDuration: const Duration(seconds: 3),
-                //   ),
-                // ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(

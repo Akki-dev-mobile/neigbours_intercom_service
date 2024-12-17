@@ -231,10 +231,11 @@ class RemoteDataSource {
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       print("VisitorLog created: ${result.toJson()}");
 
-      // Save VisitorLog ID in SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('visitorLogId', result.id.toString());
-      print("VisitorLog ID stored in SharedPreferences: ${result.id}");
+      // // Save VisitorLog ID in SharedPreferences
+      // SharedPreferences prefs = await SharedPreferences.getInstance();
+      // await prefs.setString('visitorLogId', result.id.toString());
+      //
+      // print("VisitorLog ID stored in SharedPreferences: ${result.id}");
 
       if (visitorLog.visitor_building_assignment != null) {
         print("Building Assignment found");
@@ -575,21 +576,41 @@ class RemoteDataSource {
             "Company ID is null. Please ensure the society is selected.");
       }
 
-      // Retrieve data from SharedPreferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? memberDetailsJson = prefs.getString('member_details');
-      final String? unitIdsJson = prefs.getString("unit_ids");
-      final String? memberIdsJson = prefs.getString("member_ids");
-      final String? building_unit = prefs.getString("building_unit");
+      // Check if visitorData is valid
+      if (visitorData == null || visitorData.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "Error: Visitor data is empty!",
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return;
+      }
 
+      // Extract data from visitorData
+      final List<String> memberDetails = [];
+      final List<int> unitIds = [];
+      final List<int> memberIds = [];
+      final List<String> buildingUnits = [];
+
+      for (var entry in visitorData) {
+        if (entry.containsKey('member_details')) {
+          memberDetails
+              .addAll(List<String>.from(entry['member_details'] ?? []));
+        }
+        if (entry.containsKey('unit_ids')) {
+          unitIds.addAll(List<int>.from(entry['unit_ids'] ?? []));
+        }
+        if (entry.containsKey('member_ids')) {
+          memberIds.addAll(List<int>.from(entry['member_ids'] ?? []));
+        }
+        if (entry.containsKey('building_unit')) {
+          buildingUnits.addAll(List<String>.from(entry['building_unit'] ?? []));
+        }
+      }
+
+      // Debug prints
       print(
-          " $memberDetailsJson, unitIds=$unitIdsJson, memberIds=$memberIdsJson, building_unit=$building_unit");
-
-      // Decode the JSON strings
-      final List<dynamic> memberDetails = jsonDecode(memberDetailsJson ?? '[]');
-      final List<dynamic> unitIds = jsonDecode(unitIdsJson ?? '[]');
-      final List<dynamic> memberIds = jsonDecode(memberIdsJson ?? '[]');
-      final List<dynamic> buildingUnit = jsonDecode(building_unit ?? "[]");
+          "Member Details: $memberDetails, Unit IDs: $unitIds, Member IDs: $memberIds, Building Units: $buildingUnits");
 
       // Validate extracted data
       if (memberDetails.isEmpty || unitIds.isEmpty || memberIds.isEmpty) {
@@ -602,13 +623,14 @@ class RemoteDataSource {
       }
 
       final String? visitorLogId = await getVisitorLogId();
+      // log("this is$visitorId");
       final payload = {
         "visitor_log_id": visitorLogId,
         "company_name": companyName,
         "member_id": memberIds[0],
         "member_name": memberDetails.join(", "),
         "unit_id": unitIds[0],
-        "unit_name": buildingUnit[0],
+        "unit_name": buildingUnits.isNotEmpty ? buildingUnits[0] : "N/A",
       };
 
       print("Payload: $payload");

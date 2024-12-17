@@ -452,12 +452,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     )['id']
                                     .toString();
                               }
-                              List<int> unitIds = _allMembers
-                                  .where((member) => selectedMembers
-                                      .contains(member['member_name']))
-                                  .map<int>(
-                                      (member) => member['fk_unit_id'] as int)
-                                  .toList();
+
                               List<int> memberIds = _allMembers
                                   .where((member) => selectedMembers
                                       .contains(member['member_name']))
@@ -467,11 +462,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
                               log("Member IDs List: $memberIds");
 
-                              log("Selected User ID: $unitIds");
-
                               log("Post Selection:::");
-                              await postSelection(context, selectedMember,
-                                  selectedUnits, unitIds);
+                              await postSelection(
+                                  context, selectedMember, selectedUnits);
 
                               // preferenceUtils.getTooglevalue() == true
                               //     ? showApprovalDialog('Waiting for approval......')
@@ -658,7 +651,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 selectedBuildingUnits.add(buildingUnit);
                               }
                               _selectedMembersNotifier.value = updatedMembers;
-
+                              final updateUnits = Set<int>.from(selectedUnits);
+                              if (selectedUnits.contains(unitId)) {
+                                updateUnits.remove(unitId);
+                              } else {
+                                selectedUnits.add(unitId);
+                              }
+                              _selectedUnitsNotifier.value = updateUnits;
                               // Debugging logs
                               log("Selected User IDs: $selectedUserIds");
                               log("Selected Member IDs: $selectedMemberIds");
@@ -686,29 +685,38 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
+// Global or Class-level Map to store details
+  Map<String, dynamic> savedMemberUnitDetails = {};
+
   Future<void> saveMemberAndUnitToPrefs(
       Set<String> memberDetails, Set<int?> unitIDs) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-
     // Debug: Print the sets
     print("Member Details Set: $memberDetails");
     print("Unit IDs Set: $unitIDs");
-    print("this is$selectedBuildingUnits");
+    print("Building Units: $selectedBuildingUnits");
 
+    // Convert sets to lists for storage
     final List<String> memberList = memberDetails.toList();
     final List<int> unitList = unitIDs.whereType<int>().toList();
+    final List<String> buildingUnitList = selectedBuildingUnits.toList();
 
-    await prefs.setString('member_details', jsonEncode(memberList));
-    await prefs.setString('unit_ids', jsonEncode(unitList));
-    await prefs.setString('member_ids', jsonEncode(selectedMemberIds));
-    await prefs.setString('building_unit', jsonEncode(selectedBuildingUnits));
+    // Store the data in the Map
+    savedMemberUnitDetails['member_details'] = memberList;
+    savedMemberUnitDetails['unit_ids'] = unitList;
+    savedMemberUnitDetails['member_ids'] = selectedMemberIds.toList();
+    savedMemberUnitDetails['building_unit'] = buildingUnitList;
 
-    print("Saved Member Details: ${jsonEncode(memberList)}");
-    print("Saved Unit IDs: ${jsonEncode(unitList)}");
-    print("Saved member IDs: ${jsonEncode(selectedBuildingUnits)}");
-    print("Saved member IDs: ${jsonEncode(unitList)}");
-    var visitorLogdetails;
-    await remoteDataSource.visitorLogDetails(visitorLogdetails);
+    // Debugging: Print saved data
+    print(
+        "Saved Member Details: ${jsonEncode(savedMemberUnitDetails['member_details'])}");
+    print("Saved Unit IDs: ${jsonEncode(savedMemberUnitDetails['unit_ids'])}");
+    print(
+        "Saved Member IDs: ${jsonEncode(savedMemberUnitDetails['member_ids'])}");
+    print(
+        "Saved Building Units: ${jsonEncode(savedMemberUnitDetails['building_unit'])}");
+
+    await remoteDataSource.visitorLogDetails([savedMemberUnitDetails]);
+
     Fluttertoast.showToast(
       msg: "Member and Unit details saved successfully.",
       backgroundColor: Colors.green,
@@ -717,7 +725,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> postSelection(BuildContext context, Set<String> selectedMembers,
-      Set<int> selectedUnits, List<int> unitIds) async {
+      Set<int> selectedUnits) async {
     print("Request Data Posting selection...");
     print(
         "postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
