@@ -16,6 +16,7 @@ class AdminDashboardBloc
   final AdminDashboardUseCase _adminDashboardUseCase;
   final VisitorLogUsecase _visitorLogUsecase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+
   AdminDashboardBloc(this._adminDashboardUseCase, this._visitorLogUsecase)
       : super(AdminDashboardInitial()) {
     on<AdminDashboardInitialEvent>(adminDashboardInitial);
@@ -32,8 +33,10 @@ class AdminDashboardBloc
       emit(AdminDashboardLoadingState());
       final List<VisitorLog>? checkedInVisitors =
           await _visitorLogUsecase.fetchCheckInVisitorLog(
-              _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-              DateTime.now().toString());
+        _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
+        DateTime.now().toString(),
+        // DateTime.now().subtract(Duration(days: 1)).toString(),
+      );
       final int inBook = checkedInVisitors!.length;
 
       final List<VisitorLog>? checkedOutVisitors =

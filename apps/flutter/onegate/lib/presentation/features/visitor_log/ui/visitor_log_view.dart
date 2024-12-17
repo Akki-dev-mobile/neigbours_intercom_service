@@ -15,6 +15,7 @@ import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_sel
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -76,6 +77,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
   @override
   Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final yesterday = today.subtract(Duration(days: 1));
+
     return BlocConsumer<VisitorLogBloc, VisitorLogState>(
       bloc: _visitorLogBloc,
       listenWhen: (previous, current) => current is VisitorLogActionState,
@@ -115,6 +119,20 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     .toLowerCase()
                     .contains(_searchText!.toLowerCase()))
                 .toList();
+            final todayLogs = filteredVisitors.where((log) {
+              return log.visitor_check_in
+                  .isAfter(today.subtract(Duration(days: 1)));
+            }).toList();
+
+            final yesterdayLogs = filteredVisitors.where((log) {
+              return log.visitor_check_in
+                      .isAfter(yesterday.subtract(Duration(days: 1))) &&
+                  log.visitor_check_in.isBefore(today);
+            }).toList();
+
+            final olderLogs = filteredVisitors.where((log) {
+              return log.visitor_check_in.isBefore(yesterday);
+            }).toList();
             return PopScope(
               canPop: false,
               child: MyScrollView(
@@ -213,354 +231,72 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         ),
                       ),
                     ),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.7,
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: filteredVisitors.length,
-                        itemBuilder: (context, index) {
-                          String unitList = '';
-                          if (filteredVisitors[index]
-                                      .visitor_building_assignment !=
-                                  null &&
-                              filteredVisitors[index]
-                                  .visitor_building_assignment!
-                                  .isNotEmpty) {
-                            unitList = filteredVisitors[index]
-                                .visitor_building_assignment![0]
-                                .unit_id
-                                .map((units) => units.toString())
-                                .join(', ');
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Card(
-                              elevation: 2,
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 2,
-                                    ),
-                                    leading: CircleAvatar(
-                                      backgroundImage: filteredVisitors[index]
-                                              .visitor!
-                                              .visitor_image
-                                              .isNotEmpty
-                                          ? NetworkImage(
-                                              filteredVisitors[index]
-                                                  .visitor!
-                                                  .visitor_image,
-                                            )
-                                          : null,
-                                      child: filteredVisitors[index]
-                                              .visitor!
-                                              .visitor_image
-                                              .isEmpty
-                                          ? Text(
-                                              filteredVisitors[index]
-                                                      .visitor!
-                                                      .name
-                                                      .isNotEmpty
-                                                  ? filteredVisitors[index]
-                                                      .visitor!
-                                                      .name[0]
-                                                  : '',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium,
-                                            )
-                                          : null,
-                                    ),
-                                    title: RichText(
-                                      text: TextSpan(
-                                        children: [
-                                          TextSpan(
-                                            text: filteredVisitors[index]
-                                                .visitor!
-                                                .name,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium,
-                                          ),
-                                          WidgetSpan(
-                                            child: visitorLogs[index]
-                                                        .visitor_count
-                                                        .toString() !=
-                                                    '1'
-                                                ? Container(
-                                                    margin:
-                                                        const EdgeInsets.only(
-                                                            left: 8),
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 7,
-                                                      vertical: 2,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(
-                                                          0xffFFEBE6),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                    ),
-                                                    child: Text(
-                                                      "+ ${visitorLogs[index].visitor_count.toString()}",
-                                                      style: TextStyle(
-                                                        color: Colors.black,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontSize: 14,
-                                                      ),
-                                                    ))
-                                                : SizedBox(),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    subtitle: Padding(
-                                      padding: const EdgeInsets.only(top: 5),
-                                      child: RichText(
-                                        text: TextSpan(
-                                          children: [
-                                            const WidgetSpan(
-                                              child: Icon(
-                                                Symbols.apartment,
-                                                color: Color(0xffFFB080),
-                                              ),
-                                            ),
-                                            TextSpan(
-                                                text: unitList,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .labelSmall),
-                                            WidgetSpan(
-                                              child: Container(
-                                                margin: const EdgeInsets.only(
-                                                    left: 8),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 7,
-                                                  vertical: 2,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xffFFEBE6),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: const Text(
-                                                  'Guest',
-                                                  style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    trailing: IconButton(
-                                      onPressed: () {
-                                        SnackBar(
-                                          content: Text(
-                                            'Calling ${visitorLogs[index].visitor!.mobile}',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelMedium,
-                                          ),
-                                          action: SnackBarAction(
-                                            label: 'Close',
-                                            onPressed: () {
-                                              ScaffoldMessenger.of(context)
-                                                  .hideCurrentSnackBar();
-                                            },
-                                          ),
-                                        );
-                                      },
-                                      icon: Icon(
-                                        Ionicons.call_outline,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                  ),
-                                  Divider(
-                                    indent: 16,
-                                    endIndent: 16,
-                                    color: Colors.grey[200],
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        bottom: 14.0, top: 8),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        RichText(
-                                          text: TextSpan(
-                                            children: [
-                                              const WidgetSpan(
-                                                child: Icon(
-                                                  Symbols
-                                                      .directions_walk_rounded,
-                                                  color: Colors.green,
-                                                ),
-                                              ),
-                                              TextSpan(
-                                                text:
-                                                    Utils.convertDateTimeFormat(
-                                                        filteredVisitors[index]
-                                                            .visitor_check_in),
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .labelMedium!
-                                                    .merge(
-                                                      const TextStyle(
-                                                        color: Colors.green,
-                                                      ),
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          margin:
-                                              const EdgeInsets.only(left: 8),
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 2, horizontal: 10),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: const [
-                                                Color.fromRGBO(
-                                                  255,
-                                                  236,
-                                                  158,
-                                                  0.8,
-                                                ),
-                                                Color.fromRGBO(
-                                                  255,
-                                                  190,
-                                                  168,
-                                                  0.8,
-                                                ),
-                                              ],
-                                              begin: Alignment.topRight,
-                                              end: Alignment.bottomLeft,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: Color.fromRGBO(
-                                                  255, 190, 168, 1),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Lottie.asset(
-                                                'assets/json/idcard.json',
-                                                width: 30,
-                                                height: 30,
-                                                fit: BoxFit.cover,
-                                                animate: true,
-                                              ),
-                                              SizedBox(
-                                                width: 5,
-                                              ),
-                                              Text(
-                                                "V-110",
-                                                style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        (filteredVisitors[index]
-                                                    .visitor_check_out
-                                                    .toString()
-                                                    .isEmpty ||
-                                                filteredVisitors[index]
-                                                        .visitor_check_out
-                                                        .toString() ==
-                                                    'null')
-                                            ? ElevatedButton(
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.red,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                  ),
-                                                ),
-                                                onPressed: () {
-                                                  filteredVisitors[index]
-                                                          .visitor_check_out =
-                                                      Utils.getCurrentTime();
-                                                  filteredVisitors[index]
-                                                      .is_checked_out = true;
-                                                  _visitorLogBloc.add(
-                                                      CheckOutEvent(
-                                                          filteredVisitors[
-                                                              index],
-                                                          widget.id));
-                                                },
-                                                child: Text(
-                                                  'CheckOut',
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .labelSmall!
-                                                      .merge(
-                                                        const TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 14),
-                                                      ),
-                                                ),
-                                              )
-                                            : RichText(
-                                                text: TextSpan(
-                                                  children: [
-                                                    const WidgetSpan(
-                                                      child: Icon(
-                                                        Symbols
-                                                            .directions_walk_rounded,
-                                                        color: Colors.red,
-                                                      ),
-                                                    ),
-                                                    TextSpan(
-                                                      text: Utils
-                                                          .convertDateTimeFormat(
-                                                              filteredVisitors[
-                                                                      index]
-                                                                  .visitor_check_out!),
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .labelMedium!
-                                                          .merge(
-                                                            const TextStyle(
-                                                              color: Colors.red,
-                                                            ),
-                                                          ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                    ListView(
+                      shrinkWrap: true,
+                      children: [
+                        ExpansionTile(
+                          trailing: Text(
+                            todayLogs.length.toString(),
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          initiallyExpanded: true,
+                          title: Text('Today'),
+                          children: todayLogs.map((log) {
+                            return VisitorLogItem(
+                              visitorLog: log,
+                              onCheckOut: () {
+                                log.visitor_check_out = Utils.getCurrentTime();
+                                log.is_checked_out = true;
+                                _visitorLogBloc
+                                    .add(CheckOutEvent(log, widget.id));
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        ExpansionTile(
+                          trailing: Text(
+                            yesterdayLogs.length.toString(),
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          title: Text('Yesterday'),
+                          children: yesterdayLogs.map((log) {
+                            return VisitorLogItem(
+                              visitorLog: log,
+                              onCheckOut: () {
+                                log.visitor_check_out = Utils.getCurrentTime();
+                                log.is_checked_out = true;
+                                _visitorLogBloc
+                                    .add(CheckOutEvent(log, widget.id));
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        ExpansionTile(
+                          trailing: Text(
+                            olderLogs.length.toString(),
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          title: Text('Older'),
+                          children: olderLogs.take(10).map((log) {
+                            return VisitorLogItem(
+                              visitorLog: log,
+                              onCheckOut: () {
+                                log.visitor_check_out = Utils.getCurrentTime();
+                                log.is_checked_out = true;
+                                _visitorLogBloc
+                                    .add(CheckOutEvent(log, widget.id));
+                              },
+                            );
+                          }).toList(),
+                          onExpansionChanged: (expanded) {
+                            if (expanded) {
+                              setState(() {
+                                olderLogs.addAll(filteredVisitors.skip(10));
+                              });
+                            }
+                          },
+                        ),
+                      ],
                     ),
                     const SizedBox(
                       height: 100,
@@ -657,6 +393,286 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           },
         );
       },
+    );
+  }
+}
+
+class VisitorLogItem extends StatelessWidget {
+  final VisitorLog visitorLog;
+  final Function onCheckOut;
+
+  const VisitorLogItem({
+    Key? key,
+    required this.visitorLog,
+    required this.onCheckOut,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    String unitList = '';
+    if (visitorLog.visitor_building_assignment != null &&
+        visitorLog.visitor_building_assignment!.isNotEmpty) {
+      unitList = visitorLog.visitor_building_assignment![0].unit_id
+          .map((units) => units.toString())
+          .join(', ');
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        elevation: 2,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 2,
+              ),
+              leading: CircleAvatar(
+                backgroundImage: (visitorLog
+                            .visitor!.visitor_image.isNotEmpty &&
+                        Uri.tryParse(visitorLog.visitor!.visitor_image)
+                                ?.hasAbsolutePath ==
+                            true)
+                    ? NetworkImage(visitorLog.visitor!.visitor_image)
+                    : NetworkImage(
+                        "https://plus.unsplash.com/premium_photo-1678706071143-232715cbb866?q=80&w=3027&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"),
+                child: visitorLog.visitor!.visitor_image.isEmpty
+                    ? Text(
+                        visitorLog.visitor!.name.isNotEmpty
+                            ? visitorLog.visitor!.name[0]
+                            : 'asd',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      )
+                    : null,
+              ),
+              title: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: visitorLog.visitor!.name,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    WidgetSpan(
+                      child: visitorLog.visitor_count.toString() != '1'
+                          ? Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffFFEBE6),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                "+ ${visitorLog.visitor_count.toString()}",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            )
+                          : SizedBox(),
+                    ),
+                  ],
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: RichText(
+                  text: TextSpan(
+                    children: [
+                      const WidgetSpan(
+                        child: Icon(
+                          Symbols.apartment,
+                          color: Color(0xffFFB080),
+                        ),
+                      ),
+                      TextSpan(
+                          text: unitList,
+                          style: Theme.of(context).textTheme.labelSmall),
+                      WidgetSpan(
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffFFEBE6),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Guest',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              trailing: IconButton(
+                onPressed: () {
+                  SnackBar(
+                    content: Text(
+                      'Calling ${visitorLog.visitor!.mobile}',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    action: SnackBarAction(
+                      label: 'Close',
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      },
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Ionicons.call_outline,
+                  color: Colors.green,
+                ),
+              ),
+            ),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              color: Colors.grey[200],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14.0, top: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Tooltip(
+                    message: DateFormat('dd-MM-yyyy hh:mm a')
+                        .format(visitorLog.visitor_check_in),
+                    child: RichText(
+                      text: TextSpan(
+                        children: [
+                          const WidgetSpan(
+                            child: Icon(
+                              Symbols.directions_walk_rounded,
+                              color: Colors.green,
+                            ),
+                          ),
+                          TextSpan(
+                            text: Utils.convertDateTimeFormat(
+                                visitorLog.visitor_check_in),
+                            style:
+                                Theme.of(context).textTheme.labelMedium!.merge(
+                                      const TextStyle(
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 2,
+                      horizontal: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: const [
+                          Color.fromRGBO(255, 236, 158, 0.8),
+                          Color.fromRGBO(255, 190, 168, 0.8),
+                        ],
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomLeft,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Color.fromRGBO(255, 190, 168, 1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Lottie.asset(
+                          'assets/json/idcard.json',
+                          width: 30,
+                          height: 30,
+                          fit: BoxFit.cover,
+                        ),
+                        SizedBox(
+                          width: 5,
+                        ),
+                        Text(
+                          'V-20',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  (visitorLog.visitor_check_out.toString().isEmpty ||
+                          visitorLog.visitor_check_out.toString() == 'null')
+                      ? ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            onCheckOut();
+                          },
+                          child: Text(
+                            'CheckOut',
+                            style:
+                                Theme.of(context).textTheme.labelSmall!.merge(
+                                      const TextStyle(
+                                          color: Colors.white, fontSize: 14),
+                                    ),
+                          ),
+                        )
+                      : Tooltip(
+                          message: DateFormat('dd-MM-yyyy hh:mm a')
+                              .format(visitorLog.visitor_check_out!),
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                const WidgetSpan(
+                                  child: Icon(
+                                    Symbols.directions_walk_rounded,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: Utils.convertDateTimeFormat(
+                                      visitorLog.visitor_check_out!),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium!
+                                      .merge(
+                                        const TextStyle(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

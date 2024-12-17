@@ -8,7 +8,13 @@ class DashboardBlocks extends StatelessWidget {
   final int? inBook;
   final int? outBook;
   final Bloc bloc;
-  DashboardBlocks({super.key, this.inBook, this.outBook, required this.bloc});
+
+  DashboardBlocks({
+    super.key,
+    this.inBook,
+    this.outBook,
+    required this.bloc,
+  });
 
   @override
   Widget build(BuildContext context) {
