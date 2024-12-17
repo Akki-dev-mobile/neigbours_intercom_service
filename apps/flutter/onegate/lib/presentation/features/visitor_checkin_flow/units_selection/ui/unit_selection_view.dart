@@ -641,13 +641,26 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               } else {
                                 updatedMembers.add(firstName);
                                 selectedUserIds.add(userId);
-                                final cleanedMemberId = memberId
+                                final cleanedMemberIds = memberId
                                     .toString()
-                                    .replaceAll(',', '')
-                                    .trim();
+                                    .split(
+                                        ',') // Split by commas into a list of strings
+                                    .map((id) => id
+                                        .trim()) // Remove extra spaces from each part
+                                    .where((id) => id
+                                        .isNotEmpty) // Filter out any empty strings
+                                    .toList();
 
-                                selectedMemberIds
-                                    .add(int.parse(cleanedMemberId));
+                                for (final id in cleanedMemberIds) {
+                                  try {
+                                    selectedMemberIds.add(int.parse(
+                                        id)); // Safely parse each ID to int
+                                  } catch (e) {
+                                    print("Error parsing ID: $id, Error: $e");
+                                  }
+                                }
+
+                                print("Cleaned Member IDs: $selectedMemberIds");
                                 selectedBuildingUnits.add(buildingUnit);
                               }
                               _selectedMembersNotifier.value = updatedMembers;

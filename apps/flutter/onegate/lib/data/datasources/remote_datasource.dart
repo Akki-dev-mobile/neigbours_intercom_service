@@ -350,8 +350,7 @@ class RemoteDataSource {
         },
         options: Options(
           headers: {
-            'Authorization':
-                'Bearer $accessToken', // Pass the access token here
+            'Authorization': 'Bearer $accessToken',
           },
         ),
       );
@@ -370,7 +369,6 @@ class RemoteDataSource {
       if (kDebugMode) {
         print('client.visitorLog.fetchAllLogs $e');
       }
-      rethrow;
       rethrow;
     }
   }
@@ -424,7 +422,6 @@ class RemoteDataSource {
     try {
       log('File path: ${file.path}');
 
-      // Prepare the form data
       var data = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           file.path,
@@ -435,7 +432,6 @@ class RemoteDataSource {
         'path': file.path,
       });
 
-      // Create Dio instance and set content type
       var dio = Dio();
       var response = await dio.post(
         'http://35.154.173.226:8005/api/visitor/uploadFile',
@@ -445,11 +441,9 @@ class RemoteDataSource {
         ),
       );
 
-      // Check the response
       if (response.statusCode == 200) {
         log('Successfully uploaded: ${json.encode(response.data)}');
 
-        // Safely extract the file path from response
         var filePath = response.data['data']?['file_path'];
         if (filePath != null && filePath is String) {
           return filePath;
@@ -487,9 +481,9 @@ class RemoteDataSource {
 
   Future<void> exportLogs(List<Map<String, dynamic>> visitorData) async {
     try {
-      final userId = await gateStorage.getSocietyId();
+      final companyId = await gateStorage.getSocietyId();
 
-      if (userId.toString().isEmpty) {
+      if (companyId.toString().isEmpty) {
         Fluttertoast.showToast(
           msg: "Error: User ID is empty!",
           backgroundColor: Colors.red,
@@ -498,18 +492,17 @@ class RemoteDataSource {
         return;
       }
 
-      // Prepare the payload
       final payload = {
-        "company_id": userId,
-        "to_mail": "rohit.jain@futurescapetech.com",
+        "company_id": companyId,
+        "to_mail": visitorData[0]["to_mail"],
         "to_name": "Dinesh Koli",
+        "from_date": visitorData[0]["check_in_time"],
+        "to_date": visitorData[0]["check_out_time"],
         "visitor_logs": visitorData,
       };
 
-      // Log the payload for debugging
       print("Payload: ${payload.toString()}");
 
-      // Send the POST request using Dio
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendLogs',
         data: payload,
@@ -576,7 +569,6 @@ class RemoteDataSource {
             "Company ID is null. Please ensure the society is selected.");
       }
 
-      // Check if visitorData is valid
       if (visitorData == null || visitorData.isEmpty) {
         Fluttertoast.showToast(
           msg: "Error: Visitor data is empty!",
@@ -586,7 +578,6 @@ class RemoteDataSource {
         return;
       }
 
-      // Extract data from visitorData
       final List<String> memberDetails = [];
       final List<int> unitIds = [];
       final List<int> memberIds = [];
@@ -608,11 +599,9 @@ class RemoteDataSource {
         }
       }
 
-      // Debug prints
       print(
           "Member Details: $memberDetails, Unit IDs: $unitIds, Member IDs: $memberIds, Building Units: $buildingUnits");
 
-      // Validate extracted data
       if (memberDetails.isEmpty || unitIds.isEmpty || memberIds.isEmpty) {
         Fluttertoast.showToast(
           msg: "Error: Member details, unit IDs, or member IDs are missing!",
@@ -628,7 +617,7 @@ class RemoteDataSource {
         "visitor_log_id": visitorLogId,
         "company_name": companyName,
         "member_id": memberIds[0],
-        "member_name": memberDetails.join(", "),
+        "member_name": memberDetails[0],
         "unit_id": unitIds[0],
         "unit_name": buildingUnits.isNotEmpty ? buildingUnits[0] : "N/A",
       };

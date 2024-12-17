@@ -15,11 +15,13 @@ import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_sel
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -148,33 +150,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     padding: const EdgeInsets.only(right: 10.0),
                     child: IconButton(
                       onPressed: () async {
-                        try {
-                          List<Map<String, dynamic>> visitorData =
-                              visitorLogs.map((visitor) {
-                            return {
-                              "visitor_name":
-                                  visitor.visitor?.name ?? "Unknown Visitor",
-                              "check_in_time":
-                                  visitor.visitor_check_in.toIso8601String() ??
-                                      "Unknown",
-                              "check_out_time": visitor.visitor_check_out
-                                      ?.toIso8601String() ??
-                                  "Not Checked Out",
-                              "visitor_count": visitor.visitor_count ?? 1,
-                            };
-                          }).toList();
-
-                          print("ninadkabaap$visitorData");
-                          await remoteDataSource.exportLogs(visitorData);
-                        } catch (e) {
-                          print(e);
-                        }
+                        await _showExportDialog(context, visitorLogs);
                       },
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.download,
                       ),
                     ),
-                  ),
+                  )
+
+// ,
                 ],
                 pageBody: Column(
                   children: [
@@ -572,6 +556,127 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           default:
             return Container();
         }
+      },
+    );
+  }
+
+  Future<void> _showExportDialog(
+      BuildContext context, List<VisitorLog> visitorLogs) async {
+    TextEditingController emailController = TextEditingController();
+    DateTime? fromDate;
+    DateTime? toDate;
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final storedEmail = prefs.getString('email') ?? ''; // Load email if saved
+    emailController.text = storedEmail;
+
+    // Function to pick a date
+    Future<DateTime?> _pickDate(BuildContext context) async {
+      return await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(2000),
+        lastDate: DateTime.now(),
+      );
+    }
+
+    // Show the dialog
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Export Logs'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Email Input
+                  CustomForm.textField("Email",
+                      titleColor: Theme.of(context).colorScheme.onSurface,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
+                      hintText: "Enter email for export",
+                      textController: emailController),
+
+                  const SizedBox(height: 10),
+                  // From Date Picker
+                  ListTile(
+                    title: Text(
+                        "From Date: ${fromDate != null ? DateFormat('yyyy-MM-dd').format(fromDate!) : 'Select'}"),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await _pickDate(context);
+                      if (picked != null) {
+                        setState(() {
+                          fromDate = picked;
+                        });
+                      }
+                    },
+                  ),
+                  // To Date Picker
+                  ListTile(
+                    title: Text(
+                        "To Date: ${toDate != null ? DateFormat('yyyy-MM-dd').format(toDate!) : 'Select'}"),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await _pickDate(context);
+                      if (picked != null) {
+                        setState(() {
+                          toDate = picked;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                CustomLargeBtn(
+                    onPressed: () async {
+                      // Save email in SharedPreferences
+                      await prefs.setString('email', emailController.text);
+
+                      // Ensure fromDate and toDate are formatted correctly
+                      final formattedFromDate = fromDate != null
+                          ? DateFormat('yyyy-MM-dd').format(fromDate!)
+                          : null;
+                      final formattedToDate = toDate != null
+                          ? DateFormat('yyyy-MM-dd').format(toDate!)
+                          : null;
+
+                      // Prepare export data
+                      var visitorData = visitorLogs.map((visitor) {
+                        return {
+                          "visitor_name":
+                              visitor.visitor?.name ?? "Unknown Visitor",
+                          "check_in_time":
+                              visitor.visitor_check_in.toIso8601String() ??
+                                  "Unknown",
+                          "check_out_time":
+                              visitor.visitor_check_out?.toIso8601String() ??
+                                  "Not Checked Out",
+                          "visitor_count": visitor.visitor_count ?? 1,
+                          "to_mail": emailController.text,
+                          "from_date":
+                              formattedFromDate, // Add formatted from_date
+                          "to_date": formattedToDate, // Add formatted to_date
+                        };
+                      }).toList();
+
+                      print("Export Data: $visitorData");
+                      print(
+                          "Email: ${emailController.text}, From: $formattedFromDate, To: $formattedToDate");
+
+                      // Call API with the updated payload
+                      await remoteDataSource.exportLogs(visitorData);
+
+                      // Close dialog
+                      Navigator.of(context).pop();
+                    },
+                    text: "Export")
+              ],
+            );
+          },
+        );
       },
     );
   }
