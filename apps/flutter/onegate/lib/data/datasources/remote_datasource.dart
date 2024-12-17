@@ -553,42 +553,65 @@ class RemoteDataSource {
     return prefs.getString('visitorLogId');
   }
 
-  Future<void> visitorLogDetails(List<Map<String, dynamic>> visitorData) async {
+  Future<void> visitorLogDetails(
+      List<Map<String, dynamic>>? visitorData) async {
     try {
+      // Fetch society and company details
       final societyId = await gateStorage.getSocietyId();
-
-      if (societyId.toString().isEmpty) {
+      if (societyId == null || societyId.toString().isEmpty) {
         Fluttertoast.showToast(
-          msg: "Error: User ID is empty!",
+          msg: "Error: Society ID is empty!",
           backgroundColor: Colors.red,
           textColor: Colors.white,
         );
         return;
       }
-      String? visitorLogId = await getVisitorLogId();
 
       final companyDetails = await gateStorage.getSocietyDetails();
       final companyId = companyDetails['societyId'];
       final companyName = companyDetails["societyName"];
-
       if (companyId == null) {
         throw Exception(
             "Company ID is null. Please ensure the society is selected.");
       }
 
-      final userId = await gateStorage.getUserId();
-      // Prepare the payload
+      // Retrieve data from SharedPreferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? memberDetailsJson = prefs.getString('member_details');
+      final String? unitIdsJson = prefs.getString("unit_ids");
+      final String? memberIdsJson = prefs.getString("member_ids");
+      final String? building_unit = prefs.getString("building_unit");
+
+      print(
+          " $memberDetailsJson, unitIds=$unitIdsJson, memberIds=$memberIdsJson, building_unit=$building_unit");
+
+      // Decode the JSON strings
+      final List<dynamic> memberDetails = jsonDecode(memberDetailsJson ?? '[]');
+      final List<dynamic> unitIds = jsonDecode(unitIdsJson ?? '[]');
+      final List<dynamic> memberIds = jsonDecode(memberIdsJson ?? '[]');
+      final List<dynamic> buildingUnit = jsonDecode(building_unit ?? "[]");
+
+      // Validate extracted data
+      if (memberDetails.isEmpty || unitIds.isEmpty || memberIds.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "Error: Member details, unit IDs, or member IDs are missing!",
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return;
+      }
+
+      final String? visitorLogId = await getVisitorLogId();
       final payload = {
         "visitor_log_id": visitorLogId,
         "company_name": companyName,
-        "member_id": userId,
-        "member_name": "Deepak",
-        "unit_id": 2,
-        "unit_name": "A wing-001"
+        "member_id": memberIds[0],
+        "member_name": memberDetails.join(", "),
+        "unit_id": unitIds[0],
+        "unit_name": buildingUnit[0],
       };
 
-      // Log the payload for debugging
-      print("Payload: ${payload.toString()}");
+      print("Payload: $payload");
 
       // Send the POST request using Dio
       final response = await Dio().post(
@@ -606,6 +629,7 @@ class RemoteDataSource {
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
+        print("Response: ${response.data}");
       } else {
         print("Response Error: ${response.data}");
         Fluttertoast.showToast(
