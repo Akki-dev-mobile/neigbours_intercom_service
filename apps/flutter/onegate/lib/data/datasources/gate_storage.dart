@@ -9,6 +9,7 @@ class GateStorage {
   static const _usernameKey = 'username';
   static const _roleKey = 'role';
   static const _societyIdKey = 'society_id';
+  static const _visitorLogIdKey = 'visitorLogId';
 
   static final GateStorage _instance = GateStorage._internal();
 
@@ -18,7 +19,6 @@ class GateStorage {
 
   GateStorage._internal();
 
-  // Singleton for SharedPreferences
   SharedPreferences? _prefs;
 
   Future<void> init() async {
@@ -62,7 +62,7 @@ class GateStorage {
 
   Future<void> saveSocietyDetails(int societyId, String societyName) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('societyId', societyId);
+    await prefs.setInt(_societyIdKey, societyId);
     await prefs.setString('societyName', societyName);
   }
 
@@ -70,7 +70,7 @@ class GateStorage {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final societyId = prefs.getInt('societyId');
     final societyName = prefs.getString('societyName');
-    return {'societyId': societyId, 'societyName': societyName};
+    return {_societyIdKey: societyId, 'societyName': societyName};
   }
 
   Future<String?> getRole() async {
@@ -79,12 +79,12 @@ class GateStorage {
   }
 
   Future<void> saveSocietyId(int societyId) async {
-    await _prefs?.setInt('societyId', societyId);
+    await _prefs?.setInt(_societyIdKey, societyId);
     log("Society ID saved successfully: $societyId");
   }
 
   Future<int?> getSocietyId() async {
-    final id = _prefs?.getInt('societyId');
+    final id = _prefs?.getInt(_societyIdKey);
     log("Retrieved Society ID: $id");
     return id;
   }
@@ -116,5 +116,17 @@ class GateStorage {
   Future<void> clearStorage() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+  }
+
+  Future<void> saveVisitorLogId(String visitorLogId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_visitorLogIdKey, visitorLogId.toString());
+
+    print("VisitorLog ID stored in SharedPreferences: $visitorLogId");
+  }
+
+  Future<String?> getVisitorLogId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_visitorLogIdKey);
   }
 }

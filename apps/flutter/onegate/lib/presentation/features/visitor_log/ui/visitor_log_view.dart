@@ -563,6 +563,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   Future<void> _showExportDialog(
       BuildContext context, List<VisitorLog> visitorLogs) async {
     TextEditingController emailController = TextEditingController();
+    TextEditingController nameController = TextEditingController();
     DateTime? fromDate;
     DateTime? toDate;
 
@@ -588,46 +589,56 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('Export Logs'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Email Input
-                  CustomForm.textField("Email",
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      hintText: "Enter email for export",
-                      textController: emailController),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Email Input
+                    CustomForm.textField("name",
+                        titleColor: Theme.of(context).colorScheme.onSurface,
+                        hintColor: Theme.of(context).colorScheme.onPrimary,
+                        hintText: "Enter name for export",
+                        textController: nameController),
 
-                  const SizedBox(height: 10),
-                  // From Date Picker
-                  ListTile(
-                    title: Text(
-                        "From Date: ${fromDate != null ? DateFormat('yyyy-MM-dd').format(fromDate!) : 'Select'}"),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await _pickDate(context);
-                      if (picked != null) {
-                        setState(() {
-                          fromDate = picked;
-                        });
-                      }
-                    },
-                  ),
-                  // To Date Picker
-                  ListTile(
-                    title: Text(
-                        "To Date: ${toDate != null ? DateFormat('yyyy-MM-dd').format(toDate!) : 'Select'}"),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await _pickDate(context);
-                      if (picked != null) {
-                        setState(() {
-                          toDate = picked;
-                        });
-                      }
-                    },
-                  ),
-                ],
+                    CustomForm.textField("Email",
+                        titleColor: Theme.of(context).colorScheme.onSurface,
+                        hintColor: Theme.of(context).colorScheme.onPrimary,
+                        hintText: "Enter email for export",
+                        textController: emailController),
+
+                    const SizedBox(height: 10),
+                    ListTile(
+                      title: Text(
+                        "From Date: ${fromDate != null ? DateFormat('yyyy-MM-dd').format(fromDate!) : 'Select'}",
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await _pickDate(context);
+                        if (picked != null) {
+                          setState(() {
+                            fromDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    // To Date Picker
+                    ListTile(
+                      title: Text(
+                          "To Date: ${toDate != null ? DateFormat('yyyy-MM-dd').format(toDate!) : 'Select'}",
+                          style: Theme.of(context).textTheme.headlineSmall),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await _pickDate(context);
+                        if (picked != null) {
+                          setState(() {
+                            toDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 CustomLargeBtn(
@@ -635,7 +646,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       // Save email in SharedPreferences
                       await prefs.setString('email', emailController.text);
 
-                      // Ensure fromDate and toDate are formatted correctly
                       final formattedFromDate = fromDate != null
                           ? DateFormat('yyyy-MM-dd').format(fromDate!)
                           : null;
@@ -646,19 +656,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       // Prepare export data
                       var visitorData = visitorLogs.map((visitor) {
                         return {
-                          "visitor_name":
-                              visitor.visitor?.name ?? "Unknown Visitor",
-                          "check_in_time":
-                              visitor.visitor_check_in.toIso8601String() ??
-                                  "Unknown",
-                          "check_out_time":
-                              visitor.visitor_check_out?.toIso8601String() ??
-                                  "Not Checked Out",
+                          "name": nameController.text,
                           "visitor_count": visitor.visitor_count ?? 1,
                           "to_mail": emailController.text,
-                          "from_date":
-                              formattedFromDate, // Add formatted from_date
-                          "to_date": formattedToDate, // Add formatted to_date
+                          "from_date": formattedFromDate,
+                          "to_date": formattedToDate,
                         };
                       }).toList();
 

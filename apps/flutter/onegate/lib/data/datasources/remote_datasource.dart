@@ -106,10 +106,6 @@ class RemoteDataSource {
 
   Future<List<dynamic>> fetchSocieties(String userId) async {
     try {
-      // var id = gateStorage.getSocietyId();
-
-      // print("society id -- $id");
-      // print("id  $id");
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('access_token');
 
@@ -142,29 +138,8 @@ class RemoteDataSource {
     }
   }
 
-  //   try {
-  //     final response = await _dio2?.get('/api/admin/building/list',
-  //         queryParameters: {'company_id': companyId});
-  //
-  //     // Check if response data is null
-  //     if (response?.data != null) {
-  //       return response?.data?['data'];
-  //     } else {
-  //       print('Response data is null');
-  //       return [];
-  //     }
-  //   } catch (e) {
-  //     print('Error fetching buildings: $e');
-  //     rethrow;
-  //   }
-  // }
-
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
-      // final result = await client.visitor.fetchVisitor(mobileNumber);
-      // print("searchVisitor: ${result.toString()}");
-      // return result!;
-
       final result = await client.visitor.fetchVisitor(mobileNumber);
       if (result != null) {
         print("searchVisitor: ${result.toString()}");
@@ -197,7 +172,6 @@ class RemoteDataSource {
       print("createVisitor remote_datasrc ::: $result");
 
       if (result != null && result.id != null) {
-        // Save the visitor ID to SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('visitorId', result.id!.toString());
         print("Visitor ID stored in SharedPreferences: ${result.id}");
@@ -231,12 +205,7 @@ class RemoteDataSource {
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       print("VisitorLog created: ${result.toJson()}");
 
-      // // Save VisitorLog ID in SharedPreferences
-      // SharedPreferences prefs = await SharedPreferences.getInstance();
-      // await prefs.setString('visitorLogId', result.id.toString());
-      //
-      // print("VisitorLog ID stored in SharedPreferences: ${result.id}");
-
+      await gateStorage.saveVisitorLogId(result.id.toString());
       if (visitorLog.visitor_building_assignment != null) {
         print("Building Assignment found");
         for (BuildingAssignment buildingAssignment
@@ -315,8 +284,7 @@ class RemoteDataSource {
         },
         options: Options(
           headers: {
-            'Authorization':
-                'Bearer $accessToken', // Pass the access token here
+            'Authorization': 'Bearer $accessToken',
           },
         ),
       );
@@ -495,9 +463,9 @@ class RemoteDataSource {
       final payload = {
         "company_id": companyId,
         "to_mail": visitorData[0]["to_mail"],
-        "to_name": "Dinesh Koli",
-        "from_date": visitorData[0]["check_in_time"],
-        "to_date": visitorData[0]["check_out_time"],
+        "to_name": visitorData[0]["name"],
+        "from_date": visitorData[0]["from_date"],
+        "to_date": visitorData[0]["to_date"],
         "visitor_logs": visitorData,
       };
 
@@ -542,15 +510,9 @@ class RemoteDataSource {
     }
   }
 
-  Future<String?> getVisitorLogId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('visitorLogId');
-  }
-
   Future<void> visitorLogDetails(
       List<Map<String, dynamic>>? visitorData) async {
     try {
-      // Fetch society and company details
       final societyId = await gateStorage.getSocietyId();
       if (societyId == null || societyId.toString().isEmpty) {
         Fluttertoast.showToast(
@@ -611,8 +573,9 @@ class RemoteDataSource {
         return;
       }
 
-      final String? visitorLogId = await getVisitorLogId();
-      // log("this is$visitorId");
+      final String? visitorLogId = await gateStorage.getVisitorLogId();
+
+      log("this is$visitorLogId");
       final payload = {
         "visitor_log_id": visitorLogId,
         "company_name": companyName,
@@ -698,8 +661,8 @@ class RemoteDataSource {
 
   Future<List<dynamic>> getMembersList(int companyId) async {
     try {
-      final userId = gateStorage.getSocietyId();
-      if (userId == null) {
+      final socId = gateStorage.getSocietyId();
+      if (socId == null) {
         throw Exception("Company ID (userId) is null");
       }
       final prefs = await SharedPreferences.getInstance();
@@ -711,7 +674,7 @@ class RemoteDataSource {
       final response = await _dio2?.get(
         '/api/admin/member/list',
         queryParameters: {
-          'company_id': userId,
+          'company_id': socId,
         },
         options: Options(
           headers: {
