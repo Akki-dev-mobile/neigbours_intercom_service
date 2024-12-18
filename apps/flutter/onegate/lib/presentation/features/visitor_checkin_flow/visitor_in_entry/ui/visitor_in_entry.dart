@@ -185,14 +185,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               context,
               MaterialPageRoute(
                 builder: (context) => UnitSelectionView(
-                  visitorId: widget.searchedVisitor?.id,
-                  guestname: guestName.text,
-                  mobileNumber: widget.mobile,
-                  purposeCategory: state.purposeCategory,
-                  visitor: state.visitor,
-                  comingFrom: guestComingFrom.text,
-                  guestCount: _guestCount,
-                ),
+                    visitorId: widget.searchedVisitor?.id,
+                    guestname: guestName.text,
+                    mobileNumber: widget.mobile,
+                    purposeCategory: state.purposeCategory,
+                    visitor: state.visitor,
+                    comingFrom: guestComingFrom.text,
+                    guestCount: _guestCount,
+                    visitorNumber: visitorNumber.text),
               ),
             );
           } else if (state is VIENavigateToCameraState) {
@@ -384,25 +384,22 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                         ),
                       ),
-                      preferenceUtils.getTooglevalue() == true
-                          ? CustomForm.textField(
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your ID';
-                                }
-                                return null;
-                              },
-                              titleColor:
-                                  Theme.of(context).colorScheme.onSurface,
-                              hintColor:
-                                  Theme.of(context).colorScheme.onPrimary,
-                              "Enter your ID",
-                              hintText: 'Request from Security',
-                              keyboardType: TextInputType.text,
-                              length: 4,
-                              // textController: visitorNumber
-                            )
-                          : SizedBox(),
+                      // preferenceUtils.getTooglevalue() == true
+                      //     ?
+                      CustomForm.textField(validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your ID';
+                        }
+                        return null;
+                      },
+                          titleColor: Theme.of(context).colorScheme.onSurface,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          "Enter your ID",
+                          hintText: 'Request from Security',
+                          keyboardType: TextInputType.text,
+                          length: 4,
+                          textController: visitorNumber),
+                      // : SizedBox(),
                       CustomForm.textField(
                         "Guest Count",
                         textController: _guestCountController,

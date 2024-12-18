@@ -29,6 +29,7 @@ class UnitSelectionView extends StatefulWidget {
   final int? companyId;
   final String guestname;
   final String mobileNumber;
+  final String? visitorNumber;
 
   const UnitSelectionView(
       {Key? key,
@@ -39,7 +40,8 @@ class UnitSelectionView extends StatefulWidget {
       this.companyId,
       this.visitorId,
       required this.guestname,
-      required this.mobileNumber})
+      required this.mobileNumber,
+      this.visitorNumber})
       : super(key: key);
 
   @override
@@ -730,11 +732,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     await remoteDataSource.visitorLogDetails([savedMemberUnitDetails]);
 
-    Fluttertoast.showToast(
-      msg: "Member and Unit details saved successfully.",
-      backgroundColor: Colors.green,
-      textColor: Colors.white,
-    );
+    // Fluttertoast.showToast(
+    //   msg: "Member and Unit details saved successfully.",
+    //   backgroundColor: Colors.green,
+    //   textColor: Colors.white,
+    // );
   }
 
   Future<void> postSelection(BuildContext context, Set<String> selectedMembers,
@@ -752,13 +754,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       final c.VisitorLog data = c.VisitorLog(
         visitor_id: widget.visitorId ?? int.parse(visitorId!),
-        visitor_purpose_category_id: 1,
+        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
-        visitor_count: 1, // Example count
+        visitor_count: int.parse(widget.guestCount.toString()),
         visitor_check_in: DateTime.now(),
         visitor_check_out: null,
-        visitor_card_number: null,
-        visitor_coming_from: "Unknown",
+        visitor_card_number: widget.visitorNumber,
+        visitor_coming_from: widget.comingFrom,
         visitor_card_id: null,
         company_id: companyId!,
         is_checked_out: false,
@@ -771,13 +773,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     if (selectedUnits.length != 1) {
       final c.VisitorLog data = c.VisitorLog(
         visitor_id: widget.visitorId ?? int.parse(visitorId!),
-        visitor_purpose_category_id: 1,
+        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
-        visitor_count: 1, // Example count
+        visitor_count: int.parse(widget.guestCount.toString()), // Example count
         visitor_check_in: DateTime.now(),
         visitor_check_out: null,
-        visitor_card_number: null,
-        visitor_coming_from: "Unknown",
+        visitor_card_number: widget.visitorNumber,
+        visitor_coming_from: widget.comingFrom,
         visitor_card_id: null,
         company_id: companyId!,
         is_checked_out: false,
@@ -823,15 +825,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       print("Saved to storage: Member - $memberName, Unit - $unitId");
     } catch (e) {
       print("Error saving member details: $e");
-      Fluttertoast.showToast(
-        msg: "Error saving member details.",
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+      // Fluttertoast.showToast(
+      //   msg: "Error saving member details.",
+      //   backgroundColor: Colors.red,
+      //   textColor: Colors.white,
+      // );
       return;
     }
 
-    // Prepare the request data
     final data = {
       'company_id': companyId,
       'name': widget.guestname,
@@ -861,8 +862,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
         await showApprovalDialog(true);
 
-        // Clear visitorId from SharedPreferences
-        // await prefs.remove('visitorId');
         print("Visitor ID cleared from SharedPreferences.");
       } else {
         print("Unhandled response status code: ${response.statusCode}");
@@ -896,28 +895,28 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         await _showApprovedDialog(context, data);
       } else {
         log("Error during posting or sending notification: ${e.response?.statusCode} - ${e.response?.data}");
-        Fluttertoast.showToast(
-          msg:
-              "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 2,
-          backgroundColor: Colors.orange,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+        // Fluttertoast.showToast(
+        //   msg:
+        //       "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
+        //   toastLength: Toast.LENGTH_SHORT,
+        //   gravity: ToastGravity.BOTTOM,
+        //   timeInSecForIosWeb: 2,
+        //   backgroundColor: Colors.orange,
+        //   textColor: Colors.white,
+        //   fontSize: 16.0,
+        // );
       }
     } catch (e) {
       log("Unexpected error during posting or sending notification: $e");
-      Fluttertoast.showToast(
-        msg: "An unexpected error occurred. Please try again.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 2,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
+      // Fluttertoast.showToast(
+      //   msg: "An unexpected error occurred. Please try again.",
+      //   toastLength: Toast.LENGTH_SHORT,
+      //   gravity: ToastGravity.BOTTOM,
+      //   timeInSecForIosWeb: 2,
+      //   backgroundColor: Colors.red,
+      //   textColor: Colors.white,
+      //   fontSize: 16.0,
+      // );
     }
   }
 
