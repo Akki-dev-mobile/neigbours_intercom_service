@@ -76,6 +76,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     }
   }
 
+  //init a scroll controller
+  final ScrollController _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
@@ -115,29 +118,41 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             final successState = state as VisitorLogSuccessState;
             final visitorLogs = successState.visitorLogs;
             print("here i am $visitorLogs");
+            // Filter visitors based on the search text
             List<VisitorLog> filteredVisitors = visitorLogs!
                 .where((visitorLog) => visitorLog.visitor!.name
                     .toLowerCase()
                     .contains(_searchText!.toLowerCase()))
                 .toList();
+
+// Define start and end of today
+            final startOfToday = DateTime(today.year, today.month, today.day);
+            final endOfToday = startOfToday.add(Duration(days: 1));
+
+// Define start and end of yesterday
+            final startOfYesterday = startOfToday.subtract(Duration(days: 1));
+            final endOfYesterday = startOfToday;
+
+// Filter for today
             final todayLogs = filteredVisitors.where((log) {
-              return log.visitor_check_in
-                  .isAfter(today.subtract(Duration(days: 1)));
+              return log.visitor_check_in.isAfter(startOfToday) &&
+                  log.visitor_check_in.isBefore(endOfToday);
             }).toList();
 
+// Filter for yesterday
             final yesterdayLogs = filteredVisitors.where((log) {
-              return log.visitor_check_in
-                      .isAfter(yesterday.subtract(Duration(days: 1))) &&
-                  log.visitor_check_in.isBefore(today);
+              return log.visitor_check_in.isAfter(startOfYesterday) &&
+                  log.visitor_check_in.isBefore(endOfYesterday);
             }).toList();
 
+// Filter for older
             final olderLogs = filteredVisitors.where((log) {
-              return log.visitor_check_in.isBefore(yesterday);
+              return log.visitor_check_in.isBefore(startOfYesterday);
             }).toList();
             return PopScope(
               canPop: false,
               child: MyScrollView(
-                isScrollable: false,
+                // isScrollable: false,
                 hasBackButton: false,
                 pageTitleWidget: Hero(
                   tag: 'page_title',
@@ -175,7 +190,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     ),
                   )
 
-// ,
+                  // ,
                 ],
                 pageBody: Column(
                   children: [
@@ -214,72 +229,124 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         ),
                       ),
                     ),
-                    ListView(
+                    ListView.builder(
+                      physics: BouncingScrollPhysics(),
                       shrinkWrap: true,
-                      children: [
-                        ExpansionTile(
-                          trailing: Text(
-                            todayLogs.length.toString(),
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          initiallyExpanded: true,
-                          title: Text('Today'),
-                          children: todayLogs.map((log) {
+                      itemCount: todayLogs.length +
+                          yesterdayLogs.length +
+                          olderLogs.length +
+                          (todayLogs.isNotEmpty ? 1 : 0) +
+                          (yesterdayLogs.isNotEmpty ? 1 : 0) +
+                          (olderLogs.isNotEmpty ? 1 : 0), // Add headers count
+                      itemBuilder: (context, index) {
+                        int currentIndex = 0;
+
+                        // Today Section
+                        if (todayLogs.isNotEmpty) {
+                          if (index == currentIndex) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Today',
+                                  style:
+                                      Theme.of(context).textTheme.headlineSmall,
+                                ),
+                                const Divider(),
+                              ],
+                            );
+                          }
+                          if (index > currentIndex &&
+                              index <= currentIndex + todayLogs.length) {
                             return VisitorLogItem(
-                              visitorLog: log,
+                              visitorLog: todayLogs[index - currentIndex - 1],
                               onCheckOut: () {
-                                log.visitor_check_out = Utils.getCurrentTime();
-                                log.is_checked_out = true;
-                                _visitorLogBloc
-                                    .add(CheckOutEvent(log, widget.id));
+                                todayLogs[index - currentIndex - 1]
+                                    .visitor_check_out = Utils.getCurrentTime();
+                                todayLogs[index - currentIndex - 1]
+                                    .is_checked_out = true;
+                                _visitorLogBloc.add(CheckOutEvent(
+                                    todayLogs[index - currentIndex - 1],
+                                    widget.id));
                               },
                             );
-                          }).toList(),
-                        ),
-                        ExpansionTile(
-                          trailing: Text(
-                            yesterdayLogs.length.toString(),
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          title: Text('Yesterday'),
-                          children: yesterdayLogs.map((log) {
+                          }
+                          currentIndex +=
+                              todayLogs.length + 1; // Add 1 for header
+                        }
+
+                        // Yesterday Section
+                        if (yesterdayLogs.isNotEmpty) {
+                          if (index == currentIndex) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Yesterday',
+                                  style:
+                                      Theme.of(context).textTheme.headlineSmall,
+                                ),
+                                const Divider(),
+                              ],
+                            );
+                          }
+                          if (index > currentIndex &&
+                              index <= currentIndex + yesterdayLogs.length) {
                             return VisitorLogItem(
-                              visitorLog: log,
+                              visitorLog:
+                                  yesterdayLogs[index - currentIndex - 1],
                               onCheckOut: () {
-                                log.visitor_check_out = Utils.getCurrentTime();
-                                log.is_checked_out = true;
-                                _visitorLogBloc
-                                    .add(CheckOutEvent(log, widget.id));
+                                yesterdayLogs[index - currentIndex - 1]
+                                    .visitor_check_out = Utils.getCurrentTime();
+                                yesterdayLogs[index - currentIndex - 1]
+                                    .is_checked_out = true;
+                                _visitorLogBloc.add(CheckOutEvent(
+                                    yesterdayLogs[index - currentIndex - 1],
+                                    widget.id));
                               },
                             );
-                          }).toList(),
-                        ),
-                        ExpansionTile(
-                          trailing: Text(
-                            olderLogs.length.toString(),
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                          title: Text('Older'),
-                          children: olderLogs.take(10).map((log) {
+                          }
+                          currentIndex +=
+                              yesterdayLogs.length + 1; // Add 1 for header
+                        }
+
+                        // Older Section
+                        if (olderLogs.isNotEmpty) {
+                          if (index == currentIndex) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Older',
+                                  style:
+                                      Theme.of(context).textTheme.headlineSmall,
+                                ),
+                                const Divider(),
+                              ],
+                            );
+                          }
+                          if (index > currentIndex &&
+                              index <= currentIndex + olderLogs.length) {
                             return VisitorLogItem(
-                              visitorLog: log,
+                              visitorLog: olderLogs[index - currentIndex - 1],
                               onCheckOut: () {
-                                log.visitor_check_out = Utils.getCurrentTime();
-                                log.is_checked_out = true;
-                                _visitorLogBloc
-                                    .add(CheckOutEvent(log, widget.id));
+                                olderLogs[index - currentIndex - 1]
+                                    .visitor_check_out = Utils.getCurrentTime();
+                                olderLogs[index - currentIndex - 1]
+                                    .is_checked_out = true;
+                                _visitorLogBloc.add(CheckOutEvent(
+                                    olderLogs[index - currentIndex - 1],
+                                    widget.id));
                               },
                             );
-                          }).toList(),
-                          onExpansionChanged: (expanded) {
-                            if (expanded) {
-                              setState(() {
-                                olderLogs.addAll(filteredVisitors.skip(10));
-                              });
-                            }
-                          },
-                        ),
-                      ],
+                          }
+                        }
+
+                        return const SizedBox
+                            .shrink(); // Fallback in case of unexpected index
+                      },
                     ),
                     const SizedBox(
                       height: 100,
