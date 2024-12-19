@@ -95,131 +95,100 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                 title: "Gate Id",
                 subtitle: "Set gate id as mandatory",
               ),
-              Card(
-                elevation: 2,
-                margin: const EdgeInsets.all(8.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Visitor's Purpose",
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          overflow: TextOverflow.ellipsis, // Prevent overflow
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Set visitor's purpose as mandatory",
+                          style: Theme.of(context).textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis, // Prevent overflow
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: provider.isPurposeToggleOn,
+                    onChanged: (value) async {
+                      await provider.setPurposeToggleState(value);
+                      if (value) {
+                        provider.fetchPurposes(remoteDataSource);
+                      }
+                      setState(() {
+                        _isExpanded = value; // Expand or collapse content
+                      });
+                    },
+                  ),
+                ],
+              ),
+              if (_isExpanded) ...[
+                provider.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    // : provider.purposes == null || provider.purposes!.isEmpty
+                    //     ? const Center(child: Text("No purposes available"))
+                    : Column(
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Visitor's Purpose",
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  overflow:
-                                      TextOverflow.ellipsis, // Prevent overflow
+                          ...provider.purposes!.map((purpose) {
+                            return ListTile(
+                              leading: purpose.purpose_img.isNotEmpty
+                                  ? Image.network(
+                                      purpose.purpose_img,
+                                      width: 40,
+                                      height: 40,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Icon(Icons.error),
+                                    )
+                                  : Icon(Icons.image),
+                              title: Text(
+                                purpose.purpose_category_name,
+                                overflow:
+                                    TextOverflow.ellipsis, // Prevent overflow
+                              ),
+                              trailing: Checkbox(
+                                value: purpose.isSelected,
+                                onChanged: (isChecked) {
+                                  provider.updatePurposeSelection(
+                                    provider.purposes!.indexOf(purpose),
+                                    isChecked ?? false,
+                                  );
+
+                                  final selectedPurposes = provider.purposes!
+                                      .where((p) => p.isSelected)
+                                      .toList();
+                                  provider
+                                      .saveSelectedPurposes(selectedPurposes);
+                                },
+                              ),
+                            );
+                          }).toList(),
+                          CustomLargeBtn(
+                            onPressed: () {
+                              final selectedPurposes = provider.purposes!
+                                  .where((p) => p.isSelected)
+                                  .toList();
+                              provider.saveSelectedPurposes(selectedPurposes);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Purposes saved successfully!"),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "Set visitor's purpose as mandatory",
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  overflow:
-                                      TextOverflow.ellipsis, // Prevent overflow
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: provider.isPurposeToggleOn,
-                            onChanged: (value) async {
-                              await provider.setPurposeToggleState(value);
-                              if (value) {
-                                provider.fetchPurposes(remoteDataSource);
-                              }
-                              setState(() {
-                                _isExpanded =
-                                    value; // Expand or collapse content
-                              });
+                              );
                             },
+                            text: "Confirm",
                           ),
                         ],
                       ),
-                      if (_isExpanded) ...[
-                        provider.isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : provider.purposes == null ||
-                                    provider.purposes!.isEmpty
-                                ? const Center(
-                                    child: Text("No purposes available"))
-                                : Column(
-                                    children: [
-                                      ...provider.purposes!.map((purpose) {
-                                        return ListTile(
-                                          leading:
-                                              purpose.purpose_img.isNotEmpty
-                                                  ? Image.network(
-                                                      purpose.purpose_img,
-                                                      width: 40,
-                                                      height: 40,
-                                                      errorBuilder: (context,
-                                                              error,
-                                                              stackTrace) =>
-                                                          Icon(Icons.error),
-                                                    )
-                                                  : Icon(Icons.image),
-                                          title: Text(
-                                            purpose.purpose_category_name,
-                                            overflow: TextOverflow
-                                                .ellipsis, // Prevent overflow
-                                          ),
-                                          trailing: Checkbox(
-                                            value: purpose.isSelected,
-                                            onChanged: (isChecked) {
-                                              provider.updatePurposeSelection(
-                                                provider.purposes!
-                                                    .indexOf(purpose),
-                                                isChecked ?? false,
-                                              );
-
-                                              final selectedPurposes = provider
-                                                  .purposes!
-                                                  .where((p) => p.isSelected)
-                                                  .toList();
-                                              provider.saveSelectedPurposes(
-                                                  selectedPurposes);
-                                            },
-                                          ),
-                                        );
-                                      }).toList(),
-                                      Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: SizedBox(
-                                          width: double.infinity,
-                                          child: ElevatedButton(
-                                            onPressed: () {
-                                              final selectedPurposes = provider
-                                                  .purposes!
-                                                  .where((p) => p.isSelected)
-                                                  .toList();
-                                              provider.saveSelectedPurposes(
-                                                  selectedPurposes);
-
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                      "Purposes saved successfully!"),
-                                                ),
-                                              );
-                                            },
-                                            child: Text("Confirm"),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                      ],
-                    ],
-                  ),
-                ),
-              )
+              ]
             ],
           ),
         );
