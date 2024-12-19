@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
-
 import 'dart:convert';
 
 import 'package:common_widgets/common_widgets.dart';
@@ -7,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
+import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,7 +18,6 @@ class VisitorSettingsView extends StatefulWidget {
 }
 
 class _VisitorSettingsViewState extends State<VisitorSettingsView> {
-  // bool _visitorsName = true;
   bool _visitorsAddress = false;
   bool _visitorsPurpose = false;
   bool _membersApproval = true;
@@ -28,32 +26,59 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
   final remoteDataSource = RemoteDataSource(
       DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
 
+  List<PurposeCategory>? _purposes; // Using PurposeCategory, not mapper.
+
   @override
   void initState() {
     super.initState();
+    _loadToggleValues();
+  }
+
+  void _loadToggleValues() {
     PreferenceUtils.getInstance().then((prefs) {
       setState(() {
         _gateIdToogleValue = prefs.getTooglevalue() ?? false;
         _visitorsAddress = prefs.getTooglevalue() ?? false;
         _membersApproval = prefs.getTooglevalue() ?? false;
-        print("Gate toggle Toggle value retrieved: $_gateIdToogleValue");
-        print("Gate toggle Toggle value retrieved: $_visitorsAddress");
-        print(
-            "Gate toggle Toggle value retrieved: $_membersApproval"); // Print statement
       });
     }).catchError((error) {
-      print(
-          "Gate toggle Error retrieving toggle value: $error"); // Error handling
+      print("Error retrieving toggle values: $error");
     });
   }
 
-  List<PurposeCategory>? _purposes; // Local state to store fetched purposes
-
   void _fetchPurposes() async {
-    final fetchedPurposes = await remoteDataSource.fetchPurpose();
+    try {
+      final fetchedPurposes = await remoteDataSource.fetchPurpose();
+      setState(() {
+        _purposes = fetchedPurposes;
+      });
+    } catch (e) {
+      print("Failed to fetch purposes: $e");
+    }
+  }
+
+  void _updatePurposeSelection(int index, bool isChecked) {
     setState(() {
-      _purposes = fetchedPurposes;
+      // Update only the selected state of the specific purpose
+      _purposes![index].isSelected = isChecked;
     });
+
+    // Save only the selected purposes
+    _saveSelectedPurposes(
+      _purposes!.where((purpose) => purpose.isSelected).toList(),
+    );
+  }
+
+  void _saveSelectedPurposes(List<PurposeCategory> selectedPurposes) async {
+    try {
+      final roh = await SharedPreferences.getInstance();
+      final jsonString = jsonEncode(
+          PurposeCategoryMapper.toJsonList(selectedPurposes)); // Use mapper
+      await roh.setString('selected_purposes', jsonString);
+      print("Saved selected purposes: $jsonString");
+    } catch (e) {
+      print("Failed to save selected purposes: $e");
+    }
   }
 
   @override
@@ -65,34 +90,17 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
       pageTitle: 'Gate Settings',
       pageBody: Column(
         children: [
-          // GateSettingListTile(
-          //   switchValue: _visitorsName,
-          //   onChanged: (value) {
-          //     setState(() {
-          //       _visitorsName = value;
-          //     });
-          //   },
-          //   title: "Visitor's Name",
-          //   subtitle: "Set visitor's name as mandatory",
-          // ),
           GateSettingListTile(
             switchValue: _visitorsAddress,
             onChanged: (value) {
               setState(() {
                 _visitorsAddress = value;
               });
-              print("Gate toggle value $_visitorsAddress");
-
-              PreferenceUtils.getInstance().then((prefs) {
-                prefs.setToogleValue(value);
-              }).catchError((error) {
-                print("Failed to save Gate toggle value: $error");
-              });
+              _updateToggleValue(value);
             },
             title: "Visitor's Address",
             subtitle: "Set visitor's address as mandatory",
           ),
-
           GateSettingListTile(
             switchValue: _visitorsPurpose,
             onChanged: (value) {
@@ -126,18 +134,13 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                                     Icon(Icons.error),
                                               )
                                             : Icon(Icons.image),
-                                        title:
-                                            Text(purpose.purpose_category_name),
+                                        title: Text(purpose
+                                            .purpose_category_name), // Correct mapping
                                         trailing: Checkbox(
                                           value: purpose.isSelected,
                                           onChanged: (isChecked) {
-                                            setState(() {
-                                              purpose.isSelected =
-                                                  isChecked ?? false;
-                                            });
-                                            print(
-                                                "Updated purpose: ${purpose.purpose_category_name}, Selected: ${purpose.isSelected}");
-                                            _saveSelectedPurposes(_purposes!);
+                                            _updatePurposeSelection(
+                                                index, isChecked ?? false);
                                           },
                                         ),
                                       );
@@ -148,48 +151,28 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                   );
                 }
               });
-
-              print("Gate toggle value $_visitorsPurpose");
-
-              PreferenceUtils.getInstance().then((prefs) {
-                prefs.setToogleValue(value);
-              }).catchError((error) {
-                print("Failed to save Gate toggle value: $error");
-              });
             },
             title: "Visitor's Purpose",
             subtitle: "Set visitor's purpose as mandatory",
           ),
-
           GateSettingListTile(
             switchValue: _membersApproval,
             onChanged: (value) {
               setState(() {
                 _membersApproval = value;
               });
-              PreferenceUtils.getInstance().then((prefs) {
-                prefs.setToogleValue(value);
-              }).catchError((error) {
-                print("Failed to save Gate toggle value: $error");
-              });
+              _updateToggleValue(value);
             },
             title: "Member's Approval",
             subtitle: "Set member's approval as mandatory",
           ),
-
           GateSettingListTile(
             switchValue: _gateIdToogleValue,
             onChanged: (value) {
               setState(() {
                 _gateIdToogleValue = value;
               });
-              print("Gate toggle value $_gateIdToogleValue");
-
-              PreferenceUtils.getInstance().then((prefs) {
-                prefs.setToogleValue(value);
-              }).catchError((error) {
-                print("Failed to save Gate toggle value: $error");
-              });
+              _updateToggleValue(value);
             },
             title: "Gate Id",
             subtitle: "Set gate id as mandatory",
@@ -199,20 +182,11 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
     );
   }
 
-  void _saveSelectedPurposes(List<PurposeCategory> purposes) async {
-    try {
-      final roh = await SharedPreferences.getInstance();
-      final selectedPurposes = purposes
-          .where((purpose) => purpose.isSelected) // Filter selected purposes
-          .map((purpose) => purpose.toJson())
-          .toList();
-      await roh.setString(
-        'selected_purposes',
-        jsonEncode(selectedPurposes),
-      );
-      print("Saved selected purposes: $selectedPurposes");
-    } catch (e) {
-      print("Failed to save selected purposes: $e");
-    }
+  void _updateToggleValue(bool value) {
+    PreferenceUtils.getInstance().then((prefs) {
+      prefs.setToogleValue(value);
+    }).catchError((error) {
+      print("Failed to save toggle value: $error");
+    });
   }
 }

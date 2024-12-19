@@ -146,7 +146,7 @@ class _IdInputViewState extends State<IdInputView> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => VisitorsInEntry(
-                      selectedValue: navigateToVisitorDetailsState.purpose,
+                      // selectedValue: navigateToVisitorDetailsState.purpose,
                       searchedVisitor: navigateToVisitorDetailsState.visitor,
                       mobile: navigateToVisitorDetailsState.mobile,
                     ),
@@ -181,7 +181,6 @@ class _IdInputViewState extends State<IdInputView> {
                         boxDecoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                         ),
-
                         barrierColor: Theme.of(context)
                             .colorScheme
                             .surface
@@ -227,16 +226,19 @@ class _IdInputViewState extends State<IdInputView> {
                           });
                         },
                       ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       textController: mobileController,
                       keyboardType: TextInputType.number,
                       length: 10,
                       onChanged: (value) {
                         if (value.length == 10) {
-                          gateDashboardBloc.add(GDOnMobileNumberEnteredEvent(
-                              mobileController.text,),);
+                          gateDashboardBloc.add(
+                            GDOnMobileNumberEnteredEvent(
+                              mobileController.text,
+                            ),
+                          );
                         }
                       },
                     ),
