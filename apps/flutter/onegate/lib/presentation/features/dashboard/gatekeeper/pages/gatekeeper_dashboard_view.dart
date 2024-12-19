@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'dart:developer';
+
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:common_widgets/common_widgets.dart';
@@ -14,12 +16,14 @@ import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/commons/ui/dashboard_commons.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../app_intro/ui/keyclock_login.dart';
 import 'id_input_view.dart';
 
 class GateDashboardView extends StatefulWidget {
@@ -68,6 +72,18 @@ class _GateDashboardViewState extends State<GateDashboardView>
       FocusScope.of(context).requestFocus(_focusNode);
     });
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
+  }
+
+  Future<void> logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Clear all stored preferences
+
+    log("User logged out. Navigating to login screen.");
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MyAppLogin()),
+    );
   }
 
   @override
@@ -155,47 +171,47 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
-                  IconButton(
-                    onPressed: () {
-                      Fluttertoast.showToast(
-                        msg: "jaate raaho, coming soon",
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.CENTER,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.black,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
-                      );
-                    },
-                    icon: Icon(
-                      Symbols.alarm_rounded,
-                      color: Theme.of(context).colorScheme.onBackground,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Fluttertoast.showToast(
-                        msg: "missed approvals, coming soon",
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.CENTER,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.black,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
-                      );
-                    },
-                    icon: Icon(
-                      Symbols.phone_missed_rounded,
-                      color: Theme.of(context).colorScheme.onBackground,
-                    ),
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     Fluttertoast.showToast(
+                  //       msg: "jaate raaho, coming soon",
+                  //       toastLength: Toast.LENGTH_SHORT,
+                  //       gravity: ToastGravity.CENTER,
+                  //       timeInSecForIosWeb: 1,
+                  //       backgroundColor: Colors.black,
+                  //       textColor: Colors.white,
+                  //       fontSize: 16.0,
+                  //     );
+                  //   },
+                  //   icon: Icon(
+                  //     Symbols.alarm_rounded,
+                  //     color: Theme.of(context).colorScheme.onBackground,
+                  //   ),
+                  // ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     Fluttertoast.showToast(
+                  //       msg: "missed approvals, coming soon",
+                  //       toastLength: Toast.LENGTH_SHORT,
+                  //       gravity: ToastGravity.CENTER,
+                  //       timeInSecForIosWeb: 1,
+                  //       backgroundColor: Colors.black,
+                  //       textColor: Colors.white,
+                  //       fontSize: 16.0,
+                  //     );
+                  //   },
+                  //   icon: Icon(
+                  //     Symbols.phone_missed_rounded,
+                  //     color: Theme.of(context).colorScheme.onBackground,
+                  //   ),
+                  // ),
                   IconButton(
                     onPressed: () {
                       Navigator.push(
                         context,
                         PageTransition(
                           type: PageTransitionType.rightToLeft,
-                          child: SettingsHome(),
+                          child: VisitorSettingsView(),
                         ),
                       );
                     },
@@ -204,6 +220,18 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       color: Theme.of(context).colorScheme.onBackground,
                     ),
                   ),
+                  TextButton.icon(
+                      onPressed: () {
+                        logout(context);
+                      },
+                      icon: Icon(
+                        Icons.logout,
+                        color: Theme.of(context).colorScheme.onBackground,
+                      ),
+                      label: Text(
+                        'Logout',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      )),
                 ],
                 pageBody: Column(
                   children: [

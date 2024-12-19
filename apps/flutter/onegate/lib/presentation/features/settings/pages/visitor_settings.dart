@@ -7,6 +7,7 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -110,7 +111,16 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                   context: context,
                   builder: (context) {
                     return AlertDialog(
-                      title: Text("Select Purpose"),
+                      title: Row(
+                        children: [
+                          const Text("Select Purpose"),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Symbols.cancel),
+                          ),
+                        ],
+                      ),
                       content: _purposes == null
                           ? const Center(child: CircularProgressIndicator())
                           : _purposes!.isEmpty
@@ -118,6 +128,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                   child: Text("No purposes available"))
                               : SizedBox(
                                   width: double.maxFinite,
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.35,
                                   child: ListView.builder(
                                     itemCount: _purposes!.length,
                                     itemBuilder: (context, index) {
@@ -147,17 +159,18 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                   ),
                                 ),
                       actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text("Cancel"),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            _saveSelectedPurposes(
-                                _purposes!.where((p) => p.isSelected).toList());
-                            Navigator.pop(context);
-                          },
-                          child: Text("Confirm"),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.4,
+                          height: MediaQuery.of(context).size.height * 0.05,
+                          child: CustomLargeBtn(
+                            onPressed: () {
+                              _saveSelectedPurposes(_purposes!
+                                  .where((p) => p.isSelected)
+                                  .toList());
+                              Navigator.pop(context);
+                            },
+                            text: "Confirm",
+                          ),
                         ),
                       ],
                     );
@@ -186,6 +199,9 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                       child: Text("No purposes available"))
                                   : SizedBox(
                                       width: double.maxFinite,
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.35,
                                       child: ListView.builder(
                                         itemCount: _purposes!.length,
                                         itemBuilder: (context, index) {
@@ -229,18 +245,18 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                       ),
                                     ),
                           actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text("Cancel"),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                _saveSelectedPurposes(_purposes!
-                                    .where((p) => p.isSelected)
-                                    .toList());
-                                Navigator.pop(context);
-                              },
-                              child: Text("Confirm"),
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              height: MediaQuery.of(context).size.height * 0.05,
+                              child: CustomLargeBtn(
+                                onPressed: () {
+                                  _saveSelectedPurposes(_purposes!
+                                      .where((p) => p.isSelected)
+                                      .toList());
+                                  Navigator.pop(context);
+                                },
+                                text: "Confirm",
+                              ),
                             ),
                           ],
                         );

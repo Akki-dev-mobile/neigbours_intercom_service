@@ -14,6 +14,7 @@ import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -32,11 +33,14 @@ import '../bloc/visitor_in_entry_bloc.dart';
 class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory? selectedValue;
   final Visitor? searchedVisitor;
-  final String? mobile;
+  final String mobile;
   // final int companyId = GlobalUser.getUserId() ?? 55275;
 
   VisitorsInEntry(
-      {Key? key, this.selectedValue, this.searchedVisitor, this.mobile})
+      {Key? key,
+      this.selectedValue,
+      this.searchedVisitor,
+      required this.mobile})
       : super(key: key);
 
   @override
@@ -186,7 +190,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           DioSingleton.instance1,
           DioSingleton.instance2,
           DioSingleton.instance3)));
-      visitorUsecase.uploadImage(localImage, widget.mobile ?? "", companyId!);
+      visitorUsecase.uploadImage(localImage, widget.mobile, companyId!);
 
       return localImage;
     } catch (e) {
@@ -206,76 +210,92 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   Widget build(BuildContext context) {
     final effectivePurpose = getEffectivePurposeCategory();
 
+    // Check if the purpose is null or not available
     if (effectivePurpose == null) {
       return Center(
-        child: Text("No purpose selected or available."),
+        child: Text(
+          "No purpose selected or available.",
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
       );
     }
 
     return BlocConsumer<VisitorInEntryBloc, VisitorInEntryState>(
-      bloc: visitorInEntryBloc,
-      listenWhen: (previous, current) => current is VisitorInEntryActionState,
-      listener: (context, state) async {
-        if (state is VIENavigateToUnitSelectionState) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UnitSelectionView(
-                visitorId: widget.searchedVisitor?.id,
-                guestname: guestName.text,
-                mobileNumber: widget.mobile!,
-                purposeCategory: state.purposeCategory,
-                visitor: state.visitor,
-                comingFrom: guestComingFrom.text,
-                guestCount: _guestCount,
-                visitorNumber: visitorNumber.text,
-              ),
-            ),
-          );
-        }
-      },
-      builder: (context, state) {
-        if (_isInitialLoad && state is VisitorInEntryLoadingState) {
-          return LoaderView();
-        }
-        _isInitialLoad = false;
-
-        return MyScrollView(
-          backButtonPressed: () {
-            Navigator.pop(context);
-          },
-          isScrollable: true,
-          pageTitle:
-              'Purpose Entry - ${effectivePurpose.purpose_category_name}',
-          pageBody: _buildPurposeForm(effectivePurpose),
-          floatingActionButton: CustomLargeBtn(
-            onPressed: () {
-              if (guestName.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Please enter guest name')),
-                );
-              } else if (preferenceUtils.getTooglevalue() == true &&
-                  guestComingFrom.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Coming from is mandatory field')),
-                );
-              } else {
-                visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
-                  searchedVisitor: widget.searchedVisitor,
-                  guestName: guestName.text,
-                  guestComingFrom: guestComingFrom.text,
+        bloc: visitorInEntryBloc,
+        listenWhen: (previous, current) => current is VisitorInEntryActionState,
+        listener: (context, state) async {
+          if (state is VIENavigateToUnitSelectionState) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UnitSelectionView(
+                  visitorId: widget.searchedVisitor?.id,
+                  guestname: guestName.text,
+                  mobileNumber: mobileController.text,
+                  purposeCategory: state.purposeCategory,
+                  visitor: state.visitor,
+                  comingFrom: guestComingFrom.text,
                   guestCount: _guestCount,
-                  purposeCategory: effectivePurpose,
-                  mobile: widget.mobile!,
                   visitorNumber: visitorNumber.text,
-                ));
-              }
-            },
-            text: 'Next',
-          ),
-        );
-      },
-    );
+                ),
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          // Loader display on initial state
+          if (_isInitialLoad && state is VisitorInEntryLoadingState) {
+            return LoaderView();
+          }
+          _isInitialLoad = false; // Disable loader after initial load
+
+          return MyScrollView(
+              backButtonPressed: () {
+                Navigator.pop(context);
+              },
+              isScrollable: true,
+              pageTitle:
+                  'Purpose Entry - ${effectivePurpose.purpose_category_name}',
+              pageBody: _buildPurposeForm(effectivePurpose),
+              floatingActionButton: CustomLargeBtn(
+                onPressed: () {
+                  if (guestName.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Please enter guest name')),
+                    );
+                  } else if (preferenceUtils.getTooglevalue() == true &&
+                      guestComingFrom.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Coming from is mandatory field')),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UnitSelectionView(
+                          visitorId: widget.searchedVisitor?.id,
+                          guestname: guestName.text,
+                          mobileNumber: mobileController.text,
+                          purposeCategory: widget.selectedValue!,
+                          visitor: widget.searchedVisitor!,
+                          comingFrom: guestComingFrom.text,
+                          guestCount: _guestCount,
+                          visitorNumber: visitorNumber.text,
+                        ),
+                      ),
+                    );
+                    visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
+                        searchedVisitor: widget.searchedVisitor,
+                        guestName: guestName.text,
+                        guestComingFrom: guestComingFrom.text,
+                        guestCount: _guestCount,
+                        purposeCategory: widget.selectedValue!,
+                        mobile: widget.mobile ?? ""));
+                  }
+                },
+                text: 'Next',
+              ));
+        });
   }
 
   Widget _buildPurposeForm(PurposeCategory purpose) {

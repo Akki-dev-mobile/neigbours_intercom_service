@@ -247,8 +247,7 @@ class RemoteDataSource {
         queryParameters: {'company_id': userId},
         options: Options(
           headers: {
-            'Authorization':
-                'Bearer $accessToken', // Pass the access token here
+            'Authorization': 'Bearer $accessToken',
           },
         ),
       );

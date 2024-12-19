@@ -133,7 +133,9 @@ class _IdInputViewState extends State<IdInputView> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => VisitorsInEntry(
+                      searchedVisitor: searchedVisitor,
                       selectedValue: singlePurpose,
+                      mobile: mobileController.text,
                     ),
                   ),
                 );
@@ -193,14 +195,12 @@ class _IdInputViewState extends State<IdInputView> {
                   selectedPurpose = PurposeCategoryMapper.fromJson(json);
                 }
 
-                mobileController.text = '';
-
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => VisitorsInEntry(
                       searchedVisitor: navigateToVisitorDetailsState.visitor,
-                      mobile: navigateToVisitorDetailsState.mobile,
+                      mobile: mobileController.text,
                       selectedValue: selectedPurpose,
                     ),
                   ),
@@ -508,7 +508,6 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                     selectedValue,
                   );
 
-                  // Save the selected purpose as a JSON string
                   final dialogue = await SharedPreferences.getInstance();
                   await dialogue.setString(
                     "dialoguePurpose",
