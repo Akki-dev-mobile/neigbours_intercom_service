@@ -41,18 +41,21 @@ class PurposeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveSelectedPurposes(
-      List<PurposeCategory> selectedPurposes) async {
+  Future<void> saveSelectedPurposes(List<PurposeCategory> purposes) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonString =
-          jsonEncode(selectedPurposes.map((p) => p.toJson()).toList());
+      final jsonString = jsonEncode(purposes.map((p) => p.toJson()).toList());
       await prefs.setString('selected_purposes', jsonString);
-      _purposes = selectedPurposes;
+      _purposes = purposes; // Update the provider's list
       notifyListeners();
     } catch (e) {
       debugPrint("Failed to save purposes: $e");
     }
+  }
+
+  void updatePurposeSelection(int index, bool isSelected) {
+    _purposes![index].isSelected = isSelected;
+    notifyListeners();
   }
 
   Future<void> fetchPurposes(RemoteDataSource remoteDataSource) async {
@@ -75,8 +78,14 @@ class PurposeProvider extends ChangeNotifier {
     }
   }
 
-  void updatePurposeSelection(int index, bool isSelected) {
-    _purposes![index].isSelected = isSelected;
-    notifyListeners();
+  Future<void> clearSavedPurposes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('selected_purposes');
+      _purposes = [];
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Failed to clear purposes: $e");
+    }
   }
 }

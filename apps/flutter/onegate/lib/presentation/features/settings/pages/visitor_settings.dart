@@ -122,9 +122,12 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       await provider.setPurposeToggleState(value);
                       if (value) {
                         provider.fetchPurposes(remoteDataSource);
+                      } else {
+                        // Clear values from SharedPreferences
+                        await provider.clearSavedPurposes();
                       }
                       setState(() {
-                        _isExpanded = value; // Expand or collapse content
+                        _isExpanded = value; // Update expansion state
                       });
                     },
                   ),
@@ -157,16 +160,15 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                               trailing: Checkbox(
                                 value: purpose.isSelected,
                                 onChanged: (isChecked) {
+                                  // Update the selection status of the specific purpose
                                   provider.updatePurposeSelection(
                                     provider.purposes!.indexOf(purpose),
                                     isChecked ?? false,
                                   );
 
-                                  final selectedPurposes = provider.purposes!
-                                      .where((p) => p.isSelected)
-                                      .toList();
+                                  // Save the entire list to preserve all purposes with updated states
                                   provider
-                                      .saveSelectedPurposes(selectedPurposes);
+                                      .saveSelectedPurposes(provider.purposes!);
                                 },
                               ),
                             );
