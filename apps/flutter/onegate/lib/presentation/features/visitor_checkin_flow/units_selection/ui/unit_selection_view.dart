@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -28,6 +29,7 @@ class UnitSelectionView extends StatefulWidget {
   final int? companyId;
   final String guestname;
   final String mobileNumber;
+  final String? visitorNumber;
 
   const UnitSelectionView(
       {Key? key,
@@ -38,7 +40,8 @@ class UnitSelectionView extends StatefulWidget {
       this.companyId,
       this.visitorId,
       required this.guestname,
-      required this.mobileNumber})
+      required this.mobileNumber,
+      this.visitorNumber})
       : super(key: key);
 
   @override
@@ -451,7 +454,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     )['id']
                                     .toString();
                               }
-                              log("Selected User ID: $userId");
+
+                              List<int> memberIds = _allMembers
+                                  .where((member) => selectedMembers
+                                      .contains(member['member_name']))
+                                  .map<int>(
+                                      (member) => member['member_id'] as int)
+                                  .toList();
+
+                              log("Member IDs List: $memberIds");
 
                               log("Post Selection:::");
                               await postSelection(
@@ -519,6 +530,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 // Define a global variable to store user IDs
   Set<String> selectedUserIds = {};
 
+// Global variables
+  List<int> selectedMemberIds = []; // To store selected member IDs
+  List<String> selectedBuildingUnits =
+      []; // To store selected building-unit combinations
+
   Widget _buildMemberList(BuildContext context) {
     return ValueListenableBuilder<Set<String>>(
       valueListenable: _selectedMembersNotifier,
@@ -544,7 +560,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               itemCount: filteredMembers.length,
               itemBuilder: (context, index) {
                 final member = filteredMembers[index];
+                print("shubham $member");
+
                 final unitId = member['fk_unit_id'] ?? 'N/A';
+                final memberId = member["member_id"];
+                final buildingUnit = member["building_unit"] ?? 'N/A';
+
                 final memberDetails =
                     member['member_details'] as List<dynamic>? ?? [];
                 final firstMemberName = memberDetails.isNotEmpty
@@ -584,8 +605,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           color: Theme.of(context).colorScheme.onSurface),
                     ),
                     collapsedIconColor: Theme.of(context).colorScheme.onSurface,
-
-                    // expandedIconColor: Colors.redAccent,
                     children: [
                       ListView.separated(
                         padding: EdgeInsets.zero,
@@ -619,13 +638,34 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               if (selectedMembers.contains(firstName)) {
                                 updatedMembers.remove(firstName);
                                 selectedUserIds.remove(userId);
+                                selectedMemberIds.remove(memberId);
+                                selectedBuildingUnits.remove(buildingUnit);
                               } else {
                                 updatedMembers.add(firstName);
                                 selectedUserIds.add(userId);
+                                final cleanedMemberIds = memberId
+                                    .toString()
+                                    .split(
+                                        ',') // Split by commas into a list of strings
+                                    .map((id) => id
+                                        .trim()) // Remove extra spaces from each part
+                                    .where((id) => id
+                                        .isNotEmpty) // Filter out any empty strings
+                                    .toList();
+
+                                for (final id in cleanedMemberIds) {
+                                  try {
+                                    selectedMemberIds.add(int.parse(
+                                        id)); // Safely parse each ID to int
+                                  } catch (e) {
+                                    print("Error parsing ID: $id, Error: $e");
+                                  }
+                                }
+
+                                print("Cleaned Member IDs: $selectedMemberIds");
+                                selectedBuildingUnits.add(buildingUnit);
                               }
                               _selectedMembersNotifier.value = updatedMembers;
-
-                              // Add/remove unitId in selectedUnits
                               final updateUnits = Set<int>.from(selectedUnits);
                               if (selectedUnits.contains(unitId)) {
                                 updateUnits.remove(unitId);
@@ -633,9 +673,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 selectedUnits.add(unitId);
                               }
                               _selectedUnitsNotifier.value = updateUnits;
-
                               // Debugging logs
                               log("Selected User IDs: $selectedUserIds");
+                              log("Selected Member IDs: $selectedMemberIds");
+                              log("Selected Building Units: $selectedBuildingUnits");
                             },
                             trailing: Icon(
                               selectedMembers.contains(firstName)
@@ -659,211 +700,43 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Widget buildUnitsTab() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: DropdownButton<String>(
-            value: selectedBuilding,
-            items: buildings.map<DropdownMenuItem<String>>((building) {
-              return DropdownMenuItem<String>(
-                value: building['soc_building_name'],
-                child: Text(building['soc_building_name']),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                selectedBuilding = value!;
-                final buildingId = buildings.firstWhere(
-                    (building) => building['soc_building_name'] == value)['id'];
-                fetchUnits(buildingId);
-              });
-            },
-          ),
-        ),
-        if (isUnitsLoading)
-          const Expanded(child: Center(child: CircularProgressIndicator()))
-        else
-          Expanded(
-            child: GridView.builder(
-              shrinkWrap: true,
-              padding: EdgeInsets.fromLTRB(
-                12,
-                16,
-                12,
-                MediaQuery.of(context).size.height * 0.25,
-              ),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 2,
-              ),
-              itemCount: units.length,
-              itemBuilder: (context, index) {
-                final unit = units[index]['unit_flat_number'];
-                final isSelected = selectedUnit == unit;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      selectedUnit = unit;
-                      selectedMember = null;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                    ),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color:
-                          isSelected ? Colors.orange[100] : Colors.transparent,
-                      border: Border.all(
-                        color: isSelected ? Colors.orange : Colors.grey,
-                        width: 2,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: FittedBox(
-                      child: Text(
-                        unit,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.orange : Colors.black,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
+// Global or Class-level Map to store details
+  Map<String, dynamic> savedMemberUnitDetails = {};
 
-  Widget buildMembersTab() {
-    return FutureBuilder<List<dynamic>>(
-      future: getMember(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Text(
-              'No Members Found.\nSearch members by their name or flat',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-            ),
-          );
-        } else {
-          if (_allMembers.isEmpty) {
-            _allMembers = snapshot.data!;
-            _filteredMembers = _allMembers;
-          }
+  Future<void> saveMemberAndUnitToPrefs(
+      Set<String> memberDetails, Set<int?> unitIDs) async {
+    // Debug: Print the sets
+    print("Member Details Set: $memberDetails");
+    print("Unit IDs Set: $unitIDs");
+    print("Building Units: $selectedBuildingUnits");
 
-          return SizedBox(
-            height: MediaQuery.of(context).size.height,
-            child: Column(
-              children: [
-                CustomForm.textField(
-                  'Search Members',
-                  titleColor: Theme.of(context).colorScheme.onSurface,
-                  hintColor:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                  hintText: 'Search Members',
-                  textController: _searchController,
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Ionicons.search,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        onPressed: () {
-                          final query =
-                              _searchController.text.trim().toLowerCase();
-                          setState(() {
-                            _filteredMembers = _allMembers.where((member) {
-                              final memberName = member['member_name']
-                                  ?.toLowerCase()
-                                  .contains(query);
-                              final unitNumber = member['unit_flat_number']
-                                  ?.toLowerCase()
-                                  .contains(query);
-                              return memberName || unitNumber;
-                            }).toList();
-                          });
-                        },
-                      ),
-                      _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(
-                                Ionicons.close,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {
-                                  _filteredMembers = _allMembers;
-                                });
-                              },
-                            )
-                          : const SizedBox.shrink(),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _filteredMembers.length,
-                    itemBuilder: (context, index) {
-                      final member = _filteredMembers[index];
-                      final isSelected =
-                          selectedMember == member['member_name'];
+    // Convert sets to lists for storage
+    final List<String> memberList = memberDetails.toList();
+    final List<int> unitList = unitIDs.whereType<int>().toList();
+    final List<String> buildingUnitList = selectedBuildingUnits.toList();
 
-                      print("this is$selectedMember");
-                      final unitID = member['fk_unit_id'];
-                      print("unitID:::$unitID");
-                      return ListTile(
-                        title: Text(
-                          member['member_name'],
-                        ),
-                        subtitle: Text(member['unit_flat_number']),
-                        trailing: IconButton(
-                          icon: Icon(
-                            isSelected
-                                ? Ionicons.checkmark_circle
-                                : Ionicons.add_circle_outline,
-                            color: isSelected ? Colors.green : null,
-                          ),
-                          onPressed: () async {
-                            setState(() {
-                              selectedMember = member['member_name'];
-                              selectedUnit = member['fk_unit_id'];
+    // Store the data in the Map
+    savedMemberUnitDetails['member_details'] = memberList;
+    savedMemberUnitDetails['unit_ids'] = unitList;
+    savedMemberUnitDetails['member_ids'] = selectedMemberIds.toList();
+    savedMemberUnitDetails['building_unit'] = buildingUnitList;
 
-                              print(
-                                  "Selected Member: $selectedMember, Selected Unit: $selectedUnit");
-                            });
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-      },
-    );
+    // Debugging: Print saved data
+    print(
+        "Saved Member Details: ${jsonEncode(savedMemberUnitDetails['member_details'])}");
+    print("Saved Unit IDs: ${jsonEncode(savedMemberUnitDetails['unit_ids'])}");
+    print(
+        "Saved Member IDs: ${jsonEncode(savedMemberUnitDetails['member_ids'])}");
+    print(
+        "Saved Building Units: ${jsonEncode(savedMemberUnitDetails['building_unit'])}");
+
+    await remoteDataSource.visitorLogDetails([savedMemberUnitDetails]);
+
+    // Fluttertoast.showToast(
+    //   msg: "Member and Unit details saved successfully.",
+    //   backgroundColor: Colors.green,
+    //   textColor: Colors.white,
+    // );
   }
 
   Future<void> postSelection(BuildContext context, Set<String> selectedMembers,
@@ -874,34 +747,20 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
-    //
-    // if (visitorId == null) {
-    //   print("Visitor ID not found in SharedPreferences.");
-    //   Fluttertoast.showToast(
-    //     msg: "Visitor ID not found. Please try again.",
-    //     toastLength: Toast.LENGTH_SHORT,
-    //     gravity: ToastGravity.BOTTOM,
-    //     timeInSecForIosWeb: 2,
-    //     backgroundColor: Colors.red,
-    //     textColor: Colors.white,
-    //     fontSize: 16.0,
-    //   );
-    //   return;
-    // }
-
+    await saveMemberAndUnitToPrefs(selectedMembers, selectedUnits);
     if (selectedMembers.length != 1) {
       print("Request skipped: Exactly one user ID must be selected.");
       print("Returning success as no posting is required.");
 
       final c.VisitorLog data = c.VisitorLog(
         visitor_id: widget.visitorId ?? int.parse(visitorId!),
-        visitor_purpose_category_id: 1,
+        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
-        visitor_count: 1, // Example count
+        visitor_count: int.parse(widget.guestCount.toString()),
         visitor_check_in: DateTime.now(),
         visitor_check_out: null,
-        visitor_card_number: null,
-        visitor_coming_from: "Unknown",
+        visitor_card_number: widget.visitorNumber,
+        visitor_coming_from: widget.comingFrom,
         visitor_card_id: null,
         company_id: companyId!,
         is_checked_out: false,
@@ -912,8 +771,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
 
     if (selectedUnits.length != 1) {
+      final c.VisitorLog data = c.VisitorLog(
+        visitor_id: widget.visitorId ?? int.parse(visitorId!),
+        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
+        visitor_purpose_sub_category_id: null,
+        visitor_count: int.parse(widget.guestCount.toString()), // Example count
+        visitor_check_in: DateTime.now(),
+        visitor_check_out: null,
+        visitor_card_number: widget.visitorNumber,
+        visitor_coming_from: widget.comingFrom,
+        visitor_card_id: null,
+        company_id: companyId!,
+        is_checked_out: false,
+      );
+
       print("Request skipped: Exactly one unit must be selected.");
       print("Returning success as no posting is required.");
+      _showApprovedDialog(context, data);
       return;
     }
 
@@ -951,15 +825,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       print("Saved to storage: Member - $memberName, Unit - $unitId");
     } catch (e) {
       print("Error saving member details: $e");
-      Fluttertoast.showToast(
-        msg: "Error saving member details.",
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+      // Fluttertoast.showToast(
+      //   msg: "Error saving member details.",
+      //   backgroundColor: Colors.red,
+      //   textColor: Colors.white,
+      // );
       return;
     }
 
-    // Prepare the request data
     final data = {
       'company_id': companyId,
       'name': widget.guestname,
@@ -989,8 +862,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
         await showApprovalDialog(true);
 
-        // Clear visitorId from SharedPreferences
-        // await prefs.remove('visitorId');
         print("Visitor ID cleared from SharedPreferences.");
       } else {
         print("Unhandled response status code: ${response.statusCode}");
@@ -1024,28 +895,28 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         await _showApprovedDialog(context, data);
       } else {
         log("Error during posting or sending notification: ${e.response?.statusCode} - ${e.response?.data}");
-        Fluttertoast.showToast(
-          msg:
-              "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 2,
-          backgroundColor: Colors.orange,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+        // Fluttertoast.showToast(
+        //   msg:
+        //       "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
+        //   toastLength: Toast.LENGTH_SHORT,
+        //   gravity: ToastGravity.BOTTOM,
+        //   timeInSecForIosWeb: 2,
+        //   backgroundColor: Colors.orange,
+        //   textColor: Colors.white,
+        //   fontSize: 16.0,
+        // );
       }
     } catch (e) {
       log("Unexpected error during posting or sending notification: $e");
-      Fluttertoast.showToast(
-        msg: "An unexpected error occurred. Please try again.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 2,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
+      // Fluttertoast.showToast(
+      //   msg: "An unexpected error occurred. Please try again.",
+      //   toastLength: Toast.LENGTH_SHORT,
+      //   gravity: ToastGravity.BOTTOM,
+      //   timeInSecForIosWeb: 2,
+      //   backgroundColor: Colors.red,
+      //   textColor: Colors.white,
+      //   fontSize: 16.0,
+      // );
     }
   }
 

@@ -21,6 +21,7 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -166,33 +167,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     padding: const EdgeInsets.only(right: 10.0),
                     child: IconButton(
                       onPressed: () async {
-                        try {
-                          List<Map<String, dynamic>> visitorData =
-                              visitorLogs.map((visitor) {
-                            return {
-                              "visitor_name":
-                                  visitor.visitor?.name ?? "Unknown Visitor",
-                              "check_in_time":
-                                  visitor.visitor_check_in.toIso8601String() ??
-                                      "Unknown",
-                              "check_out_time": visitor.visitor_check_out
-                                      ?.toIso8601String() ??
-                                  "Not Checked Out",
-                              "visitor_count": visitor.visitor_count ?? 1,
-                            };
-                          }).toList();
-
-                          print("ninadkabaap$visitorData");
-                          await remoteDataSource.exportLogs(visitorData);
-                        } catch (e) {
-                          print(e);
-                        }
+                        await _showExportDialog(context, visitorLogs);
                       },
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.download,
                       ),
                     ),
-                  ),
+                  )
+
+// ,
                 ],
                 pageBody: Column(
                   children: [
@@ -308,6 +291,129 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           default:
             return Container();
         }
+      },
+    );
+  }
+
+  Future<void> _showExportDialog(
+      BuildContext context, List<VisitorLog> visitorLogs) async {
+    TextEditingController emailController = TextEditingController();
+    TextEditingController nameController = TextEditingController();
+    DateTime? fromDate;
+    DateTime? toDate;
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final storedEmail = prefs.getString('email') ?? ''; // Load email if saved
+    emailController.text = storedEmail;
+
+    // Function to pick a date
+    Future<DateTime?> _pickDate(BuildContext context) async {
+      return await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(2000),
+        lastDate: DateTime.now(),
+      );
+    }
+
+    // Show the dialog
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Export Logs'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Email Input
+                    CustomForm.textField("name",
+                        titleColor: Theme.of(context).colorScheme.onSurface,
+                        hintColor: Theme.of(context).colorScheme.onPrimary,
+                        hintText: "Enter name for export",
+                        textController: nameController),
+
+                    CustomForm.textField("Email",
+                        titleColor: Theme.of(context).colorScheme.onSurface,
+                        hintColor: Theme.of(context).colorScheme.onPrimary,
+                        hintText: "Enter email for export",
+                        textController: emailController),
+
+                    const SizedBox(height: 10),
+                    ListTile(
+                      title: Text(
+                        "From Date: ${fromDate != null ? DateFormat('yyyy-MM-dd').format(fromDate!) : 'Select'}",
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await _pickDate(context);
+                        if (picked != null) {
+                          setState(() {
+                            fromDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    // To Date Picker
+                    ListTile(
+                      title: Text(
+                          "To Date: ${toDate != null ? DateFormat('yyyy-MM-dd').format(toDate!) : 'Select'}",
+                          style: Theme.of(context).textTheme.headlineSmall),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await _pickDate(context);
+                        if (picked != null) {
+                          setState(() {
+                            toDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                CustomLargeBtn(
+                    onPressed: () async {
+                      // Save email in SharedPreferences
+                      await prefs.setString('email', emailController.text);
+
+                      final formattedFromDate = fromDate != null
+                          ? DateFormat('yyyy-MM-dd').format(fromDate!)
+                          : null;
+                      final formattedToDate = toDate != null
+                          ? DateFormat('yyyy-MM-dd').format(toDate!)
+                          : null;
+
+                      // Prepare export data
+                      var visitorData = visitorLogs.map((visitor) {
+                        return {
+                          "name": nameController.text,
+                          "visitor_count": visitor.visitor_count ?? 1,
+                          "to_mail": emailController.text,
+                          "from_date": formattedFromDate,
+                          "to_date": formattedToDate,
+                        };
+                      }).toList();
+
+                      print("Export Data: $visitorData");
+                      print(
+                          "Email: ${emailController.text}, From: $formattedFromDate, To: $formattedToDate");
+
+                      // Call API with the updated payload
+                      await remoteDataSource.exportLogs(visitorData);
+
+                      // Close dialog
+                      Navigator.of(context).pop();
+                    },
+                    text: "Export")
+              ],
+            );
+          },
+        );
       },
     );
   }

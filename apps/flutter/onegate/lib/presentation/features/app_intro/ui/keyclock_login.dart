@@ -178,7 +178,8 @@ class _MyAppLoginState extends State<MyAppLogin> {
                     selectedSocietyId =
                         societyId; // Ensure this is the resolved ID
                     log("Selected Society ID: $selectedSocietyId");
-
+                    await gateStorage.saveSocietyDetails(
+                        societyId, societyName);
                     await gateStorage.saveSocietyId(selectedSocietyId!);
 
                     log("Society ID saved successfully.");
