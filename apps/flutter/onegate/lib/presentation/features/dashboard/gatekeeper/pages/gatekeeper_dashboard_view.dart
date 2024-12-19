@@ -171,40 +171,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
-                  // IconButton(
-                  //   onPressed: () {
-                  //     Fluttertoast.showToast(
-                  //       msg: "jaate raaho, coming soon",
-                  //       toastLength: Toast.LENGTH_SHORT,
-                  //       gravity: ToastGravity.CENTER,
-                  //       timeInSecForIosWeb: 1,
-                  //       backgroundColor: Colors.black,
-                  //       textColor: Colors.white,
-                  //       fontSize: 16.0,
-                  //     );
-                  //   },
-                  //   icon: Icon(
-                  //     Symbols.alarm_rounded,
-                  //     color: Theme.of(context).colorScheme.onBackground,
-                  //   ),
-                  // ),
-                  // IconButton(
-                  //   onPressed: () {
-                  //     Fluttertoast.showToast(
-                  //       msg: "missed approvals, coming soon",
-                  //       toastLength: Toast.LENGTH_SHORT,
-                  //       gravity: ToastGravity.CENTER,
-                  //       timeInSecForIosWeb: 1,
-                  //       backgroundColor: Colors.black,
-                  //       textColor: Colors.white,
-                  //       fontSize: 16.0,
-                  //     );
-                  //   },
-                  //   icon: Icon(
-                  //     Symbols.phone_missed_rounded,
-                  //     color: Theme.of(context).colorScheme.onBackground,
-                  //   ),
-                  // ),
                   IconButton(
                     onPressed: () {
                       Navigator.push(

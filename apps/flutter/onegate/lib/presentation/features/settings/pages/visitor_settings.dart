@@ -1,15 +1,11 @@
-import 'dart:convert';
-
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
-import 'package:flutter_onegate/purpose_mapper.dart';
+import 'package:flutter_onegate/purposeProvider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import 'package:onegate_client/onegate_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 class VisitorSettingsView extends StatefulWidget {
   const VisitorSettingsView({super.key});
@@ -23,16 +19,16 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
   bool _visitorsPurpose = false;
   bool _membersApproval = true;
   bool _gateIdToogleValue = false;
-
   final remoteDataSource = RemoteDataSource(
       DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
-
-  List<PurposeCategory>? _purposes; // Using PurposeCategory, not mapper.
+  final provider1 = PurposeProvider();
+  bool _isExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _loadToggleValues();
+    // provider1.fetchPurposes();
   }
 
   void _loadToggleValues() {
@@ -47,260 +43,187 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
     });
   }
 
-  void _fetchPurposes() async {
-    try {
-      final fetchedPurposes = await remoteDataSource.fetchPurpose();
-      setState(() {
-        _purposes = fetchedPurposes;
-      });
-    } catch (e) {
-      print("Failed to fetch purposes: $e");
-    }
-  }
-
-  void _updatePurposeSelection(int index, bool isChecked) {
-    setState(() {
-      // Update only the selected state of the specific purpose
-      _purposes![index].isSelected = isChecked;
-    });
-
-    // Save only the selected purposes
-    _saveSelectedPurposes(
-      _purposes!.where((purpose) => purpose.isSelected).toList(),
-    );
-  }
-
-  void _saveSelectedPurposes(List<PurposeCategory> selectedPurposes) async {
-    try {
-      final roh = await SharedPreferences.getInstance();
-      final jsonString =
-          jsonEncode(PurposeCategoryMapper.toJsonList(selectedPurposes));
-      await roh.setString('selected_purposes', jsonString);
-      print("Saved selected purposes: $jsonString");
-    } catch (e) {
-      print("Failed to save selected purposes: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MyScrollView(
-      backButtonPressed: () {
-        Navigator.pop(context);
-      },
-      pageTitle: 'Gate Settings',
-      pageBody: Column(
-        children: [
-          GateSettingListTile(
-            switchValue: _visitorsAddress,
-            onChanged: (value) {
-              setState(() {
-                _visitorsAddress = value;
-              });
-              _updateToggleValue(value);
-            },
-            title: "Visitor's Address",
-            subtitle: "Set visitor's address as mandatory",
-          ),
-          GestureDetector(
-            onTap: () {
-              if (_visitorsPurpose) {
-                _fetchPurposes();
-
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: Row(
-                        children: [
-                          const Text("Select Purpose"),
-                          const Spacer(),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Symbols.cancel),
-                          ),
-                        ],
-                      ),
-                      content: _purposes == null
-                          ? const Center(child: CircularProgressIndicator())
-                          : _purposes!.isEmpty
-                              ? const Center(
-                                  child: Text("No purposes available"))
-                              : SizedBox(
-                                  width: double.maxFinite,
-                                  height:
-                                      MediaQuery.of(context).size.height * 0.35,
-                                  child: ListView.builder(
-                                    itemCount: _purposes!.length,
-                                    itemBuilder: (context, index) {
-                                      final purpose = _purposes![index];
-                                      return ListTile(
-                                        leading: purpose.purpose_img.isNotEmpty
-                                            ? Image.network(
-                                                purpose.purpose_img,
-                                                width: 40,
-                                                height: 40,
-                                                errorBuilder: (context, error,
-                                                        stackTrace) =>
-                                                    Icon(Icons.error),
-                                              )
-                                            : Icon(Icons.image),
-                                        title:
-                                            Text(purpose.purpose_category_name),
-                                        trailing: Checkbox(
-                                          value: purpose.isSelected,
-                                          onChanged: (isChecked) {
-                                            _updatePurposeSelection(
-                                                index, isChecked ?? false);
-                                          },
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                      actions: [
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.4,
-                          height: MediaQuery.of(context).size.height * 0.05,
-                          child: CustomLargeBtn(
-                            onPressed: () {
-                              _saveSelectedPurposes(_purposes!
-                                  .where((p) => p.isSelected)
-                                  .toList());
-                              Navigator.pop(context);
-                            },
-                            text: "Confirm",
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              }
-            },
-            child: GateSettingListTile(
-              switchValue: _visitorsPurpose,
-              onChanged: (value) {
-                setState(() {
-                  _visitorsPurpose = value;
-
-                  if (_visitorsPurpose) {
-                    _fetchPurposes();
-
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: Text("Select Purpose"),
-                          content: _purposes == null
-                              ? const Center(child: CircularProgressIndicator())
-                              : _purposes!.isEmpty
-                                  ? const Center(
-                                      child: Text("No purposes available"))
-                                  : SizedBox(
-                                      width: double.maxFinite,
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.35,
-                                      child: ListView.builder(
-                                        itemCount: _purposes!.length,
-                                        itemBuilder: (context, index) {
-                                          final purpose = _purposes![index];
-                                          return ListTile(
-                                            leading:
-                                                purpose.purpose_img.isNotEmpty
-                                                    ? Image.network(
-                                                        purpose.purpose_img,
-                                                        width: 40,
-                                                        height: 40,
-                                                        errorBuilder: (context,
-                                                                error,
-                                                                stackTrace) =>
-                                                            Icon(Icons.error),
-                                                      )
-                                                    : Icon(Icons.image),
-                                            title: Text(
-                                                purpose.purpose_category_name),
-                                            trailing: Checkbox(
-                                              value: purpose.isSelected,
-                                              onChanged: (isChecked) {
-                                                setState(() {
-                                                  _purposes![index].isSelected =
-                                                      isChecked ?? false;
-                                                });
-
-                                                // Save the updated purposes in the background
-                                                Future.microtask(() {
-                                                  _saveSelectedPurposes(
-                                                    _purposes!
-                                                        .where((purpose) =>
-                                                            purpose.isSelected)
-                                                        .toList(),
-                                                  );
-                                                });
-                                              },
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                          actions: [
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.4,
-                              height: MediaQuery.of(context).size.height * 0.05,
-                              child: CustomLargeBtn(
-                                onPressed: () {
-                                  _saveSelectedPurposes(_purposes!
-                                      .where((p) => p.isSelected)
-                                      .toList());
-                                  Navigator.pop(context);
-                                },
-                                text: "Confirm",
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  }
-                });
-              },
-              title: "Visitor's Purpose",
-              subtitle: "Set visitor's purpose as mandatory",
-            ),
-          ),
-          GateSettingListTile(
-            switchValue: _membersApproval,
-            onChanged: (value) {
-              setState(() {
-                _membersApproval = value;
-              });
-              _updateToggleValue(value);
-            },
-            title: "Member's Approval",
-            subtitle: "Set member's approval as mandatory",
-          ),
-          GateSettingListTile(
-            switchValue: _gateIdToogleValue,
-            onChanged: (value) {
-              setState(() {
-                _gateIdToogleValue = value;
-              });
-              _updateToggleValue(value);
-            },
-            title: "Gate Id",
-            subtitle: "Set gate id as mandatory",
-          ),
-        ],
-      ),
-    );
-  }
-
   void _updateToggleValue(bool value) {
     PreferenceUtils.getInstance().then((prefs) {
       prefs.setToogleValue(value);
     }).catchError((error) {
       print("Failed to save toggle value: $error");
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<PurposeProvider>(
+      builder: (context, provider, child) {
+        return MyScrollView(
+          backButtonPressed: () {
+            Navigator.pop(context);
+          },
+          pageTitle: 'Gate Settings',
+          pageBody: Column(
+            children: [
+              GateSettingListTile(
+                switchValue: _visitorsAddress,
+                onChanged: (value) {
+                  setState(() {
+                    _visitorsAddress = value;
+                  });
+                  _updateToggleValue(value);
+                },
+                title: "Visitor's Address",
+                subtitle: "Set visitor's address as mandatory",
+              ),
+              GateSettingListTile(
+                switchValue: _membersApproval,
+                onChanged: (value) {
+                  setState(() {
+                    _membersApproval = value;
+                  });
+                  _updateToggleValue(value);
+                },
+                title: "Member's Approval",
+                subtitle: "Set member's approval as mandatory",
+              ),
+              GateSettingListTile(
+                switchValue: _gateIdToogleValue,
+                onChanged: (value) {
+                  setState(() {
+                    _gateIdToogleValue = value;
+                  });
+                  _updateToggleValue(value);
+                },
+                title: "Gate Id",
+                subtitle: "Set gate id as mandatory",
+              ),
+              Card(
+                elevation: 2,
+                margin: const EdgeInsets.all(8.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Visitor's Purpose",
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                  overflow:
+                                      TextOverflow.ellipsis, // Prevent overflow
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Set visitor's purpose as mandatory",
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                  overflow:
+                                      TextOverflow.ellipsis, // Prevent overflow
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: provider.isPurposeToggleOn,
+                            onChanged: (value) async {
+                              await provider.setPurposeToggleState(value);
+                              if (value) {
+                                provider.fetchPurposes(remoteDataSource);
+                              }
+                              setState(() {
+                                _isExpanded =
+                                    value; // Expand or collapse content
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      if (_isExpanded) ...[
+                        provider.isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : provider.purposes == null ||
+                                    provider.purposes!.isEmpty
+                                ? const Center(
+                                    child: Text("No purposes available"))
+                                : Column(
+                                    children: [
+                                      ...provider.purposes!.map((purpose) {
+                                        return ListTile(
+                                          leading:
+                                              purpose.purpose_img.isNotEmpty
+                                                  ? Image.network(
+                                                      purpose.purpose_img,
+                                                      width: 40,
+                                                      height: 40,
+                                                      errorBuilder: (context,
+                                                              error,
+                                                              stackTrace) =>
+                                                          Icon(Icons.error),
+                                                    )
+                                                  : Icon(Icons.image),
+                                          title: Text(
+                                            purpose.purpose_category_name,
+                                            overflow: TextOverflow
+                                                .ellipsis, // Prevent overflow
+                                          ),
+                                          trailing: Checkbox(
+                                            value: purpose.isSelected,
+                                            onChanged: (isChecked) {
+                                              provider.updatePurposeSelection(
+                                                provider.purposes!
+                                                    .indexOf(purpose),
+                                                isChecked ?? false,
+                                              );
+
+                                              final selectedPurposes = provider
+                                                  .purposes!
+                                                  .where((p) => p.isSelected)
+                                                  .toList();
+                                              provider.saveSelectedPurposes(
+                                                  selectedPurposes);
+                                            },
+                                          ),
+                                        );
+                                      }).toList(),
+                                      Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton(
+                                            onPressed: () {
+                                              final selectedPurposes = provider
+                                                  .purposes!
+                                                  .where((p) => p.isSelected)
+                                                  .toList();
+                                              provider.saveSelectedPurposes(
+                                                  selectedPurposes);
+
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                      "Purposes saved successfully!"),
+                                                ),
+                                              );
+                                            },
+                                            child: Text("Confirm"),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                      ],
+                    ],
+                  ),
+                ),
+              )
+            ],
+          ),
+        );
+      },
+    );
   }
 }

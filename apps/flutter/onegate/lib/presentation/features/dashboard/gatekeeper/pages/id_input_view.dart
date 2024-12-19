@@ -16,6 +16,7 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/purposeProvider.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
@@ -71,7 +72,7 @@ class _IdInputViewState extends State<IdInputView> {
     Future.delayed(Duration(milliseconds: 200), () {
       FocusScope.of(context).requestFocus(_focusNode);
     });
-    _loadSelectedPurposesToGlobal();
+    loadPurposes();
   }
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
@@ -87,6 +88,7 @@ class _IdInputViewState extends State<IdInputView> {
               DioSingleton.instance3),
         ),
       ));
+  final provider = PurposeProvider();
 
   @override
   void dispose() {
@@ -97,21 +99,17 @@ class _IdInputViewState extends State<IdInputView> {
 
   List<PurposeCategory> globalSelectedPurposes = [];
 
-  Future<void> _loadSelectedPurposesToGlobal() async {
+  Future<void> loadPurposes() async {
     try {
-      final roh = await SharedPreferences.getInstance();
-      final jsonString = roh.getString('selected_purposes');
-      if (jsonString != null) {
-        final jsonList = jsonDecode(jsonString) as List<dynamic>;
-        setState(() {
-          globalSelectedPurposes = jsonList
-              .map((json) => PurposeCategoryMapper.fromJson(json))
-              .toList();
-        });
-        print("Global selected purposes loaded: $globalSelectedPurposes");
+      final prefs = await SharedPreferences.getInstance();
+      final savedPurposes = prefs.getString('selected_purposes');
+      if (savedPurposes != null) {
+        final decoded = jsonDecode(savedPurposes) as List;
+        globalSelectedPurposes =
+            decoded.map((e) => PurposeCategoryMapper.fromJson(e)).toList();
       }
     } catch (e) {
-      print("Failed to load selected purposes into global variable: $e");
+      debugPrint("Failed to load purposes: $e");
     }
   }
 
@@ -399,7 +397,100 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           const SizedBox(height: 10),
           Expanded(
             child: globalSelectedPurposes.isEmpty
-                ? const Center(child: CircularProgressIndicator())
+                ? GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                    ),
+                    itemCount: widget.purposeCategories.length,
+                    itemBuilder: (context, index) {
+                      final purpose = widget.purposeCategories[index];
+                      return GestureDetector(
+                        onTap: () => selectImage(index),
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 250,
+                              width: 200,
+                              margin: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: selectedImageIndex == index
+                                    ? const Color(0x10C08261)
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: selectedImageIndex == index
+                                      ? const Color(0xffC08261)
+                                      : Colors.grey,
+                                  width: selectedImageIndex == index ? 2 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 7),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: CachedNetworkImage(
+                                        maxHeightDiskCache: 90,
+                                        maxWidthDiskCache: 90,
+                                        height: 60,
+                                        width: 60,
+                                        fit: BoxFit.cover,
+                                        imageUrl: purpose.purpose_img,
+                                        placeholder: (context, url) =>
+                                            const CircularProgressIndicator(),
+                                        errorWidget: (context, url, error) =>
+                                            const Icon(
+                                          Icons.error,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        purpose.purpose_category_name,
+                                        style: TextStyle(
+                                          color: selectedImageIndex == index
+                                              ? const Color(0xffC08261)
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                          fontWeight:
+                                              selectedImageIndex == index
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (selectedImageIndex == index)
+                              const Positioned(
+                                right: 10,
+                                top: 10,
+                                child: Icon(
+                                  size: 20,
+                                  Ionicons.checkmark_circle_outline,
+                                  color: Color(0xffC08261),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
                 : GridView.builder(
                     shrinkWrap: true,
                     gridDelegate:
@@ -501,8 +592,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               text: 'Next',
               onPressed: () async {
                 if (selectedImageIndex != -1) {
-                  final selectedValue =
-                      globalSelectedPurposes[selectedImageIndex];
+                  final selectedValue = globalSelectedPurposes.length == 0
+                      ? widget.purposeCategories[selectedImageIndex]
+                      : globalSelectedPurposes[selectedImageIndex];
                   Navigator.pop(
                     context,
                     selectedValue,
