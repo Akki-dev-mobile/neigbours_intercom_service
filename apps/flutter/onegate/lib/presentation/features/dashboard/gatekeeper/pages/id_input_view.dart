@@ -332,6 +332,32 @@ class ImageGridBottomSheet extends StatefulWidget {
 class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   int selectedImageIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedPurposesToGlobal();
+  }
+
+  List<PurposeCategory> globalSelectedPurposes = [];
+
+  Future<void> _loadSelectedPurposesToGlobal() async {
+    try {
+      final roh = await SharedPreferences.getInstance();
+      final jsonString = roh.getString('selected_purposes');
+      if (jsonString != null) {
+        final jsonList = jsonDecode(jsonString) as List<dynamic>;
+        setState(() {
+          globalSelectedPurposes = jsonList
+              .map((json) => PurposeCategoryMapper.fromJson(json))
+              .toList();
+        });
+        print("Global selected purposes loaded: $globalSelectedPurposes");
+      }
+    } catch (e) {
+      print("Failed to load selected purposes into global variable: $e");
+    }
+  }
+
   void selectImage(int index) {
     setState(() {
       selectedImageIndex = index;
@@ -341,11 +367,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
@@ -363,7 +387,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                     fontWeight: FontWeight.w600,
                   ),
             ),
-            trailing: Icon(
+            trailing: const Icon(
               Ionicons.close_circle_outline,
               color: Colors.red,
               size: 28,
@@ -372,117 +396,113 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               Navigator.pop(context);
             },
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Expanded(
-            child: GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 3,
-                crossAxisSpacing: 3,
-              ),
-              itemCount: widget.purposeCategories.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () => selectImage(index),
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 250,
-                        width: 200,
-                        /*padding:
-                            EdgeInsets.symmetric(vertical: 7, horizontal: 10),*/
-                        margin: EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: selectedImageIndex == index
-                              ? Color(0x10C08261)
-                              : Colors.transparent,
-                          border: Border.all(
-                            color: selectedImageIndex == index
-                                ? Color(0xffC08261)
-                                : Colors.grey,
-                            width: selectedImageIndex == index ? 2 : 1,
-                          ),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            child: globalSelectedPurposes.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                    ),
+                    itemCount: globalSelectedPurposes.length,
+                    itemBuilder: (context, index) {
+                      final purpose = globalSelectedPurposes[index];
+                      return GestureDetector(
+                        onTap: () => selectImage(index),
+                        child: Stack(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 7),
-                              child: ClipRRect(
+                            Container(
+                              height: 250,
+                              width: 200,
+                              margin: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: selectedImageIndex == index
+                                    ? const Color(0x10C08261)
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: selectedImageIndex == index
+                                      ? const Color(0xffC08261)
+                                      : Colors.grey,
+                                  width: selectedImageIndex == index ? 2 : 1,
+                                ),
                                 borderRadius: BorderRadius.circular(15),
-                                child: CachedNetworkImage(
-                                  maxHeightDiskCache: 90,
-                                  maxWidthDiskCache: 90,
-                                  height: 60,
-                                  width: 60,
-                                  fit: BoxFit.cover,
-                                  imageUrl: widget
-                                      .purposeCategories[index].purpose_img,
-                                  placeholder: (context, url) =>
-                                      const CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(
-                                    Icons.error,
-                                    color: Colors.red,
+                              ),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 7),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: CachedNetworkImage(
+                                        maxHeightDiskCache: 90,
+                                        maxWidthDiskCache: 90,
+                                        height: 60,
+                                        width: 60,
+                                        fit: BoxFit.cover,
+                                        imageUrl: purpose.purpose_img,
+                                        placeholder: (context, url) =>
+                                            const CircularProgressIndicator(),
+                                        errorWidget: (context, url, error) =>
+                                            const Icon(
+                                          Icons.error,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  fadeOutDuration:
-                                      const Duration(milliseconds: 300),
-                                  fadeInDuration:
-                                      const Duration(milliseconds: 300),
-                                ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        purpose.purpose_category_name,
+                                        style: TextStyle(
+                                          color: selectedImageIndex == index
+                                              ? const Color(0xffC08261)
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                          fontWeight:
+                                              selectedImageIndex == index
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  widget.purposeCategories[index]
-                                      .purpose_category_name,
-                                  style: TextStyle(
-                                    color: selectedImageIndex == index
-                                        ? Color(0xffC08261)
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                    fontWeight: selectedImageIndex == index
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
+                            if (selectedImageIndex == index)
+                              const Positioned(
+                                right: 10,
+                                top: 10,
+                                child: Icon(
+                                  size: 20,
+                                  Ionicons.checkmark_circle_outline,
+                                  color: Color(0xffC08261),
                                 ),
                               ),
-                            ),
                           ],
                         ),
-                      ),
-                      selectedImageIndex == index
-                          ? Positioned(
-                              right: 10,
-                              top: 10,
-                              child: Icon(
-                                size: 20,
-                                Ionicons.checkmark_circle_outline,
-                                color: Color(0xffC08261),
-                              ),
-                            )
-                          : SizedBox()
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 20),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
             child: CustomLargeBtn(
               text: 'Next',
               onPressed: () async {
-                if (searchedVisitor != null) {}
                 if (selectedImageIndex != -1) {
-                  PurposeCategory selectedValue =
-                      widget.purposeCategories[selectedImageIndex];
+                  final selectedValue =
+                      globalSelectedPurposes[selectedImageIndex];
                   Navigator.pop(
                     context,
                     selectedValue,
@@ -492,8 +512,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                   final dialogue = await SharedPreferences.getInstance();
                   await dialogue.setString(
                     "dialoguePurpose",
-                    jsonEncode(
-                        selectedValue.toJson()), // Convert to JSON string
+                    jsonEncode(selectedValue.toJson()),
                   );
 
                   widget.gatekeeperDashboardBloc.add(
@@ -507,7 +526,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               },
             ),
           ),
-          SizedBox(height: 10)
+          const SizedBox(height: 10),
         ],
       ),
     );

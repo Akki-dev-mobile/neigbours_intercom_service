@@ -208,8 +208,20 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                             trailing: Checkbox(
                                               value: purpose.isSelected,
                                               onChanged: (isChecked) {
-                                                _updatePurposeSelection(
-                                                    index, isChecked ?? false);
+                                                setState(() {
+                                                  _purposes![index].isSelected =
+                                                      isChecked ?? false;
+                                                });
+
+                                                // Save the updated purposes in the background
+                                                Future.microtask(() {
+                                                  _saveSelectedPurposes(
+                                                    _purposes!
+                                                        .where((purpose) =>
+                                                            purpose.isSelected)
+                                                        .toList(),
+                                                  );
+                                                });
                                               },
                                             ),
                                           );
