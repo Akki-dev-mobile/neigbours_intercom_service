@@ -72,8 +72,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
   void _saveSelectedPurposes(List<PurposeCategory> selectedPurposes) async {
     try {
       final roh = await SharedPreferences.getInstance();
-      final jsonString = jsonEncode(
-          PurposeCategoryMapper.toJsonList(selectedPurposes)); // Use mapper
+      final jsonString =
+          jsonEncode(PurposeCategoryMapper.toJsonList(selectedPurposes));
       await roh.setString('selected_purposes', jsonString);
       print("Saved selected purposes: $jsonString");
     } catch (e) {
@@ -101,24 +101,23 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
             title: "Visitor's Address",
             subtitle: "Set visitor's address as mandatory",
           ),
-          GateSettingListTile(
-            switchValue: _visitorsPurpose,
-            onChanged: (value) {
-              setState(() {
-                _visitorsPurpose = value;
+          GestureDetector(
+            onTap: () {
+              if (_visitorsPurpose) {
+                _fetchPurposes();
 
-                if (_visitorsPurpose) {
-                  _fetchPurposes(); // Fetch purposes once
-
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (context) {
-                      return _purposes == null
-                          ? Center(child: CircularProgressIndicator())
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text("Select Purpose"),
+                      content: _purposes == null
+                          ? const Center(child: CircularProgressIndicator())
                           : _purposes!.isEmpty
-                              ? Center(child: Text("No purposes available"))
-                              : Padding(
-                                  padding: const EdgeInsets.all(8.0),
+                              ? const Center(
+                                  child: Text("No purposes available"))
+                              : SizedBox(
+                                  width: double.maxFinite,
                                   child: ListView.builder(
                                     itemCount: _purposes!.length,
                                     itemBuilder: (context, index) {
@@ -134,8 +133,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                                     Icon(Icons.error),
                                               )
                                             : Icon(Icons.image),
-                                        title: Text(purpose
-                                            .purpose_category_name), // Correct mapping
+                                        title:
+                                            Text(purpose.purpose_category_name),
                                         trailing: Checkbox(
                                           value: purpose.isSelected,
                                           onChanged: (isChecked) {
@@ -146,14 +145,101 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                       );
                                     },
                                   ),
-                                );
-                    },
-                  );
-                }
-              });
+                                ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text("Cancel"),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            _saveSelectedPurposes(
+                                _purposes!.where((p) => p.isSelected).toList());
+                            Navigator.pop(context);
+                          },
+                          child: Text("Confirm"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              }
             },
-            title: "Visitor's Purpose",
-            subtitle: "Set visitor's purpose as mandatory",
+            child: GateSettingListTile(
+              switchValue: _visitorsPurpose,
+              onChanged: (value) {
+                setState(() {
+                  _visitorsPurpose = value;
+
+                  if (_visitorsPurpose) {
+                    _fetchPurposes();
+
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text("Select Purpose"),
+                          content: _purposes == null
+                              ? const Center(child: CircularProgressIndicator())
+                              : _purposes!.isEmpty
+                                  ? const Center(
+                                      child: Text("No purposes available"))
+                                  : SizedBox(
+                                      width: double.maxFinite,
+                                      child: ListView.builder(
+                                        itemCount: _purposes!.length,
+                                        itemBuilder: (context, index) {
+                                          final purpose = _purposes![index];
+                                          return ListTile(
+                                            leading:
+                                                purpose.purpose_img.isNotEmpty
+                                                    ? Image.network(
+                                                        purpose.purpose_img,
+                                                        width: 40,
+                                                        height: 40,
+                                                        errorBuilder: (context,
+                                                                error,
+                                                                stackTrace) =>
+                                                            Icon(Icons.error),
+                                                      )
+                                                    : Icon(Icons.image),
+                                            title: Text(
+                                                purpose.purpose_category_name),
+                                            trailing: Checkbox(
+                                              value: purpose.isSelected,
+                                              onChanged: (isChecked) {
+                                                _updatePurposeSelection(
+                                                    index, isChecked ?? false);
+                                              },
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text("Cancel"),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                _saveSelectedPurposes(_purposes!
+                                    .where((p) => p.isSelected)
+                                    .toList());
+                                Navigator.pop(context);
+                              },
+                              child: Text("Confirm"),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                });
+              },
+              title: "Visitor's Purpose",
+              subtitle: "Set visitor's purpose as mandatory",
+            ),
           ),
           GateSettingListTile(
             switchValue: _membersApproval,

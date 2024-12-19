@@ -32,14 +32,11 @@ import '../bloc/visitor_in_entry_bloc.dart';
 class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory? selectedValue;
   final Visitor? searchedVisitor;
-  final String mobile;
+  final String? mobile;
   // final int companyId = GlobalUser.getUserId() ?? 55275;
 
   VisitorsInEntry(
-      {Key? key,
-      this.selectedValue,
-      this.searchedVisitor,
-      required this.mobile})
+      {Key? key, this.selectedValue, this.searchedVisitor, this.mobile})
       : super(key: key);
 
   @override
@@ -77,7 +74,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
     _initSpeech();
     _fetchCompanyId();
-    _loadSelectedPurposes();
+    _loadSelectedPurposesToGlobal();
   }
 
   void _initSpeech() async {
@@ -123,22 +120,24 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     });
   }
 
-  Future<List<PurposeCategory>> _loadSelectedPurposes() async {
+  List<PurposeCategory> globalSelectedPurposes = [];
+
+  Future<void> _loadSelectedPurposesToGlobal() async {
     try {
       final roh = await SharedPreferences.getInstance();
       final jsonString = roh.getString('selected_purposes');
       if (jsonString != null) {
-        final List<dynamic> jsonList = jsonDecode(jsonString);
-        return jsonList
-            .map((json) => PurposeCategoryMapper.fromJson(
-                  json,
-                ))
-            .toList();
+        final jsonList = jsonDecode(jsonString) as List<dynamic>;
+        setState(() {
+          globalSelectedPurposes = jsonList
+              .map((json) => PurposeCategoryMapper.fromJson(json))
+              .toList();
+        });
+        print("Global selected purposes loaded: $globalSelectedPurposes");
       }
     } catch (e) {
-      print("Failed to load selected purposes: $e");
+      print("Failed to load selected purposes into global variable: $e");
     }
-    return [];
   }
 
   void _decrementGuestCount() {
@@ -187,7 +186,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           DioSingleton.instance1,
           DioSingleton.instance2,
           DioSingleton.instance3)));
-      visitorUsecase.uploadImage(localImage, widget.mobile, companyId!);
+      visitorUsecase.uploadImage(localImage, widget.mobile ?? "", companyId!);
 
       return localImage;
     } catch (e) {
@@ -196,391 +195,330 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
   }
 
+  PurposeCategory? getEffectivePurposeCategory() {
+    return widget.selectedValue ??
+        (globalSelectedPurposes.isNotEmpty
+            ? globalSelectedPurposes.first
+            : null);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final effectivePurpose = getEffectivePurposeCategory();
+
+    if (effectivePurpose == null) {
+      return Center(
+        child: Text("No purpose selected or available."),
+      );
+    }
+
     return BlocConsumer<VisitorInEntryBloc, VisitorInEntryState>(
-        bloc: visitorInEntryBloc,
-        listenWhen: (previous, current) => current is VisitorInEntryActionState,
-        listener: (context, state) async {
-          if (state is VIENavigateToUnitSelectionState) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UnitSelectionView(
-                    visitorId: widget.searchedVisitor?.id,
-                    guestname: guestName.text,
-                    mobileNumber: widget.mobile,
-                    purposeCategory: state.purposeCategory,
-                    visitor: state.visitor,
-                    comingFrom: guestComingFrom.text,
-                    guestCount: _guestCount,
-                    visitorNumber: visitorNumber.text),
-              ),
-            );
-          } else if (state is VIENavigateToCameraState) {
-            final imageFile = await _captureImageFromCamera();
-            if (imageFile != null) {
-              visitorInEntryBloc.add(VIECameraButtonPressedEvent(
+      bloc: visitorInEntryBloc,
+      listenWhen: (previous, current) => current is VisitorInEntryActionState,
+      listener: (context, state) async {
+        if (state is VIENavigateToUnitSelectionState) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UnitSelectionView(
+                visitorId: widget.searchedVisitor?.id,
+                guestname: guestName.text,
+                mobileNumber: widget.mobile!,
                 purposeCategory: state.purposeCategory,
-                imageFile: imageFile,
                 visitor: state.visitor,
-                operation: state.operation,
-              ));
-            }
-          }
-        },
-        builder: (context, state) {
-          if (_isInitialLoad && state is VisitorInEntryLoadingState) {
-            return LoaderView();
-          }
-          _isInitialLoad = false; // Set to false after initial load
-
-          return MyScrollView(
-            backButtonPressed: () {
-              Navigator.pop(context);
-            },
-            isScrollable: true,
-            pageTitle: 'Purpose Entry',
-            pageBody: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // if (widget.selectedValue.purpose_category_name == 'CABS')
-                Column(
-                  children: [
-                    CustomForm.textField(
-                      "Cab Driver Name",
-                      hintText: 'Enter Name',
-                      textCapitalization: TextCapitalization.words,
-                      suffixIcon: IconButton(
-                        onPressed: () {},
-                        icon: CircleAvatar(
-                          backgroundColor: Color(0xffFFEBE6),
-                          radius: 20,
-                          child: Icon(
-                            size: 22,
-                            Ionicons.mic_outline,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                    CustomForm.textField(
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      "Cab Number",
-                      hintText: 'MH 12 AB 1234',
-                      textCapitalization: TextCapitalization.characters,
-                      suffixIcon: IconButton(
-                        onPressed: () {},
-                        icon: CircleAvatar(
-                          backgroundColor: Color(0xffFFEBE6),
-                          radius: 20,
-                          child: Icon(
-                            size: 22,
-                            Ionicons.mic_outline,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                // if (widget.selectedValue.purpose_category_name == 'DELIVERY')
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CustomForm.textField(
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      "Delivery Person Name",
-                      hintText: 'Enter Name',
-                      textCapitalization: TextCapitalization.words,
-                      suffixIcon: IconButton(
-                        onPressed: () {},
-                        icon: CircleAvatar(
-                          backgroundColor: Color(0xffFFEBE6),
-                          radius: 20,
-                          child: Icon(
-                            size: 22,
-                            Ionicons.mic_outline,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Select Delivery Company',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                    SelectTypeWidget(),
-                  ],
-                ),
-                // if (widget.selectedValue.purpose_category_name == 'GUEST' ||
-                //     widget.selectedValue.purpose_category_name == 'VISITOR')
-                Column(
-                  children: [
-                    CustomForm.textField(
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      "Guest Name",
-                      hintText: 'Enter Name',
-                      validator: preferenceUtils.getTooglevalue() == true
-                          ? (value) {
-                              return 'Please enter coming from';
-                            }
-                          : null,
-
-                      //(value) {
-                      //   if (value == null || value.isEmpty) {
-                      //     return 'Please enter guest name';
-                      //   }
-                      //   return null;
-                      // },
-
-                      textCapitalization: TextCapitalization.words,
-                      textController: guestName,
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          showDialog(
-                              context: context,
-                              builder: (context) => ListeningDialog());
-                          _speechToText.isNotListening
-                              ? _startListening('guestName')
-                              : _stopListening();
-                        },
-                        icon: CircleAvatar(
-                          backgroundColor:
-                              _speechTextControllerId == 'guestName' &&
-                                      _speechToText.isListening
-                                  ? Color(0xffCAF1D1)
-                                  : Color(0xffFFEBE6),
-                          radius: 20,
-                          child: Icon(
-                            size: 22,
-                            Ionicons.mic_outline,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                    CustomForm.textField(
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      "Coming From",
-                      hintText: 'Enter Coming From',
-                      validator: preferenceUtils.getTooglevalue() == true
-                          ? (value) {
-                              return 'Please enter coming from';
-                            }
-                          : null,
-                      textCapitalization: TextCapitalization.words,
-                      textController: guestComingFrom,
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          showDialog(
-                              context: context,
-                              builder: (context) => ListeningDialog());
-                          _speechToText.isNotListening
-                              ? _startListening('comingFrom')
-                              : _stopListening();
-                        },
-                        icon: CircleAvatar(
-                          backgroundColor:
-                              _speechTextControllerId == 'comingFrom' &&
-                                      _speechToText.isListening
-                                  ? Color(0xffCAF1D1)
-                                  : Color(0xffFFEBE6),
-                          radius: 20,
-                          child: Icon(
-                            size: 22,
-                            Ionicons.mic_outline,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // preferenceUtils.getTooglevalue() == true
-                    //     ?
-                    CustomForm.textField(validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your ID';
-                      }
-                      return null;
-                    },
-                        titleColor: Theme.of(context).colorScheme.onSurface,
-                        hintColor: Theme.of(context).colorScheme.onPrimary,
-                        "Enter your ID",
-                        hintText: 'Request from Security',
-                        keyboardType: TextInputType.text,
-                        length: 4,
-                        textController: visitorNumber),
-                    // : SizedBox(),
-                    CustomForm.textField(
-                      "Guest Count",
-                      textController: _guestCountController,
-                      hintText: 'Guest Count',
-                      keyboardType: TextInputType.number,
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      length: 2,
-                      onChanged: (value) {
-                        setState(() {
-                          _guestCount = int.tryParse(value) ?? 1;
-                        });
-                      },
-                      suffixIcon: OverflowBar(
-                        // mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: _decrementGuestCount,
-                            icon: Icon(
-                              Ionicons.remove_circle_outline,
-                              color: Colors.red,
-                              size: 32,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: _incrementGuestCount,
-                            icon: Icon(
-                              Ionicons.add_circle_outline,
-                              size: 32,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 150),
-                  ],
-                ),
-                // if (widget.selectedValue.purpose_category_name == 'STAFF')
-                Column(
-                  children: [
-                    CustomForm.textField(
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      "Staff Name",
-                      hintText: 'Enter Name',
-                      textCapitalization: TextCapitalization.words,
-                      suffixIcon: IconButton(
-                        onPressed: () {},
-                        icon: CircleAvatar(
-                          backgroundColor: Color(0xffFFEBE6),
-                          radius: 20,
-                          child: Icon(
-                            size: 22,
-                            Ionicons.mic_outline,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Select Staff Category',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                    SelectTypeWidget(),
-                  ],
-                ),
-                // if (widget.selectedValue.purpose_category_name == 'VENDOR')
-                Column(
-                  children: [
-                    CustomForm.textField(
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      "Vendor Name",
-                      hintText: 'Enter Name',
-                      textCapitalization: TextCapitalization.words,
-                      suffixIcon: IconButton(
-                        onPressed: () {},
-                        icon: CircleAvatar(
-                          backgroundColor: Color(0xffFFEBE6),
-                          radius: 20,
-                          child: Icon(
-                            size: 22,
-                            Ionicons.mic_outline,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Select Vendor Category',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                    SelectTypeWidget(),
-                  ],
-                ),
-              ],
-            ),
-            floatingActionButton: CustomLargeBtn(
-              onPressed: () {
-                if (guestName.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Please enter guest name')),
-                  );
-                } else if (preferenceUtils.getTooglevalue() == true &&
-                    guestComingFrom.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Coming from is mandatory field')),
-                  );
-                } else {
-                  visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
-                      searchedVisitor: widget.searchedVisitor,
-                      guestName: guestName.text,
-                      guestComingFrom: guestComingFrom.text,
-                      guestCount: _guestCount,
-                      purposeCategory: widget.selectedValue!,
-                      mobile: widget.mobile,
-                      visitorNumber: visitorNumber.text));
-                }
-
-                // if (guestComingFrom.text.isEmpty &&
-                //     preferenceUtils.getTooglevalue() == true) {
-                //   ScaffoldMessenger.of(context).showSnackBar(
-                //     SnackBar(content: Text('Coming from is mandatory field')),
-                //   );
-                // } else {
-                //   visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
-                //       searchedVisitor: widget.searchedVisitor,
-                //       guestName: guestName.text,
-                //       guestComingFrom: guestComingFrom.text,
-                //       guestCount: _guestCount,
-                //       purposeCategory: widget.selectedValue,
-                //       mobile: widget.mobile));
-                // }
-
-                // visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
-                //     searchedVisitor: widget.searchedVisitor,
-                //     guestName: guestName.text,
-                //     guestComingFrom: guestComingFrom.text,
-                //     guestCount: _guestCount,
-                //     purposeCategory: widget.selectedValue,
-                //     mobile: widget.mobile));
-              },
-              text: 'Next',
+                comingFrom: guestComingFrom.text,
+                guestCount: _guestCount,
+                visitorNumber: visitorNumber.text,
+              ),
             ),
           );
-        });
+        }
+      },
+      builder: (context, state) {
+        if (_isInitialLoad && state is VisitorInEntryLoadingState) {
+          return LoaderView();
+        }
+        _isInitialLoad = false;
+
+        return MyScrollView(
+          backButtonPressed: () {
+            Navigator.pop(context);
+          },
+          isScrollable: true,
+          pageTitle:
+              'Purpose Entry - ${effectivePurpose.purpose_category_name}',
+          pageBody: _buildPurposeForm(effectivePurpose),
+          floatingActionButton: CustomLargeBtn(
+            onPressed: () {
+              if (guestName.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Please enter guest name')),
+                );
+              } else if (preferenceUtils.getTooglevalue() == true &&
+                  guestComingFrom.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Coming from is mandatory field')),
+                );
+              } else {
+                visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
+                  searchedVisitor: widget.searchedVisitor,
+                  guestName: guestName.text,
+                  guestComingFrom: guestComingFrom.text,
+                  guestCount: _guestCount,
+                  purposeCategory: effectivePurpose,
+                  mobile: widget.mobile!,
+                  visitorNumber: visitorNumber.text,
+                ));
+              }
+            },
+            text: 'Next',
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPurposeForm(PurposeCategory purpose) {
+    if (purpose.purpose_category_name == 'CABS') {
+      return _buildCabsForm();
+    } else if (purpose.purpose_category_name == 'DELIVERY') {
+      return _buildDeliveryForm();
+    } else if (purpose.purpose_category_name == 'GUEST') {
+      return _buildGuestForm();
+    } else {
+      return Center(
+        child: Text('Unknown Purpose'),
+      );
+    }
+  }
+
+  Widget _buildCabsForm() {
+    return Column(
+      children: [
+        CustomForm.textField(
+          "Cab Driver Name",
+          hintText: 'Enter Name',
+          textCapitalization: TextCapitalization.words,
+          suffixIcon: IconButton(
+            onPressed: () {},
+            icon: CircleAvatar(
+              backgroundColor: Color(0xffFFEBE6),
+              radius: 20,
+              child: Icon(
+                size: 22,
+                Ionicons.mic_outline,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+        ),
+        CustomForm.textField(
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          "Cab Number",
+          hintText: 'MH 12 AB 1234',
+          textCapitalization: TextCapitalization.characters,
+          suffixIcon: IconButton(
+            onPressed: () {},
+            icon: CircleAvatar(
+              backgroundColor: Color(0xffFFEBE6),
+              radius: 20,
+              child: Icon(
+                size: 22,
+                Ionicons.mic_outline,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryForm() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomForm.textField(
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          "Delivery Person Name",
+          hintText: 'Enter Name',
+          textCapitalization: TextCapitalization.words,
+          suffixIcon: IconButton(
+            onPressed: () {},
+            icon: CircleAvatar(
+              backgroundColor: Color(0xffFFEBE6),
+              radius: 20,
+              child: Icon(
+                size: 22,
+                Ionicons.mic_outline,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            'Select Delivery Company',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        SelectTypeWidget(),
+      ],
+    );
+  }
+
+  Widget _buildGuestForm() {
+    return Column(
+      children: [
+        CustomForm.textField(
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          "Guest Name",
+          hintText: 'Enter Name',
+          validator: preferenceUtils.getTooglevalue() == true
+              ? (value) {
+                  return 'Please enter coming from';
+                }
+              : null,
+
+          //(value) {
+          //   if (value == null || value.isEmpty) {
+          //     return 'Please enter guest name';
+          //   }
+          //   return null;
+          // },
+
+          textCapitalization: TextCapitalization.words,
+          textController: guestName,
+          suffixIcon: IconButton(
+            onPressed: () {
+              showDialog(
+                  context: context, builder: (context) => ListeningDialog());
+              _speechToText.isNotListening
+                  ? _startListening('guestName')
+                  : _stopListening();
+            },
+            icon: CircleAvatar(
+              backgroundColor: _speechTextControllerId == 'guestName' &&
+                      _speechToText.isListening
+                  ? Color(0xffCAF1D1)
+                  : Color(0xffFFEBE6),
+              radius: 20,
+              child: Icon(
+                size: 22,
+                Ionicons.mic_outline,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ),
+        CustomForm.textField(
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          "Coming From",
+          hintText: 'Enter Coming From',
+          validator: preferenceUtils.getTooglevalue() == true
+              ? (value) {
+                  return 'Please enter coming from';
+                }
+              : null,
+          textCapitalization: TextCapitalization.words,
+          textController: guestComingFrom,
+          suffixIcon: IconButton(
+            onPressed: () {
+              showDialog(
+                  context: context, builder: (context) => ListeningDialog());
+              _speechToText.isNotListening
+                  ? _startListening('comingFrom')
+                  : _stopListening();
+            },
+            icon: CircleAvatar(
+              backgroundColor: _speechTextControllerId == 'comingFrom' &&
+                      _speechToText.isListening
+                  ? Color(0xffCAF1D1)
+                  : Color(0xffFFEBE6),
+              radius: 20,
+              child: Icon(
+                size: 22,
+                Ionicons.mic_outline,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ),
+        // preferenceUtils.getTooglevalue() == true
+        //     ?
+        CustomForm.textField(validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter your ID';
+          }
+          return null;
+        },
+            titleColor: Theme.of(context).colorScheme.onSurface,
+            hintColor: Theme.of(context).colorScheme.onPrimary,
+            "Enter your ID",
+            hintText: 'Request from Security',
+            keyboardType: TextInputType.text,
+            length: 4,
+            textController: visitorNumber),
+        // : SizedBox(),
+        CustomForm.textField(
+          "Guest Count",
+          textController: _guestCountController,
+          hintText: 'Guest Count',
+          keyboardType: TextInputType.number,
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          length: 2,
+          onChanged: (value) {
+            setState(() {
+              _guestCount = int.tryParse(value) ?? 1;
+            });
+          },
+          suffixIcon: OverflowBar(
+            // mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: _decrementGuestCount,
+                icon: Icon(
+                  Ionicons.remove_circle_outline,
+                  color: Colors.red,
+                  size: 32,
+                ),
+              ),
+              IconButton(
+                onPressed: _incrementGuestCount,
+                icon: Icon(
+                  Ionicons.add_circle_outline,
+                  size: 32,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 150),
+      ],
+    );
+  }
+
+  Widget? _buildVendorForm() {
+    return null;
+
+    //   Column(
+    //   children: [
+    //     CustomForm.textField(
+    //       "Vendor Name", titleColor: null, hintColor: null, hintText: '',
+    //     ),
+    //     SelectTypeWidget(),
+    //   ],
+    // );
   }
 }
 

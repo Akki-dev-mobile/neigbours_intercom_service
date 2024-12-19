@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
@@ -14,9 +16,11 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 
@@ -67,6 +71,7 @@ class _IdInputViewState extends State<IdInputView> {
     Future.delayed(Duration(milliseconds: 200), () {
       FocusScope.of(context).requestFocus(_focusNode);
     });
+    _loadSelectedPurposesToGlobal();
   }
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
@@ -90,6 +95,26 @@ class _IdInputViewState extends State<IdInputView> {
     mobileController.text = '';
   }
 
+  List<PurposeCategory> globalSelectedPurposes = [];
+
+  Future<void> _loadSelectedPurposesToGlobal() async {
+    try {
+      final roh = await SharedPreferences.getInstance();
+      final jsonString = roh.getString('selected_purposes');
+      if (jsonString != null) {
+        final jsonList = jsonDecode(jsonString) as List<dynamic>;
+        setState(() {
+          globalSelectedPurposes = jsonList
+              .map((json) => PurposeCategoryMapper.fromJson(json))
+              .toList();
+        });
+        print("Global selected purposes loaded: $globalSelectedPurposes");
+      }
+    } catch (e) {
+      print("Failed to load selected purposes into global variable: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -100,7 +125,38 @@ class _IdInputViewState extends State<IdInputView> {
               current is GatekeeperDashboardActionState,
           buildWhen: (previous, current) =>
               current is! GatekeeperDashboardActionState,
-          listener: (context, state) {
+          listener: (context, state) async {
+            if (state is OpenPurposeDialogState) {
+              if (globalSelectedPurposes.length == 1) {
+                final singlePurpose = globalSelectedPurposes.first;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VisitorsInEntry(
+                      selectedValue: singlePurpose,
+                    ),
+                  ),
+                );
+                return; // Exit early
+              }
+
+              showModalBottomSheet(
+                useSafeArea: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                context: context,
+                builder: (context) => ImageGridBottomSheet(
+                  purposeCategories: state.purposeCategories ?? [],
+                  gatekeeperDashboardBloc: gateDashboardBloc,
+                ),
+              );
+            }
+
             switch (state.runtimeType) {
               case GatekeeperDashboardErrorState:
                 final errorState = state as GatekeeperDashboardErrorState;
@@ -114,41 +170,38 @@ class _IdInputViewState extends State<IdInputView> {
                   fontSize: 16.0,
                 );
                 break;
-              case OpenPurposeDialogState:
-                final dialogState = state as OpenPurposeDialogState;
-                showModalBottomSheet(
-                  useSafeArea: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                  ),
-                  backgroundColor: Theme.of(context).colorScheme.surface,
-                  context: context,
-                  builder: (context) => ImageGridBottomSheet(
-                      purposeCategories: dialogState.purposeCategories!,
-                      gatekeeperDashboardBloc: gateDashboardBloc),
-                );
-                break;
+
               case SaveSearchedVisitorState:
                 final saveVisitorState = state as SaveSearchedVisitorState;
                 searchedVisitor = saveVisitorState.visitor;
                 break;
+
               case InputPutViewNextClickedState:
                 // Example: Set loading state here if needed
                 break;
+
               case NavigateToVisitorDetailsState:
                 final navigateToVisitorDetailsState =
                     state as NavigateToVisitorDetailsState;
+
+                // Retrieve and decode the saved purpose
+                final prefs = await SharedPreferences.getInstance();
+                final jsonString = prefs.getString("dialoguePurpose");
+                PurposeCategory? selectedPurpose;
+                if (jsonString != null) {
+                  final json = jsonDecode(jsonString);
+                  selectedPurpose = PurposeCategoryMapper.fromJson(json);
+                }
+
                 mobileController.text = '';
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => VisitorsInEntry(
-                      // selectedValue: navigateToVisitorDetailsState.purpose,
                       searchedVisitor: navigateToVisitorDetailsState.visitor,
                       mobile: navigateToVisitorDetailsState.mobile,
+                      selectedValue: selectedPurpose,
                     ),
                   ),
                 );
@@ -425,7 +478,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
             margin: EdgeInsets.symmetric(horizontal: 20),
             child: CustomLargeBtn(
               text: 'Next',
-              onPressed: () {
+              onPressed: () async {
                 if (searchedVisitor != null) {}
                 if (selectedImageIndex != -1) {
                   PurposeCategory selectedValue =
@@ -434,9 +487,22 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                     context,
                     selectedValue,
                   );
+
+                  // Save the selected purpose as a JSON string
+                  final dialogue = await SharedPreferences.getInstance();
+                  await dialogue.setString(
+                    "dialoguePurpose",
+                    jsonEncode(
+                        selectedValue.toJson()), // Convert to JSON string
+                  );
+
                   widget.gatekeeperDashboardBloc.add(
-                      PurposeNextButtonClickedEvent(selectedValue,
-                          searchedVisitor, mobileController.text));
+                    PurposeNextButtonClickedEvent(
+                      selectedValue,
+                      searchedVisitor,
+                      mobileController.text,
+                    ),
+                  );
                 }
               },
             ),
