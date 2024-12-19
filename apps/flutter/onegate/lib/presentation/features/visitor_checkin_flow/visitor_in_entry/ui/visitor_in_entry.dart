@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
@@ -19,6 +20,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart';
@@ -74,6 +76,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
     _initSpeech();
     _fetchCompanyId();
+    _loadSelectedPurposes();
   }
 
   void _initSpeech() async {
@@ -117,6 +120,23 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       _guestCount++;
       _guestCountController.text = _guestCount.toString();
     });
+  }
+
+  Future<List<PurposeCategory>> _loadSelectedPurposes() async {
+    try {
+      final roh = await SharedPreferences.getInstance();
+      final jsonString = roh.getString('selected_purposes');
+      if (jsonString != null) {
+        final List<dynamic> jsonList = jsonDecode(jsonString);
+        return jsonList
+            .map((json) =>
+                PurposeCategory.fromJson(json, SerializationManager()))
+            .toList();
+      }
+    } catch (e) {
+      print("Failed to load selected purposes: $e");
+    }
+    return [];
   }
 
   void _decrementGuestCount() {
