@@ -135,7 +135,8 @@ class _GateSelectionViewState extends State<GateSelectionView> {
                           selectedGate = gatesList[index];
                         })
                       },
-                      title: successState.gates[index].gateName ?? 'Unknown Gate',
+                      title:
+                          successState.gates[index].gateName ?? 'Unknown Gate',
                       subtitle:
                           'Enable/Disable ${successState.gates[index].gateName}',
                       // leadingIcon: Ionicons.grid_outline,

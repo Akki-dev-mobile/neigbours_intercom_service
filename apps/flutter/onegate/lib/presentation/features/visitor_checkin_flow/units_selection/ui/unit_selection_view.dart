@@ -825,11 +825,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       print("Saved to storage: Member - $memberName, Unit - $unitId");
     } catch (e) {
       print("Error saving member details: $e");
-      // Fluttertoast.showToast(
-      //   msg: "Error saving member details.",
-      //   backgroundColor: Colors.red,
-      //   textColor: Colors.white,
-      // );
+      Fluttertoast.showToast(
+        msg: "Error saving member details.",
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
       return;
     }
 
@@ -895,28 +895,28 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         await _showApprovedDialog(context, data);
       } else {
         log("Error during posting or sending notification: ${e.response?.statusCode} - ${e.response?.data}");
-        // Fluttertoast.showToast(
-        //   msg:
-        //       "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
-        //   toastLength: Toast.LENGTH_SHORT,
-        //   gravity: ToastGravity.BOTTOM,
-        //   timeInSecForIosWeb: 2,
-        //   backgroundColor: Colors.orange,
-        //   textColor: Colors.white,
-        //   fontSize: 16.0,
-        // );
+        Fluttertoast.showToast(
+          msg:
+              "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 2,
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
       }
     } catch (e) {
       log("Unexpected error during posting or sending notification: $e");
-      // Fluttertoast.showToast(
-      //   msg: "An unexpected error occurred. Please try again.",
-      //   toastLength: Toast.LENGTH_SHORT,
-      //   gravity: ToastGravity.BOTTOM,
-      //   timeInSecForIosWeb: 2,
-      //   backgroundColor: Colors.red,
-      //   textColor: Colors.white,
-      //   fontSize: 16.0,
-      // );
+      Fluttertoast.showToast(
+        msg: "An unexpected error occurred. Please try again.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 2,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
   }
 

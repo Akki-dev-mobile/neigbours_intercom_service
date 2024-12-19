@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
@@ -14,9 +16,12 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/purposeProvider.dart';
+import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 
@@ -67,6 +72,7 @@ class _IdInputViewState extends State<IdInputView> {
     Future.delayed(Duration(milliseconds: 200), () {
       FocusScope.of(context).requestFocus(_focusNode);
     });
+    loadPurposes();
   }
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
@@ -82,12 +88,29 @@ class _IdInputViewState extends State<IdInputView> {
               DioSingleton.instance3),
         ),
       ));
+  final provider = PurposeProvider();
 
   @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
     mobileController.text = '';
+  }
+
+  List<PurposeCategory> globalSelectedPurposes = [];
+
+  Future<void> loadPurposes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPurposes = prefs.getString('selected_purposes');
+      if (savedPurposes != null) {
+        final decoded = jsonDecode(savedPurposes) as List;
+        globalSelectedPurposes =
+            decoded.map((e) => PurposeCategoryMapper.fromJson(e)).toList();
+      }
+    } catch (e) {
+      debugPrint("Failed to load purposes: $e");
+    }
   }
 
   @override
@@ -100,7 +123,40 @@ class _IdInputViewState extends State<IdInputView> {
               current is GatekeeperDashboardActionState,
           buildWhen: (previous, current) =>
               current is! GatekeeperDashboardActionState,
-          listener: (context, state) {
+          listener: (context, state) async {
+            if (state is OpenPurposeDialogState) {
+              if (globalSelectedPurposes.length == 1) {
+                final singlePurpose = globalSelectedPurposes.first;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VisitorsInEntry(
+                      searchedVisitor: searchedVisitor,
+                      selectedValue: singlePurpose,
+                      mobile: mobileController.text,
+                    ),
+                  ),
+                );
+                return; // Exit early
+              }
+
+              showModalBottomSheet(
+                useSafeArea: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                context: context,
+                builder: (context) => ImageGridBottomSheet(
+                  purposeCategories: state.purposeCategories ?? [],
+                  gatekeeperDashboardBloc: gateDashboardBloc,
+                ),
+              );
+            }
+
             switch (state.runtimeType) {
               case GatekeeperDashboardErrorState:
                 final errorState = state as GatekeeperDashboardErrorState;
@@ -114,41 +170,36 @@ class _IdInputViewState extends State<IdInputView> {
                   fontSize: 16.0,
                 );
                 break;
-              case OpenPurposeDialogState:
-                final dialogState = state as OpenPurposeDialogState;
-                showModalBottomSheet(
-                  useSafeArea: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                  ),
-                  backgroundColor: Theme.of(context).colorScheme.surface,
-                  context: context,
-                  builder: (context) => ImageGridBottomSheet(
-                      purposeCategories: dialogState.purposeCategories!,
-                      gatekeeperDashboardBloc: gateDashboardBloc),
-                );
-                break;
+
               case SaveSearchedVisitorState:
                 final saveVisitorState = state as SaveSearchedVisitorState;
                 searchedVisitor = saveVisitorState.visitor;
                 break;
+
               case InputPutViewNextClickedState:
                 // Example: Set loading state here if needed
                 break;
+
               case NavigateToVisitorDetailsState:
                 final navigateToVisitorDetailsState =
                     state as NavigateToVisitorDetailsState;
-                mobileController.text = '';
+
+                // Retrieve and decode the saved purpose
+                final prefs = await SharedPreferences.getInstance();
+                final jsonString = prefs.getString("dialoguePurpose");
+                PurposeCategory? selectedPurpose;
+                if (jsonString != null) {
+                  final json = jsonDecode(jsonString);
+                  selectedPurpose = PurposeCategoryMapper.fromJson(json);
+                }
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => VisitorsInEntry(
-                      selectedValue: navigateToVisitorDetailsState.purpose,
                       searchedVisitor: navigateToVisitorDetailsState.visitor,
-                      mobile: navigateToVisitorDetailsState.mobile,
+                      mobile: mobileController.text,
+                      selectedValue: selectedPurpose,
                     ),
                   ),
                 );
@@ -181,7 +232,6 @@ class _IdInputViewState extends State<IdInputView> {
                         boxDecoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                         ),
-
                         barrierColor: Theme.of(context)
                             .colorScheme
                             .surface
@@ -227,16 +277,19 @@ class _IdInputViewState extends State<IdInputView> {
                           });
                         },
                       ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       textController: mobileController,
                       keyboardType: TextInputType.number,
                       length: 10,
                       onChanged: (value) {
                         if (value.length == 10) {
-                          gateDashboardBloc.add(GDOnMobileNumberEnteredEvent(
-                              mobileController.text,),);
+                          gateDashboardBloc.add(
+                            GDOnMobileNumberEnteredEvent(
+                              mobileController.text,
+                            ),
+                          );
                         }
                       },
                     ),
@@ -277,6 +330,32 @@ class ImageGridBottomSheet extends StatefulWidget {
 class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   int selectedImageIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedPurposesToGlobal();
+  }
+
+  List<PurposeCategory> globalSelectedPurposes = [];
+
+  Future<void> _loadSelectedPurposesToGlobal() async {
+    try {
+      final roh = await SharedPreferences.getInstance();
+      final jsonString = roh.getString('selected_purposes');
+      if (jsonString != null) {
+        final jsonList = jsonDecode(jsonString) as List<dynamic>;
+        setState(() {
+          globalSelectedPurposes = jsonList
+              .map((json) => PurposeCategoryMapper.fromJson(json))
+              .toList();
+        });
+        print("Global selected purposes loaded: $globalSelectedPurposes");
+      }
+    } catch (e) {
+      print("Failed to load selected purposes into global variable: $e");
+    }
+  }
+
   void selectImage(int index) {
     setState(() {
       selectedImageIndex = index;
@@ -286,11 +365,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
@@ -308,7 +385,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                     fontWeight: FontWeight.w600,
                   ),
             ),
-            trailing: Icon(
+            trailing: const Icon(
               Ionicons.close_circle_outline,
               color: Colors.red,
               size: 28,
@@ -317,129 +394,230 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               Navigator.pop(context);
             },
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Expanded(
-            child: GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 3,
-                crossAxisSpacing: 3,
-              ),
-              itemCount: widget.purposeCategories.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () => selectImage(index),
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 250,
-                        width: 200,
-                        /*padding:
-                            EdgeInsets.symmetric(vertical: 7, horizontal: 10),*/
-                        margin: EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: selectedImageIndex == index
-                              ? Color(0x10C08261)
-                              : Colors.transparent,
-                          border: Border.all(
-                            color: selectedImageIndex == index
-                                ? Color(0xffC08261)
-                                : Colors.grey,
-                            width: selectedImageIndex == index ? 2 : 1,
-                          ),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            child: globalSelectedPurposes.isEmpty
+                ? GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                    ),
+                    itemCount: widget.purposeCategories.length,
+                    itemBuilder: (context, index) {
+                      final purpose = widget.purposeCategories[index];
+                      return GestureDetector(
+                        onTap: () => selectImage(index),
+                        child: Stack(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 7),
-                              child: ClipRRect(
+                            Container(
+                              height: 250,
+                              width: 200,
+                              margin: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: selectedImageIndex == index
+                                    ? const Color(0x10C08261)
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: selectedImageIndex == index
+                                      ? const Color(0xffC08261)
+                                      : Colors.grey,
+                                  width: selectedImageIndex == index ? 2 : 1,
+                                ),
                                 borderRadius: BorderRadius.circular(15),
-                                child: CachedNetworkImage(
-                                  maxHeightDiskCache: 90,
-                                  maxWidthDiskCache: 90,
-                                  height: 60,
-                                  width: 60,
-                                  fit: BoxFit.cover,
-                                  imageUrl: widget
-                                      .purposeCategories[index].purpose_img,
-                                  placeholder: (context, url) =>
-                                      const CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(
-                                    Icons.error,
-                                    color: Colors.red,
+                              ),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 7),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: CachedNetworkImage(
+                                        maxHeightDiskCache: 90,
+                                        maxWidthDiskCache: 90,
+                                        height: 60,
+                                        width: 60,
+                                        fit: BoxFit.cover,
+                                        imageUrl: purpose.purpose_img,
+                                        placeholder: (context, url) =>
+                                            const CircularProgressIndicator(),
+                                        errorWidget: (context, url, error) =>
+                                            const Icon(
+                                          Icons.error,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  fadeOutDuration:
-                                      const Duration(milliseconds: 300),
-                                  fadeInDuration:
-                                      const Duration(milliseconds: 300),
-                                ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        purpose.purpose_category_name,
+                                        style: TextStyle(
+                                          color: selectedImageIndex == index
+                                              ? const Color(0xffC08261)
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                          fontWeight:
+                                              selectedImageIndex == index
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  widget.purposeCategories[index]
-                                      .purpose_category_name,
-                                  style: TextStyle(
-                                    color: selectedImageIndex == index
-                                        ? Color(0xffC08261)
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                    fontWeight: selectedImageIndex == index
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
+                            if (selectedImageIndex == index)
+                              const Positioned(
+                                right: 10,
+                                top: 10,
+                                child: Icon(
+                                  size: 20,
+                                  Ionicons.checkmark_circle_outline,
+                                  color: Color(0xffC08261),
                                 ),
                               ),
-                            ),
                           ],
                         ),
-                      ),
-                      selectedImageIndex == index
-                          ? Positioned(
-                              right: 10,
-                              top: 10,
-                              child: Icon(
-                                size: 20,
-                                Ionicons.checkmark_circle_outline,
-                                color: Color(0xffC08261),
+                      );
+                    },
+                  )
+                : GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                    ),
+                    itemCount: globalSelectedPurposes.length,
+                    itemBuilder: (context, index) {
+                      final purpose = globalSelectedPurposes[index];
+                      return GestureDetector(
+                        onTap: () => selectImage(index),
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 250,
+                              width: 200,
+                              margin: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: selectedImageIndex == index
+                                    ? const Color(0x10C08261)
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: selectedImageIndex == index
+                                      ? const Color(0xffC08261)
+                                      : Colors.grey,
+                                  width: selectedImageIndex == index ? 2 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(15),
                               ),
-                            )
-                          : SizedBox()
-                    ],
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 7),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: CachedNetworkImage(
+                                        maxHeightDiskCache: 90,
+                                        maxWidthDiskCache: 90,
+                                        height: 60,
+                                        width: 60,
+                                        fit: BoxFit.cover,
+                                        imageUrl: purpose.purpose_img,
+                                        placeholder: (context, url) =>
+                                            const CircularProgressIndicator(),
+                                        errorWidget: (context, url, error) =>
+                                            const Icon(
+                                          Icons.error,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        purpose.purpose_category_name,
+                                        style: TextStyle(
+                                          color: selectedImageIndex == index
+                                              ? const Color(0xffC08261)
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                          fontWeight:
+                                              selectedImageIndex == index
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (selectedImageIndex == index)
+                              const Positioned(
+                                right: 10,
+                                top: 10,
+                                child: Icon(
+                                  size: 20,
+                                  Ionicons.checkmark_circle_outline,
+                                  color: Color(0xffC08261),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 20),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
             child: CustomLargeBtn(
               text: 'Next',
-              onPressed: () {
-                if (searchedVisitor != null) {}
+              onPressed: () async {
                 if (selectedImageIndex != -1) {
-                  PurposeCategory selectedValue =
-                      widget.purposeCategories[selectedImageIndex];
+                  final selectedValue = globalSelectedPurposes.length == 0
+                      ? widget.purposeCategories[selectedImageIndex]
+                      : globalSelectedPurposes[selectedImageIndex];
                   Navigator.pop(
                     context,
                     selectedValue,
                   );
+
+                  final dialogue = await SharedPreferences.getInstance();
+                  await dialogue.setString(
+                    "dialoguePurpose",
+                    jsonEncode(selectedValue.toJson()),
+                  );
+
                   widget.gatekeeperDashboardBloc.add(
-                      PurposeNextButtonClickedEvent(selectedValue,
-                          searchedVisitor, mobileController.text));
+                    PurposeNextButtonClickedEvent(
+                      selectedValue,
+                      searchedVisitor,
+                      mobileController.text,
+                    ),
+                  );
                 }
               },
             ),
           ),
-          SizedBox(height: 10)
+          const SizedBox(height: 10),
         ],
       ),
     );

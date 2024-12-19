@@ -13,18 +13,21 @@ class PurposeCategory extends _i1.SerializableEntity {
     this.id,
     required this.purpose_category_name,
     required this.purpose_img,
+    this.isSelected = false, // Default value is false
   });
 
   factory PurposeCategory.fromJson(
-    Map<String, dynamic> jsonSerialization,
-    _i1.SerializationManager serializationManager,
-  ) {
+      Map<String, dynamic> jsonSerialization,
+      _i1.SerializationManager serializationManager,
+      ) {
     return PurposeCategory(
       id: serializationManager.deserialize<int?>(jsonSerialization['id']),
       purpose_category_name: serializationManager
           .deserialize<String>(jsonSerialization['purpose_category_name']),
       purpose_img: serializationManager
           .deserialize<String>(jsonSerialization['purpose_img']),
+      isSelected: serializationManager
+          .deserialize<bool?>(jsonSerialization['isSelected']) ?? false,
     );
   }
 
@@ -37,12 +40,16 @@ class PurposeCategory extends _i1.SerializableEntity {
 
   String purpose_img;
 
+  /// Indicates whether the purpose is selected
+  bool isSelected;
+
   @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'purpose_category_name': purpose_category_name,
       'purpose_img': purpose_img,
+      'isSelected': isSelected, // Include isSelected in serialization
     };
   }
 }
