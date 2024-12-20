@@ -240,6 +240,16 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 ),
               ),
             );
+          } else if (state is VIENavigateToCameraState) {
+            final imageFile = await _captureImageFromCamera();
+            if (imageFile != null) {
+              visitorInEntryBloc.add(VIECameraButtonPressedEvent(
+                purposeCategory: state.purposeCategory,
+                imageFile: imageFile,
+                visitor: state.visitor,
+                operation: state.operation,
+              ));
+            }
           }
         },
         builder: (context, state) {
@@ -269,21 +279,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       SnackBar(content: Text('Coming from is mandatory field')),
                     );
                   } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UnitSelectionView(
-                          visitorId: widget.searchedVisitor?.id,
-                          guestname: guestName.text,
-                          mobileNumber: mobileController.text,
-                          purposeCategory: widget.selectedValue!,
-                          visitor: widget.searchedVisitor!,
-                          comingFrom: guestComingFrom.text,
-                          guestCount: _guestCount,
-                          visitorNumber: visitorNumber.text,
-                        ),
-                      ),
-                    );
                     visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
                         searchedVisitor: widget.searchedVisitor,
                         guestName: guestName.text,

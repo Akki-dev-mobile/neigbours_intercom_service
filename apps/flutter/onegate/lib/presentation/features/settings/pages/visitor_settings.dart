@@ -154,19 +154,16 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                   : Icon(Icons.image),
                               title: Text(
                                 purpose.purpose_category_name,
-                                overflow:
-                                    TextOverflow.ellipsis, // Prevent overflow
+                                overflow: TextOverflow.ellipsis,
                               ),
                               trailing: Checkbox(
                                 value: purpose.isSelected,
                                 onChanged: (isChecked) {
-                                  // Update the selection status of the specific purpose
                                   provider.updatePurposeSelection(
                                     provider.purposes!.indexOf(purpose),
                                     isChecked ?? false,
                                   );
 
-                                  // Save the entire list to preserve all purposes with updated states
                                   provider
                                       .saveSelectedPurposes(provider.purposes!);
                                 },

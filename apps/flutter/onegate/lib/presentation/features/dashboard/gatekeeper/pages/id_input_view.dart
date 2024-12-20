@@ -139,7 +139,6 @@ class _IdInputViewState extends State<IdInputView> {
                 );
                 return; // Exit early
               }
-
               showModalBottomSheet(
                 useSafeArea: true,
                 shape: const RoundedRectangleBorder(
@@ -151,7 +150,12 @@ class _IdInputViewState extends State<IdInputView> {
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 context: context,
                 builder: (context) => ImageGridBottomSheet(
-                  purposeCategories: state.purposeCategories ?? [],
+                  // Filter purposes to only include "GUEST"
+                  purposeCategories: state.purposeCategories!
+                      .where((purpose) =>
+                          purpose.purpose_category_name.toUpperCase() ==
+                          "GUEST")
+                      .toList(),
                   gatekeeperDashboardBloc: gateDashboardBloc,
                 ),
               );
@@ -183,6 +187,7 @@ class _IdInputViewState extends State<IdInputView> {
               case NavigateToVisitorDetailsState:
                 final navigateToVisitorDetailsState =
                     state as NavigateToVisitorDetailsState;
+                mobileController.text = '';
 
                 // Retrieve and decode the saved purpose
                 final prefs = await SharedPreferences.getInstance();

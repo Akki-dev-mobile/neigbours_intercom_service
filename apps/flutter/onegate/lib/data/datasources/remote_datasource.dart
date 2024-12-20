@@ -204,19 +204,19 @@ class RemoteDataSource {
 
       final result = await client.visitorLog.createVisitorLog(visitorLog);
       print("VisitorLog created: ${result.toJson()}");
-
-      await gateStorage.saveVisitorLogId(result.id.toString());
       if (visitorLog.visitor_building_assignment != null) {
         print("Building Assignment found");
         for (BuildingAssignment buildingAssignment
             in visitorLog.visitor_building_assignment!) {
           buildingAssignment.visitor_log_id = result.id;
+
           print("Creating BuildingAssignment: ${buildingAssignment.toJson()}");
           await createBuildingAssignment(buildingAssignment);
         }
       } else {
         print("No building assignment found");
       }
+      GlobalStorage.visitorLogId = result.id.toString();
 
       print("Check-in successful: ${result.toString()}");
       return result;
@@ -503,33 +503,13 @@ class RemoteDataSource {
   Future<void> visitorLogDetails(
       List<Map<String, dynamic>>? visitorData) async {
     try {
-      final societyId = await gateStorage.getSocietyId();
-      // if (societyId == null || societyId.toString().isEmpty) {
-      //   // Fluttertoast.showToast(
-      //   //   msg: "Error: Society ID is empty!",
-      //   //   backgroundColor: Colors.red,
-      //   //   textColor: Colors.white,
-      //   // );
-      //   return;
-      // }
-
       final companyDetails = await gateStorage.getSocietyDetails();
       final socId = await gateStorage.getSocietyId();
-      final companyId = companyDetails['societyId'];
       final companyName = companyDetails["societyName"];
       if (socId == null) {
         throw Exception(
             "Company ID is null. Please ensure the society is selected.");
       }
-
-      // if (visitorData == null || visitorData.isEmpty) {
-      //   Fluttertoast.showToast(
-      //     msg: "Error: Visitor data is empty!",
-      //     backgroundColor: Colors.red,
-      //     textColor: Colors.white,
-      //   );
-      //   return;
-      // }
 
       final List<String> memberDetails = [];
       final List<int> unitIds = [];
@@ -555,20 +535,18 @@ class RemoteDataSource {
       print(
           "Member Details: $memberDetails, Unit IDs: $unitIds, Member IDs: $memberIds, Building Units: $buildingUnits");
 
-      // if (memberDetails.isEmpty || unitIds.isEmpty || memberIds.isEmpty) {
-      //   Fluttertoast.showToast(
-      //     msg: "Error: Member details, unit IDs, or member IDs are missing!",
-      //     backgroundColor: Colors.red,
-      //     textColor: Colors.white,
-      //   );
-      //   return;
-      // }
+      if (memberDetails.isEmpty || unitIds.isEmpty || memberIds.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "Error: Member details, unit IDs, or member IDs are missing!",
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return;
+      }
 
-      final String? visitorLogId = await gateStorage.getVisitorLogId();
-
-      log("this is$visitorLogId");
+      log("this is${GlobalStorage.visitorLogId}");
       final payload = {
-        "visitor_log_id": visitorLogId,
+        "visitor_log_id": GlobalStorage.visitorLogId,
         "company_name": companyName,
         "member_id": memberIds[0],
         "member_name": memberDetails[0],
@@ -578,7 +556,6 @@ class RemoteDataSource {
 
       print("Payload: $payload");
 
-      // Send the POST request using Dio
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/logDetails',
         data: payload,
@@ -589,19 +566,19 @@ class RemoteDataSource {
 
       // Handle the response
       if (response.statusCode == 200) {
-        // Fluttertoast.showToast(
-        //   msg: "Visitor logs sent successfully!",
-        //   backgroundColor: Colors.green,
-        //   textColor: Colors.white,
-        // );
+        Fluttertoast.showToast(
+          msg: "Visitor logs sent successfully!",
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
         print("Response: ${response.data}");
       } else {
         print("Response Error: ${response.data}");
-        // Fluttertoast.showToast(
-        //   msg: "Failed to send logs: ${response.statusMessage}",
-        //   backgroundColor: Colors.red,
-        //   textColor: Colors.white,
-        // );
+        Fluttertoast.showToast(
+          msg: "Failed to send logs: ${response.statusMessage}",
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
       }
     } catch (e) {
       // Handle DioError and other exceptions
@@ -611,11 +588,11 @@ class RemoteDataSource {
         print("Unexpected Error: $e");
       }
 
-      // Fluttertoast.showToast(
-      //   msg: "Error occurred: ${e.toString()}",
-      //   backgroundColor: Colors.orange,
-      //   textColor: Colors.white,
-      // );
+      Fluttertoast.showToast(
+        msg: "Error occurred: ${e.toString()}",
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+      );
     }
   }
 
@@ -710,4 +687,9 @@ class RemoteDataSource {
     }
     return null;
   }
+}
+
+class GlobalStorage {
+  static String?
+      visitorLogId; // Nullable to handle cases where it might not be set
 }

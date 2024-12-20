@@ -9,6 +9,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
@@ -747,7 +748,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
-    await saveMemberAndUnitToPrefs(selectedMembers, selectedUnits);
     if (selectedMembers.length != 1) {
       print("Request skipped: Exactly one user ID must be selected.");
       print("Returning success as no posting is required.");
@@ -757,7 +757,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
         visitor_count: int.parse(widget.guestCount.toString()),
-        visitor_check_in: DateTime.now(),
+        visitor_check_in: Utils.getCurrentDateTimeInIndianTimeZone(),
         visitor_check_out: null,
         visitor_card_number: widget.visitorNumber,
         visitor_coming_from: widget.comingFrom,
@@ -766,7 +766,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         is_checked_out: false,
       );
 
-      await _showApprovedDialog(context, data);
+      await _showApprovedDialog(context, data, selectedMembers);
       return;
     }
 
@@ -776,7 +776,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
         visitor_count: int.parse(widget.guestCount.toString()), // Example count
-        visitor_check_in: DateTime.now(),
+        visitor_check_in: Utils.getCurrentDateTimeInIndianTimeZone(),
         visitor_check_out: null,
         visitor_card_number: widget.visitorNumber,
         visitor_coming_from: widget.comingFrom,
@@ -787,7 +787,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       print("Request skipped: Exactly one unit must be selected.");
       print("Returning success as no posting is required.");
-      _showApprovedDialog(context, data);
+      _showApprovedDialog(context, data, selectedMembers);
       return;
     }
 
@@ -882,17 +882,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           visitor_id: widget.visitorId ?? int.parse(visitorId!),
           visitor_purpose_category_id: 1,
           visitor_purpose_sub_category_id: null,
-          visitor_count: 1,
-          visitor_check_in: DateTime.now(),
+          visitor_count: widget.guestCount ?? 1,
+          visitor_check_in: Utils.getCurrentDateTimeInIndianTimeZone(),
           visitor_check_out: null,
-          visitor_card_number: null,
-          visitor_coming_from: "Unknown",
+          visitor_card_number: widget.visitorNumber,
+          visitor_coming_from: widget.comingFrom,
           visitor_card_id: null,
           company_id: companyId!,
           is_checked_out: false,
         );
 
-        await _showApprovedDialog(context, data);
+        await _showApprovedDialog(context, data, selectedMembers);
       } else {
         log("Error during posting or sending notification: ${e.response?.statusCode} - ${e.response?.data}");
         Fluttertoast.showToast(
@@ -920,8 +920,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  Future<void> _showApprovedDialog(
-      BuildContext context, c.VisitorLog data) async {
+  Future<void> _showApprovedDialog(BuildContext context, c.VisitorLog data,
+      Set<String> selectedMembers) async {
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissal by tapping outside
@@ -956,6 +956,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       // Navigator.pop(dialogContext);
 
                       await remoteDataSource.checkIn(data);
+                      await saveMemberAndUnitToPrefs(
+                          selectedMembers, selectedUnits);
+
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(

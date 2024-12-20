@@ -7,53 +7,58 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
 
   VisitorLogRepositoryImpl(this._remoteDataSource);
   @override
-  Future<VisitorLog?> createVisitorLog(VisitorLog visitorLog) async{
-    try{
+  Future<VisitorLog?> createVisitorLog(VisitorLog visitorLog) async {
+    try {
       final response = await _remoteDataSource.checkIn(visitorLog);
       return response;
-    }catch(error){
-      return null;
-    }
-  }
-  
-  @override
-  Future<List<VisitorLog>?> fetchCheckInVisitorLog(int companyId, String dateTime) async{
-    try{
-      final response = await _remoteDataSource.fetchCheckInLogs(companyId, dateTime);
-      return response;
-    }catch(error){
+    } catch (error) {
       return null;
     }
   }
 
-   @override
-  Future<List<VisitorLog>?> fetchAllVisitorLog(int companyId, String dateTime) async{
-    try{
-      final response = await _remoteDataSource.fetchAllLogs(companyId, dateTime);
+  @override
+  Future<List<VisitorLog>?> fetchCheckInVisitorLog(
+      int companyId, String dateTime) async {
+    try {
+      final response =
+          await _remoteDataSource.fetchCheckInLogs(companyId, dateTime);
       return response;
-    }catch(error){
+    } catch (error) {
       return null;
     }
   }
-  
+
   @override
-  Future<bool> checkOut(VisitorLog visitorLog) async{
-    try{
+  Future<List<VisitorLog>?> fetchAllVisitorLog(
+      int companyId, String dateTime) async {
+    try {
+      final response =
+          await _remoteDataSource.fetchAllLogs(companyId, dateTime);
+      return response;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> checkOut(VisitorLog visitorLog) async {
+    try {
       final response = await _remoteDataSource.checkOut(visitorLog);
       return response;
-    }catch(error){
+    } catch (error) {
       return Future.value(false);
     }
   }
-  
+
   @override
-  Future<List<VisitorLog>?> fetchCheckOutVisitorLog(int companyId, String dateTime) async{
-    try{
-      final response = await _remoteDataSource.fetchCheckOutLogs(companyId, dateTime);
+  Future<List<VisitorLog>?> fetchCheckOutVisitorLog(
+      int companyId, String dateTime) async {
+    try {
+      final response =
+          await _remoteDataSource.fetchCheckOutLogs(companyId, dateTime);
       return response;
-    }catch(error){
+    } catch (error) {
       return null;
     }
   }
-  
 }

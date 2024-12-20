@@ -120,13 +120,25 @@ class GateStorage {
 
   Future<void> saveVisitorLogId(String visitorLogId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_visitorLogIdKey, visitorLogId.toString());
 
+    // Remove the existing visitor log ID
+    await prefs.remove(_visitorLogIdKey);
+
+    // Save the new visitor log ID
+    await prefs.setString(_visitorLogIdKey, visitorLogId);
     print("VisitorLog ID stored in SharedPreferences: $visitorLogId");
   }
 
+  /// Retrieve the current visitor log ID
   Future<String?> getVisitorLogId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString(_visitorLogIdKey);
+  }
+
+  /// Clear the visitor log ID
+  Future<void> clearVisitorLogId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_visitorLogIdKey);
+    print("VisitorLog ID removed from SharedPreferences");
   }
 }
