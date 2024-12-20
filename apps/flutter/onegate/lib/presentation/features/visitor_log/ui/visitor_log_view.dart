@@ -125,6 +125,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     .contains(_searchText!.toLowerCase()))
                 .toList();
 
+            final dateFormat = DateFormat("yyyy-MM-ddTHH:mm:ss.SSSSSSZ");
+
 // Define start and end of today
             final startOfToday = DateTime(today.year, today.month, today.day);
             final endOfToday = startOfToday.add(Duration(days: 1));
@@ -135,19 +137,25 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
 // Filter for today
             final todayLogs = filteredVisitors.where((log) {
-              return log.visitor_check_in.isAfter(startOfToday) &&
-                  log.visitor_check_in.isBefore(endOfToday);
+              final checkInDate =
+                  dateFormat.parse(log.visitor_check_in.toIso8601String());
+              return checkInDate.isAfter(startOfToday) &&
+                  checkInDate.isBefore(endOfToday);
             }).toList();
 
 // Filter for yesterday
             final yesterdayLogs = filteredVisitors.where((log) {
-              return log.visitor_check_in.isAfter(startOfYesterday) &&
-                  log.visitor_check_in.isBefore(endOfYesterday);
+              final checkInDate =
+                  dateFormat.parse(log.visitor_check_in.toIso8601String());
+              return checkInDate.isAfter(startOfYesterday) &&
+                  checkInDate.isBefore(endOfYesterday);
             }).toList();
 
 // Filter for older
             final olderLogs = filteredVisitors.where((log) {
-              return log.visitor_check_in.isBefore(startOfYesterday);
+              final checkInDate =
+                  dateFormat.parse(log.visitor_check_in.toIso8601String());
+              return checkInDate.isBefore(startOfYesterday);
             }).toList();
             return PopScope(
               canPop: false,
@@ -373,13 +381,29 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     final storedEmail = prefs.getString('email') ?? ''; // Load email if saved
     emailController.text = storedEmail;
 
-    // Function to pick a date
+    // Function to pick a dateimport 'package:flutter/material.dart';
+
+// Function to pick a date
     Future<DateTime?> _pickDate(BuildContext context) async {
       return await showDatePicker(
         context: context,
         initialDate: DateTime.now(),
         firstDate: DateTime(2000),
         lastDate: DateTime.now(),
+        builder: (BuildContext context, Widget? child) {
+          return Theme(
+            data: ThemeData.light().copyWith(
+              colorScheme: ColorScheme.light(
+                primary: Colors.black, // Header background color
+                onPrimary: Colors.white, // Header text color
+                surface: Colors.white, // Background color
+                onSurface: Colors.black, // Text color
+              ),
+              dialogBackgroundColor: Colors.white, // Background color
+            ),
+            child: child!,
+          );
+        },
       );
     }
 
@@ -396,23 +420,26 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Email Input
-                    CustomForm.textField("name",
-                        titleColor: Theme.of(context).colorScheme.onSurface,
-                        hintColor: Theme.of(context).colorScheme.onPrimary,
-                        hintText: "Enter name for export",
-                        textController: nameController),
+                    // CustomForm.textField("name",
+                    //     titleColor: Theme.of(context).colorScheme.onSurface,
+                    //     hintColor: Theme.of(context).colorScheme.onPrimary,
+                    //     hintText: "Enter name for export",
+                    //     textController: nameController,),
 
-                    CustomForm.textField("Email",
-                        titleColor: Theme.of(context).colorScheme.onSurface,
-                        hintColor: Theme.of(context).colorScheme.onPrimary,
-                        hintText: "Enter email for export",
-                        textController: emailController),
+                    CustomForm.textField(
+                      "Email",
+                      titleColor: Theme.of(context).colorScheme.onSurface,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
+                      hintText: "Enter email for export",
+                      keyboardType: TextInputType.emailAddress,
+                      textController: emailController,
+                    ),
 
                     const SizedBox(height: 10),
                     ListTile(
                       title: Text(
                         "From Date: ${fromDate != null ? DateFormat('yyyy-MM-dd').format(fromDate!) : 'Select'}",
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       trailing: const Icon(Icons.calendar_today),
                       onTap: () async {
@@ -427,8 +454,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     // To Date Picker
                     ListTile(
                       title: Text(
-                          "To Date: ${toDate != null ? DateFormat('yyyy-MM-dd').format(toDate!) : 'Select'}",
-                          style: Theme.of(context).textTheme.headlineSmall),
+                        "To Date: ${toDate != null ? DateFormat('yyyy-MM-dd').format(toDate!) : 'Select'}",
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                       trailing: const Icon(Icons.calendar_today),
                       onTap: () async {
                         final picked = await _pickDate(context);
@@ -603,19 +631,18 @@ class VisitorLogItem extends StatelessWidget {
                 vertical: 2,
               ),
               leading: CircleAvatar(
-                backgroundImage: (visitorLog
-                            .visitor!.visitor_image.isNotEmpty &&
-                        Uri.tryParse(visitorLog.visitor!.visitor_image)
-                                ?.hasAbsolutePath ==
-                            true)
-                    ? NetworkImage(visitorLog.visitor!.visitor_image)
+                backgroundImage: (visitorLog.visitor!.visitor_image.isNotEmpty)
+                    ? NetworkImage(
+                        visitorLog.visitor!.visitor_image,
+                      )
                     : NetworkImage(
-                        "https://plus.unsplash.com/premium_photo-1678706071143-232715cbb866?q=80&w=3027&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"),
+                        visitorLog.visitor!.visitor_image,
+                      ),
                 child: visitorLog.visitor!.visitor_image.isEmpty
                     ? Text(
                         visitorLog.visitor!.name.isNotEmpty
                             ? visitorLog.visitor!.name[0]
-                            : 'asd',
+                            : 'G',
                         style: Theme.of(context).textTheme.bodyMedium,
                       )
                     : null,
@@ -692,26 +719,26 @@ class VisitorLogItem extends StatelessWidget {
                   ),
                 ),
               ),
-              trailing: IconButton(
-                onPressed: () {
-                  SnackBar(
-                    content: Text(
-                      'Calling ${visitorLog.visitor!.mobile}',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    action: SnackBarAction(
-                      label: 'Close',
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      },
-                    ),
-                  );
-                },
-                icon: Icon(
-                  Ionicons.call_outline,
-                  color: Colors.green,
-                ),
-              ),
+              // trailing: IconButton(
+              //   onPressed: () {
+              //     SnackBar(
+              //       content: Text(
+              //         'Calling ${visitorLog.visitor!.mobile}',
+              //         style: Theme.of(context).textTheme.labelMedium,
+              //       ),
+              //       action: SnackBarAction(
+              //         label: 'Close',
+              //         onPressed: () {
+              //           ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              //         },
+              //       ),
+              //     );
+              //   },
+              //   icon: Icon(
+              //     Ionicons.call_outline,
+              //     color: Colors.green,
+              //   ),
+              // ),
             ),
             Divider(
               indent: 16,
@@ -781,7 +808,7 @@ class VisitorLogItem extends StatelessWidget {
                           width: 5,
                         ),
                         Text(
-                          'V-20',
+                          visitorLog.visitor_card_number ?? 'N/A',
                           style: TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w800,

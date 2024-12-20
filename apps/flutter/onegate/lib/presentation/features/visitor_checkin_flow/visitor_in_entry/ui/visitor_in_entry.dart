@@ -34,6 +34,7 @@ class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory? selectedValue;
   final Visitor? searchedVisitor;
   final String mobile;
+
   // final int companyId = GlobalUser.getUserId() ?? 55275;
 
   VisitorsInEntry(
@@ -236,7 +237,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   visitor: state.visitor,
                   comingFrom: guestComingFrom.text,
                   guestCount: _guestCount,
-                  visitorNumber: visitorNumber.text,
+                  visitorNumber: "V${visitorNumber.text}",
+                  // visitorNumber: visitorNumber.text,
                 ),
               ),
             );
@@ -411,27 +413,27 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
           textCapitalization: TextCapitalization.words,
           textController: guestName,
-          suffixIcon: IconButton(
-            onPressed: () {
-              showDialog(
-                  context: context, builder: (context) => ListeningDialog());
-              _speechToText.isNotListening
-                  ? _startListening('guestName')
-                  : _stopListening();
-            },
-            icon: CircleAvatar(
-              backgroundColor: _speechTextControllerId == 'guestName' &&
-                      _speechToText.isListening
-                  ? Color(0xffCAF1D1)
-                  : Color(0xffFFEBE6),
-              radius: 20,
-              child: Icon(
-                size: 22,
-                Ionicons.mic_outline,
-                color: Colors.black,
-              ),
-            ),
-          ),
+          // suffixIcon: IconButton(
+          //   onPressed: () {
+          //     showDialog(
+          //         context: context, builder: (context) => ListeningDialog());
+          //     _speechToText.isNotListening
+          //         ? _startListening('guestName')
+          //         : _stopListening();
+          //   },
+          //   icon: CircleAvatar(
+          //     backgroundColor: _speechTextControllerId == 'guestName' &&
+          //             _speechToText.isListening
+          //         ? Color(0xffCAF1D1)
+          //         : Color(0xffFFEBE6),
+          //     radius: 20,
+          //     child: Icon(
+          //       size: 22,
+          //       Ionicons.mic_outline,
+          //       color: Colors.black,
+          //     ),
+          //   ),
+          // ),
         ),
         CustomForm.textField(
           titleColor: Theme.of(context).colorScheme.onSurface,
@@ -445,43 +447,62 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               : null,
           textCapitalization: TextCapitalization.words,
           textController: guestComingFrom,
-          suffixIcon: IconButton(
-            onPressed: () {
-              showDialog(
-                  context: context, builder: (context) => ListeningDialog());
-              _speechToText.isNotListening
-                  ? _startListening('comingFrom')
-                  : _stopListening();
-            },
-            icon: CircleAvatar(
-              backgroundColor: _speechTextControllerId == 'comingFrom' &&
-                      _speechToText.isListening
-                  ? Color(0xffCAF1D1)
-                  : Color(0xffFFEBE6),
-              radius: 20,
-              child: Icon(
-                size: 22,
-                Ionicons.mic_outline,
-                color: Colors.black,
+          // suffixIcon: IconButton(
+          //   onPressed: () {
+          //     showDialog(
+          //         context: context, builder: (context) => ListeningDialog());
+          //     _speechToText.isNotListening
+          //         ? _startListening('comingFrom')
+          //         : _stopListening();
+          //   },
+          //   icon: CircleAvatar(
+          //     backgroundColor: _speechTextControllerId == 'comingFrom' &&
+          //             _speechToText.isListening
+          //         ? Color(0xffCAF1D1)
+          //         : Color(0xffFFEBE6),
+          //     radius: 20,
+          //     child: Icon(
+          //       size: 22,
+          //       Ionicons.mic_outline,
+          //       color: Colors.black,
+          //     ),
+          //   ),
+          // ),
+        ),
+        // preferenceUtils.getTooglevalue() == true
+        //     ?
+        CustomForm.textField(
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter your ID';
+            }
+            return null;
+          },
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          "Enter your ID",
+          hintText: 'Request from Security',
+          keyboardType: TextInputType.number,
+          length: 4,
+          textController: visitorNumber,
+          prefixIcon: Container(
+            width: 20,
+            margin: EdgeInsets.only(
+              left: 10,
+              right: 10,
+            ),
+            decoration: BoxDecoration(
+              color: Color(0xffFFEBE6),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            // radius: 16,
+            child: Center(
+              child: Text(
+                "V",
               ),
             ),
           ),
         ),
-        // preferenceUtils.getTooglevalue() == true
-        //     ?
-        CustomForm.textField(validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter your ID';
-          }
-          return null;
-        },
-            titleColor: Theme.of(context).colorScheme.onSurface,
-            hintColor: Theme.of(context).colorScheme.onPrimary,
-            "Enter your ID",
-            hintText: 'Request from Security',
-            keyboardType: TextInputType.text,
-            length: 4,
-            textController: visitorNumber),
         // : SizedBox(),
         CustomForm.textField(
           "Guest Count",

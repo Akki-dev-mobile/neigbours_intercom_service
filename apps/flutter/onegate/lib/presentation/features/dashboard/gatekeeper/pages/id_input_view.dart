@@ -187,7 +187,7 @@ class _IdInputViewState extends State<IdInputView> {
               case NavigateToVisitorDetailsState:
                 final navigateToVisitorDetailsState =
                     state as NavigateToVisitorDetailsState;
-                mobileController.text = '';
+                // mobileController.text = '';
 
                 // Retrieve and decode the saved purpose
                 final prefs = await SharedPreferences.getInstance();
@@ -322,6 +322,7 @@ class ImageGridBottomSheet extends StatefulWidget {
   final List<PurposeCategory> purposeCategories;
   final GatekeeperDashboardBloc gatekeeperDashboardBloc;
   Visitor? searchedVisitor;
+
   ImageGridBottomSheet(
       {super.key,
       required this.purposeCategories,
@@ -345,16 +346,22 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
 
   Future<void> _loadSelectedPurposesToGlobal() async {
     try {
-      final roh = await SharedPreferences.getInstance();
-      final jsonString = roh.getString('selected_purposes');
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString('selected_purposes');
+
       if (jsonString != null) {
         final jsonList = jsonDecode(jsonString) as List<dynamic>;
         setState(() {
           globalSelectedPurposes = jsonList
               .map((json) => PurposeCategoryMapper.fromJson(json))
+              .toList()
+              .where((purpose) =>
+                  purpose.purpose_category_name.toUpperCase() == "GUEST")
               .toList();
         });
         print("Global selected purposes loaded: $globalSelectedPurposes");
+      } else {
+        print("No selected purposes found in SharedPreferences.");
       }
     } catch (e) {
       print("Failed to load selected purposes into global variable: $e");

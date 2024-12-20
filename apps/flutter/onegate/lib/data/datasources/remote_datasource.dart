@@ -167,12 +167,25 @@ class RemoteDataSource {
 
   Future<Visitor?> createVisitor(Visitor visitor) async {
     try {
+      // Retrieve the uploaded image URL from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final uploadedImageUrl = prefs.getString('uploaded_image_url');
+
+      // Attach the uploaded image URL to the visitor object
+      if (uploadedImageUrl != null) {
+        visitor.visitor_image = uploadedImageUrl;
+      } else {
+        print("No uploaded image URL found in SharedPreferences.");
+      }
+
+      // Create the visitor
       final result = await client.visitor.createVisitor(visitor);
+
       print("createVisitor: ${result.toString()}");
       print("createVisitor remote_datasrc ::: $result");
 
+      // Store visitor ID in SharedPreferences
       if (result != null && result.id != null) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('visitorId', result.id!.toString());
         print("Visitor ID stored in SharedPreferences: ${result.id}");
       }
@@ -180,8 +193,8 @@ class RemoteDataSource {
       return result;
     } catch (e) {
       print("Error creating visitor: ${e.toString()}");
+      return null;
     }
-    return null;
   }
 
   Future<BuildingAssignment?> createBuildingAssignment(
@@ -478,17 +491,27 @@ class RemoteDataSource {
         );
       } else {
         print("Response Error: ${response.data}");
-        // Fluttertoast.showToast(
-        //   msg: "Failed to send logs: ${response.statusMessage}",
-        //   backgroundColor: Colors.red,
-        //   textColor: Colors.white,
-        // );
+        Fluttertoast.showToast(
+          msg: "feature unlocking soon",
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
       }
     } catch (e) {
       // Handle DioError and other exceptions
       if (e is DioError) {
+        Fluttertoast.showToast(
+          msg: "feature unlocking soon",
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
         print("DioError: ${e.response?.data ?? e.message}");
       } else {
+        Fluttertoast.showToast(
+          msg: "feature unlocking soon",
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
         print("Unexpected Error: $e");
       }
 
@@ -544,13 +567,18 @@ class RemoteDataSource {
         return;
       }
 
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final visitorId = await prefs.getString('visitorId');
+
       log("this is${GlobalStorage.visitorLogId}");
       final payload = {
         "visitor_log_id": GlobalStorage.visitorLogId,
+        "visitor_id": visitorId,
         "company_name": companyName,
         "member_id": memberIds[0],
         "member_name": memberDetails[0],
         "unit_id": unitIds[0],
+        "company_id": socId,
         "unit_name": buildingUnits.isNotEmpty ? buildingUnits[0] : "N/A",
       };
 
@@ -692,4 +720,5 @@ class RemoteDataSource {
 class GlobalStorage {
   static String?
       visitorLogId; // Nullable to handle cases where it might not be set
+  static String? visitorId;
 }

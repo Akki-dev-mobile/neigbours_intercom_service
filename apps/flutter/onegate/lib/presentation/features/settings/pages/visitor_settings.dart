@@ -95,99 +95,99 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                 title: "Gate Id",
                 subtitle: "Set gate id as mandatory",
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Visitor's Purpose",
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          overflow: TextOverflow.ellipsis, // Prevent overflow
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Set visitor's purpose as mandatory",
-                          style: Theme.of(context).textTheme.bodySmall,
-                          overflow: TextOverflow.ellipsis, // Prevent overflow
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: provider.isPurposeToggleOn,
-                    onChanged: (value) async {
-                      await provider.setPurposeToggleState(value);
-                      if (value) {
-                        provider.fetchPurposes(remoteDataSource);
-                      } else {
-                        // Clear values from SharedPreferences
-                        await provider.clearSavedPurposes();
-                      }
-                      setState(() {
-                        _isExpanded = value; // Update expansion state
-                      });
-                    },
-                  ),
-                ],
-              ),
-              if (_isExpanded) ...[
-                provider.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    // : provider.purposes == null || provider.purposes!.isEmpty
-                    //     ? const Center(child: Text("No purposes available"))
-                    : Column(
-                        children: [
-                          ...provider.purposes!.map((purpose) {
-                            return ListTile(
-                              leading: purpose.purpose_img.isNotEmpty
-                                  ? Image.network(
-                                      purpose.purpose_img,
-                                      width: 40,
-                                      height: 40,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              Icon(Icons.error),
-                                    )
-                                  : Icon(Icons.image),
-                              title: Text(
-                                purpose.purpose_category_name,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: Checkbox(
-                                value: purpose.isSelected,
-                                onChanged: (isChecked) {
-                                  provider.updatePurposeSelection(
-                                    provider.purposes!.indexOf(purpose),
-                                    isChecked ?? false,
-                                  );
-
-                                  provider
-                                      .saveSelectedPurposes(provider.purposes!);
-                                },
-                              ),
-                            );
-                          }).toList(),
-                          CustomLargeBtn(
-                            onPressed: () {
-                              final selectedPurposes = provider.purposes!
-                                  .where((p) => p.isSelected)
-                                  .toList();
-                              provider.saveSelectedPurposes(selectedPurposes);
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("Purposes saved successfully!"),
-                                ),
-                              );
-                            },
-                            text: "Confirm",
-                          ),
-                        ],
-                      ),
-              ]
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //   children: [
+              //     Expanded(
+              //       child: Column(
+              //         crossAxisAlignment: CrossAxisAlignment.start,
+              //         children: [
+              //           Text(
+              //             "Visitor's Purpose",
+              //             style: Theme.of(context).textTheme.bodyMedium,
+              //             overflow: TextOverflow.ellipsis, // Prevent overflow
+              //           ),
+              //           const SizedBox(height: 4),
+              //           Text(
+              //             "Set visitor's purpose as mandatory",
+              //             style: Theme.of(context).textTheme.bodySmall,
+              //             overflow: TextOverflow.ellipsis, // Prevent overflow
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //     Switch(
+              //       value: provider.isPurposeToggleOn,
+              //       onChanged: (value) async {
+              //         await provider.setPurposeToggleState(value);
+              //         if (value) {
+              //           provider.fetchPurposes(remoteDataSource);
+              //         } else {
+              //           // Clear values from SharedPreferences
+              //           await provider.clearSavedPurposes();
+              //         }
+              //         setState(() {
+              //           _isExpanded = value; // Update expansion state
+              //         });
+              //       },
+              //     ),
+              //   ],
+              // ),
+              // if (_isExpanded) ...[
+              //   provider.isLoading
+              //       ? const Center(child: CircularProgressIndicator())
+              //       // : provider.purposes == null || provider.purposes!.isEmpty
+              //       //     ? const Center(child: Text("No purposes available"))
+              //       : Column(
+              //           children: [
+              //             ...provider.purposes!.map((purpose) {
+              //               return ListTile(
+              //                 leading: purpose.purpose_img.isNotEmpty
+              //                     ? Image.network(
+              //                         purpose.purpose_img,
+              //                         width: 40,
+              //                         height: 40,
+              //                         errorBuilder:
+              //                             (context, error, stackTrace) =>
+              //                                 Icon(Icons.error),
+              //                       )
+              //                     : Icon(Icons.image),
+              //                 title: Text(
+              //                   purpose.purpose_category_name,
+              //                   overflow: TextOverflow.ellipsis,
+              //                 ),
+              //                 trailing: Checkbox(
+              //                   value: purpose.isSelected,
+              //                   onChanged: (isChecked) {
+              //                     provider.updatePurposeSelection(
+              //                       provider.purposes!.indexOf(purpose),
+              //                       isChecked ?? false,
+              //                     );
+              //
+              //                     provider
+              //                         .saveSelectedPurposes(provider.purposes!);
+              //                   },
+              //                 ),
+              //               );
+              //             }).toList(),
+              //             CustomLargeBtn(
+              //               onPressed: () {
+              //                 final selectedPurposes = provider.purposes!
+              //                     .where((p) => p.isSelected)
+              //                     .toList();
+              //                 provider.saveSelectedPurposes(selectedPurposes);
+              //
+              //                 ScaffoldMessenger.of(context).showSnackBar(
+              //                   SnackBar(
+              //                     content: Text("Purposes saved successfully!"),
+              //                   ),
+              //                 );
+              //               },
+              //               text: "Confirm",
+              //             ),
+              //           ],
+              //         ),
+              // ]
             ],
           ),
         );

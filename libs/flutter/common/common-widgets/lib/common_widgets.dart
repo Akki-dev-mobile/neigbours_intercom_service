@@ -17,6 +17,7 @@ class MyScrollView extends StatelessWidget {
     this.backButtonPressed,
     this.isScrollable = true,
     this.actions,
+    this.bottomNavigationBar,
   });
 
   final Widget pageBody;
@@ -29,6 +30,7 @@ class MyScrollView extends StatelessWidget {
   final bool isScrollable;
   final List<Widget>? actions;
   final VoidCallback? backButtonPressed;
+  final Widget? bottomNavigationBar;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,6 +97,7 @@ class MyScrollView extends StatelessWidget {
         ],
       ),
       floatingActionButton: floatingActionButton,
+      bottomNavigationBar: bottomNavigationBar,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomSheet: bottomSheet,
     );

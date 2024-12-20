@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
 import 'package:onegate_client/onegate_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VisitorRepoImpl extends VisitorRepository {
   final RemoteDataSource _remoteDataSource;
@@ -79,10 +80,19 @@ class VisitorRepoImpl extends VisitorRepository {
         userMobile,
         companyId,
       );
+
       print("ResponseImage::: $response");
+
+      if (response != null) {
+        // Save the image URL to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('uploaded_image_url', response);
+        print("Image URL saved to SharedPreferences: $response");
+      }
 
       return response;
     } catch (error) {
+      print("Error uploading image: $error");
       return null;
     }
   }

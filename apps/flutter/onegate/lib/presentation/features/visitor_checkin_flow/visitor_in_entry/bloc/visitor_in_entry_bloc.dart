@@ -82,6 +82,8 @@ class VisitorInEntryBloc
 
   Future<void> vieCameraButtonPressedEvent(VIECameraButtonPressedEvent event,
       Emitter<VisitorInEntryState> emit) async {
+    emit(VisitorInEntryLoadingState());
+
     try {
       final imageUrl = await _visitorUsecase.uploadImage(
         event.imageFile!,
@@ -116,6 +118,8 @@ class VisitorInEntryBloc
       }
     } catch (error) {
       emit(VisitorInEntryErrorState(message: error.toString()));
+    } finally {
+      emit(VisitorInEntryInitial());
     }
   }
 }

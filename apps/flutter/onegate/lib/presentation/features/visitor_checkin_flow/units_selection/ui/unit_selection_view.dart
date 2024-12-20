@@ -375,7 +375,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           }
         },
       ),
-      floatingActionButton: ValueListenableBuilder<Set<String>>(
+      bottomNavigationBar: ValueListenableBuilder<Set<String>>(
           valueListenable: _selectedMembersNotifier,
           builder: (context, selectedMember, child) {
             return (selectedMembers.isNotEmpty || selectedMember.isNotEmpty)
@@ -390,17 +390,22 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       mainAxisSize: MainAxisSize.max,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          selectedMember.length > 1
-                              ? "${selectedMember.first} +${selectedMember.length - 1}"
-                              : selectedMember.first,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge!
-                              .copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.surface,
-                              ),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.5,
+                          child: Text(
+                            softWrap: true,
+                            overflow: TextOverflow.ellipsis,
+                            selectedMember.length > 1
+                                ? "${selectedMember.first} +${selectedMember.length - 1}"
+                                : selectedMember.first,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge!
+                                .copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.surface,
+                                ),
+                          ),
                         ),
                         ElevatedButton.icon(
                           style: ButtonStyle(
@@ -430,7 +435,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             padding:
                                 WidgetStateProperty.all<EdgeInsetsGeometry>(
                               const EdgeInsets.symmetric(
-                                horizontal: 36,
+                                horizontal: 24,
                                 vertical: 16,
                               ),
                             ),
@@ -477,7 +482,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               log("No selection made");
                             }
                           },
-                          label: Text(
+                          label: Icon(
+                            Icons.navigate_next,
+                            size: 32,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          icon: Text(
                             (selectedMember.length > 1) ? "Allow" : "Next",
                             style: Theme.of(context)
                                 .textTheme
@@ -486,11 +496,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   color:
                                       Theme.of(context).colorScheme.onSurface,
                                 ),
-                          ),
-                          icon: Icon(
-                            Icons.navigate_before,
-                            size: 32,
-                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -721,7 +726,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     savedMemberUnitDetails['unit_ids'] = unitList;
     savedMemberUnitDetails['member_ids'] = selectedMemberIds.toList();
     savedMemberUnitDetails['building_unit'] = buildingUnitList;
-
+    savedMemberUnitDetails['visitor_id'] = widget.visitorId;
     // Debugging: Print saved data
     print(
         "Saved Member Details: ${jsonEncode(savedMemberUnitDetails['member_details'])}");
@@ -775,7 +780,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         visitor_id: widget.visitorId ?? int.parse(visitorId!),
         visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
-        visitor_count: int.parse(widget.guestCount.toString()), // Example count
+        visitor_count: int.parse(widget.guestCount.toString()),
+        // Example count
         visitor_check_in: Utils.getCurrentDateTimeInIndianTimeZone(),
         visitor_check_out: null,
         visitor_card_number: widget.visitorNumber,
