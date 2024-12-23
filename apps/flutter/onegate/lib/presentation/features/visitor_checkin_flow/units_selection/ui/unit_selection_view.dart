@@ -847,17 +847,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'in_time': formattedInTime,
       'user_id': userId,
       'visitor_count': widget.guestCount?.toString() ?? "1",
-      'purpose_details': "zomato",
+      'purpose_details': "Meeting with $memberName",
       'coming_from': widget.comingFrom ?? "Unknown",
     };
 
     try {
       // Send the request
+      print("FCM Notification Dio().post:");
+
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+          },
+        ),
         data: data,
       );
+
+      print("FCM Notification Request:");
+
+      print("FCM Notification Request: $data");
 
       if (response.statusCode == 200) {
         print("FCM notification sent successfully: ${response.data}");
@@ -948,7 +958,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   repeat: false,
                 ),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   "Approved!",
                   style: TextStyle(
                     fontSize: 18,

@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'dart:developer';
+
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/foundation.dart';
@@ -22,6 +24,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -63,6 +66,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   void initState() {
     super.initState();
     selectedId = widget.id;
+
     switch (widget.id) {
       case "In Out Book":
         _visitorLogBloc.add(FetchVisitorLogEvent(Utils.getCurrentTime()));
@@ -107,6 +111,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             break;
           case VisitorCheckInLogSuccessState:
             _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
+            Fluttertoast.showToast(
+              msg: "Visitor Checked Out Successfully",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.CENTER,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.green,
+              textColor: Colors.white,
+              fontSize: 16.0,
+            );
             break;
         }
       },
@@ -117,7 +130,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
             final visitorLogs = successState.visitorLogs;
-            print("here i am $visitorLogs");
+            log("here i am $visitorLogs");
             // Filter visitors based on the search text
             List<VisitorLog> filteredVisitors = visitorLogs!
                 .where((visitorLog) => visitorLog.visitor!.name
@@ -407,6 +420,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       );
     }
 
+    final _exportFormKey = GlobalKey<FormState>();
+
     // Show the dialog
     await showDialog(
       context: context,
@@ -416,64 +431,96 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             return AlertDialog(
               title: const Text('Export Logs'),
               content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Email Input
-                    // CustomForm.textField("name",
-                    //     titleColor: Theme.of(context).colorScheme.onSurface,
-                    //     hintColor: Theme.of(context).colorScheme.onPrimary,
-                    //     hintText: "Enter name for export",
-                    //     textController: nameController,),
+                child: Form(
+                  key: _exportFormKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Email Input
+                      // CustomForm.textField("name",
+                      //     titleColor: Theme.of(context).colorScheme.onSurface,
+                      //     hintColor: Theme.of(context).colorScheme.onPrimary,
+                      //     hintText: "Enter name for export",
+                      //     textController: nameController,),
 
-                    CustomForm.textField(
-                      "Email",
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      hintText: "Enter email for export",
-                      keyboardType: TextInputType.emailAddress,
-                      textController: emailController,
-                    ),
+                      CustomForm.textField(
+                        "Email",
+                        titleColor: Theme.of(context).colorScheme.onSurface,
+                        hintColor: Theme.of(context).colorScheme.onPrimary,
+                        hintText: "Enter email for export",
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value!.isEmpty) {
+                            return 'Please enter email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                        textController: emailController,
+                      ),
 
-                    const SizedBox(height: 10),
-                    ListTile(
-                      title: Text(
-                        "From Date: ${fromDate != null ? DateFormat('yyyy-MM-dd').format(fromDate!) : 'Select'}",
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      const SizedBox(height: 10),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          "From Date:",
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        subtitle: fromDate != null
+                            ? Text(
+                                DateFormat('dd-MM-yyyy').format(fromDate!),
+                                style: Theme.of(context).textTheme.labelMedium,
+                              )
+                            : null,
+                        trailing: const Icon(
+                          Symbols.calendar_month,
+                        ),
+                        onTap: () async {
+                          final picked = await _pickDate(context);
+                          if (picked != null) {
+                            setState(() {
+                              fromDate = picked;
+                            });
+                          }
+                        },
                       ),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: () async {
-                        final picked = await _pickDate(context);
-                        if (picked != null) {
-                          setState(() {
-                            fromDate = picked;
-                          });
-                        }
-                      },
-                    ),
-                    // To Date Picker
-                    ListTile(
-                      title: Text(
-                        "To Date: ${toDate != null ? DateFormat('yyyy-MM-dd').format(toDate!) : 'Select'}",
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      // To Date Picker
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          "To Date:",
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        subtitle: toDate != null
+                            ? Text(
+                                DateFormat('dd-MM-yyyy').format(toDate!),
+                                style: Theme.of(context).textTheme.labelMedium,
+                              )
+                            : null,
+                        trailing: const Icon(
+                          Symbols.calendar_month,
+                        ),
+                        onTap: () async {
+                          final picked = await _pickDate(context);
+                          if (picked != null) {
+                            setState(() {
+                              toDate = picked;
+                            });
+                          }
+                        },
                       ),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: () async {
-                        final picked = await _pickDate(context);
-                        if (picked != null) {
-                          setState(() {
-                            toDate = picked;
-                          });
-                        }
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               actions: [
                 CustomLargeBtn(
-                    onPressed: () async {
-                      // Save email in SharedPreferences
+                  onPressed: () async {
+                    if (_exportFormKey.currentState!.validate() &&
+                        fromDate != null &&
+                        toDate != null) {
                       await prefs.setString('email', emailController.text);
 
                       final formattedFromDate = fromDate != null
@@ -483,7 +530,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           ? DateFormat('yyyy-MM-dd').format(toDate!)
                           : null;
 
-                      // Prepare export data
                       var visitorData = visitorLogs.map((visitor) {
                         return {
                           "name": nameController.text,
@@ -494,17 +540,23 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         };
                       }).toList();
 
-                      print("Export Data: $visitorData");
-                      print(
-                          "Email: ${emailController.text}, From: $formattedFromDate, To: $formattedToDate");
-
-                      // Call API with the updated payload
                       await remoteDataSource.exportLogs(visitorData);
 
-                      // Close dialog
                       Navigator.of(context).pop();
-                    },
-                    text: "Export")
+                    } else {
+                      Fluttertoast.showToast(
+                        msg: "Please fill all fields",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                    }
+                  },
+                  text: "Export",
+                )
               ],
             );
           },
@@ -598,7 +650,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   }
 }
 
-class VisitorLogItem extends StatelessWidget {
+class VisitorLogItem extends StatefulWidget {
   final VisitorLog visitorLog;
   final Function onCheckOut;
 
@@ -609,11 +661,41 @@ class VisitorLogItem extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<VisitorLogItem> createState() => _VisitorLogItemState();
+}
+
+class _VisitorLogItemState extends State<VisitorLogItem> {
+  bool _hasCallSupport = false;
+  Future<void>? _launched;
+
+  @override
+  void initState() {
+    canLaunchUrl(
+      Uri(
+        scheme: 'tel',
+      ),
+    ).then((bool result) {
+      setState(() {
+        _hasCallSupport = result;
+      });
+    });
+    super.initState();
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    await launchUrl(launchUri);
+  }
+
+  @override
   Widget build(BuildContext context) {
     String unitList = '';
-    if (visitorLog.visitor_building_assignment != null &&
-        visitorLog.visitor_building_assignment!.isNotEmpty) {
-      unitList = visitorLog.visitor_building_assignment![0].unit_id
+    if (widget.visitorLog.visitor_building_assignment != null &&
+        widget.visitorLog.visitor_building_assignment!.isNotEmpty) {
+      unitList = widget.visitorLog.visitor_building_assignment![0].unit_id
           .map((units) => units.toString())
           .join(', ');
     }
@@ -631,17 +713,18 @@ class VisitorLogItem extends StatelessWidget {
                 vertical: 2,
               ),
               leading: CircleAvatar(
-                backgroundImage: (visitorLog.visitor!.visitor_image.isNotEmpty)
-                    ? NetworkImage(
-                        visitorLog.visitor!.visitor_image,
-                      )
-                    : NetworkImage(
-                        visitorLog.visitor!.visitor_image,
-                      ),
-                child: visitorLog.visitor!.visitor_image.isEmpty
+                backgroundImage:
+                    (widget.visitorLog.visitor!.visitor_image.isNotEmpty)
+                        ? NetworkImage(
+                            widget.visitorLog.visitor!.visitor_image,
+                          )
+                        : NetworkImage(
+                            widget.visitorLog.visitor!.visitor_image,
+                          ),
+                child: widget.visitorLog.visitor!.visitor_image.isEmpty
                     ? Text(
-                        visitorLog.visitor!.name.isNotEmpty
-                            ? visitorLog.visitor!.name[0]
+                        widget.visitorLog.visitor!.name.isNotEmpty
+                            ? widget.visitorLog.visitor!.name[0]
                             : 'G',
                         style: Theme.of(context).textTheme.bodyMedium,
                       )
@@ -651,11 +734,11 @@ class VisitorLogItem extends StatelessWidget {
                 text: TextSpan(
                   children: [
                     TextSpan(
-                      text: visitorLog.visitor!.name,
+                      text: widget.visitorLog.visitor!.name,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     WidgetSpan(
-                      child: visitorLog.visitor_count.toString() != '1'
+                      child: widget.visitorLog.visitor_count.toString() != '1'
                           ? Container(
                               margin: const EdgeInsets.only(left: 8),
                               padding: const EdgeInsets.symmetric(
@@ -667,7 +750,7 @@ class VisitorLogItem extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                "+ ${visitorLog.visitor_count.toString()}",
+                                "+ ${widget.visitorLog.visitor_count.toString()}",
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w500,
@@ -719,26 +802,36 @@ class VisitorLogItem extends StatelessWidget {
                   ),
                 ),
               ),
-              // trailing: IconButton(
-              //   onPressed: () {
-              //     SnackBar(
-              //       content: Text(
-              //         'Calling ${visitorLog.visitor!.mobile}',
-              //         style: Theme.of(context).textTheme.labelMedium,
-              //       ),
-              //       action: SnackBarAction(
-              //         label: 'Close',
-              //         onPressed: () {
-              //           ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              //         },
-              //       ),
-              //     );
-              //   },
-              //   icon: Icon(
-              //     Ionicons.call_outline,
-              //     color: Colors.green,
-              //   ),
-              // ),
+              trailing: IconButton(
+                onPressed: _hasCallSupport
+                    ? () => setState(() {
+                          _launched =
+                              _makePhoneCall(widget.visitorLog.visitor!.mobile);
+                        })
+                    : null,
+
+                // onPressed: () {
+                //               log(
+                //                 'Calling ${visitorLog.visitor!.mobile}',
+                //               );
+                //
+                //               SnackBar(
+                //                 content: Text(
+                //                   'Calling ${visitorLog.visitor!.mobile}',
+                //                   style: Theme.of(context).textTheme.labelMedium,
+                //                 ),
+                //                 action: SnackBarAction(
+                //                   label: 'Close',
+                //                   onPressed: () {
+                //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                //                   },
+                //                 ),
+                //               );
+                icon: Icon(
+                  Ionicons.call_outline,
+                  color: Colors.green,
+                ),
+              ),
             ),
             Divider(
               indent: 16,
@@ -752,7 +845,7 @@ class VisitorLogItem extends StatelessWidget {
                 children: [
                   Tooltip(
                     message: DateFormat('dd-MM-yyyy hh:mm a')
-                        .format(visitorLog.visitor_check_in),
+                        .format(widget.visitorLog.visitor_check_in),
                     child: RichText(
                       text: TextSpan(
                         children: [
@@ -764,7 +857,7 @@ class VisitorLogItem extends StatelessWidget {
                           ),
                           TextSpan(
                             text: Utils.convertDateTimeFormat(
-                                visitorLog.visitor_check_in),
+                                widget.visitorLog.visitor_check_in),
                             style:
                                 Theme.of(context).textTheme.labelMedium!.merge(
                                       const TextStyle(
@@ -776,50 +869,53 @@ class VisitorLogItem extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 2,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: const [
-                          Color.fromRGBO(255, 236, 158, 0.8),
-                          Color.fromRGBO(255, 190, 168, 0.8),
-                        ],
-                        begin: Alignment.topRight,
-                        end: Alignment.bottomLeft,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Color.fromRGBO(255, 190, 168, 1),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Lottie.asset(
-                          'assets/json/idcard.json',
-                          width: 30,
-                          height: 30,
-                          fit: BoxFit.cover,
-                        ),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Text(
-                          visitorLog.visitor_card_number ?? 'N/A',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                  widget.visitorLog.visitor_card_number!.isNotEmpty
+                      ? Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 2,
+                            horizontal: 10,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  (visitorLog.visitor_check_out.toString().isEmpty ||
-                          visitorLog.visitor_check_out.toString() == 'null')
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: const [
+                                Color.fromRGBO(255, 236, 158, 0.8),
+                                Color.fromRGBO(255, 190, 168, 0.8),
+                              ],
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color.fromRGBO(255, 190, 168, 1),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Lottie.asset(
+                                'assets/json/idcard.json',
+                                width: 30,
+                                height: 30,
+                                fit: BoxFit.cover,
+                              ),
+                              SizedBox(
+                                width: 5,
+                              ),
+                              Text(
+                                widget.visitorLog.visitor_card_number ?? 'N/A',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : SizedBox(),
+                  (widget.visitorLog.visitor_check_out.toString().isEmpty ||
+                          widget.visitorLog.visitor_check_out.toString() ==
+                              'null')
                       ? ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
@@ -828,7 +924,7 @@ class VisitorLogItem extends StatelessWidget {
                             ),
                           ),
                           onPressed: () {
-                            onCheckOut();
+                            widget.onCheckOut();
                           },
                           child: Text(
                             'CheckOut',
@@ -841,7 +937,7 @@ class VisitorLogItem extends StatelessWidget {
                         )
                       : Tooltip(
                           message: DateFormat('dd-MM-yyyy hh:mm a')
-                              .format(visitorLog.visitor_check_out!),
+                              .format(widget.visitorLog.visitor_check_out!),
                           child: RichText(
                             text: TextSpan(
                               children: [
@@ -853,7 +949,7 @@ class VisitorLogItem extends StatelessWidget {
                                 ),
                                 TextSpan(
                                   text: Utils.convertDateTimeFormat(
-                                      visitorLog.visitor_check_out!),
+                                      widget.visitorLog.visitor_check_out!),
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelMedium!
