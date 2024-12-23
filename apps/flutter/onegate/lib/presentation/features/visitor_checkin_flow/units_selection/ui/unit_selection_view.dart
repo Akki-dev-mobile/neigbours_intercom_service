@@ -1136,15 +1136,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       }
     } on DioError catch (e) {
       if (e.response?.statusCode == 400) {
-        Fluttertoast.showToast(
-          msg: "Not a OneApp user",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 2,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+        // Fluttertoast.showToast(
+        //   msg: "Not a OneApp user",
+        //   toastLength: Toast.LENGTH_SHORT,
+        //   gravity: ToastGravity.BOTTOM,
+        //   timeInSecForIosWeb: 2,
+        //   backgroundColor: Colors.red,
+        //   textColor: Colors.white,
+        //   fontSize: 16.0,
+        // );
 
         final c.VisitorLog data = c.VisitorLog(
           visitor_id: widget.visitorId ?? int.parse(visitorId!),
@@ -1211,7 +1211,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  "Approved!",
+                  "Allowed by Gatekeeper!",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

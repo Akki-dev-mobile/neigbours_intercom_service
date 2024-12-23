@@ -485,7 +485,7 @@ class RemoteDataSource {
       // Handle the response
       if (response.statusCode == 200) {
         Fluttertoast.showToast(
-          msg: "Visitor logs sent successfully!",
+          msg: "Allowed by Gatekeeper",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
@@ -595,7 +595,7 @@ class RemoteDataSource {
       // Handle the response
       if (response.statusCode == 200) {
         Fluttertoast.showToast(
-          msg: "Visitor logs sent successfully!",
+          msg: "Visitor checked-in successfully!",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
