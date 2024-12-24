@@ -296,12 +296,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 onPressed: () {
                   if (guestName.text.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Please enter guest name')),
+                      SnackBar(
+                        content: Text('Please enter guest name'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                   } else if (preferenceUtils.getTooglevalue() == true &&
                       guestComingFrom.text.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Coming from is mandatory field')),
+                      SnackBar(
+                        content: Text('Coming from is mandatory field'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                   } else {
                     visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
