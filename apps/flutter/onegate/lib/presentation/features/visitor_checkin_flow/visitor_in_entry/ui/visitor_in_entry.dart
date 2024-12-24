@@ -258,7 +258,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   visitor: state.visitor,
                   comingFrom: guestComingFrom.text,
                   guestCount: _guestCount,
-                  visitorNumber: "V${visitorNumber.text}",
+                  visitorNumber: visitorNumber.text.isNotEmpty
+                      ? "V${visitorNumber.text}"
+                      : visitorNumber.text,
                   // visitorNumber: visitorNumber.text,
                 ),
               ),

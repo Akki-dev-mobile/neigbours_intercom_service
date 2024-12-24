@@ -100,8 +100,22 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
         final societies = await remoteDataSource.fetchSocieties(userId!);
 
-        if (societies.isNotEmpty) {
-          // Societies found, show selection
+        if (societies.length == 1) {
+          // Only one society found, proceed with its value
+          final society = societies.first;
+          final societyId = society['company_id'];
+          final societyName = society['company_name'];
+
+          if (societyId != null) {
+            selectedSocietyId = societyId;
+            await gateStorage.saveSocietyDetails(societyId, societyName);
+            await gateStorage.saveSocietyId(selectedSocietyId!);
+            _showRoleSelection(context);
+          } else {
+            _showSnackbar("Invalid society data.");
+          }
+        } else if (societies.isNotEmpty) {
+          // Multiple societies found, show selection
           _showSocietySelection(context, societies);
         } else {
           // No societies found
@@ -142,64 +156,84 @@ class _MyAppLoginState extends State<MyAppLogin> {
   void _showSocietySelection(BuildContext context, List<dynamic> societies) {
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ListTile(title: Text('Select Society')),
-            ...societies.map((society) {
-              final societyId = society['company_id'];
-              final societyName = society['company_name'];
+        return SingleChildScrollView(
+          child: ListView(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            children: [
+              SizedBox(
+                height: 20,
+              ),
+              ListTile(
+                title: Text(
+                  'Select Society',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              Divider(
+                indent: 20,
+                endIndent: 20,
+                height: 1,
+              ),
+              ...societies.map((society) {
+                final societyId = society['company_id'];
+                final societyName = society['company_name'];
 
-              if (societyId == null) {
-                return const ListTile(
-                  title: Text('Invalid Society'),
-                  subtitle: Text('This entry has no valid ID'),
+                if (societyId == null) {
+                  return const ListTile(
+                    title: Text('Invalid Society'),
+                    subtitle: Text('This entry has no valid ID'),
+                  );
+                }
+
+                return ListTile(
+                  title: Text(societyName ?? 'Unknown Society'),
+                  onTap: () async {
+                    try {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (BuildContext context) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        },
+                      );
+                      selectedSocietyId =
+                          societyId; // Ensure this is the resolved ID
+                      log("Selected Society ID: $selectedSocietyId");
+                      await gateStorage.saveSocietyDetails(
+                          societyId, societyName);
+                      await gateStorage.saveSocietyId(selectedSocietyId!);
+
+                      log("Society ID saved successfully.");
+                      Navigator.pop(context);
+                      Navigator.pop(ctx);
+
+                      _showRoleSelection(context);
+                    } catch (e) {
+                      log("Error saving society ID: $e");
+                      Navigator.pop(context); // Close the loading dialog
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to save society ID'),
+                        ),
+                      );
+                    }
+                  },
                 );
-              }
-
-              return ListTile(
-                title: Text(societyName ?? 'Unknown Society'),
-                onTap: () async {
-                  try {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (BuildContext context) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      },
-                    );
-                    selectedSocietyId =
-                        societyId; // Ensure this is the resolved ID
-                    log("Selected Society ID: $selectedSocietyId");
-                    await gateStorage.saveSocietyDetails(
-                        societyId, societyName);
-                    await gateStorage.saveSocietyId(selectedSocietyId!);
-
-                    log("Society ID saved successfully.");
-                    Navigator.pop(context); // Close the loading dialog
-                    Navigator.pop(ctx); // Close the bottom sheet
-
-                    _showRoleSelection(context);
-                  } catch (e) {
-                    log("Error saving society ID: $e");
-                    Navigator.pop(context); // Close the loading dialog
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Failed to save society ID'),
-                      ),
-                    );
-                  }
-                },
-              );
-            }).toList(),
-          ],
+              }).toList(),
+              SizedBox(
+                height: 20,
+              ),
+            ],
+          ),
         );
       },
     );
@@ -253,7 +287,12 @@ class _MyAppLoginState extends State<MyAppLogin> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ListTile(title: Text('Select Role')),
+            ListTile(
+              title: Text(
+                'Select Role',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+            ),
             ListTile(
               title: const Text('Admin'),
               onTap: () async {
@@ -261,7 +300,8 @@ class _MyAppLoginState extends State<MyAppLogin> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const AdminDashboardView()),
+                    builder: (context) => const AdminDashboardView(),
+                  ),
                 );
               },
             ),
@@ -301,19 +341,22 @@ class _MyAppLoginState extends State<MyAppLogin> {
                   final gates =
                       await remoteDataSource.fetchGates(selectedSocietyId!);
 
-                  Navigator.pop(context); // Dismiss the loading dialog
+                  Navigator.pop(context);
 
                   if (gates.isNotEmpty) {
-                    _showGateSelection(context, gates); // Show gate selection
+                    _showGateSelection(context, gates);
                   } else {
                     _showSnackbar("No gates found for the selected society.");
                   }
                 } catch (e) {
-                  Navigator.pop(context); // Dismiss the loading dialog
+                  Navigator.pop(context);
                   log("Error fetching gates: $e");
                   _showSnackbar("Error fetching gates. Please try again.");
                 }
               },
+            ),
+            const SizedBox(
+              height: 30,
             ),
           ],
         );
