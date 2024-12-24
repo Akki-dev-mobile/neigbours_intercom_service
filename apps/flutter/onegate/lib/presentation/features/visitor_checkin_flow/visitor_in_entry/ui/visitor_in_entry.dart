@@ -23,7 +23,6 @@ import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart';
 
@@ -92,30 +91,52 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     setState(() {});
   }
 
-  void _startListening(String textControllerId) async {
-    _speechTextControllerId = textControllerId;
-    await _speechToText.listen(
-      onResult: _onSpeechResult,
-    );
-    setState(() {});
-  }
+  // void _startListening(String textControllerId) async {
+  //   _speechTextControllerId = textControllerId;
+  //   await _speechToText.listen(
+  //     onResult: _onSpeechResult,
+  //   );
+  //   setState(() {});
+  // }
 
   void _stopListening() async {
     await _speechToText.stop();
     setState(() {});
   }
 
-  void _onSpeechResult(SpeechRecognitionResult result) {
-    setState(() {
-      switch (_speechTextControllerId) {
-        case 'guestName':
-          guestName.text = result.recognizedWords;
-          break;
-        case 'guestComingFrom':
-          guestComingFrom.text = result.recognizedWords;
-          break;
-      }
-    });
+  // void _onSpeechResult(SpeechRecognitionResult result) {
+  //   setState(() {
+  //     switch (_speechTextControllerId) {
+  //       case 'guestName':
+  //         guestName.text = result.recognizedWords;
+  //         break;
+  //       case 'guestComingFrom':
+  //         guestComingFrom.text = result.recognizedWords;
+  //         break;
+  //     }
+  //   });
+  // }
+  void _handleMicPress(String fieldId) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => ListeningDialog(),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        switch (fieldId) {
+          case 'guestName':
+            guestName.text = result;
+            break;
+          case 'guestComingFrom':
+            guestComingFrom.text = result;
+            break;
+          case 'visitorNumber':
+            visitorNumber.text = result;
+            break;
+        }
+      });
+    }
   }
 
   void _incrementGuestCount() {
@@ -396,81 +417,43 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     return Column(
       children: [
         CustomForm.textField(
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          "Guest Name",
-          hintText: 'Enter Name',
-          validator: preferenceUtils.getTooglevalue() == true
-              ? (value) {
-                  return 'Please enter coming from';
-                }
-              : null,
-
-          //(value) {
-          //   if (value == null || value.isEmpty) {
-          //     return 'Please enter guest name';
-          //   }
-          //   return null;
-          // },
-
-          textCapitalization: TextCapitalization.words,
-          textController: guestName,
-          // suffixIcon: IconButton(
-          //   onPressed: () {
-          //     showDialog(
-          //         context: context, builder: (context) => ListeningDialog());
-          //     _speechToText.isNotListening
-          //         ? _startListening('guestName')
-          //         : _stopListening();
-          //   },
-          //   icon: CircleAvatar(
-          //     backgroundColor: _speechTextControllerId == 'guestName' &&
-          //             _speechToText.isListening
-          //         ? Color(0xffCAF1D1)
-          //         : Color(0xffFFEBE6),
-          //     radius: 20,
-          //     child: Icon(
-          //       size: 22,
-          //       Ionicons.mic_outline,
-          //       color: Colors.black,
-          //     ),
-          //   ),
-          // ),
-        ),
+            titleColor: Theme.of(context).colorScheme.onSurface,
+            hintColor: Theme.of(context).colorScheme.onPrimary,
+            "Guest Name",
+            hintText: 'Enter Name',
+            textCapitalization: TextCapitalization.words,
+            textController: guestName,
+            suffixIcon: IconButton(
+              onPressed: () => _handleMicPress('guestName'),
+              icon: CircleAvatar(
+                backgroundColor: Color(0xffFFEBE6),
+                radius: 20,
+                child: Icon(
+                  size: 22,
+                  Ionicons.mic_outline,
+                  color: Colors.black,
+                ),
+              ),
+            )),
         CustomForm.textField(
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          "Coming From",
-          hintText: 'Enter Coming From',
-          validator: preferenceUtils.getTooglevalue() == true
-              ? (value) {
-                  return 'Please enter coming from';
-                }
-              : null,
-          textCapitalization: TextCapitalization.words,
-          textController: guestComingFrom,
-          // suffixIcon: IconButton(
-          //   onPressed: () {
-          //     showDialog(
-          //         context: context, builder: (context) => ListeningDialog());
-          //     _speechToText.isNotListening
-          //         ? _startListening('comingFrom')
-          //         : _stopListening();
-          //   },
-          //   icon: CircleAvatar(
-          //     backgroundColor: _speechTextControllerId == 'comingFrom' &&
-          //             _speechToText.isListening
-          //         ? Color(0xffCAF1D1)
-          //         : Color(0xffFFEBE6),
-          //     radius: 20,
-          //     child: Icon(
-          //       size: 22,
-          //       Ionicons.mic_outline,
-          //       color: Colors.black,
-          //     ),
-          //   ),
-          // ),
-        ),
+            titleColor: Theme.of(context).colorScheme.onSurface,
+            hintColor: Theme.of(context).colorScheme.onPrimary,
+            "Coming From",
+            hintText: 'Enter Coming From',
+            textCapitalization: TextCapitalization.words,
+            textController: guestComingFrom,
+            suffixIcon: IconButton(
+              onPressed: () => _handleMicPress('guestComingFrom'),
+              icon: CircleAvatar(
+                backgroundColor: Color(0xffFFEBE6),
+                radius: 20,
+                child: Icon(
+                  size: 22,
+                  Ionicons.mic_outline,
+                  color: Colors.black,
+                ),
+              ),
+            )),
         // preferenceUtils.getTooglevalue() == true
         //     ?
         CustomForm.textField(
@@ -654,6 +637,7 @@ class ListeningDialogState extends State<ListeningDialog>
   late stt.SpeechToText _speechToText;
   bool _isListening = false;
   String recognizedText = 'Listening...';
+  bool _hasRecognizedText = false;
 
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -663,7 +647,6 @@ class ListeningDialogState extends State<ListeningDialog>
     super.initState();
     _speechToText = stt.SpeechToText();
 
-    // Animation for pulsing mic icon
     _controller = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 1000),
@@ -673,41 +656,58 @@ class ListeningDialogState extends State<ListeningDialog>
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
-    _startListening(
-        'guestComingFrom'); // Automatically start listening when dialog opens
+    _startListening();
   }
 
-  // Toggle between listening and not listening
-  void _toggleListening(String contextLabel) {
-    if (!_isListening) {
-      _startListening(contextLabel);
-    } else {
-      _stopListening();
-    }
-  }
+  Future<void> _startListening() async {
+    setState(() {
+      _hasRecognizedText = false;
+      recognizedText = 'Listening...';
+    });
 
-  // Start listening
-  Future<void> _startListening(String contextLabel) async {
     bool available = await _speechToText.initialize(
       onStatus: (status) {
         if (status == 'done' || status == 'notListening') {
           setState(() => _isListening = false);
         }
       },
-      onError: (error) => print('Error: $error'),
+      onError: (error) {
+        print('Error: $error');
+        setState(() {
+          recognizedText = 'Error occurred. Please try again.';
+          _isListening = false;
+        });
+      },
     );
 
     if (available) {
       setState(() => _isListening = true);
       _speechToText.listen(
         onResult: (result) {
-          setState(() => recognizedText = result.recognizedWords);
+          setState(() {
+            if (result.recognizedWords.isNotEmpty) {
+              recognizedText = result.recognizedWords;
+              _hasRecognizedText = true;
+            }
+            if (result.finalResult) {
+              _isListening = false;
+            }
+          });
         },
       );
+    } else {
+      setState(() {
+        recognizedText = 'Speech recognition not available';
+        _isListening = false;
+      });
     }
   }
 
-  // Stop listening
+  void _retryListening() {
+    _stopListening();
+    _startListening();
+  }
+
   void _stopListening() {
     _speechToText.stop();
     setState(() => _isListening = false);
@@ -732,6 +732,7 @@ class ListeningDialogState extends State<ListeningDialog>
             Text(
               recognizedText,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
             SizedBox(height: 20),
             AnimatedBuilder(
@@ -744,17 +745,41 @@ class ListeningDialogState extends State<ListeningDialog>
                     size: 50,
                     color: Colors.red,
                   ),
-                  onPressed: () => _toggleListening('guestComingFrom'),
+                  onPressed: _isListening ? _stopListening : _startListening,
                 ),
               ),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                _stopListening(); // Ensure it stops listening on exit
-                Navigator.of(context).pop();
-              },
-              child: Text('Close'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (_hasRecognizedText) // Only show retry when we have recognized text
+                  ElevatedButton.icon(
+                    onPressed: _retryListening,
+                    icon: Icon(Icons.refresh),
+                    label: Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ElevatedButton(
+                  onPressed: () {
+                    _stopListening();
+                    if (_hasRecognizedText) {
+                      Navigator.of(context).pop(recognizedText);
+                    } else {
+                      Navigator.of(context).pop(null);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        _hasRecognizedText ? Colors.green : Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(_hasRecognizedText ? 'Done' : 'Cancel'),
+                ),
+              ],
             ),
           ],
         ),

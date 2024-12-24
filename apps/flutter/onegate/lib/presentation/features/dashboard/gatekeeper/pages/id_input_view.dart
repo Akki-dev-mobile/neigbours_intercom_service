@@ -73,6 +73,7 @@ class _IdInputViewState extends State<IdInputView> {
       FocusScope.of(context).requestFocus(_focusNode);
     });
     loadPurposes();
+    mobileController.clear();
   }
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
@@ -94,6 +95,7 @@ class _IdInputViewState extends State<IdInputView> {
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+
     mobileController.text = '';
   }
 
