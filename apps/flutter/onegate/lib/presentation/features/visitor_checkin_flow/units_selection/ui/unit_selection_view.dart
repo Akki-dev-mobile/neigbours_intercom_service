@@ -382,7 +382,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      floatingActionButton: ValueListenableBuilder<Set<String>>(
+      bottomNavigationBar: ValueListenableBuilder<Set<String>>(
         valueListenable: _selectedMembersNotifier,
         builder: (context, selectedMembers, child) {
           if (selectedMembers.isEmpty) {
@@ -644,141 +644,160 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                                   .colorScheme
                                                                   .background),
                                                     ),
-                                                    ElevatedButton.icon(
-                                                      style: ButtonStyle(
-                                                        // overlayColor: MaterialStateProperty.all<Color>(
-                                                        //   Color(0xFF61677A),
-                                                        // ),
-                                                        foregroundColor:
-                                                            WidgetStateProperty
-                                                                .all<Color>(
-                                                          const Color(
-                                                              0xFF7D7C7C),
-                                                        ),
-                                                        backgroundColor:
-                                                            WidgetStateProperty
-                                                                .all<Color>(
-                                                          Theme.of(context)
-                                                              .colorScheme
-                                                              .surface,
-                                                        ),
-                                                        elevation:
-                                                            WidgetStateProperty
-                                                                .resolveWith<
-                                                                    double>(
-                                                          (Set<WidgetState>
-                                                              states) {
-                                                            if (states.contains(
-                                                                WidgetState
-                                                                    .pressed)) {
-                                                              return 8;
-                                                            }
-                                                            return 0;
-                                                          },
-                                                        ),
-                                                        shape: WidgetStateProperty
-                                                            .all<
-                                                                RoundedRectangleBorder>(
-                                                          RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        15),
-                                                          ),
-                                                        ),
-                                                        padding:
-                                                            WidgetStateProperty.all<
-                                                                EdgeInsetsGeometry>(
-                                                          const EdgeInsets
-                                                              .symmetric(
-                                                            horizontal: 16,
-                                                            vertical: 10,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      onPressed: () async {
-                                                        log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
-
-                                                        if (selectedUnits !=
-                                                                null ||
-                                                            selectedMember !=
-                                                                null) {
-                                                          log("Selected Unit: $selectedUnits");
-                                                          log("Selected Member: $selectedMember");
-
-                                                          String? userId;
-                                                          if (selectedUnits
-                                                              .isNotEmpty) {
-                                                            userId =
-                                                                selectedUnits
-                                                                    .first
-                                                                    .toString();
-                                                          } else if (selectedMembers
-                                                              .isNotEmpty) {
-                                                            userId = _allMembers
-                                                                .firstWhere(
-                                                                  (member) =>
-                                                                      selectedMembers
-                                                                          .contains(
-                                                                    member[
-                                                                        'member_name'],
-                                                                  ),
-                                                                )['id']
-                                                                .toString();
-                                                          }
-
-                                                          List<int> memberIds = _allMembers
-                                                              .where((member) =>
-                                                                  selectedMembers
-                                                                      .contains(
-                                                                          member[
-                                                                              'member_name']))
-                                                              .map<int>((member) =>
-                                                                  member['member_id']
-                                                                      as int)
-                                                              .toList();
-
-                                                          log("Member IDs List: $memberIds");
-
-                                                          log("Post Selection:::");
-                                                          await postSelection(
-                                                              context,
-                                                              selectedMembers,
-                                                              selectedUnits);
-
-                                                          // preferenceUtils.getTooglevalue() == true
-                                                          //     ? showApprovalDialog('Waiting for approval......')
-                                                          //     : await postSelection(
-                                                          //         context, selectedMember, unitId);
-                                                        } else {
-                                                          log("No selection made");
-                                                        }
-                                                      },
-                                                      icon: selectedMembers
-                                                                  .length >
-                                                              1
-                                                          ? const Icon(
-                                                              Icons.check,
-                                                              size: 15,
-                                                            ) // Icon for "Allow"
-                                                          : const Icon(
-                                                              Icons
-                                                                  .navigate_next,
-                                                              size: 18),
-                                                      label: Text(
-                                                        selectedMembers.length >
-                                                                1
-                                                            ? "Allow"
-                                                            : "Next",
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .bodyMedium!
-                                                            .copyWith(
-                                                              color: Theme.of(
-                                                                      context)
-                                                                  .colorScheme
-                                                                  .onSurface,
+                                                    Container(
+                                                      height:
+                                                          MediaQuery.of(context)
+                                                                  .size
+                                                                  .height *
+                                                              0.08,
+                                                      width:
+                                                          MediaQuery.of(context)
+                                                                  .size
+                                                                  .width *
+                                                              0.4,
+                                                      child: Directionality(
+                                                        textDirection: ui
+                                                            .TextDirection.rtl,
+                                                        child:
+                                                            ElevatedButton.icon(
+                                                          style: ButtonStyle(
+                                                            // overlayColor: MaterialStateProperty.all<Color>(
+                                                            //   Color(0xFF61677A),
+                                                            // ),
+                                                            foregroundColor:
+                                                                WidgetStateProperty
+                                                                    .all<Color>(
+                                                              const Color(
+                                                                  0xFF7D7C7C),
                                                             ),
+                                                            backgroundColor:
+                                                                WidgetStateProperty
+                                                                    .all<Color>(
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .surface,
+                                                            ),
+                                                            elevation:
+                                                                WidgetStateProperty
+                                                                    .resolveWith<
+                                                                        double>(
+                                                              (Set<WidgetState>
+                                                                  states) {
+                                                                if (states.contains(
+                                                                    WidgetState
+                                                                        .pressed)) {
+                                                                  return 8;
+                                                                }
+                                                                return 0;
+                                                              },
+                                                            ),
+                                                            shape: WidgetStateProperty
+                                                                .all<
+                                                                    RoundedRectangleBorder>(
+                                                              RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            15),
+                                                              ),
+                                                            ),
+                                                            padding:
+                                                                WidgetStateProperty
+                                                                    .all<
+                                                                        EdgeInsetsGeometry>(
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                horizontal: 16,
+                                                                vertical: 10,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          onPressed: () async {
+                                                            log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
+
+                                                            if (selectedUnits !=
+                                                                    null ||
+                                                                selectedMember !=
+                                                                    null) {
+                                                              log("Selected Unit: $selectedUnits");
+                                                              log("Selected Member: $selectedMember");
+
+                                                              String? userId;
+                                                              if (selectedUnits
+                                                                  .isNotEmpty) {
+                                                                userId =
+                                                                    selectedUnits
+                                                                        .first
+                                                                        .toString();
+                                                              } else if (selectedMembers
+                                                                  .isNotEmpty) {
+                                                                userId = _allMembers
+                                                                    .firstWhere(
+                                                                      (member) =>
+                                                                          selectedMembers
+                                                                              .contains(
+                                                                        member[
+                                                                            'member_name'],
+                                                                      ),
+                                                                    )['id']
+                                                                    .toString();
+                                                              }
+
+                                                              List<int> memberIds = _allMembers
+                                                                  .where((member) =>
+                                                                      selectedMembers
+                                                                          .contains(member[
+                                                                              'member_name']))
+                                                                  .map<int>((member) =>
+                                                                      member['member_id']
+                                                                          as int)
+                                                                  .toList();
+
+                                                              log("Member IDs List: $memberIds");
+
+                                                              log("Post Selection:::");
+                                                              await postSelection(
+                                                                  context,
+                                                                  selectedMembers,
+                                                                  selectedUnits);
+
+                                                              // preferenceUtils.getTooglevalue() == true
+                                                              //     ? showApprovalDialog('Waiting for approval......')
+                                                              //     : await postSelection(
+                                                              //         context, selectedMember, unitId);
+                                                            } else {
+                                                              log("No selection made");
+                                                            }
+                                                          },
+                                                          icon: selectedMembers
+                                                                      .length >
+                                                                  1
+                                                              ? const Icon(
+                                                                  Icons.check,
+                                                                  size: 15,
+                                                                ) // Icon for "Allow"
+                                                              : const Icon(
+                                                                  Icons
+                                                                      .navigate_next,
+                                                                  size: 18),
+                                                          label: Text(
+                                                            selectedMembers
+                                                                        .length >
+                                                                    1
+                                                                ? "Allow"
+                                                                : "Next",
+                                                            style: Theme.of(
+                                                                    context)
+                                                                .textTheme
+                                                                .bodyMedium!
+                                                                .copyWith(
+                                                                  color: Theme.of(
+                                                                          context)
+                                                                      .colorScheme
+                                                                      .onSurface,
+                                                                ),
+                                                          ),
+                                                        ),
                                                       ),
                                                     ),
                                                   ],
@@ -902,105 +921,118 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                               .colorScheme
                                               .background),
                                 ),
-                                ElevatedButton.icon(
-                                  style: ButtonStyle(
-                                    // overlayColor: MaterialStateProperty.all<Color>(
-                                    //   Color(0xFF61677A),
-                                    // ),
-                                    foregroundColor:
-                                        WidgetStateProperty.all<Color>(
-                                      const Color(0xFF7D7C7C),
-                                    ),
-                                    backgroundColor:
-                                        WidgetStateProperty.all<Color>(
-                                      Theme.of(context).colorScheme.surface,
-                                    ),
-                                    elevation:
-                                        WidgetStateProperty.resolveWith<double>(
-                                      (Set<WidgetState> states) {
-                                        if (states
-                                            .contains(WidgetState.pressed)) {
-                                          return 8;
-                                        }
-                                        return 0;
-                                      },
-                                    ),
-                                    shape: WidgetStateProperty.all<
-                                        RoundedRectangleBorder>(
-                                      RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(15),
-                                      ),
-                                    ),
-                                    padding: WidgetStateProperty.all<
-                                        EdgeInsetsGeometry>(
-                                      const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                  ),
-                                  onPressed: () async {
-                                    log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
-
-                                    if (selectedUnits != null ||
-                                        selectedMember != null) {
-                                      log("Selected Unit: $selectedUnits");
-                                      log("Selected Member: $selectedMember");
-
-                                      String? userId;
-                                      if (selectedUnits.isNotEmpty) {
-                                        userId = selectedUnits.first.toString();
-                                      } else if (selectedMembers.isNotEmpty) {
-                                        userId = _allMembers
-                                            .firstWhere(
-                                              (member) =>
-                                                  selectedMembers.contains(
-                                                member['member_name'],
-                                              ),
-                                            )['id']
-                                            .toString();
-                                      }
-
-                                      List<int> memberIds = _allMembers
-                                          .where((member) => selectedMembers
-                                              .contains(member['member_name']))
-                                          .map<int>((member) =>
-                                              member['member_id'] as int)
-                                          .toList();
-
-                                      log("Member IDs List: $memberIds");
-
-                                      log("Post Selection:::");
-                                      await postSelection(context,
-                                          selectedMembers, selectedUnits);
-
-                                      // preferenceUtils.getTooglevalue() == true
-                                      //     ? showApprovalDialog('Waiting for approval......')
-                                      //     : await postSelection(
-                                      //         context, selectedMember, unitId);
-                                    } else {
-                                      log("No selection made");
-                                    }
-                                  },
-                                  icon: selectedMembers.length > 1
-                                      ? const Icon(
-                                          Icons.check,
-                                          size: 15,
-                                        ) // Icon for "Allow"
-                                      : const Icon(Icons.navigate_next,
-                                          size: 18),
-                                  label: Text(
-                                    selectedMembers.length > 1
-                                        ? "Allow"
-                                        : "Next",
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge!
-                                        .copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
+                                Container(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.08,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.4,
+                                  child: Directionality(
+                                    textDirection: ui.TextDirection.rtl,
+                                    child: ElevatedButton.icon(
+                                      style: ButtonStyle(
+                                        // overlayColor: MaterialStateProperty.all<Color>(
+                                        //   Color(0xFF61677A),
+                                        // ),
+                                        foregroundColor:
+                                            WidgetStateProperty.all<Color>(
+                                          const Color(0xFF7D7C7C),
                                         ),
+                                        backgroundColor:
+                                            WidgetStateProperty.all<Color>(
+                                          Theme.of(context).colorScheme.surface,
+                                        ),
+                                        elevation: WidgetStateProperty
+                                            .resolveWith<double>(
+                                          (Set<WidgetState> states) {
+                                            if (states.contains(
+                                                WidgetState.pressed)) {
+                                              return 8;
+                                            }
+                                            return 0;
+                                          },
+                                        ),
+                                        shape: WidgetStateProperty.all<
+                                            RoundedRectangleBorder>(
+                                          RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(15),
+                                          ),
+                                        ),
+                                        padding: WidgetStateProperty.all<
+                                            EdgeInsetsGeometry>(
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 10,
+                                          ),
+                                        ),
+                                      ),
+                                      onPressed: () async {
+                                        log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
+
+                                        if (selectedUnits != null ||
+                                            selectedMember != null) {
+                                          log("Selected Unit: $selectedUnits");
+                                          log("Selected Member: $selectedMember");
+
+                                          String? userId;
+                                          if (selectedUnits.isNotEmpty) {
+                                            userId =
+                                                selectedUnits.first.toString();
+                                          } else if (selectedMembers
+                                              .isNotEmpty) {
+                                            userId = _allMembers
+                                                .firstWhere(
+                                                  (member) =>
+                                                      selectedMembers.contains(
+                                                    member['member_name'],
+                                                  ),
+                                                )['id']
+                                                .toString();
+                                          }
+
+                                          List<int> memberIds = _allMembers
+                                              .where((member) =>
+                                                  selectedMembers.contains(
+                                                      member['member_name']))
+                                              .map<int>((member) =>
+                                                  member['member_id'] as int)
+                                              .toList();
+
+                                          log("Member IDs List: $memberIds");
+
+                                          log("Post Selection:::");
+                                          await postSelection(context,
+                                              selectedMembers, selectedUnits);
+
+                                          // preferenceUtils.getTooglevalue() == true
+                                          //     ? showApprovalDialog('Waiting for approval......')
+                                          //     : await postSelection(
+                                          //         context, selectedMember, unitId);
+                                        } else {
+                                          log("No selection made");
+                                        }
+                                      },
+                                      icon: selectedMembers.length > 1
+                                          ? const Icon(
+                                              Icons.check,
+                                              size: 15,
+                                            ) // Icon for "Allow"
+                                          : const Icon(Icons.navigate_next,
+                                              size: 18),
+                                      label: Text(
+                                        selectedMembers.length > 1
+                                            ? "Allow"
+                                            : "Next",
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge!
+                                            .copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1018,9 +1050,24 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             ...selectedMembers.map(
                               (member) => ListTile(
                                 leading: const Icon(Icons.person),
-                                title: Text(
-                                  member,
-                                  style: Theme.of(context).textTheme.bodyLarge,
+                                title: Row(
+                                  children: [
+                                    Text(
+                                      member,
+                                      style:
+                                          Theme.of(context).textTheme.bodyLarge,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(member,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            )),
+                                  ],
                                 ),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.close,
