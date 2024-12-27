@@ -383,46 +383,199 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
+//   Future<void> _showExportDialog(
+//       BuildContext context, List<VisitorLog> visitorLogs) async {
+//     TextEditingController emailController = TextEditingController();
+//     TextEditingController nameController = TextEditingController();
+//     DateTime? fromDate;
+//     DateTime? toDate;
+//
+//     final SharedPreferences prefs = await SharedPreferences.getInstance();
+//     final storedEmail = prefs.getString('email') ?? ''; // Load email if saved
+//     emailController.text = storedEmail;
+//
+//     // Function to pick a dateimport 'package:flutter/material.dart';
+//
+// // Function to pick a date
+//     Future<DateTimeRange?> _pickDate(BuildContext context) async {
+//       return await showDateRangePicker(
+//         context: context,
+//         firstDate: DateTime(2000),
+//         lastDate: DateTime.now(),
+//         builder: (BuildContext context, Widget? child) {
+//           return Theme(
+//             data: ThemeData.light().copyWith(
+//               colorScheme: ColorScheme.light(
+//                 primary: Colors.black, // Header background color
+//                 onPrimary: Colors.white, // Header text color
+//                 surface: Colors.white, // Background color
+//                 onSurface: Colors.black, // Text color
+//               ),
+//               dialogBackgroundColor: Colors.white, // Background color
+//             ),
+//             child: child!,
+//           );
+//         },
+//       );
+//     }
+//
+//     final _exportFormKey = GlobalKey<FormState>();
+//
+//     // Show the dialog
+//     await showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return StatefulBuilder(
+//           builder: (context, setState) {
+//             return AlertDialog(
+//               title: const Text('Export Logs'),
+//               content: SingleChildScrollView(
+//                 child: Form(
+//                   key: _exportFormKey,
+//                   child: Column(
+//                     mainAxisSize: MainAxisSize.min,
+//                     children: [
+//                       // Email Input
+//                       // CustomForm.textField("name",
+//                       //     titleColor: Theme.of(context).colorScheme.onSurface,
+//                       //     hintColor: Theme.of(context).colorScheme.onPrimary,
+//                       //     hintText: "Enter name for export",
+//                       //     textController: nameController,),
+//
+//                       CustomForm.textField(
+//                         "Email",
+//                         titleColor: Theme.of(context).colorScheme.onSurface,
+//                         hintColor: Theme.of(context).colorScheme.onPrimary,
+//                         hintText: "Enter email for export",
+//                         keyboardType: TextInputType.emailAddress,
+//                         validator: (value) {
+//                           if (value!.isEmpty) {
+//                             return 'Please enter email';
+//                           }
+//                           if (!value.contains('@')) {
+//                             return 'Please enter a valid email';
+//                           }
+//                           return null;
+//                         },
+//                         textController: emailController,
+//                       ),
+//
+//                       const SizedBox(height: 10),
+//                       ListTile(
+//                         contentPadding: EdgeInsets.zero,
+//                         title: Text(
+//                           "From Date:",
+//                           style: Theme.of(context).textTheme.bodyMedium,
+//                         ),
+//                         subtitle: fromDate != null
+//                             ? Text(
+//                                 DateFormat('dd-MM-yyyy').format(fromDate!),
+//                                 style: Theme.of(context).textTheme.labelMedium,
+//                               )
+//                             : null,
+//                         trailing: const Icon(
+//                           Symbols.calendar_month,
+//                         ),
+//                         onTap: () async {
+//                           final picked = await _pickDate(context);
+//                           if (picked != null) {
+//                             setState(() {
+//                               fromDate = picked;
+//                             });
+//                           }
+//                         },
+//                       ),
+//                       // To Date Picker
+//                       ListTile(
+//                         contentPadding: EdgeInsets.zero,
+//                         title: Text(
+//                           "To Date:",
+//                           style: Theme.of(context).textTheme.bodyMedium,
+//                         ),
+//                         subtitle: toDate != null
+//                             ? Text(
+//                                 DateFormat('dd-MM-yyyy').format(toDate!),
+//                                 style: Theme.of(context).textTheme.labelMedium,
+//                               )
+//                             : null,
+//                         trailing: const Icon(
+//                           Symbols.calendar_month,
+//                         ),
+//                         onTap: () async {
+//                           final picked = await _pickDate(context);
+//                           if (picked != null) {
+//                             setState(() {
+//                               toDate = picked;
+//                             });
+//                           }
+//                         },
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//               actions: [
+//                 CustomLargeBtn(
+//                   onPressed: () async {
+//                     if (_exportFormKey.currentState!.validate() &&
+//                         fromDate != null &&
+//                         toDate != null) {
+//                       await prefs.setString('email', emailController.text);
+//
+//                       final formattedFromDate = fromDate != null
+//                           ? DateFormat('yyyy-MM-dd').format(fromDate!)
+//                           : null;
+//                       final formattedToDate = toDate != null
+//                           ? DateFormat('yyyy-MM-dd').format(toDate!)
+//                           : null;
+//
+//                       var visitorData = visitorLogs.map((visitor) {
+//                         return {
+//                           "name": nameController.text,
+//                           "visitor_count": visitor.visitor_count ?? 1,
+//                           "to_mail": emailController.text,
+//                           "from_date": formattedFromDate,
+//                           "to_date": formattedToDate,
+//                         };
+//                       }).toList();
+//
+//                       await remoteDataSource.exportLogs(visitorData);
+//
+//                       Navigator.of(context).pop();
+//                     } else {
+//                       Fluttertoast.showToast(
+//                         msg: "Please fill all fields",
+//                         toastLength: Toast.LENGTH_SHORT,
+//                         gravity: ToastGravity.CENTER,
+//                         timeInSecForIosWeb: 1,
+//                         backgroundColor: Colors.red,
+//                         textColor: Colors.white,
+//                         fontSize: 16.0,
+//                       );
+//                     }
+//                   },
+//                   text: "Export",
+//                 )
+//               ],
+//             );
+//           },
+//         );
+//       },
+//     );
+//   }
   Future<void> _showExportDialog(
       BuildContext context, List<VisitorLog> visitorLogs) async {
     TextEditingController emailController = TextEditingController();
     TextEditingController nameController = TextEditingController();
-    DateTime? fromDate;
-    DateTime? toDate;
+    DateTime? startDate;
+    DateTime? endDate;
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final storedEmail = prefs.getString('email') ?? ''; // Load email if saved
+    final storedEmail = prefs.getString('email') ?? '';
     emailController.text = storedEmail;
-
-    // Function to pick a dateimport 'package:flutter/material.dart';
-
-// Function to pick a date
-    Future<DateTime?> _pickDate(BuildContext context) async {
-      return await showDatePicker(
-        context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime(2000),
-        lastDate: DateTime.now(),
-        builder: (BuildContext context, Widget? child) {
-          return Theme(
-            data: ThemeData.light().copyWith(
-              colorScheme: ColorScheme.light(
-                primary: Colors.black, // Header background color
-                onPrimary: Colors.white, // Header text color
-                surface: Colors.white, // Background color
-                onSurface: Colors.black, // Text color
-              ),
-              dialogBackgroundColor: Colors.white, // Background color
-            ),
-            child: child!,
-          );
-        },
-      );
-    }
 
     final _exportFormKey = GlobalKey<FormState>();
 
-    // Show the dialog
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -436,13 +589,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Email Input
-                      // CustomForm.textField("name",
-                      //     titleColor: Theme.of(context).colorScheme.onSurface,
-                      //     hintColor: Theme.of(context).colorScheme.onPrimary,
-                      //     hintText: "Enter name for export",
-                      //     textController: nameController,),
-
                       CustomForm.textField(
                         "Email",
                         titleColor: Theme.of(context).colorScheme.onSurface,
@@ -460,56 +606,107 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         },
                         textController: emailController,
                       ),
+                      const SizedBox(height: 20),
+                      // Date Range Picker
+                      InkWell(
+                        onTap: () async {
+                          final DateTimeRange? picked =
+                              await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2024),
+                            lastDate: DateTime.now(),
+                            initialDateRange:
+                                startDate != null && endDate != null
+                                    ? DateTimeRange(
+                                        start: startDate!, end: endDate!)
+                                    : null,
+                            builder: (BuildContext context, Widget? child) {
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.fromLTRB(
+                                      16,
+                                      MediaQuery.of(context).size.height * 0.2,
+                                      16,
+                                      0,
+                                    ),
+                                  ),
+                                  Container(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.7,
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.9,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    // constraints: BoxConstraints(
+                                    //   maxWidth:
+                                    //       MediaQuery.of(context).size.width *
+                                    //           0.9,
+                                    //   maxHeight:
+                                    //       MediaQuery.of(context).size.height *
+                                    //           0.7,
+                                    // ),
+                                    child: Theme(
+                                      data: ThemeData(
+                                        datePickerTheme: DatePickerThemeData(
+                                          rangeSelectionBackgroundColor:
+                                              Colors.red.shade200,
+                                          dayBackgroundColor:
+                                              WidgetStateProperty.all(
+                                            Colors.red.shade200,
+                                          ),
+                                          // Colors.red,
+                                        ),
+                                        useMaterial3: true,
+                                      ),
+                                      child: child!,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
 
-                      const SizedBox(height: 10),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          "From Date:",
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        subtitle: fromDate != null
-                            ? Text(
-                                DateFormat('dd-MM-yyyy').format(fromDate!),
-                                style: Theme.of(context).textTheme.labelMedium,
-                              )
-                            : null,
-                        trailing: const Icon(
-                          Symbols.calendar_month,
-                        ),
-                        onTap: () async {
-                          final picked = await _pickDate(context);
                           if (picked != null) {
                             setState(() {
-                              fromDate = picked;
+                              startDate = picked.start;
+                              endDate = picked.end;
                             });
                           }
                         },
-                      ),
-                      // To Date Picker
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          "To Date:",
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Date Range',
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                startDate != null && endDate != null
+                                    ? '${DateFormat('MMM dd, yyyy').format(startDate!)} - ${DateFormat('MMM dd, yyyy').format(endDate!)}'
+                                    : 'Select date range',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
                         ),
-                        subtitle: toDate != null
-                            ? Text(
-                                DateFormat('dd-MM-yyyy').format(toDate!),
-                                style: Theme.of(context).textTheme.labelMedium,
-                              )
-                            : null,
-                        trailing: const Icon(
-                          Symbols.calendar_month,
-                        ),
-                        onTap: () async {
-                          final picked = await _pickDate(context);
-                          if (picked != null) {
-                            setState(() {
-                              toDate = picked;
-                            });
-                          }
-                        },
                       ),
                     ],
                   ),
@@ -519,16 +716,14 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 CustomLargeBtn(
                   onPressed: () async {
                     if (_exportFormKey.currentState!.validate() &&
-                        fromDate != null &&
-                        toDate != null) {
+                        startDate != null &&
+                        endDate != null) {
                       await prefs.setString('email', emailController.text);
 
-                      final formattedFromDate = fromDate != null
-                          ? DateFormat('yyyy-MM-dd').format(fromDate!)
-                          : null;
-                      final formattedToDate = toDate != null
-                          ? DateFormat('yyyy-MM-dd').format(toDate!)
-                          : null;
+                      final formattedFromDate =
+                          DateFormat('yyyy-MM-dd').format(startDate!);
+                      final formattedToDate =
+                          DateFormat('yyyy-MM-dd').format(endDate!);
 
                       var visitorData = visitorLogs.map((visitor) {
                         return {
@@ -541,7 +736,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       }).toList();
 
                       await remoteDataSource.exportLogs(visitorData);
-
                       Navigator.of(context).pop();
                     } else {
                       Fluttertoast.showToast(
@@ -556,7 +750,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     }
                   },
                   text: "Export",
-                )
+                ),
               ],
             );
           },
