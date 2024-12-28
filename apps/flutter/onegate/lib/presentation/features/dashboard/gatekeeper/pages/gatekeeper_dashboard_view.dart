@@ -63,6 +63,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
               DioSingleton.instance3),
         ),
       ));
+
   @override
   void initState() {
     // startKioskMode();
@@ -103,12 +104,12 @@ class _GateDashboardViewState extends State<GateDashboardView>
       listener: (context, state) {
         switch (state.runtimeType) {
           case GDInAndOutButtonPressedState:
+            log('In and Out button pressed');
             Navigator.push(
               context,
-              PageTransition(
-                type: PageTransitionType.leftToRight,
-                child: VisitorLogView(
-                  id: 'In Out Book',
+              MaterialPageRoute(
+                builder: (context) => VisitorLogView(
+                  id: 'Visitor In',
                   logList: const [
                     "In Out Book",
                     "Visitor In",
@@ -117,6 +118,20 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 ),
               ),
             );
+            // Navigator.push(
+            //   context,
+            //   PageTransition(
+            //     type: PageTransitionType.leftToRight,
+            //     child: VisitorLogView(
+            //       id: 'In Out Book',
+            //       logList: const [
+            //         "In Out Book",
+            //         "Visitor In",
+            //         "Visitor Out",
+            //       ],
+            //     ),
+            //   ),
+            // );
             break;
           case GDVisitorsInButtonPressedState:
             Navigator.push(
@@ -386,11 +401,13 @@ class DashboardShortcut extends StatelessWidget {
     required this.isVisible,
     super.key,
   });
+
   final String title;
   final IconData icon;
   final Function onTap;
   final bool isPremium;
   final bool isVisible;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

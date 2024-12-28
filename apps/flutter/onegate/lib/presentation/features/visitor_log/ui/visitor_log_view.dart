@@ -1,31 +1,14 @@
-// ignore_for_file: prefer_const_constructors
+import 'dart:convert';
 
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_onegate/data/datasources/gate_storage.dart';
-import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
-import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
-import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
-import 'package:flutter_onegate/utils/app_utils.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:intl/intl.dart';
-import 'package:ionicons/ionicons.dart';
-import 'package:lottie/lottie.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import 'package:onegate_client/onegate_client.dart';
-import 'package:page_transition/page_transition.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+
+import '../../../../data/datasources/gate_storage.dart';
+import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 
 class VisitorLogView extends StatefulWidget {
-  String id;
+  final String id;
   final List<String> logList;
   final String? selectedBuilding;
 
@@ -41,1118 +24,123 @@ class VisitorLogView extends StatefulWidget {
 }
 
 class _VisitorLogViewState extends State<VisitorLogView> {
+  static const String apiUrl =
+      'https://gateapi.cubeone.in/api/visitor/log?company_id=';
+  static const Map<String, String> headers = {
+    'Content-Type': 'application/json'
+  };
+  GateStorage gateStorage = GateStorage();
   late String selectedId;
   String? _searchText = "";
-  List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
-  final gateStorage = GateStorage();
-  final remoteDataSource = RemoteDataSource(
-      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
-
-  final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
-    VisitorLogUsecase(
-      VisitorLogRepositoryImpl(
-        RemoteDataSource(
-          DioSingleton.instance1,
-          DioSingleton.instance2,
-          DioSingleton.instance3,
-        ),
-      ),
-    ),
-  );
+  List<dynamic> visitorLogs = [];
+  bool isLoading = true;
+  bool _isFetching = false; // Flag to prevent multiple fetches
 
   @override
   void initState() {
     super.initState();
-    selectedId = widget.id;
+    fetchVisitorLogs();
+  }
 
-    switch (widget.id) {
-      case "In Out Book":
-        _visitorLogBloc.add(FetchVisitorLogEvent(Utils.getCurrentTime()));
-        break;
-      case "Visitor In":
-        _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
-        break;
-      case "Visitor Out":
-        _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
-        break;
+  Future<void> fetchVisitorLogs() async {
+    String companyId = gateStorage.getSocietyId().toString();
+
+    if (_isFetching) return;
+    _isFetching = true;
+
+    try {
+      final response =
+          await http.get(Uri.parse(apiUrl + companyId), headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint('API Response (status: ${response.statusCode}): $data');
+
+        if (data is Map &&
+            data['data'] is Map &&
+            data['data']['data'] is List) {
+          setState(() {
+            visitorLogs = data['data']['data'];
+          });
+        } else {
+          throw Exception('Unexpected response format');
+        }
+      } else {
+        debugPrint('Error response: ${response.statusCode}, ${response.body}');
+        throw Exception('Failed to fetch visitor logs');
+      }
+    } catch (e) {
+      debugPrint('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching data: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+      _isFetching = false;
     }
   }
 
-  //init a scroll controller
-  final ScrollController _scrollController = ScrollController();
+  Future<bool> _onWillPop() async {
+    if (isLoading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please wait, data is still loading.')),
+      );
+      return false;
+    }
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final yesterday = today.subtract(Duration(days: 1));
-
-    return BlocConsumer<VisitorLogBloc, VisitorLogState>(
-      bloc: _visitorLogBloc,
-      listenWhen: (previous, current) => current is VisitorLogActionState,
-      buildWhen: (previous, current) => current is! VisitorLogActionState,
-      listener: (context, state) {
-        switch (state.runtimeType) {
-          case VisitorLogCheckOutSuccessState:
-            final successState = state as VisitorLogCheckOutSuccessState;
-            if (successState.isCheckOut!) {
-              Fluttertoast.showToast(
-                msg: "User Checked Out Successfully",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-              _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
-            }
-            break;
-          case VisitorCheckInLogSuccessState:
-            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
-            Fluttertoast.showToast(
-              msg: "Visitor Checked Out Successfully",
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.CENTER,
-              timeInSecForIosWeb: 1,
-              backgroundColor: Colors.green,
-              textColor: Colors.white,
-              fontSize: 16.0,
-            );
-            break;
-        }
-      },
-      builder: (context, state) {
-        switch (state.runtimeType) {
-          case VisitorLogLoadingState:
-            return LoaderView();
-          case VisitorLogSuccessState:
-            final successState = state as VisitorLogSuccessState;
-            final visitorLogs = successState.visitorLogs;
-            List<VisitorLog> filteredVisitors = visitorLogs!
-                .where((visitorLog) => visitorLog.visitor!.name
-                    .toLowerCase()
-                    .contains(_searchText!.toLowerCase()))
-                .toList();
-
-            final dateFormat = DateFormat("yyyy-MM-ddTHH:mm:ss.SSSSSSZ");
-
-// Define start and end of today
-            final startOfToday = DateTime(today.year, today.month, today.day);
-            final endOfToday = startOfToday.add(Duration(days: 1));
-
-// Define start and end of yesterday
-            final startOfYesterday = startOfToday.subtract(Duration(days: 1));
-            final endOfYesterday = startOfToday;
-
-// Filter for today
-            final todayLogs = filteredVisitors.where((log) {
-              final checkInDate =
-                  dateFormat.parse(log.visitor_check_in.toIso8601String());
-              return checkInDate.isAfter(startOfToday) &&
-                  checkInDate.isBefore(endOfToday);
-            }).toList();
-
-// Filter for yesterday
-            final yesterdayLogs = filteredVisitors.where((log) {
-              final checkInDate =
-                  dateFormat.parse(log.visitor_check_in.toIso8601String());
-              return checkInDate.isAfter(startOfYesterday) &&
-                  checkInDate.isBefore(endOfYesterday);
-            }).toList();
-
-// Filter for older
-            final olderLogs = filteredVisitors.where((log) {
-              final checkInDate =
-                  dateFormat.parse(log.visitor_check_in.toIso8601String());
-              return checkInDate.isBefore(startOfYesterday);
-            }).toList();
-            return PopScope(
-              canPop: false,
-              child: MyScrollView(
-                // isScrollable: false,
-                hasBackButton: false,
-                pageTitleWidget: Hero(
-                  tag: 'page_title',
-                  child: Text(
-                    widget.id,
-                    style: Theme.of(context).textTheme.bodyLarge,
+    return PopScope(
+      canPop: false,
+      // _onWillPop,
+      child: MyScrollView(
+        // isScrollable: false,
+        pageTitle: 'Visitor Logs',
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10.0),
+            child: IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const GateDashboardView(),
                   ),
-                ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10.0),
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => GateDashboardView(),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.home,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10.0),
-                    child: IconButton(
-                      onPressed: () async {
-                        await _showExportDialog(context, visitorLogs);
-                      },
-                      icon: const Icon(
-                        Icons.download,
-                      ),
-                    ),
-                  )
-
-                  // ,
-                ],
-                pageBody: Column(
-                  children: [
-                    CustomForm.textField(
-                      widget.selectedBuilding ?? 'Search',
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onSurface,
-                      hintText: 'Search Visitor',
-                      textCapitalization: TextCapitalization.words,
-                      textInputAction: TextInputAction.search,
-                      onFieldSubmitted: (value) {
-                        if (kDebugMode) {
-                          print(value);
-                        }
-                      },
-                      onChanged: (value) {
-                        setState(() {
-                          _searchText = value;
-                        });
-                      },
-                      prefixIcon: IconButton(
-                        onPressed: () {},
-                        icon: Icon(
-                          Ionicons.search_outline,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          _showLogBookConfigBottomSheet(context);
-                        },
-                        icon: Icon(
-                          Ionicons.funnel_outline,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                    ListView.builder(
-                      physics: BouncingScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: todayLogs.length +
-                          yesterdayLogs.length +
-                          olderLogs.length +
-                          (todayLogs.isNotEmpty ? 1 : 0) +
-                          (yesterdayLogs.isNotEmpty ? 1 : 0) +
-                          (olderLogs.isNotEmpty ? 1 : 0), // Add headers count
-                      itemBuilder: (context, index) {
-                        int currentIndex = 0;
-
-                        // Today Section
-                        if (todayLogs.isNotEmpty) {
-                          if (index == currentIndex) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Today',
-                                  style:
-                                      Theme.of(context).textTheme.headlineSmall,
-                                ),
-                                const Divider(),
-                              ],
-                            );
-                          }
-                          if (index > currentIndex &&
-                              index <= currentIndex + todayLogs.length) {
-                            return VisitorLogItem(
-                              visitorLog: todayLogs[index - currentIndex - 1],
-                              onCheckOut: () {
-                                todayLogs[index - currentIndex - 1]
-                                    .visitor_check_out = Utils.getCurrentTime();
-                                todayLogs[index - currentIndex - 1]
-                                    .is_checked_out = true;
-                                _visitorLogBloc.add(CheckOutEvent(
-                                    todayLogs[index - currentIndex - 1],
-                                    widget.id));
-                              },
-                            );
-                          }
-                          currentIndex +=
-                              todayLogs.length + 1; // Add 1 for header
-                        }
-
-                        // Yesterday Section
-                        if (yesterdayLogs.isNotEmpty) {
-                          if (index == currentIndex) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 20),
-                                Text(
-                                  'Yesterday',
-                                  style:
-                                      Theme.of(context).textTheme.headlineSmall,
-                                ),
-                                const Divider(),
-                              ],
-                            );
-                          }
-                          if (index > currentIndex &&
-                              index <= currentIndex + yesterdayLogs.length) {
-                            return VisitorLogItem(
-                              visitorLog:
-                                  yesterdayLogs[index - currentIndex - 1],
-                              onCheckOut: () {
-                                yesterdayLogs[index - currentIndex - 1]
-                                    .visitor_check_out = Utils.getCurrentTime();
-                                yesterdayLogs[index - currentIndex - 1]
-                                    .is_checked_out = true;
-                                _visitorLogBloc.add(CheckOutEvent(
-                                    yesterdayLogs[index - currentIndex - 1],
-                                    widget.id));
-                              },
-                            );
-                          }
-                          currentIndex +=
-                              yesterdayLogs.length + 1; // Add 1 for header
-                        }
-
-                        // Older Section
-                        if (olderLogs.isNotEmpty) {
-                          if (index == currentIndex) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 20),
-                                Text(
-                                  'Older',
-                                  style:
-                                      Theme.of(context).textTheme.headlineSmall,
-                                ),
-                                const Divider(),
-                              ],
-                            );
-                          }
-                          if (index > currentIndex &&
-                              index <= currentIndex + olderLogs.length) {
-                            return VisitorLogItem(
-                              visitorLog: olderLogs[index - currentIndex - 1],
-                              onCheckOut: () {
-                                olderLogs[index - currentIndex - 1]
-                                    .visitor_check_out = Utils.getCurrentTime();
-                                olderLogs[index - currentIndex - 1]
-                                    .is_checked_out = true;
-                                _visitorLogBloc.add(CheckOutEvent(
-                                    olderLogs[index - currentIndex - 1],
-                                    widget.id));
-                              },
-                            );
-                          }
-                        }
-
-                        return const SizedBox
-                            .shrink(); // Fallback in case of unexpected index
-                      },
-                    ),
-                    const SizedBox(
-                      height: 100,
-                    ),
-                  ],
-                ),
+                );
+              },
+              icon: const Icon(
+                Icons.home,
               ),
-            );
-          default:
-            return Container();
-        }
-      },
-    );
-  }
-
-//   Future<void> _showExportDialog(
-//       BuildContext context, List<VisitorLog> visitorLogs) async {
-//     TextEditingController emailController = TextEditingController();
-//     TextEditingController nameController = TextEditingController();
-//     DateTime? fromDate;
-//     DateTime? toDate;
-//
-//     final SharedPreferences prefs = await SharedPreferences.getInstance();
-//     final storedEmail = prefs.getString('email') ?? ''; // Load email if saved
-//     emailController.text = storedEmail;
-//
-//     // Function to pick a dateimport 'package:flutter/material.dart';
-//
-// // Function to pick a date
-//     Future<DateTimeRange?> _pickDate(BuildContext context) async {
-//       return await showDateRangePicker(
-//         context: context,
-//         firstDate: DateTime(2000),
-//         lastDate: DateTime.now(),
-//         builder: (BuildContext context, Widget? child) {
-//           return Theme(
-//             data: ThemeData.light().copyWith(
-//               colorScheme: ColorScheme.light(
-//                 primary: Colors.black, // Header background color
-//                 onPrimary: Colors.white, // Header text color
-//                 surface: Colors.white, // Background color
-//                 onSurface: Colors.black, // Text color
-//               ),
-//               dialogBackgroundColor: Colors.white, // Background color
-//             ),
-//             child: child!,
-//           );
-//         },
-//       );
-//     }
-//
-//     final _exportFormKey = GlobalKey<FormState>();
-//
-//     // Show the dialog
-//     await showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return StatefulBuilder(
-//           builder: (context, setState) {
-//             return AlertDialog(
-//               title: const Text('Export Logs'),
-//               content: SingleChildScrollView(
-//                 child: Form(
-//                   key: _exportFormKey,
-//                   child: Column(
-//                     mainAxisSize: MainAxisSize.min,
-//                     children: [
-//                       // Email Input
-//                       // CustomForm.textField("name",
-//                       //     titleColor: Theme.of(context).colorScheme.onSurface,
-//                       //     hintColor: Theme.of(context).colorScheme.onPrimary,
-//                       //     hintText: "Enter name for export",
-//                       //     textController: nameController,),
-//
-//                       CustomForm.textField(
-//                         "Email",
-//                         titleColor: Theme.of(context).colorScheme.onSurface,
-//                         hintColor: Theme.of(context).colorScheme.onPrimary,
-//                         hintText: "Enter email for export",
-//                         keyboardType: TextInputType.emailAddress,
-//                         validator: (value) {
-//                           if (value!.isEmpty) {
-//                             return 'Please enter email';
-//                           }
-//                           if (!value.contains('@')) {
-//                             return 'Please enter a valid email';
-//                           }
-//                           return null;
-//                         },
-//                         textController: emailController,
-//                       ),
-//
-//                       const SizedBox(height: 10),
-//                       ListTile(
-//                         contentPadding: EdgeInsets.zero,
-//                         title: Text(
-//                           "From Date:",
-//                           style: Theme.of(context).textTheme.bodyMedium,
-//                         ),
-//                         subtitle: fromDate != null
-//                             ? Text(
-//                                 DateFormat('dd-MM-yyyy').format(fromDate!),
-//                                 style: Theme.of(context).textTheme.labelMedium,
-//                               )
-//                             : null,
-//                         trailing: const Icon(
-//                           Symbols.calendar_month,
-//                         ),
-//                         onTap: () async {
-//                           final picked = await _pickDate(context);
-//                           if (picked != null) {
-//                             setState(() {
-//                               fromDate = picked;
-//                             });
-//                           }
-//                         },
-//                       ),
-//                       // To Date Picker
-//                       ListTile(
-//                         contentPadding: EdgeInsets.zero,
-//                         title: Text(
-//                           "To Date:",
-//                           style: Theme.of(context).textTheme.bodyMedium,
-//                         ),
-//                         subtitle: toDate != null
-//                             ? Text(
-//                                 DateFormat('dd-MM-yyyy').format(toDate!),
-//                                 style: Theme.of(context).textTheme.labelMedium,
-//                               )
-//                             : null,
-//                         trailing: const Icon(
-//                           Symbols.calendar_month,
-//                         ),
-//                         onTap: () async {
-//                           final picked = await _pickDate(context);
-//                           if (picked != null) {
-//                             setState(() {
-//                               toDate = picked;
-//                             });
-//                           }
-//                         },
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//               actions: [
-//                 CustomLargeBtn(
-//                   onPressed: () async {
-//                     if (_exportFormKey.currentState!.validate() &&
-//                         fromDate != null &&
-//                         toDate != null) {
-//                       await prefs.setString('email', emailController.text);
-//
-//                       final formattedFromDate = fromDate != null
-//                           ? DateFormat('yyyy-MM-dd').format(fromDate!)
-//                           : null;
-//                       final formattedToDate = toDate != null
-//                           ? DateFormat('yyyy-MM-dd').format(toDate!)
-//                           : null;
-//
-//                       var visitorData = visitorLogs.map((visitor) {
-//                         return {
-//                           "name": nameController.text,
-//                           "visitor_count": visitor.visitor_count ?? 1,
-//                           "to_mail": emailController.text,
-//                           "from_date": formattedFromDate,
-//                           "to_date": formattedToDate,
-//                         };
-//                       }).toList();
-//
-//                       await remoteDataSource.exportLogs(visitorData);
-//
-//                       Navigator.of(context).pop();
-//                     } else {
-//                       Fluttertoast.showToast(
-//                         msg: "Please fill all fields",
-//                         toastLength: Toast.LENGTH_SHORT,
-//                         gravity: ToastGravity.CENTER,
-//                         timeInSecForIosWeb: 1,
-//                         backgroundColor: Colors.red,
-//                         textColor: Colors.white,
-//                         fontSize: 16.0,
-//                       );
-//                     }
-//                   },
-//                   text: "Export",
-//                 )
-//               ],
-//             );
-//           },
-//         );
-//       },
-//     );
-//   }
-  Future<void> _showExportDialog(
-      BuildContext context, List<VisitorLog> visitorLogs) async {
-    TextEditingController emailController = TextEditingController();
-    TextEditingController nameController = TextEditingController();
-    DateTime? startDate;
-    DateTime? endDate;
-
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final storedEmail = prefs.getString('email') ?? '';
-    emailController.text = storedEmail;
-
-    final exportFormKey = GlobalKey<FormState>();
-
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Export Logs'),
-              content: SingleChildScrollView(
-                child: Form(
-                  key: exportFormKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CustomForm.textField(
-                        "Email",
-                        titleColor: Theme.of(context).colorScheme.onSurface,
-                        hintColor: Theme.of(context).colorScheme.onPrimary,
-                        hintText: "Enter email for export",
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return 'Please enter email';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Please enter a valid email';
-                          }
-                          return null;
-                        },
-                        textController: emailController,
-                      ),
-                      const SizedBox(height: 20),
-                      // Date Range Picker
-                      InkWell(
-                        onTap: () async {
-                          final DateTimeRange? picked =
-                              await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2024),
-                            lastDate: DateTime.now(),
-                            initialDateRange:
-                                startDate != null && endDate != null
-                                    ? DateTimeRange(
-                                        start: startDate!, end: endDate!)
-                                    : null,
-                            builder: (BuildContext context, Widget? child) {
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.fromLTRB(
-                                      16,
-                                      MediaQuery.of(context).size.height * 0.2,
-                                      16,
-                                      0,
-                                    ),
-                                  ),
-                                  Container(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.7,
-                                    width:
-                                        MediaQuery.of(context).size.width * 0.9,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    // constraints: BoxConstraints(
-                                    //   maxWidth:
-                                    //       MediaQuery.of(context).size.width *
-                                    //           0.9,
-                                    //   maxHeight:
-                                    //       MediaQuery.of(context).size.height *
-                                    //           0.7,
-                                    // ),
-                                    child: Theme(
-                                      data: ThemeData(
-                                        datePickerTheme: DatePickerThemeData(
-                                          rangeSelectionBackgroundColor:
-                                              Colors.red.shade200,
-                                          dayBackgroundColor:
-                                              WidgetStateProperty.all(
-                                            Colors.red.shade200,
-                                          ),
-                                          // Colors.red,
-                                        ),
-                                        useMaterial3: true,
-                                      ),
-                                      child: child!,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-
-                          if (picked != null) {
-                            setState(() {
-                              startDate = picked.start;
-                              endDate = picked.end;
-                            });
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.calendar_today, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Date Range',
-                                    style:
-                                        Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                startDate != null && endDate != null
-                                    ? '${DateFormat('MMM dd, yyyy').format(startDate!)} - ${DateFormat('MMM dd, yyyy').format(endDate!)}'
-                                    : 'Select date range',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
+            ),
+          ),
+        ],
+        pageBody: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : visitorLogs.isEmpty
+                ? const Center(child: Text('No visitor logs available'))
+                : ListView.builder(
+                    padding: EdgeInsets.zero,
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: visitorLogs.length,
+                    itemBuilder: (context, index) {
+                      final log = visitorLogs[index];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          child:
+                              Text(log['name'] != null ? log['name'][0] : '?'),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                CustomLargeBtn(
-                  onPressed: () async {
-                    if (exportFormKey.currentState!.validate() &&
-                        startDate != null &&
-                        endDate != null) {
-                      await prefs.setString('email', emailController.text);
-
-                      final formattedFromDate =
-                          DateFormat('yyyy-MM-dd').format(startDate!);
-                      final formattedToDate =
-                          DateFormat('yyyy-MM-dd').format(endDate!);
-
-                      var visitorData = visitorLogs.map((visitor) {
-                        return {
-                          "name": nameController.text,
-                          "visitor_count": visitor.visitor_count ?? 1,
-                          "to_mail": emailController.text,
-                          "from_date": formattedFromDate,
-                          "to_date": formattedToDate,
-                        };
-                      }).toList();
-
-                      await remoteDataSource.exportLogs(visitorData);
-                      Navigator.of(context).pop();
-                    } else {
-                      Fluttertoast.showToast(
-                        msg: "Please fill all fields",
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.CENTER,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.red,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
-                      );
-                    }
-                  },
-                  text: "Export",
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showLogBookConfigBottomSheet(BuildContext context) async {
-    showModalBottomSheet(
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                color: Theme.of(context).colorScheme.surface,
-              ),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      'Filters',
-                      style: Theme.of(context).textTheme.displaySmall!.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: widget.logList.length,
-                      itemBuilder: (context, index) {
-                        return GateSettingListTile(
-                          switchValue: selectedId == widget.logList[index],
-                          onChanged: (value) {
-                            setState(() {
-                              selectedId = widget.logList[index];
-                            });
-                          },
-                          title: widget.logList[index],
-                          subtitle: 'Enable/Disable ${widget.logList[index]}',
-                          leadingIcon: Symbols.gate,
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 30,
-                  ),
-                  CustomLargeBtn(
-                    text: 'Confirm',
-                    onPressed: () {
-                      setState(() {
-                        widget.id = selectedId;
-                      });
-                      Navigator.pop(context);
-                      Navigator.pushReplacement(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.bottomToTop,
-                          child: VisitorLogView(
-                            id: widget.id,
-                            logList: widget.logList,
-                            selectedBuilding: widget.selectedBuilding,
-                          ),
-                        ),
+                        title: Text(log['name'] ?? 'Unknown'),
+                        subtitle: Text(
+                            'Check-in: ${log['visitor_check_in'] ?? 'N/A'}'),
                       );
                     },
                   ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class VisitorLogItem extends StatefulWidget {
-  final VisitorLog visitorLog;
-  final Function onCheckOut;
-
-  const VisitorLogItem({
-    Key? key,
-    required this.visitorLog,
-    required this.onCheckOut,
-  }) : super(key: key);
-
-  @override
-  State<VisitorLogItem> createState() => _VisitorLogItemState();
-}
-
-class _VisitorLogItemState extends State<VisitorLogItem> {
-  final bool _hasCallSupport = true;
-  Future<void>? _launched;
-
-  @override
-  void initState() {
-    // canLaunchUrl(
-    //   Uri(
-    //     scheme: 'tel',
-    //   ),
-    // ).then((bool result) {
-    //   setState(() {
-    //     _hasCallSupport = result;
-    //   });
-    // });
-    super.initState();
-  }
-
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    await launchUrl(launchUri);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    String unitList = '';
-    if (widget.visitorLog.visitor_building_assignment != null &&
-        widget.visitorLog.visitor_building_assignment!.isNotEmpty) {
-      unitList = widget.visitorLog.visitor_building_assignment![0].unit_id
-          .map((units) => units.toString())
-          .join(', ');
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Card(
-        elevation: 2,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 2,
-              ),
-              leading: CircleAvatar(
-                backgroundImage: widget
-                        .visitorLog.visitor!.visitor_image.isNotEmpty
-                    ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
-                    : NetworkImage(
-                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                child: widget.visitorLog.visitor!.visitor_image.isEmpty
-                    ? Text(
-                        widget.visitorLog.visitor!.name.isNotEmpty
-                            ? widget.visitorLog.visitor!.name[0]
-                            : 'G',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      )
-                    : null,
-              ),
-              title: RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: widget.visitorLog.visitor!.name,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    WidgetSpan(
-                      child: widget.visitorLog.visitor_count.toString() != '1'
-                          ? Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xffFFEBE6),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                "+ ${widget.visitorLog.visitor_count.toString()}",
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            )
-                          : SizedBox(),
-                    ),
-                  ],
-                ),
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 5),
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      const WidgetSpan(
-                        child: Icon(
-                          Symbols.apartment,
-                          color: Color(0xffFFB080),
-                        ),
-                      ),
-                      TextSpan(
-                          text: unitList,
-                          style: Theme.of(context).textTheme.labelSmall),
-                      WidgetSpan(
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xffFFEBE6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'Guest',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              trailing: IconButton(
-                onPressed: _hasCallSupport
-                    ? () => _launched =
-                        _makePhoneCall(widget.visitorLog.visitor!.mobile)
-                    : null,
-
-                // onPressed: () {
-                //               log(
-                //                 'Calling ${visitorLog.visitor!.mobile}',
-                //               );
-                //
-                //               SnackBar(
-                //                 content: Text(
-                //                   'Calling ${visitorLog.visitor!.mobile}',
-                //                   style: Theme.of(context).textTheme.labelMedium,
-                //                 ),
-                //                 action: SnackBarAction(
-                //                   label: 'Close',
-                //                   onPressed: () {
-                //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                //                   },
-                //                 ),
-                //               );
-                icon: Icon(
-                  Ionicons.call_outline,
-                  color: Colors.green,
-                ),
-              ),
-            ),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              color: Colors.grey[200],
-            ),
-            Container(
-              padding: const EdgeInsets.only(bottom: 14.0, top: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Tooltip(
-                    message: DateFormat('dd-MM-yyyy hh:mm a')
-                        .format(widget.visitorLog.visitor_check_in),
-                    child: RichText(
-                      text: TextSpan(
-                        children: [
-                          const WidgetSpan(
-                            child: Icon(
-                              Symbols.directions_walk_rounded,
-                              color: Colors.green,
-                            ),
-                          ),
-                          TextSpan(
-                            text: Utils.convertDateTimeFormat(
-                                widget.visitorLog.visitor_check_in),
-                            style:
-                                Theme.of(context).textTheme.labelMedium!.merge(
-                                      const TextStyle(
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  widget.visitorLog.visitor_card_number!.isNotEmpty
-                      ? Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 2,
-                            horizontal: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: const [
-                                Color.fromRGBO(255, 236, 158, 0.8),
-                                Color.fromRGBO(255, 190, 168, 0.8),
-                              ],
-                              begin: Alignment.topRight,
-                              end: Alignment.bottomLeft,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Color.fromRGBO(255, 190, 168, 1),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Lottie.asset(
-                                'assets/json/idcard.json',
-                                width: 30,
-                                height: 30,
-                                fit: BoxFit.cover,
-                              ),
-                              SizedBox(
-                                width: 5,
-                              ),
-                              Text(
-                                widget.visitorLog.visitor_card_number ?? 'N/A',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : SizedBox(),
-                  (widget.visitorLog.visitor_check_out.toString().isEmpty ||
-                          widget.visitorLog.visitor_check_out.toString() ==
-                              'null')
-                      ? ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () {
-                            widget.onCheckOut();
-                          },
-                          child: Text(
-                            'CheckOut',
-                            style:
-                                Theme.of(context).textTheme.labelSmall!.merge(
-                                      const TextStyle(
-                                          color: Colors.white, fontSize: 14),
-                                    ),
-                          ),
-                        )
-                      : Tooltip(
-                          message: DateFormat('dd-MM-yyyy hh:mm a')
-                              .format(widget.visitorLog.visitor_check_out!),
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                const WidgetSpan(
-                                  child: Icon(
-                                    Symbols.directions_walk_rounded,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: Utils.convertDateTimeFormat(
-                                      widget.visitorLog.visitor_check_out!),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium!
-                                      .merge(
-                                        const TextStyle(
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
