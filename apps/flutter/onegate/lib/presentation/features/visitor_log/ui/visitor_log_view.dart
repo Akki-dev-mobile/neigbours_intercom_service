@@ -1,7 +1,5 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'dart:developer';
-
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/foundation.dart';
@@ -130,8 +128,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
             final visitorLogs = successState.visitorLogs;
-            log("here i am $visitorLogs");
-            // Filter visitors based on the search text
             List<VisitorLog> filteredVisitors = visitorLogs!
                 .where((visitorLog) => visitorLog.visitor!.name
                     .toLowerCase()
@@ -574,7 +570,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     final storedEmail = prefs.getString('email') ?? '';
     emailController.text = storedEmail;
 
-    final _exportFormKey = GlobalKey<FormState>();
+    final exportFormKey = GlobalKey<FormState>();
 
     await showDialog(
       context: context,
@@ -585,7 +581,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               title: const Text('Export Logs'),
               content: SingleChildScrollView(
                 child: Form(
-                  key: _exportFormKey,
+                  key: exportFormKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -715,7 +711,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               actions: [
                 CustomLargeBtn(
                   onPressed: () async {
-                    if (_exportFormKey.currentState!.validate() &&
+                    if (exportFormKey.currentState!.validate() &&
                         startDate != null &&
                         endDate != null) {
                       await prefs.setString('email', emailController.text);
@@ -859,20 +855,20 @@ class VisitorLogItem extends StatefulWidget {
 }
 
 class _VisitorLogItemState extends State<VisitorLogItem> {
-  bool _hasCallSupport = false;
+  final bool _hasCallSupport = true;
   Future<void>? _launched;
 
   @override
   void initState() {
-    canLaunchUrl(
-      Uri(
-        scheme: 'tel',
-      ),
-    ).then((bool result) {
-      setState(() {
-        _hasCallSupport = result;
-      });
-    });
+    // canLaunchUrl(
+    //   Uri(
+    //     scheme: 'tel',
+    //   ),
+    // ).then((bool result) {
+    //   setState(() {
+    //     _hasCallSupport = result;
+    //   });
+    // });
     super.initState();
   }
 
@@ -907,14 +903,11 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 vertical: 2,
               ),
               leading: CircleAvatar(
-                backgroundImage:
-                    (widget.visitorLog.visitor!.visitor_image.isNotEmpty)
-                        ? NetworkImage(
-                            widget.visitorLog.visitor!.visitor_image,
-                          )
-                        : NetworkImage(
-                            widget.visitorLog.visitor!.visitor_image,
-                          ),
+                backgroundImage: widget
+                        .visitorLog.visitor!.visitor_image.isNotEmpty
+                    ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
+                    : NetworkImage(
+                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
                 child: widget.visitorLog.visitor!.visitor_image.isEmpty
                     ? Text(
                         widget.visitorLog.visitor!.name.isNotEmpty
@@ -998,10 +991,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               ),
               trailing: IconButton(
                 onPressed: _hasCallSupport
-                    ? () => setState(() {
-                          _launched =
-                              _makePhoneCall(widget.visitorLog.visitor!.mobile);
-                        })
+                    ? () => _launched =
+                        _makePhoneCall(widget.visitorLog.visitor!.mobile)
                     : null,
 
                 // onPressed: () {
@@ -1032,10 +1023,10 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               endIndent: 16,
               color: Colors.grey[200],
             ),
-            Padding(
+            Container(
               padding: const EdgeInsets.only(bottom: 14.0, top: 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Tooltip(
                     message: DateFormat('dd-MM-yyyy hh:mm a')

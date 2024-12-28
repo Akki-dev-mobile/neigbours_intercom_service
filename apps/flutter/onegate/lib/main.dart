@@ -5,7 +5,6 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
-import 'package:flutter_onegate/utils/amqp_receiver.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
@@ -61,7 +60,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  late final AmqpReceiver _amqpReceiver;
+  // late final AmqpReceiver _amqpReceiver;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
 
   @override
@@ -70,28 +69,28 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     // Initialize and start the AMQP receiver
-    _amqpReceiver = AmqpReceiver();
-    _amqpReceiver.startListening();
+    // _amqpReceiver = AmqpReceiver();
+    // _amqpReceiver.startListening();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   super.didChangeAppLifecycleState(state);
 
-    if (state == AppLifecycleState.resumed) {
-      // Resume listening when the app is reopened
-      _amqpReceiver.startListening();
-    } else if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      // Stop listening when the app is inactive or paused
-      _amqpReceiver.stopListening();
-    }
-  }
+  //   if (state == AppLifecycleState.resumed) {
+  //     // Resume listening when the app is reopened
+  //     _amqpReceiver.startListening();
+  //   } else if (state == AppLifecycleState.inactive ||
+  //       state == AppLifecycleState.paused) {
+  //     // Stop listening when the app is inactive or paused
+  //     _amqpReceiver.stopListening();
+  //   }
+  // }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _amqpReceiver.stopListening();
+    // _amqpReceiver.stopListening();
     super.dispose();
   }
 
