@@ -109,7 +109,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
               context,
               MaterialPageRoute(
                 builder: (context) => VisitorLogView(
-                  id: 'Visitor In',
+                  id: 'In Out Book',
                   logList: const [
                     "In Out Book",
                     "Visitor In",
