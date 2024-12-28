@@ -485,7 +485,7 @@ class RemoteDataSource {
       // Handle the response
       if (response.statusCode == 200) {
         Fluttertoast.showToast(
-          msg: "Allowed by Gatekeeper",
+          msg: "Visitor logs sent Successfully",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
