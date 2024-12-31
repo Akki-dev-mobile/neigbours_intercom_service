@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
@@ -167,35 +168,141 @@ class RemoteDataSource {
 
   Future<Visitor?> createVisitor(Visitor visitor) async {
     try {
-      // Retrieve the uploaded image URL from SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final uploadedImageUrl = prefs.getString('uploaded_image_url');
+      // Instantiate Dio
+      final Dio dio = Dio();
 
-      // Attach the uploaded image URL to the visitor object
-      if (uploadedImageUrl != null) {
-        visitor.visitor_image = uploadedImageUrl;
-      } else {
-        print("No uploaded image URL found in SharedPreferences.");
-      }
+      // Define the API endpoint
+      const String apiUrl = "https://gateapi.cubeone.in/api/visitor/entry";
 
-      // Create the visitor
-      final result = await client.visitor.createVisitor(visitor);
+      // Get the uploaded image URL
+      final uploadImageUrl = await GateStorage().getImage();
 
-      print("createVisitor: ${result.toString()}");
-      print("createVisitor remote_datasrc ::: $result");
+      // Prepare the request payload
+      final data = {
+        "name": visitor.name,
+        "mobile_number": visitor.mobile,
+        "visitor_image": uploadImageUrl.toString(),
+      };
 
-      // Store visitor ID in SharedPreferences
-      if (result != null && result.id != null) {
+      // Make the POST request using Dio
+      final Response response = await dio.post(apiUrl, data: data);
+
+      // Log the response
+      print("createVisitor Response: ${response.data}");
+
+      // Parse and return the Visitor object if response is successful
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Safely access visitor_id
+        final responseData = response.data;
+        final visitorData = responseData['data'];
+        if (visitorData == null) {
+          throw Exception('Visitor data is missing in response.');
+        }
+
+        final int? visitorId = visitorData['visitor_id'] as int?;
+        if (visitorId == null) {
+          throw Exception('Visitor ID is null.');
+        }
+
+        final Visitor result = Visitor(
+          id: visitorId,
+          name: visitor.name,
+          mobile: visitor.mobile,
+          visitor_image: uploadImageUrl.toString(),
+        );
+        final prefs = await SharedPreferences.getInstance();
+
         await prefs.setString('visitorId', result.id!.toString());
-        print("Visitor ID stored in SharedPreferences: ${result.id}");
-      }
+        log("Visitor ID stored in SharedPreferences: ${result.id}");
+        // Log success
+        print("Visitor created successfully. Status Code: ${response.statusCode}");
 
-      return result;
+        // Return the Visitor object
+        return result;
+      } else {
+        // Log failure and return null
+        print("Failed to create visitor. Status Code: ${response.statusCode}");
+      }
     } catch (e) {
-      print("Error creating visitor: ${e.toString()}");
-      return null;
+      // Handle errors gracefully
+      print("Error creating visitor: $e");
+    }
+
+    // Return null in case of failure
+    return null;
+  }
+
+  Future<dynamic> passcodeVerify(String passcode, BuildContext context) async {
+    const String endpoint = 'https://gateapi.cubeone.in/api/member/verifyGuest';
+
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
+
+      // Payload
+      final Map<String, dynamic> payload = {
+        'passcode': passcode,
+      };
+
+      // Make API call
+      final Response? response = await _dio1?.post(
+        endpoint,
+        data: payload,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      // Hide loading indicator
+      Navigator.pop(context);
+
+      // Handle response
+      if (response?.statusCode == 200) {
+        final responseData = response?.data;
+        if (responseData['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    responseData['message'] ?? 'Verification successful!')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                Text(responseData['message'] ?? 'Verification failed.')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('API Error: ${response?.statusCode}')),
+        );
+      }
+    } on DioError catch (e) {
+      Navigator.pop(context);
+
+      // Handle Dio errors
+      final errorMessage = e.response?.data['message'] ?? 'An error occurred';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $errorMessage')),
+      );
+    } catch (e) {
+      Navigator.pop(context);
+
+      // Handle unexpected errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unexpected error: $e')),
+      );
     }
   }
+
 
   Future<BuildingAssignment?> createBuildingAssignment(
       BuildingAssignment buildingAssignment) async {
@@ -229,6 +336,7 @@ class RemoteDataSource {
       } else {
         print("No building assignment found");
       }
+
       GlobalStorage.visitorLogId = result.id.toString();
 
       print("Check-in successful: ${result.toString()}");
@@ -615,6 +723,7 @@ class RemoteDataSource {
       } else {
         print("Unexpected Error: $e");
       }
+      log("Error: $e");
 
       Fluttertoast.showToast(
         msg: "Error occurred: ${e.toString()}",
@@ -715,6 +824,18 @@ class RemoteDataSource {
     }
     return null;
   }
+
+  Future<List<StaffModel>> fetchStaffList(String companyId) async {
+    final response = await _dio1?.get('admin/staffs/staffLists', queryParameters: {'company_id': companyId});
+    if (response?.statusCode == 200) {
+      final List<dynamic> data = response?.data['data'];
+      return data.map((e) => StaffModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to fetch staff list');
+    }
+  }
+
+
 }
 
 class GlobalStorage {

@@ -61,6 +61,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           DioSingleton.instance2,
           DioSingleton.instance3))));
   final GateStorage gateStorage = GateStorage();
+  bool isText = true;
 
   int _guestCount = 1;
   TextEditingController guestComingFrom = TextEditingController();
@@ -253,7 +254,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 builder: (context) => UnitSelectionView(
                   visitorId: widget.searchedVisitor?.id,
                   guestname: guestName.text,
-                  mobileNumber: mobileController.text,
+                  mobileNumber: widget.mobile,
                   purposeCategory: state.purposeCategory,
                   visitor: state.visitor,
                   comingFrom: guestComingFrom.text,
@@ -294,32 +295,42 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               pageBody: _buildPurposeForm(effectivePurpose),
               floatingActionButton: CustomLargeBtn(
                 onPressed: () {
-                  if (guestName.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Please enter guest name'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  } else if (preferenceUtils.getTooglevalue() == true &&
-                      guestComingFrom.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Coming from is mandatory field'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  } else {
-                    visitorInEntryBloc.add(VIEGuestFormSubmitButtonPressedEvent(
-                        searchedVisitor: widget.searchedVisitor,
-                        guestName: guestName.text,
-                        guestComingFrom: guestComingFrom.text,
-                        guestCount: _guestCount,
-                        purposeCategory: widget.selectedValue!,
-                        mobile: widget.mobile ?? ""));
+                  if (isText == true) {
+                    if (guestName.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Please enter guest name'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } else if (preferenceUtils.getTooglevalue() == true &&
+                        guestComingFrom.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Coming from is mandatory field'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } else {
+                      setState(() {
+                        isText = false;
+                      });
+                      visitorInEntryBloc.add(
+                          VIEGuestFormSubmitButtonPressedEvent(
+                              searchedVisitor: widget.searchedVisitor,
+                              guestName: guestName.text,
+                              guestComingFrom: guestComingFrom.text,
+                              guestCount: _guestCount,
+                              purposeCategory: widget.selectedValue!,
+                              mobile: widget.mobile ?? ""));
+                    }
                   }
                 },
+                isText: isText,
                 text: 'Next',
+                widgetChild: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
               ));
         });
   }

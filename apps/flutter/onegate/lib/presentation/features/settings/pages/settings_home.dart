@@ -10,6 +10,7 @@ import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_sel
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
+import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
@@ -361,6 +362,20 @@ class _SettingsHomeState extends State<SettingsHome> {
         children: [
           SecondarySettingsTile(
             title: 'Gate Settings',
+          ),
+          PrimarySettingsTile(
+            icon: Ionicons.people_outline,
+            title: 'Staffs',
+            subtitle:
+                'View your society staffs',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StaffScreen(),
+                ),
+              );
+            },
           ),
           PrimarySettingsTile(
             icon: Ionicons.grid_outline,

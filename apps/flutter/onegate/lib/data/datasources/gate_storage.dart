@@ -50,6 +50,17 @@ class GateStorage {
     await prefs.setString(_usernameKey, username);
   }
 
+  Future<void> saveImage(String image) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('uploaded_image_url', image);
+    // print("Image URL saved to SharedPreferences: $response");
+  }
+
+  Future<String?> getImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("uploaded_image_url");
+  }
+
   Future<String?> getUsername() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_usernameKey);

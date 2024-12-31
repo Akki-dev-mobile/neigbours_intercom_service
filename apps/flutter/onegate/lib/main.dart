@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/staff/bloc/staff_bloc.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 import 'package:one_theme/theme.dart';
 import 'package:provider/provider.dart';
+
+import 'domain/repositories/staff_repository.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -32,6 +36,7 @@ void main() async {
   await ThemeManager.initializeWithAppId(appId);
 
   runApp(
+
     ScreenUtilInit(
       fontSizeResolver: (num size, ScreenUtil _) => 0.5,
       designSize: const Size(360, 690),
@@ -39,12 +44,14 @@ void main() async {
       splitScreenMode: true,
       builder: (_, child) => MultiProvider(
         providers: [
+
           ChangeNotifierProvider<ApprovalStatusProvider>(
             create: (_) => ApprovalStatusProvider(), // Initialize your provider
           ),
           ChangeNotifierProvider<PurposeProvider>(
             create: (_) => PurposeProvider(), // Initialize your provider
           ),
+
         ],
         child: const MyApp(),
       ),

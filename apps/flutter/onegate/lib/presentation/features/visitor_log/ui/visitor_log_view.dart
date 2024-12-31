@@ -530,7 +530,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                               ),
                                             ),
                                           ),
-                                          log['visitor_card_number'].isNotEmpty
+                                          (log['visitor_card_number'] !=
+                                                      null &&
+                                                  log['visitor_card_number']
+                                                      .isNotEmpty)
                                               ? Container(
                                                   margin: const EdgeInsets.only(
                                                       left: 8),
@@ -584,7 +587,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                                     ],
                                                   ),
                                                 )
-                                              : SizedBox(),
+                                              : const SizedBox(),
                                           (log['visitor_check_out']
                                                       .toString()
                                                       .isEmpty ||

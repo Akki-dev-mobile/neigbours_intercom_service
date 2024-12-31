@@ -236,11 +236,15 @@ class CustomLargeBtn extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.text,
+    this.isText = true,
+    this.widgetChild,
     this.heroTag,
   });
   final Function() onPressed;
   final String text;
   final String? heroTag;
+  final bool isText;
+  final Widget? widgetChild;
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +280,7 @@ class CustomLargeBtn extends StatelessWidget {
         onPressed: onPressed,
         child: Hero(
           tag: heroTag ?? 'btn',
-          child: Text(
+          child: isText ? Text(
             text,
             style: TextStyle(
               color: Theme.of(context).colorScheme.surface,
@@ -284,7 +288,7 @@ class CustomLargeBtn extends StatelessWidget {
               wordSpacing: 1.2,
               fontWeight: FontWeight.w500,
             ),
-          ),
+          ) : widgetChild ?? SizedBox.shrink(),
         ),
       ),
     );

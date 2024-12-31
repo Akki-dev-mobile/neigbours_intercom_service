@@ -24,6 +24,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app_intro/ui/keyclock_login.dart';
+import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
 
 class GateDashboardView extends StatefulWidget {
@@ -192,7 +193,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         context,
                         PageTransition(
                           type: PageTransitionType.rightToLeft,
-                          child: VisitorSettingsView(),
+                          child: SettingsHome(),
+
+                          // VisitorSettingsView(),
                         ),
                       );
                     },

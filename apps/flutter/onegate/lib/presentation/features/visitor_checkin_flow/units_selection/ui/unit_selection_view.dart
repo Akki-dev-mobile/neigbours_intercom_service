@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:ui' as ui; // Import and alias dart:ui
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dio/dio.dart';
@@ -10,11 +9,11 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:get_it/get_it.dart'; // import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:intl/intl.dart'; // Import intl package
+import 'package:get_it/get_it.dart';
+// import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -34,15 +33,15 @@ class UnitSelectionView extends StatefulWidget {
 
   const UnitSelectionView(
       {Key? key,
-      required this.visitor,
-      required this.purposeCategory,
-      this.comingFrom,
-      this.guestCount,
-      this.companyId,
-      this.visitorId,
-      required this.guestname,
-      required this.mobileNumber,
-      this.visitorNumber})
+        required this.visitor,
+        required this.purposeCategory,
+        this.comingFrom,
+        this.guestCount,
+        this.companyId,
+        this.visitorId,
+        required this.guestname,
+        required this.mobileNumber,
+        this.visitorNumber})
       : super(key: key);
 
   @override
@@ -62,9 +61,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   List<dynamic> buildings = [];
   List<dynamic> units = [];
 
-  // _buildSearchFieldFocusNode
-  final FocusNode _buildSearchFieldFocusNode = FocusNode();
-
   // late Client amqpClient;
   String? approvalStatus =
       "Waiting for approval..."; // Holds approval/decline message
@@ -75,7 +71,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   List<dynamic> _filteredMembers = [];
   List<dynamic> _allMembers = [];
   final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
-      ValueNotifier([]);
+  ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
   int? companyId;
@@ -85,17 +81,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   @override
   void initState() {
     super.initState();
-    _initializeMembers().then((_) {
-      _isLoadingNotifier.value = false;
-    });
-
     // fetchBuildings();
     _searchController.addListener(_filterMembers);
 
     // setupAMQPReceiver(); // Initialize AMQP receiver
-    log("widget.mobileNumber${widget.mobileNumber}");
+    print("widget.mobileNumber${widget.mobileNumber}");
     _fetchCompanyId();
-    log("widget.visitorId${widget.visitorId}");
+    print("widget.visitorId${widget.visitorId}");
   }
 
   Future<void> _initializeMembers() async {
@@ -121,7 +113,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         final unitID =
             member['fk_unit_id']?.toString().toLowerCase().contains(query) ??
                 false;
-        log("unitID:::$unitID");
+        print("unitID:::$unitID");
 
         return memberName || unitNumber;
       }).toList();
@@ -135,8 +127,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     // amqpClient.close();
     _filteredMembersNotifier.dispose();
     _selectedMembersNotifier.dispose();
-    _isLoadingNotifier.dispose();
-    _buildSearchFieldFocusNode.dispose();
 
     super.dispose();
   }
@@ -239,16 +229,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (approvalStatus == "Waiting for approval...")
-                    const CircularProgressIndicator(
-                      color: Colors.grey,
-                    ),
+                    const CircularProgressIndicator(),
                   const SizedBox(height: 20),
                   Text(
-                    approvalStatusNew,
+                    approvalStatusNew.toString(),
                     style: const TextStyle(fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
@@ -288,16 +275,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   //       'https://societybackend.cubeone.in/api/admin/building/list?company_id=$companyId',
   //     );
   //     setState(() {
-  //       log("Company IDDDDDD");
+  //       print("Company IDDDDDD");
   //       buildings = response.data['data'];
-  //       // log("Company IDDDDDD$buildings");
+  //       // print("Company IDDDDDD$buildings");
   //       if (buildings.isNotEmpty) {
   //         selectedBuilding = buildings[0]['soc_building_name'];
   //         fetchUnits(buildings[0]['id']);
   //       }
   //     });
   //   } catch (e) {
-  //     log('Error fetching buildings: $e');
+  //     print('Error fetching buildings: $e');
   //     setState(() => isLoading = false);
   //   }
   // }
@@ -320,83 +307,59 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         isLoading = false;
       });
     } catch (e) {
-      log('Error fetching units: $e');
+      print('Error fetching units: $e');
       setState(() => isUnitsLoading = false);
     }
   }
 
   Future<List<dynamic>> getMember() async {
     try {
-      int? getMemberCompanyId = await gateStorage.getSocietyId();
-
       final response = await _dio.get(
           'https://societybackend.cubeone.in/api/admin/member/list',
           queryParameters: {
-            'company_id': getMemberCompanyId.toString(),
+            'company_id': companyId.toString(),
             'unit_id': null,
             'current_tab': 'approved'
           });
+      // log("soc units list:::$response");
       return response.data['data'];
     } catch (e) {
-      if (e is DioError) {
-        // Handle DioError specifically
-        log('Error fetching members: ${e.response?.statusCode} ${e.response?.data}');
-        // You can also show a user-friendly message or take other actions
-      } else {
-        // Handle other types of errors
-        log('Unexpected error: $e');
-      }
-      return [];
+      print('Error fetching members: $e');
+      rethrow;
     }
   }
 
-  // Future<List<dynamic>> getMember() async {
-  //   try {
-  //     final response = await _dio.get(
-  //         'https://societybackend.cubeone.in/api/admin/member/list',
-  //         queryParameters: {
-  //           'company_id': companyId.toString(),
-  //           'unit_id': null,
-  //           'current_tab': 'approved'
-  //         });
-  //     // log("soc units list:::$response");
-  //     return response.data['data'];
-  //   } catch (e) {
-  //     log('Error fetching members: $e');
-  //     rethrow;
-  //   }
-  // }
-
-  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(true);
-
   @override
   Widget build(BuildContext context) {
-    double bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
     return MyScrollView(
       isScrollable: false,
       pageTitle: 'Select Units/Members',
-      pageBody: ValueListenableBuilder<bool>(
-        valueListenable: _isLoadingNotifier,
-        builder: (context, isLoading, child) {
-          if (isLoading) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.4,
-                ),
-                CircularProgressIndicator(color: Colors.grey, strokeWidth: 2),
-                SizedBox(height: 16), // Add spacing
-                Text(
-                  "Loading Units and Members...",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+      pageBody: FutureBuilder<void>(
+        future: _initializeMembers(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16), // Add spacing
+                  Text(
+                    "Loading Units and Members...",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
             );
           } else {
             return SizedBox(
@@ -411,660 +374,157 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           }
         },
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _buildFloatingActionButton(
-        context,
-      ),
-    );
-  }
-
-  Widget _buildFloatingActionButton(
-    BuildContext context,
-  ) {
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: _selectedMembersNotifier,
-      builder: (context, selectedMembers, child) {
-        if (selectedMembers.isEmpty) {
-          return const SizedBox(); // Hide FAB when no members are selected
-        }
-
-        return GestureDetector(
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-            color: Theme.of(context).colorScheme.onSurface,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.5,
-                  child: Text(
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    selectedMembers.length > 1
-                        ? "${selectedMembers.first} +${selectedMembers.length - 1}"
-                        : selectedMembers.first,
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.surface,
-                        ),
-                  ),
-                ),
-                Container(
-                  height: MediaQuery.of(context).size.height * 0.08,
-                  width: MediaQuery.of(context).size.width * 0.4,
-                  child: selectedMembers.isNotEmpty &&
-                          selectedMembers.length < 2
-                      ? Directionality(
-                          textDirection: ui.TextDirection.rtl,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(
-                              Icons.check,
-                              size: 15,
-                            ),
-                            label: Text(
-                              selectedMembers.length < 2 ? "Allow" : "Next",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                            ),
-                            onPressed: () async {
-                              log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
-
-                              if (selectedUnits != null ||
-                                  selectedMember != null) {
-                                log("Selected Unit: $selectedUnits");
-                                log("Selected Member: $selectedMember");
-
-                                String? userId;
-                                if (selectedUnits.isNotEmpty) {
-                                  userId = selectedUnits.first.toString();
-                                } else if (selectedMembers.isNotEmpty) {
-                                  userId = _allMembers
-                                      .firstWhere(
-                                        (member) => selectedMembers.contains(
-                                          member['member_name'],
-                                        ),
-                                      )['id']
-                                      .toString();
-                                }
-
-                                List<int> memberIds = _allMembers
-                                    .where((member) => selectedMembers
-                                        .contains(member['member_name']))
-                                    .map<int>(
-                                        (member) => member['member_id'] as int)
-                                    .toList();
-
-                                log("Member IDs List: $memberIds");
-
-                                log("Post Selection:::");
-                                await postSelection(
-                                    context, selectedMembers, selectedUnits);
-                              } else {
-                                log("No selection made");
-                              }
-                            },
-                            style: ButtonStyle(
-                              foregroundColor: MaterialStateProperty.all<Color>(
-                                const Color(0xFF7D7C7C),
-                              ),
-                              backgroundColor: MaterialStateProperty.all<Color>(
-                                Theme.of(context).colorScheme.surface,
-                              ),
-                              elevation:
-                                  MaterialStateProperty.resolveWith<double>(
-                                (Set<MaterialState> states) {
-                                  if (states.contains(MaterialState.pressed)) {
-                                    return 8;
-                                  }
-                                  return 0;
-                                },
-                              ),
-                              shape: MaterialStateProperty.all<
-                                  RoundedRectangleBorder>(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              padding:
-                                  MaterialStateProperty.all<EdgeInsetsGeometry>(
-                                const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      : Container(
-                          height: MediaQuery.of(context).size.height * 0.08,
-                          width: MediaQuery.of(context).size.width * 0.4,
-                          child: Directionality(
-                            textDirection: ui.TextDirection.rtl,
-                            child: ElevatedButton.icon(
-                              style: ButtonStyle(
-                                foregroundColor:
-                                    MaterialStateProperty.all<Color>(
-                                  const Color(0xFF7D7C7C),
-                                ),
-                                backgroundColor:
-                                    MaterialStateProperty.all<Color>(
-                                  Theme.of(context).colorScheme.surface,
-                                ),
-                                elevation:
-                                    MaterialStateProperty.resolveWith<double>(
-                                  (Set<MaterialState> states) {
-                                    if (states
-                                        .contains(MaterialState.pressed)) {
-                                      return 8;
-                                    }
-                                    return 0;
-                                  },
-                                ),
-                                shape: MaterialStateProperty.all<
-                                    RoundedRectangleBorder>(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                ),
-                                padding: MaterialStateProperty.all<
-                                    EdgeInsetsGeometry>(
-                                  const EdgeInsets.symmetric(
-                                    horizontal: 36,
-                                    vertical: 16,
-                                  ),
-                                ),
-                              ),
-                              onPressed: () async {
-                                showModalBottomSheet(
-                                  context: context,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(20)),
-                                  ),
-                                  isDismissible: false,
-                                  builder: (context) {
-                                    return ValueListenableBuilder<Set<String>>(
-                                      valueListenable: _selectedMembersNotifier,
-                                      builder:
-                                          (context, selectedMembers, child) {
-                                        return Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Container(
-                                              padding: EdgeInsets.symmetric(
-                                                vertical: 10,
-                                              ),
-                                              color: Colors.black,
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceEvenly,
-                                                children: [
-                                                  Text(
-                                                    "Selected Members",
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleLarge
-                                                        ?.copyWith(
-                                                          color:
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .background,
-                                                        ),
-                                                  ),
-                                                  Container(
-                                                    height:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .height *
-                                                            0.08,
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.4,
-                                                    child: Directionality(
-                                                      textDirection:
-                                                          ui.TextDirection.rtl,
-                                                      child:
-                                                          ElevatedButton.icon(
-                                                        style: ButtonStyle(
-                                                          foregroundColor:
-                                                              MaterialStateProperty
-                                                                  .all<Color>(
-                                                            const Color(
-                                                                0xFF7D7C7C),
-                                                          ),
-                                                          backgroundColor:
-                                                              MaterialStateProperty
-                                                                  .all<Color>(
-                                                            Theme.of(context)
-                                                                .colorScheme
-                                                                .surface,
-                                                          ),
-                                                          elevation:
-                                                              MaterialStateProperty
-                                                                  .resolveWith<
-                                                                      double>(
-                                                            (Set<MaterialState>
-                                                                states) {
-                                                              if (states.contains(
-                                                                  MaterialState
-                                                                      .pressed)) {
-                                                                return 8;
-                                                              }
-                                                              return 0;
-                                                            },
-                                                          ),
-                                                          shape: MaterialStateProperty
-                                                              .all<
-                                                                  RoundedRectangleBorder>(
-                                                            RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          15),
-                                                            ),
-                                                          ),
-                                                          padding:
-                                                              MaterialStateProperty
-                                                                  .all<
-                                                                      EdgeInsetsGeometry>(
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 16,
-                                                              vertical: 10,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        onPressed: () async {
-                                                          log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
-
-                                                          if (selectedUnits !=
-                                                                  null ||
-                                                              selectedMember !=
-                                                                  null) {
-                                                            log("Selected Unit: $selectedUnits");
-                                                            log("Selected Member: $selectedMember");
-
-                                                            String? userId;
-                                                            if (selectedUnits
-                                                                .isNotEmpty) {
-                                                              userId =
-                                                                  selectedUnits
-                                                                      .first
-                                                                      .toString();
-                                                            } else if (selectedMembers
-                                                                .isNotEmpty) {
-                                                              userId = _allMembers
-                                                                  .firstWhere(
-                                                                    (member) =>
-                                                                        selectedMembers
-                                                                            .contains(
-                                                                      member[
-                                                                          'member_name'],
-                                                                    ),
-                                                                  )['id']
-                                                                  .toString();
-                                                            }
-
-                                                            List<int> memberIds = _allMembers
-                                                                .where((member) =>
-                                                                    selectedMembers
-                                                                        .contains(
-                                                                            member[
-                                                                                'member_name']))
-                                                                .map<int>((member) =>
-                                                                    member['member_id']
-                                                                        as int)
-                                                                .toList();
-
-                                                            log("Member IDs List: $memberIds");
-
-                                                            log("Post Selection:::");
-                                                            await postSelection(
-                                                                context,
-                                                                selectedMembers,
-                                                                selectedUnits);
-                                                          } else {
-                                                            log("No selection made");
-                                                          }
-                                                        },
-                                                        icon: selectedMembers
-                                                                    .length >
-                                                                1
-                                                            ? const Icon(
-                                                                Icons.check,
-                                                                size: 15,
-                                                              ) // Icon for "Allow"
-                                                            : const Icon(
-                                                                Icons
-                                                                    .navigate_next,
-                                                                size: 18),
-                                                        label: Text(
-                                                          selectedMembers
-                                                                      .length >
-                                                                  1
-                                                              ? "Allow"
-                                                              : "Next",
-                                                          style:
-                                                              Theme.of(context)
-                                                                  .textTheme
-                                                                  .bodyMedium!
-                                                                  .copyWith(
-                                                                    color: Theme.of(
-                                                                            context)
-                                                                        .colorScheme
-                                                                        .onSurface,
-                                                                  ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            if (selectedMembers.isEmpty)
-                                              const Center(
-                                                child: Text(
-                                                  "No members selected.",
-                                                  style: TextStyle(
-                                                      color: Colors.grey),
-                                                ),
-                                              ),
-                                            if (selectedMembers.isNotEmpty)
-                                              ...selectedMembers.map(
-                                                (member) => ListTile(
-                                                  leading:
-                                                      const Icon(Icons.person),
-                                                  title: Text(
-                                                    member,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium,
-                                                  ),
-                                                  trailing: IconButton(
-                                                    icon: const Icon(
-                                                        Icons.close,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      final updatedMembers =
-                                                          Set<String>.from(
-                                                              selectedMembers);
-                                                      updatedMembers
-                                                          .remove(member);
-                                                      _selectedMembersNotifier
-                                                              .value =
-                                                          updatedMembers;
-                                                      if (updatedMembers
-                                                          .isEmpty) {
-                                                        Navigator.pop(context);
-                                                      }
-                                                    },
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
-                              },
-                              icon: selectedMembers.length > 1
-                                  ? const Icon(
-                                      Icons.check,
-                                      size: 15,
-                                    ) // Icon for "Allow"
-                                  : const Icon(Icons.navigate_next, size: 18),
-                              label: Text(
-                                selectedMembers.length > 1 ? "View" : "Next",
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                              ),
-                            ),
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          ),
-          onTap: () {
-            FocusScope.of(context).requestFocus(
-              FocusNode(),
-            );
-
-            showModalBottomSheet(
-              context: context,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      floatingActionButton: ValueListenableBuilder<Set<String>>(
+          valueListenable: _selectedMembersNotifier,
+          builder: (context, selectedMember, child) {
+            return (selectedMembers.isNotEmpty || selectedMember.isNotEmpty)
+                ? Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 10,
+                horizontal: 20,
               ),
-              isDismissible: true,
-              builder: (context) {
-                return _buildBottomSheet(context);
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildBottomSheet(BuildContext context) {
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: _selectedMembersNotifier,
-      builder: (context, selectedMembers, child) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20.0),
-                  topRight: Radius.circular(20.0),
-                ),
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              color: Theme.of(context).colorScheme.onSurface,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    "Selected Members",
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.surface,
-                        ),
+                    selectedMember.length > 1
+                        ? "${selectedMember.first} +${selectedMember.length - 1}"
+                        : selectedMember.first,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge!
+                        .copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
                   ),
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.08,
-                    width: MediaQuery.of(context).size.width * 0.4,
-                    child: Directionality(
-                      textDirection: ui.TextDirection.rtl,
-                      child: ElevatedButton.icon(
-                        style: ButtonStyle(
-                          foregroundColor: MaterialStateProperty.all<Color>(
-                            const Color(0xFF7D7C7C),
-                          ),
-                          backgroundColor: MaterialStateProperty.all<Color>(
-                            Theme.of(context).colorScheme.surface,
-                          ),
-                          elevation: MaterialStateProperty.resolveWith<double>(
-                            (Set<MaterialState> states) {
-                              if (states.contains(MaterialState.pressed)) {
-                                return 8;
-                              }
-                              return 0;
-                            },
-                          ),
-                          shape:
-                              MaterialStateProperty.all<RoundedRectangleBorder>(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                          ),
-                          padding:
-                              MaterialStateProperty.all<EdgeInsetsGeometry>(
-                            const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                          ),
-                        ),
-                        onPressed: () async {
-                          log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
-
-                          if (selectedUnits != null || selectedMember != null) {
-                            log("Selected Unit: $selectedUnits");
-                            log("Selected Member: $selectedMember");
-
-                            String? userId;
-                            if (selectedUnits.isNotEmpty) {
-                              userId = selectedUnits.first.toString();
-                            } else if (selectedMembers.isNotEmpty) {
-                              userId = _allMembers
-                                  .firstWhere(
-                                    (member) => selectedMembers.contains(
-                                      member['member_name'],
-                                    ),
-                                  )['id']
-                                  .toString();
-                            }
-
-                            List<int> memberIds = _allMembers
-                                .where((member) => selectedMembers
-                                    .contains(member['member_name']))
-                                .map<int>(
-                                    (member) => member['member_id'] as int)
-                                .toList();
-
-                            log("Member IDs List: $memberIds");
-
-                            log("Post Selection:::");
-                            await postSelection(
-                                context, selectedMembers, selectedUnits);
-                          } else {
-                            log("No selection made");
+                  ElevatedButton.icon(
+                    style: ButtonStyle(
+                      // overlayColor: MaterialStateProperty.all<Color>(
+                      //   Color(0xFF61677A),
+                      // ),
+                      foregroundColor: WidgetStateProperty.all<Color>(
+                        const Color(0xFF7D7C7C),
+                      ),
+                      backgroundColor: WidgetStateProperty.all<Color>(
+                        Theme.of(context).colorScheme.surface,
+                      ),
+                      elevation: WidgetStateProperty.resolveWith<double>(
+                            (Set<WidgetState> states) {
+                          if (states.contains(WidgetState.pressed)) {
+                            return 8;
                           }
+                          return 0;
                         },
-                        icon: selectedMembers.length > 1
-                            ? const Icon(
-                                Icons.check,
-                                size: 15,
-                              ) // Icon for "Allow"
-                            : const Icon(Icons.navigate_next, size: 18),
-                        label: Text(
-                          selectedMembers.length > 1 ? "Allow" : "Next",
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge!
-                              .copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                      ),
+                      shape:
+                      WidgetStateProperty.all<RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
                         ),
                       ),
+                      padding:
+                      WidgetStateProperty.all<EdgeInsetsGeometry>(
+                        const EdgeInsets.symmetric(
+                          horizontal: 36,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                    onPressed: () async {
+                      log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
+
+                      if (selectedUnits != null ||
+                          selectedMember != null) {
+                        log("Selected Unit: $selectedUnits");
+                        log("Selected Member: $selectedMember");
+
+                        String? userId;
+                        if (selectedUnits.isNotEmpty) {
+                          userId = selectedUnits.first.toString();
+                        } else if (selectedMembers.isNotEmpty) {
+                          userId = _allMembers
+                              .firstWhere(
+                                (member) => selectedMembers.contains(
+                              member['member_name'],
+                            ),
+                          )['id']
+                              .toString();
+                        }
+
+                        List<int> memberIds = _allMembers
+                            .where((member) => selectedMembers
+                            .contains(member['member_name']))
+                            .map<int>(
+                                (member) => member['member_id'] as int)
+                            .toList();
+
+                        log("Member IDs List: $memberIds");
+
+                        log("Post Selection:::");
+                        await postSelection(
+                            context, selectedMember, selectedUnits);
+
+                        // preferenceUtils.getTooglevalue() == true
+                        //     ? showApprovalDialog('Waiting for approval......')
+                        //     : await postSelection(
+                        //         context, selectedMember, unitId);
+                      } else {
+                        log("No selection made");
+                      }
+                    },
+                    label: Text(
+                      (selectedMember.length > 1) ? "Allow" : "Next",
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge!
+                          .copyWith(
+                        color:
+                        Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.navigate_before,
+                      size: 32,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 10),
-            (selectedMembers.isEmpty)
-                ? const Center(
-                    child: Text(
-                      "No members selected.",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(0, 12, 0, 10),
-                      children: [
-                        ...selectedMembers.map(
-                          (member) => ListTile(
-                            leading: const Icon(Icons.person),
-                            title: Text(
-                              member,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.close, color: Colors.red),
-                              onPressed: () {
-                                // Remove member from the notifier
-                                final updatedMembers =
-                                    Set<String>.from(selectedMembers);
-                                updatedMembers.remove(member);
-
-                                // Update the notifier value directly to trigger the rebuild
-                                _selectedMembersNotifier.value = updatedMembers;
-
-                                // Close the bottom sheet if no members remain
-                                if (updatedMembers.isEmpty) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ],
-        );
-      },
+            )
+                : const SizedBox();
+          }),
     );
   }
 
   Widget _buildSearchField(BuildContext context) {
-    return CustomForm.textField('Search Units/Members',
-        titleColor: Theme.of(context).colorScheme.onSurface,
-        hintColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-        hintText: 'Search Units/Members',
-        focusNode: _buildSearchFieldFocusNode,
-        textController: _searchController, onChanged: (_) {
-      _searchController.text.trim().length >= 3
-          ? _filterMembers()
-          : _filteredMembersNotifier.value = _allMembers;
-    },
-        suffixIcon: IconButton(
-          icon: Icon(
-            Ionicons.close,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-          onPressed: () {
-            _searchController.clear();
-            _filteredMembersNotifier.value = _allMembers;
-            FocusScope.of(context).requestFocus(FocusNode());
-          },
-        )
-
-        // _searchController.text.isNotEmpty
-        //     ? IconButton(
-        //         icon: Icon(
-        //           Ionicons.close,
-        //           color: Theme.of(context).colorScheme.onSurface,
-        //         ),
-        //         onPressed: () {
-        //           _searchController.clear();
-        //           _filteredMembersNotifier.value = _allMembers;
-        //         },
-        //       )
-        //     : null,
-        );
+    return CustomForm.textField(
+      'Search Members',
+      titleColor: Theme.of(context).colorScheme.onSurface,
+      hintColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      hintText: 'Search Members',
+      textController: _searchController,
+      onChanged: (_) {
+        _searchController.text.trim().length >= 3
+            ? _filterMembers()
+            : _filteredMembersNotifier.value = _allMembers;
+      },
+      suffixIcon: _searchController.text.isNotEmpty
+          ? IconButton(
+        icon: Icon(
+          Ionicons.close,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        onPressed: () {
+          _searchController.clear();
+          _filteredMembersNotifier.value = _allMembers;
+        },
+      )
+          : null,
+    );
   }
 
 // Define a global variable to store user IDs
@@ -1073,7 +533,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 // Global variables
   List<int> selectedMemberIds = []; // To store selected member IDs
   List<String> selectedBuildingUnits =
-      []; // To store selected building-unit combinations
+  []; // To store selected building-unit combinations
 
   Widget _buildMemberList(BuildContext context) {
     return ValueListenableBuilder<Set<String>>(
@@ -1100,7 +560,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               itemCount: filteredMembers.length,
               itemBuilder: (context, index) {
                 final member = filteredMembers[index];
-                log("shubham $member");
+                print("shubham $member");
 
                 final unitId = member['fk_unit_id'] ?? 'N/A';
                 final memberId = member["member_id"];
@@ -1116,12 +576,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     : '';
 
                 final isSelected =
-                    selectedMembers.contains(member['unit_flat_number']);
+                selectedMembers.contains(member['unit_flat_number']);
 
                 return Theme(
                   data: Theme.of(context).copyWith(
                     dividerColor:
-                        Theme.of(context).colorScheme.onSurface.withAlpha(20),
+                    Theme.of(context).colorScheme.onSurface.withAlpha(20),
                   ),
                   child: ExpansionTile(
                     iconColor: Colors.redAccent,
@@ -1135,8 +595,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     title: Text(
                       member['unit_flat_number'] ?? 'N/A',
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     subtitle: Text(
                       '$firstMemberName $additionalMembersCount',
@@ -1174,7 +634,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             ),
                             onTap: () async {
                               final updatedMembers =
-                                  Set<String>.from(selectedMembers);
+                              Set<String>.from(selectedMembers);
                               if (selectedMembers.contains(firstName)) {
                                 updatedMembers.remove(firstName);
                                 selectedUserIds.remove(userId);
@@ -1186,11 +646,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 final cleanedMemberIds = memberId
                                     .toString()
                                     .split(
-                                        ',') // Split by commas into a list of strings
+                                    ',') // Split by commas into a list of strings
                                     .map((id) => id
-                                        .trim()) // Remove extra spaces from each part
+                                    .trim()) // Remove extra spaces from each part
                                     .where((id) => id
-                                        .isNotEmpty) // Filter out any empty strings
+                                    .isNotEmpty) // Filter out any empty strings
                                     .toList();
 
                                 for (final id in cleanedMemberIds) {
@@ -1198,11 +658,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     selectedMemberIds.add(int.parse(
                                         id)); // Safely parse each ID to int
                                   } catch (e) {
-                                    log("Error parsing ID: $id, Error: $e");
+                                    print("Error parsing ID: $id, Error: $e");
                                   }
                                 }
 
-                                log("Cleaned Member IDs: $selectedMemberIds");
+                                print("Cleaned Member IDs: $selectedMemberIds");
                                 selectedBuildingUnits.add(buildingUnit);
                               }
                               _selectedMembersNotifier.value = updatedMembers;
@@ -1246,9 +706,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> saveMemberAndUnitToPrefs(
       Set<String> memberDetails, Set<int?> unitIDs) async {
     // Debug: Print the sets
-    log("Member Details Set: $memberDetails");
-    log("Unit IDs Set: $unitIDs");
-    log("Building Units: $selectedBuildingUnits");
+    print("Member Details Set: $memberDetails");
+    print("Unit IDs Set: $unitIDs");
+    print("Building Units: $selectedBuildingUnits");
 
     // Convert sets to lists for storage
     final List<String> memberList = memberDetails.toList();
@@ -1260,12 +720,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     savedMemberUnitDetails['unit_ids'] = unitList;
     savedMemberUnitDetails['member_ids'] = selectedMemberIds.toList();
     savedMemberUnitDetails['building_unit'] = buildingUnitList;
-    savedMemberUnitDetails['visitor_id'] = widget.visitorId;
+
     // Debugging: Print saved data
-    log("Saved Member Details: ${jsonEncode(savedMemberUnitDetails['member_details'])}");
-    log("Saved Unit IDs: ${jsonEncode(savedMemberUnitDetails['unit_ids'])}");
-    log("Saved Member IDs: ${jsonEncode(savedMemberUnitDetails['member_ids'])}");
-    log("Saved Building Units: ${jsonEncode(savedMemberUnitDetails['building_unit'])}");
+    print(
+        "Saved Member Details: ${jsonEncode(savedMemberUnitDetails['member_details'])}");
+    print("Saved Unit IDs: ${jsonEncode(savedMemberUnitDetails['unit_ids'])}");
+    print(
+        "Saved Member IDs: ${jsonEncode(savedMemberUnitDetails['member_ids'])}");
+    print(
+        "Saved Building Units: ${jsonEncode(savedMemberUnitDetails['building_unit'])}");
 
     await remoteDataSource.visitorLogDetails([savedMemberUnitDetails]);
 
@@ -1278,21 +741,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<void> postSelection(BuildContext context, Set<String> selectedMembers,
       Set<int> selectedUnits) async {
-    log("Request Data Posting selection...");
-    log("postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
+    print("Request Data Posting selection...");
+    print(
+        "postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
+    await saveMemberAndUnitToPrefs(selectedMembers, selectedUnits);
     if (selectedMembers.length != 1) {
-      log("Request skipped: Exactly one user ID must be selected.");
-      log("Returning success as no posting is required.");
+      print("Request skipped: Exactly one user ID must be selected.");
+      print("Returning success as no posting is required.");
 
       final c.VisitorLog data = c.VisitorLog(
         visitor_id: widget.visitorId ?? int.parse(visitorId!),
         visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
         visitor_count: int.parse(widget.guestCount.toString()),
-        visitor_check_in: Utils.getCurrentDateTimeInIndianTimeZone(),
+        visitor_check_in: DateTime.now(),
         visitor_check_out: null,
         visitor_card_number: widget.visitorNumber,
         visitor_coming_from: widget.comingFrom,
@@ -1301,7 +766,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         is_checked_out: false,
       );
 
-      await _showApprovedDialog(context, data, selectedMembers);
+      await _showApprovedDialog(context, data);
       return;
     }
 
@@ -1310,9 +775,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         visitor_id: widget.visitorId ?? int.parse(visitorId!),
         visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
-        visitor_count: int.parse(widget.guestCount.toString()),
-        // Example count
-        visitor_check_in: Utils.getCurrentDateTimeInIndianTimeZone(),
+        visitor_count: int.parse(widget.guestCount.toString()), // Example count
+        visitor_check_in: DateTime.now(),
         visitor_check_out: null,
         visitor_card_number: widget.visitorNumber,
         visitor_coming_from: widget.comingFrom,
@@ -1321,15 +785,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         is_checked_out: false,
       );
 
-      log("Request skipped: Exactly one unit must be selected.");
-      log("Returning success as no posting is required.");
-      _showApprovedDialog(context, data, selectedMembers);
+      print("Request skipped: Exactly one unit must be selected.");
+      print("Returning success as no posting is required.");
+      _showApprovedDialog(context, data);
       return;
     }
 
-    final String userId = selectedMembers.first;
+    final String userId = selectedUserIds.first;
     final String formattedInTime =
-        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
     final int unitId = selectedUnits.first;
 
@@ -1338,17 +802,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     // Fetch the member details from _allMembers
     final selectedMemberDetails = _allMembers.firstWhere(
-      (member) =>
-          member['member_name'] == selectedMemberName &&
+          (member) =>
+      member['member_name'] == selectedMemberName &&
           member['fk_unit_id'] == selectedUnitId,
       orElse: () => {},
     );
-    log(selectedMemberDetails);
+    print(selectedMemberDetails);
     final String memberName = selectedMemberDetails['member_name'] ?? 'Unknown';
     final String unitFlatNumber =
         selectedMemberDetails['unit_flat_number'] ?? 'N/A';
 
-    log("Saving Member Details: member_name: $memberName, unit_id: $unitId, unit_flat_number: $unitFlatNumber");
+    print(
+        "Saving Member Details: member_name: $memberName, unit_id: $unitId, unit_flat_number: $unitFlatNumber");
 
     // Save Selected Member Details to gateStorage
     try {
@@ -1357,9 +822,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         'unit_id': unitId,
         'unit_flat_number': unitFlatNumber,
       });
-      log("Saved to storage: Member - $memberName, Unit - $unitId");
+      print("Saved to storage: Member - $memberName, Unit - $unitId");
     } catch (e) {
-      log("Error saving member details: $e");
+      print("Error saving member details: $e");
       Fluttertoast.showToast(
         msg: "Error saving member details.",
         backgroundColor: Colors.red,
@@ -1369,104 +834,107 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
 
     final data = {
-      'company_id': companyId,
-      'name': widget.guestname,
+      'company_id': companyId.toString(),
+      'name': widget.guestname.toString(),
       'mobile': widget.mobileNumber,
       'purpose': "meeting",
-      'in_time': formattedInTime,
-      'user_id': userId,
+      'in_time': formattedInTime.toString(),
+      'user_id': int.tryParse(userId),
       'visitor_count': widget.guestCount?.toString() ?? "1",
-      'purpose_details': "Meeting with $memberName",
+      'purpose_details': "zomato",
       'coming_from': widget.comingFrom ?? "Unknown",
     };
 
     try {
       // Send the request
-      log("FCM Notification Dio().post:");
-
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
-        options: Options(
-          headers: {
-            "Content-Type": "application/json",
-          },
-        ),
+        options: Options(headers: {"Content-Type": "application/json"}),
         data: data,
       );
 
-      log("FCM Notification Request:");
-
-      log("FCM Notification Request: $data");
-
       if (response.statusCode == 200) {
-        log("FCM notification sent successfully: ${response.data}");
+        print("FCM notification sent successfully: ${response.data}");
 
         setState(() {
           isWaitingForApproval = true;
         });
-
-        await showApprovalDialog(true);
-
-        log("Visitor ID cleared from SharedPreferences.");
-      } else {
-        log("Unhandled response status code: ${response.statusCode}");
-      }
-    } on DioError catch (e) {
-      if (e.response?.statusCode == 400) {
-        // Fluttertoast.showToast(
-        //   msg: "Not a OneApp user",
-        //   toastLength: Toast.LENGTH_SHORT,
-        //   gravity: ToastGravity.BOTTOM,
-        //   timeInSecForIosWeb: 2,
-        //   backgroundColor: Colors.red,
-        //   textColor: Colors.white,
-        //   fontSize: 16.0,
-        // );
-
         final c.VisitorLog data = c.VisitorLog(
           visitor_id: widget.visitorId ?? int.parse(visitorId!),
           visitor_purpose_category_id: 1,
           visitor_purpose_sub_category_id: null,
-          visitor_count: widget.guestCount ?? 1,
-          visitor_check_in: Utils.getCurrentDateTimeInIndianTimeZone(),
+          visitor_count: 1,
+          visitor_check_in: DateTime.now(),
           visitor_check_out: null,
-          visitor_card_number: widget.visitorNumber,
-          visitor_coming_from: widget.comingFrom,
+          visitor_card_number: null,
+          visitor_coming_from: "Unknown",
           visitor_card_id: null,
           company_id: companyId!,
           is_checked_out: false,
         );
 
-        await _showApprovedDialog(context, data, selectedMembers);
+        await _showApprovedDialog(context, data);
+
+        print("Visitor ID cleared from SharedPreferences.");
       } else {
-        log("Error during posting or sending notification: ${e.response?.statusCode} - ${e.response?.data}");
+        print("Unhandled response status code: ${response.statusCode}");
+      }
+    } on DioError catch (e) {
+      if (e.response?.statusCode == 400) {
         Fluttertoast.showToast(
-          msg:
-              "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
+          msg: "Not a OneApp user",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 2,
-          backgroundColor: Colors.orange,
+          backgroundColor: Colors.red,
           textColor: Colors.white,
           fontSize: 16.0,
         );
+
+        final c.VisitorLog data = c.VisitorLog(
+          visitor_id: widget.visitorId ?? int.parse(visitorId!),
+          visitor_purpose_category_id: 1,
+          visitor_purpose_sub_category_id: null,
+          visitor_count: 1,
+          visitor_check_in: DateTime.now(),
+          visitor_check_out: null,
+          visitor_card_number: null,
+          visitor_coming_from: "Unknown",
+          visitor_card_id: null,
+          company_id: companyId!,
+          is_checked_out: false,
+        );
+
+        await _showApprovedDialog(context, data);
+      } else {
+        log("Error during posting or sending notification: ${e.response?.statusCode} - ${e.response?.data}");
+        // Fluttertoast.showToast(
+        //   msg:
+        //   "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
+        //   toastLength: Toast.LENGTH_SHORT,
+        //   gravity: ToastGravity.BOTTOM,
+        //   timeInSecForIosWeb: 2,
+        //   backgroundColor: Colors.orange,
+        //   textColor: Colors.white,
+        //   fontSize: 16.0,
+        // );
       }
     } catch (e) {
       log("Unexpected error during posting or sending notification: $e");
-      Fluttertoast.showToast(
-        msg: "An unexpected error occurred. Please try again.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 2,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
+      // Fluttertoast.showToast(
+      //   msg: "An unexpected error occurred. Please try again.",
+      //   toastLength: Toast.LENGTH_SHORT,
+      //   gravity: ToastGravity.BOTTOM,
+      //   timeInSecForIosWeb: 2,
+      //   backgroundColor: Colors.red,
+      //   textColor: Colors.white,
+      //   fontSize: 16.0,
+      // );
     }
   }
 
-  Future<void> _showApprovedDialog(BuildContext context, c.VisitorLog data,
-      Set<String> selectedMembers) async {
+  Future<void> _showApprovedDialog(
+      BuildContext context, c.VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissal by tapping outside
@@ -1488,7 +956,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  "Allowed by Gatekeeper!",
+                  "Approved!",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1501,9 +969,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       // Navigator.pop(dialogContext);
 
                       await remoteDataSource.checkIn(data);
-                      await saveMemberAndUnitToPrefs(
-                          selectedMembers, selectedUnits);
-
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(

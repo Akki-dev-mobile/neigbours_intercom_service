@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chips_choice/chips_choice.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
@@ -20,8 +21,10 @@ import 'package:flutter_onegate/purposeProvider.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toggle_switch/toggle_switch.dart';
 
 import '../../../visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 
@@ -37,7 +40,7 @@ final mobileControllerFormKey = GlobalKey<FormState>();
 final passcodeControllerFormKey = GlobalKey<FormState>();
 TextEditingController mobileController = TextEditingController();
 TextEditingController passcodeController = TextEditingController();
-int _currentIndex = 1;
+int _currentIndex = 0;
 List<String> _labels = ['Mobile', 'Pass Code'];
 String? selectedPassAlpha = 'A';
 String selectedCountryCode = 'IN';
@@ -90,9 +93,13 @@ class _IdInputViewState extends State<IdInputView> {
         ),
       ));
   final provider = PurposeProvider();
+  RemoteDataSource remoteDataSource = new RemoteDataSource(
+      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3,);
+
 
   @override
   void dispose() {
+    _currentIndex = 0;
     _focusNode.dispose();
     super.dispose();
 
@@ -116,15 +123,17 @@ class _IdInputViewState extends State<IdInputView> {
   }
 
   @override
+
+
   Widget build(BuildContext context) {
     return Stack(
       children: [
         BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
           bloc: gateDashboardBloc,
           listenWhen: (previous, current) =>
-              current is GatekeeperDashboardActionState,
+          current is GatekeeperDashboardActionState,
           buildWhen: (previous, current) =>
-              current is! GatekeeperDashboardActionState,
+          current is! GatekeeperDashboardActionState,
           listener: (context, state) async {
             if (state is OpenPurposeDialogState) {
               if (globalSelectedPurposes.length == 1) {
@@ -155,8 +164,8 @@ class _IdInputViewState extends State<IdInputView> {
                   // Filter purposes to only include "GUEST"
                   purposeCategories: state.purposeCategories!
                       .where((purpose) =>
-                          purpose.purpose_category_name.toUpperCase() ==
-                          "GUEST")
+                  purpose.purpose_category_name.toUpperCase() ==
+                      "GUEST")
                       .toList(),
                   gatekeeperDashboardBloc: gateDashboardBloc,
                 ),
@@ -183,12 +192,12 @@ class _IdInputViewState extends State<IdInputView> {
                 break;
 
               case InputPutViewNextClickedState:
-                // Example: Set loading state here if needed
+              // Example: Set loading state here if needed
                 break;
 
               case NavigateToVisitorDetailsState:
                 final navigateToVisitorDetailsState =
-                    state as NavigateToVisitorDetailsState;
+                state as NavigateToVisitorDetailsState;
                 // mobileController.text = '';
 
                 // Retrieve and decode the saved purpose
@@ -222,11 +231,40 @@ class _IdInputViewState extends State<IdInputView> {
               pageBody: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 20),
-                  Form(
+                  ToggleSwitch(
+                    cornerRadius: 20.0,
+                    borderWidth: 0.5,
+                    minWidth: MediaQuery.of(context).size.width * 0.8,
+                    minHeight: 50.0,
+                    fontSize: 18.0,
+                    changeOnTap: true,
+                    initialLabelIndex: _currentIndex,
+                    activeBgColor: [
+                      Theme.of(context).colorScheme.onBackground,
+                    ],
+                    activeFgColor: Theme.of(context).colorScheme.background,
+                    borderColor: [
+                      Theme.of(context).colorScheme.onBackground,
+                    ],
+                    inactiveBgColor: Theme.of(context).colorScheme.background,
+                    inactiveFgColor: Theme.of(context).colorScheme.onPrimary,
+                    totalSwitches: 2,
+                    labels: _labels,
+                    onToggle: (index) {
+                      setState(() {
+                        _currentIndex = index!;
+                      });
+                        print('Switched to: $_currentIndex');
+
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  (_currentIndex == 0)
+                      ? Form(
                     key: mobileControllerFormKey,
                     child: CustomForm.textField(
-                      titleColor: Theme.of(context).colorScheme.onSurface,
+                      titleColor:
+                      Theme.of(context).colorScheme.onBackground,
                       hintColor: Theme.of(context).colorScheme.onPrimary,
                       focusNode: _focusNode,
                       "Visitor Mobile Number",
@@ -237,46 +275,57 @@ class _IdInputViewState extends State<IdInputView> {
                         showFlagMain: true,
                         showFlagDialog: true,
                         boxDecoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Theme.of(context).colorScheme.background,
                         ),
                         barrierColor: Theme.of(context)
                             .colorScheme
-                            .surface
+                            .background
                             .withOpacity(0.5),
                         closeIcon: Icon(
                           Icons.close,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color:
+                          Theme.of(context).colorScheme.onBackground,
                         ),
                         searchDecoration: InputDecoration(
                           prefixIcon: Icon(
                             Icons.search,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onBackground,
                           ),
                           hintText: 'Search',
                           hintStyle: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onBackground,
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
                             borderSide: BorderSide(
                               style: BorderStyle.solid,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onBackground,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
                             borderSide: BorderSide(
                               style: BorderStyle.solid,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onBackground,
                             ),
                           ),
                         ),
                         textStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color:
+                          Theme.of(context).colorScheme.onBackground,
                           fontSize: 18,
                         ),
                         dialogTextStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color:
+                          Theme.of(context).colorScheme.onBackground,
                         ),
                         onChanged: (CountryCode countryCode) {
                           setState(() {
@@ -284,31 +333,135 @@ class _IdInputViewState extends State<IdInputView> {
                           });
                         },
                       ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
                       textController: mobileController,
                       keyboardType: TextInputType.number,
                       length: 10,
                       onChanged: (value) {
                         if (value.length == 10) {
                           gateDashboardBloc.add(
-                            GDOnMobileNumberEnteredEvent(
-                              mobileController.text,
-                            ),
-                          );
+                              GDOnMobileNumberEnteredEvent(
+                                  mobileController.text));
                         }
                       },
+                      // validator: (value) {
+                      //   if (value!.isEmpty) {
+                      //     return 'Mobile number is required';
+                      //   } else if (value.length != 10) {
+                      //     return 'Please enter a 10-digit number';
+                      //   }
+                      //   return null;
+                      // },
                     ),
+                  )
+                      : Column(
+                    children: [
+                      Form(
+                        key: passcodeControllerFormKey,
+                        child: CustomForm.textField(
+                          titleColor:
+                          Theme.of(context).colorScheme.onBackground,
+                          hintColor:
+                          Theme.of(context).colorScheme.onPrimary,
+                          "Visitor Passcode",
+                          hintText: '123456',
+                          textController: passcodeController,
+                          textCapitalization:
+                          TextCapitalization.characters,
+                          length: 6,
+                          keyboardType: TextInputType.number,
+                          prefixIcon: Padding(
+                            padding: EdgeInsets.only(
+                              left: 10,
+                              right: 20,
+                            ),
+                            child: CircleAvatar(
+                              backgroundColor: Colors.blueGrey,
+                              child: Text(
+                                selectedPassAlpha ?? 'A',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              if (passcodeControllerFormKey.currentState!
+                                  .validate()) {
+                                // showModalBottomSheet(
+                                //   useSafeArea: true,
+                                //   shape: RoundedRectangleBorder(
+                                //     borderRadius: BorderRadius.only(
+                                //       topLeft: Radius.circular(20),
+                                //       topRight: Radius.circular(20),
+                                //     ),
+                                //   ),
+                                //   backgroundColor: Theme.of(context)
+                                //       .colorScheme
+                                //       .background,
+                                //   context: context,
+                                //   builder: (context) =>
+                                //       ImageGridBottomSheet(),
+                                // );
+                              }
+                            },
+                            icon: Icon(
+                              Symbols.done_rounded,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onBackground,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value!.isEmpty) {
+                              return 'Passcode is required';
+                            } else if (value.length != 6) {
+                              return 'Please enter a 6-digit passcode';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      ChipsChoice<String>.single(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        spacing: 20,
+                        choiceStyle: C2ChipStyle.outlined(
+                          borderWidth: 1,
+                          color: Colors.grey,
+                          selectedStyle: C2ChipStyle.outlined(
+                            overlayColor: Color(0x90C08261),
+                            color: Color(0xff0c08261),
+                          ),
+                        ),
+                        choiceCheckmark: true,
+                        value: selectedPassAlpha,
+                        scrollPhysics: BouncingScrollPhysics(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedPassAlpha = value;
+                          });
+                        },
+                        choiceItems: C2Choice.listFrom<String, String>(
+                          source: listPassAlpha,
+                          value: (i, v) => v,
+                          label: (i, v) => v,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
               floatingActionButton: CustomLargeBtn(
                 text: 'Next',
-                onPressed: () {
-                  if (mobileControllerFormKey.currentState!.validate()) {
-                    gateDashboardBloc.add(InputPutViewNextClickedEvent());
-                  }
+                onPressed: () async {
+                  var passcode = passcodeController.text;
+
+                  await remoteDataSource.passcodeVerify(passcode, context);
+
+                 if (mobileControllerFormKey.currentState?.validate() ?? false) {
+  gateDashboardBloc.add(InputPutViewNextClickedEvent());
+}
                 },
               ),
             );
@@ -318,6 +471,10 @@ class _IdInputViewState extends State<IdInputView> {
       ],
     );
   }
+
+
+
+
 }
 
 class ImageGridBottomSheet extends StatefulWidget {
