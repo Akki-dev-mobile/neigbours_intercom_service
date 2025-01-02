@@ -12,6 +12,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -31,7 +32,7 @@ import '../bloc/visitor_in_entry_bloc.dart';
 
 class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory? selectedValue;
-  final Visitor? searchedVisitor;
+  final VisitorMapper? searchedVisitor;
   final String mobile;
 
   // final int companyId = GlobalUser.getUserId() ?? 55275;
@@ -256,7 +257,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   guestname: guestName.text,
                   mobileNumber: widget.mobile,
                   purposeCategory: state.purposeCategory,
-                  visitor: state.visitor,
+                  visitor: state.visitor as Visitor,
                   comingFrom: guestComingFrom.text,
                   guestCount: _guestCount,
                   visitorNumber: visitorNumber.text.isNotEmpty

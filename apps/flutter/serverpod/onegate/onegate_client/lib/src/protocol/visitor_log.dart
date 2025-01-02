@@ -18,7 +18,7 @@ class VisitorLog extends _i1.SerializableEntity {
     this.visitor_purpose_sub_category_id,
     this.visitor_building_assignment,
     required this.visitor_count,
-    required this.visitor_check_in,
+     this.visitor_check_in,
     this.visitor_check_out,
     this.visitor_card_number,
     this.visitor_coming_from,
@@ -80,7 +80,7 @@ class VisitorLog extends _i1.SerializableEntity {
 
   int visitor_count;
 
-  DateTime visitor_check_in;
+  DateTime? visitor_check_in;
 
   DateTime? visitor_check_out;
 

@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -139,12 +142,12 @@ class RemoteDataSource {
     }
   }
 
-  Future<Visitor?> searchVisitor(String mobileNumber) async {
+  Future<VisitorMapper?> searchVisitor(String mobileNumber) async {
     try {
       final result = await client.visitor.fetchVisitor(mobileNumber);
       if (result != null) {
         print("searchVisitor: ${result.toString()}");
-        return result;
+        return result as VisitorMapper;
       } else {
         print("No visitor found for mobile number: $mobileNumber");
         return null;
@@ -166,7 +169,7 @@ class RemoteDataSource {
     return null;
   }
 
-  Future<Visitor?> createVisitor(Visitor visitor) async {
+  Future<VisitorMapper?> createVisitor(VisitorMapper visitor) async {
     try {
       // Instantiate Dio
       final Dio dio = Dio();
@@ -204,18 +207,19 @@ class RemoteDataSource {
           throw Exception('Visitor ID is null.');
         }
 
-        final Visitor result = Visitor(
+        final VisitorMapper result = VisitorMapper(
           id: visitorId,
           name: visitor.name,
           mobile: visitor.mobile,
-          visitor_image: uploadImageUrl.toString(),
+          VisitorMapperImage:  uploadImageUrl.toString(),
         );
         final prefs = await SharedPreferences.getInstance();
 
         await prefs.setString('visitorId', result.id!.toString());
         log("Visitor ID stored in SharedPreferences: ${result.id}");
         // Log success
-        print("Visitor created successfully. Status Code: ${response.statusCode}");
+        print(
+            "Visitor created successfully. Status Code: ${response.statusCode}");
 
         // Return the Visitor object
         return result;
@@ -277,7 +281,7 @@ class RemoteDataSource {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content:
-                Text(responseData['message'] ?? 'Verification failed.')),
+                    Text(responseData['message'] ?? 'Verification failed.')),
           );
         }
       } else {
@@ -303,7 +307,6 @@ class RemoteDataSource {
     }
   }
 
-
   Future<BuildingAssignment?> createBuildingAssignment(
       BuildingAssignment buildingAssignment) async {
     try {
@@ -317,39 +320,87 @@ class RemoteDataSource {
     return null;
   }
 
-  Future<VisitorLog?> checkIn(VisitorLog visitorLog) async {
+  String formatDateTime(DateTime dateTime) {
+    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+    return formatter.format(dateTime);
+  }
+
+  Future<VisitorLogMapper?> checkIn(VisitorLogMapper visitorLog) async {
     print("Attempting check-in...");
+
     try {
-      print("VisitorLog Data: ${visitorLog.toJson()}");
+      // Instantiate Dio
+      final Dio dio = Dio();
 
-      final result = await client.visitorLog.createVisitorLog(visitorLog);
-      print("VisitorLog created: ${result.toJson()}");
-      if (visitorLog.visitor_building_assignment != null) {
-        print("Building Assignment found");
-        for (BuildingAssignment buildingAssignment
-            in visitorLog.visitor_building_assignment!) {
-          buildingAssignment.visitor_log_id = result.id;
+      // Define the API endpoint
+      const String apiUrl = "https://gateapi.cubeone.in/api/visitor/log";
 
-          print("Creating BuildingAssignment: ${buildingAssignment.toJson()}");
-          await createBuildingAssignment(buildingAssignment);
-        }
-      } else {
-        print("No building assignment found");
+      // Prepare the payload using VisitorLogMapper's `toJson` method
+      final Map<String, dynamic> data = VisitorLogMapper.toJson(visitorLog);
+
+      // Format visitor_check_in and visitor_check_out
+      data['visitor_check_in'] =
+          formatDateTime(visitorLog.visitorCheckIn ?? DateTime.now());
+      if (visitorLog.visitorCheckOut != null) {
+        data['visitor_check_out'] =
+            formatDateTime(visitorLog.visitorCheckOut!);
       }
 
-      GlobalStorage.visitorLogId = result.id.toString();
+      // Add additional fields dynamically
+      data['in_gate'] = "A-wing"; // Example dynamic field
+      data['visitor_purpose_sub_category_id'] = 1;
+      data['visitor_card_id'] = 1;
+      data['id'] = 1;
 
-      print("Check-in successful: ${result.toString()}");
-      return result;
-    } on ServerpodClientException catch (e) {
-      print("Failed call: ${e.message}");
-      print("Call log ID: ${e.message}");
-      print("Status Code: ${e.statusCode}");
-    } catch (e) {
+      print("Final Payload: $data");
+
+      // Make the POST request
+      final Response response = await dio.post(
+        apiUrl,
+        data: data,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'insomnia/10.3.0',
+          },
+        ),
+      );
+
+      // Log the response
+      print("VisitorLog Response: ${response.data}");
+
+      // Parse the response and return the VisitorLogMapper object if successful
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data['success'] == true && data['data'] != null) {
+          final VisitorLogMapper result =
+          VisitorLogMapper.fromJson(data['data']);
+          print("VisitorLog created: ${VisitorLogMapper.toJson(result)}");
+          return result;
+        } else {
+          print("API Response Error: ${data['message']}");
+        }
+      } else {
+        print("Failed to create VisitorLog. Status Code: ${response.statusCode}");
+      }
+    } on DioError catch (e) {
+      // Handle Dio-specific errors
+      if (e.response != null) {
+        print("Dio Error: ${e.response?.data}");
+        print("Status Code: ${e.response?.statusCode}");
+      } else {
+        print("Dio Error: ${e.message}");
+      }
+    } catch (e, stackTrace) {
+      // Handle unexpected errors
       print("Unexpected error during check-in: $e");
+      print("Stack trace: $stackTrace");
     }
-    return null;
+
+    return null; // Return null if the check-in fails
   }
+
+
 
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
@@ -494,14 +545,14 @@ class RemoteDataSource {
     return false;
   }
 
-  Future<bool> updateVisitor(Visitor visitor) async {
-    try {
-      final result = await client.visitor.updateVisitor(visitor);
-      print("visitor update: ${result.toString()}");
-      return result;
-    } catch (e) {
-      print(e.toString());
-    }
+  Future<bool> updateVisitor(VisitorMapper visitor) async {
+    // try {
+    //   final result = await client.visitor.updateVisitor(visitor);
+    //   print("visitor update: ${result.toString()}");
+    //   return result;
+    // } catch (e) {
+    //   print(e.toString());
+    // }
     return false;
   }
 
@@ -826,7 +877,8 @@ class RemoteDataSource {
   }
 
   Future<List<StaffModel>> fetchStaffList(String companyId) async {
-    final response = await _dio1?.get('admin/staffs/staffLists', queryParameters: {'company_id': companyId});
+    final response = await _dio1?.get('admin/staffs/staffLists',
+        queryParameters: {'company_id': companyId});
     if (response?.statusCode == 200) {
       final List<dynamic> data = response?.data['data'];
       return data.map((e) => StaffModel.fromJson(e)).toList();
@@ -834,8 +886,6 @@ class RemoteDataSource {
       throw Exception('Failed to fetch staff list');
     }
   }
-
-
 }
 
 class GlobalStorage {
@@ -843,3 +893,4 @@ class GlobalStorage {
       visitorLogId; // Nullable to handle cases where it might not be set
   static String? visitorId;
 }
+

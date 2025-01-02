@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +12,7 @@ class VisitorRepoImpl extends VisitorRepository {
   VisitorRepoImpl(this._remoteDataSource);
 
   @override
-  Future<Visitor?> searchVisitor(String mobileNumber) async {
+  Future<VisitorMapper?> searchVisitor(String mobileNumber) async {
     try {
       final response = await _remoteDataSource.searchVisitor(mobileNumber);
       return response;
@@ -61,7 +62,7 @@ class VisitorRepoImpl extends VisitorRepository {
   }
 
   @override
-  Future<Visitor?> createVisitor(Visitor visitor) async {
+  Future<VisitorMapper?> createVisitor(VisitorMapper visitor) async {
     try {
       final response = await _remoteDataSource.createVisitor(visitor);
       print("createVisitor visitor_repo_impl::: $response");
@@ -98,7 +99,7 @@ class VisitorRepoImpl extends VisitorRepository {
   }
 
   @override
-  Future<bool> updateVisitor(Visitor visitor) async {
+  Future<bool> updateVisitor(VisitorMapper visitor) async {
     try {
       final response = await _remoteDataSource.updateVisitor(visitor);
       return response;

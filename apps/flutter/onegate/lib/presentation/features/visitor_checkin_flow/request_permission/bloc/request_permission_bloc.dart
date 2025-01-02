@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
 import 'package:onegate_client/onegate_client.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 part 'request_permission_event.dart';
 part 'request_permission_state.dart';
@@ -31,16 +33,16 @@ class RequestPermissionBloc
         buildingAssignment.visitor_id = event.visitor.id;
       }
       print("${Utils.getCurrentTime().toUtc().toString()}");
-      VisitorLog visitorLog = VisitorLog(
-          company_id: _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-          visitor_building_assignment: buildingAssignments,
-          visitor_id: event.visitor.id!,
-          visitor_count: event.guestCount == null ? 1 : event.guestCount!,
-          visitor_purpose_category_id: event.purposeCategory.id!,
-          visitor_check_in: Utils.getCurrentTime().toUtc(),
-          visitor_coming_from: event.comingFrom,
-          visitor: event.visitor,
-          is_checked_out: false);
+      VisitorLogMapper visitorLog = VisitorLogMapper(
+          companyId: _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
+          // visitorBu: buildingAssignments,
+          visitorId: event.visitor.id!,
+          visitorCount: event.guestCount == null ? 1 : event.guestCount!,
+          visitorPurposeCategoryId: event.purposeCategory.id!,
+          visitorCheckIn: Utils.getCurrentTime().toUtc(),
+          visitorComingFrom: event.comingFrom,
+          // vi: event.visitor,
+          isCheckedOut: false);
 
       await visitorLogUsecase.createVisitorLog(visitorLog);
 

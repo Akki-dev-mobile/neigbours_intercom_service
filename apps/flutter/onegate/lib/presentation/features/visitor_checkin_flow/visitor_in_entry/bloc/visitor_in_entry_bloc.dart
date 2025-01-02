@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -64,13 +65,15 @@ class VisitorInEntryBloc
     );
 
     if (event.searchedVisitor == null ||
-        event.searchedVisitor!.visitor_image.isEmpty) {
+        event.searchedVisitor!.VisitorMapperImage.isEmpty) {
       emit(VIENavigateToCameraState(
-        event.searchedVisitor ?? visitor,
+        event.searchedVisitor ?? visitor as VisitorMapper,
         event.purposeCategory,
         event.searchedVisitor == null ? 'new_visitor' : 'update_image',
       ));
-    } else {
+    }
+
+    else {
       emit(VIENavigateToUnitSelectionState(
         event.searchedVisitor!,
         event.purposeCategory,
@@ -103,7 +106,7 @@ class VisitorInEntryBloc
           event.purposeCategory!,
         ));
       } else {
-        event.visitor!.visitor_image = imageUrl;
+        event.visitor!.VisitorMapperImage = imageUrl;
         final isUpdated = await _visitorUsecase.updateVisitor(event.visitor!);
 
         if (!isUpdated) {

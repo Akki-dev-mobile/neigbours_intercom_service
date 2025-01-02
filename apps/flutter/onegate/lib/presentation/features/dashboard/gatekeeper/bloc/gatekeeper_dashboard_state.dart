@@ -51,13 +51,13 @@ class OpenPurposeDialogState extends GatekeeperDashboardActionState {
 }
 
 class SaveSearchedVisitorState extends GatekeeperDashboardActionState {
-  final Visitor? visitor;
+  final VisitorMapper? visitor;
 
   SaveSearchedVisitorState({required this.visitor});
 }
 
 class NavigateToVisitorDetailsState extends GatekeeperDashboardActionState {
-  final Visitor? visitor;
+  final VisitorMapper? visitor;
   final PurposeCategory purpose;
   final String mobile;
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
 import 'package:onegate_client/onegate_client.dart';
 
@@ -8,7 +9,7 @@ class VisitorUsecase {
 
   VisitorUsecase(this._repository);
 
-  Future<Visitor?> searchVisitor(String mobileNUmber) async {
+  Future<VisitorMapper?> searchVisitor(String mobileNUmber) async {
     return await _repository.searchVisitor(mobileNUmber);
   }
 
@@ -28,7 +29,7 @@ class VisitorUsecase {
     return await _repository.getBuildingList(companyId);
   }
 
-  Future<Visitor?> createVisitor(Visitor visitor) async {
+  Future<VisitorMapper?> createVisitor(VisitorMapper visitor) async {
     return await _repository.createVisitor(visitor);
   }
 
@@ -37,7 +38,7 @@ class VisitorUsecase {
     return await _repository.uploadImage(file, userMobile, companyId);
   }
 
-  Future<bool> updateVisitor(Visitor visitor) async {
+  Future<bool> updateVisitor(VisitorMapper visitor) async {
     return await _repository.updateVisitor(visitor);
   }
 

@@ -16,7 +16,7 @@ class SelfEntryErrorState extends SelfEntryActionState {
 }
 
 class SESaveVisitorState extends SelfEntryActionState {
-  final Visitor? visitor;
+  final VisitorMapper? visitor;
 
   SESaveVisitorState({this.visitor});
 }

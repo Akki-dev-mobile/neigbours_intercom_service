@@ -1,13 +1,14 @@
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_log_repo.dart';
 import 'package:onegate_client/onegate_client.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 class VisitorLogRepositoryImpl extends VisitorLogRepository {
   final RemoteDataSource _remoteDataSource;
 
   VisitorLogRepositoryImpl(this._remoteDataSource);
   @override
-  Future<VisitorLog?> createVisitorLog(VisitorLog visitorLog) async {
+  Future<VisitorLogMapper?> createVisitorLog(VisitorLogMapper visitorLog) async {
     try {
       final response = await _remoteDataSource.checkIn(visitorLog);
       return response;

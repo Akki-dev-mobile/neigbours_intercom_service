@@ -19,6 +19,7 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart' as c;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final c.Visitor visitor;
@@ -738,6 +739,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     //   textColor: Colors.white,
     // );
   }
+  final String formattedInTime =
+  DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
   Future<void> postSelection(BuildContext context, Set<String> selectedMembers,
       Set<int> selectedUnits) async {
@@ -752,39 +755,37 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       print("Request skipped: Exactly one user ID must be selected.");
       print("Returning success as no posting is required.");
 
-      final c.VisitorLog data = c.VisitorLog(
-        visitor_id: widget.visitorId ?? int.parse(visitorId!),
-        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
-        visitor_purpose_sub_category_id: null,
-        visitor_count: int.parse(widget.guestCount.toString()),
-        visitor_check_in: DateTime.now(),
-        visitor_check_out: null,
-        visitor_card_number: widget.visitorNumber,
-        visitor_coming_from: widget.comingFrom,
-        visitor_card_id: null,
-        company_id: companyId!,
-        is_checked_out: false,
+      final VisitorLogMapper data = VisitorLogMapper(
+        visitorId: widget.visitorId ?? int.parse(visitorId!),
+        visitorPurposeCategoryId: 1,
+        visitorPurposeSubCategoryId: null,
+        visitorCount: 1,
+        visitorCheckIn: DateTime.parse(formattedInTime),
+        visitorCheckOut: null,
+        visitorCardNumber: widget.visitorNumber,
+        visitorComingFrom: "Unknown",
+        visitorCardId: null,
+        companyId: companyId!,
+        isCheckedOut: false,
       );
-
       await _showApprovedDialog(context, data);
       return;
     }
 
     if (selectedUnits.length != 1) {
-      final c.VisitorLog data = c.VisitorLog(
-        visitor_id: widget.visitorId ?? int.parse(visitorId!),
-        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
-        visitor_purpose_sub_category_id: null,
-        visitor_count: int.parse(widget.guestCount.toString()), // Example count
-        visitor_check_in: DateTime.now(),
-        visitor_check_out: null,
-        visitor_card_number: widget.visitorNumber,
-        visitor_coming_from: widget.comingFrom,
-        visitor_card_id: null,
-        company_id: companyId!,
-        is_checked_out: false,
+      final VisitorLogMapper data = VisitorLogMapper(
+        visitorId: widget.visitorId ?? int.parse(visitorId!),
+        visitorPurposeCategoryId: 1,
+        visitorPurposeSubCategoryId: null,
+        visitorCount: 1,
+        visitorCheckIn: DateTime.parse(formattedInTime),
+        visitorCheckOut: null,
+        visitorCardNumber: widget.visitorNumber,
+        visitorComingFrom: "Unknown",
+        visitorCardId: null,
+        companyId: companyId!,
+        isCheckedOut: false,
       );
-
       print("Request skipped: Exactly one unit must be selected.");
       print("Returning success as no posting is required.");
       _showApprovedDialog(context, data);
@@ -792,8 +793,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
 
     final String userId = selectedUserIds.first;
-    final String formattedInTime =
-    DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
     final int unitId = selectedUnits.first;
 
@@ -859,18 +858,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         setState(() {
           isWaitingForApproval = true;
         });
-        final c.VisitorLog data = c.VisitorLog(
-          visitor_id: widget.visitorId ?? int.parse(visitorId!),
-          visitor_purpose_category_id: 1,
-          visitor_purpose_sub_category_id: null,
-          visitor_count: 1,
-          visitor_check_in: DateTime.now(),
-          visitor_check_out: null,
-          visitor_card_number: null,
-          visitor_coming_from: "Unknown",
-          visitor_card_id: null,
-          company_id: companyId!,
-          is_checked_out: false,
+        final VisitorLogMapper data = VisitorLogMapper(
+          visitorId: widget.visitorId ?? int.parse(visitorId!),
+          visitorPurposeCategoryId: 1,
+          visitorPurposeSubCategoryId: null,
+          visitorCount: 1,
+          visitorCheckIn: DateTime.parse(formattedInTime),
+          visitorCheckOut: null,
+          visitorCardNumber: widget.visitorNumber,
+          visitorComingFrom: "Unknown",
+          visitorCardId: null,
+          companyId: companyId!,
+          isCheckedOut: false,
         );
 
         await _showApprovedDialog(context, data);
@@ -891,18 +890,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           fontSize: 16.0,
         );
 
-        final c.VisitorLog data = c.VisitorLog(
-          visitor_id: widget.visitorId ?? int.parse(visitorId!),
-          visitor_purpose_category_id: 1,
-          visitor_purpose_sub_category_id: null,
-          visitor_count: 1,
-          visitor_check_in: DateTime.now(),
-          visitor_check_out: null,
-          visitor_card_number: null,
-          visitor_coming_from: "Unknown",
-          visitor_card_id: null,
-          company_id: companyId!,
-          is_checked_out: false,
+        final VisitorLogMapper data = VisitorLogMapper(
+          visitorId: widget.visitorId ?? int.parse(visitorId!),
+          visitorPurposeCategoryId: 1,
+          visitorPurposeSubCategoryId: null,
+          visitorCount: 1,
+          visitorCheckIn: DateTime.parse(formattedInTime),
+          visitorCheckOut: null,
+          visitorCardNumber: widget.visitorNumber,
+          visitorComingFrom: "Unknown",
+          visitorCardId: null,
+          companyId: companyId!,
+          isCheckedOut: false,
         );
 
         await _showApprovedDialog(context, data);
@@ -934,7 +933,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _showApprovedDialog(
-      BuildContext context, c.VisitorLog data) async {
+      BuildContext context, VisitorLogMapper data) async {
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissal by tapping outside
