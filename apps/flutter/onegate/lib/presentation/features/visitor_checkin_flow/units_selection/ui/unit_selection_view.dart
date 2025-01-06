@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:ui' as ui;
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
@@ -13,8 +14,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:get_it/get_it.dart';
-// import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:get_it/get_it.dart'; // import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
@@ -79,6 +79,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   String formattedInTime =
       DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
   String? approvalStatus = "Waiting for approval...";
+  int? selectedUnit;
+  int? selectedMember;
 
   @override
   void initState() {
@@ -414,7 +416,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           return _buildMainContent();
         },
       ),
-      floatingActionButton: _buildFloatingActionButton(),
+      bottomNavigationBar: _buildFloatingActionButton(context),
     );
   }
 
@@ -430,17 +432,624 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Widget _buildFloatingActionButton() {
+  Widget _buildFloatingActionButton(
+    BuildContext context,
+  ) {
     return ValueListenableBuilder<Set<String>>(
       valueListenable: _selectedMembersNotifier,
-      builder: (context, selectedMember, child) {
-        if (selectedMembers.isEmpty && selectedMember.isEmpty) {
-          return const SizedBox();
+      builder: (context, selectedMembers, child) {
+        if (selectedMembers.isEmpty) {
+          return const SizedBox(); // Hide FAB when no members are selected
         }
-        return _buildSelectionBar(selectedMember);
+
+        return GestureDetector(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            color: Theme.of(context).colorScheme.onSurface,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  child: Text(
+                    softWrap: true,
+                    overflow: TextOverflow.ellipsis,
+                    selectedMembers.length > 1
+                        ? "${selectedMembers.first} +${selectedMembers.length - 1}"
+                        : selectedMembers.first,
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.surface,
+                        ),
+                  ),
+                ),
+                Container(
+                  height: MediaQuery.of(context).size.height * 0.08,
+                  width: MediaQuery.of(context).size.width * 0.4,
+                  child: selectedMembers.isNotEmpty &&
+                          selectedMembers.length < 2
+                      ? Directionality(
+                          textDirection: ui.TextDirection.rtl,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(
+                              Icons.check,
+                              size: 15,
+                            ),
+                            label: Text(
+                              selectedMembers.length < 2 ? "Allow" : "Next",
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                            ),
+                            onPressed: () async {
+                              log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
+
+                              if (selectedUnits != null ||
+                                  selectedMember != null) {
+                                log("Selected Unit: $selectedUnits");
+                                log("Selected Member: $selectedMember");
+
+                                String? userId;
+                                if (selectedUnits.isNotEmpty) {
+                                  userId = selectedUnits.first.toString();
+                                } else if (selectedMembers.isNotEmpty) {
+                                  userId = _allMembers
+                                      .firstWhere(
+                                        (member) => selectedMembers.contains(
+                                          member['member_name'],
+                                        ),
+                                      )['id']
+                                      .toString();
+                                }
+
+                                List<int> memberIds = _allMembers
+                                    .where((member) => selectedMembers
+                                        .contains(member['member_name']))
+                                    .map<int>(
+                                        (member) => member['member_id'] as int)
+                                    .toList();
+
+                                log("Member IDs List: $memberIds");
+
+                                log("Post Selection:::");
+                                await _handleSelectionSubmit(selectedMembers);
+                              } else {
+                                log("No selection made");
+                              }
+                            },
+                            style: ButtonStyle(
+                              foregroundColor: MaterialStateProperty.all<Color>(
+                                const Color(0xFF7D7C7C),
+                              ),
+                              backgroundColor: MaterialStateProperty.all<Color>(
+                                Theme.of(context).colorScheme.surface,
+                              ),
+                              elevation:
+                                  MaterialStateProperty.resolveWith<double>(
+                                (Set<MaterialState> states) {
+                                  if (states.contains(MaterialState.pressed)) {
+                                    return 8;
+                                  }
+                                  return 0;
+                                },
+                              ),
+                              shape: MaterialStateProperty.all<
+                                  RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              padding:
+                                  MaterialStateProperty.all<EdgeInsetsGeometry>(
+                                const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          height: MediaQuery.of(context).size.height * 0.08,
+                          width: MediaQuery.of(context).size.width * 0.4,
+                          child: Directionality(
+                            textDirection: ui.TextDirection.rtl,
+                            child: ElevatedButton.icon(
+                              style: ButtonStyle(
+                                foregroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                  const Color(0xFF7D7C7C),
+                                ),
+                                backgroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                  Theme.of(context).colorScheme.surface,
+                                ),
+                                elevation:
+                                    MaterialStateProperty.resolveWith<double>(
+                                  (Set<MaterialState> states) {
+                                    if (states
+                                        .contains(MaterialState.pressed)) {
+                                      return 8;
+                                    }
+                                    return 0;
+                                  },
+                                ),
+                                shape: MaterialStateProperty.all<
+                                    RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                ),
+                                padding: MaterialStateProperty.all<
+                                    EdgeInsetsGeometry>(
+                                  const EdgeInsets.symmetric(
+                                    horizontal: 36,
+                                    vertical: 16,
+                                  ),
+                                ),
+                              ),
+                              onPressed: () async {
+                                showModalBottomSheet(
+                                  context: context,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(20)),
+                                  ),
+                                  isDismissible: false,
+                                  builder: (context) {
+                                    return ValueListenableBuilder<Set<String>>(
+                                      valueListenable: _selectedMembersNotifier,
+                                      builder:
+                                          (context, selectedMembers, child) {
+                                        return Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                vertical: 10,
+                                              ),
+                                              color: Colors.black,
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                children: [
+                                                  Text(
+                                                    "Selected Members",
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge
+                                                        ?.copyWith(
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .background,
+                                                        ),
+                                                  ),
+                                                  Container(
+                                                    height:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .height *
+                                                            0.08,
+                                                    width:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width *
+                                                            0.4,
+                                                    child: Directionality(
+                                                      textDirection:
+                                                          ui.TextDirection.rtl,
+                                                      child:
+                                                          ElevatedButton.icon(
+                                                        style: ButtonStyle(
+                                                          foregroundColor:
+                                                              MaterialStateProperty
+                                                                  .all<Color>(
+                                                            const Color(
+                                                                0xFF7D7C7C),
+                                                          ),
+                                                          backgroundColor:
+                                                              MaterialStateProperty
+                                                                  .all<Color>(
+                                                            Theme.of(context)
+                                                                .colorScheme
+                                                                .surface,
+                                                          ),
+                                                          elevation:
+                                                              MaterialStateProperty
+                                                                  .resolveWith<
+                                                                      double>(
+                                                            (Set<MaterialState>
+                                                                states) {
+                                                              if (states.contains(
+                                                                  MaterialState
+                                                                      .pressed)) {
+                                                                return 8;
+                                                              }
+                                                              return 0;
+                                                            },
+                                                          ),
+                                                          shape: MaterialStateProperty
+                                                              .all<
+                                                                  RoundedRectangleBorder>(
+                                                            RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          15),
+                                                            ),
+                                                          ),
+                                                          padding:
+                                                              MaterialStateProperty
+                                                                  .all<
+                                                                      EdgeInsetsGeometry>(
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 16,
+                                                              vertical: 10,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        onPressed: () async {
+                                                          log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
+
+                                                          if (selectedUnits !=
+                                                                  null ||
+                                                              selectedMember !=
+                                                                  null) {
+                                                            log("Selected Unit: $selectedUnits");
+                                                            log("Selected Member: $selectedMember");
+
+                                                            String? userId;
+                                                            if (selectedUnits
+                                                                .isNotEmpty) {
+                                                              userId =
+                                                                  selectedUnits
+                                                                      .first
+                                                                      .toString();
+                                                            } else if (selectedMembers
+                                                                .isNotEmpty) {
+                                                              userId = _allMembers
+                                                                  .firstWhere(
+                                                                    (member) =>
+                                                                        selectedMembers
+                                                                            .contains(
+                                                                      member[
+                                                                          'member_name'],
+                                                                    ),
+                                                                  )['id']
+                                                                  .toString();
+                                                            }
+
+                                                            List<int> memberIds = _allMembers
+                                                                .where((member) =>
+                                                                    selectedMembers
+                                                                        .contains(
+                                                                            member[
+                                                                                'member_name']))
+                                                                .map<int>((member) =>
+                                                                    member['member_id']
+                                                                        as int)
+                                                                .toList();
+
+                                                            log("Member IDs List: $memberIds");
+
+                                                            log("Post Selection:::");
+                                                            await _handleSelectionSubmit(
+                                                                selectedMembers);
+                                                          } else {
+                                                            log("No selection made");
+                                                          }
+                                                        },
+                                                        icon: selectedMembers
+                                                                    .length >
+                                                                1
+                                                            ? const Icon(
+                                                                Icons.check,
+                                                                size: 15,
+                                                              ) // Icon for "Allow"
+                                                            : const Icon(
+                                                                Icons
+                                                                    .navigate_next,
+                                                                size: 18),
+                                                        label: Text(
+                                                          selectedMembers
+                                                                      .length >
+                                                                  1
+                                                              ? "Allow"
+                                                              : "Next",
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .bodyMedium!
+                                                                  .copyWith(
+                                                                    color: Theme.of(
+                                                                            context)
+                                                                        .colorScheme
+                                                                        .onSurface,
+                                                                  ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            if (selectedMembers.isEmpty)
+                                              const Center(
+                                                child: Text(
+                                                  "No members selected.",
+                                                  style: TextStyle(
+                                                      color: Colors.grey),
+                                                ),
+                                              ),
+                                            if (selectedMembers.isNotEmpty)
+                                              ...selectedMembers.map(
+                                                (member) => ListTile(
+                                                  leading:
+                                                      const Icon(Icons.person),
+                                                  title: Text(
+                                                    member,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodyMedium,
+                                                  ),
+                                                  trailing: IconButton(
+                                                    icon: const Icon(
+                                                        Icons.close,
+                                                        color: Colors.red),
+                                                    onPressed: () {
+                                                      final updatedMembers =
+                                                          Set<String>.from(
+                                                              selectedMembers);
+                                                      updatedMembers
+                                                          .remove(member);
+                                                      _selectedMembersNotifier
+                                                              .value =
+                                                          updatedMembers;
+                                                      if (updatedMembers
+                                                          .isEmpty) {
+                                                        Navigator.pop(context);
+                                                      }
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                              icon: selectedMembers.length > 1
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 15,
+                                    ) // Icon for "Allow"
+                                  : const Icon(Icons.navigate_next, size: 18),
+                              label: Text(
+                                selectedMembers.length > 1 ? "View" : "Next",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+          onTap: () {
+            FocusScope.of(context).requestFocus(
+              FocusNode(),
+            );
+
+            showModalBottomSheet(
+              context: context,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              isDismissible: true,
+              builder: (context) {
+                return _buildBottomSheet(context);
+              },
+            );
+          },
+        );
       },
     );
   }
+
+  Widget _buildBottomSheet(BuildContext context) {
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _selectedMembersNotifier,
+      builder: (context, selectedMembers, child) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20.0),
+                  topRight: Radius.circular(20.0),
+                ),
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Text(
+                    "Selected Members",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.surface,
+                        ),
+                  ),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.08,
+                    width: MediaQuery.of(context).size.width * 0.4,
+                    child: Directionality(
+                      textDirection: ui.TextDirection.rtl,
+                      child: ElevatedButton.icon(
+                        style: ButtonStyle(
+                          foregroundColor: MaterialStateProperty.all<Color>(
+                            const Color(0xFF7D7C7C),
+                          ),
+                          backgroundColor: MaterialStateProperty.all<Color>(
+                            Theme.of(context).colorScheme.surface,
+                          ),
+                          elevation: MaterialStateProperty.resolveWith<double>(
+                            (Set<MaterialState> states) {
+                              if (states.contains(MaterialState.pressed)) {
+                                return 8;
+                              }
+                              return 0;
+                            },
+                          ),
+                          shape:
+                              MaterialStateProperty.all<RoundedRectangleBorder>(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          padding:
+                              MaterialStateProperty.all<EdgeInsetsGeometry>(
+                            const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                        onPressed: () async {
+                          log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
+
+                          if (selectedUnits != null || selectedMember != null) {
+                            log("Selected Unit: $selectedUnits");
+                            log("Selected Member: $selectedMember");
+
+                            String? userId;
+                            if (selectedUnits.isNotEmpty) {
+                              userId = selectedUnits.first.toString();
+                            } else if (selectedMembers.isNotEmpty) {
+                              userId = _allMembers
+                                  .firstWhere(
+                                    (member) => selectedMembers.contains(
+                                      member['member_name'],
+                                    ),
+                                  )['id']
+                                  .toString();
+                            }
+
+                            List<int> memberIds = _allMembers
+                                .where((member) => selectedMembers
+                                    .contains(member['member_name']))
+                                .map<int>(
+                                    (member) => member['member_id'] as int)
+                                .toList();
+
+                            log("Member IDs List: $memberIds");
+
+                            log("Post Selection:::");
+                            await _handleSelectionSubmit(selectedMembers);
+                          } else {
+                            log("No selection made");
+                          }
+                        },
+                        icon: selectedMembers.length > 1
+                            ? const Icon(
+                                Icons.check,
+                                size: 15,
+                              ) // Icon for "Allow"
+                            : const Icon(Icons.navigate_next, size: 18),
+                        label: Text(
+                          selectedMembers.length > 1 ? "Allow" : "Next",
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge!
+                              .copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            (selectedMembers.isEmpty)
+                ? const Center(
+                    child: Text(
+                      "No members selected.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(0, 12, 0, 10),
+                      children: [
+                        ...selectedMembers.map(
+                          (member) => ListTile(
+                            leading: const Icon(Icons.person),
+                            title: Text(
+                              member,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              onPressed: () {
+                                // Remove member from the notifier
+                                final updatedMembers =
+                                    Set<String>.from(selectedMembers);
+                                updatedMembers.remove(member);
+
+                                // Update the notifier value directly to trigger the rebuild
+                                _selectedMembersNotifier.value = updatedMembers;
+
+                                // Close the bottom sheet if no members remain
+                                if (updatedMembers.isEmpty) {
+                                  Navigator.pop(context);
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Widget _buildFloatingActionButton() {
+  //   return ValueListenableBuilder<Set<String>>(
+  //     valueListenable: _selectedMembersNotifier,
+  //     builder: (context, selectedMember, child) {
+  //       if (selectedMembers.isEmpty && selectedMember.isEmpty) {
+  //         return const SizedBox();
+  //       }
+  //       return _buildSelectionBar(selectedMember);
+  //     },
+  //   );
+  // }
 
   Widget _buildSelectionBar(Set<String> selectedMember) {
     return Container(
