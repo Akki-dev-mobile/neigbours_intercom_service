@@ -131,8 +131,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             final visitorLogs = successState.visitorLogs;
             List<VisitorLog> filteredVisitors = visitorLogs!
                 .where((visitorLog) => visitorLog.visitor!.name
-                .toLowerCase()
-                .contains(_searchText!.toLowerCase()))
+                    .toLowerCase()
+                    .contains(_searchText!.toLowerCase()))
                 .toList();
 
             final dateFormat = DateFormat("yyyy-MM-ddTHH:mm:ss.SSSSSSZ");
@@ -148,7 +148,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 // Filter for today
             final todayLogs = filteredVisitors.where((log) {
               final checkInDate =
-              dateFormat.parse(log.visitor_check_in!.toIso8601String());
+                  dateFormat.parse(log.visitor_check_in!.toIso8601String());
               return checkInDate.isAfter(startOfToday) &&
                   checkInDate.isBefore(endOfToday);
             }).toList();
@@ -156,7 +156,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 // Filter for yesterday
             final yesterdayLogs = filteredVisitors.where((log) {
               final checkInDate =
-              dateFormat.parse(log.visitor_check_in!.toIso8601String());
+                  dateFormat.parse(log.visitor_check_in!.toIso8601String());
               return checkInDate.isAfter(startOfYesterday) &&
                   checkInDate.isBefore(endOfYesterday);
             }).toList();
@@ -164,7 +164,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 // Filter for older
             final olderLogs = filteredVisitors.where((log) {
               final checkInDate =
-              dateFormat.parse(log.visitor_check_in!.toIso8601String());
+                  dateFormat.parse(log.visitor_check_in!.toIso8601String());
               return checkInDate.isBefore(startOfYesterday);
             }).toList();
             return PopScope(
@@ -196,17 +196,18 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10.0),
-                    child: IconButton(
-                      onPressed: () async {
-                        await _showExportDialog(context, visitorLogs);
-                      },
-                      icon: const Icon(
-                        Icons.download,
+                  if (widget.id == "In Out Book")
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10.0),
+                      child: IconButton(
+                        onPressed: () async {
+                          await _showExportDialog(context, visitorLogs);
+                        },
+                        icon: const Icon(
+                          Icons.download,
+                        ),
                       ),
-                    ),
-                  )
+                    )
 
                   // ,
                 ],
@@ -265,12 +266,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'Today',
-                                  style:
-                                  Theme.of(context).textTheme.headlineSmall,
-                                ),
-                                const Divider(),
+                                // Text(
+                                //   'Today',
+                                //   style:
+                                //       Theme.of(context).textTheme.headlineSmall,
+                                // ),
+                                // const Divider(),
                               ],
                             );
                           }
@@ -294,73 +295,73 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         }
 
                         // Yesterday Section
-                        if (yesterdayLogs.isNotEmpty) {
-                          if (index == currentIndex) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 20),
-                                Text(
-                                  'Yesterday',
-                                  style:
-                                  Theme.of(context).textTheme.headlineSmall,
-                                ),
-                                const Divider(),
-                              ],
-                            );
-                          }
-                          if (index > currentIndex &&
-                              index <= currentIndex + yesterdayLogs.length) {
-                            return VisitorLogItem(
-                              visitorLog:
-                              yesterdayLogs[index - currentIndex - 1],
-                              onCheckOut: () {
-                                yesterdayLogs[index - currentIndex - 1]
-                                    .visitor_check_out = Utils.getCurrentTime();
-                                yesterdayLogs[index - currentIndex - 1]
-                                    .is_checked_out = true;
-                                _visitorLogBloc.add(CheckOutEvent(
-                                    yesterdayLogs[index - currentIndex - 1],
-                                    widget.id));
-                              },
-                            );
-                          }
-                          currentIndex +=
-                              yesterdayLogs.length + 1; // Add 1 for header
-                        }
+                        // if (yesterdayLogs.isNotEmpty) {
+                        //   if (index == currentIndex) {
+                        //     return Column(
+                        //       crossAxisAlignment: CrossAxisAlignment.start,
+                        //       children: [
+                        //         const SizedBox(height: 20),
+                        //         Text(
+                        //           'Yesterday',
+                        //           style:
+                        //               Theme.of(context).textTheme.headlineSmall,
+                        //         ),
+                        //         const Divider(),
+                        //       ],
+                        //     );
+                        //   }
+                        //   if (index > currentIndex &&
+                        //       index <= currentIndex + yesterdayLogs.length) {
+                        //     return VisitorLogItem(
+                        //       visitorLog:
+                        //           yesterdayLogs[index - currentIndex - 1],
+                        //       onCheckOut: () {
+                        //         yesterdayLogs[index - currentIndex - 1]
+                        //             .visitor_check_out = Utils.getCurrentTime();
+                        //         yesterdayLogs[index - currentIndex - 1]
+                        //             .is_checked_out = true;
+                        //         _visitorLogBloc.add(CheckOutEvent(
+                        //             yesterdayLogs[index - currentIndex - 1],
+                        //             widget.id));
+                        //       },
+                        //     );
+                        //   }
+                        //   currentIndex +=
+                        //       yesterdayLogs.length + 1; // Add 1 for header
+                        // }
 
                         // Older Section
-                        if (olderLogs.isNotEmpty) {
-                          if (index == currentIndex) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 20),
-                                Text(
-                                  'Older',
-                                  style:
-                                  Theme.of(context).textTheme.headlineSmall,
-                                ),
-                                const Divider(),
-                              ],
-                            );
-                          }
-                          if (index > currentIndex &&
-                              index <= currentIndex + olderLogs.length) {
-                            return VisitorLogItem(
-                              visitorLog: olderLogs[index - currentIndex - 1],
-                              onCheckOut: () {
-                                olderLogs[index - currentIndex - 1]
-                                    .visitor_check_out = Utils.getCurrentTime();
-                                olderLogs[index - currentIndex - 1]
-                                    .is_checked_out = true;
-                                _visitorLogBloc.add(CheckOutEvent(
-                                    olderLogs[index - currentIndex - 1],
-                                    widget.id));
-                              },
-                            );
-                          }
-                        }
+                        // if (olderLogs.isNotEmpty) {
+                        //   if (index == currentIndex) {
+                        //     return Column(
+                        //       crossAxisAlignment: CrossAxisAlignment.start,
+                        //       children: [
+                        //         const SizedBox(height: 20),
+                        //         Text(
+                        //           'Older',
+                        //           style:
+                        //               Theme.of(context).textTheme.headlineSmall,
+                        //         ),
+                        //         const Divider(),
+                        //       ],
+                        //     );
+                        //   }
+                        //   if (index > currentIndex &&
+                        //       index <= currentIndex + olderLogs.length) {
+                        //     return VisitorLogItem(
+                        //       visitorLog: olderLogs[index - currentIndex - 1],
+                        //       onCheckOut: () {
+                        //         olderLogs[index - currentIndex - 1]
+                        //             .visitor_check_out = Utils.getCurrentTime();
+                        //         olderLogs[index - currentIndex - 1]
+                        //             .is_checked_out = true;
+                        //         _visitorLogBloc.add(CheckOutEvent(
+                        //             olderLogs[index - currentIndex - 1],
+                        //             widget.id));
+                        //       },
+                        //     );
+                        //   }
+                        // }
 
                         return const SizedBox
                             .shrink(); // Fallback in case of unexpected index
@@ -379,7 +380,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       },
     );
   }
-
 
   Future<void> _showExportDialog(
       BuildContext context, List<VisitorLog> visitorLogs) async {
@@ -428,102 +428,51 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       // Date Range Picker
                       InkWell(
                         onTap: () async {
-                          final DateTimeRange? picked =
-                          await showDateRangePicker(
+                          final DateTime? picked = await showDatePicker(
                             context: context,
-                            firstDate: DateTime(2024),
+                            initialDate: startDate ?? DateTime.now(),
+                            firstDate: DateTime(2000),
                             lastDate: DateTime.now(),
-                            initialDateRange:
-                            startDate != null && endDate != null
-                                ? DateTimeRange(
-                                start: startDate!, end: endDate!)
-                                : null,
-                            builder: (BuildContext context, Widget? child) {
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.fromLTRB(
-                                      16,
-                                      MediaQuery.of(context).size.height * 0.2,
-                                      16,
-                                      0,
-                                    ),
-                                  ),
-                                  Container(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.7,
-                                    width:
-                                    MediaQuery.of(context).size.width * 0.9,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    // constraints: BoxConstraints(
-                                    //   maxWidth:
-                                    //       MediaQuery.of(context).size.width *
-                                    //           0.9,
-                                    //   maxHeight:
-                                    //       MediaQuery.of(context).size.height *
-                                    //           0.7,
-                                    // ),
-                                    child: Theme(
-                                      data: ThemeData(
-                                        datePickerTheme: DatePickerThemeData(
-                                          rangeSelectionBackgroundColor:
-                                          Colors.red.shade200,
-                                          dayBackgroundColor:
-                                          WidgetStateProperty.all(
-                                            Colors.red.shade200,
-                                          ),
-                                          // Colors.red,
-                                        ),
-                                        useMaterial3: true,
-                                      ),
-                                      child: child!,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
                           );
-
                           if (picked != null) {
                             setState(() {
-                              startDate = picked.start;
-                              endDate = picked.end;
+                              startDate = picked;
+                              // Ensure "To Date" is valid
+                              if (endDate != null &&
+                                  startDate!.isAfter(endDate!)) {
+                                endDate = null;
+                              }
                             });
                           }
                         },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.calendar_today, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Date Range',
-                                    style:
-                                    Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                startDate != null && endDate != null
-                                    ? '${DateFormat('MMM dd, yyyy').format(startDate!)} - ${DateFormat('MMM dd, yyyy').format(endDate!)}'
-                                    : 'Select date range',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
+                        child: _buildDateField(
+                          context,
+                          label: 'From Date',
+                          date: startDate,
+                          placeholder: 'Select From Date',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // To Date Picker
+                      InkWell(
+                        onTap: () async {
+                          final DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: endDate ?? DateTime.now(),
+                            firstDate: startDate ?? DateTime(2000),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              endDate = picked;
+                            });
+                          }
+                        },
+                        child: _buildDateField(
+                          context,
+                          label: 'To Date',
+                          date: endDate,
+                          placeholder: 'Select To Date',
                         ),
                       ),
                     ],
@@ -539,9 +488,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       await prefs.setString('email', emailController.text);
 
                       final formattedFromDate =
-                      DateFormat('yyyy-MM-dd').format(startDate!);
+                          DateFormat('yyyy-MM-dd').format(startDate!);
                       final formattedToDate =
-                      DateFormat('yyyy-MM-dd').format(endDate!);
+                          DateFormat('yyyy-MM-dd').format(endDate!);
 
                       var visitorData = visitorLogs.map((visitor) {
                         return {
@@ -577,6 +526,39 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
+  Widget _buildDateField(BuildContext context,
+      {required String label, DateTime? date, required String placeholder}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                date != null
+                    ? DateFormat('MMM dd, yyyy').format(date)
+                    : placeholder,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showLogBookConfigBottomSheet(BuildContext context) async {
     showModalBottomSheet(
       useSafeArea: true,
@@ -607,8 +589,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     title: Text(
                       'Filters',
                       style: Theme.of(context).textTheme.displaySmall!.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
                   Expanded(
@@ -756,20 +738,20 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               leading: CircleAvatar(
                 backgroundImage:
 
-                // widget
-                //         .visitorLog.visitor!.visitor_image.isNotEmpty
-                //     ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
-                //     :
+                    // widget
+                    //         .visitorLog.visitor!.visitor_image.isNotEmpty
+                    //     ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
+                    //     :
 
-                NetworkImage(
-                    'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                    NetworkImage(
+                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
                 child: widget.visitorLog.visitor!.visitor_image.isEmpty
                     ? Text(
-                  widget.visitorLog.visitor!.name.isNotEmpty
-                      ? widget.visitorLog.visitor!.name[0]
-                      : 'G',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                )
+                        widget.visitorLog.visitor!.name.isNotEmpty
+                            ? widget.visitorLog.visitor!.name[0]
+                            : 'G',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      )
                     : null,
               ),
               title: RichText(
@@ -782,24 +764,24 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                     WidgetSpan(
                       child: widget.visitorLog.visitor_count.toString() != '1'
                           ? Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffFFEBE6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          "+ ${widget.visitorLog.visitor_count.toString()}",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      )
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffFFEBE6),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                "+ ${widget.visitorLog.visitor_count.toString()}",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            )
                           : SizedBox(),
                     ),
                   ],
@@ -847,7 +829,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               trailing: IconButton(
                 onPressed: _hasCallSupport
                     ? () => _launched =
-                    _makePhoneCall(widget.visitorLog.visitor!.mobile)
+                        _makePhoneCall(widget.visitorLog.visitor!.mobile)
                     : null,
 
                 // onPressed: () {
@@ -881,7 +863,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
             Container(
               padding: const EdgeInsets.only(bottom: 14.0, top: 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Tooltip(
                     message: DateFormat('dd-MM-yyyy hh:mm a')
@@ -899,11 +881,11 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             text: Utils.convertDateTimeFormat(
                                 widget.visitorLog.visitor_check_in!),
                             style:
-                            Theme.of(context).textTheme.labelMedium!.merge(
-                              const TextStyle(
-                                color: Colors.green,
-                              ),
-                            ),
+                                Theme.of(context).textTheme.labelMedium!.merge(
+                                      const TextStyle(
+                                        color: Colors.green,
+                                      ),
+                                    ),
                           ),
                         ],
                       ),
@@ -911,98 +893,98 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                   ),
                   widget.visitorLog.visitor_card_number != null
                       ? Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 2,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: const [
-                          Color.fromRGBO(255, 236, 158, 0.8),
-                          Color.fromRGBO(255, 190, 168, 0.8),
-                        ],
-                        begin: Alignment.topRight,
-                        end: Alignment.bottomLeft,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Color.fromRGBO(255, 190, 168, 1),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Lottie.asset(
-                          'assets/json/idcard.json',
-                          width: 30,
-                          height: 30,
-                          fit: BoxFit.cover,
-                        ),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Text(
-                          widget.visitorLog.visitor_card_number ?? 'N/A',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 2,
+                            horizontal: 10,
                           ),
-                        ),
-                      ],
-                    ),
-                  )
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: const [
+                                Color.fromRGBO(255, 236, 158, 0.8),
+                                Color.fromRGBO(255, 190, 168, 0.8),
+                              ],
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color.fromRGBO(255, 190, 168, 1),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Lottie.asset(
+                                'assets/json/idcard.json',
+                                width: 30,
+                                height: 30,
+                                fit: BoxFit.cover,
+                              ),
+                              SizedBox(
+                                width: 5,
+                              ),
+                              Text(
+                                widget.visitorLog.visitor_card_number ?? 'N/A',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
                       : SizedBox(),
                   (widget.visitorLog.visitor_check_out.toString().isEmpty ||
-                      widget.visitorLog.visitor_check_out.toString() ==
-                          'null')
+                          widget.visitorLog.visitor_check_out.toString() ==
+                              'null')
                       ? ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      widget.onCheckOut();
-                    },
-                    child: Text(
-                      'CheckOut',
-                      style:
-                      Theme.of(context).textTheme.labelSmall!.merge(
-                        const TextStyle(
-                            color: Colors.white, fontSize: 14),
-                      ),
-                    ),
-                  )
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            widget.onCheckOut();
+                          },
+                          child: Text(
+                            'CheckOut',
+                            style:
+                                Theme.of(context).textTheme.labelSmall!.merge(
+                                      const TextStyle(
+                                          color: Colors.white, fontSize: 14),
+                                    ),
+                          ),
+                        )
                       : Tooltip(
-                    message: DateFormat('dd-MM-yyyy hh:mm a')
-                        .format(widget.visitorLog.visitor_check_out!),
-                    child: RichText(
-                      text: TextSpan(
-                        children: [
-                          const WidgetSpan(
-                            child: Icon(
-                              Symbols.directions_walk_rounded,
-                              color: Colors.red,
+                          message: DateFormat('dd-MM-yyyy hh:mm a')
+                              .format(widget.visitorLog.visitor_check_out!),
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                const WidgetSpan(
+                                  child: Icon(
+                                    Symbols.directions_walk_rounded,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: Utils.convertDateTimeFormat(
+                                      widget.visitorLog.visitor_check_out!),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium!
+                                      .merge(
+                                        const TextStyle(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                ),
+                              ],
                             ),
                           ),
-                          TextSpan(
-                            text: Utils.convertDateTimeFormat(
-                                widget.visitorLog.visitor_check_out!),
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelMedium!
-                                .merge(
-                              const TextStyle(
-                                color: Colors.red,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
                 ],
               ),
             ),

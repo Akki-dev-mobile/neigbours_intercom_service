@@ -29,12 +29,13 @@ class VisitorLogMapper {
 
   factory VisitorLogMapper.fromJson(Map<String, dynamic> json) {
     return VisitorLogMapper(
-      visitorLogId: json['visitor_log_id'] as int?,
-      visitorId: json['visitor_id'] as int? ?? 0, // Fallback to 0 if missing
+      visitorLogId: json['id'] as int?,
+      visitorId: json['visitor_id'] as int? ?? 0,
+      // Fallback to 0 if missing
       visitorPurposeCategoryId:
-      json['visitor_purpose_category_id'] as int? ?? 0,
+          json['visitor_purpose_category_id'] as int? ?? 0,
       visitorPurposeSubCategoryId:
-      json['visitor_purpose_sub_category_id'] as int?,
+          json['visitor_purpose_sub_category_id'] as int?,
       visitorCount: json['visitor_count'] as int? ?? 0,
       visitorCheckIn: json['visitor_check_in'] != null
           ? DateTime.tryParse(json['visitor_check_in'])
@@ -52,7 +53,7 @@ class VisitorLogMapper {
 
   Map<String, dynamic> toJson() {
     return {
-      'visitor_log_id': visitorLogId,
+      'id': visitorLogId,
       'visitor_id': visitorId,
       'visitor_purpose_category_id': visitorPurposeCategoryId,
       'visitor_purpose_sub_category_id': visitorPurposeSubCategoryId,

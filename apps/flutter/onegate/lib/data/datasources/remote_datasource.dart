@@ -1,23 +1,22 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'package:flutter_onegate/common/apiHelper.dart';
-import 'package:flutter_onegate/common/environment.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/common/apiHelper.dart';
+import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/models/staff_model.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
 var client = Client('https://onegate.cubeone.in/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
@@ -41,6 +40,7 @@ class RemoteDataSource {
     this._dio2,
     this._dio3,
   );
+
   final ApiHelper _apiHelper = ApiHelper();
 
   final gateStorage = GateStorage();
@@ -98,7 +98,6 @@ class RemoteDataSource {
     return response.data['data'] ?? [];
   }
 
-
   Future<VisitorMapper?> searchVisitor(String mobileNumber) async {
     final response = await _apiHelper.get(
       '${Environment.baseUrl}/api/visitor/entry',
@@ -111,9 +110,6 @@ class RemoteDataSource {
     }
     return null;
   }
-
-
-
 
   //Pending++++++++++++++
   Future<List<PurposeCategory>?> fetchPurpose() async {
@@ -140,16 +136,18 @@ class RemoteDataSource {
       };
 
       // Make the POST request to the API
-      final response = await _apiHelper.post('${Environment.baseUrl}/api/visitor/entry', data: data);
+      final response = await _apiHelper
+          .post('${Environment.baseUrl}/api/visitor/entry', data: data);
 
       // Parse the response and map it to VisitorMapper
       final visitorData = response.data['data'];
       final visitorId = visitorData['visitor_id'] as int?;
-log("createvisitorresponse $response");
+      log("createvisitorresponse $response");
       // Save the visitor ID in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('visitorId', visitorId.toString());
-print("$visitorId visitorId");
+      // await prefs.setString('visitorId', visitorId.toString());
+      GlobalStorage.visitorId = visitorId.toString();
+      print("$visitorId visitorId");
       // Return the VisitorMapper instance
       log("createdVisitor:$response");
       return VisitorMapper(
@@ -249,7 +247,6 @@ print("$visitorId visitorId");
     return null;
   }
 
-
   String formatDateTime(DateTime dateTime) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
     return formatter.format(dateTime);
@@ -272,8 +269,7 @@ print("$visitorId visitorId");
       data['visitor_check_in'] =
           formatDateTime(visitorLog.visitorCheckIn ?? DateTime.now());
       if (visitorLog.visitorCheckOut != null) {
-        data['visitor_check_out'] =
-            formatDateTime(visitorLog.visitorCheckOut!);
+        data['visitor_check_out'] = formatDateTime(visitorLog.visitorCheckOut!);
       }
 
       // Add additional fields dynamically
@@ -301,19 +297,15 @@ print("$visitorId visitorId");
       // Log the response
       print("VisitorLog Response: ${response.data}");
 
+      GlobalStorage.visitorLogId =
+          response.data['data']['visitor_log_id'].toString();
       // Parse the response and return the VisitorLogMapper object if successful
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
         if (responseData['success'] == true && responseData['data'] != null) {
           final VisitorLogMapper result =
-          VisitorLogMapper.fromJson(responseData['data']);
+              VisitorLogMapper.fromJson(responseData['data']);
           print("VisitorLog created: ${visitorLog.toJson()}");
-
-          // Save visitor log ID globally if needed
-          GlobalStorage.visitorLogId = responseData['data']['visitor_log_id'].toString();
-          GlobalStorage.visitorId = responseData['data']['visitor_id'].toString();
-          print("Saved Visitor Log ID: ${GlobalStorage.visitorLogId}");
-          print("Saved Visitor Log ID: ${GlobalStorage.visitorId}");
 
           return result;
         } else {
@@ -339,7 +331,6 @@ print("$visitorId visitorId");
 
     return null; // Return null if the check-in fails
   }
-
 
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
@@ -476,8 +467,10 @@ print("$visitorId visitorId");
   Future<void> checkoutVisitor(String visitorId) async {
     final data = {'visitor_log_id': visitorId};
 
-    await _apiHelper.patch('${Environment.baseUrl}/api/visitor/checkout', data: data);
+    await _apiHelper.patch('${Environment.baseUrl}/api/visitor/checkout',
+        data: data);
   }
+
 //NOt in use
   Future<bool> checkOut(VisitorLog visitorLog) async {
     try {
@@ -676,8 +669,8 @@ print("$visitorId visitorId");
 
       log("this is${GlobalStorage.visitorLogId}");
       final payload = {
-        "visitor_log_id": GlobalStorage.visitorLogId,
-        "visitor_id": GlobalStorage.visitorLogId,
+        "visitor_log_id": int.parse(GlobalStorage.visitorLogId.toString()),
+        "visitor_id": int.parse(GlobalStorage.visitorId.toString()),
         "company_name": companyName,
         "member_id": memberIds[0],
         "member_name": memberDetails[0],
@@ -739,6 +732,7 @@ print("$visitorId visitorId");
 
     return response.data['data'] ?? [];
   }
+
   Future<List<dynamic>> getMembersList() async {
     final int? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');
@@ -750,6 +744,7 @@ print("$visitorId visitorId");
 
     return response.data['data'] ?? [];
   }
+
   Future<String?> sendOTP(String mobileNumber) async {
     try {
       final response = await _dio1?.get('/sms/verification-code',
@@ -791,6 +786,7 @@ print("$visitorId visitorId");
     }
   }
 }
+
 class GlobalStorage {
   static String? _visitorLogId; // Private field for visitorLogId
   static String? _visitorId; // Private field for visitorId

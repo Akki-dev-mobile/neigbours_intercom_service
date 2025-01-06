@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
@@ -9,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -21,8 +21,6 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart' as c;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
-
 
 class UnitSelectionView extends StatefulWidget {
   final VisitorMapper visitor;
@@ -57,7 +55,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage gateStorage = GateStorage();
   final TextEditingController _searchController = TextEditingController();
-  final ValueNotifier<List<dynamic>> _filteredMembersNotifier = ValueNotifier([]);
+  final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
+      ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
   final remoteDataSource = RemoteDataSource(
@@ -66,6 +65,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     DioSingleton.instance3,
   );
   late Client amqpClient;
+
   // State Data
   Set<int> selectedMembers = {};
   Set<int> selectedUnits = {};
@@ -76,9 +76,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<String> selectedUserIds = {};
   List<int> selectedMemberIds = [];
   List<String> selectedBuildingUnits = [];
-  String formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-  String? approvalStatus =
-      "Waiting for approval...";
+  String formattedInTime =
+      DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+  String? approvalStatus = "Waiting for approval...";
+
   @override
   void initState() {
     super.initState();
@@ -93,8 +94,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _searchController.dispose();
     super.dispose();
   }
-
-
 
   // API Methods
   Future<void> _fetchCompanyId() async {
@@ -130,8 +129,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.length >= 3) {
       _filteredMembersNotifier.value = _allMembers.where((member) {
-        final memberName = member['member_name']?.toLowerCase().contains(query) ?? false;
-        final unitNumber = member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
+        final memberName =
+            member['member_name']?.toLowerCase().contains(query) ?? false;
+        final unitNumber =
+            member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
         return memberName || unitNumber;
       }).toList();
     } else {
@@ -140,7 +141,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   // Storage Methods
-  Future<void> saveMemberAndUnitToPrefs(Set<String> memberDetails, Set<int> unitIDs) async {
+  Future<void> saveMemberAndUnitToPrefs(
+      Set<String> memberDetails, Set<int> unitIDs) async {
     savedMemberUnitDetails = {
       'member_details': memberDetails.toList(),
       'unit_ids': unitIDs.whereType<int>().toList(),
@@ -153,10 +155,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   // UI Methods
   Widget _buildSearchField(BuildContext context) {
     return CustomForm.textField(
-      'Search Members',
+      'Search Units/Members ',
       titleColor: Theme.of(context).colorScheme.onSurface,
       hintColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-      hintText: 'Search Members',
+      hintText: 'Search Units/Members',
       textController: _searchController,
       onChanged: (_) {
         _searchController.text.trim().length >= 3
@@ -165,15 +167,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       },
       suffixIcon: _searchController.text.isNotEmpty
           ? IconButton(
-        icon: Icon(
-          Ionicons.close,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        onPressed: () {
-          _searchController.clear();
-          _filteredMembersNotifier.value = _allMembers;
-        },
-      )
+              icon: Icon(
+                Ionicons.close,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              onPressed: () {
+                _searchController.clear();
+                _filteredMembersNotifier.value = _allMembers;
+              },
+            )
           : null,
     );
   }
@@ -208,11 +210,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Widget _buildMemberListView(List<dynamic> filteredMembers, Set<String> selectedMembers) {
+  Widget _buildMemberListView(
+      List<dynamic> filteredMembers, Set<String> selectedMembers) {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: filteredMembers.length,
-      itemBuilder: (context, index) => _buildMemberTile(filteredMembers[index], selectedMembers),
+      itemBuilder: (context, index) =>
+          _buildMemberTile(filteredMembers[index], selectedMembers),
     );
   }
 
@@ -221,9 +225,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final firstMemberName = memberDetails.isNotEmpty
         ? memberDetails.first['member_first_name'] ?? 'N/A'
         : 'N/A';
-    final additionalMembersCount = memberDetails.length > 1
-        ? '+${memberDetails.length - 1}'
-        : '';
+    final additionalMembersCount =
+        memberDetails.length > 1 ? '+${memberDetails.length - 1}' : '';
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -241,8 +244,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         title: Text(
           member['unit_flat_number'] ?? 'N/A',
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         subtitle: Text(
           '$firstMemberName $additionalMembersCount',
@@ -256,7 +259,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  List<Widget> _buildMemberDetailsList(List<dynamic> memberDetails, dynamic member) {
+  List<Widget> _buildMemberDetailsList(
+      List<dynamic> memberDetails, dynamic member) {
     return [
       ListView.separated(
         padding: EdgeInsets.zero,
@@ -267,7 +271,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           color: Theme.of(context).dividerColor,
           height: 1,
         ),
-        itemBuilder: (context, index) => _buildMemberDetailsItem(memberDetails[index], member),
+        itemBuilder: (context, index) =>
+            _buildMemberDetailsItem(memberDetails[index], member),
       ),
     ];
   }
@@ -308,13 +313,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   // Selection Handling Methods
   Future<void> _handleMemberSelection(
-      String firstName,
-      String userId,
-      dynamic memberId,
-      String buildingUnit,
-      dynamic unitId,
-      String? memberMobileNo,
-      ) async {
+    String firstName,
+    String userId,
+    dynamic memberId,
+    String buildingUnit,
+    dynamic unitId,
+    String? memberMobileNo,
+  ) async {
     final updatedMembers = Set<String>.from(_selectedMembersNotifier.value);
 
     if (_selectedMembersNotifier.value.contains(firstName)) {
@@ -335,7 +340,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   void _addMemberIds(dynamic memberId) {
-    final cleanedMemberIds = memberId.toString().split(',')
+    final cleanedMemberIds = memberId
+        .toString()
+        .split(',')
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
         .toList();
@@ -381,7 +388,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  SizedBox(
+                    height: 250,
+                  ),
+                  Center(
+                      child: CircularProgressIndicator(
+                    color: Colors.grey,
+                  )),
                   SizedBox(height: 16),
                   Text(
                     "Loading Units and Members...",
@@ -431,39 +444,39 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Widget _buildSelectionBar(Set<String> selectedMember) {
     return Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-    color: Theme.of(context).colorScheme.onSurface,
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    mainAxisSize: MainAxisSize.max,
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-    Text(
-    selectedMember.length > 1
-    ? "${selectedMember.first} +${selectedMember.length - 1}"
-        : selectedMember.first,
-      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-        fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.surface,
-      ),
-    ),
-      ElevatedButton.icon(
-        style: _buildElevatedButtonStyle(),
-        onPressed: () => _handleSelectionSubmit(selectedMember),
-        label: Text(
-          (selectedMember.length > 1) ? "Allow" : "Next",
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      color: Theme.of(context).colorScheme.onSurface,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            selectedMember.length > 1
+                ? "${selectedMember.first} +${selectedMember.length - 1}"
+                : selectedMember.first,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.surface,
+                ),
           ),
-        ),
-        icon: Icon(
-          Icons.navigate_before,
-          size: 32,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
+          ElevatedButton.icon(
+            style: _buildElevatedButtonStyle(),
+            onPressed: () => _handleSelectionSubmit(selectedMember),
+            label: Text(
+              (selectedMember.length > 1) ? "Allow" : "Next",
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+            ),
+            icon: Icon(
+              Icons.navigate_before,
+              size: 32,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ],
       ),
-    ],
-    ),
     );
   }
 
@@ -474,7 +487,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         Theme.of(context).colorScheme.surface,
       ),
       elevation: WidgetStateProperty.resolveWith<double>(
-            (Set<WidgetState> states) => states.contains(WidgetState.pressed) ? 8 : 0,
+        (Set<WidgetState> states) =>
+            states.contains(WidgetState.pressed) ? 8 : 0,
       ),
       shape: WidgetStateProperty.all<RoundedRectangleBorder>(
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -544,13 +558,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     await _showApprovedDialog(context, visitorLogData);
   }
 
-
-
-
   Future<void> _processSelectionSubmission(
-      Set<String> selectedMember,
-      VisitorLogMapper visitorLogData
-      ) async {
+      Set<String> selectedMember, VisitorLogMapper visitorLogData) async {
     final userId = selectedUserIds.first;
     final selectedMobileNumbers = await _getSelectedMobileNumbers();
 
@@ -565,13 +574,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<List<String>> _getSelectedMobileNumbers() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedMobileNumbersJson = prefs.getString('selected_member_mobile_numbers') ?? '[]';
-    final cleanedJson = savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
+    final savedMobileNumbersJson =
+        prefs.getString('selected_member_mobile_numbers') ?? '[]';
+    final cleanedJson =
+        savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
     return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
   }
 
-  Map<String, String> _prepareRequestData(String userId, List<String> savedMobileNumbers) {
-
+  Map<String, String> _prepareRequestData(
+      String userId, List<String> savedMobileNumbers) {
     return {
       'company_id': companyId.toString(),
       'name': widget.guestname,
@@ -590,9 +601,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _sendFcmNotification(
-      Map<String, String> requestData,
-      VisitorLogMapper visitorLogData
-      ) async {
+      Map<String, String> requestData, VisitorLogMapper visitorLogData) async {
     try {
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
@@ -602,9 +611,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       if (response.statusCode == 200) {
         log("FCM notification sent successfully: ${response.data}");
-        bool isWaitingForApproval =false;
+        bool isWaitingForApproval = false;
         setState(() => isWaitingForApproval = true);
-        await _showApprovedDialog(context,visitorLogData);
+        await _showApprovedDialog(context, visitorLogData);
       }
     } on DioError catch (e) {
       _handleDioError(e, visitorLogData);
@@ -613,23 +622,25 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   void _handleDioError(DioError e, VisitorLogMapper visitorLogData) async {
     if (e.response?.statusCode == 400) {
-      Fluttertoast.showToast(
-        msg: "Not a OneApp user",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+      // Fluttertoast.showToast(
+      //   msg: "Not a OneApp user",
+      //   toastLength: Toast.LENGTH_SHORT,
+      //   gravity: ToastGravity.BOTTOM,
+      //   backgroundColor: Colors.red,
+      //   textColor: Colors.white,
+      // );
       await _showApprovedDialog(context, visitorLogData);
     } else {
       log("Error during FCM notification: ${e.response?.statusCode} - ${e.response?.data}");
     }
   }
 
-  void _handleSubmissionError(dynamic error, VisitorLogMapper visitorLogData) async {
+  void _handleSubmissionError(
+      dynamic error, VisitorLogMapper visitorLogData) async {
     log("Unexpected error during submission: $error");
     await _showApprovedDialog(context, visitorLogData);
   }
+
   Future<void> setupAMQPReceiver() async {
     try {
       log("Initializing AMQP Receiver...");
@@ -639,7 +650,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         settings: ConnectionSettings(
           host: "65.1.230.119",
           authProvider:
-          const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
+              const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
         ),
       );
 
@@ -728,7 +739,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (approvalStatus == "Waiting for approval...")
-                    const CircularProgressIndicator(),
+                    const CircularProgressIndicator(
+                      color: Colors.grey,
+                    ),
                   const SizedBox(height: 20),
                   Text(
                     approvalStatusNew,
@@ -763,7 +776,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     });
   }
 
-  Future<void> _showApprovedDialog(BuildContext context, VisitorLogMapper data) async {
+  Future<void> _showApprovedDialog(
+      BuildContext context, VisitorLogMapper data) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -802,14 +816,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       // Use the existing savedMemberUnitDetails which was populated earlier
                       if (savedMemberUnitDetails.isNotEmpty) {
                         // Log the data being sent
-                        log('Sending visitor log details: ${jsonEncode([savedMemberUnitDetails])}');
+                        log('Sending visitor log details: ${jsonEncode([
+                              savedMemberUnitDetails
+                            ])}');
 
-                        await remoteDataSource.visitorLogDetails([savedMemberUnitDetails]);
+                        await remoteDataSource
+                            .visitorLogDetails([savedMemberUnitDetails]);
 
                         // Navigate to dashboard on success
-                      await   Navigator.pushReplacement(
+                        await Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const GateDashboardView()),
+                          MaterialPageRoute(
+                              builder: (context) => const GateDashboardView()),
                         );
                       } else {
                         log('Error: savedMemberUnitDetails is empty');
