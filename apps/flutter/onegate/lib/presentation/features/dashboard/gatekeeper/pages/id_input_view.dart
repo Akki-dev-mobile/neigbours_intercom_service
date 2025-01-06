@@ -72,14 +72,17 @@ class _IdInputViewState extends State<IdInputView> {
   @override
   void initState() {
     super.initState();
-    _focusNode = FocusNode();
-    Future.delayed(Duration(milliseconds: 200), () {
-      FocusScope.of(context).requestFocus(_focusNode);
-    });
-    loadPurposes();
-    mobileController.clear();
-  }
 
+    _focusNode = FocusNode();
+
+    // Request focus after the build phase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_focusNode);
+      mobileController.clear(); // Clear after the build phase
+    });
+
+    loadPurposes();
+  }
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
         VisitorRepoImpl(

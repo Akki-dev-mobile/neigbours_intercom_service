@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:flutter_onegate/common/apiHelper.dart';
+import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
@@ -15,6 +17,7 @@ import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 var client = Client('https://onegate.cubeone.in/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
@@ -38,6 +41,7 @@ class RemoteDataSource {
     this._dio2,
     this._dio3,
   );
+  final ApiHelper _apiHelper = ApiHelper();
 
   final gateStorage = GateStorage();
 
@@ -74,90 +78,44 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<dynamic>> fetchGates(int societyId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final accessToken = prefs.getString('access_token');
-      log("here i am2 ${gateStorage.getSocietyId()}");
-      if (accessToken == null) {
-        throw Exception('Access token not found. Please log in again.');
-      }
+  Future<List<dynamic>> fetchGates() async {
+    final int? companyId = await gateStorage.getSocietyId();
+    if (companyId == null) throw Exception('Company ID not found.');
 
-      final queryParams = {
-        'company_id': await gateStorage.getSocietyId(),
-      };
+    final response = await _apiHelper.get(
+      '${Environment.baseUrl}/api/admin/gates',
+      queryParameters: {'company_id': companyId},
+    );
 
-      final response = await Dio().get(
-        'https://gateapi.cubeone.in/api/admin/gates',
-        queryParameters: queryParams,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        return response.data['data'];
-      } else {
-        throw Exception('Failed to load gates: ${response.statusCode}');
-      }
-    } catch (e) {
-      log('Error fetching gates: $e');
-      rethrow;
-    }
+    return response.data['data'] ?? [];
   }
 
   Future<List<dynamic>> fetchSocieties(String userId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final accessToken = prefs.getString('access_token');
+    final response = await _apiHelper.get(
+      '${Environment.baseUrl}/api/admin/companies/$userId',
+    );
 
-      if (accessToken == null) {
-        throw Exception('Access token not found. Please log in again.');
-      }
-      print(
-        'https://gateapi.cubeone.in/api/admin/companies/$userId',
-      );
-      final response = await Dio().get(
-        'https://gateapi.cubeone.in/api/admin/companies/$userId',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        log('Societies fetched: ${response.data?['data']}');
-
-        return response.data?['data'];
-      } else {
-        throw Exception(
-            'Failed to load societies fetchSocieties: ${response.statusCode}');
-      }
-    } catch (e) {
-      log('Error in fetchSocieties: $e');
-      rethrow;
-    }
+    return response.data['data'] ?? [];
   }
 
+
   Future<VisitorMapper?> searchVisitor(String mobileNumber) async {
-    try {
-      final result = await client.visitor.fetchVisitor(mobileNumber);
-      if (result != null) {
-        print("searchVisitor: ${result.toString()}");
-        return result as VisitorMapper;
-      } else {
-        print("No visitor found for mobile number: $mobileNumber");
-        return null;
-      }
-    } catch (e) {
-      print('Error fetching visitor: $e');
+    final response = await _apiHelper.get(
+      '${Environment.baseUrl}/api/visitor/entry',
+      queryParameters: {'mobile_number': mobileNumber},
+    );
+
+    final List<dynamic> data = response.data["data"] ?? [];
+    if (data.isNotEmpty) {
+      return VisitorMapper.fromJson(data.first);
     }
     return null;
   }
 
+
+
+
+  //Pending++++++++++++++
   Future<List<PurposeCategory>?> fetchPurpose() async {
     try {
       final result = await client.purposeCategory.fetchPurposeCategory();
@@ -171,69 +129,40 @@ class RemoteDataSource {
 
   Future<VisitorMapper?> createVisitor(VisitorMapper visitor) async {
     try {
-      // Instantiate Dio
-      final Dio dio = Dio();
-
-      // Define the API endpoint
-      const String apiUrl = "https://gateapi.cubeone.in/api/visitor/entry";
-
-      // Get the uploaded image URL
+      // Fetch the uploaded image URL from GateStorage
       final uploadImageUrl = await GateStorage().getImage();
 
-      // Prepare the request payload
+      // Prepare the data payload
       final data = {
         "name": visitor.name,
         "mobile_number": visitor.mobile,
         "visitor_image": uploadImageUrl.toString(),
       };
 
-      // Make the POST request using Dio
-      final Response response = await dio.post(apiUrl, data: data);
+      // Make the POST request to the API
+      final response = await _apiHelper.post('${Environment.baseUrl}/api/visitor/entry', data: data);
 
-      // Log the response
-      print("createVisitor Response: ${response.data}");
-
-      // Parse and return the Visitor object if response is successful
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Safely access visitor_id
-        final responseData = response.data;
-        final visitorData = responseData['data'];
-        if (visitorData == null) {
-          throw Exception('Visitor data is missing in response.');
-        }
-
-        final int? visitorId = visitorData['visitor_id'] as int?;
-        if (visitorId == null) {
-          throw Exception('Visitor ID is null.');
-        }
-
-        final VisitorMapper result = VisitorMapper(
-          id: visitorId,
-          name: visitor.name,
-          mobile: visitor.mobile,
-          VisitorMapperImage:  uploadImageUrl.toString(),
-        );
-        final prefs = await SharedPreferences.getInstance();
-
-        await prefs.setString('visitorId', result.id!.toString());
-        log("Visitor ID stored in SharedPreferences: ${result.id}");
-        // Log success
-        print(
-            "Visitor created successfully. Status Code: ${response.statusCode}");
-
-        // Return the Visitor object
-        return result;
-      } else {
-        // Log failure and return null
-        print("Failed to create visitor. Status Code: ${response.statusCode}");
-      }
-    } catch (e) {
-      // Handle errors gracefully
-      print("Error creating visitor: $e");
+      // Parse the response and map it to VisitorMapper
+      final visitorData = response.data['data'];
+      final visitorId = visitorData['visitor_id'] as int?;
+log("createvisitorresponse $response");
+      // Save the visitor ID in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('visitorId', visitorId.toString());
+print("$visitorId visitorId");
+      // Return the VisitorMapper instance
+      log("createdVisitor:$response");
+      return VisitorMapper(
+        id: visitorId,
+        name: visitor.name,
+        mobile: visitor.mobile,
+        VisitorMapperImage: uploadImageUrl.toString(),
+      );
+    } catch (error) {
+      // Handle any errors
+      log('Error creating visitor: $error');
+      return null;
     }
-
-    // Return null in case of failure
-    return null;
   }
 
   Future<dynamic> passcodeVerify(String passcode, BuildContext context) async {
@@ -320,6 +249,7 @@ class RemoteDataSource {
     return null;
   }
 
+
   String formatDateTime(DateTime dateTime) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
     return formatter.format(dateTime);
@@ -336,9 +266,9 @@ class RemoteDataSource {
       const String apiUrl = "https://gateapi.cubeone.in/api/visitor/log";
 
       // Prepare the payload using VisitorLogMapper's `toJson` method
-      final Map<String, dynamic> data = VisitorLogMapper.toJson(visitorLog);
+      final Map<String, dynamic> data = visitorLog.toJson();
 
-      // Format visitor_check_in and visitor_check_out
+      // Format `visitor_check_in` and `visitor_check_out`
       data['visitor_check_in'] =
           formatDateTime(visitorLog.visitorCheckIn ?? DateTime.now());
       if (visitorLog.visitorCheckOut != null) {
@@ -347,10 +277,12 @@ class RemoteDataSource {
       }
 
       // Add additional fields dynamically
-      data['in_gate'] = "A-wing"; // Example dynamic field
-      data['visitor_purpose_sub_category_id'] = 1;
-      data['visitor_card_id'] = 1;
-      data['id'] = 1;
+      data.addAll({
+        'in_gate': "A-wing", // Example dynamic field
+        'visitor_purpose_sub_category_id': 1,
+        'visitor_card_id': 1,
+        'id': 1,
+      });
 
       print("Final Payload: $data");
 
@@ -361,7 +293,7 @@ class RemoteDataSource {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'User-Agent': 'insomnia/10.3.0',
+            'User-Agent': 'insomnia/10.3.0', // Example header
           },
         ),
       );
@@ -371,17 +303,25 @@ class RemoteDataSource {
 
       // Parse the response and return the VisitorLogMapper object if successful
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = response.data;
-        if (data['success'] == true && data['data'] != null) {
+        final responseData = response.data;
+        if (responseData['success'] == true && responseData['data'] != null) {
           final VisitorLogMapper result =
-          VisitorLogMapper.fromJson(data['data']);
-          print("VisitorLog created: ${VisitorLogMapper.toJson(result)}");
+          VisitorLogMapper.fromJson(responseData['data']);
+          print("VisitorLog created: ${visitorLog.toJson()}");
+
+          // Save visitor log ID globally if needed
+          GlobalStorage.visitorLogId = responseData['data']['visitor_log_id'].toString();
+          GlobalStorage.visitorId = responseData['data']['visitor_id'].toString();
+          print("Saved Visitor Log ID: ${GlobalStorage.visitorLogId}");
+          print("Saved Visitor Log ID: ${GlobalStorage.visitorId}");
+
           return result;
         } else {
-          print("API Response Error: ${data['message']}");
+          print("API Response Error: ${responseData['message']}");
         }
       } else {
-        print("Failed to create VisitorLog. Status Code: ${response.statusCode}");
+        print(
+            "Failed to create VisitorLog. Status Code: ${response.statusCode}, Response: ${response.data}");
       }
     } on DioError catch (e) {
       // Handle Dio-specific errors
@@ -399,7 +339,6 @@ class RemoteDataSource {
 
     return null; // Return null if the check-in fails
   }
-
 
 
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
@@ -534,6 +473,12 @@ class RemoteDataSource {
     }
   }
 
+  Future<void> checkoutVisitor(String visitorId) async {
+    final data = {'visitor_log_id': visitorId};
+
+    await _apiHelper.patch('${Environment.baseUrl}/api/visitor/checkout', data: data);
+  }
+//NOt in use
   Future<bool> checkOut(VisitorLog visitorLog) async {
     try {
       final result = await client.visitorLog.checkOut(visitorLog);
@@ -651,7 +596,7 @@ class RemoteDataSource {
       } else {
         print("Response Error: ${response.data}");
         Fluttertoast.showToast(
-          msg: "feature unlocking soon",
+          msg: "${response.data}",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
@@ -732,7 +677,7 @@ class RemoteDataSource {
       log("this is${GlobalStorage.visitorLogId}");
       final payload = {
         "visitor_log_id": GlobalStorage.visitorLogId,
-        "visitor_id": visitorId,
+        "visitor_id": GlobalStorage.visitorLogId,
         "company_name": companyName,
         "member_id": memberIds[0],
         "member_name": memberDetails[0],
@@ -761,14 +706,13 @@ class RemoteDataSource {
         print("Response: ${response.data}");
       } else {
         print("Response Error: ${response.data}");
-        Fluttertoast.showToast(
-          msg: "Failed to send logs: ${response.statusMessage}",
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
+        // Fluttertoast.showToast(
+        //   msg: "Failed to send logs: ${response.statusMessage}",
+        //   backgroundColor: Colors.red,
+        //   textColor: Colors.white,
+        // );
       }
     } catch (e) {
-      // Handle DioError and other exceptions
       if (e is DioError) {
         print("DioError: ${e.response?.data ?? e.message}");
       } else {
@@ -776,76 +720,36 @@ class RemoteDataSource {
       }
       log("Error: $e");
 
-      Fluttertoast.showToast(
-        msg: "Error occurred: ${e.toString()}",
-        backgroundColor: Colors.orange,
-        textColor: Colors.white,
-      );
+      // Fluttertoast.showToast(
+      //   msg: "Error occurred: ${e.toString()}",
+      //   backgroundColor: Colors.orange,
+      //   textColor: Colors.white,
+      // );
     }
   }
 
-  Future<List<dynamic>> getBuildingsList(int companyId) async {
-    try {
-      final userId = gateStorage.getSocietyId();
-      if (userId == null) {
-        throw Exception("Company ID (userId) is null");
-      }
-      final prefs = await SharedPreferences.getInstance();
-      final accessToken = prefs.getString('access_token');
+  Future<List<dynamic>> getBuildingsList() async {
+    final int? companyId = await gateStorage.getSocietyId();
+    if (companyId == null) throw Exception('Company ID not found.');
 
-      if (accessToken == null) {
-        throw Exception('Access token not found. Please log in again.');
-      }
-      final response = await _dio2?.get(
-        '/api/admin/building/list',
-        queryParameters: {
-          'company_id': userId,
-        },
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
-      );
-      print("Buildings List: ${response?.data?['data']}");
-      return response?.data?['data'] ?? [];
-    } catch (e) {
-      print('Error fetching buildings list: $e');
-      rethrow;
-    }
+    final response = await _apiHelper.get(
+      '${Environment.societyBackendUrl}/admin/building/list',
+      queryParameters: {'company_id': companyId},
+    );
+
+    return response.data['data'] ?? [];
   }
+  Future<List<dynamic>> getMembersList() async {
+    final int? companyId = await gateStorage.getSocietyId();
+    if (companyId == null) throw Exception('Company ID not found.');
 
-  Future<List<dynamic>> getMembersList(int companyId) async {
-    try {
-      final socId = gateStorage.getSocietyId();
-      if (socId == null) {
-        throw Exception("Company ID (userId) is null");
-      }
-      final prefs = await SharedPreferences.getInstance();
-      final accessToken = prefs.getString('access_token');
+    final response = await _apiHelper.get(
+      '${Environment.societyBackendUrl}/admin/member/list',
+      queryParameters: {'company_id': companyId},
+    );
 
-      if (accessToken == null) {
-        throw Exception('Access token not found. Please log in again.');
-      }
-      final response = await _dio2?.get(
-        '/api/admin/member/list',
-        queryParameters: {
-          'company_id': socId,
-        },
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
-      );
-      print("Members List: ${response?.data?['data']}");
-      return response?.data?['data'] ?? [];
-    } catch (e) {
-      print('Error fetching members list: $e');
-      rethrow;
-    }
+    return response.data['data'] ?? [];
   }
-
   Future<String?> sendOTP(String mobileNumber) async {
     try {
       final response = await _dio1?.get('/sms/verification-code',
@@ -887,10 +791,25 @@ class RemoteDataSource {
     }
   }
 }
-
 class GlobalStorage {
-  static String?
-      visitorLogId; // Nullable to handle cases where it might not be set
-  static String? visitorId;
-}
+  static String? _visitorLogId; // Private field for visitorLogId
+  static String? _visitorId; // Private field for visitorId
 
+  // Getter for visitorLogId
+  static String? get visitorLogId => _visitorLogId;
+
+  // Setter for visitorLogId
+  static set visitorLogId(String? value) {
+    _visitorLogId = value;
+    print("VisitorLogId has been set to: $value");
+  }
+
+  // Getter for visitorId
+  static String? get visitorId => _visitorId;
+
+  // Setter for visitorId
+  static set visitorId(String? value) {
+    _visitorId = value;
+    print("VisitorId has been set to: $value");
+  }
+}

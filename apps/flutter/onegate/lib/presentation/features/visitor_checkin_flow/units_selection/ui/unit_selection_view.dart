@@ -3,11 +3,13 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
+import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -21,8 +23,9 @@ import 'package:onegate_client/onegate_client.dart' as c;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
+
 class UnitSelectionView extends StatefulWidget {
-  final c.Visitor visitor;
+  final VisitorMapper visitor;
   final c.PurposeCategory purposeCategory;
   final String? comingFrom;
   final int? guestCount;
@@ -32,18 +35,18 @@ class UnitSelectionView extends StatefulWidget {
   final String mobileNumber;
   final String? visitorNumber;
 
-  const UnitSelectionView(
-      {Key? key,
-        required this.visitor,
-        required this.purposeCategory,
-        this.comingFrom,
-        this.guestCount,
-        this.companyId,
-        this.visitorId,
-        required this.guestname,
-        required this.mobileNumber,
-        this.visitorNumber})
-      : super(key: key);
+  const UnitSelectionView({
+    Key? key,
+    required this.visitor,
+    required this.purposeCategory,
+    this.comingFrom,
+    this.guestCount,
+    this.companyId,
+    this.visitorId,
+    required this.guestname,
+    required this.mobileNumber,
+    this.visitorNumber,
+  }) : super(key: key);
 
   @override
   State<UnitSelectionView> createState() => _UnitSelectionViewState();
@@ -51,44 +54,69 @@ class UnitSelectionView extends StatefulWidget {
 
 class _UnitSelectionViewState extends State<UnitSelectionView> {
   final Dio _dio = Dio();
-  int? selectedUnit;
-  int? selectedMember;
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage gateStorage = GateStorage();
-  File? image;
-  Set<int> selectedMembers = {};
-  Set<int> selectedUnits = {};
-  String selectedBuilding = '';
-  List<dynamic> buildings = [];
-  List<dynamic> units = [];
-
-  // late Client amqpClient;
-  String? approvalStatus =
-      "Waiting for approval..."; // Holds approval/decline message
-  bool isWaitingForApproval = false; // Shows waiting state
-  bool isLoading = true;
-  bool isUnitsLoading = false;
   final TextEditingController _searchController = TextEditingController();
-  List<dynamic> _filteredMembers = [];
-  List<dynamic> _allMembers = [];
-  final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
-  ValueNotifier([]);
+  final ValueNotifier<List<dynamic>> _filteredMembersNotifier = ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
-  int? companyId;
   final remoteDataSource = RemoteDataSource(
-      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
-
+    DioSingleton.instance1,
+    DioSingleton.instance2,
+    DioSingleton.instance3,
+  );
+  late Client amqpClient;
+  // State Data
+  Set<int> selectedMembers = {};
+  Set<int> selectedUnits = {};
+  List<dynamic> _allMembers = [];
+  int? companyId;
+  bool isLoading = true;
+  Map<String, dynamic> savedMemberUnitDetails = {};
+  Set<String> selectedUserIds = {};
+  List<int> selectedMemberIds = [];
+  List<String> selectedBuildingUnits = [];
+  String formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+  String? approvalStatus =
+      "Waiting for approval...";
   @override
   void initState() {
     super.initState();
-    // fetchBuildings();
     _searchController.addListener(_filterMembers);
-
-    // setupAMQPReceiver(); // Initialize AMQP receiver
-    print("widget.mobileNumber${widget.mobileNumber}");
     _fetchCompanyId();
-    print("widget.visitorId${widget.visitorId}");
+  }
+
+  @override
+  void dispose() {
+    _filteredMembersNotifier.dispose();
+    _selectedMembersNotifier.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+
+
+  // API Methods
+  Future<void> _fetchCompanyId() async {
+    companyId = await gateStorage.getSocietyId();
+    setState(() {});
+  }
+
+  Future<List<dynamic>> getMember() async {
+    try {
+      final response = await _dio.get(
+        'https://societybackend.cubeone.in/api/admin/member/list',
+        queryParameters: {
+          'company_id': companyId.toString(),
+          'unit_id': null,
+          'current_tab': 'approved'
+        },
+      );
+      return response.data['data'];
+    } catch (e) {
+      log('Error fetching members: $e');
+      rethrow;
+    }
   }
 
   Future<void> _initializeMembers() async {
@@ -97,25 +125,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _filteredMembersNotifier.value = members;
   }
 
-  Future<void> _fetchCompanyId() async {
-    companyId = await gateStorage.getSocietyId();
-    setState(() {});
-  }
-
+  // Search and Filter Methods
   void _filterMembers() {
     final query = _searchController.text.trim().toLowerCase();
     if (query.length >= 3) {
       _filteredMembersNotifier.value = _allMembers.where((member) {
-        final memberName =
-            member['member_name']?.toLowerCase().contains(query) ?? false;
-        final unitNumber =
-            member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
-
-        final unitID =
-            member['fk_unit_id']?.toString().toLowerCase().contains(query) ??
-                false;
-        print("unitID:::$unitID");
-
+        final memberName = member['member_name']?.toLowerCase().contains(query) ?? false;
+        final unitNumber = member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
         return memberName || unitNumber;
       }).toList();
     } else {
@@ -123,103 +139,582 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  @override
-  void dispose() {
-    // amqpClient.close();
-    _filteredMembersNotifier.dispose();
-    _selectedMembersNotifier.dispose();
-
-    super.dispose();
+  // Storage Methods
+  Future<void> saveMemberAndUnitToPrefs(Set<String> memberDetails, Set<int> unitIDs) async {
+    savedMemberUnitDetails = {
+      'member_details': memberDetails.toList(),
+      'unit_ids': unitIDs.whereType<int>().toList(),
+      'member_ids': selectedMemberIds.toList(),
+      'building_unit': selectedBuildingUnits.toList(),
+    };
+    log('Saved member and unit details: ${jsonEncode(savedMemberUnitDetails)}');
   }
 
-  // Future<void> setupAMQPReceiver() async {
-  //   try {
-  //     log("Initializing AMQP Receiver...");
-  //
-  //     // Initialize AMQP client with connection settings
-  //     amqpClient = Client(
-  //       settings: ConnectionSettings(
-  //         host: "65.1.230.119",
-  //         authProvider:
-  //             const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
-  //       ),
-  //     );
-  //
-  //     log("Connecting to RabbitMQ server...");
-  //     await amqpClient.connect();
-  //     log("Connection to RabbitMQ server established successfully.");
-  //
-  //     // Define the queue name dynamically based on the mobile number
-  //     final queueName = "visitor_approval_77525_${widget.mobileNumber}";
-  //     log("Queue Name: $queueName");
-  //
-  //     // Access the channel and declare the queue
-  //     Channel channel = await amqpClient.channel();
-  //     log("Channel opened.");
-  //
-  //     Queue queue = await channel.queue(queueName, durable: false);
-  //     log("Queue declared: $queueName");
-  //
-  //     // Bind the queue to an exchange (if required)
-  //     // Note: Replace "exchange_name" and "routing_key" with actual values if applicable
-  //     const String exchangeName = "logs"; // Example exchange name
-  //     final Exchange exchange = await channel.exchange(
-  //       exchangeName,
-  //       ExchangeType.FANOUT,
-  //       durable: false,
-  //     );
-  //     log("Exchange bound: $exchangeName");
-  //
-  //     await queue.bind(exchange, "routing_key_placeholder");
-  //     log("Queue bound to exchange with routing key.");
-  //
-  //     // Start consuming messages from the queue
-  //     Consumer consumer = await queue.consume();
-  //
-  //     log("Consumer registered for queue. Waiting for messages...");
-  //
-  //     // Listen for messages on the queue
-  //     consumer.listen((AmqpMessage message) {
-  //       log("Message received from queue.");
-  //
-  //       try {
-  //         // Decode the message payload
-  //         final payload = utf8.decode(message.payload as List<int>);
-  //         log("Raw Message Payload: $payload");
-  //
-  //         // Parse the message as JSON
-  //         final response = jsonDecode(payload);
-  //         log("Decoded Message: $response");
-  //
-  //         // Extract the approval status from the message
-  //         final status = response['status'];
-  //         log("Approval Status: $status");
-  //
-  //         showApprovalDialog(status);
-  //
-  //         // Update the dialog dynamically
-  //         // setState(() {
-  //         //   approvalStatus = status;
-  //         // });
-  //
-  //         // Acknowledge the message
-  //         message.ack();
-  //       } catch (e) {
-  //         log("Error processing message: $e");
-  //       }
-  //     });
-  //   } catch (e) {
-  //     log("Error setting up AMQP Receiver: $e");
-  //   }
-  // }
+  // UI Methods
+  Widget _buildSearchField(BuildContext context) {
+    return CustomForm.textField(
+      'Search Members',
+      titleColor: Theme.of(context).colorScheme.onSurface,
+      hintColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      hintText: 'Search Members',
+      textController: _searchController,
+      onChanged: (_) {
+        _searchController.text.trim().length >= 3
+            ? _filterMembers()
+            : _filteredMembersNotifier.value = _allMembers;
+      },
+      suffixIcon: _searchController.text.isNotEmpty
+          ? IconButton(
+        icon: Icon(
+          Ionicons.close,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        onPressed: () {
+          _searchController.clear();
+          _filteredMembersNotifier.value = _allMembers;
+        },
+      )
+          : null,
+    );
+  }
+
+  Widget _buildMemberList(BuildContext context) {
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _selectedMembersNotifier,
+      builder: (context, selectedMembers, child) {
+        return ValueListenableBuilder<List<dynamic>>(
+          valueListenable: _filteredMembersNotifier,
+          builder: (context, filteredMembers, child) {
+            if (filteredMembers.isEmpty) {
+              return _buildEmptyState();
+            }
+            return _buildMemberListView(filteredMembers, selectedMembers);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Text(
+        'No Members Found.\nSearch members by their name or flat',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.grey[600],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMemberListView(List<dynamic> filteredMembers, Set<String> selectedMembers) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: filteredMembers.length,
+      itemBuilder: (context, index) => _buildMemberTile(filteredMembers[index], selectedMembers),
+    );
+  }
+
+  Widget _buildMemberTile(dynamic member, Set<String> selectedMembers) {
+    final memberDetails = member['member_details'] as List<dynamic>? ?? [];
+    final firstMemberName = memberDetails.isNotEmpty
+        ? memberDetails.first['member_first_name'] ?? 'N/A'
+        : 'N/A';
+    final additionalMembersCount = memberDetails.length > 1
+        ? '+${memberDetails.length - 1}'
+        : '';
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        dividerColor: Theme.of(context).colorScheme.onSurface.withAlpha(20),
+      ),
+      child: ExpansionTile(
+        iconColor: Colors.redAccent,
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.zero,
+        leading: Icon(
+          Symbols.location_away,
+          color: Theme.of(context).colorScheme.onSurface,
+          size: 32,
+        ),
+        title: Text(
+          member['unit_flat_number'] ?? 'N/A',
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(
+          '$firstMemberName $additionalMembersCount',
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              fontWeight: FontWeight.w300,
+              color: Theme.of(context).colorScheme.onSurface),
+        ),
+        collapsedIconColor: Theme.of(context).colorScheme.onSurface,
+        children: _buildMemberDetailsList(memberDetails, member),
+      ),
+    );
+  }
+
+  List<Widget> _buildMemberDetailsList(List<dynamic> memberDetails, dynamic member) {
+    return [
+      ListView.separated(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: memberDetails.length,
+        separatorBuilder: (context, index) => Divider(
+          color: Theme.of(context).dividerColor,
+          height: 1,
+        ),
+        itemBuilder: (context, index) => _buildMemberDetailsItem(memberDetails[index], member),
+      ),
+    ];
+  }
+
+  Widget _buildMemberDetailsItem(dynamic detail, dynamic member) {
+    final firstName = detail['member_first_name'] ?? 'N/A';
+    final lastName = detail['member_last_name']?.toString() ?? 'N/A';
+    final userId = detail['user_id']?.toString() ?? 'N/A';
+    final unitId = member['fk_unit_id'] ?? 'N/A';
+    final memberId = member["member_id"];
+    final buildingUnit = member["building_unit"] ?? 'N/A';
+    final memberMobileNo = member["member_mobile_number"];
+
+    return ListTile(
+      contentPadding: const EdgeInsets.only(top: 3, bottom: 10),
+      title: Text(
+        '$firstName $lastName',
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
+      onTap: () => _handleMemberSelection(
+        firstName,
+        userId,
+        memberId,
+        buildingUnit,
+        unitId,
+        memberMobileNo,
+      ),
+      trailing: Icon(
+        _selectedMembersNotifier.value.contains(firstName)
+            ? Ionicons.checkmark_circle
+            : Icons.add_circle_outline,
+        color: _selectedMembersNotifier.value.contains(firstName)
+            ? Colors.green
+            : null,
+      ),
+    );
+  }
+
+  // Selection Handling Methods
+  Future<void> _handleMemberSelection(
+      String firstName,
+      String userId,
+      dynamic memberId,
+      String buildingUnit,
+      dynamic unitId,
+      String? memberMobileNo,
+      ) async {
+    final updatedMembers = Set<String>.from(_selectedMembersNotifier.value);
+
+    if (_selectedMembersNotifier.value.contains(firstName)) {
+      updatedMembers.remove(firstName);
+      selectedUserIds.remove(userId);
+      selectedMemberIds.remove(memberId);
+      selectedBuildingUnits.remove(buildingUnit);
+    } else {
+      updatedMembers.add(firstName);
+      selectedUserIds.add(userId);
+      _addMemberIds(memberId);
+      selectedBuildingUnits.add(buildingUnit);
+      await _saveMemberMobileNumber(memberMobileNo);
+    }
+
+    _selectedMembersNotifier.value = updatedMembers;
+    _updateSelectedUnits(unitId);
+  }
+
+  void _addMemberIds(dynamic memberId) {
+    final cleanedMemberIds = memberId.toString().split(',')
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+
+    for (final id in cleanedMemberIds) {
+      try {
+        selectedMemberIds.add(int.parse(id));
+      } catch (e) {
+        log("Error parsing ID: $id, Error: $e");
+      }
+    }
+  }
+
+  Future<void> _saveMemberMobileNumber(String? memberMobileNo) async {
+    if (memberMobileNo != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selected_member_mobile_numbers', memberMobileNo);
+      log("Saved selected member mobile number: $memberMobileNo");
+    }
+  }
+
+  void _updateSelectedUnits(dynamic unitId) {
+    final updateUnits = Set<int>.from(selectedUnits);
+    if (selectedUnits.contains(unitId)) {
+      updateUnits.remove(unitId);
+    } else {
+      selectedUnits.add(unitId);
+    }
+    _selectedUnitsNotifier.value = updateUnits;
+  }
+
+  // Main Build Method
+  @override
+  Widget build(BuildContext context) {
+    return MyScrollView(
+      isScrollable: false,
+      pageTitle: 'Select Units/Members',
+      pageBody: FutureBuilder<void>(
+        future: _initializeMembers(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    "Loading Units and Members...",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            );
+          }
+          return _buildMainContent();
+        },
+      ),
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height,
+      child: Column(
+        children: [
+          _buildSearchField(context),
+          Expanded(child: _buildMemberList(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _selectedMembersNotifier,
+      builder: (context, selectedMember, child) {
+        if (selectedMembers.isEmpty && selectedMember.isEmpty) {
+          return const SizedBox();
+        }
+        return _buildSelectionBar(selectedMember);
+      },
+    );
+  }
+
+  Widget _buildSelectionBar(Set<String> selectedMember) {
+    return Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+    color: Theme.of(context).colorScheme.onSurface,
+    child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    mainAxisSize: MainAxisSize.max,
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+    Text(
+    selectedMember.length > 1
+    ? "${selectedMember.first} +${selectedMember.length - 1}"
+        : selectedMember.first,
+      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.surface,
+      ),
+    ),
+      ElevatedButton.icon(
+        style: _buildElevatedButtonStyle(),
+        onPressed: () => _handleSelectionSubmit(selectedMember),
+        label: Text(
+          (selectedMember.length > 1) ? "Allow" : "Next",
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        icon: Icon(
+          Icons.navigate_before,
+          size: 32,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+    ],
+    ),
+    );
+  }
+
+  ButtonStyle _buildElevatedButtonStyle() {
+    return ButtonStyle(
+      foregroundColor: WidgetStateProperty.all<Color>(const Color(0xFF7D7C7C)),
+      backgroundColor: WidgetStateProperty.all<Color>(
+        Theme.of(context).colorScheme.surface,
+      ),
+      elevation: WidgetStateProperty.resolveWith<double>(
+            (Set<WidgetState> states) => states.contains(WidgetState.pressed) ? 8 : 0,
+      ),
+      shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      ),
+      padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
+        const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
+      ),
+    );
+  }
+
+  // Selection Submission Methods
+  Future<void> _handleSelectionSubmit(Set<String> selectedMember) async {
+    log("Handling selection submit...");
+    await saveMemberAndUnitToPrefs(selectedMember, selectedUnits);
+
+    if (!_validateSelection(selectedMember)) return;
+
+    final visitorLogData = await _prepareVisitorLogData();
+    await _processSelectionSubmission(selectedMember, visitorLogData);
+  }
+
+  bool _validateSelection(Set<String> selectedMember) {
+    if (selectedMember.length != 1 || selectedUnits.length != 1) {
+      _handleInvalidSelection();
+      return false;
+    }
+    return true;
+  }
+
+  Future<VisitorLogMapper> _prepareVisitorLogData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? visitorId = prefs.getString('visitorId');
+
+    return VisitorLogMapper(
+      visitorId: widget.visitorId ?? int.parse(visitorId!),
+      visitorPurposeCategoryId: widget.purposeCategory.id ?? 1,
+      visitorPurposeSubCategoryId: null,
+      visitorCount: 1,
+      visitorCheckIn: DateTime.parse(formattedInTime),
+      visitorCheckOut: null,
+      visitorCardNumber: widget.visitorNumber,
+      visitorComingFrom: widget.comingFrom,
+      visitorCardId: null,
+      companyId: companyId!,
+      isCheckedOut: false,
+    );
+  }
+
+  void _handleInvalidSelection() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? visitorId = prefs.getString('visitorId');
+
+    final visitorLogData = VisitorLogMapper(
+      visitorId: widget.visitorId ?? int.parse(visitorId!),
+      visitorPurposeCategoryId: 1,
+      visitorPurposeSubCategoryId: widget.purposeCategory.id ?? 1,
+      visitorCount: 1,
+      visitorCheckIn: DateTime.parse(formattedInTime),
+      visitorCheckOut: null,
+      visitorCardNumber: widget.visitorNumber,
+      visitorComingFrom: widget.comingFrom,
+      visitorCardId: null,
+      companyId: companyId!,
+      isCheckedOut: false,
+    );
+
+    await _showApprovedDialog(context, visitorLogData);
+  }
+
+
+
+
+  Future<void> _processSelectionSubmission(
+      Set<String> selectedMember,
+      VisitorLogMapper visitorLogData
+      ) async {
+    final userId = selectedUserIds.first;
+    final selectedMobileNumbers = await _getSelectedMobileNumbers();
+
+    final requestData = _prepareRequestData(userId, selectedMobileNumbers);
+
+    try {
+      await _sendFcmNotification(requestData, visitorLogData);
+    } catch (e) {
+      _handleSubmissionError(e, visitorLogData);
+    }
+  }
+
+  Future<List<String>> _getSelectedMobileNumbers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedMobileNumbersJson = prefs.getString('selected_member_mobile_numbers') ?? '[]';
+    final cleanedJson = savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
+    return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
+  }
+
+  Map<String, String> _prepareRequestData(String userId, List<String> savedMobileNumbers) {
+
+    return {
+      'company_id': companyId.toString(),
+      'name': widget.guestname,
+      'mobile': widget.mobileNumber,
+      'purpose': "meeting",
+      'in_time': formattedInTime,
+      'user_id': (int.tryParse(userId) ?? 5243243).toString(),
+      'visitor_count': widget.guestCount?.toString() ?? "1",
+      "member_mobile_number": "918452060059",
+      "member_id": selectedMemberIds.first.toString(),
+      "visitor_id": widget.visitorId?.toString() ?? "",
+      "purpose_category": widget.purposeCategory.id?.toString() ?? "",
+      'purpose_details': "zomato",
+      'coming_from': widget.comingFrom ?? "Unknown",
+    };
+  }
+
+  Future<void> _sendFcmNotification(
+      Map<String, String> requestData,
+      VisitorLogMapper visitorLogData
+      ) async {
+    try {
+      final response = await Dio().post(
+        'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        log("FCM notification sent successfully: ${response.data}");
+        bool isWaitingForApproval =false;
+        setState(() => isWaitingForApproval = true);
+        await _showApprovedDialog(context,visitorLogData);
+      }
+    } on DioError catch (e) {
+      _handleDioError(e, visitorLogData);
+    }
+  }
+
+  void _handleDioError(DioError e, VisitorLogMapper visitorLogData) async {
+    if (e.response?.statusCode == 400) {
+      Fluttertoast.showToast(
+        msg: "Not a OneApp user",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      await _showApprovedDialog(context, visitorLogData);
+    } else {
+      log("Error during FCM notification: ${e.response?.statusCode} - ${e.response?.data}");
+    }
+  }
+
+  void _handleSubmissionError(dynamic error, VisitorLogMapper visitorLogData) async {
+    log("Unexpected error during submission: $error");
+    await _showApprovedDialog(context, visitorLogData);
+  }
+  Future<void> setupAMQPReceiver() async {
+    try {
+      log("Initializing AMQP Receiver...");
+
+      // Initialize AMQP client with connection settings
+      amqpClient = Client(
+        settings: ConnectionSettings(
+          host: "65.1.230.119",
+          authProvider:
+          const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
+        ),
+      );
+
+      log("Connecting to RabbitMQ server...");
+      await amqpClient.connect();
+      log("Connection to RabbitMQ server established successfully.");
+
+      // Define the queue name dynamically based on the mobile number
+      final queueName = "visitor_approval_77525_${widget.mobileNumber}";
+      log("Queue Name: $queueName");
+
+      Channel channel = await amqpClient.channel();
+      log("Channel opened.");
+
+      Queue queue = await channel.queue(queueName, durable: false);
+      log("Queue declared: $queueName");
+
+      const String exchangeName = "logs"; // Example exchange name
+      final Exchange exchange = await channel.exchange(
+        exchangeName,
+        ExchangeType.FANOUT,
+        durable: false,
+      );
+      log("Exchange bound: $exchangeName");
+
+      await queue.bind(exchange, "routing_key_placeholder");
+      log("Queue bound to exchange with routing key.");
+
+      // Start consuming messages from the queue
+      Consumer consumer = await queue.consume();
+
+      log("Consumer registered for queue. Waiting for messages...");
+
+      // Listen for messages on the queue
+      consumer.listen((AmqpMessage message) {
+        log("Message received from queue.");
+
+        try {
+          // Decode the message payload
+          final payload = utf8.decode(message.payload as List<int>);
+          log("Raw Message Payload: $payload");
+
+          // Parse the message as JSON
+          final response = jsonDecode(payload);
+          log("Decoded Message: $response");
+
+          // Extract the approval status from the message
+          final status = response['status'];
+          log("Approval Status: $status");
+
+          showApprovalDialog(status);
+
+          // Update the dialog dynamically
+          // setState(() {
+          //   approvalStatus = status;
+          // });
+
+          // Acknowledge the message
+          message.ack();
+        } catch (e) {
+          log("Error processing message: $e");
+        }
+      });
+    } catch (e) {
+      log("Error setting up AMQP Receiver: $e");
+    }
+  }
 
   Future<void> showApprovalDialog(approvalStatusNew) async {
     // Ensure `approvalStatus` starts with "Waiting for approval..."
-    // setState(() {
-    //   approvalStatus = "Waiting for approval...";
-    // });
+    setState(() {
+      approvalStatus = "Waiting for approval...";
+    });
 
-    // await setupAMQPReceiver();
+    await setupAMQPReceiver();
 
     showDialog(
       context: context,
@@ -236,7 +731,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     const CircularProgressIndicator(),
                   const SizedBox(height: 20),
                   Text(
-                    approvalStatusNew.toString(),
+                    approvalStatusNew,
                     style: const TextStyle(fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
@@ -268,675 +763,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     });
   }
 
-  // Future<void> fetchBuildings() async {
-  //   try {
-  //     setState(() => isLoading = true);
-  //
-  //     final response = await _dio.get(
-  //       'https://societybackend.cubeone.in/api/admin/building/list?company_id=$companyId',
-  //     );
-  //     setState(() {
-  //       print("Company IDDDDDD");
-  //       buildings = response.data['data'];
-  //       // print("Company IDDDDDD$buildings");
-  //       if (buildings.isNotEmpty) {
-  //         selectedBuilding = buildings[0]['soc_building_name'];
-  //         fetchUnits(buildings[0]['id']);
-  //       }
-  //     });
-  //   } catch (e) {
-  //     print('Error fetching buildings: $e');
-  //     setState(() => isLoading = false);
-  //   }
-  // }
-
-  Future<void> fetchUnits(int buildingId) async {
-    try {
-      setState(() => isUnitsLoading = true);
-
-      final response = await _dio.get(
-        'https://societybackend.cubeone.in/api/admin/units/list',
-        queryParameters: {
-          'company_id': companyId,
-          'building_id': buildingId,
-          'per_page': 1000,
-        },
-      );
-      setState(() {
-        units = response.data['data'];
-        isUnitsLoading = false;
-        isLoading = false;
-      });
-    } catch (e) {
-      print('Error fetching units: $e');
-      setState(() => isUnitsLoading = false);
-    }
-  }
-
-  Future<List<dynamic>> getMember() async {
-    try {
-      final response = await _dio.get(
-          'https://societybackend.cubeone.in/api/admin/member/list',
-          queryParameters: {
-            'company_id': companyId.toString(),
-            'unit_id': null,
-            'current_tab': 'approved'
-          });
-      // log("soc units list:::$response");
-      return response.data['data'];
-    } catch (e) {
-      print('Error fetching members: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MyScrollView(
-      isScrollable: false,
-      pageTitle: 'Select Units/Members',
-      pageBody: FutureBuilder<void>(
-        future: _initializeMembers(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16), // Add spacing
-                  Text(
-                    "Loading Units and Members...",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: TextStyle(color: Colors.red, fontSize: 16),
-              ),
-            );
-          } else {
-            return SizedBox(
-              height: MediaQuery.of(context).size.height,
-              child: Column(
-                children: [
-                  _buildSearchField(context),
-                  Expanded(child: _buildMemberList(context)),
-                ],
-              ),
-            );
-          }
-        },
-      ),
-      floatingActionButton: ValueListenableBuilder<Set<String>>(
-          valueListenable: _selectedMembersNotifier,
-          builder: (context, selectedMember, child) {
-            return (selectedMembers.isNotEmpty || selectedMember.isNotEmpty)
-                ? Container(
-              padding: const EdgeInsets.symmetric(
-                vertical: 10,
-                horizontal: 20,
-              ),
-              color: Theme.of(context).colorScheme.onSurface,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    selectedMember.length > 1
-                        ? "${selectedMember.first} +${selectedMember.length - 1}"
-                        : selectedMember.first,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge!
-                        .copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    style: ButtonStyle(
-                      // overlayColor: MaterialStateProperty.all<Color>(
-                      //   Color(0xFF61677A),
-                      // ),
-                      foregroundColor: WidgetStateProperty.all<Color>(
-                        const Color(0xFF7D7C7C),
-                      ),
-                      backgroundColor: WidgetStateProperty.all<Color>(
-                        Theme.of(context).colorScheme.surface,
-                      ),
-                      elevation: WidgetStateProperty.resolveWith<double>(
-                            (Set<WidgetState> states) {
-                          if (states.contains(WidgetState.pressed)) {
-                            return 8;
-                          }
-                          return 0;
-                        },
-                      ),
-                      shape:
-                      WidgetStateProperty.all<RoundedRectangleBorder>(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      padding:
-                      WidgetStateProperty.all<EdgeInsetsGeometry>(
-                        const EdgeInsets.symmetric(
-                          horizontal: 36,
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                    onPressed: () async {
-                      log("FloatingActionButtonunitId Selected Member: $selectedMembers, Selected Unit: $selectedUnit");
-
-                      if (selectedUnits != null ||
-                          selectedMember != null) {
-                        log("Selected Unit: $selectedUnits");
-                        log("Selected Member: $selectedMember");
-
-                        String? userId;
-                        if (selectedUnits.isNotEmpty) {
-                          userId = selectedUnits.first.toString();
-                        } else if (selectedMembers.isNotEmpty) {
-                          userId = _allMembers
-                              .firstWhere(
-                                (member) => selectedMembers.contains(
-                              member['member_name'],
-                            ),
-                          )['id']
-                              .toString();
-                        }
-
-                        List<int> memberIds = _allMembers
-                            .where((member) => selectedMembers
-                            .contains(member['member_name']))
-                            .map<int>(
-                                (member) => member['member_id'] as int)
-                            .toList();
-
-                        log("Member IDs List: $memberIds");
-
-                        log("Post Selection:::");
-                        await postSelection(
-                            context, selectedMember, selectedUnits);
-
-                        // preferenceUtils.getTooglevalue() == true
-                        //     ? showApprovalDialog('Waiting for approval......')
-                        //     : await postSelection(
-                        //         context, selectedMember, unitId);
-                      } else {
-                        log("No selection made");
-                      }
-                    },
-                    label: Text(
-                      (selectedMember.length > 1) ? "Allow" : "Next",
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge!
-                          .copyWith(
-                        color:
-                        Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    icon: Icon(
-                      Icons.navigate_before,
-                      size: 32,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            )
-                : const SizedBox();
-          }),
-    );
-  }
-
-  Widget _buildSearchField(BuildContext context) {
-    return CustomForm.textField(
-      'Search Members',
-      titleColor: Theme.of(context).colorScheme.onSurface,
-      hintColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-      hintText: 'Search Members',
-      textController: _searchController,
-      onChanged: (_) {
-        _searchController.text.trim().length >= 3
-            ? _filterMembers()
-            : _filteredMembersNotifier.value = _allMembers;
-      },
-      suffixIcon: _searchController.text.isNotEmpty
-          ? IconButton(
-        icon: Icon(
-          Ionicons.close,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        onPressed: () {
-          _searchController.clear();
-          _filteredMembersNotifier.value = _allMembers;
-        },
-      )
-          : null,
-    );
-  }
-
-// Define a global variable to store user IDs
-  Set<String> selectedUserIds = {};
-
-// Global variables
-  List<int> selectedMemberIds = []; // To store selected member IDs
-  List<String> selectedBuildingUnits =
-  []; // To store selected building-unit combinations
-
-  Widget _buildMemberList(BuildContext context) {
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: _selectedMembersNotifier,
-      builder: (context, selectedMembers, child) {
-        return ValueListenableBuilder<List<dynamic>>(
-          valueListenable: _filteredMembersNotifier,
-          builder: (context, filteredMembers, child) {
-            if (filteredMembers.isEmpty) {
-              // Display a message when no members are found
-              return Center(
-                child: Text(
-                  'No Members Found.\nSearch members by their name or flat',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              );
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: filteredMembers.length,
-              itemBuilder: (context, index) {
-                final member = filteredMembers[index];
-                print("shubham $member");
-
-                final unitId = member['fk_unit_id'] ?? 'N/A';
-                final memberId = member["member_id"];
-                final buildingUnit = member["building_unit"] ?? 'N/A';
-
-                final memberDetails =
-                    member['member_details'] as List<dynamic>? ?? [];
-                final firstMemberName = memberDetails.isNotEmpty
-                    ? memberDetails.first['member_first_name'] ?? 'N/A'
-                    : 'N/A';
-                final additionalMembersCount = memberDetails.length > 1
-                    ? '+${memberDetails.length - 1}'
-                    : '';
-
-                final isSelected =
-                selectedMembers.contains(member['unit_flat_number']);
-
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor:
-                    Theme.of(context).colorScheme.onSurface.withAlpha(20),
-                  ),
-                  child: ExpansionTile(
-                    iconColor: Colors.redAccent,
-                    tilePadding: EdgeInsets.zero,
-                    childrenPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      Symbols.location_away,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      size: 32,
-                    ),
-                    title: Text(
-                      member['unit_flat_number'] ?? 'N/A',
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '$firstMemberName $additionalMembersCount',
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w300,
-                          color: Theme.of(context).colorScheme.onSurface),
-                    ),
-                    collapsedIconColor: Theme.of(context).colorScheme.onSurface,
-                    children: [
-                      ListView.separated(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: memberDetails.length,
-                        separatorBuilder: (context, index) => Divider(
-                          color: Theme.of(context).dividerColor,
-                          height: 1,
-                        ),
-                        itemBuilder: (context, index) {
-                          final detail = memberDetails[index];
-                          final firstName =
-                              detail['member_first_name'] ?? 'N/A';
-                          final lastName =
-                              detail['member_last_name']?.toString() ?? 'N/A';
-                          final userId = detail['user_id']?.toString() ?? 'N/A';
-
-                          return ListTile(
-                            contentPadding: const EdgeInsets.only(
-                              top: 3,
-                              bottom: 10,
-                            ),
-                            title: Text(
-                              '$firstName $lastName',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            onTap: () async {
-                              final updatedMembers =
-                              Set<String>.from(selectedMembers);
-                              if (selectedMembers.contains(firstName)) {
-                                updatedMembers.remove(firstName);
-                                selectedUserIds.remove(userId);
-                                selectedMemberIds.remove(memberId);
-                                selectedBuildingUnits.remove(buildingUnit);
-                              } else {
-                                updatedMembers.add(firstName);
-                                selectedUserIds.add(userId);
-                                final cleanedMemberIds = memberId
-                                    .toString()
-                                    .split(
-                                    ',') // Split by commas into a list of strings
-                                    .map((id) => id
-                                    .trim()) // Remove extra spaces from each part
-                                    .where((id) => id
-                                    .isNotEmpty) // Filter out any empty strings
-                                    .toList();
-
-                                for (final id in cleanedMemberIds) {
-                                  try {
-                                    selectedMemberIds.add(int.parse(
-                                        id)); // Safely parse each ID to int
-                                  } catch (e) {
-                                    print("Error parsing ID: $id, Error: $e");
-                                  }
-                                }
-
-                                print("Cleaned Member IDs: $selectedMemberIds");
-                                selectedBuildingUnits.add(buildingUnit);
-                              }
-                              _selectedMembersNotifier.value = updatedMembers;
-                              final updateUnits = Set<int>.from(selectedUnits);
-                              if (selectedUnits.contains(unitId)) {
-                                updateUnits.remove(unitId);
-                              } else {
-                                selectedUnits.add(unitId);
-                              }
-                              _selectedUnitsNotifier.value = updateUnits;
-                              // Debugging logs
-                              log("Selected User IDs: $selectedUserIds");
-                              log("Selected Member IDs: $selectedMemberIds");
-                              log("Selected Building Units: $selectedBuildingUnits");
-                            },
-                            trailing: Icon(
-                              selectedMembers.contains(firstName)
-                                  ? Ionicons.checkmark_circle
-                                  : Icons.add_circle_outline,
-                              color: selectedMembers.contains(firstName)
-                                  ? Colors.green
-                                  : null,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-// Global or Class-level Map to store details
-  Map<String, dynamic> savedMemberUnitDetails = {};
-
-  Future<void> saveMemberAndUnitToPrefs(
-      Set<String> memberDetails, Set<int?> unitIDs) async {
-    // Debug: Print the sets
-    print("Member Details Set: $memberDetails");
-    print("Unit IDs Set: $unitIDs");
-    print("Building Units: $selectedBuildingUnits");
-
-    // Convert sets to lists for storage
-    final List<String> memberList = memberDetails.toList();
-    final List<int> unitList = unitIDs.whereType<int>().toList();
-    final List<String> buildingUnitList = selectedBuildingUnits.toList();
-
-    // Store the data in the Map
-    savedMemberUnitDetails['member_details'] = memberList;
-    savedMemberUnitDetails['unit_ids'] = unitList;
-    savedMemberUnitDetails['member_ids'] = selectedMemberIds.toList();
-    savedMemberUnitDetails['building_unit'] = buildingUnitList;
-
-    // Debugging: Print saved data
-    print(
-        "Saved Member Details: ${jsonEncode(savedMemberUnitDetails['member_details'])}");
-    print("Saved Unit IDs: ${jsonEncode(savedMemberUnitDetails['unit_ids'])}");
-    print(
-        "Saved Member IDs: ${jsonEncode(savedMemberUnitDetails['member_ids'])}");
-    print(
-        "Saved Building Units: ${jsonEncode(savedMemberUnitDetails['building_unit'])}");
-
-    await remoteDataSource.visitorLogDetails([savedMemberUnitDetails]);
-
-    // Fluttertoast.showToast(
-    //   msg: "Member and Unit details saved successfully.",
-    //   backgroundColor: Colors.green,
-    //   textColor: Colors.white,
-    // );
-  }
-  final String formattedInTime =
-  DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-
-  Future<void> postSelection(BuildContext context, Set<String> selectedMembers,
-      Set<int> selectedUnits) async {
-    print("Request Data Posting selection...");
-    print(
-        "postSelection:: selectedUnits:::$selectedUnits, selectedMembers:::$selectedMembers");
-
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? visitorId = prefs.getString('visitorId');
-    await saveMemberAndUnitToPrefs(selectedMembers, selectedUnits);
-    if (selectedMembers.length != 1) {
-      print("Request skipped: Exactly one user ID must be selected.");
-      print("Returning success as no posting is required.");
-
-      final VisitorLogMapper data = VisitorLogMapper(
-        visitorId: widget.visitorId ?? int.parse(visitorId!),
-        visitorPurposeCategoryId: 1,
-        visitorPurposeSubCategoryId: null,
-        visitorCount: 1,
-        visitorCheckIn: DateTime.parse(formattedInTime),
-        visitorCheckOut: null,
-        visitorCardNumber: widget.visitorNumber,
-        visitorComingFrom: "Unknown",
-        visitorCardId: null,
-        companyId: companyId!,
-        isCheckedOut: false,
-      );
-      await _showApprovedDialog(context, data);
-      return;
-    }
-
-    if (selectedUnits.length != 1) {
-      final VisitorLogMapper data = VisitorLogMapper(
-        visitorId: widget.visitorId ?? int.parse(visitorId!),
-        visitorPurposeCategoryId: 1,
-        visitorPurposeSubCategoryId: null,
-        visitorCount: 1,
-        visitorCheckIn: DateTime.parse(formattedInTime),
-        visitorCheckOut: null,
-        visitorCardNumber: widget.visitorNumber,
-        visitorComingFrom: "Unknown",
-        visitorCardId: null,
-        companyId: companyId!,
-        isCheckedOut: false,
-      );
-      print("Request skipped: Exactly one unit must be selected.");
-      print("Returning success as no posting is required.");
-      _showApprovedDialog(context, data);
-      return;
-    }
-
-    final String userId = selectedUserIds.first;
-
-    final int unitId = selectedUnits.first;
-
-    final String selectedMemberName = selectedMembers.first;
-    final int selectedUnitId = selectedUnits.first;
-
-    // Fetch the member details from _allMembers
-    final selectedMemberDetails = _allMembers.firstWhere(
-          (member) =>
-      member['member_name'] == selectedMemberName &&
-          member['fk_unit_id'] == selectedUnitId,
-      orElse: () => {},
-    );
-    print(selectedMemberDetails);
-    final String memberName = selectedMemberDetails['member_name'] ?? 'Unknown';
-    final String unitFlatNumber =
-        selectedMemberDetails['unit_flat_number'] ?? 'N/A';
-
-    print(
-        "Saving Member Details: member_name: $memberName, unit_id: $unitId, unit_flat_number: $unitFlatNumber");
-
-    // Save Selected Member Details to gateStorage
-    try {
-      await gateStorage.saveMemberDetails({
-        'member_name': memberName,
-        'unit_id': unitId,
-        'unit_flat_number': unitFlatNumber,
-      });
-      print("Saved to storage: Member - $memberName, Unit - $unitId");
-    } catch (e) {
-      print("Error saving member details: $e");
-      Fluttertoast.showToast(
-        msg: "Error saving member details.",
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-      return;
-    }
-
-    final data = {
-      'company_id': companyId.toString(),
-      'name': widget.guestname.toString(),
-      'mobile': widget.mobileNumber,
-      'purpose': "meeting",
-      'in_time': formattedInTime.toString(),
-      'user_id': int.tryParse(userId),
-      'visitor_count': widget.guestCount?.toString() ?? "1",
-      'purpose_details': "zomato",
-      'coming_from': widget.comingFrom ?? "Unknown",
-    };
-
-    try {
-      // Send the request
-      final response = await Dio().post(
-        'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
-        data: data,
-      );
-
-      if (response.statusCode == 200) {
-        print("FCM notification sent successfully: ${response.data}");
-
-        setState(() {
-          isWaitingForApproval = true;
-        });
-        final VisitorLogMapper data = VisitorLogMapper(
-          visitorId: widget.visitorId ?? int.parse(visitorId!),
-          visitorPurposeCategoryId: 1,
-          visitorPurposeSubCategoryId: null,
-          visitorCount: 1,
-          visitorCheckIn: DateTime.parse(formattedInTime),
-          visitorCheckOut: null,
-          visitorCardNumber: widget.visitorNumber,
-          visitorComingFrom: "Unknown",
-          visitorCardId: null,
-          companyId: companyId!,
-          isCheckedOut: false,
-        );
-
-        await _showApprovedDialog(context, data);
-
-        print("Visitor ID cleared from SharedPreferences.");
-      } else {
-        print("Unhandled response status code: ${response.statusCode}");
-      }
-    } on DioError catch (e) {
-      if (e.response?.statusCode == 400) {
-        Fluttertoast.showToast(
-          msg: "Not a OneApp user",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 2,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-
-        final VisitorLogMapper data = VisitorLogMapper(
-          visitorId: widget.visitorId ?? int.parse(visitorId!),
-          visitorPurposeCategoryId: 1,
-          visitorPurposeSubCategoryId: null,
-          visitorCount: 1,
-          visitorCheckIn: DateTime.parse(formattedInTime),
-          visitorCheckOut: null,
-          visitorCardNumber: widget.visitorNumber,
-          visitorComingFrom: "Unknown",
-          visitorCardId: null,
-          companyId: companyId!,
-          isCheckedOut: false,
-        );
-
-        await _showApprovedDialog(context, data);
-      } else {
-        log("Error during posting or sending notification: ${e.response?.statusCode} - ${e.response?.data}");
-        // Fluttertoast.showToast(
-        //   msg:
-        //   "An unexpected error occurred: ${e.response?.statusCode ?? 'Unknown error'}",
-        //   toastLength: Toast.LENGTH_SHORT,
-        //   gravity: ToastGravity.BOTTOM,
-        //   timeInSecForIosWeb: 2,
-        //   backgroundColor: Colors.orange,
-        //   textColor: Colors.white,
-        //   fontSize: 16.0,
-        // );
-      }
-    } catch (e) {
-      log("Unexpected error during posting or sending notification: $e");
-      // Fluttertoast.showToast(
-      //   msg: "An unexpected error occurred. Please try again.",
-      //   toastLength: Toast.LENGTH_SHORT,
-      //   gravity: ToastGravity.BOTTOM,
-      //   timeInSecForIosWeb: 2,
-      //   backgroundColor: Colors.red,
-      //   textColor: Colors.white,
-      //   fontSize: 16.0,
-      // );
-    }
-  }
-
-  Future<void> _showApprovedDialog(
-      BuildContext context, VisitorLogMapper data) async {
+  Future<void> _showApprovedDialog(BuildContext context, VisitorLogMapper data) async {
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent dismissal by tapping outside
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -954,7 +784,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   repeat: false,
                 ),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   "Approved!",
                   style: TextStyle(
                     fontSize: 18,
@@ -964,17 +794,44 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 ),
                 const SizedBox(height: 16),
                 CustomLargeBtn(
-                    onPressed: () async {
-                      // Navigator.pop(dialogContext);
-
+                  onPressed: () async {
+                    try {
+                      // First perform the check-in
                       await remoteDataSource.checkIn(data);
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const GateDashboardView()),
+
+                      // Use the existing savedMemberUnitDetails which was populated earlier
+                      if (savedMemberUnitDetails.isNotEmpty) {
+                        // Log the data being sent
+                        log('Sending visitor log details: ${jsonEncode([savedMemberUnitDetails])}');
+
+                        await remoteDataSource.visitorLogDetails([savedMemberUnitDetails]);
+
+                        // Navigate to dashboard on success
+                      await   Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const GateDashboardView()),
+                        );
+                      } else {
+                        log('Error: savedMemberUnitDetails is empty');
+                        // Show error toast or handle empty data case
+                        Fluttertoast.showToast(
+                          msg: "Error: Missing member details",
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                        );
+                      }
+                    } catch (e) {
+                      log('Error in approved dialog: $e');
+                      // Show error toast
+                      Fluttertoast.showToast(
+                        msg: "Error processing approval",
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
                       );
-                    },
-                    text: "Continue")
+                    }
+                  },
+                  text: "Continue",
+                )
               ],
             ),
           ),

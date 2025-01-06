@@ -65,10 +65,12 @@ dependencies:
   ionicons: ^0.2.1
   keycloak_wrapper: ^1.4.4
   permission_handler: ^11.3.1
+  camera: ^0.11.0+2
   dart_amqp: ^0.3.1
   alarm: ^4.1.1
   url_launcher: ^6.3.1
   calendar_date_picker2: ^0.5.3
+
 
 
 

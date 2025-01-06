@@ -44,7 +44,7 @@ class VisitorRepoImpl extends VisitorRepository {
   @override
   Future<List<dynamic>?>? getBuildingList(int companyId) async {
     try {
-      final response = await _remoteDataSource.getBuildingsList(companyId);
+      final response = await _remoteDataSource.getBuildingsList();
       return response;
     } catch (error) {
       return null;
@@ -54,7 +54,7 @@ class VisitorRepoImpl extends VisitorRepository {
   @override
   Future<List<dynamic>?>? getMembersList(int companyId) async {
     try {
-      final response = await _remoteDataSource.getMembersList(companyId);
+      final response = await _remoteDataSource.getMembersList();
       return response;
     } catch (error) {
       return null;

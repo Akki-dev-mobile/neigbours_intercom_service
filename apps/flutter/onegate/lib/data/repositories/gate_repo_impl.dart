@@ -14,7 +14,7 @@ class GateRepositoryImpl implements GateRepository {
 
     try {
       final response =
-          await _remoteDataSource.fetchGates(companyId);
+          await _remoteDataSource.fetchGates();
       final gateListResponse = GateMapper.fromJsonList(response);
       print("Company IDDD GateRepositoryImpl response: $gateListResponse");
       return gateListResponse;

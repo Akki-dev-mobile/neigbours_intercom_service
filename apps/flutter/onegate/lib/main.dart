@@ -6,6 +6,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/staff/bloc/staff_bloc.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -50,6 +51,9 @@ void main() async {
           ),
           ChangeNotifierProvider<PurposeProvider>(
             create: (_) => PurposeProvider(), // Initialize your provider
+          ),
+          ChangeNotifierProvider<VisitorLogsProvider>(
+            create: (_) => VisitorLogsProvider(), // Initialize your provider
           ),
 
         ],

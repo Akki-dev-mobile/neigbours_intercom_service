@@ -1,9 +1,9 @@
 class VisitorMapper {
   VisitorMapper({
     this.id,
-    required this.name,
-    required this.mobile,
-    required this.VisitorMapperImage,
+    this.name,
+    this.mobile,
+    this.VisitorMapperImage,
   });
 
   /// The database id, set if the object has been inserted into the
@@ -11,17 +11,17 @@ class VisitorMapper {
   /// the id will be null.
   int? id;
 
-  String name;
-  String mobile;
-  String VisitorMapperImage;
+  String? name;
+  String? mobile;
+  String? VisitorMapperImage; // All fields are now nullable
 
   /// Factory constructor to create a `VisitorMapper` object from JSON.
   factory VisitorMapper.fromJson(Map<String, dynamic> json) {
     return VisitorMapper(
-      id: json['id'] as int?,
-      name: json['name'] as String,
-      mobile: json['mobile'] as String,
-      VisitorMapperImage: json['VisitorMapper_image'] as String,
+      id: json['id'] as int?, // Handle nullable id
+      name: json['name'] as String?, // Handle nullable name
+      mobile: json['mobile'] as String?, // Handle nullable mobile
+      VisitorMapperImage: json['visitor_image'] as String?, // Handle nullable visitorImage
     );
   }
 
@@ -31,7 +31,7 @@ class VisitorMapper {
       'id': id,
       'name': name,
       'mobile': mobile,
-      'VisitorMapper_image': VisitorMapperImage,
+      'visitor_image': VisitorMapperImage,
     };
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
@@ -50,11 +51,52 @@ class _MyAppLoginState extends State<MyAppLogin> {
     if (status.isGranted) {
       log("Location permission granted");
     } else if (status.isDenied) {
-      log("Location permission denied");
+      if (Platform.isIOS) {
+        // On iOS, notify the user that they must manually enable permissions in settings
+        log("Location permission denied on iOS. Showing info alert...");
+        showLocationDeniedAlert(context);
+      } else {
+        log("Location permission denied");
+      }
     } else if (status.isPermanentlyDenied) {
-      log("Location permission permanently denied. Redirecting to settings...");
-      openAppSettings();
+      if (Platform.isIOS) {
+        // iOS doesn't have a 'permanently denied' status; it directs to settings for denied permissions
+        log("Location permission permanently denied on iOS. Redirecting to settings...");
+        showLocationDeniedAlert(context);
+      } else {
+        log("Location permission permanently denied. Redirecting to settings...");
+        openAppSettings();
+      }
     }
+  }
+
+  void showLocationDeniedAlert(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Location Permission Required"),
+          content: const Text(
+            "Location permissions are required to use this feature. Please enable them in your iOS device settings.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                openAppSettings(); // Redirect to app settings
+              },
+              child: const Text("Open Settings"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> initializeKeycloak() async {
@@ -339,7 +381,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
 
                 try {
                   final gates =
-                      await remoteDataSource.fetchGates(selectedSocietyId!);
+                      await remoteDataSource.fetchGates();
 
                   Navigator.pop(context);
 

@@ -76,7 +76,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     super.initState();
     _guestCountController = TextEditingController(text: _guestCount.toString());
     if (widget.searchedVisitor != null) {
-      guestName.text = widget.searchedVisitor!.name;
+      guestName.text = widget.searchedVisitor!.name ?? "";
     }
     _initSpeech();
     _fetchCompanyId();
@@ -257,7 +257,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   guestname: guestName.text,
                   mobileNumber: widget.mobile,
                   purposeCategory: state.purposeCategory,
-                  visitor: state.visitor as Visitor,
+                  visitor: state.visitor as VisitorMapper,
                   comingFrom: guestComingFrom.text,
                   guestCount: _guestCount,
                   visitorNumber: visitorNumber.text.isNotEmpty

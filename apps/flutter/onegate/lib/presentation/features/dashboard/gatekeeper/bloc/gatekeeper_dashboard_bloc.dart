@@ -33,7 +33,7 @@ class GatekeeperDashboardBloc
     emit(GatekeeperDashboardLoadingState());
     try {
       final response = await _visitorUsecase.searchVisitor(event.mobileNumber);
-
+      print("visitor --$response");
       emit(SaveSearchedVisitorState(visitor: response));
 
       emit(GatekeeperDashboardInitial());
