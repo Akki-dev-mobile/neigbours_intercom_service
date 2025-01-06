@@ -248,6 +248,17 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         ),
                       ),
                     ),
+                    if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'No such visitor found in log',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                     ListView.builder(
                       physics: BouncingScrollPhysics(),
                       shrinkWrap: true,

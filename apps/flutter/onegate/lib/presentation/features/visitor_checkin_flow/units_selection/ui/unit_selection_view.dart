@@ -516,7 +516,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 log("Member IDs List: $memberIds");
 
                                 log("Post Selection:::");
-                                await _handleSelectionSubmit(selectedMembers);
+                                // await _handleSelectionSubmit(selectedMembers);
                               } else {
                                 log("No selection made");
                               }
@@ -791,38 +791,52 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                       color: Colors.grey),
                                                 ),
                                               ),
-                                            if (selectedMembers.isNotEmpty)
-                                              ...selectedMembers.map(
-                                                (member) => ListTile(
-                                                  leading:
-                                                      const Icon(Icons.person),
-                                                  title: Text(
-                                                    member,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium,
+                                            Expanded(
+                                              child: ListView(
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        0, 12, 0, 10),
+                                                children: [
+                                                  ...selectedMembers.map(
+                                                    (member) => ListTile(
+                                                      leading: const Icon(
+                                                          Icons.person),
+                                                      title: Text(
+                                                        member,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .bodyMedium,
+                                                      ),
+                                                      trailing: IconButton(
+                                                        icon: const Icon(
+                                                            Icons.close,
+                                                            color: Colors.red),
+                                                        onPressed: () {
+                                                          // Remove member from the notifier
+                                                          final updatedMembers =
+                                                              Set<String>.from(
+                                                                  selectedMembers);
+                                                          updatedMembers
+                                                              .remove(member);
+
+                                                          // Update the notifier value directly to trigger the rebuild
+                                                          _selectedMembersNotifier
+                                                                  .value =
+                                                              updatedMembers;
+
+                                                          // Close the bottom sheet if no members remain
+                                                          if (updatedMembers
+                                                              .isEmpty) {
+                                                            Navigator.pop(
+                                                                context);
+                                                          }
+                                                        },
+                                                      ),
+                                                    ),
                                                   ),
-                                                  trailing: IconButton(
-                                                    icon: const Icon(
-                                                        Icons.close,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      final updatedMembers =
-                                                          Set<String>.from(
-                                                              selectedMembers);
-                                                      updatedMembers
-                                                          .remove(member);
-                                                      _selectedMembersNotifier
-                                                              .value =
-                                                          updatedMembers;
-                                                      if (updatedMembers
-                                                          .isEmpty) {
-                                                        Navigator.pop(context);
-                                                      }
-                                                    },
-                                                  ),
-                                                ),
+                                                ],
                                               ),
+                                            ),
                                           ],
                                         );
                                       },
