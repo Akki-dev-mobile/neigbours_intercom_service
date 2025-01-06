@@ -17,6 +17,7 @@ class GatekeeperDashboardBloc
   final VisitorUsecase _visitorUsecase;
   final VisitorLogUsecase _visitorLogUsecase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+
   GatekeeperDashboardBloc(this._visitorUsecase, this._visitorLogUsecase)
       : super(GatekeeperDashboardInitial()) {
     on<GatekeeperDashboardInitialEvent>(onInitialEvent);
@@ -92,6 +93,21 @@ class GatekeeperDashboardBloc
       Emitter<GatekeeperDashboardState> emit) async {
     try {
       emit(GatekeeperDashboardLoadingState());
+      // final List<VisitorLog>? checkedInVisitors =
+      //     await _visitorLogUsecase.fetchCheckInVisitorLog(
+      //         _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
+      //         DateTime.now().toString());
+      //
+      // final today = DateTime.now();
+      // final List<VisitorLog> todayCheckedInVisitors =
+      //     checkedInVisitors!.where((visitor) {
+      //   final checkInDate = DateTime.parse(visitor.checkInDate);
+      //   return checkInDate.year == today.year &&
+      //       checkInDate.month == today.month &&
+      //       checkInDate.day == today.day;
+      // }).toList();
+      //
+      // final int inBook = todayCheckedInVisitors.length;
       final List<VisitorLog>? checkedInVisitors =
           await _visitorLogUsecase.fetchCheckInVisitorLog(
               _preferenceUtils.getSelectedCompany()?.companyId ?? 0,

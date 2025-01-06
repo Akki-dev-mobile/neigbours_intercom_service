@@ -598,14 +598,14 @@ class RemoteDataSource {
       // Handle DioError and other exceptions
       if (e is DioError) {
         Fluttertoast.showToast(
-          msg: "feature unlocking soon",
+          msg: "Error sending logs",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
         print("DioError: ${e.response?.data ?? e.message}");
       } else {
         Fluttertoast.showToast(
-          msg: "feature unlocking soon",
+          msg: "Error Sending logs",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );

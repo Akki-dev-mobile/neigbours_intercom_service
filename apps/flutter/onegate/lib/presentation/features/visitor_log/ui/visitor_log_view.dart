@@ -444,6 +444,27 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             initialDate: startDate ?? DateTime.now(),
                             firstDate: DateTime(2000),
                             lastDate: DateTime.now(),
+                            builder: (BuildContext context, Widget? child) {
+                              return Theme(
+                                data: ThemeData.light().copyWith(
+                                  colorScheme: ColorScheme.light(
+                                    primary: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface, // Header background color
+                                    onPrimary: Theme.of(context)
+                                        .colorScheme
+                                        .surface, // Header text color
+                                    surface: Theme.of(context)
+                                        .colorScheme
+                                        .surface, // Background color
+                                    onSurface: Colors.black, // Text color
+                                  ),
+                                  dialogBackgroundColor: Colors
+                                      .white, // Background color of the dialog
+                                ),
+                                child: child!,
+                              );
+                            },
                           );
                           if (picked != null) {
                             setState(() {
@@ -472,6 +493,27 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             initialDate: endDate ?? DateTime.now(),
                             firstDate: startDate ?? DateTime(2000),
                             lastDate: DateTime.now(),
+                            builder: (BuildContext context, Widget? child) {
+                              return Theme(
+                                data: ThemeData.light().copyWith(
+                                  colorScheme: ColorScheme.light(
+                                    primary: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface, // Header background color
+                                    onPrimary: Theme.of(context)
+                                        .colorScheme
+                                        .surface, // Header text color
+                                    surface: Theme.of(context)
+                                        .colorScheme
+                                        .surface, // Background color
+                                    onSurface: Colors.black, // Text color
+                                  ),
+                                  dialogBackgroundColor: Colors
+                                      .white, // Background color of the dialog
+                                ),
+                                child: child!,
+                              );
+                            },
                           );
                           if (picked != null) {
                             setState(() {
@@ -517,7 +559,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       Navigator.of(context).pop();
                     } else {
                       Fluttertoast.showToast(
-                        msg: "Please fill all fields",
+                        msg: "Please fill From and Todate field",
                         toastLength: Toast.LENGTH_SHORT,
                         gravity: ToastGravity.CENTER,
                         timeInSecForIosWeb: 1,
