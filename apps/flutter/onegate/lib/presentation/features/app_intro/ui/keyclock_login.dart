@@ -10,12 +10,14 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
-
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 final keycloakWrapper =
     KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
@@ -103,6 +105,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
     try {
       keycloakWrapper.initialize();
       log("Keycloak initialized successfully");
+      // log(mes);
     } catch (e) {
       log('Error initializing Keycloak: $e');
       _showSnackbar("Failed to initialize Keycloak: $e");
@@ -386,7 +389,8 @@ class _MyAppLoginState extends State<MyAppLogin> {
                   Navigator.pop(context);
 
                   if (gates.isNotEmpty) {
-                    _showGateSelection(context, gates);
+
+                    _showGateSelection(context,gates);
                   } else {
                     _showSnackbar("No gates found for the selected society.");
                   }
@@ -406,14 +410,30 @@ class _MyAppLoginState extends State<MyAppLogin> {
     );
   }
 
-  void _showGateSelection(BuildContext context, List<dynamic> gates) {
+
+
+  void _showGateSelection(BuildContext context, List gateList) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) {
+      builder: (ctx)  {
+        final gateProvider = Provider.of<GateProvider>(context);
+        final gates =  gateProvider.gates ?? gateList ;
+
+        // Display a loading indicator if data is still being fetched
+        if (gateProvider.isLoading) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        // Display the list of gates when data is available
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: gates.map((gate) {
@@ -421,6 +441,7 @@ class _MyAppLoginState extends State<MyAppLogin> {
             return ListTile(
               title: Text(gateName),
               onTap: () async {
+                await gateProvider.selectGate(gates.indexOf(gate));
                 Navigator.pop(ctx);
                 Navigator.pushReplacement(
                   context,

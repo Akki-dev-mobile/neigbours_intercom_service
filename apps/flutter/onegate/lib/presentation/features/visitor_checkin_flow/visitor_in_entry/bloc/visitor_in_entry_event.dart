@@ -31,6 +31,9 @@ class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
       required this.purposeCategory,
       required this.mobile,
       this.visitorNumber});
+
+
+
 }
 
 class VIECameraButtonPressedEvent extends VisitorInEntryEvent {

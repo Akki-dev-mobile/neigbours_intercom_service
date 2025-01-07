@@ -6,11 +6,13 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
@@ -22,7 +24,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart' as c;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
-
 
 class UnitSelectionView extends StatefulWidget {
   final VisitorMapper visitor;
@@ -57,7 +58,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage gateStorage = GateStorage();
   final TextEditingController _searchController = TextEditingController();
-  final ValueNotifier<List<dynamic>> _filteredMembersNotifier = ValueNotifier([]);
+  final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
+      ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
   final remoteDataSource = RemoteDataSource(
@@ -76,14 +78,22 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<String> selectedUserIds = {};
   List<int> selectedMemberIds = [];
   List<String> selectedBuildingUnits = [];
-  String formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-  String? approvalStatus =
-      "Waiting for approval...";
+  String formattedInTime =
+      DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+  String? approvalStatus = "Waiting for approval...";
+  bool _membersApproval = false;
+  late Future<void> _initializeFuture;
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_filterMembers);
     _fetchCompanyId();
+    Future.microtask(() {
+      _membersApproval =
+          context.read<VisitorSettingsProvider>().membersApproval;
+    });
+    _initializeFuture = _initializeMembers(); // Initialize the Future once
   }
 
   @override
@@ -94,33 +104,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     super.dispose();
   }
 
-
-
   // API Methods
   Future<void> _fetchCompanyId() async {
     companyId = await gateStorage.getSocietyId();
     setState(() {});
   }
 
-  Future<List<dynamic>> getMember() async {
-    try {
-      final response = await _dio.get(
-        'https://societybackend.cubeone.in/api/admin/member/list',
-        queryParameters: {
-          'company_id': companyId.toString(),
-          'unit_id': null,
-          'current_tab': 'approved'
-        },
-      );
-      return response.data['data'];
-    } catch (e) {
-      log('Error fetching members: $e');
-      rethrow;
-    }
-  }
-
   Future<void> _initializeMembers() async {
-    final members = await getMember();
+    final members = await remoteDataSource.getMembersList();
     _allMembers = members;
     _filteredMembersNotifier.value = members;
   }
@@ -130,8 +121,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.length >= 3) {
       _filteredMembersNotifier.value = _allMembers.where((member) {
-        final memberName = member['member_name']?.toLowerCase().contains(query) ?? false;
-        final unitNumber = member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
+        final memberName =
+            member['member_name']?.toLowerCase().contains(query) ?? false;
+        final unitNumber =
+            member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
         return memberName || unitNumber;
       }).toList();
     } else {
@@ -139,8 +132,125 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
+  void _showSelectedMembersBottomSheet(Set<String> selectedMember) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ValueListenableBuilder<Set<String>>(
+        valueListenable: _selectedMembersNotifier,
+        builder: (context, updatedSelectedMember, _) => Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Selected Members (${updatedSelectedMember.length})',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: updatedSelectedMember.length,
+                  itemBuilder: (context, index) {
+                    final member = updatedSelectedMember.elementAt(index);
+                    return ListTile(
+                      title: Text(member),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          final updatedMembers =
+                              Set<String>.from(_selectedMembersNotifier.value);
+                          updatedMembers.remove(member);
+                          _selectedMembersNotifier.value = updatedMembers;
+                          if (updatedMembers.isEmpty) {
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: CustomLargeBtn(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _handleSelectionSubmit(updatedSelectedMember);
+                      },
+                      text: 'Allow'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(Set<String> selectedMember) {
+    return GestureDetector(
+      onTap: () => _showSelectedMembersBottomSheet(selectedMember),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.people),
+                const SizedBox(width: 8),
+                Text(
+                  '${selectedMember.length} Selected',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const Icon(Icons.keyboard_arrow_up),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Storage Methods
-  Future<void> saveMemberAndUnitToPrefs(Set<String> memberDetails, Set<int> unitIDs) async {
+  Future<void> saveMemberAndUnitToPrefs(
+      Set<String> memberDetails, Set<int> unitIDs) async {
     savedMemberUnitDetails = {
       'member_details': memberDetails.toList(),
       'unit_ids': unitIDs.whereType<int>().toList(),
@@ -165,15 +275,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       },
       suffixIcon: _searchController.text.isNotEmpty
           ? IconButton(
-        icon: Icon(
-          Ionicons.close,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        onPressed: () {
-          _searchController.clear();
-          _filteredMembersNotifier.value = _allMembers;
-        },
-      )
+              icon: Icon(
+                Ionicons.close,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              onPressed: () {
+                _searchController.clear();
+                _filteredMembersNotifier.value = _allMembers;
+              },
+            )
           : null,
     );
   }
@@ -208,11 +318,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Widget _buildMemberListView(List<dynamic> filteredMembers, Set<String> selectedMembers) {
+  Widget _buildMemberListView(
+      List<dynamic> filteredMembers, Set<String> selectedMembers) {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: filteredMembers.length,
-      itemBuilder: (context, index) => _buildMemberTile(filteredMembers[index], selectedMembers),
+      itemBuilder: (context, index) =>
+          _buildMemberTile(filteredMembers[index], selectedMembers),
     );
   }
 
@@ -221,9 +333,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final firstMemberName = memberDetails.isNotEmpty
         ? memberDetails.first['member_first_name'] ?? 'N/A'
         : 'N/A';
-    final additionalMembersCount = memberDetails.length > 1
-        ? '+${memberDetails.length - 1}'
-        : '';
+    final additionalMembersCount =
+        memberDetails.length > 1 ? '+${memberDetails.length - 1}' : '';
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -241,8 +352,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         title: Text(
           member['unit_flat_number'] ?? 'N/A',
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         subtitle: Text(
           '$firstMemberName $additionalMembersCount',
@@ -256,7 +367,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  List<Widget> _buildMemberDetailsList(List<dynamic> memberDetails, dynamic member) {
+  List<Widget> _buildMemberDetailsList(
+      List<dynamic> memberDetails, dynamic member) {
     return [
       ListView.separated(
         padding: EdgeInsets.zero,
@@ -267,7 +379,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           color: Theme.of(context).dividerColor,
           height: 1,
         ),
-        itemBuilder: (context, index) => _buildMemberDetailsItem(memberDetails[index], member),
+        itemBuilder: (context, index) =>
+            _buildMemberDetailsItem(memberDetails[index], member),
       ),
     ];
   }
@@ -308,13 +421,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   // Selection Handling Methods
   Future<void> _handleMemberSelection(
-      String firstName,
-      String userId,
-      dynamic memberId,
-      String buildingUnit,
-      dynamic unitId,
-      String? memberMobileNo,
-      ) async {
+    String firstName,
+    String userId,
+    dynamic memberId,
+    String buildingUnit,
+    dynamic unitId,
+    String? memberMobileNo,
+  ) async {
     final updatedMembers = Set<String>.from(_selectedMembersNotifier.value);
 
     if (_selectedMembersNotifier.value.contains(firstName)) {
@@ -335,7 +448,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   void _addMemberIds(dynamic memberId) {
-    final cleanedMemberIds = memberId.toString().split(',')
+    final cleanedMemberIds = memberId
+        .toString()
+        .split(',')
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
         .toList();
@@ -374,7 +489,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       isScrollable: false,
       pageTitle: 'Select Units/Members',
       pageBody: FutureBuilder<void>(
-        future: _initializeMembers(),
+        future: _initializeFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -401,7 +516,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           return _buildMainContent();
         },
       ),
-      floatingActionButton: _buildFloatingActionButton(),
+      bottomNavigationBar: ValueListenableBuilder<Set<String>>(
+        valueListenable: _selectedMembersNotifier,
+        builder: (context, selectedMember, _) {
+          return selectedMember.isEmpty
+              ? const SizedBox.shrink()
+              : _buildBottomBar(selectedMember);
+        },
+      ),
     );
   }
 
@@ -431,39 +553,39 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Widget _buildSelectionBar(Set<String> selectedMember) {
     return Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-    color: Theme.of(context).colorScheme.onSurface,
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    mainAxisSize: MainAxisSize.max,
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-    Text(
-    selectedMember.length > 1
-    ? "${selectedMember.first} +${selectedMember.length - 1}"
-        : selectedMember.first,
-      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-        fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.surface,
-      ),
-    ),
-      ElevatedButton.icon(
-        style: _buildElevatedButtonStyle(),
-        onPressed: () => _handleSelectionSubmit(selectedMember),
-        label: Text(
-          (selectedMember.length > 1) ? "Allow" : "Next",
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      color: Theme.of(context).colorScheme.onSurface,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            selectedMember.length > 1
+                ? "${selectedMember.first} +${selectedMember.length - 1}"
+                : selectedMember.first,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.surface,
+                ),
           ),
-        ),
-        icon: Icon(
-          Icons.navigate_before,
-          size: 32,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
+          ElevatedButton.icon(
+            style: _buildElevatedButtonStyle(),
+            onPressed: () => _handleSelectionSubmit(selectedMember),
+            label: Text(
+              (selectedMember.length > 1) ? "Allow" : "Next",
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+            ),
+            icon: Icon(
+              Icons.navigate_before,
+              size: 32,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ],
       ),
-    ],
-    ),
     );
   }
 
@@ -474,7 +596,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         Theme.of(context).colorScheme.surface,
       ),
       elevation: WidgetStateProperty.resolveWith<double>(
-            (Set<WidgetState> states) => states.contains(WidgetState.pressed) ? 8 : 0,
+        (Set<WidgetState> states) =>
+            states.contains(WidgetState.pressed) ? 8 : 0,
       ),
       shape: WidgetStateProperty.all<RoundedRectangleBorder>(
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -490,10 +613,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     log("Handling selection submit...");
     await saveMemberAndUnitToPrefs(selectedMember, selectedUnits);
 
+    // Validate the selection
     if (!_validateSelection(selectedMember)) return;
 
+    // Prepare the visitor log data
     final visitorLogData = await _prepareVisitorLogData();
-    await _processSelectionSubmission(selectedMember, visitorLogData);
+
+    if (_membersApproval) {
+      // If membersApproval is true, send FCM notification
+      log("Members approval is required. Sending notification...");
+      await _processSelectionSubmission(selectedMember, visitorLogData);
+    } else {
+      // If membersApproval is false, directly show the approval dialog
+      log("Members approval is not required. Directly showing approval dialog...");
+      await _showApprovedDialog(context, visitorLogData);
+    }
   }
 
   bool _validateSelection(Set<String> selectedMember) {
@@ -544,16 +678,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     await _showApprovedDialog(context, visitorLogData);
   }
 
-
-
-
   Future<void> _processSelectionSubmission(
-      Set<String> selectedMember,
-      VisitorLogMapper visitorLogData
-      ) async {
+      Set<String> selectedMember, VisitorLogMapper visitorLogData) async {
     final userId = selectedUserIds.first;
     final selectedMobileNumbers = await _getSelectedMobileNumbers();
-
     final requestData = _prepareRequestData(userId, selectedMobileNumbers);
 
     try {
@@ -565,13 +693,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<List<String>> _getSelectedMobileNumbers() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedMobileNumbersJson = prefs.getString('selected_member_mobile_numbers') ?? '[]';
-    final cleanedJson = savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
+    final savedMobileNumbersJson =
+        prefs.getString('selected_member_mobile_numbers') ?? '[]';
+    final cleanedJson =
+        savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
     return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
   }
 
-  Map<String, String> _prepareRequestData(String userId, List<String> savedMobileNumbers) {
-
+  Map<String, String> _prepareRequestData(
+      String userId, List<String> savedMobileNumbers) {
     return {
       'company_id': companyId.toString(),
       'name': widget.guestname,
@@ -590,9 +720,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _sendFcmNotification(
-      Map<String, String> requestData,
-      VisitorLogMapper visitorLogData
-      ) async {
+      Map<String, String> requestData, VisitorLogMapper visitorLogData) async {
     try {
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
@@ -602,9 +730,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       if (response.statusCode == 200) {
         log("FCM notification sent successfully: ${response.data}");
-        bool isWaitingForApproval =false;
+        bool isWaitingForApproval = false;
         setState(() => isWaitingForApproval = true);
-        await _showApprovedDialog(context,visitorLogData);
+        await _showApprovedDialog(context, visitorLogData);
       }
     } on DioError catch (e) {
       _handleDioError(e, visitorLogData);
@@ -626,10 +754,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  void _handleSubmissionError(dynamic error, VisitorLogMapper visitorLogData) async {
+  void _handleSubmissionError(
+      dynamic error, VisitorLogMapper visitorLogData) async {
     log("Unexpected error during submission: $error");
     await _showApprovedDialog(context, visitorLogData);
   }
+
   Future<void> setupAMQPReceiver() async {
     try {
       log("Initializing AMQP Receiver...");
@@ -639,7 +769,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         settings: ConnectionSettings(
           host: "65.1.230.119",
           authProvider:
-          const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
+              const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
         ),
       );
 
@@ -763,7 +893,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     });
   }
 
-  Future<void> _showApprovedDialog(BuildContext context, VisitorLogMapper data) async {
+  Future<void> _showApprovedDialog(
+      BuildContext context, VisitorLogMapper data) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -796,24 +927,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 CustomLargeBtn(
                   onPressed: () async {
                     try {
-                      // First perform the check-in
+                      // Perform the check-in and save visitor log details
                       await remoteDataSource.checkIn(data);
-
-                      // Use the existing savedMemberUnitDetails which was populated earlier
                       if (savedMemberUnitDetails.isNotEmpty) {
-                        // Log the data being sent
-                        log('Sending visitor log details: ${jsonEncode([savedMemberUnitDetails])}');
-
-                        await remoteDataSource.visitorLogDetails([savedMemberUnitDetails]);
-
-                        // Navigate to dashboard on success
-                      await   Navigator.pushReplacement(
+                        log('Sending visitor log details: ${jsonEncode([
+                              savedMemberUnitDetails
+                            ])}');
+                        await remoteDataSource
+                            .visitorLogDetails([savedMemberUnitDetails]);
+                        await Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const GateDashboardView()),
+                          MaterialPageRoute(
+                              builder: (context) => const GateDashboardView()),
                         );
                       } else {
                         log('Error: savedMemberUnitDetails is empty');
-                        // Show error toast or handle empty data case
                         Fluttertoast.showToast(
                           msg: "Error: Missing member details",
                           backgroundColor: Colors.red,
@@ -822,7 +950,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       }
                     } catch (e) {
                       log('Error in approved dialog: $e');
-                      // Show error toast
                       Fluttertoast.showToast(
                         msg: "Error processing approval",
                         backgroundColor: Colors.red,
@@ -831,7 +958,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     }
                   },
                   text: "Continue",
-                )
+                ),
               ],
             ),
           ),

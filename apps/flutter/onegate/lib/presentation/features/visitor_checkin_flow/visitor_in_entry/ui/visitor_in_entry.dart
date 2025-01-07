@@ -16,6 +16,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -26,9 +27,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:camera/camera.dart';
+
 
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
+import 'package:provider/provider.dart';
 
 class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory? selectedValue;
@@ -61,6 +65,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           DioSingleton.instance1,
           DioSingleton.instance2,
           DioSingleton.instance3))));
+  final remoteDataSource = RemoteDataSource(
+  DioSingleton.instance1,
+  DioSingleton.instance2,
+  DioSingleton.instance3);
   final GateStorage gateStorage = GateStorage();
   bool isText = true;
 
@@ -77,47 +85,34 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _guestCountController = TextEditingController(text: _guestCount.toString());
     if (widget.searchedVisitor != null) {
       guestName.text = widget.searchedVisitor!.name ?? "";
+      // _updateVisitor();
     }
     _initSpeech();
     _fetchCompanyId();
     _loadSelectedPurposesToGlobal();
+
   }
 
   void _initSpeech() async {
     _speechEnabled = await _speechToText.initialize();
     setState(() {});
   }
+//
+  Future<void> _updateVisitor(VisitorMapper visitor) async {
 
+    try {
+
+      await remoteDataSource.updateVisitor(visitor);
+    } catch (e) {
+      print("Error updating visitor: $e");
+    }
+  }
   Future<void> _fetchCompanyId() async {
     companyId = await gateStorage.getSocietyId();
     setState(() {});
   }
 
-  // void _startListening(String textControllerId) async {
-  //   _speechTextControllerId = textControllerId;
-  //   await _speechToText.listen(
-  //     onResult: _onSpeechResult,
-  //   );
-  //   setState(() {});
-  // }
 
-  void _stopListening() async {
-    await _speechToText.stop();
-    setState(() {});
-  }
-
-  // void _onSpeechResult(SpeechRecognitionResult result) {
-  //   setState(() {
-  //     switch (_speechTextControllerId) {
-  //       case 'guestName':
-  //         guestName.text = result.recognizedWords;
-  //         break;
-  //       case 'guestComingFrom':
-  //         guestComingFrom.text = result.recognizedWords;
-  //         break;
-  //     }
-  //   });
-  // }
   void _handleMicPress(String fieldId) async {
     final result = await showDialog<String>(
       context: context,
@@ -180,49 +175,90 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   //PickedFile? _imageFile;
 
   // ignore: body_might_complete_normally_nullable
-  Future<File?> _captureImageFromCamera() async {
-    // final picker = ImagePicker();
-    // try {
-    //   final image = await picker.pickImage(
-    //     source: ImageSource.camera,
-    //   );
-    //   return image;
-    // } catch (e) {
-    //   print('Error capturing image from camera: $e');
-    // }
-    final picker = ImagePicker();
+
+
+  Future<File?> _captureImageFromCamera(BuildContext context) async {
+    CameraController? cameraController;
+
     try {
-      final image = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 25,
+      // Access the selected camera preference from the provider
+      final cameraProvider = Provider.of<CameraSettingsProvider>(context, listen: false);
+      final selectedCameraValue = cameraProvider.selectedCameraValue;
+
+      // Fetch available cameras
+      final cameras = await availableCameras();
+      late CameraDescription selectedCamera;
+
+      // Select the appropriate camera
+      if (selectedCameraValue == 'front') {
+        selectedCamera = cameras.firstWhere(
+              (camera) => camera.lensDirection == CameraLensDirection.front,
+          orElse: () => throw Exception('Front camera not available'),
+        );
+      } else {
+        selectedCamera = cameras.firstWhere(
+              (camera) => camera.lensDirection == CameraLensDirection.back,
+          orElse: () => throw Exception('Back camera not available'),
+        );
+      }
+
+      // Initialize the camera controller
+      cameraController = CameraController(
+        selectedCamera,
+        ResolutionPreset.high,
+      );
+      await cameraController.initialize();
+
+      // Display camera preview
+      final XFile? image = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CameraPreviewScreen(cameraController: cameraController!),
+        ),
       );
 
       if (image == null) {
         // User canceled the capture
+        print('Capture canceled by user');
         return null;
       }
 
+      // Save the image locally
       final appDocDir = await getApplicationDocumentsDirectory();
-      final appDocPath = appDocDir.path;
+      final localImage = File('${appDocDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await File(image.path).copy(localImage.path);
 
-      final File localImage =
-          File('$appDocPath/${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-      await localImage.writeAsBytes(await image.readAsBytes());
-
-      final visitorUsecase = VisitorUsecase(VisitorRepoImpl(RemoteDataSource(
-          DioSingleton.instance1,
-          DioSingleton.instance2,
-          DioSingleton.instance3)));
-      visitorUsecase.uploadImage(localImage, widget.mobile, companyId!);
+      // Upload the image
+      await _uploadCapturedImage(localImage, context);
 
       return localImage;
     } catch (e) {
-      print('Error capturing and saving image from camera: $e');
+      print('Error capturing image: $e');
       return null;
+    } finally {
+      // Dispose of the camera controller
+      await cameraController?.dispose();
     }
   }
+  Future<void> _uploadCapturedImage(File localImage, BuildContext context) async {
+    try {
+      final visitorUsecase = VisitorUsecase(
+        VisitorRepoImpl(
+          RemoteDataSource(
+            DioSingleton.instance1,
+            DioSingleton.instance2,
+            DioSingleton.instance3,
+          ),
+        ),
+      );
 
+      // Replace `widget.mobile` and `companyId` with actual variables
+      await visitorUsecase.uploadImage(localImage, '1234567890', 1); // Replace with actual values
+      print('Image uploaded successfully!');
+    } catch (e) {
+      print('Error uploading image: $e');
+    }
+  }
   PurposeCategory? getEffectivePurposeCategory() {
     return widget.selectedValue ??
         (globalSelectedPurposes.isNotEmpty
@@ -268,7 +304,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               ),
             );
           } else if (state is VIENavigateToCameraState) {
-            final imageFile = await _captureImageFromCamera();
+            final imageFile = await _captureImageFromCamera(context);
             if (imageFile != null) {
               visitorInEntryBloc.add(VIECameraButtonPressedEvent(
                 purposeCategory: state.purposeCategory,
@@ -295,7 +331,21 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   'Purpose Entry - ${effectivePurpose.purpose_category_name}',
               pageBody: _buildPurposeForm(effectivePurpose),
               floatingActionButton: CustomLargeBtn(
-                onPressed: () {
+                onPressed: () async {
+                  final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+               final searched_id=   await prefs.getString('search_visitor_id');
+                  final VisitorMapper updatedVisitor = VisitorMapper(
+                    id: int.parse(searched_id.toString()),
+                      name: guestName.text,
+                      comingFrom: guestComingFrom.text,
+                      cardNumber: visitorNumber.text,
+                      guestCount: int.parse(_guestCountController.text),
+                      mobile:widget.mobile,
+                      VisitorMapperImage:""
+                  );
+
+               await    _updateVisitor(updatedVisitor);
                   if (isText == true) {
                     if (guestName.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -316,6 +366,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       setState(() {
                         isText = false;
                       });
+
+
                       visitorInEntryBloc.add(
                           VIEGuestFormSubmitButtonPressedEvent(
                               searchedVisitor: widget.searchedVisitor,
@@ -324,7 +376,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               guestCount: _guestCount,
                               purposeCategory: widget.selectedValue!,
                               mobile: widget.mobile ?? ""));
+
                     }
+
                   }
                 },
                 isText: isText,
@@ -801,6 +855,41 @@ class ListeningDialogState extends State<ListeningDialog>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+class CameraPreviewScreen extends StatelessWidget {
+  final CameraController cameraController;
+
+  const CameraPreviewScreen({Key? key, required this.cameraController}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Capture Image')),
+      body: Stack(
+        children: [
+          CameraPreview(cameraController), // Camera live feed
+          Positioned(
+            bottom: 20,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: FloatingActionButton(
+                onPressed: () async {
+                  try {
+                    final XFile image = await cameraController.takePicture();
+                    Navigator.pop(context, image); // Return the captured image
+                  } catch (e) {
+                    print('Error capturing image: $e');
+                  }
+                },
+                child: const Icon(Icons.camera),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -5,6 +5,9 @@ import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/staff/bloc/staff_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
@@ -54,6 +57,13 @@ void main() async {
           ),
           ChangeNotifierProvider<VisitorLogsProvider>(
             create: (_) => VisitorLogsProvider(), // Initialize your provider
+          ),
+          ChangeNotifierProvider<VisitorSettingsProvider>(
+            create: (_) => VisitorSettingsProvider(), // Initialize your provider
+          ), ChangeNotifierProvider<GateProvider>(
+            create: (_) => GateProvider(), // Initialize your provider
+          ),ChangeNotifierProvider<CameraSettingsProvider>(
+            create: (_) => CameraSettingsProvider(), // Initialize your provider
           ),
 
         ],

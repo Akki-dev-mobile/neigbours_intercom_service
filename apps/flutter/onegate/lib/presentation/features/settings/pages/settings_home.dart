@@ -8,6 +8,7 @@ import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
@@ -18,6 +19,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../self_entry/self_home_view.dart';
 import 'settings_gate.dart';
+import 'package:provider/provider.dart';
+
 
 class SettingsHome extends StatefulWidget {
   const SettingsHome({super.key});
@@ -50,11 +53,11 @@ class _SettingsHomeState extends State<SettingsHome> {
     _preferenceUtils.getTooglevalue();
   }
 
-  void _showCameraSettings(BuildContext context) async {
+  void _showCameraSettings(BuildContext context) {
     showModalBottomSheet(
       isScrollControlled: true,
       useSafeArea: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -64,15 +67,19 @@ class _SettingsHomeState extends State<SettingsHome> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
+            // Access the provider
+            final cameraProvider = Provider.of<CameraSettingsProvider>(context);
+            final _cameraValue = cameraProvider.selectedCameraValue;
+
             return Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
                 color: Theme.of(context).colorScheme.surface,
               ),
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,7 +89,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   ListView.builder(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shrinkWrap: true,
                     itemCount: _cameraItems.length,
                     itemBuilder: (context, index) {
@@ -90,7 +97,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
                         fillColor: WidgetStateProperty.all(
-                          Colors.red,
+                          Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(
                           item.label,
@@ -99,9 +106,11 @@ class _SettingsHomeState extends State<SettingsHome> {
                         value: item.value,
                         groupValue: _cameraValue,
                         onChanged: (value) {
-                          setState(() {
-                            _cameraValue = value!;
-                          });
+                          if (value != null) {
+                            setState(() {
+                              cameraProvider.updateCameraValue(value);
+                            });
+                          }
                         },
                       );
                     },
@@ -109,13 +118,10 @@ class _SettingsHomeState extends State<SettingsHome> {
                   CustomLargeBtn(
                     text: 'Confirm',
                     onPressed: () {
-                      setState(() {
-                        _cameraValue = _cameraValue;
-                      });
                       Navigator.pop(context);
                     },
                   ),
-                  SizedBox(height: 50.0),
+                  const SizedBox(height: 50.0),
                 ],
               ),
             );

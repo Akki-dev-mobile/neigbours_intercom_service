@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:flutter_onegate/common/apiHelper.dart';
 import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
+import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
+import 'package:provider/provider.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -98,22 +100,29 @@ class RemoteDataSource {
     return response.data['data'] ?? [];
   }
 
-
   Future<VisitorMapper?> searchVisitor(String mobileNumber) async {
-    final response = await _apiHelper.get(
-      '${Environment.baseUrl}/api/visitor/entry',
-      queryParameters: {'mobile_number': mobileNumber},
-    );
+    try {
+      final response = await _apiHelper.get(
+        '${Environment.baseUrl}/api/visitor/entry',
+        queryParameters: {'mobile_number': mobileNumber},
+      );
 
-    final List<dynamic> data = response.data["data"] ?? [];
-    if (data.isNotEmpty) {
-      return VisitorMapper.fromJson(data.first);
+      final List<dynamic> data = response.data["data"] ?? [];
+      if (data.isNotEmpty) {
+        log("data--$data");
+
+        final visitor = VisitorMapper.fromJson(data.first);
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('search_visitor_id', visitor.id.toString());
+
+        return visitor;
+      }
+    } catch (e) {
+      log("Error searching visitor: $e");
     }
+
     return null;
   }
-
-
-
 
   //Pending++++++++++++++
   Future<List<PurposeCategory>?> fetchPurpose() async {
@@ -140,16 +149,19 @@ class RemoteDataSource {
       };
 
       // Make the POST request to the API
-      final response = await _apiHelper.post('${Environment.baseUrl}/api/visitor/entry', data: data);
+      final response = await _apiHelper.post(
+        '${Environment.baseUrl}/api/visitor/entry',
+        data: data,
+      );
 
       // Parse the response and map it to VisitorMapper
       final visitorData = response.data['data'];
-      final visitorId = visitorData['visitor_id'] as int?;
-log("createvisitorresponse $response");
-      // Save the visitor ID in SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('visitorId', visitorId.toString());
-print("$visitorId visitorId");
+      final visitorId = visitorData['visitor_id'] as int;
+      log("createvisitorresponse $response");
+
+      GlobalStorage.visitorId = visitorId.toString();
+
+      print("$visitorId visitorId");
       // Return the VisitorMapper instance
       log("createdVisitor:$response");
       return VisitorMapper(
@@ -162,6 +174,44 @@ print("$visitorId visitorId");
       // Handle any errors
       log('Error creating visitor: $error');
       return null;
+    }
+  }
+
+  Future<bool> updateVisitor(VisitorMapper visitor) async {
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final searchedVisitorId=  prefs.getString('search_visitor_id');    try {
+      final url = 'http://gateapi.cubeone.in/api/visitor/entry/$searchedVisitorId';
+
+      // Prepare the request payload
+      final data = {
+        "name": visitor.name,
+        "mobile_number": visitor.mobile ?? "",
+      };
+
+      // Send the PATCH request
+      final response = await Dio().patch(
+        url,
+        data: data,
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+          },
+        ),
+      );
+
+      // Check for success response
+      if (response.statusCode == 200) {
+        print("Visitor updated successfully!");
+        return true;
+      } else {
+        print(
+            "Failed to update visitor: ${response.statusCode} - ${response.data}");
+        return false;
+      }
+    } catch (e) {
+      print("Error updating visitor: $e");
+      return false;
     }
   }
 
@@ -249,7 +299,6 @@ print("$visitorId visitorId");
     return null;
   }
 
-
   String formatDateTime(DateTime dateTime) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
     return formatter.format(dateTime);
@@ -272,13 +321,16 @@ print("$visitorId visitorId");
       data['visitor_check_in'] =
           formatDateTime(visitorLog.visitorCheckIn ?? DateTime.now());
       if (visitorLog.visitorCheckOut != null) {
-        data['visitor_check_out'] =
-            formatDateTime(visitorLog.visitorCheckOut!);
+        data['visitor_check_out'] = formatDateTime(visitorLog.visitorCheckOut!);
       }
+
+      // Load the selected gate from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName = prefs.getString('selected_gate');
 
       // Add additional fields dynamically
       data.addAll({
-        'in_gate': "A-wing", // Example dynamic field
+        'in_gate': selectedGateName.toString(), // Example dynamic field
         'visitor_purpose_sub_category_id': 1,
         'visitor_card_id': 1,
         'id': 1,
@@ -306,12 +358,12 @@ print("$visitorId visitorId");
         final responseData = response.data;
         if (responseData['success'] == true && responseData['data'] != null) {
           final VisitorLogMapper result =
-          VisitorLogMapper.fromJson(responseData['data']);
+              VisitorLogMapper.fromJson(responseData['data']);
           print("VisitorLog created: ${visitorLog.toJson()}");
 
           // Save visitor log ID globally if needed
-          GlobalStorage.visitorLogId = responseData['data']['visitor_log_id'].toString();
-          GlobalStorage.visitorId = responseData['data']['visitor_id'].toString();
+          GlobalStorage.visitorLogId =
+              responseData['data']['visitor_log_id'].toString();
           print("Saved Visitor Log ID: ${GlobalStorage.visitorLogId}");
           print("Saved Visitor Log ID: ${GlobalStorage.visitorId}");
 
@@ -339,7 +391,6 @@ print("$visitorId visitorId");
 
     return null; // Return null if the check-in fails
   }
-
 
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
@@ -473,32 +524,51 @@ print("$visitorId visitorId");
     }
   }
 
-  Future<void> checkoutVisitor(String visitorId) async {
-    final data = {'visitor_log_id': visitorId};
-
-    await _apiHelper.patch('${Environment.baseUrl}/api/visitor/checkout', data: data);
-  }
+  //
+  // Future<void> checkoutVisitor(String visitorId) async {
+  //   // Load the selected gate from SharedPreferences
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final selectedGateName = prefs.getString('selected_gate');
+  //
+  //   final data = {
+  //
+  //     'visitor_log_id': visitorId,
+  //     "out_gate": selectedGateName.toString()
+  //
+  //
+  //   };
+  //
+  //   await _apiHelper.patch('${Environment.baseUrl}/api/visitor/checkout', data: data);
+  // }
 //NOt in use
   Future<bool> checkOut(VisitorLog visitorLog) async {
     try {
-      final result = await client.visitorLog.checkOut(visitorLog);
-      print("checkOut: ${result.toString()}");
-      return result;
-    } catch (e) {
-      print(e.toString());
-    }
-    return false;
-  }
+      // Load the selected gate from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName = prefs.getString('selected_gate');
 
-  Future<bool> updateVisitor(VisitorMapper visitor) async {
-    // try {
-    //   final result = await client.visitor.updateVisitor(visitor);
-    //   print("visitor update: ${result.toString()}");
-    //   return result;
-    // } catch (e) {
-    //   print(e.toString());
-    // }
-    return false;
+      // Prepare the data payload
+      final data = {
+        'visitor_log_id': visitorLog.id.toString(),
+        'out_gate': selectedGateName ?? 'Unknown Gate', // Handle null gate name
+      };
+
+      // Send the API request
+      final response = await _apiHelper
+          .patch('${Environment.baseUrl}/api/visitor/checkout', data: data);
+
+      // If the response is successful, return true
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        log('Check-out failed: ${response.statusCode} - ${response.data}');
+        return false;
+      }
+    } catch (e) {
+      // Handle any errors
+      log('Error during check-out: $e');
+      return false;
+    }
   }
 
   Future<String?> uploadFile(
@@ -566,6 +636,8 @@ print("$visitorId visitorId");
   Future<void> exportLogs(List<Map<String, dynamic>> visitorData) async {
     try {
       final companyId = await gateStorage.getSocietyId();
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName = prefs.getString('selected_gate');
 
       final payload = {
         "company_id": companyId,
@@ -574,6 +646,7 @@ print("$visitorId visitorId");
         "from_date": visitorData[0]["from_date"],
         "to_date": visitorData[0]["to_date"],
         "visitor_logs": visitorData,
+        "in_gate": "A Gate"
       };
 
       print("Payload: ${payload.toString()}");
@@ -672,12 +745,12 @@ print("$visitorId visitorId");
       }
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      final visitorId = await prefs.getString('visitorId');
+      final searchedVisitor = await prefs.getString("searched_visitor_id");
 
       log("this is${GlobalStorage.visitorLogId}");
       final payload = {
         "visitor_log_id": GlobalStorage.visitorLogId,
-        "visitor_id": GlobalStorage.visitorLogId,
+        "visitor_id": GlobalStorage.visitorId ?? searchedVisitor ,
         "company_name": companyName,
         "member_id": memberIds[0],
         "member_name": memberDetails[0],
@@ -706,11 +779,6 @@ print("$visitorId visitorId");
         print("Response: ${response.data}");
       } else {
         print("Response Error: ${response.data}");
-        // Fluttertoast.showToast(
-        //   msg: "Failed to send logs: ${response.statusMessage}",
-        //   backgroundColor: Colors.red,
-        //   textColor: Colors.white,
-        // );
       }
     } catch (e) {
       if (e is DioError) {
@@ -739,6 +807,7 @@ print("$visitorId visitorId");
 
     return response.data['data'] ?? [];
   }
+
   Future<List<dynamic>> getMembersList() async {
     final int? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');
@@ -750,6 +819,7 @@ print("$visitorId visitorId");
 
     return response.data['data'] ?? [];
   }
+
   Future<String?> sendOTP(String mobileNumber) async {
     try {
       final response = await _dio1?.get('/sms/verification-code',
@@ -791,6 +861,7 @@ print("$visitorId visitorId");
     }
   }
 }
+
 class GlobalStorage {
   static String? _visitorLogId; // Private field for visitorLogId
   static String? _visitorId; // Private field for visitorId

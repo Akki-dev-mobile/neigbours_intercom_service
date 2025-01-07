@@ -10,6 +10,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
@@ -130,8 +131,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             final successState = state as VisitorLogSuccessState;
             final visitorLogs = successState.visitorLogs;
             List<VisitorLog> filteredVisitors = visitorLogs!
-                .where((visitorLog) => visitorLog.visitor!.name
-                .toLowerCase()
+                .where((visitorLog) => visitorLog.visitor_coming_from
+                !.toLowerCase()
                 .contains(_searchText!.toLowerCase()))
                 .toList();
 
@@ -379,7 +380,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       },
     );
   }
-
 
   Future<void> _showExportDialog(
       BuildContext context, List<VisitorLog> visitorLogs) async {

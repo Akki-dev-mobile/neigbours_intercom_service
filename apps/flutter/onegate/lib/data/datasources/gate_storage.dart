@@ -152,4 +152,11 @@ class GateStorage {
     await prefs.remove(_visitorLogIdKey);
     print("VisitorLog ID removed from SharedPreferences");
   }
+  bool? getTooglevalue(String key) {
+    return _prefs?.getBool(key);
+  }
+
+  Future<void> setToogleValue(String key, bool value) async {
+    await _prefs?.setBool(key, value);
+  }
 }
