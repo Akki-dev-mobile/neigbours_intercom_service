@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'dart:developer';
+
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:dio/dio.dart';
@@ -12,6 +14,7 @@ import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
@@ -23,13 +26,14 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher.dart';import 'package:provider/provider.dart';
+
 
 class VisitorLogView extends StatefulWidget {
   String id;
   final List<String> logList;
   final String? selectedBuilding;
-
+int? societyID;
   VisitorLogView({
     required this.id,
     required this.logList,
@@ -48,7 +52,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   final gateStorage = GateStorage();
   final remoteDataSource = RemoteDataSource(
       DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
-
+var societyId;
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
       VisitorLogRepositoryImpl(
@@ -77,11 +81,17 @@ class _VisitorLogViewState extends State<VisitorLogView> {
         _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
         break;
     }
+    _initializeSocietyId();
   }
 
   //init a scroll controller
   final ScrollController _scrollController = ScrollController();
 
+  Future<void> _initializeSocietyId() async {
+      societyId = await gateStorage.getSocietyId();
+    log('Society ID: $societyId');
+
+  }
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
@@ -535,29 +545,45 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               actions: [
                 CustomLargeBtn(
                   onPressed: () async {
-                    if (exportFormKey.currentState!.validate() &&
-                        startDate != null &&
-                        endDate != null) {
-                      await prefs.setString('email', emailController.text);
+              if (exportFormKey.currentState!.validate() && startDate != null && endDate != null) {
+                await prefs.setString('email', emailController.text);
 
-                      final formattedFromDate =
-                          DateFormat('yyyy-MM-dd').format(startDate!);
-                      final formattedToDate =
-                          DateFormat('yyyy-MM-dd').format(endDate!);
+                final formattedFromDate =
+                DateFormat('yyyy-MM-dd').format(startDate!);
+                final formattedToDate =
+                DateFormat('yyyy-MM-dd').format(endDate!);
 
-                      var visitorData = visitorLogs.map((visitor) {
-                        return {
-                          "name": nameController.text,
-                          "visitor_count": visitor.visitor_count ?? 1,
-                          "to_mail": emailController.text,
-                          "from_date": formattedFromDate,
-                          "to_date": formattedToDate,
-                        };
-                      }).toList();
+                final gateProvider = Provider.of<GateProvider>(context, listen: false);
+                final selectedGate = gateProvider.selectedGate;
 
-                      await remoteDataSource.exportLogs(visitorData);
-                      Navigator.of(context).pop();
-                    } else {
+                // Construct the data for export
+                final visitorData = {
+                  "company_id": societyId,
+                  "name": nameController.text,
+                  "to_mail": emailController.text,
+                  "from_date": formattedFromDate,
+                  "to_date": formattedToDate,
+                  "in_gate": selectedGate?["gate_name"]?.toString(),
+                };
+
+                try {
+                  await remoteDataSource.exportLogs(visitorData);
+                  Fluttertoast.showToast(
+                    msg: "Visitor logs exported successfully!",
+                    backgroundColor: Colors.green,
+                    textColor: Colors.white,
+                  );
+                  Navigator.pop(context);
+                } catch (e) {
+                  // Fluttertoast.showToast(
+                  //   msg: "Failed to export visitor logs: $e",
+                  //   backgroundColor: Colors.red,
+                  //   textColor: Colors.white,
+                  // );
+                  Navigator.pop(context);
+                }
+              }
+                      else {
                       Fluttertoast.showToast(
                         msg: "Please fill From and Todate field",
                         toastLength: Toast.LENGTH_SHORT,

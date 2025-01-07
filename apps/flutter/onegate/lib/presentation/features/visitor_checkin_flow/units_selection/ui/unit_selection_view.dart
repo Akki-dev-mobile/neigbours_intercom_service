@@ -73,6 +73,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<int> selectedUnits = {};
   List<dynamic> _allMembers = [];
   int? companyId;
+  String? companyName;
   bool isLoading = true;
   Map<String, dynamic> savedMemberUnitDetails = {};
   Set<String> selectedUserIds = {};
@@ -83,6 +84,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   String? approvalStatus = "Waiting for approval...";
   bool _membersApproval = false;
   late Future<void> _initializeFuture;
+
 
   @override
   void initState() {
@@ -107,6 +109,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   // API Methods
   Future<void> _fetchCompanyId() async {
     companyId = await gateStorage.getSocietyId();
+    final companyDetails = await gateStorage.getSocietyDetails();
+    companyName = companyDetails['societyName'];
+
     setState(() {});
   }
 
@@ -236,12 +241,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 const Icon(Icons.people),
                 const SizedBox(width: 8),
                 Text(
-                  '${selectedMember.length} Selected',
+                  selectedMember.length  > 1 ?
+
+                  '${selectedMember.length} Selected' : selectedMember.first,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
             ),
-            const Icon(Icons.keyboard_arrow_up),
+            const
+
+
+            Icon(Icons.keyboard_arrow_up),
           ],
         ),
       ),
@@ -496,7 +506,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  SizedBox(height: 112,),
+                  CircularProgressIndicator(color: Colors.grey,),
                   SizedBox(height: 16),
                   Text(
                     "Loading Units and Members...",
@@ -641,6 +652,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<VisitorLogMapper> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
+    final companyDetails = await gateStorage.getSocietyDetails();
+    final companyName = companyDetails['societyName'];
 
     return VisitorLogMapper(
       visitorId: widget.visitorId ?? int.parse(visitorId!),
@@ -654,12 +667,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       visitorCardId: null,
       companyId: companyId!,
       isCheckedOut: false,
+      memberDetails:[savedMemberUnitDetails],
+      companyName: companyName
+
     );
   }
 
   void _handleInvalidSelection() async {
     final prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
+    final companyDetails = await gateStorage.getSocietyDetails();
+    final companyName = companyDetails['societyName'];
 
     final visitorLogData = VisitorLogMapper(
       visitorId: widget.visitorId ?? int.parse(visitorId!),
@@ -673,6 +691,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       visitorCardId: null,
       companyId: companyId!,
       isCheckedOut: false,
+        memberDetails:[savedMemberUnitDetails],
+        companyName: companyName
+
     );
 
     await _showApprovedDialog(context, visitorLogData);
@@ -702,6 +723,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Map<String, String> _prepareRequestData(
       String userId, List<String> savedMobileNumbers) {
+
     return {
       'company_id': companyId.toString(),
       'name': widget.guestname,
@@ -711,12 +733,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'user_id': (int.tryParse(userId) ?? 5243243).toString(),
       'visitor_count': widget.guestCount?.toString() ?? "1",
       "member_mobile_number": "918452060059",
-      "member_id": selectedMemberIds.first.toString(),
       "visitor_id": widget.visitorId?.toString() ?? "",
       "purpose_category": widget.purposeCategory.id?.toString() ?? "",
       'purpose_details': "zomato",
       'coming_from': widget.comingFrom ?? "Unknown",
-    };
+      "member_details": selectedMembers.isNotEmpty
+          ? selectedMembers.join(',')
+          : "", "company_name":companyName ?? ""    };
+
   }
 
   Future<void> _sendFcmNotification(
@@ -848,7 +872,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent dismissing the dialog
+      barrierDismissible: false,
       builder: (_) {
         return AlertDialog(
           title: const Text("Approval Status"),
@@ -873,7 +897,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             if (approvalStatus == "Approved" || approvalStatus == "Rejected")
               TextButton(
                 onPressed: () {
-                  // Clear `approvalStatus` and close the dialog
                   setState(() {
                     approvalStatus = null;
                   });
@@ -885,7 +908,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         );
       },
     ).then((_) {
-      // Ensure `approvalStatus` is cleared if the dialog is dismissed in other ways
       setState(() {
         Navigator.push(context,
             MaterialPageRoute(builder: (context) => const GateDashboardView()));
@@ -916,7 +938,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  "Approved!",
+                  "Visitor Checked In Successfully ",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -927,7 +949,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 CustomLargeBtn(
                   onPressed: () async {
                     try {
-                      // Perform the check-in and save visitor log details
+
                       await remoteDataSource.checkIn(data);
                       if (savedMemberUnitDetails.isNotEmpty) {
                         log('Sending visitor log details: ${jsonEncode([

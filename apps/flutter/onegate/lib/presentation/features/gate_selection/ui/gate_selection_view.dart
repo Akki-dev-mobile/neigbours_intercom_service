@@ -1,5 +1,6 @@
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -28,13 +29,13 @@ class GateSelectionView extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
-                ...List.generate(provider.gates.length, (index) {
+                ...List.generate(provider.gates!.length, (index) {
                   return GateSettingListTile(
-                    switchValue: provider.gates[index]['isSelected'],
-                    onChanged: (value) => provider.selectGate(index),
-                    title: provider.gates[index]['gate_name'] ?? 'Unknown Gate',
+                    switchValue: provider.gates![index]['isSelected'],
+                    onChanged: (value) =>  provider.selectGate(index),
+                    title: provider.gates![index]['gate_name'] ?? 'Unknown Gate',
                     subtitle:
-                    'Enable/Disable ${provider.gates[index]['gate_name']}',
+                    'Enable/Disable ${provider.gates![index]['gate_name']}',
                     leadingIcon: Symbols.gate,
                   );
                 }),
@@ -53,7 +54,7 @@ class GateSelectionView extends StatelessWidget {
                     print("No gate selected");
                     SnackBar(content: Text("Gate Changed to ${selectedGate?['gateName']}"),);
                   }
-                  Navigator.pop(context);
+   Navigator.push(context, MaterialPageRoute(builder: (context) => GateDashboardView()));
                 },
               ),
             ),

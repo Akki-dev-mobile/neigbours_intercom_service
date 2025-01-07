@@ -25,11 +25,11 @@ class GateProvider with ChangeNotifier {
 
   Future<void> _initialize() async {
     if (!isLoading && gates.isEmpty) {
-      await _loadGates();
+      await loadGates();
     }
   }
 
-  Future<void> _loadGates() async {
+  Future<void> loadGates() async {
     isLoading = true; // Start loading
     notifyListeners();
 

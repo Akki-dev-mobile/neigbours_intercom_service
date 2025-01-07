@@ -48,6 +48,15 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       if (response) {
         if (event.screenType == 'Visitor In') {
           emit(VisitorCheckInLogSuccessState());
+        } else if (event.screenType == "In Out Book") {
+
+          DateTime today = DateTime.now();
+
+          // Get today's date in the desired format (yyyy-MM-dd)
+          String formattedDate = getFormattedDate(today);
+          final visitorLogs = await visitorLogUseCase.fetchAllLogs(
+              _preferenceUtils.getSelectedCompany()?.companyId ?? 0, formattedDate);
+          emit(VisitorLogSuccessState(visitorLogs));
         } else {
           emit(VisitorCheckOutLogSuccessState());
         }

@@ -1,5 +1,6 @@
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:provider/provider.dart';
@@ -54,11 +55,7 @@ class VisitorSettingsView extends StatelessWidget {
                       text: 'Confirm',
                       onPressed: () {
                         provider.saveChanges();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Changes saved successfully!"),
-                          ),
-                        );
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => GateDashboardView()));
                       },
                     )
                   : null);

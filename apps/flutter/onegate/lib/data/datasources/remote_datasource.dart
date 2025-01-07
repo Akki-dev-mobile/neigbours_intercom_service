@@ -181,7 +181,7 @@ class RemoteDataSource {
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final searchedVisitorId=  prefs.getString('search_visitor_id');    try {
-      final url = 'http://gateapi.cubeone.in/api/visitor/entry/$searchedVisitorId';
+      final url = 'https://gateapi.cubeone.in/api/visitor/entry/$searchedVisitorId';
 
       // Prepare the request payload
       final data = {
@@ -334,6 +334,7 @@ class RemoteDataSource {
         'visitor_purpose_sub_category_id': 1,
         'visitor_card_id': 1,
         'id': 1,
+
       });
 
       print("Final Payload: $data");
@@ -633,27 +634,19 @@ class RemoteDataSource {
     }
   }
 
-  Future<void> exportLogs(List<Map<String, dynamic>> visitorData) async {
+  Future<void> exportLogs(Map<String, dynamic> visitorData) async {
     try {
       final companyId = await gateStorage.getSocietyId();
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName = prefs.getString('selected_gate');
 
-      final payload = {
-        "company_id": companyId,
-        "to_mail": visitorData[0]["to_mail"],
-        "to_name": visitorData[0]["name"],
-        "from_date": visitorData[0]["from_date"],
-        "to_date": visitorData[0]["to_date"],
-        "visitor_logs": visitorData,
-        "in_gate": "A Gate"
-      };
 
-      print("Payload: ${payload.toString()}");
+
+      print("Payload: ${visitorData.toString()}");
 
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendLogs',
-        data: payload,
+        data: visitorData,
         options: Options(
           headers: {"Content-Type": "application/json"},
         ),
@@ -745,12 +738,15 @@ class RemoteDataSource {
       }
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      final searchedVisitor = await prefs.getString("searched_visitor_id");
+      final searchedVisitor = await prefs.getString("search_visitor_id");
 
       log("this is${GlobalStorage.visitorLogId}");
+      log("this is $searchedVisitor");
       final payload = {
         "visitor_log_id": GlobalStorage.visitorLogId,
-        "visitor_id": GlobalStorage.visitorId ?? searchedVisitor ,
+        "visitor_id": (GlobalStorage.visitorId == null || GlobalStorage.visitorId!.isEmpty)
+            ? searchedVisitor
+            : GlobalStorage.visitorId,
         "company_name": companyName,
         "member_id": memberIds[0],
         "member_name": memberDetails[0],

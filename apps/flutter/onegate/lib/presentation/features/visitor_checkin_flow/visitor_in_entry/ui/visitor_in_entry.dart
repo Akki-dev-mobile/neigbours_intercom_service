@@ -859,10 +859,70 @@ class ListeningDialogState extends State<ListeningDialog>
     );
   }
 }
-class CameraPreviewScreen extends StatelessWidget {
+
+
+
+
+class CameraPreviewScreen extends StatefulWidget {
   final CameraController cameraController;
 
-  const CameraPreviewScreen({Key? key, required this.cameraController}) : super(key: key);
+  const CameraPreviewScreen({
+    Key? key,
+    required this.cameraController,
+  }) : super(key: key);
+
+  @override
+  _CameraPreviewScreenState createState() => _CameraPreviewScreenState();
+}
+
+class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
+  late CameraController _cameraController;
+  late CameraDescription _currentCamera;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCamera = widget.cameraController.description;
+    _cameraController = widget.cameraController;
+  }
+
+  Future<void> _switchCamera() async {
+    try {
+      // Get the list of available cameras
+      final cameras = await availableCameras();
+
+      // Determine the new camera to switch to
+      final CameraDescription newCamera = cameras.firstWhere(
+            (camera) => camera.lensDirection == (_currentCamera.lensDirection == CameraLensDirection.front
+            ? CameraLensDirection.back
+            : CameraLensDirection.front),
+      );
+
+      // Dispose of the current camera controller
+      await _cameraController.dispose();
+
+      // Initialize a new controller for the selected camera
+      final CameraController newController = CameraController(
+        newCamera,
+        ResolutionPreset.high,
+      );
+
+      await newController.initialize();
+
+      setState(() {
+        _cameraController = newController;
+        _currentCamera = newCamera;
+      });
+    } catch (e) {
+      print('Error switching cameras: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -870,23 +930,36 @@ class CameraPreviewScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Capture Image')),
       body: Stack(
         children: [
-          CameraPreview(cameraController), // Camera live feed
+          _cameraController.value.isInitialized
+              ? CameraPreview(_cameraController) // Camera live feed
+              : const Center(child: CircularProgressIndicator()), // Loading state
           Positioned(
             bottom: 20,
             left: 0,
             right: 0,
-            child: Center(
-              child: FloatingActionButton(
-                onPressed: () async {
-                  try {
-                    final XFile image = await cameraController.takePicture();
-                    Navigator.pop(context, image); // Return the captured image
-                  } catch (e) {
-                    print('Error capturing image: $e');
-                  }
-                },
-                child: const Icon(Icons.camera),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Switch camera button
+                FloatingActionButton(
+                  heroTag: 'switchCamera',
+                  onPressed: _switchCamera,
+                  child: const Icon(Icons.switch_camera),
+                ),
+                // Capture button
+                FloatingActionButton(
+                  heroTag: 'captureImage',
+                  onPressed: () async {
+                    try {
+                      final XFile image = await _cameraController.takePicture();
+                      Navigator.pop(context, image); // Return the captured image
+                    } catch (e) {
+                      print('Error capturing image: $e');
+                    }
+                  },
+                  child: const Icon(Icons.camera),
+                ),
+              ],
             ),
           ),
         ],

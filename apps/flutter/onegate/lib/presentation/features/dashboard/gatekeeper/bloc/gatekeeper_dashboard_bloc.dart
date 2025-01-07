@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
@@ -108,18 +109,30 @@ class GatekeeperDashboardBloc
       // }).toList();
       //
       // final int inBook = todayCheckedInVisitors.length;
-      final List<VisitorLog>? checkedInVisitors =
-          await _visitorLogUsecase.fetchCheckInVisitorLog(
-              _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-              DateTime.now().toString());
-      final int inBook = checkedInVisitors!.length;
+      final gateStorage = GateStorage();
+      final int? companyId =  await gateStorage.getSocietyId();
+      final DateTime today = DateTime.now();
 
-      final List<VisitorLog>? checkedOutVisitors =
-          await _visitorLogUsecase.fetchCheckOutLogs(
-              _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-              DateTime.now().toString());
-      final int outBook = checkedOutVisitors!.length;
+      final List<VisitorLog>? allCheckedInVisitors =
+      await _visitorLogUsecase.fetchCheckInVisitorLog(companyId!,today.toString());
+      final List<VisitorLog> todaysCheckedInVisitors = allCheckedInVisitors?.where((visitor) {
+        final DateTime checkInDate = DateTime.parse(visitor.visitor_check_in.toString()); // Replace 'timestamp' with actual field
+        return checkInDate.year == today.year &&
+            checkInDate.month == today.month &&
+            checkInDate.day == today.day;
+      }).toList() ?? [];
+      final int inBook = todaysCheckedInVisitors.length;
 
+      // Fetch all check-out logs and filter for today
+      final List<VisitorLog>? allCheckedOutVisitors =
+      await _visitorLogUsecase.fetchCheckOutLogs(companyId,today.toString());
+      final List<VisitorLog> todaysCheckedOutVisitors = allCheckedOutVisitors?.where((visitor) {
+        final DateTime checkOutDate = DateTime.parse(visitor.visitor_check_out.toString()); // Replace 'timestamp' with actual field
+        return checkOutDate.year == today.year &&
+            checkOutDate.month == today.month &&
+            checkOutDate.day == today.day;
+      }).toList() ?? [];
+      final int outBook = todaysCheckedOutVisitors.length;
       emit(GatekeeperDashboardSuccessState(inBook: inBook, outBook: outBook));
     } catch (e) {
       print(e.toString());

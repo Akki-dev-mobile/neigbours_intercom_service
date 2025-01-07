@@ -6,6 +6,8 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
@@ -20,7 +22,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../self_entry/self_home_view.dart';
 import 'settings_gate.dart';
 import 'package:provider/provider.dart';
-
 
 class SettingsHome extends StatefulWidget {
   const SettingsHome({super.key});
@@ -37,6 +38,8 @@ class _SettingsHomeState extends State<SettingsHome> {
   String? selectedGate;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   Gate? selectedGateObj;
+  String? selectedGateName;
+  String? cameraValue;
 
   List<String> options = [
     'Gate 1',
@@ -51,6 +54,8 @@ class _SettingsHomeState extends State<SettingsHome> {
     super.initState();
     selectedGateObj = _preferenceUtils.getSelectedGate();
     _preferenceUtils.getTooglevalue();
+    getSelectedGate();
+    getCameraValue();
   }
 
   void _showCameraSettings(BuildContext context) {
@@ -69,7 +74,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           builder: (BuildContext context, StateSetter setState) {
             // Access the provider
             final cameraProvider = Provider.of<CameraSettingsProvider>(context);
-            final _cameraValue = cameraProvider.selectedCameraValue;
+            _cameraValue = cameraProvider.selectedCameraValue;
 
             return Container(
               decoration: BoxDecoration(
@@ -118,7 +123,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                   CustomLargeBtn(
                     text: 'Confirm',
                     onPressed: () {
-                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => GateDashboardView()));
                     },
                   ),
                   const SizedBox(height: 50.0),
@@ -372,8 +377,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           PrimarySettingsTile(
             icon: Ionicons.people_outline,
             title: 'Staffs',
-            subtitle:
-                'View your society staffs',
+            subtitle: 'View your society staffs',
             onTap: () {
               Navigator.push(
                 context,
@@ -383,11 +387,11 @@ class _SettingsHomeState extends State<SettingsHome> {
               );
             },
           ),
+
           PrimarySettingsTile(
             icon: Ionicons.grid_outline,
             title: 'Gate Settings',
-            subtitle:
-                'Current Preference: ${selectedGateObj?.gateName ?? "Gate 1"}',
+            subtitle: 'Current Preference: ${ selectedGateName ?? "Not Selected Gate"}',
             onTap: () {
               Navigator.push(
                 context,
@@ -451,7 +455,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           PrimarySettingsTile(
             icon: Ionicons.camera_outline,
             title: 'Camera Settings',
-            subtitle: "Current Preference: ${_cameraValue ?? "Back Camera"}",
+            subtitle: "Current Preference: ${cameraValue ?? "Not Selected Camera"}",
             onTap: () {
               _showCameraSettings(context);
             },
@@ -556,6 +560,20 @@ class _SettingsHomeState extends State<SettingsHome> {
       context,
       MaterialPageRoute(builder: (context) => const MyAppLogin()),
     );
+  }
+
+  Future<void> getSelectedGate() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedGateName = prefs.getString('selected_gate');
+    });
+  }
+  Future<void> getCameraValue() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      cameraValue = prefs.getString('selected_camera');
+    });
+
   }
 }
 
