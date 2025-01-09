@@ -74,6 +74,7 @@ class VisitorInEntryBloc
 
     else {
       emit(VIENavigateToUnitSelectionState(
+        // event.guestName!,
         event.searchedVisitor!,
         event.purposeCategory,
       ));
@@ -84,7 +85,7 @@ class VisitorInEntryBloc
 
   Future<void> vieCameraButtonPressedEvent(VIECameraButtonPressedEvent event,
       Emitter<VisitorInEntryState> emit) async {
-    emit(VisitorInEntryLoadingState());
+    // emit(VisitorInEntryLoadingState());
 
     try {
       final imageUrl = await _visitorUsecase.uploadImage(

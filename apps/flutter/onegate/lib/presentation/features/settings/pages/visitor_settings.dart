@@ -48,6 +48,15 @@ class VisitorSettingsView extends StatelessWidget {
                     title: "Gate Id",
                     subtitle: "Set gate id as mandatory",
                   ),
+
+                  GateSettingListTile(
+                    switchValue: provider.visitorCardNumber,
+                    onChanged: (value) {
+                      provider.updateVisitorCardNumber(value);
+                    },
+                    title: "Visitor Card Number",
+                    subtitle: "Set visitor card number as mandatory",
+                  ),
                 ],
               ),
               floatingActionButton: hasChanges

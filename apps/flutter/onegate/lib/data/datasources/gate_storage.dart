@@ -30,6 +30,26 @@ class GateStorage {
     await prefs.setString(_accessTokenKey, token);
   }
 
+  // static const String _societyIdKey = 'society_id';
+  static const String _societyNameKey = 'society_name';
+
+  Future<void> saveSocietyDetails(String societyId, String? societyName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_societyIdKey, societyId);
+    if (societyName != null) {
+      await prefs.setString(_societyNameKey, societyName);
+    }
+  }
+
+  Future<void> saveSocietyId(String societyId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_societyIdKey, societyId);
+  }
+
+  Future<String?> getSocietyId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_societyIdKey);
+  }
   Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_accessTokenKey);
@@ -71,16 +91,16 @@ class GateStorage {
     await prefs.setString(_roleKey, role);
   }
 
-  Future<void> saveSocietyDetails(int societyId, String societyName) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_societyIdKey, societyId);
-    await prefs.setString('societyName', societyName);
-  }
+  // Future<void> saveSocietyDetails(int societyId, String societyName) async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   await prefs.setInt(_societyIdKey, societyId);
+  //   await prefs.setString('societyName', societyName);
+  // }
 
-  Future<Map<String, dynamic>> getSocietyDetails() async {
+  Future<Map> getSocietyDetails() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final societyId = prefs.getInt('societyId');
-    final societyName = prefs.getString('societyName');
+    final societyName = prefs.getString(_societyNameKey);
     return {_societyIdKey: societyId, 'societyName': societyName};
   }
 
@@ -89,16 +109,16 @@ class GateStorage {
     return prefs.getString(_roleKey);
   }
 
-  Future<void> saveSocietyId(int societyId) async {
-    await _prefs?.setInt(_societyIdKey, societyId);
-    log("Society ID saved successfully: $societyId");
-  }
+  // Future<void> saveSocietyId(int societyId) async {
+  //   await _prefs?.setInt(_societyIdKey, societyId);
+  //   log("Society ID saved successfully: $societyId");
+  // }
 
-  Future<int?> getSocietyId() async {
-    final id = _prefs?.getInt(_societyIdKey);
-    log("Retrieved Society ID: $id");
-    return id;
-  }
+  // Future<int?> getSocietyId() async {
+  //   final id = _prefs?.getInt(_societyIdKey);
+  //   log("Retrieved Society ID: $id");
+  //   return id;
+  // }
 
   Future<void> saveMemberDetails(Map<String, dynamic> memberDetails) async {
     try {

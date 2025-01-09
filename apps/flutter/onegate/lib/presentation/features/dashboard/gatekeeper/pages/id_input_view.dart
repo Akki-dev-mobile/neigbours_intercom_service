@@ -7,6 +7,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
@@ -265,6 +266,16 @@ class _IdInputViewState extends State<IdInputView> {
                   Form(
                     key: mobileControllerFormKey,
                     child: CustomForm.textField(
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Mobile number is required';
+                        } else if (value.length != 10) {
+                          return 'Please enter a 10-digit number';
+                        } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                          return 'No spaces or special characters allowed';
+                        }
+                        return null;
+                      },
                       titleColor: Theme.of(context).colorScheme.onBackground,
                       hintColor: Theme.of(context).colorScheme.onPrimary,
                       focusNode: _focusNode,
@@ -278,10 +289,8 @@ class _IdInputViewState extends State<IdInputView> {
                         boxDecoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.background,
                         ),
-                        barrierColor: Theme.of(context)
-                            .colorScheme
-                            .background
-                            .withOpacity(0.5),
+                        barrierColor:
+                        Theme.of(context).colorScheme.background.withOpacity(0.5),
                         closeIcon: Icon(
                           Icons.close,
                           color: Theme.of(context).colorScheme.onBackground,
@@ -326,20 +335,16 @@ class _IdInputViewState extends State<IdInputView> {
                       textController: mobileController,
                       keyboardType: TextInputType.number,
                       length: 10,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly, // Allow only digits
+                      ],
                       onChanged: (value) {
                         if (value.length == 10) {
-                          gateDashboardBloc.add(GDOnMobileNumberEnteredEvent(
-                              mobileController.text));
+                          gateDashboardBloc.add(
+                            GDOnMobileNumberEnteredEvent(mobileController.text),
+                          );
                         }
                       },
-                      // validator: (value) {
-                      //   if (value!.isEmpty) {
-                      //     return 'Mobile number is required';
-                      //   } else if (value.length != 10) {
-                      //     return 'Please enter a 10-digit number';
-                      //   }
-                      //   return null;
-                      // },
                     ),
                   )
                   // : Column(

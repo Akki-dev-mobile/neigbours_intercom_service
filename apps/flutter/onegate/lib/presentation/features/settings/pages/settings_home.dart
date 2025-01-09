@@ -102,7 +102,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
                         fillColor: WidgetStateProperty.all(
-                          Theme.of(context).colorScheme.primary,
+                         Colors.black,
                         ),
                         title: Text(
                           item.label,
@@ -176,7 +176,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
                         fillColor: WidgetStateProperty.all(
-                          Colors.red,
+                          Colors.black,
                         ),
                         title: Text(
                           item.label,
@@ -252,7 +252,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
                         fillColor: WidgetStateProperty.all(
-                          Colors.red,
+                          Colors.black,
                         ),
                         title: Text(
                           item.label,
@@ -327,7 +327,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
                         fillColor: WidgetStateProperty.all(
-                          Colors.red,
+                          Colors.black,
                         ),
                         title: Text(
                           item.label,

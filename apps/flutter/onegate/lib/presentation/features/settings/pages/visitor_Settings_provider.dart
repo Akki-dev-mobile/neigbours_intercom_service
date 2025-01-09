@@ -5,6 +5,7 @@ class VisitorSettingsProvider with ChangeNotifier {
   bool visitorsAddress = false;
   bool membersApproval = false;
   bool gateIdToggleValue = false;
+  bool visitorCardNumber = false; // New field for visitorCardNumber
 
   VisitorSettingsProvider() {
     _loadSettings();
@@ -15,6 +16,7 @@ class VisitorSettingsProvider with ChangeNotifier {
     visitorsAddress = prefs.getBool('visitorsAddress') ?? false;
     membersApproval = prefs.getBool('membersApproval') ?? false;
     gateIdToggleValue = prefs.getBool('gateIdToggleValue') ?? false;
+    visitorCardNumber = prefs.getBool('visitorCardNumber') ?? false; // Load visitorCardNumber
     notifyListeners();
   }
 
@@ -33,6 +35,11 @@ class VisitorSettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void updateVisitorCardNumber(bool value) { // New update method
+    visitorCardNumber = value;
+    notifyListeners();
+  }
+
   bool hasChanges() {
     // Logic to determine if there are unsaved changes
     return true; // Placeholder for actual comparison logic
@@ -43,5 +50,6 @@ class VisitorSettingsProvider with ChangeNotifier {
     await prefs.setBool('visitorsAddress', visitorsAddress);
     await prefs.setBool('membersApproval', membersApproval);
     await prefs.setBool('gateIdToggleValue', gateIdToggleValue);
+    await prefs.setBool('visitorCardNumber', visitorCardNumber); // Save visitorCardNumber
   }
 }

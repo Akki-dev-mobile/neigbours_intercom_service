@@ -12,6 +12,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
@@ -26,14 +27,14 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';import 'package:provider/provider.dart';
-
+import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
   final List<String> logList;
   final String? selectedBuilding;
-int? societyID;
+  int? societyID;
   VisitorLogView({
     required this.id,
     required this.logList,
@@ -48,11 +49,12 @@ int? societyID;
 class _VisitorLogViewState extends State<VisitorLogView> {
   late String selectedId;
   String? _searchText = "";
+  var selectedGateName;
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
   final remoteDataSource = RemoteDataSource(
       DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
-var societyId;
+  var societyId;
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
       VisitorLogRepositoryImpl(
@@ -82,16 +84,24 @@ var societyId;
         break;
     }
     _initializeSocietyId();
+    getSelectedGate();
+  }
+
+  Future<void> getSelectedGate() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedGateName = prefs.getString('selected_gate');
+    });
   }
 
   //init a scroll controller
   final ScrollController _scrollController = ScrollController();
 
   Future<void> _initializeSocietyId() async {
-      societyId = await gateStorage.getSocietyId();
+    societyId = await gateStorage.getSocietyId();
     log('Society ID: $societyId');
-
   }
+
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
@@ -447,95 +457,147 @@ var societyId;
                       ),
                       const SizedBox(height: 20),
                       // Date Range Picker
-                      InkWell(
-                        onTap: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: startDate ?? DateTime.now(),
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime.now(),
-                            builder: (BuildContext context, Widget? child) {
-                              return Theme(
-                                data: ThemeData.light().copyWith(
-                                  colorScheme: ColorScheme.light(
-                                    primary: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface, // Header background color
-                                    onPrimary: Theme.of(context)
-                                        .colorScheme
-                                        .surface, // Header text color
-                                    surface: Theme.of(context)
-                                        .colorScheme
-                                        .surface, // Background color
-                                    onSurface: Colors.black, // Text color
-                                  ),
-                                  dialogBackgroundColor: Colors
-                                      .white, // Background color of the dialog
-                                ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              startDate = picked;
-                              // Ensure "To Date" is valid
-                              if (endDate != null &&
-                                  startDate!.isAfter(endDate!)) {
-                                endDate = null;
-                              }
-                            });
+                      FormField<DateTime>(
+                        validator: (value) {
+                          if (value == null) {
+                            return "Please select a start date";
                           }
+                          return null;
                         },
-                        child: _buildDateField(
-                          context,
-                          label: 'From Date',
-                          date: startDate,
-                          placeholder: 'Select From Date',
+                        builder: (fieldState) => InkWell(
+                          onTap: () async {
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: startDate ?? DateTime.now(),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now(),
+                              builder: (BuildContext context, Widget? child) {
+                                return Theme(
+                                  data: ThemeData.light().copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                      onPrimary:
+                                          Theme.of(context).colorScheme.surface,
+                                      surface:
+                                          Theme.of(context).colorScheme.surface,
+                                      onSurface: Colors.black,
+                                    ),
+                                    dialogBackgroundColor: Colors.white,
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                startDate = picked;
+                                fieldState.didChange(
+                                    picked); // Update FormField state
+                                // Ensure "To Date" is valid
+                                if (endDate != null &&
+                                    startDate!.isAfter(endDate!)) {
+                                  endDate = null;
+                                }
+                              });
+                            }
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDateField(
+                                context,
+                                label: 'From Date',
+                                date: startDate,
+                                placeholder: 'Select From Date',
+                              ),
+                              if (fieldState.hasError)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    fieldState.errorText!,
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // To Date Picker
-                      InkWell(
-                        onTap: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: endDate ?? DateTime.now(),
-                            firstDate: startDate ?? DateTime(2000),
-                            lastDate: DateTime.now(),
-                            builder: (BuildContext context, Widget? child) {
-                              return Theme(
-                                data: ThemeData.light().copyWith(
-                                  colorScheme: ColorScheme.light(
-                                    primary: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface, // Header background color
-                                    onPrimary: Theme.of(context)
-                                        .colorScheme
-                                        .surface, // Header text color
-                                    surface: Theme.of(context)
-                                        .colorScheme
-                                        .surface, // Background color
-                                    onSurface: Colors.black, // Text color
-                                  ),
-                                  dialogBackgroundColor: Colors
-                                      .white, // Background color of the dialog
-                                ),
-                                child: child!,
-                              );
-                            },
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              endDate = picked;
-                            });
+
+                      // To Date Picker with Validation
+                      FormField<DateTime>(
+                        validator: (value) {
+                          if (value == null) {
+                            return "Please select an end date";
                           }
+                          if (startDate != null && value.isBefore(startDate!)) {
+                            return "End date cannot be earlier than start date";
+                          }
+                          return null;
                         },
-                        child: _buildDateField(
-                          context,
-                          label: 'To Date',
-                          date: endDate,
-                          placeholder: 'Select To Date',
+                        builder: (fieldState) => InkWell(
+                          onTap: () async {
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: endDate ?? DateTime.now(),
+                              firstDate: startDate ?? DateTime(2000),
+                              lastDate: DateTime.now(),
+                              builder: (BuildContext context, Widget? child) {
+                                return Theme(
+                                  data: ThemeData.light().copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                      onPrimary:
+                                          Theme.of(context).colorScheme.surface,
+                                      surface:
+                                          Theme.of(context).colorScheme.surface,
+                                      onSurface: Colors.black,
+                                    ),
+                                    dialogBackgroundColor: Colors.white,
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                endDate = picked;
+                                fieldState.didChange(
+                                    picked); // Update FormField state
+                              });
+                            }
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDateField(
+                                context,
+                                label: 'To Date',
+                                date: endDate,
+                                placeholder: 'Select To Date',
+                              ),
+                              if (fieldState.hasError)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    fieldState.errorText!,
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -545,54 +607,51 @@ var societyId;
               actions: [
                 CustomLargeBtn(
                   onPressed: () async {
-              if (exportFormKey.currentState!.validate() && startDate != null && endDate != null) {
-                await prefs.setString('email', emailController.text);
+                    if (exportFormKey.currentState!.validate() &&
+                        startDate != null &&
+                        endDate != null) {
+                      await prefs.setString('email', emailController.text);
 
-                final formattedFromDate =
-                DateFormat('yyyy-MM-dd').format(startDate!);
-                final formattedToDate =
-                DateFormat('yyyy-MM-dd').format(endDate!);
+                      final formattedFromDate =
+                          DateFormat('yyyy-MM-dd').format(startDate!);
+                      final formattedToDate =
+                          DateFormat('yyyy-MM-dd').format(endDate!);
 
-                final gateProvider = Provider.of<GateProvider>(context, listen: false);
-                final selectedGate = gateProvider.selectedGate;
+                      final gateProvider =
+                          Provider.of<GateProvider>(context, listen: false);
+                      final selectedGate = gateProvider.selectedGate;
+                      final email = emailController.text.trim();
 
-                // Construct the data for export
-                final visitorData = {
-                  "company_id": societyId,
-                  "name": nameController.text,
-                  "to_mail": emailController.text,
-                  "from_date": formattedFromDate,
-                  "to_date": formattedToDate,
-                  "in_gate": selectedGate?["gate_name"]?.toString(),
-                };
-
-                try {
-                  await remoteDataSource.exportLogs(visitorData);
-                  Fluttertoast.showToast(
-                    msg: "Visitor logs exported successfully!",
-                    backgroundColor: Colors.green,
-                    textColor: Colors.white,
-                  );
-                  Navigator.pop(context);
-                } catch (e) {
-                  // Fluttertoast.showToast(
-                  //   msg: "Failed to export visitor logs: $e",
-                  //   backgroundColor: Colors.red,
-                  //   textColor: Colors.white,
-                  // );
-                  Navigator.pop(context);
-                }
-              }
-                      else {
-                      Fluttertoast.showToast(
-                        msg: "Please fill From and Todate field",
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.CENTER,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.red,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
+                      // Email validation regex
+                      final emailRegex = RegExp(
+                        r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
                       );
+
+                      if (!emailRegex.hasMatch(email)) {
+                        // _showErrorDialog(context, "Invalid Email", "Please enter a valid email address.");
+                        return;
+                      }
+
+                      // Construct the data for export
+                      final visitorData = {
+                        "company_id": societyId,
+                        "name": nameController.text,
+                        "to_mail": email,
+                        "from_date": formattedFromDate,
+                        "to_date": formattedToDate,
+                        "in_gate": selectedGateName,
+                      };
+
+                      try {
+                        await remoteDataSource.exportLogs(visitorData);
+                        Navigator.pop(context);
+                        _showSuccessDialog(context, "Export Successful",
+                            "Visitor logs exported successfully.");
+                      } catch (e) {
+                        // _showErrorDialog(context, "Export Failed", "An error occurred during the export. Please try again.");
+                      }
+                    } else {
+                      // _showErrorDialog(context, "Missing Information", "Please ensure all fields are filled.");
                     }
                   },
                   text: "Export",
@@ -600,6 +659,25 @@ var societyId;
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title, style: const TextStyle(color: Colors.red)),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Close dialog
+              child: const Text("OK"),
+            ),
+          ],
         );
       },
     );
@@ -635,6 +713,30 @@ var societyId;
           ),
         ],
       ),
+    );
+  }
+
+  void _showSuccessDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+                Navigator.pop(context); // Navigate back after successful export
+              },
+              child: const Text(
+                "OK",
+                style: TextStyle(color: Colors.black),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -743,15 +845,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
 
   @override
   void initState() {
-    // canLaunchUrl(
-    //   Uri(
-    //     scheme: 'tel',
-    //   ),
-    // ).then((bool result) {
-    //   setState(() {
-    //     _hasCallSupport = result;
-    //   });
-    // });
+
     super.initState();
   }
 
@@ -768,7 +862,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
       final response = await Dio().get(
         'https://gateapi.cubeone.in/api/visitor/log',
         queryParameters: {
-          // 'company_id': companyId,
+// 'company_id': companyId,
         },
         options: Options(
           headers: {
@@ -778,7 +872,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
       );
 
       if (response.statusCode == 200) {
-        // Handle the response data
+// Handle the response data
         print("Visitor Logs: ${response.data}");
       } else {
         print("Response Error: ${response.statusMessage}");
@@ -817,10 +911,10 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               leading: CircleAvatar(
                 backgroundImage:
 
-                    // widget
-                    //         .visitorLog.visitor!.visitor_image.isNotEmpty
-                    //     ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
-                    //     :
+// widget
+//         .visitorLog.visitor!.visitor_image.isNotEmpty
+//     ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
+//     :
 
                     NetworkImage(
                         'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
@@ -911,23 +1005,23 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                         _makePhoneCall(widget.visitorLog.visitor!.mobile)
                     : null,
 
-                // onPressed: () {
-                //               log(
-                //                 'Calling ${visitorLog.visitor!.mobile}',
-                //               );
-                //
-                //               SnackBar(
-                //                 content: Text(
-                //                   'Calling ${visitorLog.visitor!.mobile}',
-                //                   style: Theme.of(context).textTheme.labelMedium,
-                //                 ),
-                //                 action: SnackBarAction(
-                //                   label: 'Close',
-                //                   onPressed: () {
-                //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                //                   },
-                //                 ),
-                //               );
+// onPressed: () {
+//               log(
+//                 'Calling ${visitorLog.visitor!.mobile}',
+//               );
+//
+//               SnackBar(
+//                 content: Text(
+//                   'Calling ${visitorLog.visitor!.mobile}',
+//                   style: Theme.of(context).textTheme.labelMedium,
+//                 ),
+//                 action: SnackBarAction(
+//                   label: 'Close',
+//                   onPressed: () {
+//                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+//                   },
+//                 ),
+//               );
                 icon: Icon(
                   Ionicons.call_outline,
                   color: Colors.green,

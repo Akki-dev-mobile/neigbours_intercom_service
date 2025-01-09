@@ -18,11 +18,12 @@ import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admi
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginState1 {
   final bool isLoading;
   final String? userId;
-  final int? selectedSocietyId;
+  final String? selectedSocietyId;
   final String? username;
   final String? error;
 
@@ -37,7 +38,7 @@ class LoginState1 {
   LoginState1 copyWith({
     bool? isLoading,
     String? userId,
-    int? selectedSocietyId,
+    String? selectedSocietyId,
     String? username,
     String? error,
   }) {
@@ -83,8 +84,32 @@ class LoginService {
     }
 
     final userInfo = await keycloakWrapper.getUserInfo();
+    log("Access token: ${keycloakWrapper.accessToken}");
     await _saveUserData(userInfo);
     return userInfo;
+  }
+
+  List<String> getUserRoles(Map society) {
+    final List<dynamic> userRoles = society['user_roles'] ?? [];
+    List<String> roles = userRoles.map((role) => _mapRole(role.toString())).toList();
+
+    // If user is admin, add both admin and gatekeeper roles
+    if (roles.contains('admin')) {
+      roles = ['admin', 'gatekeeper'];
+    }
+
+    return roles;
+  }
+
+  String _mapRole(String apiRole) {
+    switch (apiRole.toLowerCase()) {
+      case 'master':
+        return 'admin';
+      case 'gatekeeper':
+        return 'gatekeeper';
+      default:
+        return 'unknown';
+    }
   }
 
   Future<void> _saveUserData(Map<String, dynamic>? userInfo) async {
@@ -113,7 +138,7 @@ class MyAppLogin extends StatefulWidget {
 
 class _MyAppLoginState1 extends State<MyAppLogin> {
   late final LoginService _loginService;
-  late final ValueNotifier<LoginState1> _LoginState1;
+  late final ValueNotifier<LoginState1> _loginState;
 
   @override
   void initState() {
@@ -127,29 +152,32 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         DioSingleton.instance3,
       ),
     );
-    _LoginState1 = ValueNotifier(const LoginState1());
+    _loginState = ValueNotifier(const LoginState1());
     _initialize();
   }
 
   Future<void> _initialize() async {
-    await _requestLocationPermission();
-    await _loginService.initialize();
-    await _checkLoginState1();
+    try {
+      await _requestLocationPermission();
+      await _loginService.initialize();
+      await _checkLoginState();
+    } catch (e) {
+      log('Initialization error: $e');
+      _showError('Failed to initialize: $e');
+    }
   }
 
   Future<void> _requestLocationPermission() async {
     final status = await Permission.location.request();
-
-    if (!status.isGranted) {
-      if (Platform.isIOS || status.isPermanentlyDenied) {
-        _showLocationPermissionDialog();
-      }
+    if (!status.isGranted && (Platform.isIOS || status.isPermanentlyDenied)) {
+      _showLocationPermissionDialog();
     }
   }
 
   void _showLocationPermissionDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text("Location Permission Required"),
         content: const Text(
@@ -172,30 +200,34 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     );
   }
 
-  Future<void> _checkLoginState1() async {
-    final accessToken = await _loginService.gateStorage.getAccessToken();
-    if (accessToken == null) {
-      log("User is not logged in");
-      return;
+  Future<void> _checkLoginState() async {
+    try {
+      final accessToken = await _loginService.gateStorage.getAccessToken();
+      if (accessToken == null) {
+        log("User is not logged in");
+        return;
+      }
+
+      final userId = await _loginService.gateStorage.getUserId();
+      final username = await _loginService.gateStorage.getUsername();
+      final role = await _loginService.gateStorage.getRole();
+      final societyId = await _loginService.gateStorage.getSocietyId();
+
+      _loginState.value = _loginState.value.copyWith(
+        userId: userId,
+        username: username,
+        selectedSocietyId: societyId,
+      );
+
+      _navigateBasedOnRole(role);
+    } catch (e) {
+      log('Error checking login state: $e');
+      _showError('Failed to check login state: $e');
     }
-
-    final userId = await _loginService.gateStorage.getUserId();
-    final username = await _loginService.gateStorage.getUsername();
-    final role = await _loginService.gateStorage.getRole();
-    final societyId = await _loginService.gateStorage.getSocietyId();
-
-    _LoginState1.value = _LoginState1.value.copyWith(
-      userId: userId,
-      username: username,
-      selectedSocietyId: societyId,
-    );
-
-    _navigateBasedOnRole(role);
   }
 
   void _navigateBasedOnRole(String? role) {
     Widget? destination;
-
     switch (role) {
       case 'admin':
         destination = const AdminDashboardView();
@@ -215,7 +247,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   Future<void> _handleLogin() async {
     try {
-      _LoginState1.value = _LoginState1.value.copyWith(isLoading: true);
+      _loginState.value = _loginState.value.copyWith(isLoading: true);
 
       final userInfo = await _loginService.performLogin();
       if (userInfo == null) throw Exception('No user info received');
@@ -224,17 +256,18 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       if (userId == null) throw Exception('No user ID found');
 
       final societies = await _loginService.fetchSocieties(userId);
-
       if (societies.isEmpty) {
         throw Exception('No societies found for this user');
-      } else if (societies.length == 1) {
+      }
+
+      if (societies.length == 1) {
         await _handleSingleSociety(societies.first);
       } else {
         _showSocietySelection(societies);
       }
     } catch (e) {
       log('Login error: $e');
-      _LoginState1.value = _LoginState1.value.copyWith(
+      _loginState.value = _loginState.value.copyWith(
         error: e.toString(),
         isLoading: false,
       );
@@ -242,21 +275,37 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     }
   }
 
-  Future<void> _handleSingleSociety(Map<String, dynamic> society) async {
-    final societyId = society['company_id'];
-    final societyName = society['company_name'];
+  Future<void> _handleSingleSociety(Map<dynamic, dynamic> society) async {
+    try {
+      final societyId = society['company_id']?.toString();
+      final societyName = society['company_name'];
+      final roles = _loginService.getUserRoles(society);
 
-    if (societyId == null) throw Exception('Invalid society data');
+      if (societyId == null || societyId.isEmpty) {
+        throw Exception('Invalid society data: societyId is null or empty');
+      }
 
-    await _loginService.gateStorage.saveSocietyDetails(societyId, societyName);
-    await _loginService.gateStorage.saveSocietyId(societyId);
+      if (roles.isEmpty) {
+        throw Exception('No valid roles found for user');
+      }
 
-    _LoginState1.value = _LoginState1.value.copyWith(
-      selectedSocietyId: societyId,
-      isLoading: false,
-    );
+      await _loginService.gateStorage.saveSocietyDetails(societyId, societyName);
+      await _loginService.gateStorage.saveSocietyId(societyId);
 
-    _showRoleSelection();
+      _loginState.value = _loginState.value.copyWith(
+        selectedSocietyId: societyId,
+        isLoading: false,
+      );
+
+      if (roles.length == 1) {
+        await _handleRoleSelected(roles.first);
+      } else {
+        _showRoleSelection(roles);
+      }
+    } catch (e) {
+      _showError('Failed to process society: $e');
+      _loginState.value = _loginState.value.copyWith(isLoading: false);
+    }
   }
 
   void _showSocietySelection(List<dynamic> societies) {
@@ -269,22 +318,19 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       ),
       builder: (context) => SocietySelectionSheet(
         societies: societies,
-        onSelected: _handleSocietySelected,
+        onSelected: (society) async {
+          try {
+            await _handleSingleSociety(society);
+            Navigator.pop(context);
+          } catch (e) {
+            _showError('Failed to save society: $e');
+          }
+        },
       ),
     );
   }
 
-  Future<void> _handleSocietySelected(Map<String, dynamic> society) async {
-    try {
-      await _handleSingleSociety(society);
-      Navigator.pop(context);
-      _showRoleSelection();
-    } catch (e) {
-      _showError('Failed to save society: $e');
-    }
-  }
-
-  void _showRoleSelection() {
+  void _showRoleSelection(List<String> availableRoles) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -292,48 +338,60 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => RoleSelectionSheet(
-        onAdminSelected: () => _handleRoleSelected('admin'),
-        onGatekeeperSelected: () => _handleRoleSelected('gatekeeper'),
+        availableRoles: availableRoles,
+        onRoleSelected: _handleRoleSelected,
       ),
     );
   }
 
   Future<void> _handleRoleSelected(String role) async {
-    await _loginService.gateStorage.saveRole(role);
-
-    if (role == 'gatekeeper') {
+    try {
+      await _loginService.gateStorage.saveRole(role);
       final gates = await _loginService.fetchGates();
-      if (gates.isNotEmpty) {
-        await _showGateSelection(gates);
-      } else {
+
+      if (gates.isEmpty) {
         _showError('No gates found for the selected society');
+        return;
       }
-    } else {
-      _navigateBasedOnRole(role);
+
+      await _showGateSelection(gates, role);
+    } catch (e) {
+      _showError('Failed to process role selection: $e');
     }
   }
 
-  Future<void> _showGateSelection(List<dynamic> gates) async {
-    final gateProvider = Provider.of<GateProvider>(context, listen: false);
-    await gateProvider.loadGates();
+  Future<void> _showGateSelection(List<dynamic> gates, String selectedRole) async {
+    try {
+      final gateProvider = Provider.of<GateProvider>(context, listen: false);
+      await gateProvider.loadGates();
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => GateSelectionSheet(
-        gates: gates,
-        onGateSelected: (gate) {
-          Navigator.pop(context);
-          _navigateBasedOnRole('gatekeeper');
-        },
-      ),
-    );
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => GateSelectionSheet(
+          gates: gates,
+          onGateSelected: (gate) async {
+            try {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              await prefs.setString('selected_gate', gate["gate_name"]);
+              Navigator.pop(context);
+              _navigateBasedOnRole(selectedRole);
+            } catch (e) {
+              _showError('Failed to save gate selection: $e');
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      _showError('Failed to show gate selection: $e');
+    }
   }
 
   void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -342,7 +400,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<LoginState1>(
-      valueListenable: _LoginState1,
+      valueListenable: _loginState,
       builder: (context, state, child) {
         return Stack(
           children: [
@@ -361,7 +419,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
                 },
               ),
             ),
-            if (state.isLoading) const CircularProgressIndicator(),
+            if (state.isLoading)
+              const Center(child: CircularProgressIndicator()),
           ],
         );
       },
@@ -370,10 +429,11 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   @override
   void dispose() {
-    _LoginState1.dispose();
+    _loginState.dispose();
     super.dispose();
   }
 }
+
 
 class LoginContent extends StatelessWidget {
   final VoidCallback onLoginPressed;
@@ -438,6 +498,7 @@ class LoginContent extends StatelessWidget {
     );
   }
 }
+
 // Society Selection Sheet
 class SocietySelectionSheet extends StatelessWidget {
   final List<dynamic> societies;
@@ -473,7 +534,7 @@ class SocietySelectionSheet extends StatelessWidget {
             itemCount: societies.length,
             itemBuilder: (context, index) {
               final society = societies[index];
-              final societyId = society['company_id'];
+              final societyId = society['company_id']?.toString();
               final societyName = society['company_name'];
 
               if (societyId == null) {
@@ -483,9 +544,13 @@ class SocietySelectionSheet extends StatelessWidget {
                 );
               }
 
-              return ListTile(
-                title: Text(societyName ?? 'Unknown Society'),
-                onTap: () => onSelected(society),
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(societyName ?? 'Unknown Society'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => onSelected(Map<String, dynamic>.from(society)),
+                ),
               );
             },
           ),
@@ -498,36 +563,97 @@ class SocietySelectionSheet extends StatelessWidget {
 
 // Role Selection Sheet
 class RoleSelectionSheet extends StatelessWidget {
-  final VoidCallback onAdminSelected;
-  final VoidCallback onGatekeeperSelected;
+  final List<String> availableRoles;
+  final Function(String) onRoleSelected;
 
   const RoleSelectionSheet({
     Key? key,
-    required this.onAdminSelected,
-    required this.onGatekeeperSelected,
+    required this.availableRoles,
+    required this.onRoleSelected,
   }) : super(key: key);
+
+  String _getRoleDisplayName(String role) {
+    switch (role) {
+      case 'admin':
+        return 'Admin / Master';
+      case 'gatekeeper':
+        return 'Gatekeeper';
+      default:
+        return 'Unknown Role';
+    }
+  }
+
+  String _getRoleDescription(String role) {
+    switch (role) {
+      case 'admin':
+        return 'Full access to manage society and gates';
+      case 'gatekeeper':
+        return 'Access to manage gate entries and exits';
+      default:
+        return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          title: Text(
-            'Select Role',
-            style: Theme.of(context).textTheme.headlineSmall,
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ),
-        ListTile(
-          title: const Text('Admin'),
-          onTap: onAdminSelected,
-        ),
-        ListTile(
-          title: const Text('Gatekeeper'),
-          onTap: onGatekeeperSelected,
-        ),
-        const SizedBox(height: 30),
-      ],
+          ListTile(
+            title: Text(
+              'Select Role',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            subtitle: const Text('Choose your role for this session'),
+          ),
+          const Divider(
+            indent: 20,
+            endIndent: 20,
+            height: 1,
+          ),
+          Expanded(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableRoles.length,
+              itemBuilder: (context, index) {
+                final role = availableRoles[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      _getRoleDisplayName(role),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    subtitle: Text(
+                      _getRoleDescription(role),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => onRoleSelected(role),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 }
@@ -552,62 +678,95 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          title: Text(
-            'Select Gate',
-            style: Theme.of(context).textTheme.headlineSmall,
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ),
-        const Divider(
-          indent: 20,
-          endIndent: 20,
-          height: 1,
-        ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: widget.gates.length,
-          itemBuilder: (context, index) {
-            final gate = widget.gates[index];
-            final gateName = gate['gate_name'] ?? 'Unknown Gate';
-            final isSelected = selectedIndex == index;
+          ListTile(
+            title: Text(
+              'Select Gate',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            subtitle: const Text('Choose the gate you want to manage'),
+          ),
+          const Divider(
+            indent: 20,
+            endIndent: 20,
+            height: 1,
+          ),
+          Expanded(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: widget.gates.length,
+              itemBuilder: (context, index) {
+                final gate = widget.gates[index];
+                final gateName = gate['gate_name'] ?? 'Unknown Gate';
+                final isSelected = selectedIndex == index;
 
-            return ListTile(
-              title: Text(
-                gateName,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              trailing: isSelected
-                  ? Icon(
-                Icons.check_circle,
-                color: Theme.of(context).colorScheme.primary,
-              )
-                  : null,
-              onTap: () async {
-                setState(() {
-                  selectedIndex = index;
-                });
-                final gateProvider = Provider.of<GateProvider>(context, listen: false);
-                await gateProvider.selectGate(index);
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      gateName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? Icon(
+                      Icons.check_circle,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                        : const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () async {
+                      setState(() {
+                        selectedIndex = index;
+                      });
 
-                widget.onGateSelected(gate);
+                      try {
+                        final gateProvider = Provider.of<GateProvider>(
+                            context,
+                            listen: false
+                        );
+                        await gateProvider.selectGate(index);
+                        widget.onGateSelected(Map<String, dynamic>.from(gate));
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to select gate: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                );
               },
-            );
-          },
-        ),
-      ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 }
-
 
 // Location Permission Handler
 class LocationPermissionHandler {
@@ -626,66 +785,33 @@ class LocationPermissionHandler {
     }
 
     if (status.isPermanentlyDenied || Platform.isIOS) {
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Location Permission Required'),
-          content: const Text(
-            'Please enable location permissions in your device settings to use this feature.',
+      if (context.mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('Location Permission Required'),
+            content: const Text(
+              'Please enable location permissions in your device settings to use this feature.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  openAppSettings();
+                  Navigator.pop(context);
+                },
+                child: const Text('Open Settings'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                openAppSettings();
-                Navigator.pop(context);
-              },
-              child: const Text('Open Settings'),
-            ),
-          ],
-        ),
-      );
+        );
+      }
     }
 
     return false;
-  }
-}
-
-// API Service
-class ApiService {
-  final http.Client _client;
-  final GateStorage _storage;
-
-  ApiService({
-    http.Client? client,
-    GateStorage? storage,
-  })  : _client = client ?? http.Client(),
-        _storage = storage ?? GateStorage();
-
-  Future<dynamic> get(String url) async {
-    try {
-      final token = await _storage.getAccessToken();
-      if (token == null) throw Exception('No access token found');
-
-      final response = await _client.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        return response.body;
-      } else {
-        throw Exception('API Error: ${response.statusCode}');
-      }
-    } catch (e) {
-      log('API Error: $e');
-      rethrow;
-    }
   }
 }

@@ -17,6 +17,7 @@ import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -28,7 +29,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:camera/camera.dart';
-
 
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
@@ -66,9 +66,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           DioSingleton.instance2,
           DioSingleton.instance3))));
   final remoteDataSource = RemoteDataSource(
-  DioSingleton.instance1,
-  DioSingleton.instance2,
-  DioSingleton.instance3);
+      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
   final GateStorage gateStorage = GateStorage();
   bool isText = true;
 
@@ -77,7 +75,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   TextEditingController guestName = TextEditingController();
   TextEditingController visitorNumber = TextEditingController();
   bool _isInitialLoad = true;
-  int? companyId;
+  String? companyId;
+  bool? _visitorCardNumber;
 
   @override
   void initState() {
@@ -90,28 +89,31 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _initSpeech();
     _fetchCompanyId();
     _loadSelectedPurposesToGlobal();
-
+    _loadVisitorSettings();
   }
 
+  Future<void> _loadVisitorSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+ _visitorCardNumber=   await prefs.getBool('visitorCardNumber');
+  }
   void _initSpeech() async {
     _speechEnabled = await _speechToText.initialize();
     setState(() {});
   }
+
 //
   Future<void> _updateVisitor(VisitorMapper visitor) async {
-
     try {
-
       await remoteDataSource.updateVisitor(visitor);
     } catch (e) {
       print("Error updating visitor: $e");
     }
   }
+
   Future<void> _fetchCompanyId() async {
     companyId = await gateStorage.getSocietyId();
     setState(() {});
   }
-
 
   void _handleMicPress(String fieldId) async {
     final result = await showDialog<String>(
@@ -176,13 +178,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   // ignore: body_might_complete_normally_nullable
 
-
   Future<File?> _captureImageFromCamera(BuildContext context) async {
     CameraController? cameraController;
 
     try {
       // Access the selected camera preference from the provider
-      final cameraProvider = Provider.of<CameraSettingsProvider>(context, listen: false);
+      final cameraProvider =
+          Provider.of<CameraSettingsProvider>(context, listen: false);
       final selectedCameraValue = cameraProvider.selectedCameraValue;
 
       // Fetch available cameras
@@ -192,12 +194,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       // Select the appropriate camera
       if (selectedCameraValue == 'front') {
         selectedCamera = cameras.firstWhere(
-              (camera) => camera.lensDirection == CameraLensDirection.front,
+          (camera) => camera.lensDirection == CameraLensDirection.front,
           orElse: () => throw Exception('Front camera not available'),
         );
       } else {
         selectedCamera = cameras.firstWhere(
-              (camera) => camera.lensDirection == CameraLensDirection.back,
+          (camera) => camera.lensDirection == CameraLensDirection.back,
           orElse: () => throw Exception('Back camera not available'),
         );
       }
@@ -213,7 +215,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       final XFile? image = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CameraPreviewScreen(cameraController: cameraController!),
+          builder: (context) =>
+              CameraPreviewScreen(cameraController: cameraController!),
         ),
       );
 
@@ -225,7 +228,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
       // Save the image locally
       final appDocDir = await getApplicationDocumentsDirectory();
-      final localImage = File('${appDocDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final localImage = File(
+          '${appDocDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
       await File(image.path).copy(localImage.path);
 
       // Upload the image
@@ -240,7 +244,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       await cameraController?.dispose();
     }
   }
-  Future<void> _uploadCapturedImage(File localImage, BuildContext context) async {
+
+  Future<void> _uploadCapturedImage(
+      File localImage, BuildContext context) async {
     try {
       final visitorUsecase = VisitorUsecase(
         VisitorRepoImpl(
@@ -253,12 +259,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       );
 
       // Replace `widget.mobile` and `companyId` with actual variables
-      await visitorUsecase.uploadImage(localImage, '1234567890', 1); // Replace with actual values
+      await visitorUsecase.uploadImage(
+          localImage, '1234567890', 1); // Replace with actual values
       print('Image uploaded successfully!');
     } catch (e) {
       print('Error uploading image: $e');
     }
   }
+
   PurposeCategory? getEffectivePurposeCategory() {
     return widget.selectedValue ??
         (globalSelectedPurposes.isNotEmpty
@@ -323,29 +331,32 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           _isInitialLoad = false; // Disable loader after initial load
 
           return MyScrollView(
-              backButtonPressed: () {
-                Navigator.pop(context);
-              },
+
               isScrollable: true,
               pageTitle:
                   'Purpose Entry - ${effectivePurpose.purpose_category_name}',
               pageBody: _buildPurposeForm(effectivePurpose),
               floatingActionButton: CustomLargeBtn(
                 onPressed: () async {
-                  final SharedPreferences prefs = await SharedPreferences.getInstance();
+                  final SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
 
-               final searched_id=   await prefs.getString('search_visitor_id');
-                  final VisitorMapper updatedVisitor = VisitorMapper(
-                    id: int.parse(searched_id.toString()),
-                      name: guestName.text,
-                      comingFrom: guestComingFrom.text,
-                      cardNumber: visitorNumber.text,
-                      guestCount: int.parse(_guestCountController.text),
-                      mobile:widget.mobile,
-                      VisitorMapperImage:""
-                  );
+                  final searched_id =
+                      await prefs.getString('search_visitor_id');
+                  print(" searchid $searched_id");
 
-               await    _updateVisitor(updatedVisitor);
+                  if (widget.searchedVisitor != null) {
+                    final VisitorMapper updatedVisitor = VisitorMapper(
+                        id: int.parse(searched_id.toString()),
+                        name: guestName.text,
+                        comingFrom: guestComingFrom.text,
+                        cardNumber: visitorNumber.text,
+                        guestCount: int.parse(_guestCountController.text),
+                        mobile: widget.mobile,
+                        VisitorMapperImage: "");
+
+                    await _updateVisitor(updatedVisitor);
+                  }
                   if (isText == true) {
                     if (guestName.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -367,7 +378,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         isText = false;
                       });
 
-
                       visitorInEntryBloc.add(
                           VIEGuestFormSubmitButtonPressedEvent(
                               searchedVisitor: widget.searchedVisitor,
@@ -376,14 +386,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               guestCount: _guestCount,
                               purposeCategory: widget.selectedValue!,
                               mobile: widget.mobile ?? ""));
-
                     }
-
                   }
                 },
                 isText: isText,
                 text: 'Next',
-                widgetChild: CircularProgressIndicator(
+                widgetChild:  CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ));
@@ -528,10 +536,15 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             )),
         // preferenceUtils.getTooglevalue() == true
         //     ?
-        CustomForm.textField(
+
+        (_visitorCardNumber == false)
+            ? SizedBox()
+            : CustomForm.textField(
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter your ID';
+            } else if (value.length != 4) {
+              return 'ID must be 4 digits';
             }
             return null;
           },
@@ -560,7 +573,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             ),
           ),
         ),
-        // : SizedBox(),
         CustomForm.textField(
           "Guest Count",
           textController: _guestCountController,
@@ -860,15 +872,13 @@ class ListeningDialogState extends State<ListeningDialog>
   }
 }
 
-
-
-
 class CameraPreviewScreen extends StatefulWidget {
   final CameraController cameraController;
-
-  const CameraPreviewScreen({
+// String? mobile;
+   CameraPreviewScreen({
     Key? key,
     required this.cameraController,
+    // this.mobile
   }) : super(key: key);
 
   @override
@@ -878,6 +888,7 @@ class CameraPreviewScreen extends StatefulWidget {
 class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
   late CameraController _cameraController;
   late CameraDescription _currentCamera;
+  XFile? _capturedImage;
 
   @override
   void initState() {
@@ -888,20 +899,17 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
 
   Future<void> _switchCamera() async {
     try {
-      // Get the list of available cameras
       final cameras = await availableCameras();
-
-      // Determine the new camera to switch to
       final CameraDescription newCamera = cameras.firstWhere(
-            (camera) => camera.lensDirection == (_currentCamera.lensDirection == CameraLensDirection.front
-            ? CameraLensDirection.back
-            : CameraLensDirection.front),
+        (camera) =>
+            camera.lensDirection ==
+            (_currentCamera.lensDirection == CameraLensDirection.front
+                ? CameraLensDirection.back
+                : CameraLensDirection.front),
       );
 
-      // Dispose of the current camera controller
       await _cameraController.dispose();
 
-      // Initialize a new controller for the selected camera
       final CameraController newController = CameraController(
         newCamera,
         ResolutionPreset.high,
@@ -912,6 +920,7 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
       setState(() {
         _cameraController = newController;
         _currentCamera = newCamera;
+        _capturedImage = null; // Reset captured image on camera switch
       });
     } catch (e) {
       print('Error switching cameras: $e');
@@ -927,41 +936,104 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Capture Image')),
+      appBar: AppBar(
+        title: const Text('Capture Image'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigator.pushAndRemoveUntil(
+            //   context,
+            //   MaterialPageRoute(builder: (context) => VisitorsInEntry( )),
+            //       (Route<dynamic> route) => false,
+            // );
+
+          },
+        ),
+      ),
       body: Stack(
         children: [
-          _cameraController.value.isInitialized
-              ? CameraPreview(_cameraController) // Camera live feed
-              : const Center(child: CircularProgressIndicator()), // Loading state
-          Positioned(
-            bottom: 20,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Switch camera button
-                FloatingActionButton(
-                  heroTag: 'switchCamera',
-                  onPressed: _switchCamera,
-                  child: const Icon(Icons.switch_camera),
-                ),
-                // Capture button
-                FloatingActionButton(
-                  heroTag: 'captureImage',
-                  onPressed: () async {
-                    try {
-                      final XFile image = await _cameraController.takePicture();
-                      Navigator.pop(context, image); // Return the captured image
-                    } catch (e) {
-                      print('Error capturing image: $e');
-                    }
-                  },
-                  child: const Icon(Icons.camera),
-                ),
-              ],
+          if (_capturedImage == null)
+            _cameraController.value.isInitialized
+                ? CameraPreview(_cameraController)
+                : const Center(child: CircularProgressIndicator())
+          else
+            Center(
+              child: Image.file(
+                File(_capturedImage!.path),
+                fit: BoxFit.contain,
+              ),
             ),
-          ),
+          if (_capturedImage == null)
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Switch camera button
+                  FloatingActionButton(
+                    heroTag: 'switchCamera',
+                    onPressed: _switchCamera,
+                    child: const Icon(Icons.switch_camera),
+                  ),
+                  // Capture button
+                  FloatingActionButton(
+                    heroTag: 'captureImage',
+                    onPressed: () async {
+                      try {
+                        final XFile image =
+                            await _cameraController.takePicture();
+                        setState(() {
+                          _capturedImage = image;
+                        });
+                      } catch (e) {
+                        print('Error capturing image: $e');
+                      }
+                    },
+                    child: const Icon(Icons.camera),
+                  ),
+                ],
+              ),
+            )
+          else
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Cross icon for Retake
+                  FloatingActionButton(
+                    heroTag: 'retake',
+                    onPressed: () {
+                      setState(() {
+                        _capturedImage = null; // Retake the picture
+                      });
+                    },
+                    backgroundColor: Colors.white,
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.red,
+                    ),
+                  ),
+                  // Tick icon for Go Ahead
+                  FloatingActionButton(
+                    heroTag: 'goAhead',
+                    onPressed: () {
+                      Navigator.pop(
+                          context, _capturedImage); // Proceed with the image
+                    },
+                    backgroundColor: Colors.white,
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            )
         ],
       ),
     );

@@ -26,7 +26,7 @@ GateStorage gateStorage = GateStorage();
     isLoading = true;
     notifyListeners();
 
-    final int? companyId = await gateStorage.getSocietyId();
+    final String? companyId = await gateStorage.getSocietyId();
     if (companyId == null) {
       log('Error: Company ID is null');
       isLoading = false;

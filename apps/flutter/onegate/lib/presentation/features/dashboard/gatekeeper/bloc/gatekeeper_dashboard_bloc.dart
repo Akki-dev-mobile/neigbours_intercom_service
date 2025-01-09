@@ -110,11 +110,11 @@ class GatekeeperDashboardBloc
       //
       // final int inBook = todayCheckedInVisitors.length;
       final gateStorage = GateStorage();
-      final int? companyId =  await gateStorage.getSocietyId();
+      final String? companyId =  await gateStorage.getSocietyId();
       final DateTime today = DateTime.now();
 
       final List<VisitorLog>? allCheckedInVisitors =
-      await _visitorLogUsecase.fetchCheckInVisitorLog(companyId!,today.toString());
+      await _visitorLogUsecase.fetchCheckInVisitorLog(int.parse(companyId.toString()),today.toString());
       final List<VisitorLog> todaysCheckedInVisitors = allCheckedInVisitors?.where((visitor) {
         final DateTime checkInDate = DateTime.parse(visitor.visitor_check_in.toString()); // Replace 'timestamp' with actual field
         return checkInDate.year == today.year &&
@@ -125,7 +125,7 @@ class GatekeeperDashboardBloc
 
       // Fetch all check-out logs and filter for today
       final List<VisitorLog>? allCheckedOutVisitors =
-      await _visitorLogUsecase.fetchCheckOutLogs(companyId,today.toString());
+      await _visitorLogUsecase.fetchCheckOutLogs(int.parse(companyId.toString()),today.toString());
       final List<VisitorLog> todaysCheckedOutVisitors = allCheckedOutVisitors?.where((visitor) {
         final DateTime checkOutDate = DateTime.parse(visitor.visitor_check_out.toString()); // Replace 'timestamp' with actual field
         return checkOutDate.year == today.year &&

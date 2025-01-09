@@ -1,6 +1,10 @@
+
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
+
 class VisitorLogMapper {
   int? visitorLogId;
   int? visitorId;
+  String? visitorName;
   int? visitorPurposeCategoryId;
   int? visitorPurposeSubCategoryId;
   int? visitorCount;
@@ -10,13 +14,16 @@ class VisitorLogMapper {
   String? visitorComingFrom;
   int? visitorCardId;
   int? companyId;
-  String? companyName; // New field for company name
+  String? companyName;
+  String? inGate;
   bool? isCheckedOut;
-  List<Map<String, dynamic>>? memberDetails; // Corrected to List<Map<String, dynamic>>
+  List<Map<String, dynamic>>? memberDetails;
+  List<VisitorMapper>? visitors; // New field for a list of visitors
 
   VisitorLogMapper({
     this.visitorLogId,
     this.visitorId,
+    this.visitorName,
     this.visitorPurposeCategoryId,
     this.visitorPurposeSubCategoryId,
     this.visitorCount,
@@ -26,16 +33,19 @@ class VisitorLogMapper {
     this.visitorComingFrom,
     this.visitorCardId,
     this.companyId,
-    this.companyName, // Initialize companyName
+    this.companyName,
+    this.inGate,
     this.isCheckedOut,
-    this.memberDetails, // Initialize memberDetails
+    this.memberDetails,
+    this.visitors, // Initialize the visitors list
   });
 
   /// Factory constructor to create a `VisitorLogMapper` object from JSON.
   factory VisitorLogMapper.fromJson(Map<String, dynamic> json) {
     return VisitorLogMapper(
       visitorLogId: json['id'] as int?,
-      visitorId: json['visitor_id'] as int? ?? 0, // Fallback to 0 if missing
+      visitorId: json['visitor_id'] as int? ?? 0,
+      visitorName: json['visitor_name'] as String?,
       visitorPurposeCategoryId: json['visitor_purpose_category_id'] as int? ?? 0,
       visitorPurposeSubCategoryId: json['visitor_purpose_sub_category_id'] as int?,
       visitorCount: json['visitor_count'] as int? ?? 0,
@@ -49,11 +59,15 @@ class VisitorLogMapper {
       visitorComingFrom: json['visitor_coming_from'] as String?,
       visitorCardId: json['visitor_card_id'] as int?,
       companyId: json['company_id'] as int? ?? 0,
-      companyName: json['company_name'] as String?, // Parse company name
+      companyName: json['company_name'] as String?,
+      inGate: json['in_gate'] as String?,
       isCheckedOut: json['is_checked_out'] as bool? ?? false,
       memberDetails: (json['member_details'] as List<dynamic>?)
           ?.map((member) => Map<String, dynamic>.from(member as Map))
-          .toList(), // Properly handle memberDetails as List<Map<String, dynamic>>
+          .toList(),
+      visitors: (json['visitors'] as List<dynamic>?)
+          ?.map((visitor) => VisitorMapper.fromJson(visitor))
+          .toList(), // Parse visitors list
     );
   }
 
@@ -62,6 +76,7 @@ class VisitorLogMapper {
     return {
       'id': visitorLogId,
       'visitor_id': visitorId,
+      'visitor_name': visitorName,
       'visitor_purpose_category_id': visitorPurposeCategoryId,
       'visitor_purpose_sub_category_id': visitorPurposeSubCategoryId,
       'visitor_count': visitorCount,
@@ -71,9 +86,11 @@ class VisitorLogMapper {
       'visitor_coming_from': visitorComingFrom,
       'visitor_card_id': visitorCardId,
       'company_id': companyId,
-      'company_name': companyName, // Include companyName in JSON
+      'company_name': companyName,
+      'in_gate': inGate,
       'is_checked_out': isCheckedOut,
-      'member_details': memberDetails, // Include memberDetails in JSON
+      'member_details': memberDetails,
+      'visitors': visitors?.map((visitor) => visitor.toJson()).toList(), // Convert visitors list to JSON
     };
   }
 }

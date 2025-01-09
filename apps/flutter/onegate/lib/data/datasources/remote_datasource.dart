@@ -81,7 +81,7 @@ class RemoteDataSource {
   }
 
   Future<List<dynamic>> fetchGates() async {
-    final int? companyId = await gateStorage.getSocietyId();
+    final String? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');
 
     final response = await _apiHelper.get(
@@ -92,12 +92,58 @@ class RemoteDataSource {
     return response.data['data'] ?? [];
   }
 
-  Future<List<dynamic>> fetchSocieties(String userId) async {
-    final response = await _apiHelper.get(
-      '${Environment.baseUrl}/api/admin/companies/$userId',
-    );
+  // Future<Map<String, dynamic>> fetchUserRoles(String userId, int societyId) async {
+  //   try {
+  //     final response = await _dio1?.get(
+  //       '/api/users/$userId/societies/$societyId/roles',  // Adjust endpoint as per your API
+  //       options: Options(
+  //         // headers: await _getHeaders(),
+  //       ),
+  //     );
+  //
+  //     if (response?.statusCode == 200) {
+  //       return response?.data;
+  //     } else {
+  //       throw Exception('Failed to fetch user roles: ${response?.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     log('Error fetching user roles: $e');
+  //     throw Exception('Failed to fetch user roles: $e');
+  //   }
+  // }
 
-    return response.data['data'] ?? [];
+  Future<List<dynamic>> fetchSocieties(String userId) async {
+    try {
+      final response = await Dio().get(
+        'https://gateapi.cubeone.in/api/admin/companies/$userId', // Correct the URL
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer YOUR_ACCESS_TOKEN', // Add authorization if required
+          },
+        ),
+      );
+
+      print("API Response: ${response.data}");
+
+      // Safely handle the response
+      if (response.statusCode == 200) {
+        final data = response.data['data'];
+        if (data is List) {
+          return data; // Return the list of societies
+        } else {
+          throw Exception('Unexpected data format: ${response.data}');
+        }
+      } else {
+        throw Exception('Failed to fetch societies. Status code: ${response.statusCode}');
+      }
+    } on DioError catch (e) {
+      print("DioError: ${e.response?.data ?? e.message}");
+      throw Exception('Failed to fetch societies: ${e.message}');
+    } catch (e) {
+      print("Unexpected error: $e");
+      throw Exception('Unexpected error occurred');
+    }
   }
 
   Future<VisitorMapper?> searchVisitor(String mobileNumber) async {
@@ -158,7 +204,8 @@ class RemoteDataSource {
       final visitorData = response.data['data'];
       final visitorId = visitorData['visitor_id'] as int;
       log("createvisitorresponse $response");
-
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('visitorId', visitorId.toString());
       GlobalStorage.visitorId = visitorId.toString();
 
       print("$visitorId visitorId");
@@ -178,10 +225,11 @@ class RemoteDataSource {
   }
 
   Future<bool> updateVisitor(VisitorMapper visitor) async {
-
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final searchedVisitorId=  prefs.getString('search_visitor_id');    try {
-      final url = 'https://gateapi.cubeone.in/api/visitor/entry/$searchedVisitorId';
+    final searchedVisitorId = prefs.getString('search_visitor_id');
+    try {
+      final url =
+          'https://gateapi.cubeone.in/api/visitor/entry/$searchedVisitorId';
 
       // Prepare the request payload
       final data = {
@@ -330,11 +378,10 @@ class RemoteDataSource {
 
       // Add additional fields dynamically
       data.addAll({
-        'in_gate': selectedGateName.toString(), // Example dynamic field
+        'in_gate': selectedGateName.toString(),
         'visitor_purpose_sub_category_id': 1,
         'visitor_card_id': 1,
         'id': 1,
-
       });
 
       print("Final Payload: $data");
@@ -491,6 +538,63 @@ class RemoteDataSource {
     }
   }
 
+  Future<void> _fetchVisitorLogs() async {
+    try {
+      final response = await Dio().get(
+        'https://gateapi.cubeone.in/api/visitor/log',
+        queryParameters: {
+          // 'company_id': companyId,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Handle the response data
+        print("Visitor Logs: ${response.data}");
+      } else {
+        print("Response Error: ${response.statusMessage}");
+      }
+    } catch (e) {
+      if (e is DioError) {
+        print("DioError: ${e.response?.data ?? e.message}");
+      } else {
+        print("Unexpected Error: $e");
+      }
+    }
+  }
+
+  // Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
+  //   try {
+  //     final response = await Dio().get(
+  //       'https://gateapi.cubeone.in/api/visitor/log',
+  //       queryParameters: {
+  //         // 'company_id': companyId,
+  //       },
+  //       options: Options(
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //       ),
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       // Handle the response data
+  //       print("Visitor Logs: ${response.data}");
+  //     } else {
+  //       print("Response Error: ${response.statusMessage}");
+  //     }
+  //   } catch (e) {
+  //     if (e is DioError) {
+  //       print("DioError: ${e.response?.data ?? e.message}");
+  //     } else {
+  //       print("Unexpected Error: $e");
+  //     }
+  //   }
+  // }
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
       final visitorLog = await client.visitorLog.fetchAllLogs(dateTime);
@@ -640,8 +744,6 @@ class RemoteDataSource {
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName = prefs.getString('selected_gate');
 
-
-
       print("Payload: ${visitorData.toString()}");
 
       final response = await Dio().post(
@@ -671,14 +773,14 @@ class RemoteDataSource {
       // Handle DioError and other exceptions
       if (e is DioError) {
         Fluttertoast.showToast(
-          msg: "feature unlocking soon",
+          msg: "No data found for this gate",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
         print("DioError: ${e.response?.data ?? e.message}");
       } else {
         Fluttertoast.showToast(
-          msg: "feature unlocking soon",
+          msg: "No data found for this gate",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
@@ -699,38 +801,26 @@ class RemoteDataSource {
       final companyDetails = await gateStorage.getSocietyDetails();
       final socId = await gateStorage.getSocietyId();
       final companyName = companyDetails["societyName"];
+
       if (socId == null) {
         throw Exception(
             "Company ID is null. Please ensure the society is selected.");
       }
 
-      final List<String> memberDetails = [];
-      final List<int> unitIds = [];
-      final List<int> memberIds = [];
-      final List<String> buildingUnits = [];
-
-      for (var entry in visitorData!) {
-        if (entry.containsKey('member_details')) {
-          memberDetails
-              .addAll(List<String>.from(entry['member_details'] ?? []));
-        }
-        if (entry.containsKey('unit_ids')) {
-          unitIds.addAll(List<int>.from(entry['unit_ids'] ?? []));
-        }
-        if (entry.containsKey('member_ids')) {
-          memberIds.addAll(List<int>.from(entry['member_ids'] ?? []));
-        }
-        if (entry.containsKey('building_unit')) {
-          buildingUnits.addAll(List<String>.from(entry['building_unit'] ?? []));
-        }
+      if (visitorData == null || visitorData.isEmpty) {
+        throw Exception("Visitor data is null or empty");
       }
 
-      print(
-          "Member Details: $memberDetails, Unit IDs: $unitIds, Member IDs: $memberIds, Building Units: $buildingUnits");
+      // Extract member details from the new format
+      List<Map<String, dynamic>> memberDetails = [];
+      if (visitorData.first.containsKey('member_details')) {
+        memberDetails = List<Map<String, dynamic>>.from(
+            visitorData.first['member_details'] ?? []);
+      }
 
-      if (memberDetails.isEmpty || unitIds.isEmpty || memberIds.isEmpty) {
+      if (memberDetails.isEmpty) {
         Fluttertoast.showToast(
-          msg: "Error: Member details, unit IDs, or member IDs are missing!",
+          msg: "Error: Member details are missing!",
           backgroundColor: Colors.red,
           textColor: Colors.white,
         );
@@ -740,60 +830,90 @@ class RemoteDataSource {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final searchedVisitor = await prefs.getString("search_visitor_id");
 
-      log("this is${GlobalStorage.visitorLogId}");
-      log("this is $searchedVisitor");
-      final payload = {
-        "visitor_log_id": GlobalStorage.visitorLogId,
-        "visitor_id": (GlobalStorage.visitorId == null || GlobalStorage.visitorId!.isEmpty)
-            ? searchedVisitor
-            : GlobalStorage.visitorId,
-        "company_name": companyName,
-        "member_id": memberIds[0],
-        "member_name": memberDetails[0],
-        "unit_id": unitIds[0],
-        "company_id": socId,
-        "unit_name": buildingUnits.isNotEmpty ? buildingUnits[0] : "N/A",
-      };
+      final selectedGateName = prefs.getString('selected_gate');
 
-      print("Payload: $payload");
+      log("Visitor Log ID: ${GlobalStorage.visitorLogId}");
+      log("Searched Visitor: $searchedVisitor");
 
-      final response = await Dio().post(
-        'https://gateapi.cubeone.in/api/visitor/logDetails',
-        data: payload,
-        options: Options(
-          headers: {"Content-Type": "application/json"},
-        ),
-      );
+      // Iterate through all members to create the payloads
+      List<Map<String, dynamic>> payloads = memberDetails.map((member) {
+        final memberId = int.tryParse(member['member_ids'].toString()) ??
+            0; // Ensure member_id is an integer
+        if (memberId == 0) {
+          log("Invalid member_id detected for member: ${member['name']}");
+        }
 
-      // Handle the response
-      if (response.statusCode == 200) {
-        Fluttertoast.showToast(
-          msg: "Visitor checked-in successfully!",
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
+        return {
+          "visitor_log_id": GlobalStorage.visitorLogId,
+          "visitor_id": (GlobalStorage.visitorId == null ||
+                  GlobalStorage.visitorId!.isEmpty)
+              ? searchedVisitor
+              : GlobalStorage.visitorId,
+          "company_name": companyName,
+          "member_id": memberId, // Ensure it's an integer
+          "member_name": member['name'],
+          "unit_id": member['unit_id'],
+          "company_id": socId,
+          "unit_name": member['building_unit'],
+          "in_gate": selectedGateName.toString()
+        };
+      }).toList();
+
+      log("Sending payloads: ${jsonEncode(payloads)}");
+
+      // Send each payload
+      for (final payload in payloads) {
+        if (payload['member_id'] == 0) {
+          // Fluttertoast.showToast(
+          //   msg: "Invalid member ID detected. Skipping entry for ${payload['member_name']}.",
+          //   backgroundColor: Colors.red,
+          //   textColor: Colors.white,
+          // );
+          continue; // Skip invalid member
+        }
+
+        final response = await Dio().post(
+          'https://gateapi.cubeone.in/api/visitor/logDetails',
+          data: payload,
+          options: Options(
+            headers: {"Content-Type": "application/json"},
+          ),
         );
-        print("Response: ${response.data}");
-      } else {
-        print("Response Error: ${response.data}");
+
+        if (response.statusCode == 200) {
+          log("API Response for member ${payload['member_name']}: ${response.data}");
+        } else {
+          log("API Error Response for member ${payload['member_name']}: ${response.data}");
+          throw Exception("API returned status code ${response.statusCode}");
+        }
       }
+
+      Fluttertoast.showToast(
+        msg: "Visitor checked-in successfully for all members!",
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
     } catch (e) {
       if (e is DioError) {
-        print("DioError: ${e.response?.data ?? e.message}");
+        log("DioError: ${e.response?.data ?? e.message}");
+        // Fluttertoast.showToast(
+        //   msg: "Network error occurred",
+        //   backgroundColor: Colors.red,
+        //   textColor: Colors.white,
+        // );
       } else {
-        print("Unexpected Error: $e");
+        log("Error in visitorLogDetails: $e");
+        // Fluttertoast.showToast(
+        //   msg: "An error occurred while processing the request",
+        //   backgroundColor: Colors.red,
+        //   textColor: Colors.white,
+        // );
       }
-      log("Error: $e");
-
-      // Fluttertoast.showToast(
-      //   msg: "Error occurred: ${e.toString()}",
-      //   backgroundColor: Colors.orange,
-      //   textColor: Colors.white,
-      // );
     }
   }
 
   Future<List<dynamic>> getBuildingsList() async {
-    final int? companyId = await gateStorage.getSocietyId();
+    final String? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');
 
     final response = await _apiHelper.get(
@@ -805,7 +925,7 @@ class RemoteDataSource {
   }
 
   Future<List<dynamic>> getMembersList() async {
-    final int? companyId = await gateStorage.getSocietyId();
+    final String? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');
 
     final response = await _apiHelper.get(

@@ -76,10 +76,16 @@ class DashboardBlocks extends StatelessWidget {
                       style: Theme.of(context).textTheme.displayMedium,
                     ),
                     Text(
-                      'Book',
+                      "${(outBook ?? 0) + (inBook ?? 0)}", // Handle null values with default 0
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.labelMedium,
+                      style:
+                      Theme.of(context).textTheme.displayMedium,
                     ),
+                    // Text(
+                    //   'Book',
+                    //   textAlign: TextAlign.center,
+                    //   style: Theme.of(context).textTheme.labelMedium,
+                    // ),
                   ],
                 ),
               ),
@@ -120,7 +126,7 @@ class DashboardBlocks extends StatelessWidget {
                                     Theme.of(context).textTheme.displayMedium,
                               ),
                               Text(
-                                'Visitor\nIn',
+                                'Visitor-In',
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.labelMedium,
                               ),
@@ -191,7 +197,7 @@ class DashboardBlocks extends StatelessWidget {
                                     Theme.of(context).textTheme.displayMedium,
                               ),
                               Text(
-                                'Visitor\nOut',
+                                'Visitor-Out',
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.labelMedium,
                               ),
