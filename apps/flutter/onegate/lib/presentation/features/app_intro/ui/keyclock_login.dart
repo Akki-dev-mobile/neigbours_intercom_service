@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:lottie/lottie.dart';
@@ -225,26 +226,50 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       _showError('Failed to check login state: $e');
     }
   }
+  Future<void> _navigateBasedOnRole(String? role) async {
+    try {
+      Widget? destination;
 
-  void _navigateBasedOnRole(String? role) {
-    Widget? destination;
-    switch (role) {
-      case 'admin':
+      if (role == 'admin') {
         destination = const AdminDashboardView();
-        break;
-      case 'gatekeeper':
+      } else if (role == 'gatekeeper') {
         destination = const GateDashboardView();
-        break;
-    }
+      }
 
-    if (destination != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => destination!),
-      );
+      if (destination != null) {
+        log('Navigating to $role');
+        if (context.mounted) {
+          await Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => destination!),
+          );
+          log('Navigation to $role complete');
+        } else {
+          log('Context is not mounted. Unable to navigate.');
+        }
+      } else {
+        log('No valid role found: $role');
+      }
+    } catch (e, stackTrace) {
+      log('Error during navigation: $e');
+      log('Stack trace: $stackTrace');
+      _showError('Failed to navigate based on role: $e');
     }
   }
 
+  // void _showError(String message) {
+  //   if (context.mounted) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(message)),
+  //     );
+  //   }
+  // }
+
+  // void _showError(String message) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(content: Text(message)),
+  //   );
+  // }
   Future<void> _handleLogin() async {
     try {
       _loginState.value = _loginState.value.copyWith(isLoading: true);
@@ -346,6 +371,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   Future<void> _handleRoleSelected(String role) async {
     try {
+      log("$role");
       await _loginService.gateStorage.saveRole(role);
       final gates = await _loginService.fetchGates();
 
@@ -362,10 +388,21 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   Future<void> _showGateSelection(List<dynamic> gates, String selectedRole) async {
     try {
+      // Log the gates for debugging
+      log("Gates for selection: $gates");
+
       final gateProvider = Provider.of<GateProvider>(context, listen: false);
       await gateProvider.loadGates();
 
-      showModalBottomSheet(
+      // Ensure gates list is populated
+      if (gates.isEmpty) {
+        _showError('No gates available for selection.');
+        return;
+      }
+
+      // Open the bottom sheet for gate selection
+      log("Opening gate selection sheet...");
+      await showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(
@@ -377,19 +414,25 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
             try {
               SharedPreferences prefs = await SharedPreferences.getInstance();
               await prefs.setString('selected_gate', gate["gate_name"]);
+              log("Gate selected: ${gate['gate_name']}");
               Navigator.pop(context);
-              _navigateBasedOnRole(selectedRole);
+              // await Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => GateDashboardView()),
+              // );
+            await  _navigateBasedOnRole(selectedRole);
             } catch (e) {
               _showError('Failed to save gate selection: $e');
             }
           },
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      log('Error showing gate selection: $e');
+      log('Stack trace: $stackTrace');
       _showError('Failed to show gate selection: $e');
     }
   }
-
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

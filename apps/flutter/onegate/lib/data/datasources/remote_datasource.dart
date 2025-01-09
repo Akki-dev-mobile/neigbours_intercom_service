@@ -89,7 +89,7 @@ class RemoteDataSource {
       queryParameters: {'company_id': companyId},
     );
 
-    return response.data['data'] ?? [];
+    return response.data ?? [];
   }
 
   // Future<Map<String, dynamic>> fetchUserRoles(String userId, int societyId) async {

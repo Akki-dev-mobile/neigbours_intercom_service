@@ -38,10 +38,9 @@ class GateProvider with ChangeNotifier {
       final List<dynamic> fetchedGates = await remoteDataSource.fetchGates();
       log("Fetched Gates: $fetchedGates");
 
-      // Cast each gate to Map<String, dynamic> and add `isSelected` field
       gates = fetchedGates.map((gate) {
         return {
-          ...Map<String, dynamic>.from(gate), // Explicit cast to Map<String, dynamic>
+          ...Map<String, dynamic>.from(gate),
           'isSelected': false, // Default to false
         };
       }).toList();
@@ -53,24 +52,35 @@ class GateProvider with ChangeNotifier {
       if (selectedGateName != null) {
         log("Previously Selected Gate: $selectedGateName");
 
-        // Mark the previously selected gate as `isSelected`
         selectedGate = gates.firstWhere(
               (gate) => gate['gate_name'] == selectedGateName,
           orElse: () {
-            log("Selected gate not found, defaulting to first gate.");
+            // Fallback to the first gate if not found
             gates[0]['isSelected'] = true;
-            return gates[0];
+            return gates[0]; // Explicitly return the first gate
           },
         );
-        selectedGate!['isSelected'] = true;
-      } else if (gates.isNotEmpty) {
-        // Select the first gate by default if no selection exists
+
+        if (selectedGate != null) {
+          selectedGate!['isSelected'] = true;
+          log("Selected Gate Found: ${selectedGate!['gate_name']}");
+        }
+      } else if (gates.length == 1) {
+        log("Only one gate available: ${gates[0]['gate_name']}");
+        gates[0]['isSelected'] = true;
+        selectedGate = gates[0];
+        await prefs.setString(selectedGateKey, gates[0]['gate_name']);
+      } else {
+        log("Multiple gates found, defaulting to the first gate.");
         gates[0]['isSelected'] = true;
         selectedGate = gates[0];
       }
+
+      log("Final Selected Gate: ${selectedGate?['gate_name']}");
     } catch (e, stackTrace) {
       log('Error loading gates: $e');
       log('Stack trace: $stackTrace');
+      selectedGate = null; // Reset selectedGate on failure
     } finally {
       isLoading = false; // End loading
       notifyListeners();
@@ -93,6 +103,7 @@ class GateProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('selected_gate', gates[index]['gate_name']);
       log("Selected Gate Saved: ${gates[index]['gate_name']}");
+
     } catch (e, stackTrace) {
       debugPrint('Error saving selected gate: $e');
       debugPrint('Stack trace: $stackTrace');
