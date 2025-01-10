@@ -85,7 +85,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     }
     _initializeSocietyId();
     getSelectedGate();
-  }
+    // _storeTodayLogsCount(context);
+
+     }
 
   Future<void> getSelectedGate() async {
     final prefs = await SharedPreferences.getInstance();
@@ -148,45 +150,63 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             return LoaderView();
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
-            final visitorLogs = successState.visitorLogs;
-            List<VisitorLog> filteredVisitors = visitorLogs!
-                .where((visitorLog) => visitorLog.visitor!.name
-                    .toLowerCase()
-                    .contains(_searchText!.toLowerCase()))
+            final visitorLogs = successState.visitorLogs ?? [];
+            List<VisitorLog> uniqueVisitorLogs = [];
+            Set<String> checkInTimes = {};
+
+            for (var log in visitorLogs) {
+              final checkInTime = log.visitor_check_in?.toIso8601String();
+              if (!checkInTimes.contains(checkInTime)) {
+                checkInTimes.add(checkInTime!);
+                uniqueVisitorLogs.add(log);
+              }
+            }
+
+            List<VisitorLog> filteredVisitors = uniqueVisitorLogs
+                .where((visitorLog) =>
+                visitorLog.visitor!.name.toLowerCase().contains(_searchText!.toLowerCase()))
                 .toList();
 
-            final dateFormat = DateFormat("yyyy-MM-ddTHH:mm:ss.SSSSSSZ");
-
-// Define start and end of today
+            final today = DateTime.now();
             final startOfToday = DateTime(today.year, today.month, today.day);
-            final endOfToday = startOfToday.add(Duration(days: 1));
-
-// Define start and end of yesterday
-            final startOfYesterday = startOfToday.subtract(Duration(days: 1));
+            final endOfToday = startOfToday.add(const Duration(days: 1));
+            final startOfYesterday = startOfToday.subtract(const Duration(days: 1));
             final endOfYesterday = startOfToday;
 
-// Filter for today
-            final todayLogs = filteredVisitors.where((log) {
-              final checkInDate =
-                  dateFormat.parse(log.visitor_check_in!.toIso8601String());
-              return checkInDate.isAfter(startOfToday) &&
-                  checkInDate.isBefore(endOfToday);
+            List<VisitorLog> todayLogs = filteredVisitors.where((log) {
+              final checkInDate = log.visitor_check_in!;
+              return checkInDate.isAfter(startOfToday) && checkInDate.isBefore(endOfToday);
             }).toList();
 
-// Filter for yesterday
-            final yesterdayLogs = filteredVisitors.where((log) {
-              final checkInDate =
-                  dateFormat.parse(log.visitor_check_in!.toIso8601String());
+            List<VisitorLog> todayCheckoutLogs = filteredVisitors.where((log) {
+              final checkOutDate = log.visitor_check_out;
+              return checkOutDate != null &&
+                  checkOutDate.isAfter(startOfToday) &&
+                  checkOutDate.isBefore(endOfToday);
+            }).toList();
+
+            Future<void> _storeTodayLogsCount(int count, String key) async {
+              final prefs = await SharedPreferences.getInstance();
+              prefs.setInt(key, count);
+            }
+
+            _storeTodayLogsCount(todayLogs.length, 'todayLogsCount');
+            _storeTodayLogsCount(todayCheckoutLogs.length, 'todayCheckoutLogsCount');
+
+
+
+            List<VisitorLog> yesterdayLogs = filteredVisitors.where((log) {
+              final checkInDate = log.visitor_check_in!;
               return checkInDate.isAfter(startOfYesterday) &&
                   checkInDate.isBefore(endOfYesterday);
             }).toList();
 
-// Filter for older
-            final olderLogs = filteredVisitors.where((log) {
-              final checkInDate =
-                  dateFormat.parse(log.visitor_check_in!.toIso8601String());
+            List<VisitorLog> olderLogs = filteredVisitors.where((log) {
+              final checkInDate = log.visitor_check_in!;
               return checkInDate.isBefore(startOfYesterday);
             }).toList();
+
+
             return PopScope(
               canPop: false,
               child: MyScrollView(
@@ -221,7 +241,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       padding: const EdgeInsets.only(right: 10.0),
                       child: IconButton(
                         onPressed: () async {
-                          await _showExportDialog(context, visitorLogs);
+                          await _showExportBottomSheet(context, visitorLogs);
                         },
                         icon: const Icon(
                           Icons.download,
@@ -297,12 +317,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Text(
-                                //   'Today',
-                                //   style:
-                                //       Theme.of(context).textTheme.headlineSmall,
-                                // ),
-                                // const Divider(),
+
                               ],
                             );
                           }
@@ -325,74 +340,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               todayLogs.length + 1; // Add 1 for header
                         }
 
-                        // Yesterday Section
-                        // if (yesterdayLogs.isNotEmpty) {
-                        //   if (index == currentIndex) {
-                        //     return Column(
-                        //       crossAxisAlignment: CrossAxisAlignment.start,
-                        //       children: [
-                        //         const SizedBox(height: 20),
-                        //         Text(
-                        //           'Yesterday',
-                        //           style:
-                        //               Theme.of(context).textTheme.headlineSmall,
-                        //         ),
-                        //         const Divider(),
-                        //       ],
-                        //     );
-                        //   }
-                        //   if (index > currentIndex &&
-                        //       index <= currentIndex + yesterdayLogs.length) {
-                        //     return VisitorLogItem(
-                        //       visitorLog:
-                        //           yesterdayLogs[index - currentIndex - 1],
-                        //       onCheckOut: () {
-                        //         yesterdayLogs[index - currentIndex - 1]
-                        //             .visitor_check_out = Utils.getCurrentTime();
-                        //         yesterdayLogs[index - currentIndex - 1]
-                        //             .is_checked_out = true;
-                        //         _visitorLogBloc.add(CheckOutEvent(
-                        //             yesterdayLogs[index - currentIndex - 1],
-                        //             widget.id));
-                        //       },
-                        //     );
-                        //   }
-                        //   currentIndex +=
-                        //       yesterdayLogs.length + 1; // Add 1 for header
-                        // }
 
-                        // Older Section
-                        // if (olderLogs.isNotEmpty) {
-                        //   if (index == currentIndex) {
-                        //     return Column(
-                        //       crossAxisAlignment: CrossAxisAlignment.start,
-                        //       children: [
-                        //         const SizedBox(height: 20),
-                        //         Text(
-                        //           'Older',
-                        //           style:
-                        //               Theme.of(context).textTheme.headlineSmall,
-                        //         ),
-                        //         const Divider(),
-                        //       ],
-                        //     );
-                        //   }
-                        //   if (index > currentIndex &&
-                        //       index <= currentIndex + olderLogs.length) {
-                        //     return VisitorLogItem(
-                        //       visitorLog: olderLogs[index - currentIndex - 1],
-                        //       onCheckOut: () {
-                        //         olderLogs[index - currentIndex - 1]
-                        //             .visitor_check_out = Utils.getCurrentTime();
-                        //         olderLogs[index - currentIndex - 1]
-                        //             .is_checked_out = true;
-                        //         _visitorLogBloc.add(CheckOutEvent(
-                        //             olderLogs[index - currentIndex - 1],
-                        //             widget.id));
-                        //       },
-                        //     );
-                        //   }
-                        // }
 
                         return const SizedBox
                             .shrink(); // Fallback in case of unexpected index
@@ -412,7 +360,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
-  Future<void> _showExportDialog(
+  Future<void> _showExportBottomSheet(
       BuildContext context, List<VisitorLog> visitorLogs) async {
     TextEditingController emailController = TextEditingController();
     TextEditingController nameController = TextEditingController();
@@ -425,19 +373,35 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
     final exportFormKey = GlobalKey<FormState>();
 
-    await showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Export Logs'),
-              content: SingleChildScrollView(
-                child: Form(
-                  key: exportFormKey,
+            return Container(
+              padding: EdgeInsets.only(
+                top: 16,
+                left: 16,
+                right: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.background,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Form(
+                key: exportFormKey,
+                child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Text(
+                        'Export Logs',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
                       CustomForm.textField(
                         "Email",
                         titleColor: Theme.of(context).colorScheme.onSurface,
@@ -456,207 +420,173 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         textController: emailController,
                       ),
                       const SizedBox(height: 20),
-                      // Date Range Picker
+                      // Start Date with Validation
                       FormField<DateTime>(
                         validator: (value) {
-                          if (value == null) {
+                          if (startDate == null) {
                             return "Please select a start date";
                           }
                           return null;
                         },
-                        builder: (fieldState) => InkWell(
-                          onTap: () async {
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: startDate ?? DateTime.now(),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime.now(),
-                              builder: (BuildContext context, Widget? child) {
-                                return Theme(
-                                  data: ThemeData.light().copyWith(
-                                    colorScheme: ColorScheme.light(
-                                      primary: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                      onPrimary:
-                                          Theme.of(context).colorScheme.surface,
-                                      surface:
-                                          Theme.of(context).colorScheme.surface,
-                                      onSurface: Colors.black,
+                        builder: (fieldState) {
+                          return InkWell(
+                            onTap: () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: startDate ?? DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime.now(),
+                                builder: (BuildContext context, Widget? child) {
+                                  return Theme(
+                                    data: ThemeData.light().copyWith(
+                                      colorScheme: ColorScheme.light(
+                                        primary: Colors.black, // Primary color for dialog
+                                      ),
+                                      textButtonTheme: TextButtonThemeData(
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.black, // Black text for "Cancel" and "OK"
+                                        ),
+                                      ),
                                     ),
-                                    dialogBackgroundColor: Colors.white,
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                startDate = picked;
-                                fieldState.didChange(
-                                    picked); // Update FormField state
-                                // Ensure "To Date" is valid
-                                if (endDate != null &&
-                                    startDate!.isAfter(endDate!)) {
-                                  endDate = null;
-                                }
-                              });
-                            }
-                          },
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildDateField(
-                                context,
-                                label: 'From Date',
-                                date: startDate,
-                                placeholder: 'Select From Date',
-                              ),
-                              if (fieldState.hasError)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Text(
-                                    fieldState.errorText!,
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(context).colorScheme.error,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  startDate = picked;
+                                  // Ensure "To Date" is valid
+                                  if (endDate != null && startDate!.isAfter(endDate!)) {
+                                    endDate = null;
+                                  }
+                                  fieldState.didChange(picked);
+                                });
+                              }
+                            },
+                            child: _buildDateField(
+                              context,
+                              label: 'From Date',
+                              date: startDate,
+                              placeholder: 'Select From Date',
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
-
-                      // To Date Picker with Validation
+                      // End Date with Validation
                       FormField<DateTime>(
                         validator: (value) {
-                          if (value == null) {
+                          if (endDate == null) {
                             return "Please select an end date";
                           }
-                          if (startDate != null && value.isBefore(startDate!)) {
+                          if (startDate != null &&
+                              endDate!.isBefore(startDate!)) {
                             return "End date cannot be earlier than start date";
                           }
                           return null;
                         },
-                        builder: (fieldState) => InkWell(
-                          onTap: () async {
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: endDate ?? DateTime.now(),
-                              firstDate: startDate ?? DateTime(2000),
-                              lastDate: DateTime.now(),
-                              builder: (BuildContext context, Widget? child) {
-                                return Theme(
-                                  data: ThemeData.light().copyWith(
-                                    colorScheme: ColorScheme.light(
-                                      primary: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                      onPrimary:
-                                          Theme.of(context).colorScheme.surface,
-                                      surface:
-                                          Theme.of(context).colorScheme.surface,
-                                      onSurface: Colors.black,
+                        builder: (fieldState) {
+                          return InkWell(
+                            onTap: () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: endDate ?? DateTime.now(),
+                                firstDate: startDate ?? DateTime(2000),
+                                lastDate: DateTime.now(),
+                                builder: (BuildContext context, Widget? child) {
+                                  return Theme(
+                                    data: ThemeData.light().copyWith(
+                                      colorScheme: ColorScheme.light(
+                                        primary: Colors.black, // Primary color for dialog
+                                      ),
+                                      textButtonTheme: TextButtonThemeData(
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.black, // Black text for "Cancel" and "OK"
+                                        ),
+                                      ),
                                     ),
-                                    dialogBackgroundColor: Colors.white,
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                endDate = picked;
-                                fieldState.didChange(
-                                    picked); // Update FormField state
-                              });
-                            }
-                          },
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildDateField(
-                                context,
-                                label: 'To Date',
-                                date: endDate,
-                                placeholder: 'Select To Date',
-                              ),
-                              if (fieldState.hasError)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Text(
-                                    fieldState.errorText!,
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(context).colorScheme.error,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  endDate = picked;
+                                  fieldState.didChange(picked);
+                                });
+                              }
+                            },
+                            child: _buildDateField(
+                              context,
+                              label: 'To Date',
+                              date: endDate,
+                              placeholder: 'Select To Date',
+                            ),
+                          );
+                        },
                       ),
+                      const SizedBox(height: 24),
+                  CustomLargeBtn(
+                    onPressed: () async {
+                      if (startDate == null) {
+                        Fluttertoast.showToast(
+                          msg: "Please select a start date",
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.BOTTOM,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                        return;
+                      }
+                      if (endDate == null) {
+                        Fluttertoast.showToast(
+                          msg: "Please select an end date",
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.BOTTOM,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                        return;
+                      }
+                      if (exportFormKey.currentState!.validate()) {
+                        await prefs.setString('email', emailController.text);
+
+                        final formattedFromDate = DateFormat('yyyy-MM-dd').format(startDate!);
+                        final formattedToDate = DateFormat('yyyy-MM-dd').format(endDate!);
+
+                        final gateProvider = Provider.of<GateProvider>(context, listen: false);
+                        final selectedGate = gateProvider.selectedGate;
+                        final email = emailController.text.trim();
+
+                        final visitorData = {
+                          "company_id": societyId,
+                          "name": nameController.text,
+                          "to_mail": email,
+                          "from_date": formattedFromDate,
+                          "to_date": formattedToDate,
+                          "in_gate": selectedGateName,
+                        };
+
+                        try {
+                          await remoteDataSource.exportLogs(visitorData);
+                          Navigator.pop(context);
+                          _showSuccessDialog(context, "Export logs",
+                              "Visitor logs exported successfully.");
+                        } catch (e) {
+                          // Handle error case
+                        }
+                      }
+                    },
+                    text: "Export",
+                  ),
                     ],
                   ),
                 ),
               ),
-              actions: [
-                CustomLargeBtn(
-                  onPressed: () async {
-                    if (exportFormKey.currentState!.validate() &&
-                        startDate != null &&
-                        endDate != null) {
-                      await prefs.setString('email', emailController.text);
-
-                      final formattedFromDate =
-                          DateFormat('yyyy-MM-dd').format(startDate!);
-                      final formattedToDate =
-                          DateFormat('yyyy-MM-dd').format(endDate!);
-
-                      final gateProvider =
-                          Provider.of<GateProvider>(context, listen: false);
-                      final selectedGate = gateProvider.selectedGate;
-                      final email = emailController.text.trim();
-
-                      // Email validation regex
-                      final emailRegex = RegExp(
-                        r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-                      );
-
-                      if (!emailRegex.hasMatch(email)) {
-                        // _showErrorDialog(context, "Invalid Email", "Please enter a valid email address.");
-                        return;
-                      }
-
-                      // Construct the data for export
-                      final visitorData = {
-                        "company_id": societyId,
-                        "name": nameController.text,
-                        "to_mail": email,
-                        "from_date": formattedFromDate,
-                        "to_date": formattedToDate,
-                        "in_gate": selectedGateName,
-                      };
-
-                      try {
-                        await remoteDataSource.exportLogs(visitorData);
-                        Navigator.pop(context);
-                        _showSuccessDialog(context, "Export Successful",
-                            "Visitor logs exported successfully.");
-                      } catch (e) {
-                        // _showErrorDialog(context, "Export Failed", "An error occurred during the export. Please try again.");
-                      }
-                    } else {
-                      // _showErrorDialog(context, "Missing Information", "Please ensure all fields are filled.");
-                    }
-                  },
-                  text: "Export",
-                ),
-              ],
             );
           },
         );
@@ -722,7 +652,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       builder: (context) {
         return AlertDialog(
           title: Text(title),
-          content: Text(message),
+          content: Text(message,style: TextStyle(color: Colors.green),),
           actions: [
             TextButton(
               onPressed: () {
@@ -845,7 +775,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
 
   @override
   void initState() {
-
     super.initState();
   }
 
@@ -909,14 +838,10 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 vertical: 2,
               ),
               leading: CircleAvatar(
-                backgroundImage:
-
-// widget
-//         .visitorLog.visitor!.visitor_image.isNotEmpty
-//     ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
-//     :
-
-                    NetworkImage(
+                backgroundImage: widget
+                        .visitorLog.visitor!.visitor_image.isNotEmpty
+                    ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
+                    : NetworkImage(
                         'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
                 child: widget.visitorLog.visitor!.visitor_image.isEmpty
                     ? Text(
@@ -943,7 +868,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xffFFEBE6),
+                                color: const Color(0xffFFB080),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(

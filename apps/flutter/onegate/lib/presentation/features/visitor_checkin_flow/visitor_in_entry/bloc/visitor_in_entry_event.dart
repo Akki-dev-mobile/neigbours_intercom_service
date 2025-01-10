@@ -15,7 +15,7 @@ class VIEIncrementGuestCountButtonPressedEvent extends VisitorInEntryEvent {}
 class VIEDecrementGuestCountButtonPressedEvent extends VisitorInEntryEvent {}
 
 class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
-  final VisitorMapper? searchedVisitor;
+  final Visitor? searchedVisitor;
   final String? guestName;
   final String? guestComingFrom;
   final int? guestCount;
@@ -38,7 +38,7 @@ class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
 
 class VIECameraButtonPressedEvent extends VisitorInEntryEvent {
   final File? imageFile;
-  final VisitorMapper? visitor;
+  final Visitor? visitor;
   final PurposeCategory? purposeCategory;
   final String? operation;
 

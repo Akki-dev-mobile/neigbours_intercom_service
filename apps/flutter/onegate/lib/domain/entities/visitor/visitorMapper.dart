@@ -1,3 +1,5 @@
+import 'package:onegate_client/onegate_client.dart';
+
 class VisitorMapper {
   VisitorMapper({
     this.id,
@@ -27,7 +29,8 @@ class VisitorMapper {
       id: json['id'] as int?, // Handle nullable id
       name: json['name'] as String?, // Handle nullable name
       mobile: json['mobile'] as String?, // Handle nullable mobile
-      VisitorMapperImage: json['visitor_image'] as String?, // Handle nullable visitorImage
+      VisitorMapperImage:
+      json['visitor_image'] as String?, // Handle nullable visitorImage
       comingFrom: json['coming_from'] as String?, // Handle nullable comingFrom
       cardNumber: json['card_number'] as String?, // Handle nullable cardNumber
       guestCount: json['guest_count'] as int?, // Handle nullable guestCount
@@ -45,5 +48,28 @@ class VisitorMapper {
       'card_number': cardNumber,
       'guest_count': guestCount, // Include guest count in JSON
     };
+  }
+
+  /// Converts `VisitorMapper` to `Visitor`.
+  Visitor toVisitor() {
+    return Visitor(
+      id: id,
+      name: name ?? '',
+      mobile: mobile ?? '',
+      visitor_image: VisitorMapperImage ?? '',
+    );
+  }
+
+  /// Converts `Visitor` to `VisitorMapper`.
+  factory VisitorMapper.fromVisitor(Visitor visitor) {
+    return VisitorMapper(
+      id: visitor.id,
+      name: visitor.name,
+      mobile: visitor.mobile,
+      VisitorMapperImage: visitor.visitor_image,
+      comingFrom: null,
+      cardNumber: null,
+      guestCount: null,
+    );
   }
 }

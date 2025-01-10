@@ -1,9 +1,12 @@
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class GateSelectionView extends StatelessWidget {
@@ -32,7 +35,7 @@ class GateSelectionView extends StatelessWidget {
                 ...List.generate(provider.gates!.length, (index) {
                   return GateSettingListTile(
                     switchValue: provider.gates![index]['isSelected'],
-                    onChanged: (value) =>  provider.selectGate(index),
+                    onChanged: (value) => provider.selectGate(index),
                     title: provider.gates![index]['gate_name'] ?? 'Unknown Gate',
                     subtitle:
                     'Enable/Disable ${provider.gates![index]['gate_name']}',
@@ -45,16 +48,48 @@ class GateSelectionView extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: CustomLargeBtn(
                 text: 'CONFIRM',
-                onPressed: () {
+                onPressed: () async {
                   final selectedGate = provider.selectedGate;
+
                   if (selectedGate != null) {
-                    print("Selected Gate: ${selectedGate['gateName']}");
-                    SnackBar(content: Text("Gate Changed to ${selectedGate['gateName']}"),);
+                    final prefs = await SharedPreferences.getInstance();
+
+                final selectedGate  =  await prefs.getString('selected_gate');
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Gate Changed to $selectedGate"),
+                      ),
+                    );
                   } else {
                     print("No gate selected");
-                    SnackBar(content: Text("Gate Changed to ${selectedGate?['gateName']}"),);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("No gate selected"),
+                      ),
+                    );
                   }
-   Navigator.push(context, MaterialPageRoute(builder: (context) => GateDashboardView()));
+
+                  // Check the role and navigate accordingly
+                  final role = await GateStorage().getRole();
+
+                  print("role$role");
+                  // Fetch the role
+                  if (role == 'admin' || role == 'master') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AdminDashboardView(),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GateDashboardView(),
+                      ),
+                    );
+                  }
                 },
               ),
             ),

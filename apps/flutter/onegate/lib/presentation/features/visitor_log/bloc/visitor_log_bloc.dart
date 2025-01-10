@@ -34,6 +34,8 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       String formattedDate = getFormattedDate(today);
       final visitorLogs = await visitorLogUseCase.fetchAllLogs(
           _preferenceUtils.getSelectedCompany()?.companyId ?? 0, formattedDate);
+
+
       emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));

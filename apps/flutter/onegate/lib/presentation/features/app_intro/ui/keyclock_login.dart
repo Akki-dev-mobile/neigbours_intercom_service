@@ -388,19 +388,32 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   Future<void> _showGateSelection(List<dynamic> gates, String selectedRole) async {
     try {
-      // Log the gates for debugging
-      log("Gates for selection: $gates");
-
-      final gateProvider = Provider.of<GateProvider>(context, listen: false);
-      await gateProvider.loadGates();
-
       // Ensure gates list is populated
       if (gates.isEmpty) {
         _showError('No gates available for selection.');
         return;
       }
 
-      // Open the bottom sheet for gate selection
+      // If only one gate, directly select it and navigate
+      if (gates.length == 1) {
+        final singleGate = gates.first;
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('selected_gate', singleGate["gate_name"]);
+        log("Automatically selected single gate: ${singleGate['gate_name']}");
+
+        // Show a SnackBar indicating navigation
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Only one gate available. Navigating to ${singleGate['gate_name']}')),
+          );
+        }
+
+        // Navigate directly to the destination
+        await _navigateBasedOnRole(selectedRole);
+        return;
+      }
+
+      // For multiple gates, show the bottom sheet
       log("Opening gate selection sheet...");
       await showModalBottomSheet(
         context: context,
@@ -415,12 +428,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
               SharedPreferences prefs = await SharedPreferences.getInstance();
               await prefs.setString('selected_gate', gate["gate_name"]);
               log("Gate selected: ${gate['gate_name']}");
-              Navigator.pop(context);
-              // await Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => GateDashboardView()),
-              // );
-            await  _navigateBasedOnRole(selectedRole);
+              Navigator.pop(context); // Close the bottom sheet
+              await _navigateBasedOnRole(selectedRole);
             } catch (e) {
               _showError('Failed to save gate selection: $e');
             }
@@ -433,11 +442,13 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       _showError('Failed to show gate selection: $e');
     }
   }
+
+
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(content: Text(message)),
+    // );
   }
 
   @override
@@ -793,9 +804,9 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                         widget.onGateSelected(Map<String, dynamic>.from(gate));
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to select gate: $e')),
-                          );
+                          // ScaffoldMessenger.of(context).showSnackBar(
+                          //   SnackBar(content: Text('Failed to select gate: $e')),
+                          // );
                         }
                       }
                     },

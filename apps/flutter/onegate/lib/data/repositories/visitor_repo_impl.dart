@@ -12,12 +12,12 @@ class VisitorRepoImpl extends VisitorRepository {
   VisitorRepoImpl(this._remoteDataSource);
 
   @override
-  Future<VisitorMapper?> searchVisitor(String mobileNumber) async {
+  Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
       final response = await _remoteDataSource.searchVisitor(mobileNumber);
       return response;
     } catch (error) {
-      return null; // Handle error or authentication failure
+      return null;
     }
   }
 
@@ -62,7 +62,7 @@ class VisitorRepoImpl extends VisitorRepository {
   }
 
   @override
-  Future<VisitorMapper?> createVisitor(VisitorMapper visitor) async {
+  Future<Visitor?> createVisitor(Visitor visitor) async {
     try {
       final response = await _remoteDataSource.createVisitor(visitor);
       print("createVisitor visitor_repo_impl::: $response");
@@ -99,7 +99,7 @@ class VisitorRepoImpl extends VisitorRepository {
   }
 
   @override
-  Future<bool> updateVisitor(VisitorMapper visitor) async {
+  Future<bool> updateVisitor(Visitor visitor) async {
     try {
       final response = await _remoteDataSource.updateVisitor(visitor);
       return response;

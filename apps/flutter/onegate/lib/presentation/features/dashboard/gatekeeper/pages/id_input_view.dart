@@ -43,7 +43,7 @@ List<String> _labels = ['Mobile', 'Pass Code'];
 String? selectedPassAlpha = 'A';
 String selectedCountryCode = 'IN';
 final isoCode = selectedCountryCode;
-VisitorMapper? searchedVisitor;
+Visitor? searchedVisitor;
 
 List<String> listPassAlpha = [
   'G',

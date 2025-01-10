@@ -26,7 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 class UnitSelectionView extends StatefulWidget {
-  final VisitorMapper visitor;
+  final c.Visitor visitor;
   final c.PurposeCategory purposeCategory;
   final String? comingFrom;
   final int? guestCount;
@@ -252,7 +252,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   selectedMember.length > 1
                       ? '${selectedMember.length} Selected'
                       : selectedMember.first,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Color(0xffFFB080)),
                 ),
               ],
             ),
@@ -649,8 +649,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                               : selectedMember.first,
                                           style: Theme.of(context)
                                               .textTheme
-                                              .titleMedium,
-                                        ),
+                                              .titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+
                                       ],
                                     ),
                                     const Icon(Icons.keyboard_arrow_up),
@@ -784,29 +784,55 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
 // Update the _prepareVisitorLogData method
-  Future<VisitorLogMapper> _prepareVisitorLogData() async {
+  Future<c.VisitorLog> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
     final companyDetails = await gateStorage.getSocietyDetails();
     final companyName = companyDetails['societyName'];
     // Load the selected gate from SharedPreferences
     final selectedGateName = prefs.getString('selected_gate');
-    return VisitorLogMapper(
-        visitorId: widget.visitorId ?? int.parse(visitorId ?? ""),
-        visitorPurposeCategoryId: widget.purposeCategory.id ?? 1,
-        visitorPurposeSubCategoryId: null,
-        visitorCount: 1,
-        visitorCheckIn: DateTime.parse(formattedInTime),
-        visitorCheckOut: null,
-        visitorCardNumber: widget.visitorNumber,
-        visitorComingFrom: widget.comingFrom,
-        visitorCardId: null,
-        companyId: int.parse(companyId.toString()),
-        isCheckedOut: false,
-        memberDetails:
-            formattedMemberDetails, // Use the formatted member details directly
-        companyName: companyName,
-        inGate: selectedGateName.toString());
+
+    // Save formattedMemberDetails to SharedPreferences
+    // First convert it to a JSON string since SharedPreferences doesn't store complex objects
+    try {
+      final String memberDetailsJson = json.encode(formattedMemberDetails);
+      await prefs.setString('member_details', memberDetailsJson);
+      print('Successfully saved member details: $memberDetailsJson');
+    } catch (e) {
+      print('Error saving member details: $e');
+    }
+
+    return c.VisitorLog(
+        visitor_id: widget.visitor.id ?? 0,
+        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
+        visitor_purpose_sub_category_id: null,
+        visitor_count: widget.guestCount ?? 0,
+        visitor_check_in: DateTime.parse(formattedInTime),
+        visitor_card_number: widget.visitorNumber,
+        visitor_coming_from: widget.comingFrom,
+        visitor_card_id: null,
+        company_id: int.parse(companyId.toString()),
+        is_checked_out: false);
+        // memberDetails: formattedMemberDetails,
+        // companyName: companyName,
+        // inGate: selectedGateName.toString());
+  }
+
+// Helper method to retrieve the saved member details
+  Future<List<Map<String, dynamic>>> getSavedMemberDetails() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? memberDetailsJson = prefs.getString('member_details');
+
+    if (memberDetailsJson != null) {
+      try {
+        final List<dynamic> decoded = json.decode(memberDetailsJson);
+        return List<Map<String, dynamic>>.from(decoded);
+      } catch (e) {
+        print('Error retrieving member details: $e');
+        return [];
+      }
+    }
+    return [];
   }
 
   // Update the _handleInvalidSelection method
@@ -817,27 +843,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final companyName = companyDetails['societyName'];
     // Load the selected gate from SharedPreferences
     final selectedGateName = prefs.getString('selected_gate');
-    final visitorLogData = VisitorLogMapper(
-        visitorId: widget.visitorId ?? int.parse(visitorId!),
-        visitorPurposeCategoryId: 1,
-        visitorPurposeSubCategoryId: widget.purposeCategory.id ?? 1,
-        visitorCount: 1,
-        visitorCheckIn: DateTime.parse(formattedInTime),
-        visitorCheckOut: null,
-        visitorCardNumber: widget.visitorNumber,
-        visitorComingFrom: widget.comingFrom,
-        visitorCardId: null,
-        companyId: int.parse(companyId.toString()),
-        isCheckedOut: false,
-        memberDetails: formattedMemberDetails,
-        companyName: companyName,
-        inGate: selectedGateName.toString());
+    final visitorLogData =  c.VisitorLog(
+        visitor_id: widget.visitor.id ?? 0,
+        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
+        visitor_purpose_sub_category_id: null,
+        visitor_count: widget.guestCount ?? 0,
+        visitor_check_in: DateTime.parse(formattedInTime),
+        visitor_card_number: widget.visitorNumber,
+        visitor_coming_from: widget.comingFrom,
+        visitor_card_id: null,
+        company_id: int.parse(companyId.toString()),
+        is_checked_out: false);
 
     await _showApprovedDialog(context, visitorLogData);
   }
 
   Future<void> _processSelectionSubmission(
-      Set<String> selectedMember, VisitorLogMapper visitorLogData) async {
+      Set<String> selectedMember, c.VisitorLog visitorLogData) async {
     final userId = selectedUserIds.first;
     final selectedMobileNumbers = await _getSelectedMobileNumbers();
     final requestData = _prepareRequestData(userId, selectedMobileNumbers);
@@ -869,7 +891,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'purpose': "meeting",
       'in_time': formattedInTime,
       'user_id': (int.tryParse(userId) ?? 5243243).toString(),
-      'visitor_count': widget.guestCount?.toString() ?? "1",
+      'visitor_count': widget.guestCount.toString(),
       "member_mobile_number": "918452060059",
       "visitor_id": widget.visitorId?.toString() ?? "",
       "purpose_category": widget.purposeCategory.id?.toString() ?? "",
@@ -881,7 +903,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _sendFcmNotification(
-      Map<String, String> requestData, VisitorLogMapper visitorLogData) async {
+      Map<String, String> requestData, c.VisitorLog visitorLogData) async {
     try {
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
@@ -900,7 +922,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  void _handleDioError(DioError e, VisitorLogMapper visitorLogData) async {
+  void _handleDioError(DioError e, c.VisitorLog visitorLogData) async {
     if (e.response?.statusCode == 400) {
       // Fluttertoast.showToast(
       //   msg: "Not a OneApp user",
@@ -916,7 +938,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   void _handleSubmissionError(
-      dynamic error, VisitorLogMapper visitorLogData) async {
+      dynamic error, c.VisitorLog visitorLogData) async {
     log("Unexpected error during submission: $error");
     await _showApprovedDialog(context, visitorLogData);
   }
@@ -1052,8 +1074,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     });
   }
 
+  bool _isButtonDisabled = false;
+
+  void _setLoading(bool isLoading) {
+    setState(() {
+      _isLoading = isLoading;
+    });
+  }
+
   Future<void> _showApprovedDialog(
-      BuildContext context, VisitorLogMapper data) async {
+      BuildContext context, c.VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1084,47 +1114,71 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 ),
                 const SizedBox(height: 16),
                 CustomLargeBtn(
-                  onPressed: () async {
+                  onPressed: () {
+                    if (_isButtonDisabled) return; // Prevent multiple clicks
+
                     setState(() {
                       _isLoading = true; // Start loading
+                      _isButtonDisabled = true; // Disable the button
                     });
 
-                    try {
-                      await remoteDataSource.checkIn(data);
-                      if (savedMemberUnitDetails.isNotEmpty) {
-                        log('Sending visitor log details: ${jsonEncode([
-                              savedMemberUnitDetails
-                            ])}');
-                        await remoteDataSource
-                            .visitorLogDetails([savedMemberUnitDetails]);
-                        await Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const GateDashboardView()),
+                    // Introduce a debounce
+                    Future.delayed(const Duration(milliseconds: 500), () async {
+                      try {
+                        // Simulate a delay with a timer for loader
+                        await Future.delayed(const Duration(seconds: 2));
+
+                        await remoteDataSource.checkIn(data);
+                        if (savedMemberUnitDetails.isNotEmpty) {
+                          log('Sending visitor log details: ${jsonEncode([
+                                savedMemberUnitDetails
+                              ])}');
+                          // _isLoading
+                          //     ? CircularProgressIndicator()
+                          //     : await remoteDataSource.visitorLogDetails(
+                          //         [savedMemberUnitDetails], _setLoading);
+
+                          // First close the dialog
+                          Navigator.pop(context);
+
+                          // Then navigate to GateDashboardView after operations
+                          await Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const GateDashboardView(),
+                            ),
+                          );
+                        } else {
+                          log('Error: savedMemberUnitDetails is empty');
+                          // Show a toast or SnackBar for error feedback
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Error: Missing member details'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        log('Error in approved dialog: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Error processing approval'),
+                            backgroundColor: Colors.red,
+                          ),
                         );
-                      } else {
-                        log('Error: savedMemberUnitDetails is empty');
-                        // Fluttertoast.showToast(
-                        //   msg: "Error: Missing member details",
-                        //   backgroundColor: Colors.red,
-                        //   textColor: Colors.white,
-                        // );
+                      } finally {
+                        setState(() {
+                          _isLoading = false; // Stop loading
+                          _isButtonDisabled =
+                              false; // Re-enable the button if needed
+                        });
                       }
-                    } catch (e) {
-                      log('Error in approved dialog: $e');
-                      // Fluttertoast.showToast(
-                      //   msg: "Error processing approval",
-                      //   backgroundColor: Colors.red,
-                      //   textColor: Colors.white,
-                      // );
-                    } finally {
-                      setState(() {
-                        _isLoading = false; // Stop loading
-                      });
-                    }
+                    });
                   },
-                  text: "Continue",
-                ),
+                  text: _isLoading ? "Loading..." : "Continue",
+                  disabled:
+                      _isButtonDisabled, // Custom property to visually disable button
+                )
               ],
             ),
           ),

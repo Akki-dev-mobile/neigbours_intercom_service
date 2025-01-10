@@ -7,8 +7,8 @@ class VisitorLogUsecase {
   final VisitorLogRepository _repository;
   VisitorLogUsecase(this._repository);
 
-  Future<VisitorLogMapper?> createVisitorLog(
-      VisitorLogMapper visitorLog) async {
+  Future<VisitorLog?> createVisitorLog(
+      VisitorLog visitorLog) async {
     return await _repository.createVisitorLog(visitorLog);
   }
 

@@ -4,10 +4,12 @@ import 'dart:io';
 import 'package:flutter_onegate/common/apiHelper.dart';
 import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
-import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
+import 'package:onegate_client/onegate_client.dart';
 import 'package:provider/provider.dart';
+import 'package:serverpod_client/serverpod_client.dart' as _i1;
+// import 'protocol.dart' as _i2;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -84,12 +86,39 @@ class RemoteDataSource {
     final String? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');
 
-    final response = await _apiHelper.get(
-      '${Environment.baseUrl}/api/admin/gates',
-      queryParameters: {'company_id': companyId},
-    );
+    try {
+      // Make the API call
+      final response = await _apiHelper.get(
+        '${Environment.baseUrl}/api/admin/gates',
+        queryParameters: {'company_id': companyId},
+      );
 
-    return response.data ?? [];
+      // Check and adapt to response structure
+      final responseData = response.data;
+
+      if (responseData == null) {
+        throw Exception('Response data is null');
+      }
+
+      if (responseData is List) {
+        // If the response is a list directly
+        return responseData;
+      } else if (responseData is Map && responseData.containsKey('data')) {
+        // If the response is a map containing 'data'
+        final data = responseData['data'];
+        if (data is List) {
+          return data;
+        } else {
+          throw Exception('Unexpected data format in "data" key');
+        }
+      } else {
+        throw Exception('Unexpected response structure');
+      }
+    } catch (e, stackTrace) {
+      log('Error fetching gates: $e');
+      log('Stack trace: $stackTrace');
+      throw Exception('Failed to fetch gates: $e');
+    }
   }
 
   // Future<Map<String, dynamic>> fetchUserRoles(String userId, int societyId) async {
@@ -119,7 +148,8 @@ class RemoteDataSource {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer YOUR_ACCESS_TOKEN', // Add authorization if required
+            'Authorization':
+                'Bearer YOUR_ACCESS_TOKEN', // Add authorization if required
           },
         ),
       );
@@ -135,7 +165,8 @@ class RemoteDataSource {
           throw Exception('Unexpected data format: ${response.data}');
         }
       } else {
-        throw Exception('Failed to fetch societies. Status code: ${response.statusCode}');
+        throw Exception(
+            'Failed to fetch societies. Status code: ${response.statusCode}');
       }
     } on DioError catch (e) {
       print("DioError: ${e.response?.data ?? e.message}");
@@ -146,22 +177,34 @@ class RemoteDataSource {
     }
   }
 
-  Future<VisitorMapper?> searchVisitor(String mobileNumber) async {
+  Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
       final response = await _apiHelper.get(
         '${Environment.baseUrl}/api/visitor/entry',
         queryParameters: {'mobile_number': mobileNumber},
       );
 
+      // Extract the data array from the response
       final List<dynamic> data = response.data["data"] ?? [];
       if (data.isNotEmpty) {
-        log("data--$data");
+        final visitorData = data.first; // Get the first visitor in the list
+        log("Visitor data fetched: $visitorData");
 
-        final visitor = VisitorMapper.fromJson(data.first);
+        // Map the visitorData to a Visitor object
+        final visitor = Visitor(
+          id: visitorData['id'] as int?,
+          name: visitorData['name'] as String? ?? "",
+          mobile: visitorData['mobile'] as String? ?? "",
+          visitor_image: visitorData['visitor_image'] as String? ?? "",
+        );
+
+        // Store the visitor's ID in SharedPreferences
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('search_visitor_id', visitor.id.toString());
 
         return visitor;
+      } else {
+        log("No visitor found in the response data.");
       }
     } catch (e) {
       log("Error searching visitor: $e");
@@ -182,7 +225,7 @@ class RemoteDataSource {
     return null;
   }
 
-  Future<VisitorMapper?> createVisitor(VisitorMapper visitor) async {
+  Future<Visitor?> createVisitor(Visitor visitor) async {
     try {
       // Fetch the uploaded image URL from GateStorage
       final uploadImageUrl = await GateStorage().getImage();
@@ -211,11 +254,11 @@ class RemoteDataSource {
       print("$visitorId visitorId");
       // Return the VisitorMapper instance
       log("createdVisitor:$response");
-      return VisitorMapper(
+      return Visitor(
         id: visitorId,
         name: visitor.name,
         mobile: visitor.mobile,
-        VisitorMapperImage: uploadImageUrl.toString(),
+        visitor_image: uploadImageUrl.toString(),
       );
     } catch (error) {
       // Handle any errors
@@ -224,7 +267,7 @@ class RemoteDataSource {
     }
   }
 
-  Future<bool> updateVisitor(VisitorMapper visitor) async {
+  Future<bool> updateVisitor(Visitor visitor) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final searchedVisitorId = prefs.getString('search_visitor_id');
     try {
@@ -352,36 +395,52 @@ class RemoteDataSource {
     return formatter.format(dateTime);
   }
 
-  Future<VisitorLogMapper?> checkIn(VisitorLogMapper visitorLog) async {
+  Future<VisitorLog?> checkIn(VisitorLog visitorLog) async {
     print("Attempting check-in...");
 
     try {
-      // Instantiate Dio
       final Dio dio = Dio();
-
-      // Define the API endpoint
       const String apiUrl = "https://gateapi.cubeone.in/api/visitor/log";
 
-      // Prepare the payload using VisitorLogMapper's `toJson` method
+      // Prepare the payload
       final Map<String, dynamic> data = visitorLog.toJson();
 
-      // Format `visitor_check_in` and `visitor_check_out`
+      // Format datetime fields
       data['visitor_check_in'] =
-          formatDateTime(visitorLog.visitorCheckIn ?? DateTime.now());
-      if (visitorLog.visitorCheckOut != null) {
-        data['visitor_check_out'] = formatDateTime(visitorLog.visitorCheckOut!);
+          formatDateTime(visitorLog.visitor_check_in ?? DateTime.now());
+      if (visitorLog.visitor_check_out != null) {
+        data['visitor_check_out'] =
+            formatDateTime(visitorLog.visitor_check_out!);
       }
 
-      // Load the selected gate from SharedPreferences
+      // Load selected gate and member details
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName = prefs.getString('selected_gate');
 
-      // Add additional fields dynamically
+      // Get member details from SharedPreferences
+      final String? memberDetailsJson = prefs.getString('member_details');
+      List<Map<String, dynamic>> memberDetails = [];
+      if (memberDetailsJson != null) {
+        try {
+          final List<dynamic> decoded = json.decode(memberDetailsJson);
+          memberDetails = List<Map<String, dynamic>>.from(decoded);
+        } catch (e) {
+          print('Error retrieving member details: $e');
+        }
+      }
+
+      // Get company details
+      final companyDetails = await gateStorage.getSocietyDetails();
+      final companyName = companyDetails['societyName'];
+
+      // Add additional fields
       data.addAll({
         'in_gate': selectedGateName.toString(),
+        'company_name': companyName,
         'visitor_purpose_sub_category_id': 1,
         'visitor_card_id': 1,
         'id': 1,
+        'member_details': memberDetails
       });
 
       print("Final Payload: $data");
@@ -393,38 +452,60 @@ class RemoteDataSource {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'User-Agent': 'insomnia/10.3.0', // Example header
+            'User-Agent': 'insomnia/10.3.0',
           },
         ),
       );
 
-      // Log the response
       print("VisitorLog Response: ${response.data}");
 
-      // Parse the response and return the VisitorLogMapper object if successful
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
         if (responseData['success'] == true && responseData['data'] != null) {
-          final VisitorLogMapper result =
-              VisitorLogMapper.fromJson(responseData['data']);
-          print("VisitorLog created: ${visitorLog.toJson()}");
+          final item = responseData['data'];
 
-          // Save visitor log ID globally if needed
-          GlobalStorage.visitorLogId =
-              responseData['data']['visitor_log_id'].toString();
+          // Create Visitor object
+          final visitor = Visitor(
+            id: item['visitor_id'],
+            name: item['name'] ?? "",
+            mobile: item['mobile'] ?? "",
+            visitor_image: item['visitor_image'] ?? "",
+          );
+
+          final resultLog = VisitorLog(
+            id: item['visitor_log_id'],
+            visitor_id: item['visitor_id'] ?? 0,
+            visitor: visitor,
+            visitor_purpose_category_id:
+                item['visitor_purpose_category_id'] ?? 0,
+            visitor_purpose_sub_category_id:
+                item['visitor_purpose_sub_category_id'],
+            visitor_building_assignment: item['visitor_building_assignment'],
+            visitor_count: item['visitor_count'] ?? 0,
+            visitor_check_in: item['visitor_check_in'] != null
+                ? DateTime.parse(item['visitor_check_in'])
+                : null,
+            visitor_check_out: item['visitor_check_out'] != null
+                ? DateTime.parse(item['visitor_check_out'])
+                : null,
+            visitor_card_number: item['visitor_card_number'],
+            visitor_coming_from: item['visitor_coming_from'],
+            visitor_card_id: item['visitor_card_id'],
+            company_id: item['company_id'] ?? 0,
+            is_checked_out: item['is_checked_out'] ?? false,
+          );
+
+          // Save visitor log ID globally
+          GlobalStorage.visitorLogId = item['visitor_log_id'].toString();
           print("Saved Visitor Log ID: ${GlobalStorage.visitorLogId}");
-          print("Saved Visitor Log ID: ${GlobalStorage.visitorId}");
 
-          return result;
+          return resultLog;
         } else {
           print("API Response Error: ${responseData['message']}");
+          return null;
         }
-      } else {
-        print(
-            "Failed to create VisitorLog. Status Code: ${response.statusCode}, Response: ${response.data}");
       }
     } on DioError catch (e) {
-      // Handle Dio-specific errors
       if (e.response != null) {
         print("Dio Error: ${e.response?.data}");
         print("Status Code: ${e.response?.statusCode}");
@@ -432,12 +513,11 @@ class RemoteDataSource {
         print("Dio Error: ${e.message}");
       }
     } catch (e, stackTrace) {
-      // Handle unexpected errors
       print("Unexpected error during check-in: $e");
       print("Stack trace: $stackTrace");
     }
 
-    return null; // Return null if the check-in fails
+    return null;
   }
 
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
@@ -595,14 +675,96 @@ class RemoteDataSource {
   //     }
   //   }
   // }
+
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
-      final visitorLog = await client.visitorLog.fetchAllLogs(dateTime);
-      return visitorLog.reversed.toList();
-    } catch (e) {
-      if (kDebugMode) {
-        print('client.visitorLog.fetchAllLogs $e');
+      // Define the API endpoint
+      const String apiUrl = 'https://gateapi.cubeone.in/api/visitor/getLog';
+
+      // Retrieve the gate and company details from preferences and storage
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
+      final companyDetails = await gateStorage.getSocietyId();
+      final resolvedCompanyId = companyDetails;
+
+      // Prepare the query parameters
+      final Map<String, String> queryParams = {
+        "company_id": resolvedCompanyId.toString(),
+        "in_gate": selectedGateName,
+      };
+
+      // Construct the URI with query parameters
+      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
+
+      // Perform the POST request
+      final response = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+      );
+
+      // Debugging: Log the response
+      print("Response: ${response.body}");
+
+      // Handle the response
+      if (response.statusCode == 200) {
+        // Decode the JSON response
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+
+        // Map the JSON objects to `VisitorLog` instances
+        return data.map((item) {
+          try {
+            // print("Processing Item: $item");
+
+            // Create a `Visitor` object directly from root-level fields
+            final visitor = Visitor(
+              id: null, // No `id` in your shared structure
+              name: item['name'] as String? ?? "",
+              mobile: item['mobile'] as String? ?? "",
+              visitor_image: item['visitor_image'] as String? ?? "",
+            );
+
+            // Create the `VisitorLog` object
+            final visitorLog = VisitorLog(
+              id: item['visitor_log_id']
+                  as int?, // Map `visitor_log_id` to `id`
+              visitor_id:
+                  0, // Set to 0 since `visitor_id` isn't in the shared structure
+              visitor: visitor,
+              visitor_purpose_category_id:
+                  0, // Default value, not in shared structure
+              visitor_purpose_sub_category_id: null, // Nullable
+              visitor_building_assignment: null, // Nullable
+              visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
+              visitor_check_in: item['visitor_check_in'] != null
+                  ? DateTime.parse(item['visitor_check_in'] as String)
+                  : null,
+              visitor_check_out: item['visitor_check_out'] != null
+                  ? DateTime.parse(item['visitor_check_out'] as String)
+                  : null,
+              visitor_card_number: item['visitor_card_number'] as String?,
+              visitor_coming_from: item['visitor_coming_from'] as String?,
+              visitor_card_id: null,
+              company_id: item['company_id'] as int? ?? 0,
+              is_checked_out: item['is_checked_out'] as bool? ?? false,
+            );
+
+            // print("Mapped VisitorLog: ${visitorLog.toJson()}");
+            return visitorLog;
+          } catch (mappingError) {
+            // print("Error mapping VisitorLog: $mappingError");
+            throw Exception("Failed to map visitor log");
+          }
+        }).toList();
+      } else {
+        // Handle non-successful HTTP responses
+        throw Exception(
+            'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
       }
+    } catch (e) {
+      // Handle exceptions
+      // print('Error in fetchAllLogs: $e');
       rethrow;
     }
   }
@@ -610,10 +772,93 @@ class RemoteDataSource {
   Future<List<VisitorLog>> fetchCheckInLogs(
       int companyId, String dateTime) async {
     try {
-      final visitorLog = await client.visitorLog.fetchCheckInLogs(dateTime);
-      return visitorLog.reversed.toList();
+      // Define the API endpoint
+      const String apiUrl = 'https://gateapi.cubeone.in/api/visitor/getLog';
+
+      // Boolean for filtering checked-in logs
+      bool isCheckedOut = false;
+
+      // Get the gate and company details from preferences and storage
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
+      final companyDetails = await gateStorage.getSocietyId();
+      final resolvedCompanyId = companyDetails;
+      // Prepare the request payload
+      final Map<String, dynamic> requestBody = {
+        "company_id": resolvedCompanyId,
+        "in_gate": selectedGateName,
+        "only_checkout": isCheckedOut,
+      };
+
+      // Make the POST request
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(requestBody), // Encode the request payload
+      );
+
+      // Print the response for debugging
+      // print("Response: ${response.body}");
+
+      // Check response status
+      if (response.statusCode == 200) {
+        // Parse the visitor logs from the response
+        final responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+
+        // Map the JSON data to `VisitorLog` objects
+        return data.map((item) {
+          try {
+            // print("Processing Item: $item");
+
+            // Create a `Visitor` object directly from root-level fields
+            final visitor = Visitor(
+              id: null, // No `id` in your shared structure
+              name: item['name'] as String? ?? "",
+              mobile: item['mobile'] as String? ?? "",
+              visitor_image: item['visitor_image'] as String? ?? "",
+            );
+
+            // Create the `VisitorLog` object
+            final visitorLog = VisitorLog(
+              id: item['visitor_log_id']
+                  as int?, // Map `visitor_log_id` to `id`
+              visitor_id:
+                  0, // Set to 0 since `visitor_id` isn't in the shared structure
+              visitor: visitor, // Use the constructed `Visitor` object
+              visitor_purpose_category_id:
+                  0, // Default value, not in shared structure
+              visitor_purpose_sub_category_id: null, // Nullable
+              visitor_building_assignment: null, // Nullable
+              visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
+              visitor_check_in: item['visitor_check_in'] != null
+                  ? DateTime.parse(item['visitor_check_in'] as String)
+                  : null,
+              visitor_check_out: item['visitor_check_out'] != null
+                  ? DateTime.parse(item['visitor_check_out'] as String)
+                  : null,
+              visitor_card_number: item['visitor_card_number'] as String?,
+              visitor_coming_from: item['visitor_coming_from'] as String?,
+              visitor_card_id: null, // No `visitor_card_id` in shared structure
+              company_id: item['company_id'] as int? ?? 0,
+              is_checked_out: item['is_checked_out'] as bool? ?? false,
+            );
+
+            // print("Mapped VisitorLog: ${visitorLog.toJson()}");
+            return visitorLog;
+          } catch (mappingError) {
+            // print("Error mapping VisitorLog: $mappingError");
+            throw Exception("Failed to map visitor log");
+          }
+        }).toList();
+      } else {
+        throw Exception(
+            'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
+      }
     } catch (e) {
-      print('visitorLog.fetchCheckInLogs $e');
+      // Handle errors and log them
+      // print('Error in fetchCheckInLogs: $e');
       rethrow;
     }
   }
@@ -621,10 +866,93 @@ class RemoteDataSource {
   Future<List<VisitorLog>> fetchCheckOutLogs(
       int companyId, String dateTime) async {
     try {
-      final visitorLog = await client.visitorLog.fetchCheckOutLogs(dateTime);
-      return visitorLog.reversed.toList();
+      // Define the API endpoint
+      const String apiUrl = 'https://gateapi.cubeone.in/api/visitor/getLog';
+
+      // Boolean for filtering checked-out logs
+      bool isCheckedOut = true;
+
+      // Get the gate and company details from preferences and storage
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
+      final companyDetails = await gateStorage.getSocietyId();
+      final resolvedCompanyId = companyDetails;
+      // Prepare the request payload
+      final Map<String, dynamic> requestBody = {
+        "company_id": resolvedCompanyId,
+        "in_gate": selectedGateName,
+        "only_checkout": isCheckedOut,
+      };
+
+      // Make the POST request
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(requestBody), // Encode the request payload
+      );
+
+      // Print the response for debugging
+      // print("Response: ${response.body}");
+
+      // Check response status
+      if (response.statusCode == 200) {
+        // Parse the visitor logs from the response
+        final responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+
+        // Map the JSON data to `VisitorLog` objects
+        return data.map((item) {
+          try {
+            // print("Processing Item: $item");
+
+            // Create a `Visitor` object directly from root-level fields
+            final visitor = Visitor(
+              id: null, // No `id` in your shared structure
+              name: item['name'] as String? ?? "",
+              mobile: item['mobile'] as String? ?? "",
+              visitor_image: item['visitor_image'] as String? ?? "",
+            );
+
+            // Create the `VisitorLog` object
+            final visitorLog = VisitorLog(
+              id: item['visitor_log_id']
+                  as int?, // Map `visitor_log_id` to `id`
+              visitor_id:
+                  0, // Set to 0 since `visitor_id` isn't in the shared structure
+              visitor: visitor, // Use the constructed `Visitor` object
+              visitor_purpose_category_id:
+                  0, // Default value, not in shared structure
+              visitor_purpose_sub_category_id: null, // Nullable
+              visitor_building_assignment: null, // Nullable
+              visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
+              visitor_check_in: item['visitor_check_in'] != null
+                  ? DateTime.parse(item['visitor_check_in'] as String)
+                  : null,
+              visitor_check_out: item['visitor_check_out'] != null
+                  ? DateTime.parse(item['visitor_check_out'] as String)
+                  : null,
+              visitor_card_number: item['visitor_card_number'] as String?,
+              visitor_coming_from: item['visitor_coming_from'] as String?,
+              visitor_card_id: null, // No `visitor_card_id` in shared structure
+              company_id: item['company_id'] as int? ?? 0,
+              is_checked_out: item['is_checked_out'] as bool? ?? false,
+            );
+
+            // print("Mapped VisitorLog: ${visitorLog.toJson()}");
+            return visitorLog;
+          } catch (mappingError) {
+            // print("Error mapping VisitorLog: $mappingError");
+            throw Exception("Failed to map visitor log");
+          }
+        }).toList();
+      } else {
+        throw Exception(
+            'Failed to fetch checkout logs: ${response.statusCode}, ${response.body}');
+      }
     } catch (e) {
-      print('Eclient.visitorLog.fetchCheckOutLogs $e');
+      // Handle errors and log them
+      // print('Error in fetchCheckOutLogs: $e');
       rethrow;
     }
   }
@@ -795,123 +1123,111 @@ class RemoteDataSource {
     }
   }
 
-  Future<void> visitorLogDetails(
-      List<Map<String, dynamic>>? visitorData) async {
-    try {
-      final companyDetails = await gateStorage.getSocietyDetails();
-      final socId = await gateStorage.getSocietyId();
-      final companyName = companyDetails["societyName"];
-
-      if (socId == null) {
-        throw Exception(
-            "Company ID is null. Please ensure the society is selected.");
-      }
-
-      if (visitorData == null || visitorData.isEmpty) {
-        throw Exception("Visitor data is null or empty");
-      }
-
-      // Extract member details from the new format
-      List<Map<String, dynamic>> memberDetails = [];
-      if (visitorData.first.containsKey('member_details')) {
-        memberDetails = List<Map<String, dynamic>>.from(
-            visitorData.first['member_details'] ?? []);
-      }
-
-      if (memberDetails.isEmpty) {
-        Fluttertoast.showToast(
-          msg: "Error: Member details are missing!",
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-        return;
-      }
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final searchedVisitor = await prefs.getString("search_visitor_id");
-
-      final selectedGateName = prefs.getString('selected_gate');
-
-      log("Visitor Log ID: ${GlobalStorage.visitorLogId}");
-      log("Searched Visitor: $searchedVisitor");
-
-      // Iterate through all members to create the payloads
-      List<Map<String, dynamic>> payloads = memberDetails.map((member) {
-        final memberId = int.tryParse(member['member_ids'].toString()) ??
-            0; // Ensure member_id is an integer
-        if (memberId == 0) {
-          log("Invalid member_id detected for member: ${member['name']}");
-        }
-
-        return {
-          "visitor_log_id": GlobalStorage.visitorLogId,
-          "visitor_id": (GlobalStorage.visitorId == null ||
-                  GlobalStorage.visitorId!.isEmpty)
-              ? searchedVisitor
-              : GlobalStorage.visitorId,
-          "company_name": companyName,
-          "member_id": memberId, // Ensure it's an integer
-          "member_name": member['name'],
-          "unit_id": member['unit_id'],
-          "company_id": socId,
-          "unit_name": member['building_unit'],
-          "in_gate": selectedGateName.toString()
-        };
-      }).toList();
-
-      log("Sending payloads: ${jsonEncode(payloads)}");
-
-      // Send each payload
-      for (final payload in payloads) {
-        if (payload['member_id'] == 0) {
-          // Fluttertoast.showToast(
-          //   msg: "Invalid member ID detected. Skipping entry for ${payload['member_name']}.",
-          //   backgroundColor: Colors.red,
-          //   textColor: Colors.white,
-          // );
-          continue; // Skip invalid member
-        }
-
-        final response = await Dio().post(
-          'https://gateapi.cubeone.in/api/visitor/logDetails',
-          data: payload,
-          options: Options(
-            headers: {"Content-Type": "application/json"},
-          ),
-        );
-
-        if (response.statusCode == 200) {
-          log("API Response for member ${payload['member_name']}: ${response.data}");
-        } else {
-          log("API Error Response for member ${payload['member_name']}: ${response.data}");
-          throw Exception("API returned status code ${response.statusCode}");
-        }
-      }
-
-      Fluttertoast.showToast(
-        msg: "Visitor checked-in successfully for all members!",
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-      );
-    } catch (e) {
-      if (e is DioError) {
-        log("DioError: ${e.response?.data ?? e.message}");
-        // Fluttertoast.showToast(
-        //   msg: "Network error occurred",
-        //   backgroundColor: Colors.red,
-        //   textColor: Colors.white,
-        // );
-      } else {
-        log("Error in visitorLogDetails: $e");
-        // Fluttertoast.showToast(
-        //   msg: "An error occurred while processing the request",
-        //   backgroundColor: Colors.red,
-        //   textColor: Colors.white,
-        // );
-      }
-    }
-  }
-
+  // Future<void> visitorLogDetails(
+  //     List<Map<String, dynamic>>? visitorData,
+  //     void Function(bool) setLoading, // Callback to manage loading state
+  //     ) async {
+  //   try {
+  //     setLoading(true); // Start loading
+  //
+  //     final companyDetails = await gateStorage.getSocietyDetails();
+  //     final socId = await gateStorage.getSocietyId();
+  //     final companyName = companyDetails["societyName"];
+  //
+  //     if (socId == null) {
+  //       throw Exception(
+  //           "Company ID is null. Please ensure the society is selected.");
+  //     }
+  //
+  //     if (visitorData == null || visitorData.isEmpty) {
+  //       throw Exception("Visitor data is null or empty");
+  //     }
+  //
+  //     // Extract member details from the new format
+  //     List<Map<String, dynamic>> memberDetails = [];
+  //     if (visitorData.first.containsKey('member_details')) {
+  //       memberDetails = List<Map<String, dynamic>>.from(
+  //           visitorData.first['member_details'] ?? []);
+  //     }
+  //
+  //     if (memberDetails.isEmpty) {
+  //       Fluttertoast.showToast(
+  //         msg: "Error: Member details are missing!",
+  //         backgroundColor: Colors.red,
+  //         textColor: Colors.white,
+  //       );
+  //       return;
+  //     }
+  //
+  //     SharedPreferences prefs = await SharedPreferences.getInstance();
+  //     final searchedVisitor = await prefs.getString("search_visitor_id");
+  //     final selectedGateName = prefs.getString('selected_gate');
+  //
+  //     log("Visitor Log ID: ${GlobalStorage.visitorLogId}");
+  //     log("Searched Visitor: $searchedVisitor");
+  //
+  //     // Iterate through all members to create the payloads
+  //     List<Map<String, dynamic>> payloads = memberDetails.map((member) {
+  //       final memberId = int.tryParse(member['member_ids'].toString()) ?? 0;
+  //       if (memberId == 0) {
+  //         log("Invalid member_id detected for member: ${member['name']}");
+  //       }
+  //
+  //       return {
+  //         "visitor_log_id": GlobalStorage.visitorLogId,
+  //         "visitor_id": (GlobalStorage.visitorId == null ||
+  //             GlobalStorage.visitorId!.isEmpty)
+  //             ? searchedVisitor
+  //             : GlobalStorage.visitorId,
+  //         "company_name": companyName,
+  //         "member_id": memberId,
+  //         "member_name": member['name'],
+  //         "unit_id": member['unit_id'],
+  //         "company_id": socId,
+  //         "unit_name": member['building_unit'],
+  //         "in_gate": selectedGateName.toString()
+  //       };
+  //     }).toList();
+  //
+  //     log("Sending payloads: ${jsonEncode(payloads)}");
+  //
+  //     // Send each payload
+  //     for (final payload in payloads) {
+  //       if (payload['member_id'] == 0) {
+  //         continue; // Skip invalid member
+  //       }
+  //
+  //       final response = await Dio().post(
+  //         'https://gateapi.cubeone.in/api/visitor/logDetails',
+  //         data: payload,
+  //         options: Options(
+  //           headers: {"Content-Type": "application/json"},
+  //         ),
+  //       );
+  //
+  //       if (response.statusCode == 200) {
+  //         log("API Response for member ${payload['member_name']}: ${response.data}");
+  //       } else {
+  //         log("API Error Response for member ${payload['member_name']}: ${response.data}");
+  //         throw Exception("API returned status code ${response.statusCode}");
+  //       }
+  //     }
+  //
+  //     Fluttertoast.showToast(
+  //       msg: "Visitor checked-in successfully for all members!",
+  //       backgroundColor: Colors.green,
+  //       textColor: Colors.white,
+  //     );
+  //   } catch (e) {
+  //     if (e is DioError) {
+  //       log("DioError: ${e.response?.data ?? e.message}");
+  //     } else {
+  //       log("Error in visitorLogDetails: $e");
+  //     }
+  //   } finally {
+  //     setLoading(false); // Stop loading
+  //   }
+  // }
   Future<List<dynamic>> getBuildingsList() async {
     final String? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');
@@ -998,5 +1314,106 @@ class GlobalStorage {
   static set visitorId(String? value) {
     _visitorId = value;
     print("VisitorId has been set to: $value");
+  }
+}
+
+class VisitorLogMapper2 {
+  VisitorLogMapper2({
+    this.id,
+    this.visitorId,
+    this.visitor,
+    this.visitorPurposeCategoryId,
+    this.visitorPurposeSubCategoryId,
+    this.visitorBuildingAssignment,
+    this.visitorCount,
+    this.visitorCheckIn,
+    this.visitorCheckOut,
+    this.visitorCardNumber,
+    this.visitorComingFrom,
+    this.visitorCardId,
+    this.companyId,
+    this.isCheckedOut,
+  });
+
+  final int? id;
+  final int? visitorId;
+  final VisitorMapper? visitor;
+  final int? visitorPurposeCategoryId;
+  final int? visitorPurposeSubCategoryId;
+  final List<dynamic>? visitorBuildingAssignment;
+  final int? visitorCount;
+  final DateTime? visitorCheckIn;
+  final DateTime? visitorCheckOut;
+  final String? visitorCardNumber;
+  final String? visitorComingFrom;
+  final int? visitorCardId;
+  final int? companyId;
+  final bool? isCheckedOut;
+
+  /// From JSON
+  factory VisitorLogMapper2.fromJson(Map<String, dynamic> json) {
+    return VisitorLogMapper2(
+      id: json['id'] as int?,
+      visitorId: json['visitor_id'] as int?,
+      visitor: json['visitor'] != null
+          ? VisitorMapper.fromJson(json['visitor'])
+          : null, // Handle null visitor
+      visitorPurposeCategoryId: json['visitor_purpose_category_id'] as int?,
+      visitorPurposeSubCategoryId:
+          json['visitor_purpose_sub_category_id'] as int?,
+      visitorBuildingAssignment: json['visitor_building_assignment'] != null
+          ? List<dynamic>.from(json['visitor_building_assignment'])
+          : null,
+      visitorCount: json['visitor_count'] as int?,
+      visitorCheckIn: json['visitor_check_in'] != null
+          ? DateTime.parse(json['visitor_check_in'] as String)
+          : null,
+      visitorCheckOut: json['visitor_check_out'] != null
+          ? DateTime.parse(json['visitor_check_out'] as String)
+          : null,
+      visitorCardNumber: json['visitor_card_number'] as String?,
+      visitorComingFrom: json['visitor_coming_from'] as String?,
+      visitorCardId: json['visitor_card_id'] as int?,
+      companyId: json['company_id'] as int?,
+      isCheckedOut: json['is_checked_out'] as bool?,
+    );
+  }
+
+  /// To JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'visitor_id': visitorId,
+      'visitor': visitor?.toJson(),
+      'visitor_purpose_category_id': visitorPurposeCategoryId,
+      'visitor_purpose_sub_category_id': visitorPurposeSubCategoryId,
+      'visitor_building_assignment': visitorBuildingAssignment,
+      'visitor_count': visitorCount,
+      'visitor_check_in': visitorCheckIn?.toIso8601String(),
+      'visitor_check_out': visitorCheckOut?.toIso8601String(),
+      'visitor_card_number': visitorCardNumber,
+      'visitor_coming_from': visitorComingFrom,
+      'visitor_card_id': visitorCardId,
+      'company_id': companyId,
+      'is_checked_out': isCheckedOut,
+    };
+  }
+
+  VisitorLog toVisitorLog() {
+    return VisitorLog(
+      id: id,
+      visitor_id: visitorId ?? 0,
+      visitor: visitor?.toVisitor(),
+      visitor_purpose_category_id: visitorPurposeCategoryId ?? 0,
+      visitor_purpose_sub_category_id: visitorPurposeSubCategoryId,
+      visitor_count: visitorCount ?? 0,
+      visitor_check_in: visitorCheckIn,
+      visitor_check_out: visitorCheckOut,
+      visitor_card_number: visitorCardNumber,
+      visitor_coming_from: visitorComingFrom,
+      visitor_card_id: visitorCardId,
+      company_id: companyId ?? 0,
+      is_checked_out: isCheckedOut ?? false,
+    );
   }
 }

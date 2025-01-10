@@ -239,48 +239,51 @@ class CustomLargeBtn extends StatelessWidget {
     this.isText = true,
     this.widgetChild,
     this.heroTag,
+    this.disabled = false,
   });
-  final Function() onPressed;
+
+  final Function()? onPressed; // Made nullable for the disabled state
   final String text;
   final String? heroTag;
   final bool isText;
   final Widget? widgetChild;
+  final bool disabled; // New field to handle button's disabled state
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       width: MediaQuery.of(context).size.width * 0.85,
       height: 60,
       child: ElevatedButton(
         style: ButtonStyle(
-          // overlayColor: MaterialStateProperty.all<Color>(
-          //   Color(0xFF61677A),
-          // ),
-          foregroundColor: WidgetStateProperty.all<Color>(
+          foregroundColor: MaterialStateProperty.all<Color>(
             Color(0xFF7D7C7C),
           ),
-          backgroundColor: WidgetStateProperty.all<Color>(
-            Theme.of(context).colorScheme.onSurface,
+          backgroundColor: MaterialStateProperty.all<Color>(
+            disabled
+                ? Colors.grey // Set a different color for the disabled state
+                : Theme.of(context).colorScheme.onSurface,
           ),
-          elevation: WidgetStateProperty.resolveWith<double>(
-            (Set<WidgetState> states) {
-              if (states.contains(WidgetState.pressed)) {
+          elevation: MaterialStateProperty.resolveWith<double>(
+                (Set<MaterialState> states) {
+              if (states.contains(MaterialState.pressed)) {
                 return 8;
               }
               return 0;
             },
           ),
-          shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+          shape: MaterialStateProperty.all<RoundedRectangleBorder>(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
           ),
         ),
-        onPressed: onPressed,
+        onPressed: disabled ? null : onPressed, // Disable button if `disabled` is true
         child: Hero(
           tag: heroTag ?? 'btn',
-          child: isText ? Text(
+          child: isText
+              ? Text(
             text,
             style: TextStyle(
               color: Theme.of(context).colorScheme.surface,
@@ -288,7 +291,8 @@ class CustomLargeBtn extends StatelessWidget {
               wordSpacing: 1.2,
               fontWeight: FontWeight.w500,
             ),
-          ) : widgetChild ?? SizedBox.shrink(),
+          )
+              : widgetChild ?? const SizedBox.shrink(),
         ),
       ),
     );

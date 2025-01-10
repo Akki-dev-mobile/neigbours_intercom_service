@@ -58,13 +58,13 @@ class VisitorInEntryBloc
   FutureOr<void> vieGuestFormSubmitButtonPressedEvent(
       VIEGuestFormSubmitButtonPressedEvent event,
       Emitter<VisitorInEntryState> emit) async {
-    final visitor = VisitorMapper(
+    final visitor = Visitor(
       name: event.guestName!,
-      mobile: event.mobile, VisitorMapperImage: "",
+      mobile: event.mobile, visitor_image: "",
     );
 
     if (event.searchedVisitor == null ||
-        event.searchedVisitor!.VisitorMapperImage?.isEmpty == null) {
+        event.searchedVisitor!.visitor_image?.isEmpty == null) {
       emit(VIENavigateToCameraState(
         event.searchedVisitor ?? visitor,
         event.purposeCategory,
@@ -106,7 +106,7 @@ class VisitorInEntryBloc
           event.purposeCategory!,
         ));
       } else {
-        event.visitor!.VisitorMapperImage = imageUrl;
+        event.visitor!.visitor_image = imageUrl;
         final isUpdated = await _visitorUsecase.updateVisitor(event.visitor!);
 
         if (!isUpdated) {

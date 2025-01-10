@@ -36,7 +36,7 @@ import 'package:provider/provider.dart';
 
 class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory? selectedValue;
-  final VisitorMapper? searchedVisitor;
+  final Visitor? searchedVisitor;
   final String mobile;
 
   // final int companyId = GlobalUser.getUserId() ?? 55275;
@@ -90,19 +90,34 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _fetchCompanyId();
     _loadSelectedPurposesToGlobal();
     _loadVisitorSettings();
+    // _guestCountController = TextEditingController();
+    guestName =
+        TextEditingController(text: widget.searchedVisitor?.name.toString());
+    guestComingFrom = TextEditingController();
+    visitorNumber = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    // _guestCountController.dispose();
+    guestName.dispose();
+    guestComingFrom.dispose();
+    visitorNumber.dispose();
+    super.dispose();
   }
 
   Future<void> _loadVisitorSettings() async {
     final prefs = await SharedPreferences.getInstance();
- _visitorCardNumber=   await prefs.getBool('visitorCardNumber');
+    _visitorCardNumber = await prefs.getBool('visitorCardNumber');
   }
+
   void _initSpeech() async {
     _speechEnabled = await _speechToText.initialize();
     setState(() {});
   }
 
 //
-  Future<void> _updateVisitor(VisitorMapper visitor) async {
+  Future<void> _updateVisitor(Visitor visitor) async {
     try {
       await remoteDataSource.updateVisitor(visitor);
     } catch (e) {
@@ -301,7 +316,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   guestname: guestName.text,
                   mobileNumber: widget.mobile,
                   purposeCategory: state.purposeCategory,
-                  visitor: state.visitor as VisitorMapper,
+                  visitor: state.visitor,
                   comingFrom: guestComingFrom.text,
                   guestCount: _guestCount,
                   visitorNumber: visitorNumber.text.isNotEmpty
@@ -331,7 +346,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           _isInitialLoad = false; // Disable loader after initial load
 
           return MyScrollView(
-
               isScrollable: true,
               pageTitle:
                   'Purpose Entry - ${effectivePurpose.purpose_category_name}',
@@ -341,22 +355,25 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   final SharedPreferences prefs =
                       await SharedPreferences.getInstance();
 
-                  final searched_id =
-                      await prefs.getString('search_visitor_id');
-                  print(" searchid $searched_id");
-
-                  if (widget.searchedVisitor != null) {
-                    final VisitorMapper updatedVisitor = VisitorMapper(
-                        id: int.parse(searched_id.toString()),
-                        name: guestName.text,
-                        comingFrom: guestComingFrom.text,
-                        cardNumber: visitorNumber.text,
-                        guestCount: int.parse(_guestCountController.text),
-                        mobile: widget.mobile,
-                        VisitorMapperImage: "");
-
-                    await _updateVisitor(updatedVisitor);
-                  }
+                  // final searched_id =
+                  //     await prefs.getString('search_visitor_id');
+                  // print(" searchid $searched_id");
+                  //
+                  // if (widget.searchedVisitor != null) {
+                  //   final Visitor updatedVisitor = Visitor(
+                  //       id: int.parse(searched_id.toString()),
+                  //       name: guestName.text,
+                  //       // comingFrom: guestComingFrom.text,
+                  //       // cardNumber: visitorNumber.text,
+                  //       // guestCount: int.parse(_guestCountController.text),
+                  //       mobile: widget.mobile,
+                  //       visitor_image: ""
+                  //       // VisitorMapperImage: ""
+                  //
+                  //       );
+                  //
+                  //   await _updateVisitor(updatedVisitor);
+                  // }
                   if (isText == true) {
                     if (guestName.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -391,7 +408,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 },
                 isText: isText,
                 text: 'Next',
-                widgetChild:  CircularProgressIndicator(
+                widgetChild: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ));
@@ -540,39 +557,39 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         (_visitorCardNumber == false)
             ? SizedBox()
             : CustomForm.textField(
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter your ID';
-            } else if (value.length != 4) {
-              return 'ID must be 4 digits';
-            }
-            return null;
-          },
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          "Enter your ID",
-          hintText: 'Request from Security',
-          keyboardType: TextInputType.number,
-          length: 4,
-          textController: visitorNumber,
-          prefixIcon: Container(
-            width: 20,
-            margin: EdgeInsets.only(
-              left: 10,
-              right: 10,
-            ),
-            decoration: BoxDecoration(
-              color: Color(0xffFFEBE6),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            // radius: 16,
-            child: Center(
-              child: Text(
-                "V",
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your ID';
+                  } else if (value.length != 4) {
+                    return 'ID must be 4 digits';
+                  }
+                  return null;
+                },
+                titleColor: Theme.of(context).colorScheme.onSurface,
+                hintColor: Theme.of(context).colorScheme.onPrimary,
+                "Enter your ID",
+                hintText: 'Request from Security',
+                keyboardType: TextInputType.number,
+                length: 4,
+                textController: visitorNumber,
+                prefixIcon: Container(
+                  width: 20,
+                  margin: EdgeInsets.only(
+                    left: 10,
+                    right: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Color(0xffFFEBE6),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  // radius: 16,
+                  child: Center(
+                    child: Text(
+                      "V",
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ),
         CustomForm.textField(
           "Guest Count",
           textController: _guestCountController,
@@ -801,6 +818,7 @@ class ListeningDialogState extends State<ListeningDialog>
   void dispose() {
     _controller.dispose();
     _speechToText.stop();
+
     super.dispose();
   }
 
@@ -875,7 +893,7 @@ class ListeningDialogState extends State<ListeningDialog>
 class CameraPreviewScreen extends StatefulWidget {
   final CameraController cameraController;
 // String? mobile;
-   CameraPreviewScreen({
+  CameraPreviewScreen({
     Key? key,
     required this.cameraController,
     // this.mobile
@@ -946,7 +964,6 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
             //   MaterialPageRoute(builder: (context) => VisitorsInEntry( )),
             //       (Route<dynamic> route) => false,
             // );
-
           },
         ),
       ),

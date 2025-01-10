@@ -8,7 +8,7 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
 
   VisitorLogRepositoryImpl(this._remoteDataSource);
   @override
-  Future<VisitorLogMapper?> createVisitorLog(VisitorLogMapper visitorLog) async {
+  Future<VisitorLog?> createVisitorLog(VisitorLog visitorLog) async {
     try {
       final response = await _remoteDataSource.checkIn(visitorLog);
       return response;

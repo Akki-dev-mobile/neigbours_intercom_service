@@ -33,7 +33,7 @@ class InputPutViewNextClickedEvent extends GatekeeperDashboardEvent {}
 
 class PurposeNextButtonClickedEvent extends GatekeeperDashboardEvent {
   final PurposeCategory purpose;
-  final VisitorMapper? searchedVisitor;
+  final Visitor? searchedVisitor;
   final String mobile;
 
   PurposeNextButtonClickedEvent(this.purpose, this.searchedVisitor, this.mobile);

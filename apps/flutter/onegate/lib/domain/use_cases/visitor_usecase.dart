@@ -9,7 +9,7 @@ class VisitorUsecase {
 
   VisitorUsecase(this._repository);
 
-  Future<VisitorMapper?> searchVisitor(String mobileNUmber) async {
+  Future<Visitor?> searchVisitor(String mobileNUmber) async {
     return await _repository.searchVisitor(mobileNUmber);
   }
 
@@ -29,7 +29,7 @@ class VisitorUsecase {
     return await _repository.getBuildingList(companyId);
   }
 
-  Future<VisitorMapper?> createVisitor(VisitorMapper visitor) async {
+  Future<Visitor?> createVisitor(Visitor visitor) async {
     return await _repository.createVisitor(visitor);
   }
 
@@ -38,7 +38,7 @@ class VisitorUsecase {
     return await _repository.uploadImage(file, userMobile, companyId);
   }
 
-  Future<bool> updateVisitor(VisitorMapper visitor) async {
+  Future<bool> updateVisitor(Visitor visitor) async {
     return await _repository.updateVisitor(visitor);
   }
 

@@ -32,14 +32,14 @@ class VIEDecrementGuestCountButtonPressedState
 class VIEGuestFormSubmitButtonPressedState extends VisitorInEntryActionState {}
 
 class VIENavigateToUnitSelectionState extends VisitorInEntryActionState {
-  final VisitorMapper visitor;
+  final Visitor visitor;
   final PurposeCategory purposeCategory;
 
   VIENavigateToUnitSelectionState(this.visitor, this.purposeCategory);
 }
 
 class VIENavigateToCameraState extends VisitorInEntryActionState {
-  final VisitorMapper visitor;
+  final Visitor visitor;
   final PurposeCategory purposeCategory;
   final String operation;
 
