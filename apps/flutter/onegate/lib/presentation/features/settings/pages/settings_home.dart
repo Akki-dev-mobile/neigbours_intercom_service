@@ -4,8 +4,10 @@ import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
@@ -122,8 +124,27 @@ class _SettingsHomeState extends State<SettingsHome> {
                   ),
                   CustomLargeBtn(
                     text: 'Confirm',
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => GateDashboardView()));
+                    onPressed: () async{
+                      // Check the role and navigate accordingly
+                      final role = await GateStorage().getRole();
+
+                      print("role$role");
+                      // Fetch the role
+                      if (role == 'admin' || role == 'master') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AdminDashboardView(),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GateDashboardView(),
+                          ),
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: 50.0),

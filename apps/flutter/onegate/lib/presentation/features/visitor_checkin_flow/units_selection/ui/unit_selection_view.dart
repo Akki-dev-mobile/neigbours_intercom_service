@@ -252,7 +252,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   selectedMember.length > 1
                       ? '${selectedMember.length} Selected'
                       : selectedMember.first,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Color(0xffFFB080)),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(color: Color(0xffFFB080)),
                 ),
               ],
             ),
@@ -644,13 +647,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                         const Icon(Icons.people),
                                         const SizedBox(width: 8),
                                         Text(
-                                          selectedMember.length > 1
-                                              ? '${selectedMember.length} Selected'
-                                              : selectedMember.first,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-
+                                            selectedMember.length > 1
+                                                ? '${selectedMember.length} Selected'
+                                                : selectedMember.first,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleLarge
+                                                ?.copyWith(
+                                                    fontWeight:
+                                                        FontWeight.bold)),
                                       ],
                                     ),
                                     const Icon(Icons.keyboard_arrow_up),
@@ -813,9 +818,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         visitor_card_id: null,
         company_id: int.parse(companyId.toString()),
         is_checked_out: false);
-        // memberDetails: formattedMemberDetails,
-        // companyName: companyName,
-        // inGate: selectedGateName.toString());
+    // memberDetails: formattedMemberDetails,
+    // companyName: companyName,
+    // inGate: selectedGateName.toString());
   }
 
 // Helper method to retrieve the saved member details
@@ -843,7 +848,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final companyName = companyDetails['societyName'];
     // Load the selected gate from SharedPreferences
     final selectedGateName = prefs.getString('selected_gate');
-    final visitorLogData =  c.VisitorLog(
+    final visitorLogData = c.VisitorLog(
         visitor_id: widget.visitor.id ?? 0,
         visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
         visitor_purpose_sub_category_id: null,
@@ -854,7 +859,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         visitor_card_id: null,
         company_id: int.parse(companyId.toString()),
         is_checked_out: false);
-
+    final String memberDetailsJson = json.encode(formattedMemberDetails);
+    await prefs.setString('member_details', memberDetailsJson);
     await _showApprovedDialog(context, visitorLogData);
   }
 
