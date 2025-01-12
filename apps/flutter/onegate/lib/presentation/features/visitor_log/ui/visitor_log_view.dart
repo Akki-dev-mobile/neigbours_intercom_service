@@ -786,34 +786,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
     await launchUrl(launchUri);
   }
 
-  Future<void> _fetchVisitorLogs() async {
-    try {
-      final response = await Dio().get(
-        'https://gateapi.cubeone.in/api/visitor/log',
-        queryParameters: {
-// 'company_id': companyId,
-        },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
 
-      if (response.statusCode == 200) {
-// Handle the response data
-        print("Visitor Logs: ${response.data}");
-      } else {
-        print("Response Error: ${response.statusMessage}");
-      }
-    } catch (e) {
-      if (e is DioError) {
-        print("DioError: ${e.response?.data ?? e.message}");
-      } else {
-        print("Unexpected Error: $e");
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

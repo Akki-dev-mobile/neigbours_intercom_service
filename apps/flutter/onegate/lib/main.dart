@@ -8,7 +8,6 @@ import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_logi
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
-import 'package:flutter_onegate/presentation/features/staff/bloc/staff_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -22,6 +21,8 @@ import 'domain/repositories/staff_repository.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
+  const String flavor = String.fromEnvironment('prod');
+
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
   await GateStorage().init();

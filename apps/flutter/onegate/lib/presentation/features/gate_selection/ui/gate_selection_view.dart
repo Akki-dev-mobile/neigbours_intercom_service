@@ -8,7 +8,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class GateSelectionView extends StatelessWidget {
   const GateSelectionView({Key? key}) : super(key: key);
 
@@ -32,13 +31,13 @@ class GateSelectionView extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
-                ...List.generate(provider.gates!.length, (index) {
+                ...List.generate(provider.gates.length, (index) {
                   return GateSettingListTile(
-                    switchValue: provider.gates![index]['isSelected'],
+                    switchValue: provider.gates[index]['isSelected'],
                     onChanged: (value) => provider.selectGate(index),
-                    title: provider.gates![index]['gate_name'] ?? 'Unknown Gate',
+                    title: provider.gates[index]['gate_name'] ?? 'Unknown Gate',
                     subtitle:
-                    'Enable/Disable ${provider.gates![index]['gate_name']}',
+                        'Enable/Disable ${provider.gates[index]['gate_name']}',
                     leadingIcon: Symbols.gate,
                   );
                 }),
@@ -54,7 +53,7 @@ class GateSelectionView extends StatelessWidget {
                   if (selectedGate != null) {
                     final prefs = await SharedPreferences.getInstance();
 
-                final selectedGate  =  await prefs.getString('selected_gate');
+                    final selectedGate = await prefs.getString('selected_gate');
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -122,14 +121,14 @@ class GateSettingListTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: leadingIcon != null
           ? CircleAvatar(
-        backgroundColor: const Color(0xffFFEBE6),
-        radius: 22,
-        child: Icon(
-          size: 24,
-          leadingIcon,
-          color: Colors.black,
-        ),
-      )
+              backgroundColor: const Color(0xffFFEBE6),
+              radius: 22,
+              child: Icon(
+                size: 24,
+                leadingIcon,
+                color: Colors.black,
+              ),
+            )
           : null,
       title: Text(
         title,
@@ -142,7 +141,7 @@ class GateSettingListTile extends StatelessWidget {
       trailing: Switch(
         inactiveThumbColor: Theme.of(context).colorScheme.onBackground,
         inactiveTrackColor:
-        Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
+            Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
         value: switchValue,
         onChanged: onChanged,
       ),
