@@ -5,7 +5,7 @@ class VisitorSettingsProvider with ChangeNotifier {
   bool visitorsAddress = false;
   bool membersApproval = false;
   bool gateIdToggleValue = false;
-  bool visitorCardNumber = false; // New field for visitorCardNumber
+  bool visitorCardNumber = false;
 
   VisitorSettingsProvider() {
     _loadSettings();

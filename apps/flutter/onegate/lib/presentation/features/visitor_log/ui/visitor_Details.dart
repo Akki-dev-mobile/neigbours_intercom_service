@@ -269,7 +269,11 @@ class VisitorDetailsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Divider(height: 1),
+                      Divider(
+                        indent: 16,
+                        endIndent: 16,
+                        color: Colors.grey[200],
+                      ),
                       // Check In/Out Times
                       Padding(
                         padding: const EdgeInsets.all(16),

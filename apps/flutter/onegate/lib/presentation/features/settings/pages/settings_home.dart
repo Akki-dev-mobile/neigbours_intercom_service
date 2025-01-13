@@ -58,6 +58,7 @@ class _SettingsHomeState extends State<SettingsHome> {
     _preferenceUtils.getTooglevalue();
     getSelectedGate();
     getCameraValue();
+    _initializeRole();
   }
 
   void _showCameraSettings(BuildContext context) {
@@ -382,191 +383,270 @@ class _SettingsHomeState extends State<SettingsHome> {
       },
     );
   }
+  String? role;
+  Future<void> _initializeRole() async {
+    role = await GateStorage().getRole();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+
     return MyScrollView(
       pageTitle: "Settings",
-      pageBody: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SecondarySettingsTile(
-            title: 'Gate Settings',
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.people_outline,
-            title: 'Staffs',
-            subtitle: 'View your society staffs',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StaffScreen(),
-                ),
-              );
-            },
-          ),
-
-          PrimarySettingsTile(
-            icon: Ionicons.grid_outline,
-            title: 'Gate Settings',
-            subtitle: 'Current Preference: ${ selectedGateName ?? "Not Selected Gate"}',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GateSelectionView(),
-                ),
-              );
-            },
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.person_outline,
-            title: 'Visitors and Vehicles Settings',
-            subtitle: 'All visitors will be auto approved',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GateSettingView(),
-                ),
-              );
-            },
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.people_outline,
-            title: 'Visitors Settings',
-            subtitle: 'Mark mandatory fields for visitors',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => VisitorSettingsView(),
-                ),
-              );
-            },
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.time_outline,
-            title: 'Visitor Approval Time',
-            subtitle:
-                'Current Preference: ${_visitorApprovalTimeValue ?? "100 seconds"}',
-            onTap: () {
-              _showVisitorApprovalTime(context);
-            },
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.alarm_outline,
-            title: 'Configure Duty Alarms',
-            subtitle: 'Enable/Disable Duty Alarms',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ConfigureDutyAlarms(),
-                ),
-              );
-            },
-          ),
-          SecondarySettingsTile(
-            title: 'Applicaton Settings',
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.camera_outline,
-            title: 'Camera Settings',
-            subtitle: "Current Preference: ${cameraValue ?? "Not Selected Camera"}",
-            onTap: () {
-              _showCameraSettings(context);
-            },
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.file_tray_full_outline,
-            title: 'Data Storage',
-            subtitle: 'Current Preference: ${_dataStorageValue ?? "6 Months"}',
-            onTap: () {
-              _showDataStorage(context);
-            },
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.options_outline,
-            title: 'Configure Permissions',
-            subtitle: 'All Approved',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AppPermissions(),
-                ),
-              );
-            },
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.options_outline,
-            title: 'Self Entry Settings',
-            subtitle: 'Enable/Disable Self Entry',
-            onTap: () {
-              // Fluttertoast.showToast(
-              //   msg: "self tap in, coming soon",
-              //   toastLength: Toast.LENGTH_SHORT,
-              //   gravity: ToastGravity.CENTER,
-              //   timeInSecForIosWeb: 1,
-              //   backgroundColor: Colors.black,
-              //   textColor: Colors.white,
-              //   fontSize: 16.0,
-              // );
-              _preferenceUtils.setIsSelfTapIn(true);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SelfHomeView(),
-                ),
-              );
-            },
-          ),
-          PrimarySettingsTile(
-            icon: Ionicons.shield_half_outline,
-            title: 'Change Password',
-            subtitle: 'Change your password',
-            onTap: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (context) => OtpView(),
-              //   ),
-              // );
-            },
-          ),
-          // PrimarySettingsTile(
-          //   icon: Ionicons.sunny_outline,
-          //   title: 'Change Theme',
-          //   subtitle:
-          //       'Current Settings: ${themeManager.currentThemeMode == oneTheme.ThemeMode.obsidianTheme ? 'Dark' : 'Light'}',
-          //   trailing: Switch(
-          //     value: themeManager.currentThemeMode ==
-          //         oneTheme.ThemeMode.obsidianTheme,
-          //     onChanged: (newValue) {
-          //       themeManager.toggleTheme();
-          //     },
-          //   ),
-          // ),
-          PrimarySettingsTile(
-            icon: Ionicons.language_outline,
-            title: 'Change Language',
-            subtitle: 'Current Preference: ${_languageValue ?? "English"}',
-            onTap: () {
-              _showLanguageSettings(context);
-            },
-          ),
-          PrimarySettingsTile(
+      pageBody: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SecondarySettingsTile(
+              title: 'Gate Settings',
+            ),
+            // if (role == "admin" || role == "master")
+            PrimarySettingsTile(
+              icon: Ionicons.people_outline,
+              title: 'Staffs',
+              subtitle: 'View your society staffs',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StaffScreen(),
+                  ),
+                );
+              },
+            ),
+            // Gate Settings (for Admin and Master only)
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+                icon: Ionicons.grid_outline,
+                title: 'Gate Settings',
+                subtitle: 'Current Preference: ${selectedGateName ?? "Not Selected Gate"}',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => GateSelectionView(),
+                    ),
+                  );
+                },
+              ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+              icon: Ionicons.person_outline,
+              title: 'Visitors and Vehicles Settings',
+              subtitle: 'All visitors will be auto approved',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GateSettingView(),
+                  ),
+                );
+              },
+            ),
+            // Visitor Settings (for Admin and Master only)
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+                icon: Ionicons.people_outline,
+                title: 'Visitors Settings',
+                subtitle: 'Mark mandatory fields for visitors',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VisitorSettingsView(),
+                    ),
+                  );
+                },
+              ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+              icon: Ionicons.time_outline,
+              title: 'Visitor Approval Time',
+              subtitle: 'Current Preference: ${_visitorApprovalTimeValue ?? "100 seconds"}',
+              onTap: () {
+                _showVisitorApprovalTime(context);
+              },
+            ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+              icon: Ionicons.alarm_outline,
+              title: 'Configure Duty Alarms',
+              subtitle: 'Enable/Disable Duty Alarms',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ConfigureDutyAlarms(),
+                  ),
+                );
+              },
+            ),
+            SecondarySettingsTile(
+              title: 'Application Settings',
+            ),
+            // Camera Settings (for all roles)
+            PrimarySettingsTile(
+              icon: Ionicons.camera_outline,
+              title: 'Camera Settings',
+              subtitle: "Current Preference: ${cameraValue ?? "Not Selected Camera"}",
+              onTap: () {
+                _showCameraSettings(context);
+              },
+            ),
+            if (role == "admin" || role == "master")            PrimarySettingsTile(
+              icon: Ionicons.file_tray_full_outline,
+              title: 'Data Storage',
+              subtitle: 'Current Preference: ${_dataStorageValue ?? "6 Months"}',
+              onTap: () {
+                _showDataStorage(context);
+              },
+            ),
+            if (role == "admin" || role == "master")            PrimarySettingsTile(
+              icon: Ionicons.options_outline,
+              title: 'Configure Permissions',
+              subtitle: 'All Approved',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AppPermissions(),
+                  ),
+                );
+              },
+            ),
+            // Self Entry Settings (for all roles)
+            PrimarySettingsTile(
+              icon: Ionicons.options_outline,
+              title: 'Self Entry Settings',
+              subtitle: 'Enable/Disable Self Entry',
+              onTap: () {
+                _preferenceUtils.setIsSelfTapIn(true);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SelfHomeView(),
+                  ),
+                );
+              },
+            ),
+            if (role == "admin" || role == "master")            PrimarySettingsTile(
+              icon: Ionicons.shield_half_outline,
+              title: 'Change Password',
+              subtitle: 'Change your password',
+              onTap: () {
+                // Add password change logic here
+              },
+            ),
+            if (role == "admin" || role == "master")            PrimarySettingsTile(
+              icon: Ionicons.language_outline,
+              title: 'Change Language',
+              subtitle: 'Current Preference: ${_languageValue ?? "English"}',
+              onTap: () {
+                _showLanguageSettings(context);
+              },
+            ),
+            // Logout (for all roles)
+            PrimarySettingsTile(
               icon: Ionicons.log_out_outline,
               title: 'Logout',
               subtitle: 'Logout from the app',
               onTap: () {
-                logout(context);
-              }),
-        ],
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      title: Row(
+                        children: const [
+                          Icon(Icons.warning_amber_rounded,
+                              color: Colors.red),
+                          SizedBox(width: 8),
+                          Text(
+                            'Confirm Logout',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Are you sure you want to logout?',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'This action cannot be undone.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            elevation: 0,
+                            side: BorderSide(
+                                color: Colors.grey[300]!),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                              BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                              BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                      logout(context);
+                          },
+                          child: Text(
+                            'Logout',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                      actionsPadding: EdgeInsets.all(16),
+                      actionsAlignment: MainAxisAlignment.end,
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

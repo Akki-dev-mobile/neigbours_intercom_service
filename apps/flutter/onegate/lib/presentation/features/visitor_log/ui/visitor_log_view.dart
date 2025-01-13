@@ -4,7 +4,6 @@ import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,7 +11,6 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
@@ -292,12 +290,56 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          'No such visitor found in log',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 16,
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_off_outlined,
+                              size: 48,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No such visitors found in log',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (todayLogs.isEmpty && _searchText!.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_off_outlined,
+                              size: 48,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No visitors today',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'When visitors check in, they will appear here',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ListView.builder(
@@ -400,7 +442,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         style: Theme.of(context)
                             .textTheme
                             .headlineSmall
-                            ?.copyWith(color: Colors.green),
+                         ,
                       ),
                       const SizedBox(height: 16),
                       CustomForm.textField(
@@ -751,7 +793,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     child: Text(
                       message,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.green,
+                            // color: Colors.green,
                             height: 1.5,
                           ),
                     ),
@@ -777,6 +819,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     child: Padding(
                       padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
                       child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.black, // Set the background color to black
+                          foregroundColor: Colors.white, // Set the text color to white
+                        ),
                         onPressed: () {
                           Navigator.of(context).pop();
                           onDismiss?.call();
@@ -1009,9 +1055,9 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           color: Color(0xffFFB080),
                         ),
                       ),
-                      TextSpan(
-                          text: unitList,
-                          style: Theme.of(context).textTheme.labelSmall),
+                      // TextSpan(
+                      //     text: unitList,
+                      //     style: Theme.of(context).textTheme.labelSmall),
                       WidgetSpan(
                         child: Container(
                           margin: const EdgeInsets.only(left: 8),

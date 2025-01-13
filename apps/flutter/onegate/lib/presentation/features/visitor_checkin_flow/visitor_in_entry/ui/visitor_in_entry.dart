@@ -76,7 +76,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   TextEditingController visitorNumber = TextEditingController();
   bool _isInitialLoad = true;
   String? companyId;
-  bool? _visitorCardNumber;
+  bool? _visitorCardNumber = false;
 
   @override
   void initState() {

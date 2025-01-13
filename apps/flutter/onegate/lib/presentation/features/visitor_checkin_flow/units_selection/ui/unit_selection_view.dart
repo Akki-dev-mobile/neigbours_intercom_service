@@ -160,7 +160,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: Theme.of(context).dividerColor,
+                     color:  Colors.grey[200]!,
+                      width: 1, // Border thickness
                     ),
                   ),
                 ),
@@ -169,7 +170,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   children: [
                     Text(
                       'Selected Members (${updatedSelectedMember.length})',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     IconButton(
                       icon: const Icon(
@@ -256,7 +257,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(color: Color(0xffFFB080)),
+                      ?.copyWith(color:Colors.white),
                 ),
               ],
             ),
@@ -326,17 +327,28 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Text(
-        'No Members Found.\nSearch members by their name or flat',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.grey[600],
-        ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.groups_outlined, // Google Material Icon
+            size: 60,
+            color: Colors.grey[400], // Subtle grey color for the icon
+          ),
+          const SizedBox(height: 16), // Spacing between icon and text
+          Text(
+            'No Members Found.\nSearch members by their name or flat',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
       ),
     );
   }
-
   Widget _buildMemberListView(
       List<dynamic> filteredMembers, Set<String> selectedMembers) {
     return ListView.builder(
@@ -614,13 +626,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       return const SizedBox.shrink();
                     }
                     return Container(
-                      color: Theme.of(context).colorScheme.surface,
+                      color: Colors.black,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Material(
                             elevation: 8,
-                            color: Theme.of(context).colorScheme.surface,
+                            color: Colors.black,
                             child: InkWell(
                               onTap: () => _showSelectedMembersBottomSheet(
                                   selectedMember),
@@ -643,7 +655,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(Icons.people),
+                                        const Icon(Icons.people,color:Colors.white),
                                         const SizedBox(width: 8),
                                         Text(
                                             selectedMember.length > 1
@@ -653,11 +665,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                 .textTheme
                                                 .titleLarge
                                                 ?.copyWith(
-                                                    fontWeight:
-                                                        FontWeight.bold)),
+                                                   color: Colors.white)),
                                       ],
                                     ),
-                                    const Icon(Icons.keyboard_arrow_up),
+                                    const Icon(Icons.keyboard_arrow_up,color: Colors.white,),
                                   ],
                                 ),
                               ),
@@ -942,7 +953,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'in_time': formattedInTime,
       'user_id': (int.tryParse(userId) ?? 5243243).toString(),
       'visitor_count': widget.guestCount.toString(),
-      "member_mobile_number": "918452060059",
+      "member_mobile_number": "",
       "visitor_id": widget.visitorId?.toString() ?? "",
       "purpose_category": widget.purposeCategory.id?.toString() ?? "",
       'purpose_details': "zomato",

@@ -12,6 +12,7 @@ class VisitorSettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return ChangeNotifierProvider(
       create: (_) => VisitorSettingsProvider(),
       child: Consumer<VisitorSettingsProvider>(
