@@ -18,6 +18,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
@@ -86,8 +87,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     _initializeSocietyId();
     getSelectedGate();
     // _storeTodayLogsCount(context);
-
-     }
+  }
 
   Future<void> getSelectedGate() async {
     final prefs = await SharedPreferences.getInstance();
@@ -163,19 +163,22 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             }
 
             List<VisitorLog> filteredVisitors = uniqueVisitorLogs
-                .where((visitorLog) =>
-                visitorLog.visitor!.name.toLowerCase().contains(_searchText!.toLowerCase()))
+                .where((visitorLog) => visitorLog.visitor!.name
+                    .toLowerCase()
+                    .contains(_searchText!.toLowerCase()))
                 .toList();
 
             final today = DateTime.now();
             final startOfToday = DateTime(today.year, today.month, today.day);
             final endOfToday = startOfToday.add(const Duration(days: 1));
-            final startOfYesterday = startOfToday.subtract(const Duration(days: 1));
+            final startOfYesterday =
+                startOfToday.subtract(const Duration(days: 1));
             final endOfYesterday = startOfToday;
 
             List<VisitorLog> todayLogs = filteredVisitors.where((log) {
               final checkInDate = log.visitor_check_in!;
-              return checkInDate.isAfter(startOfToday) && checkInDate.isBefore(endOfToday);
+              return checkInDate.isAfter(startOfToday) &&
+                  checkInDate.isBefore(endOfToday);
             }).toList();
 
             List<VisitorLog> todayCheckoutLogs = filteredVisitors.where((log) {
@@ -191,9 +194,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             }
 
             _storeTodayLogsCount(todayLogs.length, 'todayLogsCount');
-            _storeTodayLogsCount(todayCheckoutLogs.length, 'todayCheckoutLogsCount');
-
-
+            _storeTodayLogsCount(
+                todayCheckoutLogs.length, 'todayCheckoutLogsCount');
 
             List<VisitorLog> yesterdayLogs = filteredVisitors.where((log) {
               final checkInDate = log.visitor_check_in!;
@@ -205,7 +207,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               final checkInDate = log.visitor_check_in!;
               return checkInDate.isBefore(startOfYesterday);
             }).toList();
-
 
             return PopScope(
               canPop: false,
@@ -316,9 +317,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           if (index == currentIndex) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-
-                              ],
+                              children: const [],
                             );
                           }
                           if (index > currentIndex &&
@@ -340,8 +339,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               todayLogs.length + 1; // Add 1 for header
                         }
 
-
-
                         return const SizedBox
                             .shrink(); // Fallback in case of unexpected index
                       },
@@ -360,6 +357,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
+  bool isLoading = false;
   Future<void> _showExportBottomSheet(
       BuildContext context, List<VisitorLog> visitorLogs) async {
     TextEditingController emailController = TextEditingController();
@@ -399,7 +397,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     children: [
                       Text(
                         'Export Logs',
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(color: Colors.green),
                       ),
                       const SizedBox(height: 16),
                       CustomForm.textField(
@@ -440,11 +441,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   return Theme(
                                     data: ThemeData.light().copyWith(
                                       colorScheme: ColorScheme.light(
-                                        primary: Colors.black, // Primary color for dialog
+                                        primary: Colors
+                                            .black, // Primary color for dialog
                                       ),
                                       textButtonTheme: TextButtonThemeData(
                                         style: TextButton.styleFrom(
-                                          foregroundColor: Colors.black, // Black text for "Cancel" and "OK"
+                                          foregroundColor: Colors
+                                              .black, // Black text for "Cancel" and "OK"
                                         ),
                                       ),
                                     ),
@@ -456,7 +459,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                 setState(() {
                                   startDate = picked;
                                   // Ensure "To Date" is valid
-                                  if (endDate != null && startDate!.isAfter(endDate!)) {
+                                  if (endDate != null &&
+                                      startDate!.isAfter(endDate!)) {
                                     endDate = null;
                                   }
                                   fieldState.didChange(picked);
@@ -497,11 +501,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   return Theme(
                                     data: ThemeData.light().copyWith(
                                       colorScheme: ColorScheme.light(
-                                        primary: Colors.black, // Primary color for dialog
+                                        primary: Colors
+                                            .black, // Primary color for dialog
                                       ),
                                       textButtonTheme: TextButtonThemeData(
                                         style: TextButton.styleFrom(
-                                          foregroundColor: Colors.black, // Black text for "Cancel" and "OK"
+                                          foregroundColor: Colors
+                                              .black, // Black text for "Cancel" and "OK"
                                         ),
                                       ),
                                     ),
@@ -526,63 +532,74 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         },
                       ),
                       const SizedBox(height: 24),
-                  CustomLargeBtn(
-                    onPressed: () async {
-                      if (startDate == null) {
-                        Fluttertoast.showToast(
-                          msg: "Please select a start date",
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.BOTTOM,
-                          timeInSecForIosWeb: 1,
-                          backgroundColor: Colors.red,
-                          textColor: Colors.white,
-                          fontSize: 16.0,
-                        );
-                        return;
-                      }
-                      if (endDate == null) {
-                        Fluttertoast.showToast(
-                          msg: "Please select an end date",
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.BOTTOM,
-                          timeInSecForIosWeb: 1,
-                          backgroundColor: Colors.red,
-                          textColor: Colors.white,
-                          fontSize: 16.0,
-                        );
-                        return;
-                      }
-                      if (exportFormKey.currentState!.validate()) {
-                        await prefs.setString('email', emailController.text);
+                      if (isLoading)
+                        const CircularProgressIndicator()
+                      else
+                        CustomLargeBtn(
+                          onPressed: () async {
+                            if (startDate == null) {
+                              Fluttertoast.showToast(
+                                msg: "Please select a start date",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                              return;
+                            }
+                            if (endDate == null) {
+                              Fluttertoast.showToast(
+                                msg: "Please select an end date",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                              return;
+                            }
+                            if (exportFormKey.currentState!.validate()) {
+                              await prefs.setString(
+                                  'email', emailController.text);
 
-                        final formattedFromDate = DateFormat('yyyy-MM-dd').format(startDate!);
-                        final formattedToDate = DateFormat('yyyy-MM-dd').format(endDate!);
+                              final formattedFromDate =
+                                  DateFormat('yyyy-MM-dd').format(startDate!);
+                              final formattedToDate =
+                                  DateFormat('yyyy-MM-dd').format(endDate!);
 
-                        final gateProvider = Provider.of<GateProvider>(context, listen: false);
-                        final selectedGate = gateProvider.selectedGate;
-                        final email = emailController.text.trim();
+                              final gateProvider = Provider.of<GateProvider>(
+                                  context,
+                                  listen: false);
+                              final selectedGate = gateProvider.selectedGate;
+                              final email = emailController.text.trim();
 
-                        final visitorData = {
-                          "company_id": societyId,
-                          "name": nameController.text,
-                          "to_mail": email,
-                          "from_date": formattedFromDate,
-                          "to_date": formattedToDate,
-                          "in_gate": selectedGateName,
-                        };
+                              final visitorData = {
+                                "company_id": societyId,
+                                "name": nameController.text,
+                                "to_mail": email,
+                                "from_date": formattedFromDate,
+                                "to_date": formattedToDate,
+                                "in_gate": selectedGateName,
+                              };
 
-                        try {
-                          await remoteDataSource.exportLogs(visitorData);
-                          Navigator.pop(context);
-                          _showSuccessDialog(context, "Export logs",
-                              "Visitor logs exported successfully.");
-                        } catch (e) {
-                          // Handle error case
-                        }
-                      }
-                    },
-                    text: "Export",
-                  ),
+                              try {
+                                await remoteDataSource.exportLogs(visitorData);
+                                Navigator.pop(context);
+                                showSuccessDialog(
+                                    context: context,
+                                    title: "Export logs",
+                                    message:
+                                        "Visitor logs exported successfully.");
+                              } catch (e) {
+                                // Handle error case
+                              }
+                            }
+                          },
+                          text: "Export",
+                        ),
                     ],
                   ),
                 ),
@@ -646,27 +663,141 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
-  void _showSuccessDialog(BuildContext context, String title, String message) {
-    showDialog(
+  void showSuccessDialog({
+    required BuildContext context,
+    required String title,
+    required String message,
+    VoidCallback? onDismiss,
+  }) {
+    showGeneralDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message,style: TextStyle(color: Colors.green),),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close the dialog
-                Navigator.pop(context); // Navigate back after successful export
-              },
-              child: const Text(
-                "OK",
-                style: TextStyle(color: Colors.black),
+      pageBuilder: (_, __, ___) => Container(),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        );
+
+        return ScaleTransition(
+          scale: Tween<double>(begin: 0.5, end: 1.0).animate(curvedAnimation),
+          child: FadeTransition(
+            opacity:
+                Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.0),
               ),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              elevation: 8,
+              title: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, -0.5),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
+                )),
+                child: Row(
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 1500),
+                      tween: Tween<double>(begin: 0, end: 2 * 3.14159),
+                      builder: (context, value, child) => Transform.rotate(
+                        angle: value,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.check_circle,
+                            color: Colors.green.shade600,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              content: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.5),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+                )),
+                child: FadeTransition(
+                  opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      message,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Colors.green,
+                            height: 1.5,
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: const Interval(0.3, 0.9, curve: Curves.easeOutCubic),
+                  )),
+                  child: FadeTransition(
+                    opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: const Interval(0.3, 0.9, curve: Curves.easeOut),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onDismiss?.call();
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text('OK'),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
+      transitionDuration: const Duration(milliseconds: 500),
+      barrierDismissible: false,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
     );
   }
 
@@ -786,18 +917,16 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
     await launchUrl(launchUri);
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     String unitList = '';
     if (widget.visitorLog.visitor_building_assignment != null &&
         widget.visitorLog.visitor_building_assignment!.isNotEmpty) {
-      unitList = widget.visitorLog.visitor_building_assignment![0].unit_id
-          .map((units) => units.toString())
+      unitList = widget.visitorLog.visitor_building_assignment!
+          .expand((assignment) => assignment.unit_id ?? [])
+          .map((unit) => unit.toString())
           .join(', ');
     }
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
@@ -806,6 +935,17 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ListTile(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VisitorDetailsScreen(
+                      unitList: unitList,
+                      visitorLog: widget.visitorLog,
+                    ),
+                  ),
+                );
+              },
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 2,
@@ -1017,10 +1157,99 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             ),
                           ),
                           onPressed: () {
-                            widget.onCheckOut();
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  title: Row(
+                                    children: const [
+                                      Icon(Icons.warning_amber_rounded,
+                                          color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Confirm Checkout',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Are you sure you want to checkout?',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'This action cannot be undone.',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        elevation: 0,
+                                        side: BorderSide(
+                                            color: Colors.grey[300]!),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: Text(
+                                        'Cancel',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                        widget.onCheckOut();
+                                      },
+                                      child: Text(
+                                        'Checkout',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  actionsPadding: EdgeInsets.all(16),
+                                  actionsAlignment: MainAxisAlignment.end,
+                                );
+                              },
+                            );
                           },
                           child: Text(
-                            'CheckOut',
+                            'Checkout',
                             style:
                                 Theme.of(context).textTheme.labelSmall!.merge(
                                       const TextStyle(

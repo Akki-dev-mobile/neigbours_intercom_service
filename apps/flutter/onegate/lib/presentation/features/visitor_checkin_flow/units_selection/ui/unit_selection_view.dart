@@ -93,6 +93,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _fetchCompanyId();
     _loadVisitorSettings();
     _initializeFuture = _initializeMembers(); // Initialize the Future once
+    log("${selectedUnits} here is this");
   }
 
   Future<void> _loadVisitorSettings() async {
@@ -452,7 +453,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final updatedMembers = Set<String>.from(_selectedMembersNotifier.value);
 
     if (_selectedMembersNotifier.value.contains(firstName)) {
-      // Remove member details
       updatedMembers.remove(firstName);
       selectedUserIds.remove(userId);
       selectedMemberIds.remove(memberId);
@@ -460,7 +460,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       formattedMemberDetails
           .removeWhere((member) => member["name"] == firstName);
     } else {
-      // Add member details in the required format
       updatedMembers.add(firstName);
       selectedUserIds.add(userId);
       _addMemberIds(memberId);
@@ -794,11 +793,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final String? visitorId = prefs.getString('visitorId');
     final companyDetails = await gateStorage.getSocietyDetails();
     final companyName = companyDetails['societyName'];
-    // Load the selected gate from SharedPreferences
     final selectedGateName = prefs.getString('selected_gate');
 
+    // Extract unit IDs from formattedMemberDetails
+    List<int> unitIds = [];
+    if (formattedMemberDetails != null && formattedMemberDetails is List) {
+      unitIds = formattedMemberDetails
+          .map((member) => member['unit_id'])
+          .where((id) => id != null)
+          .map((id) => int.parse(id.toString()))
+          .toList();
+    }
+
+    // Map unit IDs to BuildingAssignment objects
+    List<c.BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
+      return c.BuildingAssignment(
+        id: null,
+        visitor_id: widget.visitor.id,
+        visitor_log_id: null,
+        company_id: int.parse(companyId.toString()),
+        building_id: 0,
+        unit_id: [unitId.toString()],
+      );
+    }).toList();
+
     // Save formattedMemberDetails to SharedPreferences
-    // First convert it to a JSON string since SharedPreferences doesn't store complex objects
     try {
       final String memberDetailsJson = json.encode(formattedMemberDetails);
       await prefs.setString('member_details', memberDetailsJson);
@@ -808,19 +827,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
 
     return c.VisitorLog(
-        visitor_id: widget.visitor.id ?? 0,
-        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
-        visitor_purpose_sub_category_id: null,
-        visitor_count: widget.guestCount ?? 0,
-        visitor_check_in: DateTime.parse(formattedInTime),
-        visitor_card_number: widget.visitorNumber,
-        visitor_coming_from: widget.comingFrom,
-        visitor_card_id: null,
-        company_id: int.parse(companyId.toString()),
-        is_checked_out: false);
-    // memberDetails: formattedMemberDetails,
-    // companyName: companyName,
-    // inGate: selectedGateName.toString());
+      visitor_id: widget.visitor.id ?? 0,
+      visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
+      visitor_purpose_sub_category_id: null,
+      visitor_count: widget.guestCount ?? 0,
+      visitor_check_in: DateTime.parse(formattedInTime),
+      visitor_card_number: widget.visitorNumber,
+      visitor_coming_from: widget.comingFrom,
+      visitor_card_id: null,
+      company_id: int.parse(companyId.toString()),
+      visitor_building_assignment: buildingAssignments,
+      is_checked_out: false,
+    );
   }
 
 // Helper method to retrieve the saved member details
@@ -846,6 +864,28 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final String? visitorId = prefs.getString('visitorId');
     final companyDetails = await gateStorage.getSocietyDetails();
     final companyName = companyDetails['societyName'];
+    // Extract unit IDs from formattedMemberDetails
+    List<int> unitIds = [];
+    if (formattedMemberDetails != null && formattedMemberDetails is List) {
+      unitIds = formattedMemberDetails
+          .map((member) => member['unit_id'])
+          .where((id) => id != null)
+          .map((id) => int.parse(id.toString()))
+          .toList();
+    }
+
+    // Map unit IDs to BuildingAssignment objects
+    List<c.BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
+      return c.BuildingAssignment(
+        id: null,
+        visitor_id: widget.visitor.id,
+        visitor_log_id: null,
+        company_id: int.parse(companyId.toString()),
+        building_id: 0,
+        unit_id: [unitId.toString()],
+      );
+    }).toList();
+
     // Load the selected gate from SharedPreferences
     final selectedGateName = prefs.getString('selected_gate');
     final visitorLogData = c.VisitorLog(
@@ -856,6 +896,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         visitor_check_in: DateTime.parse(formattedInTime),
         visitor_card_number: widget.visitorNumber,
         visitor_coming_from: widget.comingFrom,
+        visitor_building_assignment: buildingAssignments,
         visitor_card_id: null,
         company_id: int.parse(companyId.toString()),
         is_checked_out: false);
@@ -890,6 +931,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Map<String, String> _prepareRequestData(
       String userId, List<String> savedMobileNumbers) {
+
+
+
     return {
       'company_id': companyId.toString(),
       'name': widget.guestname,
@@ -1088,106 +1132,105 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     });
   }
 
-  Future<void> _showApprovedDialog(
-      BuildContext context, c.VisitorLog data) async {
+  Future<void> _showApprovedDialog(BuildContext context, c.VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Lottie.asset(
-                  'assets/json/approved.json',
-                  width: 150,
-                  height: 150,
-                  repeat: false,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Visitor Allowed By Gatekeeper",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                CustomLargeBtn(
-                  onPressed: () {
-                    if (_isButtonDisabled) return; // Prevent multiple clicks
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Lottie.asset(
+                      'assets/json/approved.json',
+                      width: 150,
+                      height: 150,
+                      repeat: false,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Visitor Allowed By Gatekeeper",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _isLoading
+                        ? const Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text(
+                          "please wait checkin",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    )
+                        : CustomLargeBtn(
+                      onPressed: () async {
+                        if (_isButtonDisabled) return;
 
-                    setState(() {
-                      _isLoading = true; // Start loading
-                      _isButtonDisabled = true; // Disable the button
-                    });
+                        setState(() {
+                          _isLoading = true;
+                          _isButtonDisabled = true;
+                        });
 
-                    // Introduce a debounce
-                    Future.delayed(const Duration(milliseconds: 500), () async {
-                      try {
-                        // Simulate a delay with a timer for loader
-                        await Future.delayed(const Duration(seconds: 2));
+                        try {
+                          await remoteDataSource.checkIn(data);
 
-                        await remoteDataSource.checkIn(data);
-                        if (savedMemberUnitDetails.isNotEmpty) {
-                          log('Sending visitor log details: ${jsonEncode([
-                                savedMemberUnitDetails
-                              ])}');
-                          // _isLoading
-                          //     ? CircularProgressIndicator()
-                          //     : await remoteDataSource.visitorLogDetails(
-                          //         [savedMemberUnitDetails], _setLoading);
+                          if (savedMemberUnitDetails.isNotEmpty) {
+                            log('Sending visitor log details: ${jsonEncode([savedMemberUnitDetails])}');
 
-                          // First close the dialog
-                          Navigator.pop(context);
-
-                          // Then navigate to GateDashboardView after operations
-                          await Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const GateDashboardView(),
-                            ),
-                          );
-                        } else {
-                          log('Error: savedMemberUnitDetails is empty');
-                          // Show a toast or SnackBar for error feedback
+                            Navigator.pop(context);
+                            await Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const GateDashboardView(),
+                              ),
+                            );
+                          } else {
+                            log('Error: savedMemberUnitDetails is empty');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Error: Missing member details'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          log('Error in approved dialog: $e');
+                          setState(() {
+                            _isLoading = false;
+                            _isButtonDisabled = false;
+                          });
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Error: Missing member details'),
+                              content: Text('Error processing approval'),
                               backgroundColor: Colors.red,
                             ),
                           );
                         }
-                      } catch (e) {
-                        log('Error in approved dialog: $e');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Error processing approval'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      } finally {
-                        setState(() {
-                          _isLoading = false; // Stop loading
-                          _isButtonDisabled =
-                              false; // Re-enable the button if needed
-                        });
-                      }
-                    });
-                  },
-                  text: _isLoading ? "Loading..." : "Continue",
-                  disabled:
-                      _isButtonDisabled, // Custom property to visually disable button
-                )
-              ],
-            ),
-          ),
+                      },
+                      text: "Continue",
+                      disabled: _isButtonDisabled,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );

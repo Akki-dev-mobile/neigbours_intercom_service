@@ -82,28 +82,28 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   void initState() {
     super.initState();
     _guestCountController = TextEditingController(text: _guestCount.toString());
-    if (widget.searchedVisitor != null) {
-      guestName.text = widget.searchedVisitor!.name ?? "";
-      // _updateVisitor();
-    }
+
     _initSpeech();
     _fetchCompanyId();
     _loadSelectedPurposesToGlobal();
     _loadVisitorSettings();
-    // _guestCountController = TextEditingController();
     guestName =
         TextEditingController(text: widget.searchedVisitor?.name.toString());
     guestComingFrom = TextEditingController();
     visitorNumber = TextEditingController();
+
   }
 
   @override
   void dispose() {
-    // _guestCountController.dispose();
     guestName.dispose();
     guestComingFrom.dispose();
     visitorNumber.dispose();
     super.dispose();
+  }
+
+  Future<void> _updateVisitor(Visitor visitor) async {
+    await remoteDataSource.updateVisitor(visitor);
   }
 
   Future<void> _loadVisitorSettings() async {
@@ -114,15 +114,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   void _initSpeech() async {
     _speechEnabled = await _speechToText.initialize();
     setState(() {});
-  }
-
-//
-  Future<void> _updateVisitor(Visitor visitor) async {
-    try {
-      await remoteDataSource.updateVisitor(visitor);
-    } catch (e) {
-      print("Error updating visitor: $e");
-    }
   }
 
   Future<void> _fetchCompanyId() async {
@@ -355,25 +346,25 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   final SharedPreferences prefs =
                       await SharedPreferences.getInstance();
 
-                  // final searched_id =
-                  //     await prefs.getString('search_visitor_id');
-                  // print(" searchid $searched_id");
-                  //
-                  // if (widget.searchedVisitor != null) {
-                  //   final Visitor updatedVisitor = Visitor(
-                  //       id: int.parse(searched_id.toString()),
-                  //       name: guestName.text,
-                  //       // comingFrom: guestComingFrom.text,
-                  //       // cardNumber: visitorNumber.text,
-                  //       // guestCount: int.parse(_guestCountController.text),
-                  //       mobile: widget.mobile,
-                  //       visitor_image: ""
-                  //       // VisitorMapperImage: ""
-                  //
-                  //       );
-                  //
-                  //   await _updateVisitor(updatedVisitor);
-                  // }
+                  final searched_id =
+                      await prefs.getString('search_visitor_id');
+                  print(" searchid $searched_id");
+
+                  if (widget.searchedVisitor != null) {
+                    final Visitor updatedVisitor = Visitor(
+                        id: int.parse(searched_id.toString()),
+                        name: guestName.text,
+                        // comingFrom: guestComingFrom.text,
+                        // cardNumber: visitorNumber.text,
+                        // guestCount: int.parse(_guestCountController.text),
+                        mobile: widget.mobile,
+                        visitor_image: ""
+                        // VisitorMapperImage: ""
+
+                        );
+
+                    await _updateVisitor(updatedVisitor);
+                  }
                   if (isText == true) {
                     if (guestName.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(

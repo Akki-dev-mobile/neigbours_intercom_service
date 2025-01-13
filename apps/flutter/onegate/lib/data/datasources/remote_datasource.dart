@@ -678,65 +678,61 @@ class RemoteDataSource {
 
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
-      // Define the API endpoint
       const String apiUrl = 'https://gateapi.cubeone.in/api/visitor/getLog';
 
-      // Retrieve the gate and company details from preferences and storage
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName =
-          prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
       final companyDetails = await gateStorage.getSocietyId();
       final resolvedCompanyId = companyDetails;
 
-      // Prepare the query parameters
       final Map<String, String> queryParams = {
         "company_id": resolvedCompanyId.toString(),
         "in_gate": selectedGateName,
       };
 
-      // Construct the URI with query parameters
       final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
 
-      // Perform the POST request
       final response = await http.post(
         uri,
         headers: {"Content-Type": "application/json"},
       );
 
-      // Debugging: Log the response
       print("Response: ${response.body}");
 
-      // Handle the response
       if (response.statusCode == 200) {
-        // Decode the JSON response
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data'] ?? [];
-
-        // Map the JSON objects to `VisitorLog` instances
+log("data--$data");
         return data.map((item) {
           try {
-            // print("Processing Item: $item");
-
-            // Create a `Visitor` object directly from root-level fields
             final visitor = Visitor(
-              id: null, // No `id` in your shared structure
+              id: item['visitor_id'] as int?,
               name: item['name'] as String? ?? "",
               mobile: item['mobile'] as String? ?? "",
               visitor_image: item['visitor_image'] as String? ?? "",
             );
 
-            // Create the `VisitorLog` object
-            final visitorLog = VisitorLog(
-              id: item['visitor_log_id']
-                  as int?, // Map `visitor_log_id` to `id`
-              visitor_id:
-                  0, // Set to 0 since `visitor_id` isn't in the shared structure
+            // Map `unit_details` to `BuildingAssignment`
+            final List<BuildingAssignment>? buildingAssignments =
+            (item['unit_details'] as List<dynamic>?)
+                ?.map((unit) => BuildingAssignment(
+              id: null, // Optional
+              visitor_id: item['visitor_id'] as int?,
+              visitor_log_id: item['visitor_log_id'] as int?,
+              company_id: item['company_id'] as int? ?? 0,
+              building_id: 0,
+              unit_id: [unit['building_unit'] as String? ?? ""],
+            ))
+                .toList();
+
+            return VisitorLog(
+              id: item['visitor_log_id'] as int?,
+              visitor_id: item['visitor_id'] as int? ?? 0,
               visitor: visitor,
-              visitor_purpose_category_id:
-                  0, // Default value, not in shared structure
-              visitor_purpose_sub_category_id: null, // Nullable
-              visitor_building_assignment: null, // Nullable
-              visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
+              visitor_purpose_category_id: item['visitor_purpose_category_id'] as int? ?? 0,
+              visitor_purpose_sub_category_id: null,
+              visitor_building_assignment: buildingAssignments,
+              visitor_count: item['visitor_count'] as int? ?? 0,
               visitor_check_in: item['visitor_check_in'] != null
                   ? DateTime.parse(item['visitor_check_in'] as String)
                   : null,
@@ -749,22 +745,15 @@ class RemoteDataSource {
               company_id: item['company_id'] as int? ?? 0,
               is_checked_out: item['is_checked_out'] as bool? ?? false,
             );
-
-            // print("Mapped VisitorLog: ${visitorLog.toJson()}");
-            return visitorLog;
           } catch (mappingError) {
-            // print("Error mapping VisitorLog: $mappingError");
-            throw Exception("Failed to map visitor log");
+            throw Exception("Failed to map visitor log: $mappingError");
           }
         }).toList();
       } else {
-        // Handle non-successful HTTP responses
         throw Exception(
             'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      // Handle exceptions
-      // print('Error in fetchAllLogs: $e');
       rethrow;
     }
   }
@@ -798,29 +787,34 @@ class RemoteDataSource {
         body: jsonEncode(requestBody), // Encode the request payload
       );
 
-      // Print the response for debugging
-      // print("Response: ${response.body}");
 
-      // Check response status
       if (response.statusCode == 200) {
         // Parse the visitor logs from the response
         final responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data'] ?? [];
 
-        // Map the JSON data to `VisitorLog` objects
         return data.map((item) {
           try {
-            // print("Processing Item: $item");
 
-            // Create a `Visitor` object directly from root-level fields
+
+
             final visitor = Visitor(
               id: null, // No `id` in your shared structure
               name: item['name'] as String? ?? "",
               mobile: item['mobile'] as String? ?? "",
               visitor_image: item['visitor_image'] as String? ?? "",
             );
-
-            // Create the `VisitorLog` object
+            final List<BuildingAssignment>? buildingAssignments =
+            (item['unit_details'] as List<dynamic>?)
+                ?.map((unit) => BuildingAssignment(
+              id: null,
+              visitor_id: item['visitor_id'] as int?,
+              visitor_log_id: item['visitor_log_id'] as int?,
+              company_id: item['company_id'] as int? ?? 0,
+              building_id: 0,
+              unit_id: [unit['building_unit'] as String? ?? ""],
+            ))
+                .toList();
             final visitorLog = VisitorLog(
               id: item['visitor_log_id']
                   as int?, // Map `visitor_log_id` to `id`
@@ -830,7 +824,7 @@ class RemoteDataSource {
               visitor_purpose_category_id:
                   0, // Default value, not in shared structure
               visitor_purpose_sub_category_id: null, // Nullable
-              visitor_building_assignment: null, // Nullable
+              visitor_building_assignment: buildingAssignments,
               visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
               visitor_check_in: item['visitor_check_in'] != null
                   ? DateTime.parse(item['visitor_check_in'] as String)
@@ -914,6 +908,17 @@ class RemoteDataSource {
               visitor_image: item['visitor_image'] as String? ?? "",
             );
 
+            final List<BuildingAssignment>? buildingAssignments =
+            (item['unit_details'] as List<dynamic>?)
+                ?.map((unit) => BuildingAssignment(
+              id: null,
+              visitor_id: item['visitor_id'] as int?,
+              visitor_log_id: item['visitor_log_id'] as int?,
+              company_id: item['company_id'] as int? ?? 0,
+              building_id: 0,
+              unit_id: [unit['building_unit'] as String? ?? ""],
+            ))
+                .toList();
             // Create the `VisitorLog` object
             final visitorLog = VisitorLog(
               id: item['visitor_log_id']
@@ -924,7 +929,7 @@ class RemoteDataSource {
               visitor_purpose_category_id:
                   0, // Default value, not in shared structure
               visitor_purpose_sub_category_id: null, // Nullable
-              visitor_building_assignment: null, // Nullable
+              visitor_building_assignment: buildingAssignments,
               visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
               visitor_check_in: item['visitor_check_in'] != null
                   ? DateTime.parse(item['visitor_check_in'] as String)
