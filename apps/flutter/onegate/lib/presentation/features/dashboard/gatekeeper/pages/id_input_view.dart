@@ -225,47 +225,17 @@ class _IdInputViewState extends State<IdInputView> {
             }
           },
           builder: (context, state) {
-            return MyScrollView(
-              pageTitle: 'Enter Mobile Number',
-              backButtonPressed: () {
-                Navigator.pop(context);
-              },
-              hasBackButton: true,
-              pageBody: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ToggleSwitch(
-                  //   cornerRadius: 20.0,
-                  //   borderWidth: 0.5,
-                  //   minWidth: MediaQuery.of(context).size.width * 0.8,
-                  //   minHeight: 50.0,
-                  //   fontSize: 18.0,s
-                  //   changeOnTap: true,
-                  //   initialLabelIndex: _currentIndex,
-                  //   activeBgColor: [
-                  //     Theme.of(context).colorScheme.onBackground,
-                  //   ],
-                  //   activeFgColor: Theme.of(context).colorScheme.background,
-                  //   borderColor: [
-                  //     Theme.of(context).colorScheme.onBackground,
-                  //   ],
-                  //   inactiveBgColor: Theme.of(context).colorScheme.background,
-                  //   inactiveFgColor: Theme.of(context).colorScheme.onPrimary,
-                  //   totalSwitches: 2,
-                  //   labels: _labels,
-                  //   onToggle: (index) {
-                  //     setState(() {
-                  //       _currentIndex = index!;
-                  //     });
-                  //     print('Switched to: $_currentIndex');
-                  //   },
-                  // ),
-                  // SizedBox(height: 20),
-                  // (_currentIndex == 0)
-                  //     ?
-                  Form(
-                    key: mobileControllerFormKey,
-                    child: CustomForm.textField(
+            return Form(
+              key: mobileControllerFormKey,
+
+              child: MyScrollView(
+                pageTitle: 'Enter Mobile Number',
+                // key: ValueKey('MyScrollView'),
+
+                pageBody: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomForm.textField(
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Mobile number is required';
@@ -345,119 +315,22 @@ class _IdInputViewState extends State<IdInputView> {
                           );
                         }
                       },
-                    ),
-                  )
-                  // : Column(
-                  //     children: [
-                  //       Form(
-                  //         key: passcodeControllerFormKey,
-                  //         child: CustomForm.textField(
-                  //           titleColor:
-                  //               Theme.of(context).colorScheme.onBackground,
-                  //           hintColor:
-                  //               Theme.of(context).colorScheme.onPrimary,
-                  //           "Visitor Passcode",
-                  //           hintText: '123456',
-                  //           textController: passcodeController,
-                  //           textCapitalization:
-                  //               TextCapitalization.characters,
-                  //           length: 6,
-                  //           keyboardType: TextInputType.number,
-                  //           prefixIcon: Padding(
-                  //             padding: EdgeInsets.only(
-                  //               left: 10,
-                  //               right: 20,
-                  //             ),
-                  //             child: CircleAvatar(
-                  //               backgroundColor: Colors.blueGrey,
-                  //               child: Text(
-                  //                 selectedPassAlpha ?? 'A',
-                  //                 style: TextStyle(
-                  //                   color: Colors.black,
-                  //                   fontWeight: FontWeight.bold,
-                  //                 ),
-                  //               ),
-                  //             ),
-                  //           ),
-                  //           suffixIcon: IconButton(
-                  //             onPressed: () {
-                  //               if (passcodeControllerFormKey.currentState!
-                  //                   .validate()) {
-                  //                 // showModalBottomSheet(
-                  //                 //   useSafeArea: true,
-                  //                 //   shape: RoundedRectangleBorder(
-                  //                 //     borderRadius: BorderRadius.only(
-                  //                 //       topLeft: Radius.circular(20),
-                  //                 //       topRight: Radius.circular(20),
-                  //                 //     ),
-                  //                 //   ),
-                  //                 //   backgroundColor: Theme.of(context)
-                  //                 //       .colorScheme
-                  //                 //       .background,
-                  //                 //   context: context,
-                  //                 //   builder: (context) =>
-                  //                 //       ImageGridBottomSheet(),
-                  //                 // );
-                  //               }
-                  //             },
-                  //             icon: Icon(
-                  //               Symbols.done_rounded,
-                  //               color: Theme.of(context)
-                  //                   .colorScheme
-                  //                   .onBackground,
-                  //             ),
-                  //           ),
-                  //           validator: (value) {
-                  //             if (value!.isEmpty) {
-                  //               return 'Passcode is required';
-                  //             } else if (value.length != 6) {
-                  //               return 'Please enter a 6-digit passcode';
-                  //             }
-                  //             return null;
-                  //           },
-                  //         ),
-                  //       ),
-                  //       ChipsChoice<String>.single(
-                  //         padding: EdgeInsets.symmetric(horizontal: 20),
-                  //         spacing: 20,
-                  //         choiceStyle: C2ChipStyle.outlined(
-                  //           borderWidth: 1,
-                  //           color: Colors.grey,
-                  //           selectedStyle: C2ChipStyle.outlined(
-                  //             overlayColor: Color(0x90C08261),
-                  //             color: Color(0xff0c08261),
-                  //           ),
-                  //         ),
-                  //         choiceCheckmark: true,
-                  //         value: selectedPassAlpha,
-                  //         scrollPhysics: BouncingScrollPhysics(),
-                  //         onChanged: (value) {
-                  //           setState(() {
-                  //             selectedPassAlpha = value;
-                  //           });
-                  //         },
-                  //         choiceItems: C2Choice.listFrom<String, String>(
-                  //           source: listPassAlpha,
-                  //           value: (i, v) => v,
-                  //           label: (i, v) => v,
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   ),
-                ],
-              ),
-              floatingActionButton: CustomLargeBtn(
-                text: 'Next',
-                onPressed: () async {
-                  // var passcode = passcodeController.text;
-                  //
-                  // await remoteDataSource.passcodeVerify(passcode, context);
+                    )
+                  ],
+                ),
+                floatingActionButton: CustomLargeBtn(
+                  text: 'Next',
+                  onPressed: () async {
+                    // var passcode = passcodeController.text;
+                    //
+                    // await remoteDataSource.passcodeVerify(passcode, context);
 
-                  if (mobileControllerFormKey.currentState?.validate() ??
-                      false) {
-                    gateDashboardBloc.add(InputPutViewNextClickedEvent());
-                  }
-                },
+                    if (mobileControllerFormKey.currentState?.validate() ??
+                        false) {
+                      gateDashboardBloc.add(InputPutViewNextClickedEvent());
+                    }
+                  },
+                ),
               ),
             );
           },

@@ -18,6 +18,7 @@ class GatekeeperDashboardBloc
   final VisitorUsecase _visitorUsecase;
   final VisitorLogUsecase _visitorLogUsecase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  bool _hasNavigated = false;
 
   GatekeeperDashboardBloc(this._visitorUsecase, this._visitorLogUsecase)
       : super(GatekeeperDashboardInitial()) {
@@ -30,22 +31,15 @@ class GatekeeperDashboardBloc
     on<GDVisitorsOutButtonPressedEvent>(onVisitorsOutButtonPressedEvent);
   }
 
-  FutureOr<void> onMobileNumberEnteredEvent(GDOnMobileNumberEnteredEvent event,
+  FutureOr<void> onMobileNumberEnteredEvent(
+      GDOnMobileNumberEnteredEvent event,
       Emitter<GatekeeperDashboardState> emit) async {
     emit(GatekeeperDashboardLoadingState());
     try {
       final response = await _visitorUsecase.searchVisitor(event.mobileNumber);
-      print("visitor --$response");
       emit(SaveSearchedVisitorState(visitor: response));
-
-      emit(GatekeeperDashboardInitial());
     } catch (e) {
-      print(e.toString());
-      emit(
-        GatekeeperDashboardErrorState(
-          message: e.toString(),
-        ),
-      );
+      emit(GatekeeperDashboardErrorState(message: e.toString()));
     }
   }
 
@@ -55,18 +49,9 @@ class GatekeeperDashboardBloc
     emit(GatekeeperDashboardLoadingState());
     try {
       final purpose = await _visitorUsecase.fetchPurposeCategory();
-      emit(GatekeeperDashboardInitial());
-      //emit(InputPutViewNextClickedState());
       emit(OpenPurposeDialogState(purposeCategories: purpose));
     } catch (e) {
-      print(e.toString());
-      final purpose = await _visitorUsecase.fetchPurposeCategory();
-      emit(OpenPurposeDialogState(purposeCategories: purpose));
-      emit(
-        GatekeeperDashboardErrorState(
-          message: e.toString(),
-        ),
-      );
+      emit(GatekeeperDashboardErrorState(message: e.toString()));
     }
   }
 
@@ -74,44 +59,21 @@ class GatekeeperDashboardBloc
       PurposeNextButtonClickedEvent event,
       Emitter<GatekeeperDashboardState> emit) async {
     emit(GatekeeperDashboardLoadingState());
-    try {
-      emit(NavigateToVisitorDetailsState(
-        event.purpose,
-        event.mobile,
-        visitor: event.searchedVisitor,
-      ));
-    } catch (e) {
-      print(e.toString());
-      emit(
-        GatekeeperDashboardErrorState(
-          message: e.toString(),
-        ),
-      );
-    }
+    emit(NavigateToVisitorDetailsState(
+      event.purpose,
+      event.mobile,
+      visitor: event.searchedVisitor,
+    ));
   }
 
   FutureOr<void> onInitialEvent(GatekeeperDashboardInitialEvent event,
       Emitter<GatekeeperDashboardState> emit) async {
     try {
       emit(GatekeeperDashboardLoadingState());
-      // final List<VisitorLog>? checkedInVisitors =
-      //     await _visitorLogUsecase.fetchCheckInVisitorLog(
-      //         _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-      //         DateTime.now().toString());
-      //
-      // final today = DateTime.now();
-      // final List<VisitorLog> todayCheckedInVisitors =
-      //     checkedInVisitors!.where((visitor) {
-      //   final checkInDate = DateTime.parse(visitor.checkInDate);
-      //   return checkInDate.year == today.year &&
-      //       checkInDate.month == today.month &&
-      //       checkInDate.day == today.day;
-      // }).toList();
-      //
-      // final int inBook = todayCheckedInVisitors.length;
+
       final gateStorage = GateStorage();
-      final String? companyId =  await gateStorage.getSocietyId();
-      final DateTime today = DateTime.now();
+      final companyId = await gateStorage.getSocietyId();
+      final today = DateTime.now();
 
       final List<VisitorLog>? allCheckedInVisitors =
       await _visitorLogUsecase.fetchCheckInVisitorLog(int.parse(companyId.toString()),today.toString());
@@ -123,7 +85,7 @@ class GatekeeperDashboardBloc
       }).toList() ?? [];
       final int inBook = todaysCheckedInVisitors.length;
 
-      // Fetch all check-out logs and filter for today
+
       final List<VisitorLog>? allCheckedOutVisitors =
       await _visitorLogUsecase.fetchCheckOutLogs(int.parse(companyId.toString()),today.toString());
       final List<VisitorLog> todaysCheckedOutVisitors = allCheckedOutVisitors?.where((visitor) {
@@ -133,27 +95,103 @@ class GatekeeperDashboardBloc
             checkOutDate.day == today.day;
       }).toList() ?? [];
       final int outBook = todaysCheckedOutVisitors.length;
+
       emit(GatekeeperDashboardSuccessState(inBook: inBook, outBook: outBook));
     } catch (e) {
-      print(e.toString());
+      emit(GatekeeperDashboardErrorState(message: e.toString()));
     }
   }
-
   FutureOr<void> onInAndOutButtonPressedEvent(
       GDInAndOutButtonPressedEvent event,
       Emitter<GatekeeperDashboardState> emit) async {
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+
+    // Emit navigation state
     emit(GDInAndOutButtonPressedState());
+
+    // Fetch the updated data for the dashboard
+    await _emitDashboardSuccessState(emit);
+
+    Future.delayed(Duration(milliseconds: 500), () => _hasNavigated = false);
   }
 
   FutureOr<void> onVisitorsInButtonPressedEvent(
       GDVisitorsInButtonPressedEvent event,
       Emitter<GatekeeperDashboardState> emit) async {
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+
+    // Emit navigation state
     emit(GDVisitorsInButtonPressedState());
+
+    // Fetch the updated data for the dashboard
+    await _emitDashboardSuccessState(emit);
+
+    Future.delayed(Duration(milliseconds: 500), () => _hasNavigated = false);
   }
 
   FutureOr<void> onVisitorsOutButtonPressedEvent(
       GDVisitorsOutButtonPressedEvent event,
       Emitter<GatekeeperDashboardState> emit) async {
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+
     emit(GDVisitorsOutButtonPressedState());
+
+    await _emitDashboardSuccessState(emit);
+
+    Future.delayed(Duration(milliseconds: 500), () => _hasNavigated = false);
+  }
+
+  Future<void> _emitDashboardSuccessState(
+      Emitter<GatekeeperDashboardState> emit) async {
+    try {
+      emit(GatekeeperDashboardLoadingState());
+
+      final gateStorage = GateStorage();
+      final companyId = await gateStorage.getSocietyId();
+      final today = DateTime.now();
+
+      final List<VisitorLog>? allCheckedInVisitors =
+      await _visitorLogUsecase.fetchCheckInVisitorLog(
+          int.parse(companyId.toString()), today.toString());
+      final List<VisitorLog> todaysCheckedInVisitors =
+          allCheckedInVisitors
+              ?.where((visitor) {
+            final DateTime checkInDate =
+            DateTime.parse(visitor.visitor_check_in.toString());
+            return checkInDate.year == today.year &&
+                checkInDate.month == today.month &&
+                checkInDate.day == today.day;
+          })
+              .toList() ??
+              [];
+      final int inBook = todaysCheckedInVisitors.length;
+
+      final List<VisitorLog>? allCheckedOutVisitors =
+      await _visitorLogUsecase.fetchCheckOutLogs(
+          int.parse(companyId.toString()), today.toString());
+      final List<VisitorLog> todaysCheckedOutVisitors =
+          allCheckedOutVisitors
+              ?.where((visitor) {
+            final DateTime checkOutDate =
+            DateTime.parse(visitor.visitor_check_out.toString());
+            return checkOutDate.year == today.year &&
+                checkOutDate.month == today.month &&
+                checkOutDate.day == today.day;
+          })
+              .toList() ??
+              [];
+      final int outBook = todaysCheckedOutVisitors.length;
+
+      emit(GatekeeperDashboardSuccessState(inBook: inBook, outBook: outBook));
+    } catch (e) {
+      emit(GatekeeperDashboardErrorState(message: e.toString()));
+    }
   }
 }
+
+
+
+

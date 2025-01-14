@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:provider/provider.dart';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
@@ -27,79 +28,77 @@ import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:speech_to_text/speech_to_text.dart';
 import 'package:camera/camera.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
-import 'package:provider/provider.dart';
 
 class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory? selectedValue;
   final Visitor? searchedVisitor;
   final String mobile;
 
-  // final int companyId = GlobalUser.getUserId() ?? 55275;
-
-  VisitorsInEntry(
-      {Key? key,
-      this.selectedValue,
-      this.searchedVisitor,
-      required this.mobile})
-      : super(key: key);
+  const VisitorsInEntry({
+    Key? key,
+    this.selectedValue,
+    this.searchedVisitor,
+    required this.mobile,
+  }) : super(key: key);
 
   @override
   State<VisitorsInEntry> createState() => _VisitorsInEntryState();
 }
 
 class _VisitorsInEntryState extends State<VisitorsInEntry> {
-  final SpeechToText _speechToText = SpeechToText();
-  bool _speechEnabled = false;
-  final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
-  String _speechTextControllerId = '';
-  late TextEditingController _guestCountController;
-  final VisitorInEntryBloc visitorInEntryBloc = VisitorInEntryBloc(
-      VisitorUsecase(VisitorRepoImpl(RemoteDataSource(DioSingleton.instance1,
-          DioSingleton.instance2, DioSingleton.instance3))),
-      VisitorLogUsecase(VisitorLogRepositoryImpl(RemoteDataSource(
-          DioSingleton.instance1,
-          DioSingleton.instance2,
-          DioSingleton.instance3))));
-  final remoteDataSource = RemoteDataSource(
-      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
-  final GateStorage gateStorage = GateStorage();
-  bool isText = true;
+  late final VisitorInEntryBloc _bloc;
+  late final TextEditingController _guestNameController;
+  late final TextEditingController _guestComingFromController;
+  late final TextEditingController _guestCountController;
+  late final TextEditingController _visitorNumberController;
 
+  bool _isSubmitting = false;
   int _guestCount = 1;
-  TextEditingController guestComingFrom = TextEditingController();
-  TextEditingController guestName = TextEditingController();
-  TextEditingController visitorNumber = TextEditingController();
-  bool _isInitialLoad = true;
-  String? companyId;
   bool? _visitorCardNumber = false;
-
+  List<PurposeCategory> _globalSelectedPurposes = [];
+  final remoteDataSource = RemoteDataSource(
+    DioSingleton.instance1,
+    DioSingleton.instance2,
+    DioSingleton.instance3,
+  );
   @override
   void initState() {
     super.initState();
-    _guestCountController = TextEditingController(text: _guestCount.toString());
-
-    _initSpeech();
-    _fetchCompanyId();
-    _loadSelectedPurposesToGlobal();
-    _loadVisitorSettings();
-    guestName =
-        TextEditingController(text: widget.searchedVisitor?.name.toString());
-    guestComingFrom = TextEditingController();
-    visitorNumber = TextEditingController();
-
+    _initializeControllers();
+    _initializeBloc();
+    _loadInitialData();
   }
 
-  @override
-  void dispose() {
-    guestName.dispose();
-    guestComingFrom.dispose();
-    visitorNumber.dispose();
-    super.dispose();
+  void _initializeControllers() {
+    _guestNameController =
+        TextEditingController(text: widget.searchedVisitor?.name);
+    _guestComingFromController = TextEditingController();
+    _guestCountController = TextEditingController(text: '1');
+    _visitorNumberController = TextEditingController();
+  }
+
+  void _initializeBloc() {
+    final remoteDataSource = RemoteDataSource(
+      DioSingleton.instance1,
+      DioSingleton.instance2,
+      DioSingleton.instance3,
+    );
+
+    _bloc = VisitorInEntryBloc(
+      VisitorUsecase(VisitorRepoImpl(remoteDataSource)),
+      VisitorLogUsecase(VisitorLogRepositoryImpl(remoteDataSource)),
+    );
+  }
+
+  Future<void> _loadInitialData() async {
+    await Future.wait([
+      _loadVisitorSettings(),
+      _loadSelectedPurposes(),
+    ]);
   }
 
   Future<void> _updateVisitor(Visitor visitor) async {
@@ -108,66 +107,55 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   Future<void> _loadVisitorSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _visitorCardNumber = await prefs.getBool('visitorCardNumber');
+    setState(() {
+      _visitorCardNumber = prefs.getBool('visitorCardNumber');
+    });
   }
 
-  void _initSpeech() async {
-    _speechEnabled = await _speechToText.initialize();
-    setState(() {});
+  Future<void> _loadSelectedPurposes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString('selected_purposes');
+      if (jsonString != null) {
+        final jsonList = jsonDecode(jsonString) as List<dynamic>;
+        setState(() {
+          _globalSelectedPurposes = jsonList
+              .map((json) => PurposeCategoryMapper.fromJson(json))
+              .toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading purposes: $e');
+    }
   }
 
-  Future<void> _fetchCompanyId() async {
-    companyId = await gateStorage.getSocietyId();
-    setState(() {});
-  }
-
-  void _handleMicPress(String fieldId) async {
+  Future<String?> _handleMicPress(String field) async {
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => ListeningDialog(),
+      builder: (context) => const ListeningDialog(),
     );
 
-    if (result != null && result.isNotEmpty) {
+    if (result != null) {
       setState(() {
-        switch (fieldId) {
+        switch (field) {
           case 'guestName':
-            guestName.text = result;
+            _guestNameController.text = result;
             break;
           case 'guestComingFrom':
-            guestComingFrom.text = result;
-            break;
-          case 'visitorNumber':
-            visitorNumber.text = result;
+            _guestComingFromController.text = result;
             break;
         }
       });
     }
+    return result;
   }
 
   void _incrementGuestCount() {
-    setState(() {
-      _guestCount++;
-      _guestCountController.text = _guestCount.toString();
-    });
-  }
-
-  List<PurposeCategory> globalSelectedPurposes = [];
-
-  Future<void> _loadSelectedPurposesToGlobal() async {
-    try {
-      final roh = await SharedPreferences.getInstance();
-      final jsonString = roh.getString('selected_purposes');
-      if (jsonString != null) {
-        final jsonList = jsonDecode(jsonString) as List<dynamic>;
-        setState(() {
-          globalSelectedPurposes = jsonList
-              .map((json) => PurposeCategoryMapper.fromJson(json))
-              .toList();
-        });
-        print("Global selected purposes loaded: $globalSelectedPurposes");
-      }
-    } catch (e) {
-      print("Failed to load selected purposes into global variable: $e");
+    if (_guestCount < 99) {
+      setState(() {
+        _guestCount++;
+        _guestCountController.text = _guestCount.toString();
+      });
     }
   }
 
@@ -180,15 +168,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
   }
 
-  //PickedFile? _imageFile;
-
-  // ignore: body_might_complete_normally_nullable
-
   Future<File?> _captureImageFromCamera(BuildContext context) async {
     CameraController? cameraController;
 
     try {
-      // Access the selected camera preference from the provider
       final cameraProvider =
           Provider.of<CameraSettingsProvider>(context, listen: false);
       final selectedCameraValue = cameraProvider.selectedCameraValue;
@@ -210,15 +193,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         );
       }
 
-      // Initialize the camera controller
       cameraController = CameraController(
         selectedCamera,
         ResolutionPreset.high,
       );
       await cameraController.initialize();
 
-      // Display camera preview
-      final XFile? image = await Navigator.push(
+      final XFile? image = await Navigator.push<XFile?>(
         context,
         MaterialPageRoute(
           builder: (context) =>
@@ -226,197 +207,179 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         ),
       );
 
-      if (image == null) {
-        // User canceled the capture
-        print('Capture canceled by user');
-        return null;
+      // Check if the user captured an image
+      if (image != null) {
+        final appDocDir = await getApplicationDocumentsDirectory();
+        final localImage = File(
+            '${appDocDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await File(image.path).copy(localImage.path);
+        return localImage;
+      } else {
+        return null; // No image captured
       }
-
-      // Save the image locally
-      final appDocDir = await getApplicationDocumentsDirectory();
-      final localImage = File(
-          '${appDocDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await File(image.path).copy(localImage.path);
-
-      // Upload the image
-      await _uploadCapturedImage(localImage, context);
-
-      return localImage;
     } catch (e) {
       print('Error capturing image: $e');
       return null;
     } finally {
-      // Dispose of the camera controller
       await cameraController?.dispose();
     }
   }
 
-  Future<void> _uploadCapturedImage(
-      File localImage, BuildContext context) async {
-    try {
-      final visitorUsecase = VisitorUsecase(
-        VisitorRepoImpl(
-          RemoteDataSource(
-            DioSingleton.instance1,
-            DioSingleton.instance2,
-            DioSingleton.instance3,
-          ),
-        ),
-      );
+  Future<void> _handleSubmit() async {
+    if (_isSubmitting) return;
 
-      // Replace `widget.mobile` and `companyId` with actual variables
-      await visitorUsecase.uploadImage(
-          localImage, '1234567890', 1); // Replace with actual values
-      print('Image uploaded successfully!');
+    if (!_validateForm()) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
+        searchedVisitor: widget.searchedVisitor,
+        guestName: _guestNameController.text,
+        guestComingFrom: _guestComingFromController.text,
+        guestCount: _guestCount,
+        purposeCategory: widget.selectedValue!,
+        mobile: widget.mobile,
+      ));
+
+      await Future.delayed(const Duration(seconds: 2));
     } catch (e) {
-      print('Error uploading image: $e');
+      _showErrorSnackBar('An error occurred: ${e.toString()}');
+    } finally {
+      // Reset submission state
+      setState(() => _isSubmitting = false);
     }
   }
 
-  PurposeCategory? getEffectivePurposeCategory() {
-    return widget.selectedValue ??
-        (globalSelectedPurposes.isNotEmpty
-            ? globalSelectedPurposes.first
-            : null);
+  bool _validateForm() {
+    if (_guestNameController.text.isEmpty) {
+      _showErrorSnackBar('Please enter guest name');
+      return false;
+    }
+
+    if (_guestComingFromController.text.isEmpty) {
+      _showErrorSnackBar('Coming from is mandatory field');
+      return false;
+    }
+
+    return true;
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final effectivePurpose = getEffectivePurposeCategory();
+    final effectivePurpose = widget.selectedValue ??
+        (_globalSelectedPurposes.isNotEmpty
+            ? _globalSelectedPurposes.first
+            : null);
 
-    // Check if the purpose is null or not available
     if (effectivePurpose == null) {
-      return Center(
-        child: Text(
-          "No purpose selected or available.",
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      );
+      return const Center(child: Text("No purpose selected or available."));
     }
 
     return BlocConsumer<VisitorInEntryBloc, VisitorInEntryState>(
-        bloc: visitorInEntryBloc,
-        listenWhen: (previous, current) => current is VisitorInEntryActionState,
-        listener: (context, state) async {
-          if (state is VIENavigateToUnitSelectionState) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UnitSelectionView(
-                  visitorId: widget.searchedVisitor?.id,
-                  guestname: guestName.text,
-                  mobileNumber: widget.mobile,
-                  purposeCategory: state.purposeCategory,
-                  visitor: state.visitor,
-                  comingFrom: guestComingFrom.text,
-                  guestCount: _guestCount,
-                  visitorNumber: visitorNumber.text.isNotEmpty
-                      ? "V${visitorNumber.text}"
-                      : visitorNumber.text,
-                  // visitorNumber: visitorNumber.text,
-                ),
-              ),
-            );
-          } else if (state is VIENavigateToCameraState) {
-            final imageFile = await _captureImageFromCamera(context);
-            if (imageFile != null) {
-              visitorInEntryBloc.add(VIECameraButtonPressedEvent(
-                purposeCategory: state.purposeCategory,
-                imageFile: imageFile,
+      bloc: _bloc,
+      listenWhen: (previous, current) => current is VisitorInEntryActionState,
+      buildWhen: (previous, current) => current is! VisitorInEntryActionState,
+      listener: (context, state) async {
+        if (state is VisitorInEntryErrorState) {
+          _showErrorSnackBar(state.message);
+          setState(() => _isSubmitting = false);
+        } else if (state is VIENavigateToUnitSelectionState) {
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+          final searched_id = await prefs.getString('search_visitor_id');
+          print(" searchid $searched_id");
+
+          if (widget.searchedVisitor != null) {
+            final Visitor updatedVisitor = Visitor(
+                id: int.parse(searched_id.toString()),
+                name: _guestNameController.text,
+                // comingFrom: guestComingFrom.text,
+                // cardNumber: visitorNumber.text,
+                // guestCount: int.parse(_guestCountController.text),
+                mobile: widget.mobile,
+                visitor_image: ""
+                // VisitorMapperImage: ""
+
+                );
+
+            await _updateVisitor(updatedVisitor);
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UnitSelectionView(
+                widget.searchedVisitor,
                 visitor: state.visitor,
-                operation: state.operation,
-              ));
-            }
+                visitorId: widget.searchedVisitor?.id,
+                guestname: _guestNameController.text,
+                mobileNumber: widget.mobile,
+                purposeCategory: state.purposeCategory,
+                comingFrom: _guestComingFromController.text,
+                guestCount: _guestCount,
+                visitorNumber: _visitorNumberController.text.isNotEmpty
+                    ? "V${_visitorNumberController.text}"
+                    : _visitorNumberController.text,
+              ),
+            ),
+          );
+          setState(() => _isSubmitting = false);
+        } else if (state is VIENavigateToCameraState) {
+          // Ensure camera state navigation is handled correctly
+          final imageFile = await _captureImageFromCamera(context);
+
+          if (imageFile != null) {
+            // Dispatch the camera button pressed event
+            _bloc.add(VIECameraButtonPressedEvent(
+              purposeCategory: state.purposeCategory,
+              imageFile: imageFile,
+              visitor: state.visitor,
+              operation: state.operation,
+            ));
+          } else {
+            _showErrorSnackBar("Camera capture was canceled.");
           }
-        },
-        builder: (context, state) {
-          // Loader display on initial state
-          if (_isInitialLoad && state is VisitorInEntryLoadingState) {
-            return LoaderView();
-          }
-          _isInitialLoad = false; // Disable loader after initial load
+        }
+      },
+      builder: (context, state) {
+        if (state is VisitorInEntryLoadingState) {
+          return const LoaderView();
+        }
 
-          return MyScrollView(
-              isScrollable: true,
-              pageTitle:
-                  'Purpose Entry - ${effectivePurpose.purpose_category_name}',
-              pageBody: _buildPurposeForm(effectivePurpose),
-              floatingActionButton: CustomLargeBtn(
-                onPressed: () async {
-                  final SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-
-                  final searched_id =
-                      await prefs.getString('search_visitor_id');
-                  print(" searchid $searched_id");
-
-                  if (widget.searchedVisitor != null) {
-                    final Visitor updatedVisitor = Visitor(
-                        id: int.parse(searched_id.toString()),
-                        name: guestName.text,
-                        // comingFrom: guestComingFrom.text,
-                        // cardNumber: visitorNumber.text,
-                        // guestCount: int.parse(_guestCountController.text),
-                        mobile: widget.mobile,
-                        visitor_image: ""
-                        // VisitorMapperImage: ""
-
-                        );
-
-                    await _updateVisitor(updatedVisitor);
-                  }
-                  if (isText == true) {
-                    if (guestName.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Please enter guest name'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } else if (preferenceUtils.getTooglevalue() == true &&
-                        guestComingFrom.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Coming from is mandatory field'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } else {
-                      setState(() {
-                        isText = false;
-                      });
-
-                      visitorInEntryBloc.add(
-                          VIEGuestFormSubmitButtonPressedEvent(
-                              searchedVisitor: widget.searchedVisitor,
-                              guestName: guestName.text,
-                              guestComingFrom: guestComingFrom.text,
-                              guestCount: _guestCount,
-                              purposeCategory: widget.selectedValue!,
-                              mobile: widget.mobile ?? ""));
-                    }
-                  }
-                },
-                isText: isText,
-                text: 'Next',
-                widgetChild: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ));
-        });
+        return MyScrollView(
+          isScrollable: true,
+          pageTitle:
+              'Purpose Entry - ${effectivePurpose.purpose_category_name}',
+          pageBody: _buildPurposeForm(effectivePurpose),
+          floatingActionButton: CustomLargeBtn(
+            onPressed: _handleSubmit,
+            isText: !_isSubmitting,
+            text: 'Next',
+            widgetChild: const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildPurposeForm(PurposeCategory purpose) {
-    if (purpose.purpose_category_name == 'CABS') {
-      return _buildCabsForm();
-    } else if (purpose.purpose_category_name == 'DELIVERY') {
-      return _buildDeliveryForm();
-    } else if (purpose.purpose_category_name == 'GUEST') {
-      return _buildGuestForm();
-    } else {
-      return Center(
-        child: Text('Unknown Purpose'),
-      );
+    switch (purpose.purpose_category_name) {
+      case 'CABS':
+        return _buildCabsForm();
+      case 'DELIVERY':
+        return _buildDeliveryForm();
+      case 'GUEST':
+        return _buildGuestForm();
+      default:
+        return const Center(child: Text('Unknown Purpose'));
     }
   }
 
@@ -427,39 +390,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           "Cab Driver Name",
           hintText: 'Enter Name',
           textCapitalization: TextCapitalization.words,
-          suffixIcon: IconButton(
-            onPressed: () {},
-            icon: CircleAvatar(
-              backgroundColor: Color(0xffFFEBE6),
-              radius: 20,
-              child: Icon(
-                size: 22,
-                Ionicons.mic_outline,
-                color: Colors.black,
-              ),
-            ),
-          ),
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
+          suffixIcon: _buildMicButton(() => _handleMicPress('cabDriverName')),
         ),
         CustomForm.textField(
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
           "Cab Number",
           hintText: 'MH 12 AB 1234',
           textCapitalization: TextCapitalization.characters,
-          suffixIcon: IconButton(
-            onPressed: () {},
-            icon: CircleAvatar(
-              backgroundColor: Color(0xffFFEBE6),
-              radius: 20,
-              child: Icon(
-                size: 22,
-                Ionicons.mic_outline,
-                color: Colors.black,
-              ),
-            ),
-          ),
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          suffixIcon: _buildMicButton(() => _handleMicPress('cabNumber')),
         ),
       ],
     );
@@ -471,23 +412,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CustomForm.textField(
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
           "Delivery Person Name",
           hintText: 'Enter Name',
           textCapitalization: TextCapitalization.words,
-          suffixIcon: IconButton(
-            onPressed: () {},
-            icon: CircleAvatar(
-              backgroundColor: Color(0xffFFEBE6),
-              radius: 20,
-              child: Icon(
-                size: 22,
-                Ionicons.mic_outline,
-                color: Colors.black,
-              ),
-            ),
-          ),
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          suffixIcon: _buildMicButton(() => _handleMicPress('deliveryName')),
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
@@ -496,7 +426,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
-        SelectTypeWidget(),
+        const SelectTypeWidget(),
       ],
     );
   }
@@ -505,133 +435,122 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     return Column(
       children: [
         CustomForm.textField(
-            titleColor: Theme.of(context).colorScheme.onSurface,
-            hintColor: Theme.of(context).colorScheme.onPrimary,
-            "Guest Name",
-            hintText: 'Enter Name',
-            textCapitalization: TextCapitalization.words,
-            textController: guestName,
-            suffixIcon: IconButton(
-              onPressed: () => _handleMicPress('guestName'),
-              icon: CircleAvatar(
-                backgroundColor: Color(0xffFFEBE6),
-                radius: 20,
-                child: Icon(
-                  size: 22,
-                  Ionicons.mic_outline,
-                  color: Colors.black,
-                ),
-              ),
-            )),
-        CustomForm.textField(
-            titleColor: Theme.of(context).colorScheme.onSurface,
-            hintColor: Theme.of(context).colorScheme.onPrimary,
-            "Coming From",
-            hintText: 'Enter Coming From',
-            textCapitalization: TextCapitalization.words,
-            textController: guestComingFrom,
-            suffixIcon: IconButton(
-              onPressed: () => _handleMicPress('guestComingFrom'),
-              icon: CircleAvatar(
-                backgroundColor: Color(0xffFFEBE6),
-                radius: 20,
-                child: Icon(
-                  size: 22,
-                  Ionicons.mic_outline,
-                  color: Colors.black,
-                ),
-              ),
-            )),
-        // preferenceUtils.getTooglevalue() == true
-        //     ?
-
-        (_visitorCardNumber == false)
-            ? SizedBox()
-            : CustomForm.textField(
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your ID';
-                  } else if (value.length != 4) {
-                    return 'ID must be 4 digits';
-                  }
-                  return null;
-                },
-                titleColor: Theme.of(context).colorScheme.onSurface,
-                hintColor: Theme.of(context).colorScheme.onPrimary,
-                "Enter your ID",
-                hintText: 'Request from Security',
-                keyboardType: TextInputType.number,
-                length: 4,
-                textController: visitorNumber,
-                prefixIcon: Container(
-                  width: 20,
-                  margin: EdgeInsets.only(
-                    left: 10,
-                    right: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Color(0xffFFEBE6),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  // radius: 16,
-                  child: Center(
-                    child: Text(
-                      "V",
-                    ),
-                  ),
-                ),
-              ),
-        CustomForm.textField(
-          "Guest Count",
-          textController: _guestCountController,
-          hintText: 'Guest Count',
-          keyboardType: TextInputType.number,
+          "Guest Name",
+          hintText: 'Enter Name',
+          textCapitalization: TextCapitalization.words,
+          textController: _guestNameController,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
-          length: 2,
-          onChanged: (value) {
-            setState(() {
-              _guestCount = int.tryParse(value) ?? 1;
-            });
-          },
-          suffixIcon: OverflowBar(
-            // mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                onPressed: _decrementGuestCount,
-                icon: Icon(
-                  Ionicons.remove_circle_outline,
-                  color: Colors.red,
-                  size: 32,
-                ),
-              ),
-              IconButton(
-                onPressed: _incrementGuestCount,
-                icon: Icon(
-                  Ionicons.add_circle_outline,
-                  size: 32,
-                  color: Colors.green,
-                ),
-              ),
-            ],
-          ),
+          suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
         ),
-        SizedBox(height: 150),
+        CustomForm.textField(
+          "Coming From",
+          hintText: 'Enter Coming From',
+          textCapitalization: TextCapitalization.words,
+          textController: _guestComingFromController,
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onPrimary,
+          suffixIcon: _buildMicButton(() => _handleMicPress('guestComingFrom')),
+        ),
+        if (_visitorCardNumber == true)
+          CustomForm.textField(
+            "Enter your ID",
+            hintText: 'Request from Security',
+            keyboardType: TextInputType.number,
+            length: 4,
+            textController: _visitorNumberController,
+            titleColor: Theme.of(context).colorScheme.onSurface,
+            hintColor: Theme.of(context).colorScheme.onPrimary,
+            validator: _validateVisitorId,
+            prefixIcon: _buildVisitorIdPrefix(),
+          ),
+        _buildGuestCountField(),
+        const SizedBox(height: 150),
       ],
     );
   }
 
-  Widget? _buildVendorForm() {
-    return null;
+  Widget _buildMicButton(Future<void> Function() onPressed) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: CircleAvatar(
+        backgroundColor: const Color(0xffFFEBE6),
+        radius: 20,
+        child: Icon(
+          Ionicons.mic_outline,
+          size: 22,
+          color: Colors.black,
+        ),
+      ),
+    );
+  }
 
-    //   Column(
-    //   children: [
-    //     CustomForm.textField(
-    //       "Vendor Name", titleColor: null, hintColor: null, hintText: '',
-    //     ),
-    //     SelectTypeWidget(),
-    //   ],
-    // );
+  Widget _buildVisitorIdPrefix() {
+    return Container(
+      width: 20,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xffFFEBE6),
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: const Center(child: Text("V")),
+    );
+  }
+
+  Widget _buildGuestCountField() {
+    return CustomForm.textField(
+      "Guest Count",
+      textController: _guestCountController,
+      hintText: 'Guest Count',
+      keyboardType: TextInputType.number,
+      titleColor: Theme.of(context).colorScheme.onSurface,
+      hintColor: Theme.of(context).colorScheme.onPrimary,
+      length: 2,
+      onChanged: (value) {
+        setState(() {
+          _guestCount = int.tryParse(value) ?? 1;
+        });
+      },
+      suffixIcon: OverflowBar(
+        children: [
+          IconButton(
+            onPressed: _decrementGuestCount,
+            icon: const Icon(
+              Ionicons.remove_circle_outline,
+              color: Colors.red,
+              size: 32,
+            ),
+          ),
+          IconButton(
+            onPressed: _incrementGuestCount,
+            icon: const Icon(
+              Ionicons.add_circle_outline,
+              size: 32,
+              color: Colors.green,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _validateVisitorId(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your ID';
+    }
+    if (value.length != 4) {
+      return 'ID must be 4 digits';
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _guestNameController.dispose();
+    _guestComingFromController.dispose();
+    _guestCountController.dispose();
+    _visitorNumberController.dispose();
+    super.dispose();
   }
 }
 
@@ -929,7 +848,7 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
       setState(() {
         _cameraController = newController;
         _currentCamera = newCamera;
-        _capturedImage = null; // Reset captured image on camera switch
+        _capturedImage = null;
       });
     } catch (e) {
       print('Error switching cameras: $e');
@@ -950,11 +869,7 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Navigator.pushAndRemoveUntil(
-            //   context,
-            //   MaterialPageRoute(builder: (context) => VisitorsInEntry( )),
-            //       (Route<dynamic> route) => false,
-            // );
+            Navigator.pop(context);
           },
         ),
       ),

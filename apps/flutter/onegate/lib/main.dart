@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
@@ -16,7 +18,12 @@ import 'package:get_it/get_it.dart';
 import 'package:one_theme/theme.dart';
 import 'package:provider/provider.dart';
 
+import 'data/datasources/remote_datasource.dart';
+import 'data/repositories/visitor_log_repo_impl.dart';
+import 'data/repositories/visitor_repo_impl.dart';
 import 'domain/repositories/staff_repository.dart';
+import 'domain/use_cases/visitor_log_usecae.dart';
+import 'domain/use_cases/visitor_usecase.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -41,7 +48,6 @@ void main() async {
   await ThemeManager.initializeWithAppId(appId);
 
   runApp(
-
     ScreenUtilInit(
       fontSizeResolver: (num size, ScreenUtil _) => 0.5,
       designSize: const Size(360, 690),
@@ -49,30 +55,53 @@ void main() async {
       splitScreenMode: true,
       builder: (_, child) => MultiProvider(
         providers: [
-
           ChangeNotifierProvider<ApprovalStatusProvider>(
-            create: (_) => ApprovalStatusProvider(), // Initialize your provider
+            create: (_) => ApprovalStatusProvider(),
           ),
           ChangeNotifierProvider<PurposeProvider>(
-            create: (_) => PurposeProvider(), // Initialize your provider
+            create: (_) => PurposeProvider(),
           ),
           ChangeNotifierProvider<VisitorLogsProvider>(
-            create: (_) => VisitorLogsProvider(), // Initialize your provider
+            create: (_) => VisitorLogsProvider(),
           ),
           ChangeNotifierProvider<VisitorSettingsProvider>(
-            create: (_) => VisitorSettingsProvider(), // Initialize your provider
-          ), ChangeNotifierProvider<GateProvider>(
-            create: (_) => GateProvider(), // Initialize your provider
-          ),ChangeNotifierProvider<CameraSettingsProvider>(
-            create: (_) => CameraSettingsProvider(), // Initialize your provider
+            create: (_) => VisitorSettingsProvider(),
           ),
-
+          ChangeNotifierProvider<GateProvider>(
+            create: (_) => GateProvider(),
+          ),
+          ChangeNotifierProvider<CameraSettingsProvider>(
+            create: (_) => CameraSettingsProvider(),
+          ),
         ],
-        child: const MyApp(),
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<GatekeeperDashboardBloc>(
+              create: (context) => GatekeeperDashboardBloc(
+                VisitorUsecase(
+                  VisitorRepoImpl( RemoteDataSource(
+      DioSingleton.instance1,
+        DioSingleton.instance2,
+        DioSingleton.instance3,
+      )), // Pass dependencies
+                ),
+                VisitorLogUsecase(
+                  VisitorLogRepositoryImpl( RemoteDataSource(
+                    DioSingleton.instance1,
+                    DioSingleton.instance2,
+                    DioSingleton.instance3,
+                  ),),
+                ),
+              ),
+            ),
+          ],
+          child: const MyApp(),
+        ),
       ),
     ),
   );
 }
+
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

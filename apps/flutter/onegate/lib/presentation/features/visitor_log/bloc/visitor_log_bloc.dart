@@ -45,27 +45,36 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
   FutureOr<void> checkOutEvent(
       CheckOutEvent event, Emitter<VisitorLogState> emit) async {
     try {
+      // Emit loading state
       emit(VisitorLogLoadingState());
+
+      // Perform the checkout operation
       final response = await visitorLogUseCase.checkOut(event.visitorLog);
+
       if (response) {
+        // Update the local visitor log's checkout fields optimistically
+        event.visitorLog.visitor_check_out = DateTime.now();
+        event.visitorLog.is_checked_out = true;
+
         if (event.screenType == 'Visitor In') {
           emit(VisitorCheckInLogSuccessState());
         } else if (event.screenType == "In Out Book") {
-
           DateTime today = DateTime.now();
-
-          // Get today's date in the desired format (yyyy-MM-dd)
           String formattedDate = getFormattedDate(today);
           final visitorLogs = await visitorLogUseCase.fetchAllLogs(
               _preferenceUtils.getSelectedCompany()?.companyId ?? 0, formattedDate);
+
+          // Emit success state with updated logs
           emit(VisitorLogSuccessState(visitorLogs));
         } else {
           emit(VisitorCheckOutLogSuccessState());
         }
       } else {
+        // Handle failure
         emit(VisitorLogErrorState('Something went wrong'));
       }
     } catch (error) {
+      // Emit error state on exception
       emit(VisitorLogErrorState(error.toString()));
     }
   }

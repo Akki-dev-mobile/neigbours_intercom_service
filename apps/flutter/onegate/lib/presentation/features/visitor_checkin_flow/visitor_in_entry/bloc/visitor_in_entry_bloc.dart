@@ -13,116 +13,103 @@ import 'package:onegate_client/onegate_client.dart';
 part 'visitor_in_entry_event.dart';
 part 'visitor_in_entry_state.dart';
 
-class VisitorInEntryBloc
-    extends Bloc<VisitorInEntryEvent, VisitorInEntryState> {
+
+class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> {
   final VisitorUsecase _visitorUsecase;
   final VisitorLogUsecase _visitorLogUsecase;
-  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  final PreferenceUtils _preferenceUtils;
 
-  VisitorInEntryBloc(this._visitorUsecase, this._visitorLogUsecase)
-      : super(VisitorInEntryInitial()) {
-    on<VisitorInEntryEvent>(visitorInEntryInitialEvent);
-
-    on<VIEGuestNameMicrophoneButtonPressedEvent>(
-        vieGuestNameMicrophoneButtonPressedEvent);
-    on<VIEGuestComingFromMicrophoneButtonPressedEvent>(
-        vieGuestComingFromMicrophoneButtonPressedEvent);
-    on<VIEIncrementGuestCountButtonPressedEvent>(
-        vieIncrementGuestCountButtonPressedEvent);
-    on<VIEDecrementGuestCountButtonPressedEvent>(
-        vieDecrementGuestCountButtonPressedEvent);
-    on<VIEGuestFormSubmitButtonPressedEvent>(
-        vieGuestFormSubmitButtonPressedEvent);
-    on<VIECameraButtonPressedEvent>(vieCameraButtonPressedEvent);
+  VisitorInEntryBloc(
+      this._visitorUsecase,
+      this._visitorLogUsecase,
+      ) : _preferenceUtils = GetIt.I<PreferenceUtils>(),
+        super(VisitorInEntryInitial()) {
+    on<VIEGuestFormSubmitButtonPressedEvent>(_handleGuestFormSubmit);
+    on<VIECameraButtonPressedEvent>(_handleCameraButton);
   }
 
-  FutureOr<void> visitorInEntryInitialEvent(
-      VisitorInEntryEvent event, Emitter<VisitorInEntryState> emit) {}
-
-  FutureOr<void> vieGuestNameMicrophoneButtonPressedEvent(
-      VIEGuestNameMicrophoneButtonPressedEvent event,
-      Emitter<VisitorInEntryState> emit) {}
-
-  FutureOr<void> vieGuestComingFromMicrophoneButtonPressedEvent(
-      VIEGuestComingFromMicrophoneButtonPressedEvent event,
-      Emitter<VisitorInEntryState> emit) {}
-
-  FutureOr<void> vieIncrementGuestCountButtonPressedEvent(
-      VIEIncrementGuestCountButtonPressedEvent event,
-      Emitter<VisitorInEntryState> emit) {}
-
-  FutureOr<void> vieDecrementGuestCountButtonPressedEvent(
-      VIEDecrementGuestCountButtonPressedEvent event,
-      Emitter<VisitorInEntryState> emit) {}
-
-  FutureOr<void> vieGuestFormSubmitButtonPressedEvent(
+  Future<void> _handleGuestFormSubmit(
       VIEGuestFormSubmitButtonPressedEvent event,
-      Emitter<VisitorInEntryState> emit) async {
+      Emitter<VisitorInEntryState> emit,
+      ) async {
     final visitor = Visitor(
       name: event.guestName!,
-      mobile: event.mobile, visitor_image: "",
+      mobile: event.mobile,
+      visitor_image: "",
     );
 
     if (event.searchedVisitor == null ||
-        event.searchedVisitor!.visitor_image?.isEmpty == null) {
+        event.searchedVisitor!.visitor_image.isEmpty == true) {
       emit(VIENavigateToCameraState(
         event.searchedVisitor ?? visitor,
         event.purposeCategory,
         event.searchedVisitor == null ? 'new_visitor' : 'update_image',
       ));
-    }
-
-    else {
+    } else {
       emit(VIENavigateToUnitSelectionState(
-        // event.guestName!,
         event.searchedVisitor!,
         event.purposeCategory,
       ));
     }
-
-    emit(VisitorInEntryInitial());
   }
 
-  Future<void> vieCameraButtonPressedEvent(VIECameraButtonPressedEvent event,
-      Emitter<VisitorInEntryState> emit) async {
-    // emit(VisitorInEntryLoadingState());
+  Future<void> _handleCameraButton(
+      VIECameraButtonPressedEvent event,
+      Emitter<VisitorInEntryState> emit,
+      ) async {
+    emit(VisitorInEntryLoadingState());
 
     try {
-      final imageUrl = await _visitorUsecase.uploadImage(
-        event.imageFile!,
-        event.visitor!.mobile ?? "",
-        _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-      );
-
-      if (imageUrl == null || imageUrl.isEmpty) {
+      final imageUrl = await _uploadVisitorImage(event);
+      if (imageUrl == null) {
         emit(VisitorInEntryErrorState(message: "Error uploading image"));
         return;
       }
 
-      if (event.operation == "new_visitor") {
-        final visitor = await _visitorUsecase.createVisitor(event.visitor!);
-        emit(VIENavigateToUnitSelectionState(
-          visitor!,
-          event.purposeCategory!,
-        ));
-      } else {
-        event.visitor!.visitor_image = imageUrl;
-        final isUpdated = await _visitorUsecase.updateVisitor(event.visitor!);
+      final updatedVisitor = event.visitor!..visitor_image = imageUrl;
 
-        if (!isUpdated) {
-          emit(VisitorInEntryErrorState(
-              message: "Error updating visitor image"));
-        } else {
-          emit(VIENavigateToUnitSelectionState(
-            event.visitor!,
-            event.purposeCategory!,
-          ));
-        }
+      if (event.operation == "new_visitor") {
+        await _handleNewVisitor(updatedVisitor, event.purposeCategory!, emit);
+      } else {
+        await _handleExistingVisitor(updatedVisitor, event.purposeCategory!, emit);
       }
     } catch (error) {
       emit(VisitorInEntryErrorState(message: error.toString()));
-    } finally {
-      emit(VisitorInEntryInitial());
+    }
+  }
+
+  Future<String?> _uploadVisitorImage(VIECameraButtonPressedEvent event) async {
+    return _visitorUsecase.uploadImage(
+      event.imageFile!,
+      event.visitor!.mobile ?? "",
+      _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
+    );
+  }
+
+  Future<void> _handleNewVisitor(
+      Visitor visitor,
+      PurposeCategory purposeCategory,
+      Emitter<VisitorInEntryState> emit,
+      ) async {
+    final createdVisitor = await _visitorUsecase.createVisitor(visitor);
+    if (createdVisitor != null) {
+      emit(VIENavigateToUnitSelectionState(createdVisitor, purposeCategory));
+    } else {
+      emit(VisitorInEntryErrorState(message: "Error creating visitor"));
+    }
+  }
+
+  Future<void> _handleExistingVisitor(
+      Visitor visitor,
+      PurposeCategory purposeCategory,
+      Emitter<VisitorInEntryState> emit,
+      ) async {
+    final isUpdated = await _visitorUsecase.updateVisitor(visitor);
+    if (isUpdated) {
+      emit(VIENavigateToUnitSelectionState(visitor, purposeCategory));
+    } else {
+      emit(VisitorInEntryErrorState(message: "Error updating visitor image"));
     }
   }
 }
+

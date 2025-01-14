@@ -447,7 +447,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               },
             ),
             // Visitor Settings (for Admin and Master only)
-            if (role == "admin" || role == "master")
+            // if (role == "admin" || role == "master")
               PrimarySettingsTile(
                 icon: Ionicons.people_outline,
                 title: 'Visitors Settings',

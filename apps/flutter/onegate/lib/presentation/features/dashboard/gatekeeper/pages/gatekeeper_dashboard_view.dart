@@ -106,24 +106,10 @@ class _GateDashboardViewState extends State<GateDashboardView>
         switch (state.runtimeType) {
           case GDInAndOutButtonPressedState:
             log('In and Out button pressed');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => VisitorLogView(
-                  id: 'In Out Book',
-                  logList: const [
-                    "In Out Book",
-                    "Visitor In",
-                    "Visitor Out",
-                  ],
-                ),
-              ),
-            );
             // Navigator.push(
             //   context,
-            //   PageTransition(
-            //     type: PageTransitionType.leftToRight,
-            //     child: VisitorLogView(
+            //   MaterialPageRoute(
+            //     builder: (context) => VisitorLogView(
             //       id: 'In Out Book',
             //       logList: const [
             //         "In Out Book",
@@ -133,6 +119,20 @@ class _GateDashboardViewState extends State<GateDashboardView>
             //     ),
             //   ),
             // );
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.leftToRight,
+                child: VisitorLogView(
+                  id: 'In Out Book',
+                  logList: const [
+                    "In Out Book",
+                    "Visitor In",
+                    "Visitor Out",
+                  ],
+                ),
+              ),
+            );
             break;
           case GDVisitorsInButtonPressedState:
             Navigator.push(

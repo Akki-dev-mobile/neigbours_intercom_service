@@ -184,13 +184,11 @@ class RemoteDataSource {
         queryParameters: {'mobile_number': mobileNumber},
       );
 
-      // Extract the data array from the response
       final List<dynamic> data = response.data["data"] ?? [];
       if (data.isNotEmpty) {
-        final visitorData = data.first; // Get the first visitor in the list
+        final visitorData = data.first;
         log("Visitor data fetched: $visitorData");
 
-        // Map the visitorData to a Visitor object
         final visitor = Visitor(
           id: visitorData['id'] as int?,
           name: visitorData['name'] as String? ?? "",
@@ -681,7 +679,8 @@ class RemoteDataSource {
       const String apiUrl = 'https://gateapi.cubeone.in/api/visitor/getLog';
 
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
       final companyDetails = await gateStorage.getSocietyId();
       final resolvedCompanyId = companyDetails;
 
@@ -702,7 +701,7 @@ class RemoteDataSource {
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data'] ?? [];
-log("data--$data");
+        log("data--$data");
         return data.map((item) {
           try {
             final visitor = Visitor(
@@ -714,22 +713,23 @@ log("data--$data");
 
             // Map `unit_details` to `BuildingAssignment`
             final List<BuildingAssignment>? buildingAssignments =
-            (item['unit_details'] as List<dynamic>?)
-                ?.map((unit) => BuildingAssignment(
-              id: null, // Optional
-              visitor_id: item['visitor_id'] as int?,
-              visitor_log_id: item['visitor_log_id'] as int?,
-              company_id: item['company_id'] as int? ?? 0,
-              building_id: 0,
-              unit_id: [unit['building_unit'] as String? ?? ""],
-            ))
-                .toList();
+                (item['unit_details'] as List<dynamic>?)
+                    ?.map((unit) => BuildingAssignment(
+                          id: null, // Optional
+                          visitor_id: item['visitor_id'] as int?,
+                          visitor_log_id: item['visitor_log_id'] as int?,
+                          company_id: item['company_id'] as int? ?? 0,
+                          building_id: 0,
+                          unit_id: [unit['building_unit'] as String? ?? ""],
+                        ))
+                    .toList();
 
             return VisitorLog(
               id: item['visitor_log_id'] as int?,
               visitor_id: item['visitor_id'] as int? ?? 0,
               visitor: visitor,
-              visitor_purpose_category_id: item['visitor_purpose_category_id'] as int? ?? 0,
+              visitor_purpose_category_id:
+                  item['visitor_purpose_category_id'] as int? ?? 0,
               visitor_purpose_sub_category_id: null,
               visitor_building_assignment: buildingAssignments,
               visitor_count: item['visitor_count'] as int? ?? 0,
@@ -787,7 +787,6 @@ log("data--$data");
         body: jsonEncode(requestBody), // Encode the request payload
       );
 
-
       if (response.statusCode == 200) {
         // Parse the visitor logs from the response
         final responseData = jsonDecode(response.body);
@@ -795,9 +794,6 @@ log("data--$data");
 
         return data.map((item) {
           try {
-
-
-
             final visitor = Visitor(
               id: null, // No `id` in your shared structure
               name: item['name'] as String? ?? "",
@@ -805,16 +801,16 @@ log("data--$data");
               visitor_image: item['visitor_image'] as String? ?? "",
             );
             final List<BuildingAssignment>? buildingAssignments =
-            (item['unit_details'] as List<dynamic>?)
-                ?.map((unit) => BuildingAssignment(
-              id: null,
-              visitor_id: item['visitor_id'] as int?,
-              visitor_log_id: item['visitor_log_id'] as int?,
-              company_id: item['company_id'] as int? ?? 0,
-              building_id: 0,
-              unit_id: [unit['building_unit'] as String? ?? ""],
-            ))
-                .toList();
+                (item['unit_details'] as List<dynamic>?)
+                    ?.map((unit) => BuildingAssignment(
+                          id: null,
+                          visitor_id: item['visitor_id'] as int?,
+                          visitor_log_id: item['visitor_log_id'] as int?,
+                          company_id: item['company_id'] as int? ?? 0,
+                          building_id: 0,
+                          unit_id: [unit['building_unit'] as String? ?? ""],
+                        ))
+                    .toList();
             final visitorLog = VisitorLog(
               id: item['visitor_log_id']
                   as int?, // Map `visitor_log_id` to `id`
@@ -909,16 +905,16 @@ log("data--$data");
             );
 
             final List<BuildingAssignment>? buildingAssignments =
-            (item['unit_details'] as List<dynamic>?)
-                ?.map((unit) => BuildingAssignment(
-              id: null,
-              visitor_id: item['visitor_id'] as int?,
-              visitor_log_id: item['visitor_log_id'] as int?,
-              company_id: item['company_id'] as int? ?? 0,
-              building_id: 0,
-              unit_id: [unit['building_unit'] as String? ?? ""],
-            ))
-                .toList();
+                (item['unit_details'] as List<dynamic>?)
+                    ?.map((unit) => BuildingAssignment(
+                          id: null,
+                          visitor_id: item['visitor_id'] as int?,
+                          visitor_log_id: item['visitor_log_id'] as int?,
+                          company_id: item['company_id'] as int? ?? 0,
+                          building_id: 0,
+                          unit_id: [unit['building_unit'] as String? ?? ""],
+                        ))
+                    .toList();
             // Create the `VisitorLog` object
             final visitorLog = VisitorLog(
               id: item['visitor_log_id']

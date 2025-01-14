@@ -51,22 +51,22 @@ class MyScrollView extends StatelessWidget {
             automaticallyImplyLeading: false,
             leading: hasBackButton
                 ? IconButton(
-                    icon: Icon(
-                      Ionicons.arrow_back_outline,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    onPressed: backButtonPressed ??
-                        () {
-                          Navigator.pop(context);
-                        },
-                  )
+              icon: Icon(
+                Ionicons.arrow_back_outline,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              onPressed: backButtonPressed ??
+                      () {
+                    Navigator.pop(context);
+                  },
+            )
                 : null,
             pinned: true,
             title: pageTitle != null
                 ? Text(
-                    pageTitle ?? '',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  )
+              pageTitle ?? '',
+              style: Theme.of(context).textTheme.bodyLarge,
+            )
                 : pageTitleWidget,
             actions: actions,
             // expandedHeight: 50,
@@ -108,30 +108,30 @@ class MyScrollView extends StatelessWidget {
 
 class CustomForm {
   static Widget textField(
-    String title, {
-    required Color titleColor,
-    required Color hintColor,
-    TextInputType? keyboardType,
-    bool isObscureText = false,
-    required String hintText,
-    int? length,
-    String? hasInitialValue,
-    TextEditingController? textController,
-    int lines = 1,
-    String? counterText,
-    bool isEnabled = true,
-    Widget? suffixIcon,
-    Widget? prefixIcon,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-    FocusNode? focusNode,
-    FormFieldValidator<String>? validator,
-    TextInputAction? textInputAction,
-    ValueChanged<String>? onChanged,
-    ValueChanged<String>? onFieldSubmitted,
-    String? errorText,
-    List<TextInputFormatter>? inputFormatters,
-    bool? isReadOnly,
-  }) {
+      String title, {
+        required Color titleColor,
+        required Color hintColor,
+        TextInputType? keyboardType,
+        bool isObscureText = false,
+        required String hintText,
+        int? length,
+        String? hasInitialValue,
+        TextEditingController? textController,
+        int lines = 1,
+        String? counterText,
+        bool isEnabled = true,
+        Widget? suffixIcon,
+        Widget? prefixIcon,
+        TextCapitalization textCapitalization = TextCapitalization.none,
+        FocusNode? focusNode,
+        FormFieldValidator<String>? validator,
+        TextInputAction? textInputAction,
+        ValueChanged<String>? onChanged,
+        ValueChanged<String>? onFieldSubmitted,
+        String? errorText,
+        List<TextInputFormatter>? inputFormatters,
+        bool? isReadOnly,
+      }) {
     return Container(
       margin: EdgeInsets.only(bottom: 2),
       child: Column(
@@ -169,7 +169,7 @@ class CustomForm {
             controller: textController,
             maxLength: length ?? 499,
             validator: validator ??
-                (value) {
+                    (value) {
                   if (value!.isEmpty) {
                     return '$title is required';
                   }

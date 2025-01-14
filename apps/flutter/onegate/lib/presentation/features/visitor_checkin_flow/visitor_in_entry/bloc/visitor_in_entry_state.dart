@@ -1,35 +1,19 @@
 part of 'visitor_in_entry_bloc.dart';
-
+// States
 @immutable
-class VisitorInEntryState {}
-
-abstract class VisitorInEntryActionState extends VisitorInEntryState {}
+abstract class VisitorInEntryState {}
 
 class VisitorInEntryInitial extends VisitorInEntryState {}
 
 class VisitorInEntryLoadingState extends VisitorInEntryState {}
 
-class VisitorInEntrySuccessState extends VisitorInEntryActionState {}
-
-class VisitorInEntryErrorState extends VisitorInEntryActionState {
+class VisitorInEntryErrorState extends VisitorInEntryState {
   final String message;
 
   VisitorInEntryErrorState({required this.message});
 }
 
-class VIEGuestNameMicrophoneButtonPressedState
-    extends VisitorInEntryActionState {}
-
-class VIEGuestComingFromMicrophoneButtonPressedState
-    extends VisitorInEntryActionState {}
-
-class VIEIncrementGuestCountButtonPressedState
-    extends VisitorInEntryActionState {}
-
-class VIEDecrementGuestCountButtonPressedState
-    extends VisitorInEntryActionState {}
-
-class VIEGuestFormSubmitButtonPressedState extends VisitorInEntryActionState {}
+abstract class VisitorInEntryActionState extends VisitorInEntryState {}
 
 class VIENavigateToUnitSelectionState extends VisitorInEntryActionState {
   final Visitor visitor;
@@ -43,9 +27,5 @@ class VIENavigateToCameraState extends VisitorInEntryActionState {
   final PurposeCategory purposeCategory;
   final String operation;
 
-  VIENavigateToCameraState(
-    this.visitor,
-    this.purposeCategory,
-    this.operation,
-  );
+  VIENavigateToCameraState(this.visitor, this.purposeCategory, this.operation);
 }

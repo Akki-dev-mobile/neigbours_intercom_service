@@ -10,9 +10,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
@@ -26,6 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 class UnitSelectionView extends StatefulWidget {
+  c.Visitor? searchedVisitor;
   final c.Visitor visitor;
   final c.PurposeCategory purposeCategory;
   final String? comingFrom;
@@ -36,7 +39,7 @@ class UnitSelectionView extends StatefulWidget {
   final String mobileNumber;
   final String? visitorNumber;
 
-  const UnitSelectionView({
+   UnitSelectionView(c.Visitor? searchedVisitor, {
     Key? key,
     required this.visitor,
     required this.purposeCategory,
@@ -532,7 +535,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        return false;
+        if (widget.searchedVisitor != null) {
+          Navigator.pop(context);
+          return false; // Prevent default back navigation.
+        } else {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => GateDashboardView()),
+                (Route<dynamic> route) => false,
+          );
+          return false; // Prevent default back navigation.
+        }
       },
       child: Scaffold(
         body: SafeArea(
@@ -548,12 +561,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         IconButton(
                           icon: Icon(Icons.arrow_back),
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => GateDashboardView(),
-                              ),
-                            );
+                            if(widget.searchedVisitor!= null){
+                              Navigator.pop(context);
+                            }
+                            else{
+
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (context) => GateDashboardView()),
+                                    (Route<dynamic> route) => false,
+                              );
+                            }
+
                           },
                         ),
                         Text(

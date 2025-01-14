@@ -12,6 +12,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
@@ -49,6 +50,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   late String selectedId;
   String? _searchText = "";
   var selectedGateName;
+  late FocusNode _searchFocusNode;
+
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
   final remoteDataSource = RemoteDataSource(
@@ -84,8 +87,19 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     }
     _initializeSocietyId();
     getSelectedGate();
+    _searchFocusNode = FocusNode();
+
     // _storeTodayLogsCount(context);
   }
+
+
+  @override
+  void dispose() {
+    _searchFocusNode.dispose();
+
+    super.dispose();
+  }
+
 
   Future<void> getSelectedGate() async {
     final prefs = await SharedPreferences.getInstance();
@@ -94,8 +108,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     });
   }
 
-  //init a scroll controller
-  final ScrollController _scrollController = ScrollController();
+
 
   Future<void> _initializeSocietyId() async {
     societyId = await gateStorage.getSocietyId();
@@ -126,6 +139,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 fontSize: 16.0,
               );
               _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
+
             }
             break;
           case VisitorCheckInLogSuccessState:
@@ -205,9 +219,29 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               final checkInDate = log.visitor_check_in!;
               return checkInDate.isBefore(startOfYesterday);
             }).toList();
+            bool _isPopping = false;
 
-            return PopScope(
-              canPop: false,
+            void _safePop(BuildContext context) {
+              if (!_isPopping) {
+                _isPopping = true;
+                Navigator.of(context).pop();
+                Future.delayed(Duration(milliseconds: 300), () {
+                  _isPopping = false;
+                });
+              }
+            }
+
+            return WillPopScope(
+              onWillPop: () async {
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => GateDashboardView()),
+                      (Route<dynamic> route) => false,
+                );
+
+                return false;
+              },
               child: MyScrollView(
                 // isScrollable: false,
                 hasBackButton: false,
@@ -219,22 +253,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   ),
                 ),
                 actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10.0),
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => GateDashboardView(),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.home,
-                      ),
-                    ),
-                  ),
+
                   if (widget.id == "In Out Book")
                     Padding(
                       padding: const EdgeInsets.only(right: 10.0),
@@ -246,14 +265,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           Icons.download,
                         ),
                       ),
-                    )
-
-                  // ,
+                    ),
                 ],
                 pageBody: Column(
                   children: [
                     CustomForm.textField(
                       widget.selectedBuilding ?? 'Search',
+                      focusNode: _searchFocusNode,
                       titleColor: Theme.of(context).colorScheme.onSurface,
                       hintColor: Theme.of(context).colorScheme.onSurface,
                       hintText: 'Search Visitor',
@@ -297,13 +315,19 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             Icon(
                               Icons.person_off_outlined,
                               size: 48,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No such visitors found in log',
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.7),
                                 fontSize: 14,
                               ),
                             ),
@@ -320,7 +344,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             Icon(
                               Icons.person_off_outlined,
                               size: 48,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -335,7 +362,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             Text(
                               'When visitors check in, they will appear here',
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.7),
                                 fontSize: 14,
                               ),
                             ),
@@ -367,13 +397,24 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             return VisitorLogItem(
                               visitorLog: todayLogs[index - currentIndex - 1],
                               onCheckOut: () {
-                                todayLogs[index - currentIndex - 1]
-                                    .visitor_check_out = Utils.getCurrentTime();
-                                todayLogs[index - currentIndex - 1]
-                                    .is_checked_out = true;
+                                // Optimistically update the UI before the state is updated
+                                setState(() {
+                                  todayLogs[index - currentIndex - 1]
+                                          .visitor_check_out =
+                                      Utils.getCurrentTime();
+                                  todayLogs[index - currentIndex - 1]
+                                      .is_checked_out = true;
+                                });
+
+                                // Emit a success state with updated logs directly
+                                _visitorLogBloc
+                                    .emit(VisitorLogSuccessState(todayLogs));
+
+                                // Trigger the Bloc event to process the checkout for backend synchronization
                                 _visitorLogBloc.add(CheckOutEvent(
-                                    todayLogs[index - currentIndex - 1],
-                                    widget.id));
+                                  todayLogs[index - currentIndex - 1],
+                                  widget.id,
+                                ));
                               },
                             );
                           }
@@ -439,10 +480,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     children: [
                       Text(
                         'Export Logs',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                         ,
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 16),
                       CustomForm.textField(
@@ -820,8 +858,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black, // Set the background color to black
-                          foregroundColor: Colors.white, // Set the text color to white
+                          backgroundColor:
+                              Colors.black, // Set the background color to black
+                          foregroundColor:
+                              Colors.white, // Set the text color to white
                         ),
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -929,6 +969,16 @@ class _VisitorLogViewState extends State<VisitorLogView> {
         );
       },
     );
+  }
+
+  // Add a method to update today's counts
+  Future<void> _updateTodayLogsCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentCount = prefs.getInt('todayLogsCount') ?? 0;
+    await prefs.setInt('todayLogsCount', currentCount - 1);
+
+    final currentCheckoutCount = prefs.getInt('todayCheckoutLogsCount') ?? 0;
+    await prefs.setInt('todayCheckoutLogsCount', currentCheckoutCount + 1);
   }
 }
 
@@ -1278,6 +1328,10 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                       onPressed: () {
                                         Navigator.of(context).pop();
                                         widget.onCheckOut();
+                                        // context
+                                        //     .read<GatekeeperDashboardBloc>()
+                                        //     .add(
+                                        //         GatekeeperDashboardInitialEvent());
                                       },
                                       child: Text(
                                         'Checkout',

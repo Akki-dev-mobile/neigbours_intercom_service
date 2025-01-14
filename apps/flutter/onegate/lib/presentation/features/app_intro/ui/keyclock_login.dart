@@ -92,7 +92,8 @@ class LoginService {
 
   List<String> getUserRoles(Map society) {
     final List<dynamic> userRoles = society['user_roles'] ?? [];
-    List<String> roles = userRoles.map((role) => _mapRole(role.toString())).toList();
+    List<String> roles =
+        userRoles.map((role) => _mapRole(role.toString())).toList();
 
     // If user is admin, add both admin and gatekeeper roles
     if (roles.contains('admin')) {
@@ -145,7 +146,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   void initState() {
     super.initState();
     _loginService = LoginService(
-      keycloakWrapper: KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
+      keycloakWrapper:
+          KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
       gateStorage: GateStorage(),
       remoteDataSource: RemoteDataSource(
         DioSingleton.instance1,
@@ -226,6 +228,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       _showError('Failed to check login state: $e');
     }
   }
+
   Future<void> _navigateBasedOnRole(String? role) async {
     try {
       Widget? destination;
@@ -314,7 +317,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         throw Exception('No valid roles found for user');
       }
 
-      await _loginService.gateStorage.saveSocietyDetails(societyId, societyName);
+      await _loginService.gateStorage
+          .saveSocietyDetails(societyId, societyName);
       await _loginService.gateStorage.saveSocietyId(societyId);
 
       _loginState.value = _loginState.value.copyWith(
@@ -386,7 +390,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     }
   }
 
-  Future<void> _showGateSelection(List<dynamic> gates, String selectedRole) async {
+  Future<void> _showGateSelection(
+      List<dynamic> gates, String selectedRole) async {
     try {
       // Ensure gates list is populated
       if (gates.isEmpty) {
@@ -404,7 +409,9 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         // Show a SnackBar indicating navigation
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Only one gate available. Navigating to ${singleGate['gate_name']}')),
+            SnackBar(
+                content: Text(
+                    'Only one gate available. Navigating to ${singleGate['gate_name']}')),
           );
         }
 
@@ -442,7 +449,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       _showError('Failed to show gate selection: $e');
     }
   }
-
 
   void _showError(String message) {
     if (!mounted) return;
@@ -487,7 +493,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     super.dispose();
   }
 }
-
 
 class LoginContent extends StatelessWidget {
   final VoidCallback onLoginPressed;
@@ -540,8 +545,8 @@ class LoginContent extends StatelessWidget {
                 child: Text(
                   'Sign Up',
                   style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                    fontSize: 20,
-                  ),
+                        fontSize: 20,
+                      ),
                 ),
               ),
             ),
@@ -566,21 +571,32 @@ class SocietySelectionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           ListTile(
             title: Text(
               'Select Society',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
-          const Divider(
-            indent: 20,
-            endIndent: 20,
-            height: 1,
+          Divider(
+            indent: 16,
+            endIndent: 16,
+            color: Colors.grey[200],
           ),
           ListView.builder(
             shrinkWrap: true,
@@ -601,7 +617,8 @@ class SocietySelectionSheet extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
-                  title: Text(societyName ?? 'Unknown Society'),
+                  title: Text(societyName ?? 'Unknown Society',
+                      style: Theme.of(context).textTheme.titleMedium),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () => onSelected(Map<String, dynamic>.from(society)),
                 ),
@@ -662,21 +679,28 @@ class RoleSelectionSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey[200]!,
+                  width: 1, // Border thickness
+                ),
+              ),
             ),
           ),
           ListTile(
             title: Text(
               'Select Role',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             subtitle: const Text('Choose your role for this session'),
           ),
-          const Divider(
-            indent: 20,
-            endIndent: 20,
-            height: 1,
+          Divider(
+            indent: 16,
+            endIndent: 16,
+            color: Colors.grey[200],
           ),
           Expanded(
             child: ListView.builder(
@@ -751,14 +775,17 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
           ListTile(
             title: Text(
               'Select Gate',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             subtitle: const Text('Choose the gate you want to manage'),
           ),
-          const Divider(
-            indent: 20,
-            endIndent: 20,
-            height: 1,
+          Divider(
+            indent: 16,
+            endIndent: 16,
+            color: Colors.grey[200],
           ),
           Expanded(
             child: ListView.builder(
@@ -778,17 +805,19 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                     title: Text(
                       gateName,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface,
-                      ),
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
                     ),
                     trailing: isSelected
                         ? Icon(
-                      Icons.check_circle,
-                      color: Theme.of(context).colorScheme.primary,
-                    )
+                            Icons.check_circle,
+                            color: Theme.of(context).colorScheme.primary,
+                          )
                         : const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () async {
                       setState(() {
@@ -796,10 +825,8 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                       });
 
                       try {
-                        final gateProvider = Provider.of<GateProvider>(
-                            context,
-                            listen: false
-                        );
+                        final gateProvider =
+                            Provider.of<GateProvider>(context, listen: false);
                         await gateProvider.selectGate(index);
                         widget.onGateSelected(Map<String, dynamic>.from(gate));
                       } catch (e) {
