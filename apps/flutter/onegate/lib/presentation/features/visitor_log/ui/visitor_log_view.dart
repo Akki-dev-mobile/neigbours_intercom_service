@@ -257,15 +257,39 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   if (widget.id == "In Out Book")
                     Padding(
                       padding: const EdgeInsets.only(right: 10.0),
-                      child: IconButton(
-                        onPressed: () async {
-                          await _showExportBottomSheet(context, visitorLogs);
-                        },
-                        icon: const Icon(
-                          Icons.download,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () async {
+                                await _showExportBottomSheet(context, visitorLogs);
+                              },
+                              icon: const Icon(
+                                Icons.download_rounded,
+                                color: Colors.black,
+                              ),
+                              tooltip: 'Download Logs',  // Adding tooltip for accessibility
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.only(right: 8.0),
+                              child: Text(
+                                'Export',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                    )
                 ],
                 pageBody: Column(
                   children: [
