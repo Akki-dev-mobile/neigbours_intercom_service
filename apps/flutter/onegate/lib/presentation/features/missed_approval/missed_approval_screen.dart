@@ -1,17 +1,13 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:material_symbols_icons/symbols.dart';
-
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:intl/intl.dart';
-
-final ValueNotifier<int> secondsRemainingNotifier = ValueNotifier<int>(120);
-final ValueNotifier<bool> isRetryEnabledNotifier = ValueNotifier<bool>(false);
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MissedApprovalsScreen extends StatelessWidget {
   final remoteDataSource = RemoteDataSource(
@@ -60,6 +56,389 @@ class MissedApprovalsScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class TimerManager {
+  static final TimerManager _instance = TimerManager._internal();
+  factory TimerManager() => _instance;
+  TimerManager._internal();
+
+  final Map<int, Timer> _timers = {};
+  final Map<int, ValueNotifier<int>> _secondsRemaining = {};
+  final Map<int, ValueNotifier<bool>> _isRetryEnabled = {};
+
+  void startTimer(int visitorLogId) {
+    print("Starting timer for visitor $visitorLogId"); // Debug print
+
+    // Cancel existing timer if any
+    _timers[visitorLogId]?.cancel();
+
+    // Initialize notifiers if they don't exist
+    _secondsRemaining[visitorLogId] ??= ValueNotifier<int>(120);
+    _isRetryEnabled[visitorLogId] ??= ValueNotifier<bool>(false);
+
+    // Reset values
+    _secondsRemaining[visitorLogId]!.value = 120;
+    _isRetryEnabled[visitorLogId]!.value = false;
+    _saveTimerState(visitorLogId); // Save initial state
+
+    // Start new timer
+    _timers[visitorLogId] = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining[visitorLogId]!.value > 0) {
+        _secondsRemaining[visitorLogId]!.value--;
+        _saveTimerState(visitorLogId);
+        print(
+            "Timer tick: ${_secondsRemaining[visitorLogId]!.value}"); // Debug print
+      } else {
+        timer.cancel();
+        _isRetryEnabled[visitorLogId]!.value = true;
+        _saveTimerState(visitorLogId);
+        print("Timer expired for visitor $visitorLogId"); // Debug print
+      }
+    });
+  }
+
+  ValueNotifier<int> getSecondsRemaining(int visitorLogId) {
+    if (_secondsRemaining[visitorLogId] == null) {
+      _secondsRemaining[visitorLogId] = ValueNotifier<int>(120);
+      startTimer(visitorLogId); // Start timer if it doesn't exist
+    }
+    return _secondsRemaining[visitorLogId]!;
+  }
+
+  ValueNotifier<bool> getIsRetryEnabled(int visitorLogId) {
+    _isRetryEnabled[visitorLogId] ??= ValueNotifier<bool>(false);
+    return _isRetryEnabled[visitorLogId]!;
+  }
+
+  Future<void> _saveTimerState(int visitorLogId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+        'timer_$visitorLogId', _secondsRemaining[visitorLogId]!.value);
+    await prefs.setBool(
+        'retry_$visitorLogId', _isRetryEnabled[visitorLogId]!.value);
+  }
+
+  Future<void> loadTimerState(int visitorLogId) async {
+    print("Loading timer state for visitor $visitorLogId"); // Debug print
+    final prefs = await SharedPreferences.getInstance();
+    final savedSeconds = prefs.getInt('timer_$visitorLogId');
+    final savedRetry = prefs.getBool('retry_$visitorLogId') ?? false;
+
+    if (savedSeconds != null && savedSeconds > 0 && !savedRetry) {
+      _secondsRemaining[visitorLogId] = ValueNotifier<int>(savedSeconds);
+      _isRetryEnabled[visitorLogId] = ValueNotifier<bool>(false);
+      startTimer(visitorLogId);
+    } else {
+      // If no saved state or timer expired, start fresh
+      startTimer(visitorLogId);
+    }
+  }
+
+  void dispose(int visitorLogId) {
+    _timers[visitorLogId]?.cancel();
+    _timers.remove(visitorLogId);
+    _secondsRemaining.remove(visitorLogId);
+    _isRetryEnabled.remove(visitorLogId);
+  }
+}
+
+class MissedApprovalItem extends StatefulWidget {
+  final VisitorInfo visitorInfo;
+
+  const MissedApprovalItem({
+    Key? key,
+    required this.visitorInfo,
+  }) : super(key: key);
+
+  @override
+  State<MissedApprovalItem> createState() => _MissedApprovalItemState();
+}
+
+class _MissedApprovalItemState extends State<MissedApprovalItem> {
+  final Dio _dio = Dio();
+  final TimerManager _timerManager = TimerManager();
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeTimer();
+  }
+
+  Future<void> _initializeTimer() async {
+    if (!_isInitialized) {
+      await _timerManager.loadTimerState(widget.visitorInfo.visitorLogId);
+      _isInitialized = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timerManager.dispose(widget.visitorInfo.visitorLogId);
+    super.dispose();
+  }
+
+  Future<void> _sendFcmNotification() async {
+    try {
+      final requestData = {
+        'member_mobile_number': "918452060059",
+        'visitor_id': widget.visitorInfo.visitorId,
+        "member_id": "29",
+        'purpose_category':
+            widget.visitorInfo.visitorPurposeCategoryId?.toString() ?? "",
+      };
+
+      final response = await _dio.post(
+        '${ApiUrls.gateBaseUrl}/visitor/exotel/call',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        Fluttertoast.showToast(
+          msg: "Notification Resent Successfully",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+        _timerManager.startTimer(widget.visitorInfo.visitorLogId);
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Failed to resend notification",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      print("Error sending FCM notification: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.all(16),
+              leading: CircleAvatar(
+                radius: 25,
+                backgroundImage: widget.visitorInfo.visitorImage.isNotEmpty
+                    ? NetworkImage(widget.visitorInfo.visitorImage)
+                    : null,
+                backgroundColor:
+                    Theme.of(context).primaryColor.withOpacity(0.1),
+                child: widget.visitorInfo.visitorImage.isEmpty
+                    ? Text(
+                        widget.visitorInfo.visitorName.isNotEmpty
+                            ? widget.visitorInfo.visitorName[0].toUpperCase()
+                            : 'G',
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      )
+                    : null,
+              ),
+              title: Text(
+                widget.visitorInfo.visitorName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Symbols.apartment,
+                        color: Theme.of(context).primaryColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              Theme.of(context).primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Guest',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildInfoRow(Icons.person_outline,
+                      'Member: ${widget.visitorInfo.memberInfo.name}'),
+                  _buildInfoRow(Icons.location_on_outlined,
+                      'Gate: ${widget.visitorInfo.inGate}'),
+                  _buildInfoRow(
+                    Icons.access_time,
+                    'Time: ${DateFormat('hh:mm a').format(DateTime.parse(widget.visitorInfo.logCreatedAt))}',
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _timerManager
+                        .getIsRetryEnabled(widget.visitorInfo.visitorLogId),
+                    builder: (context, isRetryEnabled, _) {
+                      return ElevatedButton.icon(
+                        onPressed:
+                            // isRetryEnabled ?
+
+                            _sendFcmNotification,
+                        // : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isRetryEnabled
+                              ? Theme.of(context).primaryColor
+                              : Colors.grey.shade300,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: Icon(
+                          isRetryEnabled
+                              ? Icons.refresh_rounded
+                              : Icons.hourglass_empty_rounded,
+                          size: 20,
+                        ),
+                        label: Text(
+                          isRetryEnabled ? 'Retry Now' : 'Processing',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  ValueListenableBuilder<int>(
+                    valueListenable: _timerManager
+                        .getSecondsRemaining(widget.visitorInfo.visitorLogId),
+                    builder: (context, secondsRemaining, _) {
+                      return ValueListenableBuilder<bool>(
+                        valueListenable: _timerManager
+                            .getIsRetryEnabled(widget.visitorInfo.visitorLogId),
+                        builder: (context, isRetryEnabled, _) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isRetryEnabled
+                                  ? Colors.red.shade50
+                                  : Theme.of(context)
+                                      .primaryColor
+                                      .withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isRetryEnabled
+                                    ? Colors.red.shade300
+                                    : Theme.of(context)
+                                        .primaryColor
+                                        .withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isRetryEnabled
+                                      ? Icons.timer_off_outlined
+                                      : Icons.timer_outlined,
+                                  size: 20,
+                                  color: isRetryEnabled
+                                      ? Colors.red
+                                      : Theme.of(context).primaryColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isRetryEnabled
+                                      ? 'Expired'
+                                      : '${(secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(secondsRemaining % 60).toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    color: isRetryEnabled
+                                        ? Colors.red
+                                        : Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -137,315 +516,10 @@ class MemberInfo {
   final int? unitId;
   final int? memberId;
 
-  MemberInfo({
-    required this.name,
-    this.mobileNumber,
-    this.email,
-     this.unitId,
-     this.memberId
-  });
-}
-
-class MissedApprovalItem extends StatefulWidget {
-  final VisitorInfo visitorInfo;
-
-  const MissedApprovalItem({
-    Key? key,
-    required this.visitorInfo,
-  }) : super(key: key);
-
-  @override
-  State<MissedApprovalItem> createState() => _MissedApprovalItemState();
-}
-
-class _MissedApprovalItemState extends State<MissedApprovalItem> {
-  late Timer _timer;
-  final Dio _dio = Dio();
-  String? companyId;
-  String? companyName;
-  String? memberMobileNo;
-  String? memberDetailsJson;
-
-  @override
-  void initState() {
-    super.initState();
-    startTimer();
-    _fetchCompanyDetails();
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  Future<void> _fetchCompanyDetails() async {
-    final prefs = await SharedPreferences.getInstance();
-    companyId = prefs.getString('society_id');
-    companyName = prefs.getString('society_name');
-    memberMobileNo = prefs.getString('selected_member_mobile_numbers');
-    memberDetailsJson = prefs.getString('member_details');
-    print("rohit ${widget.visitorInfo.memberInfo.memberId.toString()}");
-  }
-
-  Future<void> _sendFcmNotification() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id');
-      final formattedInTime =
-          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-
-      final requestData = {
-        'company_id': companyId,
-        'name': widget.visitorInfo.visitorName,
-        'mobile': widget.visitorInfo.visitorMobile,
-        'purpose': "meeting",
-        'in_time': formattedInTime,
-        'user_id': userId,
-        'visitor_count': "1",
-        'member_mobile_number': "918452060059",
-        'visitor_id': widget.visitorInfo.visitorId,
-        'purpose_category':
-            widget.visitorInfo.visitorPurposeCategoryId?.toString() ?? "",
-        'purpose_details': "meeting",
-        'coming_from': widget.visitorInfo.visitorComingFrom ?? "Unknown",
-        'company_name': companyName ?? "",
-        "member_id": widget.visitorInfo.memberInfo.memberId.toString()
-      };
-
-      final response = await _dio.post(
-        'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
-        data: requestData,
-      );
-
-      if (response.statusCode == 200) {
-        Fluttertoast.showToast(
-          msg: "Notification Resent Successfully",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
-        startTimer();
-      }
-    } catch (e) {
-      if (e is DioError && e.response?.statusCode == 400) {
-        Fluttertoast.showToast(
-          msg: "Failed to resend notification",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-      }
-      print("Error sending FCM notification: $e");
-    }
-  }
-
-  void startTimer() {
-    if (secondsRemainingNotifier.value == 0 || isRetryEnabledNotifier.value) {
-      secondsRemainingNotifier.value = 120;
-      isRetryEnabledNotifier.value = false;
-    }
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (secondsRemainingNotifier.value > 0) {
-        secondsRemainingNotifier.value -= 1;
-      } else {
-        timer.cancel();
-        isRetryEnabledNotifier.value = true;
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Card(
-        elevation: 2,
-        child: Column(
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 2,
-              ),
-              leading: CircleAvatar(
-                backgroundImage: widget.visitorInfo.visitorImage.isNotEmpty
-                    ? NetworkImage(widget.visitorInfo.visitorImage)
-                    : null,
-                child: widget.visitorInfo.visitorImage.isEmpty
-                    ? Text(
-                        widget.visitorInfo.visitorName.isNotEmpty
-                            ? widget.visitorInfo.visitorName[0]
-                            : 'G',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      )
-                    : null,
-              ),
-              title: Text(
-                widget.visitorInfo.visitorName,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      const Icon(
-                        Symbols.apartment,
-                        color: Color(0xffFFB080),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffFFEBE6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Guest',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    'Member: ${widget.visitorInfo.memberInfo.name}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    'Gate: ${widget.visitorInfo.inGate}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    'Time: ${DateFormat('hh:mm a').format(DateTime.parse(widget.visitorInfo.logCreatedAt))}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              color: Colors.grey[200],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable: isRetryEnabledNotifier,
-                    builder: (context, isRetryEnabled, _) {
-                      return ElevatedButton.icon(
-                        onPressed: () async {
-                          await _sendFcmNotification();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isRetryEnabled
-                              ? Colors.blue
-                              : Colors.grey.shade300,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: isRetryEnabled ? 2 : 0,
-                        ),
-                        icon: Icon(
-                          isRetryEnabled
-                              ? Icons.refresh_rounded
-                              : Icons.hourglass_empty_rounded,
-                          size: 20,
-                        ),
-                        label: Text(
-                          isRetryEnabled ? 'Retry Now' : 'Processing',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  ValueListenableBuilder<int>(
-                    valueListenable: secondsRemainingNotifier,
-                    builder: (context, secondsRemaining, _) {
-                      return Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isRetryEnabledNotifier.value
-                              ? Colors.red.shade50
-                              : Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isRetryEnabledNotifier.value
-                                ? Colors.red.shade200
-                                : Colors.blue.shade200,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isRetryEnabledNotifier.value
-                                  ? Icons.timer_off_outlined
-                                  : Icons.timer_outlined,
-                              size: 20,
-                              color: isRetryEnabledNotifier.value
-                                  ? Colors.red
-                                  : Colors.blue,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              isRetryEnabledNotifier.value
-                                  ? 'Expired'
-                                  : '${(secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(secondsRemaining % 60).toString().padLeft(2, '0')}',
-                              style: TextStyle(
-                                color: isRetryEnabledNotifier.value
-                                    ? Colors.red
-                                    : Colors.blue,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  MemberInfo(
+      {required this.name,
+      this.mobileNumber,
+      this.email,
+      this.unitId,
+      this.memberId});
 }

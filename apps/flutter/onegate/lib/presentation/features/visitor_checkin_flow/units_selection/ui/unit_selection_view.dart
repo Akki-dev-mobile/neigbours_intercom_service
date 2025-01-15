@@ -1004,11 +1004,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           backgroundColor: Colors.red,
           textColor: Colors.white,
         );
-        await Navigator.push(context,
-            MaterialPageRoute(builder: (context) => GateDashboardView()));
-        // bool isWaitingForApproval = false;
-        // setState(() => isWaitingForApproval = true);
-        // await _showApprovedDialog(context, visitorLogData);
+        // await Navigator.push(context,
+        //     MaterialPageRoute(builder: (context) => GateDashboardView()));
+        bool isWaitingForApproval = false;
+        setState(() => isWaitingForApproval = true);
+        await _notificationSent(context, visitorLogData);
       }
     } on DioError catch (e) {
       _handleDioError(e, visitorLogData);
@@ -1017,15 +1017,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   void _handleDioError(DioError e, c.VisitorLog visitorLogData) async {
     if (e.response?.statusCode == 400) {
-      // Fluttertoast.showToast(
-      //   msg: "Not a OneApp user",
-      //   toastLength: Toast.LENGTH_SHORT,
-      //   gravity: ToastGravity.BOTTOM,
-      //   backgroundColor: Colors.red,
-      //   textColor: Colors.white,
-      // );
-      await Navigator.push(context,
-          MaterialPageRoute(builder: (context) => GateDashboardView()));
+
+      await _notificationSent(context, visitorLogData);
     } else {
       log("Error during FCM notification: ${e.response?.statusCode} - ${e.response?.data}");
     }
@@ -1275,6 +1268,195 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             text: "Continue",
                             disabled: _isButtonDisabled,
                           ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _notificationSent(BuildContext context, c.VisitorLog data) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                          ),
+                        ),
+                        Lottie.asset(
+                          'assets/json/approved.json',
+                          width: 180,
+                          height: 180,
+                          repeat: false,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: Theme.of(context).primaryColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Notification Sent Successfully",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Please wait for member's response. You can check the status in the approval screen.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _isLoading
+                        ? Column(
+                      children: [
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Redirecting...",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    )
+                        : Container(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: !_isButtonDisabled
+                            ? LinearGradient(
+                          colors: [
+                            Theme.of(context).primaryColor,
+                            Theme.of(context).primaryColor.withOpacity(0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                            : null,
+                        color: _isButtonDisabled ? Colors.grey[300] : null,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: !_isButtonDisabled
+                            ? [
+                          BoxShadow(
+                            color: Theme.of(context).primaryColor.withOpacity(0.3),
+                            spreadRadius: 0,
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                            : null,
+                      ),
+                      child: MaterialButton(
+                        onPressed: _isButtonDisabled
+                            ? null
+                            : () async {
+                          setState(() {
+                            _isLoading = true;
+                            _isButtonDisabled = true;
+                          });
+
+                          await Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const GateDashboardView(),
+                            ),
+                          );
+                        },
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              color: _isButtonDisabled ? Colors.grey[500] : Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Check Approval Status",
+                              style: TextStyle(
+                                color: _isButtonDisabled ? Colors.grey[500] : Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

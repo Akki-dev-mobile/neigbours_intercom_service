@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class OneGate {
-  static const String baseUrl = 'https://societybackend.cubeone.in/api/admin';
+  static const String baseUrl = 'https://socbackend.cubeone.in/api/admin';
   static const String companyId = '412';
 
   Future<void> getUnitsList() async {

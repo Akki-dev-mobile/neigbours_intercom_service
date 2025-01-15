@@ -24,12 +24,12 @@ import 'data/repositories/visitor_repo_impl.dart';
 import 'domain/repositories/staff_repository.dart';
 import 'domain/use_cases/visitor_log_usecae.dart';
 import 'domain/use_cases/visitor_usecase.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
-  const String flavor = String.fromEnvironment('prod');
-
+  await dotenv.load(fileName: "assets/.env");
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
   await GateStorage().init();

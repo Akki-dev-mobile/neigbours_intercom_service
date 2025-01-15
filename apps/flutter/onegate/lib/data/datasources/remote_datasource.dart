@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:onegate_client/onegate_client.dart';
@@ -15,28 +16,9 @@ import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
+import 'package:http/http.dart' as http;
 
-/// Centralized API URL manager
-class ApiUrls {
-  static const String gateBaseUrl = 'https://gateapi.cubeone.in/api';
-  static const String societyBaseUrl = 'https://societybackend.cubeone.in/api';
 
-  // Gate API Endpoints
-  static String get gateLogin => '$gateBaseUrl/gatelogin';
-  static String get gates => '$gateBaseUrl/admin/gates';
-  static String get visitorEntry => '$gateBaseUrl/visitor/entry';
-  static String get visitorLog => '$gateBaseUrl/visitor/log';
-  static String get visitorCheckout => '$gateBaseUrl/visitor/checkout';
-  static String get visitorSendLogs => '$gateBaseUrl/visitor/sendLogs';
-  static String get visitorGetLog => '$gateBaseUrl/visitor/getLog';
-  static String get visitorApprovals => '$gateBaseUrl/visitor/approvals';
-
-  // Society API Endpoints
-  static String get buildingList => '$societyBaseUrl/admin/building/list';
-  static String get memberList => '$societyBaseUrl/admin/member/list';
-  static String get unitList => '$societyBaseUrl/admin/units/list';
-  static String get staffList => '$societyBaseUrl/admin/staffs/staffLists';
-}
 var client = Client('https://onegate.cubeone.in/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
 
@@ -111,21 +93,30 @@ class RemoteDataSource {
     try {
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
-
+      final combinedHeaders = await Environment.getHeaders();
       final response = await _dio2?.get(
         ApiUrls.gates,
+        options: Options(headers: combinedHeaders),
         queryParameters: {'company_id': companyId},
       );
 
       final responseData = response?.data?['data'];
       if (responseData is List) {
         return responseData;
+      } else if (responseData is Map && responseData.containsKey('data')) {
+        final data = responseData['data'];
+        if (data is List) {
+          return data;
+        } else {
+          throw Exception('Unexpected data format in "data" key');
+        }
       } else {
-        throw Exception('Unexpected response format');
+        throw Exception('Unexpected response structure');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       log('Error fetching gates: $e');
-      rethrow;
+      log('Stack trace: $stackTrace');
+      throw Exception('Failed to fetch gates: $e');
     }
   }
 
@@ -233,35 +224,69 @@ class RemoteDataSource {
 
   /// Check-in a visitor
   Future<VisitorLog?> checkIn(VisitorLog visitorLog) async {
+    print("Attempting check-in...");
+
     try {
       final Dio dio = Dio();
+      String apiUrl = ApiUrls.visitorLog;
+
+      // Prepare the payload
+      final Map<String, dynamic> data = visitorLog.toJson();
+
+      data['visitor_check_in'] =
+          _formatDateTime(visitorLog.visitor_check_in ?? DateTime.now());
+      if (visitorLog.visitor_check_out != null) {
+        data['visitor_check_out'] =
+            _formatDateTime(visitorLog.visitor_check_out!);
+      }
       final prefs = await SharedPreferences.getInstance();
+
       final selectedGateName = prefs.getString('selected_gate');
+
+      final String? memberDetailsJson = prefs.getString('member_details');
+      List<Map<String, dynamic>> memberDetails = [];
+      if (memberDetailsJson != null) {
+        try {
+          final List<dynamic> decoded = json.decode(memberDetailsJson);
+          memberDetails = List<Map<String, dynamic>>.from(decoded);
+        } catch (e) {
+          print('Error retrieving member details: $e');
+        }
+      }
+
       final companyDetails = await gateStorage.getSocietyDetails();
       final companyName = companyDetails['societyName'];
 
-      final Map<String, dynamic> data = {
-        ...visitorLog.toJson(),
-        'in_gate': selectedGateName,
+      data.addAll({
+        'in_gate': selectedGateName.toString(),
         'company_name': companyName,
-      };
+        'visitor_purpose_sub_category_id': 1,
+        'visitor_card_id': 1,
+        'id': 1,
+        'member_details': memberDetails
+      });
 
-      final response = await dio.post(
-        ApiUrls.visitorLog,
+      print("Final Payload: $data");
+
+      // Make the POST request
+      final Response response = await dio.post(
+        apiUrl,
         data: data,
         options: Options(
           headers: {
             'Content-Type': 'application/json',
+            'User-Agent': 'insomnia/10.3.0',
           },
         ),
       );
+
+      print("VisitorLog Response: ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
         if (responseData['success'] == true && responseData['data'] != null) {
           final item = responseData['data'];
 
-          // Create Visitor object
           final visitor = Visitor(
             id: item['visitor_id'],
             name: item['name'] ?? "",
@@ -273,8 +298,7 @@ class RemoteDataSource {
             id: item['visitor_log_id'],
             visitor_id: item['visitor_id'] ?? 0,
             visitor: visitor,
-            visitor_purpose_category_id:
-            item['visitor_purpose_category_id'] ?? 0,
+            visitor_purpose_category_id: item['visitor_purpose_category_id'] ?? 0,
             visitor_purpose_sub_category_id:
             item['visitor_purpose_sub_category_id'],
             visitor_building_assignment: item['visitor_building_assignment'],
@@ -292,10 +316,7 @@ class RemoteDataSource {
             is_checked_out: item['is_checked_out'] ?? false,
           );
 
-          // Save visitor log ID globally
-          GlobalStorage.visitorLogId = item['visitor_log_id'].toString();
-          print("Saved Visitor Log ID: ${GlobalStorage.visitorLogId}");
-
+          log("succes - $resultLog");
           return resultLog;
         } else {
           print("API Response Error: ${responseData['message']}");
@@ -319,31 +340,88 @@ class RemoteDataSource {
 
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
-       String apiUrl = ApiUrls.visitorGetLog;
+      const String apiUrl = 'https://gateapi.cubeone.in/api/visitor/getLog';
 
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
+      final companyDetails = await gateStorage.getSocietyId();
+      final resolvedCompanyId = companyDetails;
 
-      final response = await _dio2?.get(
-        apiUrl,
-        queryParameters: {
-          "company_id": companyId,
-          "in_gate": selectedGateName,
-        },
+      final Map<String, String> queryParams = {
+        "company_id": resolvedCompanyId.toString(),
+        "in_gate": selectedGateName,
+      };
+
+      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
+
+      final response = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
       );
 
-      if (response?.statusCode == 200) {
-        final List<dynamic> data = response?.data['data'] ?? [];
-        return data.map((item) => VisitorLogMapper2.fromJson(item).toVisitorLog()).toList();
+      print("Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+        log("data--$data");
+        return data.map((item) {
+          try {
+            final visitor = Visitor(
+              id: item['visitor_id'] as int?,
+              name: item['name'] as String? ?? "",
+              mobile: item['mobile'] as String? ?? "",
+              visitor_image: item['visitor_image'] as String? ?? "",
+            );
+
+            // Map `unit_details` to `BuildingAssignment`
+            final List<BuildingAssignment>? buildingAssignments =
+            (item['unit_details'] as List<dynamic>?)
+                ?.map((unit) => BuildingAssignment(
+              id: null, // Optional
+              visitor_id: item['visitor_id'] as int?,
+              visitor_log_id: item['visitor_log_id'] as int?,
+              company_id: item['company_id'] as int? ?? 0,
+              building_id: 0,
+              unit_id: [unit['building_unit'] as String? ?? ""],
+            ))
+                .toList();
+
+            return VisitorLog(
+              id: item['visitor_log_id'] as int?,
+              visitor_id: item['visitor_id'] as int? ?? 0,
+              visitor: visitor,
+              visitor_purpose_category_id:
+              item['visitor_purpose_category_id'] as int? ?? 0,
+              visitor_purpose_sub_category_id: null,
+              visitor_building_assignment: buildingAssignments,
+              visitor_count: item['visitor_count'] as int? ?? 0,
+              visitor_check_in: item['visitor_check_in'] != null
+                  ? DateTime.parse(item['visitor_check_in'] as String)
+                  : null,
+              visitor_check_out: item['visitor_check_out'] != null
+                  ? DateTime.parse(item['visitor_check_out'] as String)
+                  : null,
+              visitor_card_number: item['visitor_card_number'] as String?,
+              visitor_coming_from: item['visitor_coming_from'] as String?,
+              visitor_card_id: null,
+              company_id: item['company_id'] as int? ?? 0,
+              is_checked_out: item['is_checked_out'] as bool? ?? false,
+            );
+          } catch (mappingError) {
+            throw Exception("Failed to map visitor log: $mappingError");
+          }
+        }).toList();
       } else {
         throw Exception(
-            'Failed to fetch logs: ${response?.statusCode}, ${response?.data}');
+            'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      log('Error fetching all logs: $e');
       rethrow;
     }
   }
+
 
   /// Export visitor logs
   Future<void> exportLogs(Map<String, dynamic> visitorData) async {
@@ -394,51 +472,99 @@ class RemoteDataSource {
     }
   }
   /// Fetch check-in logs
-  Future<List<VisitorLog>> fetchCheckInLogs(int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckInLogs(
+      int companyId, String dateTime) async {
     try {
       // Define the API endpoint
-      String apiUrl = ApiUrls.visitorGetLog;
+       String apiUrl = ApiUrls.visitorGetLog;
 
-      // Retrieve selected gate and company details
+      bool isCheckedOut = false;
+
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
       final companyDetails = await gateStorage.getSocietyId();
       final resolvedCompanyId = companyDetails;
-
-      // Prepare the POST request payload
-      final requestBody = {
+      // Prepare the request payload
+      final Map<String, dynamic> requestBody = {
         "company_id": resolvedCompanyId,
         "in_gate": selectedGateName,
-        "only_checkout": false, // Indicating check-in logs only
-        // "date_time": dateTime,  // Optional: If logs are filtered by date
+        "only_checkout": isCheckedOut,
       };
 
-      log("Fetching Check-In Logs with Payload: $requestBody");
-
-      // Send the POST request
-      final response = await _dio2?.post(
-        apiUrl,
-        data: requestBody,
-        options: Options(
-          headers: {
-            "Content-Type": "application/json",
-          },
-        ),
+      // Make the POST request
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(requestBody),
       );
 
-      // Handle the response
-      if (response?.statusCode == 200) {
-        final List<dynamic> data = response?.data['data'] ?? [];
-        return data.map((item) => VisitorLogMapper2.fromJson(item).toVisitorLog()).toList();
+      if (response.statusCode == 200) {
+        // Parse the visitor logs from the response
+        final responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+
+        return data.map((item) {
+          try {
+            final visitor = Visitor(
+              id: null,
+              name: item['name'] as String? ?? "",
+              mobile: item['mobile'] as String? ?? "",
+              visitor_image: item['visitor_image'] as String? ?? "",
+            );
+            final List<BuildingAssignment>? buildingAssignments =
+            (item['unit_details'] as List<dynamic>?)
+                ?.map((unit) => BuildingAssignment(
+              id: null,
+              visitor_id: item['visitor_id'] as int?,
+              visitor_log_id: item['visitor_log_id'] as int?,
+              company_id: item['company_id'] as int? ?? 0,
+              building_id: 0,
+              unit_id: [unit['building_unit'] as String? ?? ""],
+            ))
+                .toList();
+            final visitorLog = VisitorLog(
+              id: item['visitor_log_id']
+              as int?, // Map `visitor_log_id` to `id`
+              visitor_id:
+              0, // Set to 0 since `visitor_id` isn't in the shared structure
+              visitor: visitor, // Use the constructed `Visitor` object
+              visitor_purpose_category_id:
+              0, // Default value, not in shared structure
+              visitor_purpose_sub_category_id: null, // Nullable
+              visitor_building_assignment: buildingAssignments,
+              visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
+              visitor_check_in: item['visitor_check_in'] != null
+                  ? DateTime.parse(item['visitor_check_in'] as String)
+                  : null,
+              visitor_check_out: item['visitor_check_out'] != null
+                  ? DateTime.parse(item['visitor_check_out'] as String)
+                  : null,
+              visitor_card_number: item['visitor_card_number'] as String?,
+              visitor_coming_from: item['visitor_coming_from'] as String?,
+              visitor_card_id: null, // No `visitor_card_id` in shared structure
+              company_id: item['company_id'] as int? ?? 0,
+              is_checked_out: item['is_checked_out'] as bool? ?? false,
+            );
+
+            // print("Mapped VisitorLog: ${visitorLog.toJson()}");
+            return visitorLog;
+          } catch (mappingError) {
+            // print("Error mapping VisitorLog: $mappingError");
+            throw Exception("Failed to map visitor log");
+          }
+        }).toList();
       } else {
         throw Exception(
-            'Failed to fetch check-in logs: ${response?.statusCode}, ${response?.data}');
+            'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      log('Error fetching check-in logs: $e');
+      // Handle errors and log them
+      // print('Error in fetchCheckInLogs: $e');
       rethrow;
     }
   }
+
   /// Fetch members for a company
   Future<List<dynamic>> getMember(int companyId) async {
     try {
@@ -581,6 +707,8 @@ class RemoteDataSource {
       log('Error sending OTP: $e');
       rethrow;
     }
+  }  String _formatDateTime(DateTime dateTime) {
+    return DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime);
   }
   /// Verify OTP for a mobile number
   Future<String?> verifyOTP(String mobileNumber, String otp) async {
@@ -606,7 +734,6 @@ class RemoteDataSource {
   /// Check out a visitor
   Future<bool> checkOut(VisitorLog visitorLog) async {
     try {
-      // Retrieve the selected gate from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
 
@@ -618,7 +745,6 @@ class RemoteDataSource {
 
       log("Check-Out Payload: $data");
 
-      // Send the PATCH request to the check-out endpoint
       final response = await _dio2?.patch(
         ApiUrls.visitorCheckout,
         data: data,
@@ -643,31 +769,107 @@ class RemoteDataSource {
     }
   }
   /// Fetch check-out logs
-  Future<List<VisitorLog>> fetchCheckOutLogs(int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckOutLogs(
+      int companyId, String dateTime) async {
     try {
-       String apiUrl = ApiUrls.visitorGetLog;
+      // Define the API endpoint
+      const String apiUrl = 'https://gateapi.cubeone.in/api/visitor/getLog';
 
+      // Boolean for filtering checked-out logs
+      bool isCheckedOut = true;
+
+      // Get the gate and company details from preferences and storage
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
+      final companyDetails = await gateStorage.getSocietyId();
+      final resolvedCompanyId = companyDetails;
+      // Prepare the request payload
+      final Map<String, dynamic> requestBody = {
+        "company_id": resolvedCompanyId,
+        "in_gate": selectedGateName,
+        "only_checkout": isCheckedOut,
+      };
 
-      final response = await _dio2?.get(
-        apiUrl,
-        queryParameters: {
-          "company_id": companyId,
-          "in_gate": selectedGateName,
-          "only_checkout": true,
-        },
+      // Make the POST request
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(requestBody), // Encode the request payload
       );
 
-      if (response?.statusCode == 200) {
-        final List<dynamic> data = response?.data['data'] ?? [];
-        return data.map((item) => VisitorLogMapper2.fromJson(item).toVisitorLog()).toList();
+      // Print the response for debugging
+      // print("Response: ${response.body}");
+
+      // Check response status
+      if (response.statusCode == 200) {
+        // Parse the visitor logs from the response
+        final responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+
+        // Map the JSON data to `VisitorLog` objects
+        return data.map((item) {
+          try {
+            // print("Processing Item: $item");
+
+            // Create a `Visitor` object directly from root-level fields
+            final visitor = Visitor(
+              id: null, // No `id` in your shared structure
+              name: item['name'] as String? ?? "",
+              mobile: item['mobile'] as String? ?? "",
+              visitor_image: item['visitor_image'] as String? ?? "",
+            );
+
+            final List<BuildingAssignment>? buildingAssignments =
+            (item['unit_details'] as List<dynamic>?)
+                ?.map((unit) => BuildingAssignment(
+              id: null,
+              visitor_id: item['visitor_id'] as int?,
+              visitor_log_id: item['visitor_log_id'] as int?,
+              company_id: item['company_id'] as int? ?? 0,
+              building_id: 0,
+              unit_id: [unit['building_unit'] as String? ?? ""],
+            ))
+                .toList();
+            // Create the `VisitorLog` object
+            final visitorLog = VisitorLog(
+              id: item['visitor_log_id']
+              as int?, // Map `visitor_log_id` to `id`
+              visitor_id:
+              0, // Set to 0 since `visitor_id` isn't in the shared structure
+              visitor: visitor, // Use the constructed `Visitor` object
+              visitor_purpose_category_id:
+              0, // Default value, not in shared structure
+              visitor_purpose_sub_category_id: null, // Nullable
+              visitor_building_assignment: buildingAssignments,
+              visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
+              visitor_check_in: item['visitor_check_in'] != null
+                  ? DateTime.parse(item['visitor_check_in'] as String)
+                  : null,
+              visitor_check_out: item['visitor_check_out'] != null
+                  ? DateTime.parse(item['visitor_check_out'] as String)
+                  : null,
+              visitor_card_number: item['visitor_card_number'] as String?,
+              visitor_coming_from: item['visitor_coming_from'] as String?,
+              visitor_card_id: null, // No `visitor_card_id` in shared structure
+              company_id: item['company_id'] as int? ?? 0,
+              is_checked_out: item['is_checked_out'] as bool? ?? false,
+            );
+
+            // print("Mapped VisitorLog: ${visitorLog.toJson()}");
+            return visitorLog;
+          } catch (mappingError) {
+            // print("Error mapping VisitorLog: $mappingError");
+            throw Exception("Failed to map visitor log");
+          }
+        }).toList();
       } else {
         throw Exception(
-            'Failed to fetch check-out logs: ${response?.statusCode}, ${response?.data}');
+            'Failed to fetch checkout logs: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      log('Error fetching check-out logs: $e');
+      // Handle errors and log them
+      // print('Error in fetchCheckOutLogs: $e');
       rethrow;
     }
   }
@@ -762,18 +964,33 @@ class RemoteDataSource {
     return null;
   }
 
-  /// Fetch members for a specific company
+
   Future<List<dynamic>> getMembersList() async {
     try {
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
 
-      final response = await _dio2?.get(
-        ApiUrls.memberList,
-        queryParameters: {'company_id': companyId},
+      final headers = await Environment.getHeaders();
+
+      final Map<String, String> queryParams = {
+        "company_id": companyId,
+      };
+      final apiUrl = ApiUrls.memberList;
+      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
+log(uri.toString());
+      final response = await http.get(
+        uri,
+        // headers: headers,
       );
 
-      return response?.data?['data'] ?? [];
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        return responseData['data'] ?? [];
+      } else {
+        log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to fetch member list: ${response.statusCode}');
+      }
     } catch (e) {
       log('Error fetching member list: $e');
       rethrow;
@@ -887,105 +1104,5 @@ class GlobalStorage {
     print("VisitorId has been set to: $value");
   }
 }
-class VisitorLogMapper2 {
-  VisitorLogMapper2({
-    this.id,
-    this.visitorId,
-    this.visitor,
-    this.visitorPurposeCategoryId,
-    this.visitorPurposeSubCategoryId,
-    this.visitorBuildingAssignment,
-    this.visitorCount,
-    this.visitorCheckIn,
-    this.visitorCheckOut,
-    this.visitorCardNumber,
-    this.visitorComingFrom,
-    this.visitorCardId,
-    this.companyId,
-    this.isCheckedOut,
-  });
 
-  final int? id;
-  final int? visitorId;
-  final VisitorMapper? visitor;
-  final int? visitorPurposeCategoryId;
-  final int? visitorPurposeSubCategoryId;
-  final List<dynamic>? visitorBuildingAssignment;
-  final int? visitorCount;
-  final DateTime? visitorCheckIn;
-  final DateTime? visitorCheckOut;
-  final String? visitorCardNumber;
-  final String? visitorComingFrom;
-  final int? visitorCardId;
-  final int? companyId;
-  final bool? isCheckedOut;
-
-  /// Factory method to create a `VisitorLogMapper2` instance from JSON.
-  factory VisitorLogMapper2.fromJson(Map<String, dynamic> json) {
-    return VisitorLogMapper2(
-      id: json['id'] as int?,
-      visitorId: json['visitor_id'] as int?,
-      visitor: json['visitor'] != null
-          ? VisitorMapper.fromJson(json['visitor'])
-          : null,
-      visitorPurposeCategoryId: json['visitor_purpose_category_id'] as int?,
-      visitorPurposeSubCategoryId:
-      json['visitor_purpose_sub_category_id'] as int?,
-      visitorBuildingAssignment: json['visitor_building_assignment'] != null
-          ? List<dynamic>.from(json['visitor_building_assignment'])
-          : null,
-      visitorCount: json['visitor_count'] as int?,
-      visitorCheckIn: json['visitor_check_in'] != null
-          ? DateTime.parse(json['visitor_check_in'] as String)
-          : null,
-      visitorCheckOut: json['visitor_check_out'] != null
-          ? DateTime.parse(json['visitor_check_out'] as String)
-          : null,
-      visitorCardNumber: json['visitor_card_number'] as String?,
-      visitorComingFrom: json['visitor_coming_from'] as String?,
-      visitorCardId: json['visitor_card_id'] as int?,
-      companyId: json['company_id'] as int?,
-      isCheckedOut: json['is_checked_out'] as bool?,
-    );
-  }
-
-  /// Converts the current `VisitorLogMapper2` instance to JSON.
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'visitor_id': visitorId,
-      'visitor': visitor?.toJson(),
-      'visitor_purpose_category_id': visitorPurposeCategoryId,
-      'visitor_purpose_sub_category_id': visitorPurposeSubCategoryId,
-      'visitor_building_assignment': visitorBuildingAssignment,
-      'visitor_count': visitorCount,
-      'visitor_check_in': visitorCheckIn?.toIso8601String(),
-      'visitor_check_out': visitorCheckOut?.toIso8601String(),
-      'visitor_card_number': visitorCardNumber,
-      'visitor_coming_from': visitorComingFrom,
-      'visitor_card_id': visitorCardId,
-      'company_id': companyId,
-      'is_checked_out': isCheckedOut,
-    };
-  }
-
-  /// Converts `VisitorLogMapper2` into a `VisitorLog` object.
-  VisitorLog toVisitorLog() {
-    return VisitorLog(
-      id: id,
-      visitor_id: visitorId ?? 0,
-      visitor: visitor?.toVisitor(),
-      visitor_purpose_category_id: visitorPurposeCategoryId ?? 0,
-      visitor_purpose_sub_category_id: visitorPurposeSubCategoryId,
-      visitor_count: visitorCount ?? 0,
-      visitor_check_in: visitorCheckIn,
-      visitor_check_out: visitorCheckOut,
-      visitor_card_number: visitorCardNumber,
-      visitor_coming_from: visitorComingFrom,
-      visitor_card_id: visitorCardId,
-      company_id: companyId ?? 0,
-      is_checked_out: isCheckedOut ?? false,
-    );
-  }
-}
 // Complete implementation with **ALL METHODS** and utilities included.

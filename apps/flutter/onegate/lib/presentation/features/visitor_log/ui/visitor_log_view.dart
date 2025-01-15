@@ -175,7 +175,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             }
 
             List<VisitorLog> filteredVisitors = uniqueVisitorLogs
-                .where((visitorLog) => visitorLog.visitor?.name
+                .where((visitorLog) => visitorLog.visitor!.name
                     .toLowerCase()
                     .contains(_searchText!.toLowerCase()))
                 .toList();
