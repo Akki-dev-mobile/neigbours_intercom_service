@@ -1163,23 +1163,23 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                         _makePhoneCall(widget.visitorLog.visitor!.mobile)
                     : null,
 
-// onPressed: () {
-//               log(
-//                 'Calling ${visitorLog.visitor!.mobile}',
-//               );
-//
-//               SnackBar(
-//                 content: Text(
-//                   'Calling ${visitorLog.visitor!.mobile}',
-//                   style: Theme.of(context).textTheme.labelMedium,
-//                 ),
-//                 action: SnackBarAction(
-//                   label: 'Close',
-//                   onPressed: () {
-//                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-//                   },
-//                 ),
-//               );
+    // onPressed: () {
+    //               log(
+    //                 'Calling ${visitorLog.visitor!.mobile}',
+    //               );
+    //
+    //               SnackBar(
+    //                 content: Text(
+    //                   'Calling ${visitorLog.visitor!.mobile}',
+    //                   style: Theme.of(context).textTheme.labelMedium,
+    //                 ),
+    //                 action: SnackBarAction(
+    //                   label: 'Close',
+    //                   onPressed: () {
+    //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    //                   },
+    //                 ),
+    //               );
                 icon: Icon(
                   Ionicons.call_outline,
                   color: Colors.green,

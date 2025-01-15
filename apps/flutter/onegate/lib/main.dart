@@ -36,8 +36,6 @@ void main() async {
   await setupLocator();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
   ]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

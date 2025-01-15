@@ -531,7 +531,7 @@ class RemoteDataSource {
         throw Exception("Company ID (userId) is null");
       }
       final response = await _dio2?.get(
-        'http://societybackend.cubeone.in/api/admin/building/list',
+        'http://socbackend.cubeone.in/api/admin/building/list',
         queryParameters: {'company_id': userId},
         options: Options(
           headers: {
@@ -563,7 +563,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
       final response = await _dio2?.get(
-        'http://societybackend.cubeone.in/api/admin/units/list',
+        'http://socbackend.cubeone.in/api/admin/units/list',
         queryParameters: {
           'company_id': companyId,
           'building_id': buildingId,
@@ -597,7 +597,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
       final response = await _dio2?.get(
-        'http://societybackend.cubeone.in/api/admin/member/list',
+        'http://socbackend.cubeone.in/api/admin/member/list',
         queryParameters: {
           'company_id': userId,
           // 'unit_id': unitId,
