@@ -758,6 +758,48 @@ class RemoteDataSource {
     }
   }
 
+  Future<List<dynamic>> memberApproval() async {
+    try {
+      // Base API URL
+      const String baseUrl = 'http://gateapi.cubeone.in/api/visitor/approvals';
+
+      // Fetch saved preferences and IDs
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
+      final companyDetails = await gateStorage.getSocietyId();
+      final resolvedCompanyId = companyDetails;
+
+      // Construct the full URL using path parameters
+      final String apiUrl = '$baseUrl/$resolvedCompanyId/$selectedGateName';
+
+      // Perform the HTTP GET request
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      );
+
+      print("Response: ${response.body}");
+
+      // Handle successful response
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+        log("data--$data");
+
+        // Directly return the raw list
+        return data;
+      } else {
+        throw Exception(
+            'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<VisitorLog>> fetchCheckInLogs(
       int companyId, String dateTime) async {
     try {

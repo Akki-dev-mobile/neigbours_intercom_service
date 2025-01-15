@@ -52,6 +52,8 @@ List<String> listPassAlpha = [
 
 class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
+
+
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
         VisitorRepoImpl(
