@@ -227,7 +227,6 @@ class _IdInputViewState extends State<IdInputView> {
           builder: (context, state) {
             return Form(
               key: mobileControllerFormKey,
-
               child: MyScrollView(
                 pageTitle: 'Enter Mobile Number',
                 // key: ValueKey('MyScrollView'),
@@ -259,8 +258,10 @@ class _IdInputViewState extends State<IdInputView> {
                         boxDecoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.background,
                         ),
-                        barrierColor:
-                        Theme.of(context).colorScheme.background.withOpacity(0.5),
+                        barrierColor: Theme.of(context)
+                            .colorScheme
+                            .background
+                            .withOpacity(0.5),
                         closeIcon: Icon(
                           Icons.close,
                           color: Theme.of(context).colorScheme.onBackground,
@@ -306,7 +307,8 @@ class _IdInputViewState extends State<IdInputView> {
                       keyboardType: TextInputType.number,
                       length: 10,
                       inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly, // Allow only digits
+                        FilteringTextInputFormatter.digitsOnly,
+                        // Allow only digits
                       ],
                       onChanged: (value) {
                         if (value.length == 10) {
@@ -327,6 +329,9 @@ class _IdInputViewState extends State<IdInputView> {
 
                     if (mobileControllerFormKey.currentState?.validate() ??
                         false) {
+                      // close keyboard
+                      FocusScope.of(context).unfocus();
+
                       gateDashboardBloc.add(InputPutViewNextClickedEvent());
                     }
                   },
@@ -626,6 +631,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
             child: CustomLargeBtn(
               text: 'Next',
               onPressed: () async {
+                FocusScope.of(context).unfocus();
+
                 if (selectedImageIndex != -1) {
                   final selectedValue = globalSelectedPurposes.length == 0
                       ? widget.purposeCategories[selectedImageIndex]
