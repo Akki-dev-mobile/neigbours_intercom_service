@@ -39,7 +39,8 @@ class UnitSelectionView extends StatefulWidget {
   final String mobileNumber;
   final String? visitorNumber;
 
-   UnitSelectionView(c.Visitor? searchedVisitor, {
+  UnitSelectionView(
+    c.Visitor? searchedVisitor, {
     Key? key,
     required this.visitor,
     required this.purposeCategory,
@@ -163,7 +164,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                     color:  Colors.grey[200]!,
+                      color: Colors.grey[200]!,
                       width: 1, // Border thickness
                     ),
                   ),
@@ -173,7 +174,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   children: [
                     Text(
                       'Selected Members (${updatedSelectedMember.length})',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     IconButton(
                       icon: const Icon(
@@ -260,7 +264,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(color:Colors.white),
+                      ?.copyWith(color: Colors.white),
                 ),
               ],
             ),
@@ -352,6 +356,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       ),
     );
   }
+
   Widget _buildMemberListView(
       List<dynamic> filteredMembers, Set<String> selectedMembers) {
     return ListView.builder(
@@ -542,7 +547,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => GateDashboardView()),
-                (Route<dynamic> route) => false,
+            (Route<dynamic> route) => false,
           );
           return false; // Prevent default back navigation.
         }
@@ -561,18 +566,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         IconButton(
                           icon: Icon(Icons.arrow_back),
                           onPressed: () {
-                            if(widget.searchedVisitor!= null){
+                            if (widget.searchedVisitor != null) {
                               Navigator.pop(context);
-                            }
-                            else{
-
+                            } else {
                               Navigator.pushAndRemoveUntil(
                                 context,
-                                MaterialPageRoute(builder: (context) => GateDashboardView()),
-                                    (Route<dynamic> route) => false,
+                                MaterialPageRoute(
+                                    builder: (context) => GateDashboardView()),
+                                (Route<dynamic> route) => false,
                               );
                             }
-
                           },
                         ),
                         Text(
@@ -674,7 +677,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(Icons.people,color:Colors.white),
+                                        const Icon(Icons.people,
+                                            color: Colors.white),
                                         const SizedBox(width: 8),
                                         Text(
                                             selectedMember.length > 1
@@ -684,10 +688,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                 .textTheme
                                                 .titleLarge
                                                 ?.copyWith(
-                                                   color: Colors.white)),
+                                                    color: Colors.white)),
                                       ],
                                     ),
-                                    const Icon(Icons.keyboard_arrow_up,color: Colors.white,),
+                                    const Icon(
+                                      Icons.keyboard_arrow_up,
+                                      color: Colors.white,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -961,9 +968,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Map<String, String> _prepareRequestData(
       String userId, List<String> savedMobileNumbers) {
-
-
-
     return {
       'company_id': companyId.toString(),
       'name': widget.guestname,
@@ -972,7 +976,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'in_time': formattedInTime,
       'user_id': (int.tryParse(userId) ?? 5243243).toString(),
       'visitor_count': widget.guestCount.toString(),
-      "member_mobile_number": "",
+      "member_mobile_number": "918452060059",
       "visitor_id": widget.visitorId?.toString() ?? "",
       "purpose_category": widget.purposeCategory.id?.toString() ?? "",
       'purpose_details': "zomato",
@@ -993,9 +997,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       if (response.statusCode == 200) {
         log("FCM notification sent successfully: ${response.data}");
-        bool isWaitingForApproval = false;
-        setState(() => isWaitingForApproval = true);
-        await _showApprovedDialog(context, visitorLogData);
+        Fluttertoast.showToast(
+          msg: "Notification Sent",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        await Navigator.push(context,
+            MaterialPageRoute(builder: (context) => GateDashboardView()));
+        // bool isWaitingForApproval = false;
+        // setState(() => isWaitingForApproval = true);
+        // await _showApprovedDialog(context, visitorLogData);
       }
     } on DioError catch (e) {
       _handleDioError(e, visitorLogData);
@@ -1011,7 +1024,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       //   backgroundColor: Colors.red,
       //   textColor: Colors.white,
       // );
-      await _showApprovedDialog(context, visitorLogData);
+      await Navigator.push(context,
+          MaterialPageRoute(builder: (context) => GateDashboardView()));
     } else {
       log("Error during FCM notification: ${e.response?.statusCode} - ${e.response?.data}");
     }
@@ -1162,7 +1176,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     });
   }
 
-  Future<void> _showApprovedDialog(BuildContext context, c.VisitorLog data) async {
+  Future<void> _showApprovedDialog(
+      BuildContext context, c.VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1196,66 +1211,70 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     const SizedBox(height: 16),
                     _isLoading
                         ? const Column(
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text(
-                          "please wait checkin",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    )
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text(
+                                "please wait checkin",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          )
                         : CustomLargeBtn(
-                      onPressed: () async {
-                        if (_isButtonDisabled) return;
+                            onPressed: () async {
+                              if (_isButtonDisabled) return;
 
-                        setState(() {
-                          _isLoading = true;
-                          _isButtonDisabled = true;
-                        });
+                              setState(() {
+                                _isLoading = true;
+                                _isButtonDisabled = true;
+                              });
 
-                        try {
-                          await remoteDataSource.checkIn(data);
+                              try {
+                                await remoteDataSource.checkIn(data);
 
-                          if (savedMemberUnitDetails.isNotEmpty) {
-                            log('Sending visitor log details: ${jsonEncode([savedMemberUnitDetails])}');
+                                if (savedMemberUnitDetails.isNotEmpty) {
+                                  log('Sending visitor log details: ${jsonEncode([
+                                        savedMemberUnitDetails
+                                      ])}');
 
-                            Navigator.pop(context);
-                            await Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const GateDashboardView(),
-                              ),
-                            );
-                          } else {
-                            log('Error: savedMemberUnitDetails is empty');
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Error: Missing member details'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          log('Error in approved dialog: $e');
-                          setState(() {
-                            _isLoading = false;
-                            _isButtonDisabled = false;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Error processing approval'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
-                      text: "Continue",
-                      disabled: _isButtonDisabled,
-                    ),
+                                  Navigator.pop(context);
+                                  await Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const GateDashboardView(),
+                                    ),
+                                  );
+                                } else {
+                                  log('Error: savedMemberUnitDetails is empty');
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Error: Missing member details'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                log('Error in approved dialog: $e');
+                                setState(() {
+                                  _isLoading = false;
+                                  _isButtonDisabled = false;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Error processing approval'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                            text: "Continue",
+                            disabled: _isButtonDisabled,
+                          ),
                   ],
                 ),
               ),
