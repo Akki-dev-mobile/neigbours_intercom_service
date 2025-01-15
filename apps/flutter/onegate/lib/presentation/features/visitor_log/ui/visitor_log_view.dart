@@ -257,15 +257,39 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   if (widget.id == "In Out Book")
                     Padding(
                       padding: const EdgeInsets.only(right: 10.0),
-                      child: IconButton(
-                        onPressed: () async {
-                          await _showExportBottomSheet(context, visitorLogs);
-                        },
-                        icon: const Icon(
-                          Icons.download,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () async {
+                                await _showExportBottomSheet(context, visitorLogs);
+                              },
+                              icon: const Icon(
+                                Icons.download_rounded,
+                                color: Colors.black,
+                              ),
+                              tooltip: 'Download Logs',  // Adding tooltip for accessibility
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.only(right: 8.0),
+                              child: Text(
+                                'Export',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                    )
                 ],
                 pageBody: Column(
                   children: [
@@ -1139,23 +1163,23 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                         _makePhoneCall(widget.visitorLog.visitor!.mobile)
                     : null,
 
-// onPressed: () {
-//               log(
-//                 'Calling ${visitorLog.visitor!.mobile}',
-//               );
-//
-//               SnackBar(
-//                 content: Text(
-//                   'Calling ${visitorLog.visitor!.mobile}',
-//                   style: Theme.of(context).textTheme.labelMedium,
-//                 ),
-//                 action: SnackBarAction(
-//                   label: 'Close',
-//                   onPressed: () {
-//                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-//                   },
-//                 ),
-//               );
+    // onPressed: () {
+    //               log(
+    //                 'Calling ${visitorLog.visitor!.mobile}',
+    //               );
+    //
+    //               SnackBar(
+    //                 content: Text(
+    //                   'Calling ${visitorLog.visitor!.mobile}',
+    //                   style: Theme.of(context).textTheme.labelMedium,
+    //                 ),
+    //                 action: SnackBarAction(
+    //                   label: 'Close',
+    //                   onPressed: () {
+    //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    //                   },
+    //                 ),
+    //               );
                 icon: Icon(
                   Ionicons.call_outline,
                   color: Colors.green,

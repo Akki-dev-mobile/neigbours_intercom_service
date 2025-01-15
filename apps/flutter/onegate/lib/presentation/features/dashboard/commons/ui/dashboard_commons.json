@@ -1,0 +1,320 @@
+{
+    "type": "container",
+    "args": {
+        "margin": {
+            "bottom": 16
+        },
+        "height": 0.3,
+        "width": 1.0
+    },
+    "children": [
+        {
+            "type": "row",
+            "args": {
+                "mainAxisAlignment": "spaceEvenly"
+            },
+            "children": [
+                {
+                    "type": "container",
+                    "args": {
+                        "width": 0.32,
+                        "color": "#F2D8A5",
+                        "borderRadius": 20
+                    },
+                    "children": [
+                        {
+                            "type": "material",
+                            "args": {
+                                "color": "#F2D8A5",
+                                "borderRadius": 20
+                            },
+                            "children": [
+                                {
+                                    "type": "inkWell",
+                                    "args": {
+                                        "borderRadius": 20,
+                                        "splashColor": "#FFE2AC",
+                                        "onTap": {
+                                            "type": "function",
+                                            "args": {
+                                                "event": "GDInAndOutButtonPressedEvent",
+                                                "alternateEvent": "ADInAndOutButtonPressedEvent"
+                                            }
+                                        }
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "column",
+                                            "args": {
+                                                "mainAxisAlignment": "spaceEvenly",
+                                                "crossAxisAlignment": "center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "container",
+                                                    "args": {
+                                                        "padding": {
+                                                            "all": 2
+                                                        },
+                                                        "margin": {
+                                                            "top": 10
+                                                        },
+                                                        "color": "#FFFFFF",
+                                                        "borderRadius": 20
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "cachedNetworkImage",
+                                                            "args": {
+                                                                "imageUrl": "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif",
+                                                                "height": 55,
+                                                                "width": 55,
+                                                                "fit": "contain",
+                                                                "placeholder": {
+                                                                    "type": "circularProgressIndicator"
+                                                                },
+                                                                "errorWidget": {
+                                                                    "type": "icon",
+                                                                    "args": {
+                                                                        "icon": "Icons.error",
+                                                                        "color": "#FF0000"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "text",
+                                                    "args": {
+                                                        "text": "In-Out",
+                                                        "style": "displayMedium"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "text",
+                                                    "args": {
+                                                        "text": "Book",
+                                                        "textAlign": "center",
+                                                        "style": "labelMedium"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "column",
+                    "args": {
+                        "mainAxisAlignment": "spaceBetween"
+                    },
+                    "children": [
+                        {
+                            "type": "container",
+                            "args": {
+                                "width": 0.5,
+                                "height": 0.14,
+                                "color": "#CAF1D1",
+                                "borderRadius": 20
+                            },
+                            "children": [
+                                {
+                                    "type": "material",
+                                    "args": {
+                                        "color": "#CAF1D1",
+                                        "borderRadius": 20
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "inkWell",
+                                            "args": {
+                                                "borderRadius": 20,
+                                                "splashColor": "#62FF7F",
+                                                "onTap": {
+                                                    "type": "function",
+                                                    "args": {
+                                                        "event": "GDVisitorsInButtonPressedEvent",
+                                                        "alternateEvent": "ADVisitorsInButtonPressedEvent"
+                                                    }
+                                                }
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "row",
+                                                    "args": {
+                                                        "mainAxisAlignment": "spaceBetween"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "column",
+                                                            "args": {
+                                                                "mainAxisAlignment": "center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "text",
+                                                                    "args": {
+                                                                        "text": "inBook",
+                                                                        "style": "displayMedium"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "text",
+                                                                    "args": {
+                                                                        "text": "Visitor\\nIn",
+                                                                        "textAlign": "center",
+                                                                        "style": "labelMedium"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "container",
+                                                            "args": {
+                                                                "color": "#F7F7F7",
+                                                                "borderRadius": 20
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "transform",
+                                                                    "args": {
+                                                                        "alignment": "center",
+                                                                        "transform": "Matrix4.rotationY(math.pi)"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "cachedNetworkImage",
+                                                                            "args": {
+                                                                                "imageUrl": "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif",
+                                                                                "height": 55,
+                                                                                "width": 55,
+                                                                                "fit": "contain",
+                                                                                "placeholder": {
+                                                                                    "type": "circularProgressIndicator"
+                                                                                },
+                                                                                "errorWidget": {
+                                                                                    "type": "icon",
+                                                                                    "args": {
+                                                                                        "icon": "Icons.error",
+                                                                                        "color": "#FF0000"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "container",
+                            "args": {
+                                "width": 0.5,
+                                "height": 0.14,
+                                "color": "#FFE5E0",
+                                "borderRadius": 20
+                            },
+                            "children": [
+                                {
+                                    "type": "material",
+                                    "args": {
+                                        "color": "#FFE5E0",
+                                        "borderRadius": 20
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "inkWell",
+                                            "args": {
+                                                "borderRadius": 20,
+                                                "splashColor": "#ED836D",
+                                                "onTap": {
+                                                    "type": "function",
+                                                    "args": {
+                                                        "event": "GDVisitorsOutButtonPressedEvent",
+                                                        "alternateEvent": "ADVisitorsOutButtonPressedEvent"
+                                                    }
+                                                }
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "row",
+                                                    "args": {
+                                                        "mainAxisAlignment": "spaceBetween"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "column",
+                                                            "args": {
+                                                                "mainAxisAlignment": "center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "text",
+                                                                    "args": {
+                                                                        "text": "outBook",
+                                                                        "style": "displayMedium"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "text",
+                                                                    "args": {
+                                                                        "text": "Visitor\\nOut",
+                                                                        "textAlign": "center",
+                                                                        "style": "labelMedium"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "container",
+                                                            "args": {
+                                                                "color": "#F7F7F7",
+                                                                "borderRadius": 20
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "cachedNetworkImage",
+                                                                    "args": {
+                                                                        "imageUrl": "https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif",
+                                                                        "height": 55,
+                                                                        "width": 55,
+                                                                        "fit": "contain",
+                                                                        "placeholder": {
+                                                                            "type": "circularProgressIndicator"
+                                                                        },
+                                                                        "errorWidget": {
+                                                                            "type": "icon",
+                                                                            "args": {
+                                                                                "icon": "Icons.error",
+                                                                                "color": "#FF0000"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

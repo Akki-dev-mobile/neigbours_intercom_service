@@ -21,7 +21,6 @@ import 'package:provider/provider.dart';
 import 'data/datasources/remote_datasource.dart';
 import 'data/repositories/visitor_log_repo_impl.dart';
 import 'data/repositories/visitor_repo_impl.dart';
-import 'domain/repositories/staff_repository.dart';
 import 'domain/use_cases/visitor_log_usecae.dart';
 import 'domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -35,7 +34,9 @@ void main() async {
   await GateStorage().init();
   await setupDependencies();
   await setupLocator();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarIconBrightness: Brightness.dark,
@@ -50,6 +51,7 @@ void main() async {
   runApp(
     ScreenUtilInit(
       fontSizeResolver: (num size, ScreenUtil _) => 0.5,
+      enableScaleText: () => true,
       designSize: const Size(360, 690),
       minTextAdapt: true,
       splitScreenMode: true,
@@ -79,18 +81,20 @@ void main() async {
             BlocProvider<GatekeeperDashboardBloc>(
               create: (context) => GatekeeperDashboardBloc(
                 VisitorUsecase(
-                  VisitorRepoImpl( RemoteDataSource(
-      DioSingleton.instance1,
-        DioSingleton.instance2,
-        DioSingleton.instance3,
-      )), // Pass dependencies
-                ),
-                VisitorLogUsecase(
-                  VisitorLogRepositoryImpl( RemoteDataSource(
+                  VisitorRepoImpl(RemoteDataSource(
                     DioSingleton.instance1,
                     DioSingleton.instance2,
                     DioSingleton.instance3,
-                  ),),
+                  )), // Pass dependencies
+                ),
+                VisitorLogUsecase(
+                  VisitorLogRepositoryImpl(
+                    RemoteDataSource(
+                      DioSingleton.instance1,
+                      DioSingleton.instance2,
+                      DioSingleton.instance3,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -101,7 +105,6 @@ void main() async {
     ),
   );
 }
-
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

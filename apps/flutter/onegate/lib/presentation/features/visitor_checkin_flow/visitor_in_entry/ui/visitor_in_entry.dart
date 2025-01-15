@@ -2,33 +2,26 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:provider/provider.dart';
 
+import 'package:camera/camera.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
-import 'package:flutter_onegate/utils/shared_pref.dart';
-import 'package:get_it/get_it.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:camera/camera.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
@@ -65,6 +58,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     DioSingleton.instance2,
     DioSingleton.instance3,
   );
+
   @override
   void initState() {
     super.initState();
@@ -802,6 +796,7 @@ class ListeningDialogState extends State<ListeningDialog>
 
 class CameraPreviewScreen extends StatefulWidget {
   final CameraController cameraController;
+
 // String? mobile;
   CameraPreviewScreen({
     Key? key,
@@ -877,7 +872,11 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
         children: [
           if (_capturedImage == null)
             _cameraController.value.isInitialized
-                ? CameraPreview(_cameraController)
+                ? Center(
+                    child: CameraPreview(
+                      _cameraController,
+                    ),
+                  )
                 : const Center(child: CircularProgressIndicator())
           else
             Center(

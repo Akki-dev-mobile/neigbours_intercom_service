@@ -356,7 +356,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       ),
     );
   }
-
   Widget _buildMemberListView(
       List<dynamic> filteredMembers, Set<String> selectedMembers) {
     return ListView.builder(
@@ -566,16 +565,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         IconButton(
                           icon: Icon(Icons.arrow_back),
                           onPressed: () {
-                            if (widget.searchedVisitor != null) {
+                            if(widget.searchedVisitor!= null){
                               Navigator.pop(context);
-                            } else {
+                            }
+                            else{
+
                               Navigator.pushAndRemoveUntil(
                                 context,
-                                MaterialPageRoute(
-                                    builder: (context) => GateDashboardView()),
-                                (Route<dynamic> route) => false,
+                                MaterialPageRoute(builder: (context) => GateDashboardView()),
+                                    (Route<dynamic> route) => false,
                               );
                             }
+
                           },
                         ),
                         Text(
@@ -691,10 +692,55 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                     color: Colors.white)),
                                       ],
                                     ),
-                                    const Icon(
-                                      Icons.keyboard_arrow_up,
-                                      color: Colors.white,
-                                    ),
+                                    ElevatedButton.icon(
+                                        style: ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStateProperty.all<Color>(
+                                                  const Color(0xFF7D7C7C)),
+                                          backgroundColor:
+                                              WidgetStateProperty.all<Color>(
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .surface,
+                                          ),
+                                          elevation: WidgetStateProperty
+                                              .resolveWith<double>(
+                                            (Set<WidgetState> states) =>
+                                                states.contains(
+                                                        WidgetState.pressed)
+                                                    ? 8
+                                                    : 0,
+                                          ),
+                                          shape: WidgetStateProperty.all<
+                                              RoundedRectangleBorder>(
+                                            RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(15)),
+                                          ),
+                                          padding: WidgetStateProperty.all<
+                                              EdgeInsetsGeometry>(
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 20, vertical: 10),
+                                          ),
+                                        ),
+                                        onPressed: () =>
+                                            _showSelectedMembersBottomSheet(
+                                                selectedMember),
+                                        label: Text(
+                                          "view",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyLarge!
+                                              .copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface,
+                                              ),
+                                        ),
+                                        icon: Icon(
+                                          Icons.keyboard_arrow_up,
+                                          color: Colors.black,
+                                        )),
                                   ],
                                 ),
                               ),
@@ -997,15 +1043,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       if (response.statusCode == 200) {
         log("FCM notification sent successfully: ${response.data}");
-        Fluttertoast.showToast(
-          msg: "Notification Sent",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-        // await Navigator.push(context,
-        //     MaterialPageRoute(builder: (context) => GateDashboardView()));
         bool isWaitingForApproval = false;
         setState(() => isWaitingForApproval = true);
         await _notificationSent(context, visitorLogData);
