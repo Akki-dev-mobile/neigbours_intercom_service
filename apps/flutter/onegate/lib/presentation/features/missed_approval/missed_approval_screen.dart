@@ -6,22 +6,12 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:onegate_client/onegate_client.dart';
 
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
-
-import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 final ValueNotifier<int> secondsRemainingNotifier = ValueNotifier<int>(120);
 final ValueNotifier<bool> isRetryEnabledNotifier = ValueNotifier<bool>(false);
-
-
 
 class MissedApprovalsScreen extends StatelessWidget {
   final remoteDataSource = RemoteDataSource(
@@ -36,33 +26,32 @@ class MissedApprovalsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Missed Approvals'),
+        title: const Text('Missed Approvals'),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: FutureBuilder<List<dynamic>>(
-        future: remoteDataSource.memberApproval(),
+        future: remoteDataSource.fetchApprovals(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(
               child: Text('Failed to load approvals: ${snapshot.error}'),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
+            return const Center(
               child: Text('No missed approvals found.'),
             );
           }
 
-          final missedApprovals = snapshot.data!.map((data) =>
-              VisitorInfo.fromJson(data)
-          ).toList();
+          final missedApprovals =
+              snapshot.data!.map((data) => VisitorInfo.fromJson(data)).toList();
 
           return ListView.builder(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             itemCount: missedApprovals.length,
             itemBuilder: (context, index) {
               return MissedApprovalItem(
@@ -75,6 +64,7 @@ class MissedApprovalsScreen extends StatelessWidget {
     );
   }
 }
+
 // Define data classes for better type safety
 class VisitorInfo {
   final int visitorId;
@@ -120,10 +110,12 @@ class VisitorInfo {
         name: json['member_name']?.toString() ?? '',
         mobileNumber: json['memb_mobile_number']?.toString(),
         email: json['memb_email']?.toString(),
-        unitId: _parseToInt(json['unit_id']),
+        memberId: json['member_id'],
+        unitId: _parseToInt(json['unit_id'] ?? "") ?? 0,
       ),
       visitorComingFrom: json['visitor_coming_from']?.toString(),
-      visitorPurposeCategoryId: _parseToInt(json['visitor_purpose_category_id']),
+      visitorPurposeCategoryId:
+          _parseToInt(json['visitor_purpose_category_id']),
     );
   }
 
@@ -142,13 +134,15 @@ class MemberInfo {
   final String name;
   final String? mobileNumber;
   final String? email;
-  final int unitId;
+  final int? unitId;
+  final int? memberId;
 
   MemberInfo({
     required this.name,
     this.mobileNumber,
     this.email,
-    required this.unitId,
+     this.unitId,
+     this.memberId
   });
 }
 
@@ -191,13 +185,15 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
     companyName = prefs.getString('society_name');
     memberMobileNo = prefs.getString('selected_member_mobile_numbers');
     memberDetailsJson = prefs.getString('member_details');
+    print("rohit ${widget.visitorInfo.memberInfo.memberId.toString()}");
   }
 
   Future<void> _sendFcmNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_id');
-      final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+      final formattedInTime =
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
       final requestData = {
         'company_id': companyId,
@@ -209,11 +205,12 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
         'visitor_count': "1",
         'member_mobile_number': "918452060059",
         'visitor_id': widget.visitorInfo.visitorId,
-        'purpose_category': widget.visitorInfo.visitorPurposeCategoryId?.toString() ?? "",
+        'purpose_category':
+            widget.visitorInfo.visitorPurposeCategoryId?.toString() ?? "",
         'purpose_details': "meeting",
         'coming_from': widget.visitorInfo.visitorComingFrom ?? "Unknown",
         'company_name': companyName ?? "",
-        "member_id": 14
+        "member_id": widget.visitorInfo.memberInfo.memberId.toString()
       };
 
       final response = await _dio.post(
@@ -252,7 +249,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
       isRetryEnabledNotifier.value = false;
     }
 
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (secondsRemainingNotifier.value > 0) {
         secondsRemainingNotifier.value -= 1;
       } else {
@@ -281,11 +278,11 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                     : null,
                 child: widget.visitorInfo.visitorImage.isEmpty
                     ? Text(
-                  widget.visitorInfo.visitorName.isNotEmpty
-                      ? widget.visitorInfo.visitorName[0]
-                      : 'G',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                )
+                        widget.visitorInfo.visitorName.isNotEmpty
+                            ? widget.visitorInfo.visitorName[0]
+                            : 'G',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      )
                     : null,
               ),
               title: Text(
@@ -295,21 +292,21 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 5),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Symbols.apartment,
                         color: Color(0xffFFB080),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 7,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Color(0xffFFEBE6),
+                          color: const Color(0xffFFEBE6),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
@@ -323,7 +320,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 5),
                   Text(
                     'Member: ${widget.visitorInfo.memberInfo.name}',
                     style: TextStyle(
@@ -370,7 +367,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                               ? Colors.blue
                               : Colors.grey.shade300,
                           foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
                           ),
@@ -387,7 +384,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                         ),
                         label: Text(
                           isRetryEnabled ? 'Retry Now' : 'Processing',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -399,7 +396,8 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                     valueListenable: secondsRemainingNotifier,
                     builder: (context, secondsRemaining, _) {
                       return Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: isRetryEnabledNotifier.value
                               ? Colors.red.shade50
@@ -424,7 +422,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                                   ? Colors.red
                                   : Colors.blue,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
                               isRetryEnabledNotifier.value
                                   ? 'Expired'
@@ -451,12 +449,3 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
