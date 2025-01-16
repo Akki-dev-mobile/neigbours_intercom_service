@@ -1,11 +1,12 @@
 import 'dart:io';
 
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 
 abstract class VisitorRepository {
   Future<Visitor?> searchVisitor(String mobileNumber);
-  Future<List<PurposeCategory>?>? fetchPurposeCategory();
+  Future<List<PurposeCategory1>?>? fetchPurposeCategory();
   Future<List<dynamic>?>? getMembersList(int companyId);
   Future<List<dynamic>?>? getBuildingList(int companyId);
   Future<List<dynamic>?>? getUnitList(int companyId);

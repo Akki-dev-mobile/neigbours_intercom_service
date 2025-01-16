@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:camera/camera.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
@@ -27,7 +29,7 @@ import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
 
 class VisitorsInEntry extends StatefulWidget {
-  final PurposeCategory? selectedValue;
+  final PurposeCategory1? selectedValue;
   final Visitor? searchedVisitor;
   final String mobile;
 
@@ -48,11 +50,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   late final TextEditingController _guestComingFromController;
   late final TextEditingController _guestCountController;
   late final TextEditingController _visitorNumberController;
+  int selectedCompanyIndex = -1; // To track the selected company index
 
   bool _isSubmitting = false;
   int _guestCount = 1;
   bool? _visitorCardNumber = false;
-  List<PurposeCategory> _globalSelectedPurposes = [];
+  List<PurposeCategory1> _globalSelectedPurposes = [];
   final remoteDataSource = RemoteDataSource(
     DioSingleton.instance1,
     DioSingleton.instance2,
@@ -122,6 +125,54 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       debugPrint('Error loading purposes: $e');
     }
   }
+
+  final List<Map<String, String>> deliveryCompanies = [
+    {
+      'name': 'Amazon',
+      'image':
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUk2zBfHzeV5yxsgE4tRO6Z2q5SozMWph8Og&s',
+    },
+    {
+      'name': 'Flipkart',
+      'image':
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcSx1XIyVOaGpvl6bEff5hZCuQze21m_Ph3A&s',
+    },
+    {
+      'name': 'Zomato',
+      'image':
+          'https://content.jdmagicbox.com/v2/comp/mumbai/u1/022pxx22.xx22.170704134830.t7u1/catalogue/zomato-com-mumbai-corporate-companies-1fm7z2kn6v.jpg',
+    },
+    {
+      'name': 'Swiggy',
+      'image':
+          'https://content.jdmagicbox.com/comp/mumbai/z1/022pxx22.xx22.150803125128.z7z1/catalogue/swiggy-com-branch-office-andheri-east-mumbai-online-websites-for-food-delivery-aijodveedn.jpg',
+    },
+    {
+      'name': 'Dunzo',
+      'image':
+          'https://mir-s3-cdn-cf.behance.net/project_modules/1400/c79cc971959541.5bd75efd34d39.jpg',
+    },
+    {
+      'name': 'BigBasket',
+      'image':
+          'https://cdn-images-1.medium.com/max/1200/1*kqElrV8y9kt64NDnfwqf6g.png',
+    },
+    {
+      'name': 'Delhivery',
+      'image':
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS2CQIMiyn44Rj9rbUflyH69dj0MaObVOeQPw&s',
+    },
+    {
+      'name': 'Blue Dart',
+      'image':
+          'https://media.licdn.com/dms/image/v2/C4D0BAQGjOwzlSzSwCQ/company-logo_200_200/company-logo_200_200/0/1631329681950?e=2147483647&v=beta&t=oyASYPcfvBB1Iv3p0q3qS0TPae-pkg3oba7DBKXUr5U',
+    },
+    {
+      'name': 'FedEx',
+      'image':
+          'https://content.jdmagicbox.com/v2/comp/bangalore/s1/080pxx80.xx80.231101201423.u9s1/catalogue/fedex-ship-site-bwc-international-kammanahalli-bangalore-international-courier-services-uguu63fg2i.jpg',
+    },
+  ];
 
   Future<String?> _handleMicPress(String field) async {
     final result = await showDialog<String>(
@@ -225,6 +276,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     if (!_validateForm()) return;
 
     setState(() => _isSubmitting = true);
+    if (selectedCompanyIndex == -1) {
+      _showErrorSnackBar("Please select a delivery company.");
+    } else {
+      final selectedCompany = deliveryCompanies[selectedCompanyIndex]['name']!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Delivery Company Selected: $selectedCompany"),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
 
     try {
       _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
@@ -250,12 +312,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       _showErrorSnackBar('Please enter guest name');
       return false;
     }
-
-    if (_guestComingFromController.text.isEmpty) {
-      _showErrorSnackBar('Coming from is mandatory field');
-      return false;
-    }
-
     return true;
   }
 
@@ -294,14 +350,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             final Visitor updatedVisitor = Visitor(
                 id: int.parse(searched_id.toString()),
                 name: _guestNameController.text,
-                // comingFrom: guestComingFrom.text,
-                // cardNumber: visitorNumber.text,
-                // guestCount: int.parse(_guestCountController.text),
                 mobile: widget.mobile,
-                visitor_image: ""
-                // VisitorMapperImage: ""
-
-                );
+                visitor_image: "");
 
             await _updateVisitor(updatedVisitor);
           }
@@ -349,7 +399,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         return MyScrollView(
           isScrollable: true,
           pageTitle:
-              'Purpose Entry - ${effectivePurpose.purpose_category_name}',
+              'Purpose Entry - ${effectivePurpose.categoryName}',
           pageBody: _buildPurposeForm(effectivePurpose),
           floatingActionButton: CustomLargeBtn(
             onPressed: _handleSubmit,
@@ -364,8 +414,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     );
   }
 
-  Widget _buildPurposeForm(PurposeCategory purpose) {
-    switch (purpose.purpose_category_name) {
+  Widget _buildPurposeForm(PurposeCategory1 purpose) {
+    switch (purpose.categoryName) {
       case 'CABS':
         return _buildCabsForm();
       case 'DELIVERY':
@@ -402,25 +452,120 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   Widget _buildDeliveryForm() {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Delivery Person Name Field
         CustomForm.textField(
           "Delivery Person Name",
           hintText: 'Enter Name',
+          textController: _guestNameController,
           textCapitalization: TextCapitalization.words,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
           suffixIcon: _buildMicButton(() => _handleMicPress('deliveryName')),
         ),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            'Select Delivery Company',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+        const SizedBox(height: 16),
+
+        Text(
+          'Select Delivery Company',
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
-        const SelectTypeWidget(),
+        const SizedBox(height: 8),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3, // Number of columns
+            mainAxisSpacing: 3,
+            crossAxisSpacing: 3,
+          ),
+          itemCount: deliveryCompanies.length,
+          itemBuilder: (context, index) {
+            final company = deliveryCompanies[index];
+            final isSelected = index == selectedCompanyIndex;
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedCompanyIndex = index;
+                });
+              },
+              child: Stack(
+                children: [
+                  Container(
+                    height: 250,
+                    width: 200,
+                    margin: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0x10C08261)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xffC08261)
+                            : Colors.grey,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 7),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child:  CachedNetworkImage(
+                              maxHeightDiskCache: 90,
+                              maxWidthDiskCache: 90,
+                              height: 60,
+                              width: 60,
+                              fit: BoxFit.cover,
+                              imageUrl: company['image']!,
+                              placeholder: (context, url) =>
+                              const CircularProgressIndicator(),
+                              errorWidget: (context, url, error) => const Icon(
+                                Icons.error,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              company['name']!,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? const Color(0xffC08261)
+                                    : Theme.of(context).colorScheme.onSurface,
+                                fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isSelected)
+                    const Positioned(
+                      right: 10,
+                      top: 10,
+                      child: Icon(
+                        size: 20,
+                        Ionicons.checkmark_circle_outline,
+                        color: Color(0xffC08261),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
       ],
     );
   }

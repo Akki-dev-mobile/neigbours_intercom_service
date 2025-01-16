@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
@@ -88,7 +89,7 @@ class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> 
 
   Future<void> _handleNewVisitor(
       Visitor visitor,
-      PurposeCategory purposeCategory,
+      PurposeCategory1 purposeCategory,
       Emitter<VisitorInEntryState> emit,
       ) async {
     final createdVisitor = await _visitorUsecase.createVisitor(visitor);
@@ -101,7 +102,7 @@ class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> 
 
   Future<void> _handleExistingVisitor(
       Visitor visitor,
-      PurposeCategory purposeCategory,
+      PurposeCategory1 purposeCategory,
       Emitter<VisitorInEntryState> emit,
       ) async {
     final isUpdated = await _visitorUsecase.updateVisitor(visitor);

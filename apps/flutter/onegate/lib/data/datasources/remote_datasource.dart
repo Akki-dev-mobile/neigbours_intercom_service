@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
@@ -187,14 +188,44 @@ class RemoteDataSource {
 
     return null;
   }
-
-  Future<List<PurposeCategory>?> fetchPurpose() async {
+  Future<List<PurposeCategory1>?> fetchPurpose() async {
     try {
-      final result = await client.purposeCategory.fetchPurposeCategory();
-      print("fetchPurpose: ${result.toString()}");
-      return result.reversed.toList();
+      String apiUrl = "http://stggateapi.cubeone.in/api/visitor/purposeCategory";
+
+      final response = await http.get(Uri.parse(apiUrl));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+
+        // Check for success in the response
+        if (jsonResponse['success'] == true) {
+          final List<dynamic> data = jsonResponse['data'];
+
+          // Map the data to PurposeCategory objects
+          final purposes = data.map((item) {
+            return PurposeCategory1(
+              categoryId: item['category_id'] ?? 0,
+              categoryName: item['purpose_category_name'] ?? '',
+            image: item['image'] ?? '',
+            subCategories  : (item['sub_categories'] as List<dynamic>).map((sub) {
+                return SubCategory(
+                  subCategoryId: sub['sub_category_id'],
+                  subCategoryName: sub['purpose_sub_category_name'],
+                  image: sub['']
+                );
+              }).toList(),
+            );
+          }).toList();
+
+          return purposes.reversed.toList(); // Reverse the list if required
+        } else {
+          print("Error: ${jsonResponse['message']}");
+        }
+      } else {
+        print("Failed to fetch purposes: ${response.statusCode}");
+      }
     } catch (e) {
-      print(e.toString());
+      print("Error fetching purposes: $e");
     }
     return null;
   }
@@ -612,6 +643,39 @@ class RemoteDataSource {
     }
   }
 
+  Future<List<dynamic>> getSubCategoryId(int companyId) async {
+    try {
+      final String? userId = await gateStorage.getSocietyId();
+      if (userId == null) {
+        throw Exception("Company ID (userId) is null");
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
+
+      final response = await _dio2?.get(
+        ApiUrls.memberList,
+        queryParameters: {
+          'company_id': userId,
+          'current_tab': 'approved', // Default tab for approved members
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+          },
+        ),
+      );
+
+      return response?.data?['data'] ?? [];
+    } catch (e) {
+      log('Error fetching members: $e');
+      rethrow;
+    }
+  }
+
   /// Fetch member units for a specific building in a company
   Future<List<dynamic>> getMemberUnit(int? companyId, int? buildingId) async {
     try {
@@ -965,27 +1029,36 @@ class RemoteDataSource {
         ),
         'company_id': '$companyId',
         'uuid': userMobile,
+        'path': file.path,
       });
 
-      var response = await _dio2?.post(
-        '${ApiUrls.gateBaseUrl}/visitor/uploadFile',
+      var dio = Dio();
+      var response = await dio.post(
+        'http://35.154.173.226:8005/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',
         ),
       );
 
-      if (response?.statusCode == 200) {
-        log('File uploaded successfully: ${response?.data}');
-        return response?.data['data']['file_path'];
+      if (response.statusCode == 200) {
+        log('Successfully uploaded: ${json.encode(response.data)}');
+
+        var filePath = response.data['data']?['file_path'];
+        if (filePath != null && filePath is String) {
+          return filePath;
+        } else {
+          log('Unexpected response format: ${response.data}');
+          return '';
+        }
       } else {
-        log('File upload failed: ${response?.statusMessage}');
+        log('Upload failed: ${response.statusMessage}');
+        return '';
       }
     } catch (e) {
-      log('Error uploading file: $e');
+      log('Error uploading image: $e');
+      rethrow;
     }
-
-    return null;
   }
 
   Future<List<dynamic>> getMembersList() async {

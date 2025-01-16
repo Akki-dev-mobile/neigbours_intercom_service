@@ -1,13 +1,15 @@
 import 'package:onegate_client/onegate_client.dart';
 
+import 'domain/entities/visitor/purpose/purpose.dart';
+
 class PurposeCategoryMapper {
   // Convert a single JSON object to a PurposeCategory
-  static PurposeCategory fromJson(Map<String, dynamic> json) {
-    return PurposeCategory(
-      id: json['id'] as int?,
-      purpose_category_name: json['purpose_category_name'] as String,
-      purpose_img: json['purpose_img'] as String,
-      isSelected: json['isSelected'] as bool? ?? false,
+  static PurposeCategory1 fromJson(Map<String, dynamic> json) {
+    return PurposeCategory1(
+      categoryId: json['id'],
+      categoryName: json['purpose_category_name'] as String,
+      image: json['purpose_img'] as String,
+      // isSelected: json['isSelected'] as bool? ?? false,
     );
   }
 
@@ -22,7 +24,7 @@ class PurposeCategoryMapper {
   }
 
   // Convert a list of JSON objects to a list of PurposeCategory
-  static List<PurposeCategory> fromJsonList(List<dynamic> jsonList) {
+  static List<PurposeCategory1> fromJsonList(List<dynamic> jsonList) {
     return jsonList
         .map((json) => fromJson(json as Map<String, dynamic>))
         .toList();

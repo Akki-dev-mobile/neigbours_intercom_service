@@ -11,6 +11,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate.dart';
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
@@ -30,7 +31,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 class UnitSelectionView extends StatefulWidget {
   c.Visitor? searchedVisitor;
   final c.Visitor visitor;
-  final c.PurposeCategory purposeCategory;
+  final PurposeCategory1 purposeCategory;
   final String? comingFrom;
   final int? guestCount;
   final int? visitorId;
@@ -356,6 +357,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       ),
     );
   }
+
   Widget _buildMemberListView(
       List<dynamic> filteredMembers, Set<String> selectedMembers) {
     return ListView.builder(
@@ -565,18 +567,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         IconButton(
                           icon: Icon(Icons.arrow_back),
                           onPressed: () {
-                            if(widget.searchedVisitor!= null){
+                            if (widget.searchedVisitor != null) {
                               Navigator.pop(context);
-                            }
-                            else{
-
+                            } else {
                               Navigator.pushAndRemoveUntil(
                                 context,
-                                MaterialPageRoute(builder: (context) => GateDashboardView()),
-                                    (Route<dynamic> route) => false,
+                                MaterialPageRoute(
+                                    builder: (context) => GateDashboardView()),
+                                (Route<dynamic> route) => false,
                               );
                             }
-
                           },
                         ),
                         Text(
@@ -911,7 +911,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     return c.VisitorLog(
       visitor_id: widget.visitor.id ?? 0,
-      visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
+      visitor_purpose_category_id: widget.purposeCategory.categoryId ?? 1,
       visitor_purpose_sub_category_id: null,
       visitor_count: widget.guestCount ?? 0,
       visitor_check_in: DateTime.parse(formattedInTime),
@@ -973,7 +973,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final selectedGateName = prefs.getString('selected_gate');
     final visitorLogData = c.VisitorLog(
         visitor_id: widget.visitor.id ?? 0,
-        visitor_purpose_category_id: widget.purposeCategory.id ?? 1,
+        visitor_purpose_category_id: widget.purposeCategory.categoryId ?? 1,
         visitor_purpose_sub_category_id: null,
         visitor_count: widget.guestCount ?? 0,
         visitor_check_in: DateTime.parse(formattedInTime),
@@ -1024,7 +1024,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'visitor_count': widget.guestCount.toString(),
       "member_mobile_number": "918452060059",
       "visitor_id": widget.visitorId?.toString() ?? "",
-      "purpose_category": widget.purposeCategory.id?.toString() ?? "",
+      "purpose_category": widget.purposeCategory.categoryId?.toString() ?? "",
       'purpose_details': "zomato",
       'coming_from': widget.comingFrom ?? "Unknown",
       "member_id": "${selectedMemberIds.first}",
@@ -1035,6 +1035,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> _sendFcmNotification(
       Map<String, String> requestData, c.VisitorLog visitorLogData) async {
     try {
+      await remoteDataSource.checkIn(visitorLogData);
+
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
@@ -1054,7 +1056,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   void _handleDioError(DioError e, c.VisitorLog visitorLogData) async {
     if (e.response?.statusCode == 400) {
-
       await _notificationSent(context, visitorLogData);
     } else {
       log("Error during FCM notification: ${e.response?.statusCode} - ${e.response?.data}");
@@ -1315,7 +1316,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Future<void> _notificationSent(BuildContext context, c.VisitorLog data) async {
+  Future<void> _notificationSent(
+      BuildContext context, c.VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1353,7 +1355,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.1),
                           ),
                         ),
                         Lottie.asset(
@@ -1367,7 +1370,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     ),
                     const SizedBox(height: 24),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -1405,95 +1409,105 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     const SizedBox(height: 24),
                     _isLoading
                         ? Column(
-                      children: [
-                        SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Redirecting...",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    )
+                            children: [
+                              SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Redirecting...",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          )
                         : Container(
-                      width: double.infinity,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        gradient: !_isButtonDisabled
-                            ? LinearGradient(
-                          colors: [
-                            Theme.of(context).primaryColor,
-                            Theme.of(context).primaryColor.withOpacity(0.8),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                            : null,
-                        color: _isButtonDisabled ? Colors.grey[300] : null,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: !_isButtonDisabled
-                            ? [
-                          BoxShadow(
-                            color: Theme.of(context).primaryColor.withOpacity(0.3),
-                            spreadRadius: 0,
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                            : null,
-                      ),
-                      child: MaterialButton(
-                        onPressed: _isButtonDisabled
-                            ? null
-                            : () async {
-                          setState(() {
-                            _isLoading = true;
-                            _isButtonDisabled = true;
-                          });
+                            width: double.infinity,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              gradient: !_isButtonDisabled
+                                  ? LinearGradient(
+                                      colors: [
+                                        Theme.of(context).primaryColor,
+                                        Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.8),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : null,
+                              color:
+                                  _isButtonDisabled ? Colors.grey[300] : null,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: !_isButtonDisabled
+                                  ? [
+                                      BoxShadow(
+                                        color: Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.3),
+                                        spreadRadius: 0,
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: MaterialButton(
+                              onPressed: _isButtonDisabled
+                                  ? null
+                                  : () async {
+                                      setState(() {
+                                        _isLoading = true;
+                                        _isButtonDisabled = true;
+                                      });
 
-                          await Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const GateDashboardView(),
-                            ),
-                          );
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.check_circle_outline,
-                              color: _isButtonDisabled ? Colors.grey[500] : Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Check Approval Status",
-                              style: TextStyle(
-                                color: _isButtonDisabled ? Colors.grey[500] : Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                      await Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const GateDashboardView(),
+                                        ),
+                                      );
+                                    },
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_outline,
+                                    color: _isButtonDisabled
+                                        ? Colors.grey[500]
+                                        : Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Check Approval Status",
+                                    style: TextStyle(
+                                      color: _isButtonDisabled
+                                          ? Colors.grey[500]
+                                          : Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
                   ],
                 ),
               ),

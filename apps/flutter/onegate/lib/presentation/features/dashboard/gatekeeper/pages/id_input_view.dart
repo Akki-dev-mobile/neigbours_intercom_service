@@ -13,6 +13,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
@@ -110,7 +111,7 @@ class _IdInputViewState extends State<IdInputView> {
     mobileController.text = '';
   }
 
-  List<PurposeCategory> globalSelectedPurposes = [];
+  List<PurposeCategory1> globalSelectedPurposes = [];
 
   Future<void> loadPurposes() async {
     try {
@@ -163,11 +164,7 @@ class _IdInputViewState extends State<IdInputView> {
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 context: context,
                 builder: (context) => ImageGridBottomSheet(
-                  // Filter purposes to only include "GUEST"
                   purposeCategories: state.purposeCategories!
-                      .where((purpose) =>
-                          purpose.purpose_category_name.toUpperCase() ==
-                          "GUEST")
                       .toList(),
                   gatekeeperDashboardBloc: gateDashboardBloc,
                 ),
@@ -205,7 +202,7 @@ class _IdInputViewState extends State<IdInputView> {
                 // Retrieve and decode the saved purpose
                 final prefs = await SharedPreferences.getInstance();
                 final jsonString = prefs.getString("dialoguePurpose");
-                PurposeCategory? selectedPurpose;
+                PurposeCategory1? selectedPurpose;
                 if (jsonString != null) {
                   final json = jsonDecode(jsonString);
                   selectedPurpose = PurposeCategoryMapper.fromJson(json);
@@ -347,7 +344,7 @@ class _IdInputViewState extends State<IdInputView> {
 }
 
 class ImageGridBottomSheet extends StatefulWidget {
-  final List<PurposeCategory> purposeCategories;
+  final List<PurposeCategory1> purposeCategories;
   final GatekeeperDashboardBloc gatekeeperDashboardBloc;
   VisitorMapper? searchedVisitor;
 
@@ -370,7 +367,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
     _loadSelectedPurposesToGlobal();
   }
 
-  List<PurposeCategory> globalSelectedPurposes = [];
+  List<PurposeCategory1> globalSelectedPurposes = [];
 
   Future<void> _loadSelectedPurposesToGlobal() async {
     try {
@@ -382,10 +379,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
         setState(() {
           globalSelectedPurposes = jsonList
               .map((json) => PurposeCategoryMapper.fromJson(json))
-              .toList()
-              .where((purpose) =>
-                  purpose.purpose_category_name.toUpperCase() == "GUEST")
               .toList();
+
         });
         print("Global selected purposes loaded: $globalSelectedPurposes");
       } else {
@@ -482,7 +477,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                         height: 60,
                                         width: 60,
                                         fit: BoxFit.cover,
-                                        imageUrl: purpose.purpose_img,
+                                        imageUrl: purpose.image??"",
                                         placeholder: (context, url) =>
                                             const CircularProgressIndicator(),
                                         errorWidget: (context, url, error) =>
@@ -498,7 +493,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Text(
-                                        purpose.purpose_category_name,
+                                        purpose.categoryName,
                                         style: TextStyle(
                                           color: selectedImageIndex == index
                                               ? const Color(0xffC08261)
@@ -576,7 +571,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                         height: 60,
                                         width: 60,
                                         fit: BoxFit.cover,
-                                        imageUrl: purpose.purpose_img,
+                                        imageUrl: purpose.image ??"",
                                         placeholder: (context, url) =>
                                             const CircularProgressIndicator(),
                                         errorWidget: (context, url, error) =>
@@ -592,7 +587,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Text(
-                                        purpose.purpose_category_name,
+                                        purpose.categoryName,
                                         style: TextStyle(
                                           color: selectedImageIndex == index
                                               ? const Color(0xffC08261)

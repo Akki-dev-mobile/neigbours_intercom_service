@@ -9,7 +9,7 @@ class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
   final String? guestName;
   final String guestComingFrom;
   final int guestCount;
-  final PurposeCategory purposeCategory;
+  final PurposeCategory1 purposeCategory;
   final String mobile;
 
   VIEGuestFormSubmitButtonPressedEvent({
@@ -24,7 +24,7 @@ class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
 
 class VIECameraButtonPressedEvent extends VisitorInEntryEvent {
   final Visitor? visitor;
-  final PurposeCategory? purposeCategory;
+  final PurposeCategory1? purposeCategory;
   final File? imageFile;
   final String? operation;
 

@@ -44,7 +44,7 @@ class MissedApprovalsScreen extends StatelessWidget {
           }
 
           final missedApprovals =
-              snapshot.data!.map((data) => VisitorInfo.fromJson(data)).toList();
+          snapshot.data!.map((data) => VisitorInfo.fromJson(data)).toList();
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -189,7 +189,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
         'visitor_id': widget.visitorInfo.visitorId,
         "member_id": "29",
         'purpose_category':
-            widget.visitorInfo.visitorPurposeCategoryId?.toString() ?? "",
+        1.toString(),
       };
 
       final response = await _dio.post(
@@ -223,195 +223,248 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Card(
-        elevation: 2,
+        elevation: 3,
+        shadowColor: Theme.of(context).shadowColor.withOpacity(0.3),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            width: 1,
+          ),
         ),
         child: Column(
           children: [
-            ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: CircleAvatar(
-                radius: 25,
-                backgroundImage: widget.visitorInfo.visitorImage.isNotEmpty
-                    ? NetworkImage(widget.visitorInfo.visitorImage)
-                    : null,
-                backgroundColor:
-                    Theme.of(context).primaryColor.withOpacity(0.1),
-                child: widget.visitorInfo.visitorImage.isEmpty
-                    ? Text(
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                leading: Hero(
+                  tag: 'visitor_${widget.visitorInfo.visitorId}',
+                  child: CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.15),
+                    child: CircleAvatar(
+                      radius: 27,
+                      backgroundImage: widget.visitorInfo.visitorImage.isNotEmpty
+                          ? NetworkImage(widget.visitorInfo.visitorImage)
+                          : null,
+                      backgroundColor: Colors.white,
+                      child: widget.visitorInfo.visitorImage.isEmpty
+                          ? Text(
                         widget.visitorInfo.visitorName.isNotEmpty
                             ? widget.visitorInfo.visitorName[0].toUpperCase()
                             : 'G',
                         style: TextStyle(
                           color: Theme.of(context).primaryColor,
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                          fontSize: 22,
                         ),
                       )
-                    : null,
-              ),
-              title: Text(
-                widget.visitorInfo.visitorName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                          : null,
+                    ),
+                  ),
+                ),
+                title: Text(
+                  widget.visitorInfo.visitorName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(context).primaryColor.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Symbols.apartment,
+                                color: Theme.of(context).primaryColor,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Guest',
+                                style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
+                      Icons.person_outline,
+                      'Member: ${widget.visitorInfo.memberInfo.name}',
+                      Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                    ),
+                    _buildInfoRow(
+                      Icons.location_on_outlined,
+                      'Gate: ${widget.visitorInfo.inGate}',
+                      Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black54,
+                    ),
+                    _buildInfoRow(
+                      Icons.access_time,
+                      'Time: ${DateFormat('hh:mm a').format(DateTime.parse(widget.visitorInfo.logCreatedAt))}',
+                      Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black54,
+                    ),
+                  ],
                 ),
               ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Symbols.apartment,
-                        color: Theme.of(context).primaryColor,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Guest',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _buildInfoRow(Icons.person_outline,
-                      'Member: ${widget.visitorInfo.memberInfo.name}'),
-                  _buildInfoRow(Icons.location_on_outlined,
-                      'Gate: ${widget.visitorInfo.inGate}'),
-                  _buildInfoRow(
-                    Icons.access_time,
-                    'Time: ${DateFormat('hh:mm a').format(DateTime.parse(widget.visitorInfo.logCreatedAt))}',
-                  ),
-                ],
-              ),
             ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _timerManager
-                        .getIsRetryEnabled(widget.visitorInfo.visitorLogId),
-                    builder: (context, isRetryEnabled, _) {
-                      return ElevatedButton.icon(
-                        onPressed:
-                            // isRetryEnabled ?
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _timerManager.getIsRetryEnabled(widget.visitorInfo.visitorLogId),
+                      builder: (context, isRetryEnabled, _) {
+                        final buttonColor = isRetryEnabled
+                            ? Color(0xFF2563EB) // Bright blue for enabled state
+                            : Color(0xFFE2E8F0); // Light gray for disabled state
+                        final textColor = isRetryEnabled
+                            ? Colors.white
+                            : Color(0xFF64748B); // Slate gray for disabled text
 
-                            _sendFcmNotification,
-                        // : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isRetryEnabled
-                              ? Theme.of(context).primaryColor
-                              : Colors.grey.shade300,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
+                        return Container(
+                          decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
+                            boxShadow: isRetryEnabled ? [
+                              BoxShadow(
+                                color: buttonColor.withOpacity(0.25),
+                                offset: Offset(0, 2),
+                                blurRadius: 6,
+                              ),
+                            ] : [],
                           ),
-                        ),
-                        icon: Icon(
-                          isRetryEnabled
-                              ? Icons.refresh_rounded
-                              : Icons.hourglass_empty_rounded,
-                          size: 20,
-                        ),
-                        label: Text(
-                          isRetryEnabled ? 'Retry Now' : 'Processing',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  ValueListenableBuilder<int>(
-                    valueListenable: _timerManager
-                        .getSecondsRemaining(widget.visitorInfo.visitorLogId),
-                    builder: (context, secondsRemaining, _) {
-                      return ValueListenableBuilder<bool>(
-                        valueListenable: _timerManager
-                            .getIsRetryEnabled(widget.visitorInfo.visitorLogId),
-                        builder: (context, isRetryEnabled, _) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isRetryEnabled
-                                  ? Colors.red.shade50
-                                  : Theme.of(context)
-                                      .primaryColor
-                                      .withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isRetryEnabled
-                                    ? Colors.red.shade300
-                                    : Theme.of(context)
-                                        .primaryColor
-                                        .withOpacity(0.3),
-                                width: 1,
+                          child: ElevatedButton.icon(
+                            onPressed: _sendFcmNotification,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: buttonColor,
+                              foregroundColor: textColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isRetryEnabled
-                                      ? Icons.timer_off_outlined
-                                      : Icons.timer_outlined,
-                                  size: 20,
-                                  color: isRetryEnabled
-                                      ? Colors.red
-                                      : Theme.of(context).primaryColor,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  isRetryEnabled
-                                      ? 'Expired'
-                                      : '${(secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(secondsRemaining % 60).toString().padLeft(2, '0')}',
-                                  style: TextStyle(
-                                    color: isRetryEnabled
-                                        ? Colors.red
-                                        : Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
+                            icon: Icon(
+                              isRetryEnabled
+                                  ? Icons.refresh_rounded
+                                  : Icons.hourglass_empty_rounded,
+                              size: 20,
                             ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
+                            label: Text(
+                              isRetryEnabled ? 'Retry Now' : 'Processing',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    ValueListenableBuilder<int>(
+                      valueListenable: _timerManager.getSecondsRemaining(widget.visitorInfo.visitorLogId),
+                      builder: (context, secondsRemaining, _) {
+                        return ValueListenableBuilder<bool>(
+                          valueListenable: _timerManager.getIsRetryEnabled(widget.visitorInfo.visitorLogId),
+                          builder: (context, isRetryEnabled, _) {
+                            final timerColor = isRetryEnabled
+                                ? Color(0xFFDC2626) // Red for expired state
+                                : Color(0xFF2563EB); // Blue for active state
+
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: timerColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: timerColor.withOpacity(0.2),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: timerColor.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isRetryEnabled
+                                        ? Icons.timer_off_outlined
+                                        : Icons.timer_outlined,
+                                    size: 20,
+                                    color: timerColor,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    isRetryEnabled
+                                        ? 'Expired'
+                                        : '${(secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(secondsRemaining % 60).toString().padLeft(2, '0')}',
+                                    style: TextStyle(
+                                      color: timerColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -420,22 +473,23 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text) {
+  Widget _buildInfoRow(IconData icon, String text, Color color) {
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(top: 6),
       child: Row(
         children: [
           Icon(
             icon,
-            size: 16,
-            color: Colors.grey[600],
+            size: 18,
+            color: color,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           Text(
             text,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: color,
               fontSize: 14,
+              height: 1.3,
             ),
           ),
         ],
@@ -489,12 +543,12 @@ class VisitorInfo {
         name: json['member_name']?.toString() ?? '',
         mobileNumber: json['memb_mobile_number']?.toString(),
         email: json['memb_email']?.toString(),
-        memberId: json['member_id'],
+        memberId: _parseToInt(json['member_id'] ?? "") ?? 0,
         unitId: _parseToInt(json['unit_id'] ?? "") ?? 0,
       ),
       visitorComingFrom: json['visitor_coming_from']?.toString(),
       visitorPurposeCategoryId:
-          _parseToInt(json['visitor_purpose_category_id']),
+      _parseToInt(json['visitor_purpose_category_id']),
     );
   }
 
@@ -518,8 +572,8 @@ class MemberInfo {
 
   MemberInfo(
       {required this.name,
-      this.mobileNumber,
-      this.email,
-      this.unitId,
-      this.memberId});
+        this.mobileNumber,
+        this.email,
+        this.unitId,
+        this.memberId});
 }

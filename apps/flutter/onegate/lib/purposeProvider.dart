@@ -6,12 +6,14 @@ import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'domain/entities/visitor/purpose/purpose.dart';
+
 class PurposeProvider extends ChangeNotifier {
-  List<PurposeCategory>? _purposes = [];
+  List<PurposeCategory1>? _purposes = [];
   bool _isLoading = false;
   bool _isPurposeToggleOn = false;
 
-  List<PurposeCategory>? get purposes => _purposes;
+  List<PurposeCategory1>? get purposes => _purposes;
   bool get isLoading => _isLoading;
   bool get isPurposeToggleOn => _isPurposeToggleOn;
 
@@ -41,7 +43,7 @@ class PurposeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveSelectedPurposes(List<PurposeCategory> purposes) async {
+  Future<void> saveSelectedPurposes(List<PurposeCategory1> purposes) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonString = jsonEncode(purposes.map((p) => p.toJson()).toList());

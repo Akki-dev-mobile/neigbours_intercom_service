@@ -32,7 +32,7 @@ class GDOnMobileNumberEnteredEvent extends GatekeeperDashboardEvent {
 class InputPutViewNextClickedEvent extends GatekeeperDashboardEvent {}
 
 class PurposeNextButtonClickedEvent extends GatekeeperDashboardEvent {
-  final PurposeCategory purpose;
+  final PurposeCategory1 purpose;
   final Visitor? searchedVisitor;
   final String mobile;
 

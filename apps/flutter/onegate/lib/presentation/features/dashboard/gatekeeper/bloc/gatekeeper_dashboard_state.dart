@@ -45,7 +45,7 @@ class GatekeeperSearchVisitorState extends GatekeeperDashboardState {}
 class InputPutViewNextClickedState extends GatekeeperDashboardActionState {}
 
 class OpenPurposeDialogState extends GatekeeperDashboardActionState {
-  final List<PurposeCategory>? purposeCategories;
+  final List<PurposeCategory1>? purposeCategories;
 
   OpenPurposeDialogState({required this.purposeCategories});
 }
@@ -58,7 +58,7 @@ class SaveSearchedVisitorState extends GatekeeperDashboardActionState {
 
 class NavigateToVisitorDetailsState extends GatekeeperDashboardActionState {
   final Visitor? visitor;
-  final PurposeCategory purpose;
+  final PurposeCategory1 purpose;
   final String mobile;
 
   NavigateToVisitorDetailsState(this.purpose, this.mobile,

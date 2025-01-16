@@ -17,14 +17,14 @@ abstract class VisitorInEntryActionState extends VisitorInEntryState {}
 
 class VIENavigateToUnitSelectionState extends VisitorInEntryActionState {
   final Visitor visitor;
-  final PurposeCategory purposeCategory;
+  final PurposeCategory1 purposeCategory;
 
   VIENavigateToUnitSelectionState(this.visitor, this.purposeCategory);
 }
 
 class VIENavigateToCameraState extends VisitorInEntryActionState {
   final Visitor visitor;
-  final PurposeCategory purposeCategory;
+  final PurposeCategory1 purposeCategory;
   final String operation;
 
   VIENavigateToCameraState(this.visitor, this.purposeCategory, this.operation);

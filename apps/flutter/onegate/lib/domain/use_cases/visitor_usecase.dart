@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
 import 'package:onegate_client/onegate_client.dart';
@@ -13,7 +14,7 @@ class VisitorUsecase {
     return await _repository.searchVisitor(mobileNUmber);
   }
 
-  Future<List<PurposeCategory>?>? fetchPurposeCategory() async {
+  Future<List<PurposeCategory1>?>? fetchPurposeCategory() async {
     return await _repository.fetchPurposeCategory();
   }
 
