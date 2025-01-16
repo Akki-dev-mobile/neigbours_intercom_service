@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -14,10 +13,8 @@ import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/common/environment.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
-import 'package:http/http.dart' as http;
 
+import 'package:http/http.dart' as http;
 
 var client = Client('https://onegate.cubeone.in/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
@@ -31,7 +28,6 @@ final keycloakConfig = KeycloakConfig(
 );
 final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
 
-
 /// Remote Data Source for managing API calls
 class RemoteDataSource {
   final Dio? _dio1;
@@ -39,10 +35,10 @@ class RemoteDataSource {
   final Dio? _dio3;
 
   RemoteDataSource(
-      this._dio1,
-      this._dio2,
-      this._dio3,
-      );
+    this._dio1,
+    this._dio2,
+    this._dio3,
+  );
 
   final GateStorage gateStorage = GateStorage();
 
@@ -88,22 +84,38 @@ class RemoteDataSource {
     }
   }
 
-  /// Fetch gates
   Future<List<dynamic>> fetchGates() async {
+    final String? companyId = await gateStorage.getSocietyId();
+    if (companyId == null) throw Exception('Company ID not found.');
+
     try {
-      final String? companyId = await gateStorage.getSocietyId();
-      if (companyId == null) throw Exception('Company ID not found.');
-      final combinedHeaders = await Environment.getHeaders();
-      final response = await _dio2?.get(
-        ApiUrls.gates,
-        options: Options(headers: combinedHeaders),
-        queryParameters: {'company_id': companyId},
+      String apiUrl = ApiUrls.gates;
+
+      final Map<String, String> queryParams = {
+        "company_id": companyId.toString(),
+      };
+
+      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
+      final headers = await Environment.getHeaders();
+      // Make the POST request
+      final response = await http.get(
+        uri,
+        headers: headers,
       );
 
-      final responseData = response?.data?['data'];
-      if (responseData is List) {
-        return responseData;
-      } else if (responseData is Map && responseData.containsKey('data')) {
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Failed to fetch gates: ${response.statusCode} - ${response.body}');
+      }
+
+      // Decode the JSON response
+      final responseData = jsonDecode(response.body);
+
+      if (responseData == null) {
+        throw Exception('Response data is null');
+      }
+
+      if (responseData is Map && responseData.containsKey('data')) {
         final data = responseData['data'];
         if (data is List) {
           return data;
@@ -298,9 +310,10 @@ class RemoteDataSource {
             id: item['visitor_log_id'],
             visitor_id: item['visitor_id'] ?? 0,
             visitor: visitor,
-            visitor_purpose_category_id: item['visitor_purpose_category_id'] ?? 0,
+            visitor_purpose_category_id:
+                item['visitor_purpose_category_id'] ?? 0,
             visitor_purpose_sub_category_id:
-            item['visitor_purpose_sub_category_id'],
+                item['visitor_purpose_sub_category_id'],
             visitor_building_assignment: item['visitor_building_assignment'],
             visitor_count: item['visitor_count'] ?? 0,
             visitor_check_in: item['visitor_check_in'] != null
@@ -377,23 +390,23 @@ class RemoteDataSource {
 
             // Map `unit_details` to `BuildingAssignment`
             final List<BuildingAssignment>? buildingAssignments =
-            (item['unit_details'] as List<dynamic>?)
-                ?.map((unit) => BuildingAssignment(
-              id: null, // Optional
-              visitor_id: item['visitor_id'] as int?,
-              visitor_log_id: item['visitor_log_id'] as int?,
-              company_id: item['company_id'] as int? ?? 0,
-              building_id: 0,
-              unit_id: [unit['building_unit'] as String? ?? ""],
-            ))
-                .toList();
+                (item['unit_details'] as List<dynamic>?)
+                    ?.map((unit) => BuildingAssignment(
+                          id: null, // Optional
+                          visitor_id: item['visitor_id'] as int?,
+                          visitor_log_id: item['visitor_log_id'] as int?,
+                          company_id: item['company_id'] as int? ?? 0,
+                          building_id: 0,
+                          unit_id: [unit['building_unit'] as String? ?? ""],
+                        ))
+                    .toList();
 
             return VisitorLog(
               id: item['visitor_log_id'] as int?,
               visitor_id: item['visitor_id'] as int? ?? 0,
               visitor: visitor,
               visitor_purpose_category_id:
-              item['visitor_purpose_category_id'] as int? ?? 0,
+                  item['visitor_purpose_category_id'] as int? ?? 0,
               visitor_purpose_sub_category_id: null,
               visitor_building_assignment: buildingAssignments,
               visitor_count: item['visitor_count'] as int? ?? 0,
@@ -421,7 +434,6 @@ class RemoteDataSource {
       rethrow;
     }
   }
-
 
   /// Export visitor logs
   Future<void> exportLogs(Map<String, dynamic> visitorData) async {
@@ -471,12 +483,13 @@ class RemoteDataSource {
       );
     }
   }
+
   /// Fetch check-in logs
   Future<List<VisitorLog>> fetchCheckInLogs(
       int companyId, String dateTime) async {
     try {
       // Define the API endpoint
-       String apiUrl = ApiUrls.visitorGetLog;
+      String apiUrl = ApiUrls.visitorGetLog;
 
       bool isCheckedOut = false;
 
@@ -513,24 +526,24 @@ class RemoteDataSource {
               visitor_image: item['visitor_image'] as String? ?? "",
             );
             final List<BuildingAssignment>? buildingAssignments =
-            (item['unit_details'] as List<dynamic>?)
-                ?.map((unit) => BuildingAssignment(
-              id: null,
-              visitor_id: item['visitor_id'] as int?,
-              visitor_log_id: item['visitor_log_id'] as int?,
-              company_id: item['company_id'] as int? ?? 0,
-              building_id: 0,
-              unit_id: [unit['building_unit'] as String? ?? ""],
-            ))
-                .toList();
+                (item['unit_details'] as List<dynamic>?)
+                    ?.map((unit) => BuildingAssignment(
+                          id: null,
+                          visitor_id: item['visitor_id'] as int?,
+                          visitor_log_id: item['visitor_log_id'] as int?,
+                          company_id: item['company_id'] as int? ?? 0,
+                          building_id: 0,
+                          unit_id: [unit['building_unit'] as String? ?? ""],
+                        ))
+                    .toList();
             final visitorLog = VisitorLog(
               id: item['visitor_log_id']
-              as int?, // Map `visitor_log_id` to `id`
+                  as int?, // Map `visitor_log_id` to `id`
               visitor_id:
-              0, // Set to 0 since `visitor_id` isn't in the shared structure
+                  0, // Set to 0 since `visitor_id` isn't in the shared structure
               visitor: visitor, // Use the constructed `Visitor` object
               visitor_purpose_category_id:
-              0, // Default value, not in shared structure
+                  0, // Default value, not in shared structure
               visitor_purpose_sub_category_id: null, // Nullable
               visitor_building_assignment: buildingAssignments,
               visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
@@ -638,6 +651,7 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
   /// Fetch buildings for a company
   Future<List<Map<String, dynamic>>> getBuilding(int companyId) async {
     try {
@@ -668,6 +682,7 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
   /// Fetch list of buildings for a company
   Future<List<dynamic>> getBuildingsList() async {
     try {
@@ -687,6 +702,7 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
   /// Send OTP to a mobile number
   Future<String?> sendOTP(String mobileNumber) async {
     try {
@@ -707,9 +723,12 @@ class RemoteDataSource {
       log('Error sending OTP: $e');
       rethrow;
     }
-  }  String _formatDateTime(DateTime dateTime) {
+  }
+
+  String _formatDateTime(DateTime dateTime) {
     return DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime);
   }
+
   /// Verify OTP for a mobile number
   Future<String?> verifyOTP(String mobileNumber, String otp) async {
     try {
@@ -731,11 +750,13 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
   /// Check out a visitor
   Future<bool> checkOut(VisitorLog visitorLog) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
 
       // Prepare the request payload
       final data = {
@@ -768,6 +789,7 @@ class RemoteDataSource {
       return false;
     }
   }
+
   /// Fetch check-out logs
   Future<List<VisitorLog>> fetchCheckOutLogs(
       int companyId, String dateTime) async {
@@ -821,25 +843,25 @@ class RemoteDataSource {
             );
 
             final List<BuildingAssignment>? buildingAssignments =
-            (item['unit_details'] as List<dynamic>?)
-                ?.map((unit) => BuildingAssignment(
-              id: null,
-              visitor_id: item['visitor_id'] as int?,
-              visitor_log_id: item['visitor_log_id'] as int?,
-              company_id: item['company_id'] as int? ?? 0,
-              building_id: 0,
-              unit_id: [unit['building_unit'] as String? ?? ""],
-            ))
-                .toList();
+                (item['unit_details'] as List<dynamic>?)
+                    ?.map((unit) => BuildingAssignment(
+                          id: null,
+                          visitor_id: item['visitor_id'] as int?,
+                          visitor_log_id: item['visitor_log_id'] as int?,
+                          company_id: item['company_id'] as int? ?? 0,
+                          building_id: 0,
+                          unit_id: [unit['building_unit'] as String? ?? ""],
+                        ))
+                    .toList();
             // Create the `VisitorLog` object
             final visitorLog = VisitorLog(
               id: item['visitor_log_id']
-              as int?, // Map `visitor_log_id` to `id`
+                  as int?, // Map `visitor_log_id` to `id`
               visitor_id:
-              0, // Set to 0 since `visitor_id` isn't in the shared structure
+                  0, // Set to 0 since `visitor_id` isn't in the shared structure
               visitor: visitor, // Use the constructed `Visitor` object
               visitor_purpose_category_id:
-              0, // Default value, not in shared structure
+                  0, // Default value, not in shared structure
               visitor_purpose_sub_category_id: null, // Nullable
               visitor_building_assignment: buildingAssignments,
               visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
@@ -877,13 +899,14 @@ class RemoteDataSource {
   /// Fetch approvals
   Future<List<dynamic>> fetchApprovals() async {
     try {
-
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
 
       final companyDetails = await gateStorage.getSocietyId();
       final resolvedCompanyId = companyDetails;
-      final String url = '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
+      final String url =
+          '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
 
       final response = await _dio2?.get(url);
       if (response?.statusCode == 200) {
@@ -930,7 +953,8 @@ class RemoteDataSource {
   }
 
   /// Upload a file
-  Future<String?> uploadFile(File file, String userMobile, int companyId) async {
+  Future<String?> uploadFile(
+      File file, String userMobile, int companyId) async {
     try {
       log('File path: ${file.path}');
 
@@ -964,7 +988,6 @@ class RemoteDataSource {
     return null;
   }
 
-
   Future<List<dynamic>> getMembersList() async {
     try {
       final String? companyId = await gateStorage.getSocietyId();
@@ -977,7 +1000,7 @@ class RemoteDataSource {
       };
       final apiUrl = ApiUrls.memberList;
       final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
-log(uri.toString());
+      log(uri.toString());
       final response = await http.get(
         uri,
         // headers: headers,
@@ -1037,6 +1060,7 @@ log(uri.toString());
       rethrow;
     }
   }
+
   /// Update visitor details
   Future<bool> updateVisitor(Visitor visitor) async {
     try {
@@ -1044,7 +1068,8 @@ log(uri.toString());
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final searchedVisitorId = prefs.getString('search_visitor_id');
       if (searchedVisitorId == null) {
-        throw Exception('No visitor ID found. Please search for a visitor first.');
+        throw Exception(
+            'No visitor ID found. Please search for a visitor first.');
       }
 
       // Prepare the API URL

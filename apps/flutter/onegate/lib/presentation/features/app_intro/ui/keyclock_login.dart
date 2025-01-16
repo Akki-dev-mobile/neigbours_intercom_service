@@ -93,7 +93,7 @@ class LoginService {
   List<String> getUserRoles(Map society) {
     final List<dynamic> userRoles = society['user_roles'] ?? [];
     List<String> roles =
-        userRoles.map((role) => _mapRole(role.toString())).toList();
+    userRoles.map((role) => _mapRole(role.toString())).toList();
 
     // If user is admin, add both admin and gatekeeper roles
     if (roles.contains('admin')) {
@@ -147,7 +147,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     super.initState();
     _loginService = LoginService(
       keycloakWrapper:
-          KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
+      KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
       gateStorage: GateStorage(),
       remoteDataSource: RemoteDataSource(
         DioSingleton.instance1,
@@ -545,8 +545,8 @@ class LoginContent extends StatelessWidget {
                 child: Text(
                   'Sign Up',
                   style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                        fontSize: 20,
-                      ),
+                    fontSize: 20,
+                  ),
                 ),
               ),
             ),
@@ -805,19 +805,19 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                     title: Text(
                       gateName,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurface,
-                          ),
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                     trailing: isSelected
                         ? Icon(
-                            Icons.check_circle,
-                            color: Theme.of(context).colorScheme.primary,
-                          )
+                      Icons.check_circle,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
                         : const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () async {
                       setState(() {
@@ -826,7 +826,7 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
 
                       try {
                         final gateProvider =
-                            Provider.of<GateProvider>(context, listen: false);
+                        Provider.of<GateProvider>(context, listen: false);
                         await gateProvider.selectGate(index);
                         widget.onGateSelected(Map<String, dynamic>.from(gate));
                       } catch (e) {
