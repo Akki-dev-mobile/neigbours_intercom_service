@@ -100,7 +100,7 @@ class _AddStaffState extends State<AddStaff> {
     } catch (e) {
       debugPrint('Error fetching categories: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load categories.')),
+        const SnackBar(content: Text('Failed to load categories.')),
       );
     }
   }
@@ -597,32 +597,7 @@ class _AddStaffState extends State<AddStaff> {
                     ),
                   ),
                 ),
-                // categories.isEmpty
-                //     ? const CircularProgressIndicator()
-                //     : DropdownButton<String>(
-                //         value: _selectedCategory,
-                //         isExpanded: true,
-                //         underline: const SizedBox(),
-                //         items: categories.entries.map((entry) {
-                //           return DropdownMenuItem<String>(
-                //             value: entry.key,
-                //             child: Text(entry.value),
-                //           );
-                //         }).toList(),
-                //         onChanged: (String? newValue) {
-                //           print('New value: $newValue');
-                //           print('New Kay: ${categories[newValue]}');
-                //           if (newValue != null) {
-                //             setState(() {
-                //               _selectedCategory = newValue;
-                //               _selectedCategoryValue = categories[newValue]!;
-                //               print(
-                //                   'Selected category: $_selectedCategoryValue');
-                //               print('Selected category: $_selectedCategory');
-                //             });
-                //           }
-                //         },
-                //       ),
+
                 CustomDropdown(
                   title: "Category",
                   hintText: "Select Category",
@@ -667,35 +642,65 @@ class _AddStaffState extends State<AddStaff> {
                 //     },
                 //   ),
                 // ),
-                Divider(
+
+                CustomDropdown(
+                  title: "Qualification",
+                  hintText: "Select Qualification",
+                  items: qualifications,
+                  selectedItem: _selectedQualification,
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedQualification = newValue;
+                      });
+                    }
+                  },
+                ),
+
+                const Divider(
                   color: Colors.grey,
                   thickness: 1,
                 ),
-                CustomForm.textField(
-                  "Enter ID Proof",
-                  isReadOnly: true,
-                  titleColor: Colors.black,
-                  hintColor: Colors.black,
+                // CustomForm.textField(
+                //   "Enter ID Proof",
+                //   isReadOnly: true,
+                //   titleColor: Colors.black,
+                //   hintColor: Colors.black,
+                //   hintText: "Select ID Proof",
+                //   hasInitialValue: _selectedIdProof,
+                //   suffixIcon: DropdownButton<String>(
+                //     underline: SizedBox(),
+                //     icon: Icon(Icons.arrow_drop_down),
+                //     items: idProofs.map((idProof) {
+                //       return DropdownMenuItem<String>(
+                //         value: idProof,
+                //         child: Text(idProof),
+                //       );
+                //     }).toList(),
+                //     onChanged: (String? newValue) {
+                //       if (newValue != null) {
+                //         setState(() {
+                //           _selectedIdProof = newValue;
+                //         });
+                //       }
+                //     },
+                //   ),
+                // ),
+
+                CustomDropdown(
+                  title: "ID Proof",
                   hintText: "Select ID Proof",
-                  hasInitialValue: _selectedIdProof,
-                  suffixIcon: DropdownButton<String>(
-                    underline: SizedBox(),
-                    icon: Icon(Icons.arrow_drop_down),
-                    items: idProofs.map((idProof) {
-                      return DropdownMenuItem<String>(
-                        value: idProof,
-                        child: Text(idProof),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _selectedIdProof = newValue;
-                        });
-                      }
-                    },
-                  ),
+                  items: idProofs,
+                  selectedItem: _selectedIdProof,
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedIdProof = newValue;
+                      });
+                    }
+                  },
                 ),
+
                 CustomForm.textField(
                   _selectedIdProof,
                   titleColor: Colors.black,
@@ -709,9 +714,10 @@ class _AddStaffState extends State<AddStaff> {
                     return null;
                   },
                   suffixIcon: IconButton(
-                    icon: Icon(Icons.camera_alt),
+                    icon: const Icon(Icons.camera_alt),
                     onPressed: () => _openCamera(isIdProof: true),
                   ),
+                  counterText: "Upload ID Proof",
                 ),
                 CustomForm.textField("Enter Address",
                     textController: addressController,
