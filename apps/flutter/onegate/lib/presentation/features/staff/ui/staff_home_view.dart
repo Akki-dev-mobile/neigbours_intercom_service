@@ -1,10 +1,14 @@
 import 'dart:developer';
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/presentation/features/staff/ui/addStaff.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
+
+import '../../../../dio_setup.dart';
 import '../api/staff_api.dart';
-import 'package:common_widgets/common_widgets.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({Key? key}) : super(key: key);
@@ -16,6 +20,11 @@ class StaffScreen extends StatefulWidget {
 class _StaffScreenState extends State<StaffScreen> {
   final StaffApi _staffApi = StaffApi();
   late Future<List<dynamic>> _staffFuture = Future.value([]);
+  RemoteDataSource _remoteDataSource = RemoteDataSource(
+    DioSingleton.instance1,
+    DioSingleton.instance2,
+    DioSingleton.instance3,
+  );
 
   GateStorage gateStorage = GateStorage();
 
@@ -35,7 +44,7 @@ class _StaffScreenState extends State<StaffScreen> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-      pageTitle: 'Staff',
+      pageTitle: "Staff",
       pageBody: FutureBuilder<List<dynamic>>(
         future: _staffFuture,
         builder: (context, snapshot) {
@@ -56,6 +65,17 @@ class _StaffScreenState extends State<StaffScreen> {
             return const Center(child: Text('No Data Available'));
           }
         },
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => AddStaff(),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }

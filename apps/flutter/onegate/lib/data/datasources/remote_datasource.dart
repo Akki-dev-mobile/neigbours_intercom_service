@@ -1034,6 +1034,132 @@ class RemoteDataSource {
   //   }
   // }
 
+  Future<Map<String, dynamic>?> uploadStaffImages(
+      File file, int companyId) async {
+    final String uploadUrl =
+        'https://societybackend.cubeone.in/api/admin/file-upload?company_id=$companyId';
+
+    try {
+      FormData formData = FormData.fromMap({
+        'files[]': await MultipartFile.fromFile(file.path,
+            filename: file.path.split('/').last),
+      });
+
+      Dio dio = Dio();
+
+      Response response = await dio.post(
+        uploadUrl,
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print("images${response.data}");
+        return response.data as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to upload image: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
+
+  Future<dynamic> fetchStaffCategory() async {
+    final String? companyId = await gateStorage.getSocietyId();
+    if (companyId == null) throw Exception('Company ID not found.');
+
+    final String url =
+        'https://societybackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
+
+    try {
+      final response = await _dio1?.get(url);
+
+      if (response?.statusCode == 200) {
+        log("Categories${response!.data.toString()}");
+        return response?.data;
+      } else {
+        throw Exception(
+            'Failed to fetch staff category: ${response?.statusCode}');
+      }
+    } catch (e) {
+      log('Error fetching staff category: $e');
+      throw Exception('Failed to fetch staff category: $e');
+    }
+  }
+
+  Future<dynamic> addStaff(Map<String, dynamic> staffData) async {
+    final String? companyId = await gateStorage.getSocietyId();
+    if (companyId == null || companyId.isEmpty) {
+      throw Exception("Company ID is missing. Cannot add staff.");
+    }
+
+    final String addStaffUrl =
+        'https://societybackend.cubeone.in/api/admin/staffs/addStaff?company_id=$companyId';
+
+    try {
+      log('Incoming staffData: $staffData');
+
+      final Map<String, dynamic> formMap = {
+        'staff_type_id': staffData['category'],
+        'staff_gender': staffData['gender'],
+        'staff_first_name': staffData['name'],
+        'staff_badge_number': staffData['idProofNumber'],
+        'staff_contact_number': staffData['phone'],
+        'staff_email_id': staffData['email'],
+        'staff_address_1': staffData['address'] ?? '',
+        'staff_dob': staffData['dateOfBirth'] != null
+            ? DateTime.parse(staffData['dateOfBirth'])
+                .toIso8601String()
+                .split('T')[0]
+            : '',
+        'staff_qualification': staffData['qualification'],
+        'staff_skill': staffData['categoryValue'] ?? '',
+        'staff_lang_iso_639_3': 'eng',
+        'staff_rfid': staffData['idProofNumber'] ?? '',
+        'staff_note': '',
+        'staff_proof': staffData['idProofImageUrl'],
+      };
+
+      final formData = FormData.fromMap(formMap);
+
+      log('Request URL: $addStaffUrl');
+      log('FormData fields: ${formData.fields}');
+      log('FormData files: ${formData.files.length} files');
+
+      final response = await _dio1?.post(
+        addStaffUrl,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      log('Response status: ${response?.statusCode}');
+      log('Response data: ${response?.data}');
+
+      if (response?.statusCode == 200) {
+        log("Staff added successfully: ${response?.data}");
+        return response?.data;
+      } else {
+        log('Error response: ${response?.data}');
+        throw Exception(
+            'Server returned ${response?.statusCode}: ${response?.data}');
+      }
+    } catch (e) {
+      log('Error adding staff: $e');
+      rethrow;
+    }
+  }
+
   Future<List<dynamic>> getMembersList({bool forceFetch = false}) async {
     try {
       final storedMemberList = await gateStorage.getMemberList();
