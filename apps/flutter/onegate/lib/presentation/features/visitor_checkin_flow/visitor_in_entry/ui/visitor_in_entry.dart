@@ -251,10 +251,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       return false;
     }
 
-    if (_guestComingFromController.text.isEmpty) {
-      _showErrorSnackBar('Coming from is mandatory field');
-      return false;
-    }
+    // if (_guestComingFromController.text.isEmpty) {
+    //   _showErrorSnackBar('Coming from is mandatory field');
+    //   return false;
+    // }
 
     return true;
   }

@@ -323,15 +323,13 @@ class _IdInputViewState extends State<IdInputView> {
                 floatingActionButton: CustomLargeBtn(
                   text: 'Next',
                   onPressed: () async {
+                    _focusNode.unfocus();
                     // var passcode = passcodeController.text;
                     //
                     // await remoteDataSource.passcodeVerify(passcode, context);
 
                     if (mobileControllerFormKey.currentState?.validate() ??
                         false) {
-                      // close keyboard
-                      FocusScope.of(context).unfocus();
-
                       gateDashboardBloc.add(InputPutViewNextClickedEvent());
                     }
                   },

@@ -1,20 +1,20 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/common/environment.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
-import 'package:flutter_onegate/data/datasources/gate_storage.dart';
-import 'package:flutter_onegate/data/models/staff_model.dart';
-import 'package:flutter_onegate/common/environment.dart';
-
-import 'package:http/http.dart' as http;
 
 var client = Client('https://onegate.cubeone.in/')
   ..connectivityMonitor = FlutterConnectivityMonitor();
@@ -392,7 +392,8 @@ class RemoteDataSource {
             final List<BuildingAssignment>? buildingAssignments =
                 (item['unit_details'] as List<dynamic>?)
                     ?.map((unit) => BuildingAssignment(
-                          id: null, // Optional
+                          id: null,
+                          // Optional
                           visitor_id: item['visitor_id'] as int?,
                           visitor_log_id: item['visitor_log_id'] as int?,
                           company_id: item['company_id'] as int? ?? 0,
@@ -537,16 +538,19 @@ class RemoteDataSource {
                         ))
                     .toList();
             final visitorLog = VisitorLog(
-              id: item['visitor_log_id']
-                  as int?, // Map `visitor_log_id` to `id`
-              visitor_id:
-                  0, // Set to 0 since `visitor_id` isn't in the shared structure
-              visitor: visitor, // Use the constructed `Visitor` object
-              visitor_purpose_category_id:
-                  0, // Default value, not in shared structure
-              visitor_purpose_sub_category_id: null, // Nullable
+              id: item['visitor_log_id'] as int?,
+              // Map `visitor_log_id` to `id`
+              visitor_id: 0,
+              // Set to 0 since `visitor_id` isn't in the shared structure
+              visitor: visitor,
+              // Use the constructed `Visitor` object
+              visitor_purpose_category_id: 0,
+              // Default value, not in shared structure
+              visitor_purpose_sub_category_id: null,
+              // Nullable
               visitor_building_assignment: buildingAssignments,
-              visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
+              visitor_count: item['visitor_count'] as int? ?? 0,
+              // Default to 0
               visitor_check_in: item['visitor_check_in'] != null
                   ? DateTime.parse(item['visitor_check_in'] as String)
                   : null,
@@ -555,7 +559,8 @@ class RemoteDataSource {
                   : null,
               visitor_card_number: item['visitor_card_number'] as String?,
               visitor_coming_from: item['visitor_coming_from'] as String?,
-              visitor_card_id: null, // No `visitor_card_id` in shared structure
+              visitor_card_id: null,
+              // No `visitor_card_id` in shared structure
               company_id: item['company_id'] as int? ?? 0,
               is_checked_out: item['is_checked_out'] as bool? ?? false,
             );
@@ -605,6 +610,8 @@ class RemoteDataSource {
         ),
       );
 
+      log("getMember response: ${response?.data}");
+
       return response?.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching members: $e');
@@ -645,6 +652,7 @@ class RemoteDataSource {
         ),
       );
 
+      log("getMemberUnit response: ${response?.data}");
       return response?.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching member units: $e');
@@ -855,16 +863,19 @@ class RemoteDataSource {
                     .toList();
             // Create the `VisitorLog` object
             final visitorLog = VisitorLog(
-              id: item['visitor_log_id']
-                  as int?, // Map `visitor_log_id` to `id`
-              visitor_id:
-                  0, // Set to 0 since `visitor_id` isn't in the shared structure
-              visitor: visitor, // Use the constructed `Visitor` object
-              visitor_purpose_category_id:
-                  0, // Default value, not in shared structure
-              visitor_purpose_sub_category_id: null, // Nullable
+              id: item['visitor_log_id'] as int?,
+              // Map `visitor_log_id` to `id`
+              visitor_id: 0,
+              // Set to 0 since `visitor_id` isn't in the shared structure
+              visitor: visitor,
+              // Use the constructed `Visitor` object
+              visitor_purpose_category_id: 0,
+              // Default value, not in shared structure
+              visitor_purpose_sub_category_id: null,
+              // Nullable
               visitor_building_assignment: buildingAssignments,
-              visitor_count: item['visitor_count'] as int? ?? 0, // Default to 0
+              visitor_count: item['visitor_count'] as int? ?? 0,
+              // Default to 0
               visitor_check_in: item['visitor_check_in'] != null
                   ? DateTime.parse(item['visitor_check_in'] as String)
                   : null,
@@ -873,7 +884,8 @@ class RemoteDataSource {
                   : null,
               visitor_card_number: item['visitor_card_number'] as String?,
               visitor_coming_from: item['visitor_coming_from'] as String?,
-              visitor_card_id: null, // No `visitor_card_id` in shared structure
+              visitor_card_id: null,
+              // No `visitor_card_id` in shared structure
               company_id: item['company_id'] as int? ?? 0,
               is_checked_out: item['is_checked_out'] as bool? ?? false,
             );
@@ -967,8 +979,8 @@ class RemoteDataSource {
         'uuid': userMobile,
       });
 
-      var response = await _dio2?.post(
-        '${ApiUrls.gateBaseUrl}/visitor/uploadFile',
+      var response = await Dio().post(
+        'http://35.154.173.226:8005/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',
@@ -988,19 +1000,64 @@ class RemoteDataSource {
     return null;
   }
 
-  Future<List<dynamic>> getMembersList() async {
+  // Future<List<dynamic>> getMembersList() async {
+  //   try {
+  //     final String? companyId = await gateStorage.getSocietyId();
+  //     if (companyId == null) throw Exception('Company ID not found.');
+  //
+  //     final headers = await Environment.getHeaders();
+  //
+  //     final Map<String, String> queryParams = {
+  //       "company_id": companyId,
+  //     };
+  //     final apiUrl = ApiUrls.memberList;
+  //     final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
+  //     log(uri.toString());
+  //     final response = await http.get(
+  //       uri,
+  //       // headers: headers,
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final responseData = jsonDecode(response.body);
+  //
+  //       log("getMembersList $responseData ");
+  //
+  //       return responseData['data'] ?? [];
+  //     } else {
+  //       log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
+  //       throw Exception('Failed to fetch member list: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     log('Error fetching member list: $e');
+  //     rethrow;
+  //   }
+  // }
+
+  Future<List<dynamic>> getMembersList({bool forceFetch = false}) async {
     try {
+      final storedMemberList = await gateStorage.getMemberList();
+
+      // 1. Attempt to fetch from local storage if NOT forcing an API call
+      if (!forceFetch) {
+        if (storedMemberList != null && storedMemberList.isNotEmpty) {
+          log("getMembersList Returning member list from local storage !forceFetch");
+          return storedMemberList;
+        }
+      }
+
+      // 2. If forcing an API call OR local storage is empty, then call the API
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
 
       final headers = await Environment.getHeaders();
-
       final Map<String, String> queryParams = {
         "company_id": companyId,
       };
       final apiUrl = ApiUrls.memberList;
       final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
-      log(uri.toString());
+      log("Fetching member list from API: $uri");
+
       final response = await http.get(
         uri,
         // headers: headers,
@@ -1008,8 +1065,13 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
+        final List<dynamic> members = responseData['data'] ?? [];
 
-        return responseData['data'] ?? [];
+        // 3. Store the fetched member list in local storage
+        await gateStorage.saveMemberList(members);
+        log("getMembersList Returning member list from API");
+
+        return members;
       } else {
         log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to fetch member list: ${response.statusCode}');

@@ -12,7 +12,6 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
@@ -26,15 +25,16 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:provider/provider.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
   final List<String> logList;
   final String? selectedBuilding;
   int? societyID;
+
   VisitorLogView({
     required this.id,
     required this.logList,
@@ -55,7 +55,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
   final remoteDataSource = RemoteDataSource(
-      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
+    DioSingleton.instance1,
+    DioSingleton.instance2,
+    DioSingleton.instance3,
+  );
   var societyId;
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
@@ -74,6 +77,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     super.initState();
     selectedId = widget.id;
 
+    /// Depending on which log type is passed, fetch that subset
     switch (widget.id) {
       case "In Out Book":
         _visitorLogBloc.add(FetchVisitorLogEvent(Utils.getCurrentTime()));
@@ -85,22 +89,19 @@ class _VisitorLogViewState extends State<VisitorLogView> {
         _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
         break;
     }
+
     _initializeSocietyId();
     getSelectedGate();
     _searchFocusNode = FocusNode();
-
-    // _storeTodayLogsCount(context);
   }
-
 
   @override
   void dispose() {
     _searchFocusNode.dispose();
-
     super.dispose();
   }
 
-
+  /// Get stored gate name from local storage
   Future<void> getSelectedGate() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -108,8 +109,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     });
   }
 
-
-
+  /// Fetch society ID from local storage
   Future<void> _initializeSocietyId() async {
     societyId = await gateStorage.getSocietyId();
     log('Society ID: $societyId');
@@ -139,7 +139,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 fontSize: 16.0,
               );
               _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
-
             }
             break;
           case VisitorCheckInLogSuccessState:
@@ -160,9 +159,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
         switch (state.runtimeType) {
           case VisitorLogLoadingState:
             return LoaderView();
+
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
             final visitorLogs = successState.visitorLogs ?? [];
+
+            /// Remove duplicate logs if any
             List<VisitorLog> uniqueVisitorLogs = [];
             Set<String> checkInTimes = {};
 
@@ -174,12 +176,36 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               }
             }
 
-            List<VisitorLog> filteredVisitors = uniqueVisitorLogs
-                .where((visitorLog) => visitorLog.visitor!.name
-                    .toLowerCase()
-                    .contains(_searchText!.toLowerCase()))
-                .toList();
+            // ----------------------------------------------------------------
+            //      SEARCH LOGIC (NAME, CARD_NUMBER, UNIT_ID)
+            // ----------------------------------------------------------------
+            final searchLower = _searchText!.toLowerCase();
 
+            /// Filter visitors if search text is present in:
+            /// - visitor name
+            /// - visitor_card_number
+            /// - any assigned unit ID
+            List<VisitorLog> filteredVisitors = uniqueVisitorLogs.where((vLog) {
+              final vName = vLog.visitor?.name?.toLowerCase() ?? '';
+              final vCardNo = vLog.visitor_card_number?.toLowerCase() ?? '';
+
+              // Flatten all unit IDs under building_assignment
+              final unitIds = vLog.visitor_building_assignment
+                      ?.expand((assignment) => assignment.unit_id ?? [])
+                      .map((unit) => unit.toString().toLowerCase())
+                      .toList() ??
+                  [];
+
+              // If name, cardNo, or any of the unit IDs match
+              final matchName = vName.contains(searchLower);
+              final matchCard = vCardNo.contains(searchLower);
+              final matchUnit = unitIds.any((u) => u.contains(searchLower));
+
+              return matchName || matchCard || matchUnit;
+            }).toList();
+            // ----------------------------------------------------------------
+
+            /// Create day-based groupings for filtered logs
             final today = DateTime.now();
             final startOfToday = DateTime(today.year, today.month, today.day);
             final endOfToday = startOfToday.add(const Duration(days: 1));
@@ -187,12 +213,14 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 startOfToday.subtract(const Duration(days: 1));
             final endOfYesterday = startOfToday;
 
+            // * For storing 'today' logs count
             List<VisitorLog> todayLogs = filteredVisitors.where((log) {
               final checkInDate = log.visitor_check_in!;
               return checkInDate.isAfter(startOfToday) &&
                   checkInDate.isBefore(endOfToday);
             }).toList();
 
+            // * For storing 'checkout' logs count
             List<VisitorLog> todayCheckoutLogs = filteredVisitors.where((log) {
               final checkOutDate = log.visitor_check_out;
               return checkOutDate != null &&
@@ -200,6 +228,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   checkOutDate.isBefore(endOfToday);
             }).toList();
 
+            // Store the counts in SharedPreferences for use elsewhere
             Future<void> _storeTodayLogsCount(int count, String key) async {
               final prefs = await SharedPreferences.getInstance();
               prefs.setInt(key, count);
@@ -207,20 +236,24 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
             _storeTodayLogsCount(todayLogs.length, 'todayLogsCount');
             _storeTodayLogsCount(
-                todayCheckoutLogs.length, 'todayCheckoutLogsCount');
+              todayCheckoutLogs.length,
+              'todayCheckoutLogsCount',
+            );
 
+            // Yesterday logs
             List<VisitorLog> yesterdayLogs = filteredVisitors.where((log) {
               final checkInDate = log.visitor_check_in!;
               return checkInDate.isAfter(startOfYesterday) &&
                   checkInDate.isBefore(endOfYesterday);
             }).toList();
 
+            // Older logs
             List<VisitorLog> olderLogs = filteredVisitors.where((log) {
               final checkInDate = log.visitor_check_in!;
               return checkInDate.isBefore(startOfYesterday);
             }).toList();
-            bool _isPopping = false;
 
+            bool _isPopping = false;
             void _safePop(BuildContext context) {
               if (!_isPopping) {
                 _isPopping = true;
@@ -233,17 +266,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
             return WillPopScope(
               onWillPop: () async {
-
+                // If user tries to go back from here, go to GateDashboardView
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => GateDashboardView()),
-                      (Route<dynamic> route) => false,
+                  (Route<dynamic> route) => false,
                 );
-
                 return false;
               },
               child: MyScrollView(
-                // isScrollable: false,
                 hasBackButton: false,
                 pageTitleWidget: Hero(
                   tag: 'page_title',
@@ -253,7 +284,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   ),
                 ),
                 actions: [
-
                   if (widget.id == "In Out Book")
                     Padding(
                       padding: const EdgeInsets.only(right: 10.0),
@@ -267,13 +297,16 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           children: [
                             IconButton(
                               onPressed: () async {
-                                await _showExportBottomSheet(context, visitorLogs);
+                                await _showExportBottomSheet(
+                                  context,
+                                  visitorLogs,
+                                );
                               },
                               icon: const Icon(
                                 Icons.download_rounded,
                                 color: Colors.black,
                               ),
-                              tooltip: 'Download Logs',  // Adding tooltip for accessibility
+                              tooltip: 'Download Logs',
                             ),
                             const Padding(
                               padding: EdgeInsets.only(right: 8.0),
@@ -293,12 +326,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 ],
                 pageBody: Column(
                   children: [
+                    // --------------------------------------------------------
+                    //                   SEARCH TEXTFIELD
+                    // --------------------------------------------------------
                     CustomForm.textField(
                       widget.selectedBuilding ?? 'Search',
                       focusNode: _searchFocusNode,
                       titleColor: Theme.of(context).colorScheme.onSurface,
                       hintColor: Theme.of(context).colorScheme.onSurface,
-                      hintText: 'Search Visitor',
+                      hintText: 'Search Visitor, Card #, or Unit #',
                       textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.search,
                       onFieldSubmitted: (value) {
@@ -329,6 +365,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         ),
                       ),
                     ),
+
+                    // If user typed something that doesn't match any logs
                     if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -346,7 +384,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No such visitors found in log',
+                              'No matching logs found',
                               style: TextStyle(
                                 color: Theme.of(context)
                                     .colorScheme
@@ -358,6 +396,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           ],
                         ),
                       ),
+
+                    // If no one visited today (and user isn't searching)
                     if (todayLogs.isEmpty && _searchText!.isEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -396,63 +436,42 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           ],
                         ),
                       ),
+
+                    /// Display only the "Today" logs in this example.
+                    /// You can similarly display Yesterday & Older logs if you wish.
                     ListView.builder(
                       physics: BouncingScrollPhysics(),
                       shrinkWrap: true,
-                      itemCount: todayLogs.length +
-                          yesterdayLogs.length +
-                          olderLogs.length +
-                          (todayLogs.isNotEmpty ? 1 : 0) +
-                          (yesterdayLogs.isNotEmpty ? 1 : 0) +
-                          (olderLogs.isNotEmpty ? 1 : 0), // Add headers count
+                      itemCount: todayLogs.length,
                       itemBuilder: (context, index) {
-                        int currentIndex = 0;
+                        return VisitorLogItem(
+                          visitorLog: todayLogs[index],
+                          onCheckOut: () {
+                            // Optimistically update UI before the state is updated
+                            setState(() {
+                              todayLogs[index].visitor_check_out =
+                                  Utils.getCurrentTime();
+                              todayLogs[index].is_checked_out = true;
+                            });
 
-                        // Today Section
-                        if (todayLogs.isNotEmpty) {
-                          if (index == currentIndex) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [],
+                            // Emit a success state with updated logs directly
+                            _visitorLogBloc.emit(
+                              VisitorLogSuccessState(todayLogs),
                             );
-                          }
-                          if (index > currentIndex &&
-                              index <= currentIndex + todayLogs.length) {
-                            return VisitorLogItem(
-                              visitorLog: todayLogs[index - currentIndex - 1],
-                              onCheckOut: () {
-                                // Optimistically update the UI before the state is updated
-                                setState(() {
-                                  todayLogs[index - currentIndex - 1]
-                                          .visitor_check_out =
-                                      Utils.getCurrentTime();
-                                  todayLogs[index - currentIndex - 1]
-                                      .is_checked_out = true;
-                                });
 
-                                // Emit a success state with updated logs directly
-                                _visitorLogBloc
-                                    .emit(VisitorLogSuccessState(todayLogs));
-
-                                // Trigger the Bloc event to process the checkout for backend synchronization
-                                _visitorLogBloc.add(CheckOutEvent(
-                                  todayLogs[index - currentIndex - 1],
-                                  widget.id,
-                                ));
-                              },
+                            // Trigger the Bloc event to process the checkout for backend
+                            _visitorLogBloc.add(
+                              CheckOutEvent(
+                                todayLogs[index],
+                                widget.id,
+                              ),
                             );
-                          }
-                          currentIndex +=
-                              todayLogs.length + 1; // Add 1 for header
-                        }
-
-                        return const SizedBox
-                            .shrink(); // Fallback in case of unexpected index
+                          },
+                        );
                       },
                     ),
-                    const SizedBox(
-                      height: 100,
-                    ),
+
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -464,9 +483,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
+  // ----------------------------------------------------------------------------
+  //                              EXPORT BOTTOM SHEET
+  // ----------------------------------------------------------------------------
   bool isLoading = false;
+
   Future<void> _showExportBottomSheet(
-      BuildContext context, List<VisitorLog> visitorLogs) async {
+    BuildContext context,
+    List<VisitorLog> visitorLogs,
+  ) async {
     TextEditingController emailController = TextEditingController();
     TextEditingController nameController = TextEditingController();
     DateTime? startDate;
@@ -507,6 +532,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 16),
+
+                      /// Email Field
                       CustomForm.textField(
                         "Email",
                         titleColor: Theme.of(context).colorScheme.onSurface,
@@ -525,7 +552,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         textController: emailController,
                       ),
                       const SizedBox(height: 20),
-                      // Start Date with Validation
+
+                      /// Start Date with Validation
                       FormField<DateTime>(
                         validator: (value) {
                           if (startDate == null) {
@@ -545,13 +573,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   return Theme(
                                     data: ThemeData.light().copyWith(
                                       colorScheme: ColorScheme.light(
-                                        primary: Colors
-                                            .black, // Primary color for dialog
+                                        primary: Colors.black,
                                       ),
                                       textButtonTheme: TextButtonThemeData(
                                         style: TextButton.styleFrom(
-                                          foregroundColor: Colors
-                                              .black, // Black text for "Cancel" and "OK"
+                                          foregroundColor: Colors.black,
                                         ),
                                       ),
                                     ),
@@ -562,7 +588,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               if (picked != null) {
                                 setState(() {
                                   startDate = picked;
-                                  // Ensure "To Date" is valid
+                                  // If "end date" is earlier than start date, reset it
                                   if (endDate != null &&
                                       startDate!.isAfter(endDate!)) {
                                     endDate = null;
@@ -581,7 +607,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      // End Date with Validation
+
+                      /// End Date with Validation
                       FormField<DateTime>(
                         validator: (value) {
                           if (endDate == null) {
@@ -605,13 +632,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   return Theme(
                                     data: ThemeData.light().copyWith(
                                       colorScheme: ColorScheme.light(
-                                        primary: Colors
-                                            .black, // Primary color for dialog
+                                        primary: Colors.black,
                                       ),
                                       textButtonTheme: TextButtonThemeData(
                                         style: TextButton.styleFrom(
-                                          foregroundColor: Colors
-                                              .black, // Black text for "Cancel" and "OK"
+                                          foregroundColor: Colors.black,
                                         ),
                                       ),
                                     ),
@@ -636,6 +661,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         },
                       ),
                       const SizedBox(height: 24),
+
                       if (isLoading)
                         const CircularProgressIndicator()
                       else
@@ -666,6 +692,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               return;
                             }
                             if (exportFormKey.currentState!.validate()) {
+                              // store email so user doesn't need to type every time
                               await prefs.setString(
                                   'email', emailController.text);
 
@@ -674,9 +701,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               final formattedToDate =
                                   DateFormat('yyyy-MM-dd').format(endDate!);
 
+                              // In case you need the currently selected gate name
+                              // from a Provider (if used in your code)
                               final gateProvider = Provider.of<GateProvider>(
-                                  context,
-                                  listen: false);
+                                context,
+                                listen: false,
+                              );
                               final selectedGate = gateProvider.selectedGate;
                               final email = emailController.text.trim();
 
@@ -693,10 +723,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                 await remoteDataSource.exportLogs(visitorData);
                                 Navigator.pop(context);
                                 showSuccessDialog(
-                                    context: context,
-                                    title: "Export logs",
-                                    message:
-                                        "Visitor logs exported successfully.");
+                                  context: context,
+                                  title: "Export logs",
+                                  message:
+                                      "Visitor logs exported successfully.",
+                                );
                               } catch (e) {
                                 // Handle error case
                               }
@@ -734,8 +765,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
-  Widget _buildDateField(BuildContext context,
-      {required String label, DateTime? date, required String placeholder}) {
+  Widget _buildDateField(
+    BuildContext context, {
+    required String label,
+    DateTime? date,
+    required String placeholder,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -855,7 +890,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     child: Text(
                       message,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            // color: Colors.green,
                             height: 1.5,
                           ),
                     ),
@@ -882,10 +916,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor:
-                              Colors.black, // Set the background color to black
-                          foregroundColor:
-                              Colors.white, // Set the text color to white
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
                         ),
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -911,6 +943,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
+  // ----------------------------------------------------------------------------
+  //                              FILTER BOTTOM SHEET
+  // ----------------------------------------------------------------------------
   void _showLogBookConfigBottomSheet(BuildContext context) async {
     showModalBottomSheet(
       useSafeArea: true,
@@ -963,9 +998,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       },
                     ),
                   ),
-                  const SizedBox(
-                    height: 30,
-                  ),
+                  const SizedBox(height: 30),
                   CustomLargeBtn(
                     text: 'Confirm',
                     onPressed: () {
@@ -994,18 +1027,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       },
     );
   }
-
-  // Add a method to update today's counts
-  Future<void> _updateTodayLogsCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    final currentCount = prefs.getInt('todayLogsCount') ?? 0;
-    await prefs.setInt('todayLogsCount', currentCount - 1);
-
-    final currentCheckoutCount = prefs.getInt('todayCheckoutLogsCount') ?? 0;
-    await prefs.setInt('todayCheckoutLogsCount', currentCheckoutCount + 1);
-  }
 }
 
+// =============================================================================
+//                          VISITOR LOG ITEM WIDGET
+// =============================================================================
 class VisitorLogItem extends StatefulWidget {
   final VisitorLog visitorLog;
   final Function onCheckOut;
@@ -1039,6 +1065,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
 
   @override
   Widget build(BuildContext context) {
+    // Construct a comma-separated list of unit IDs, if any
     String unitList = '';
     if (widget.visitorLog.visitor_building_assignment != null &&
         widget.visitorLog.visitor_building_assignment!.isNotEmpty) {
@@ -1047,6 +1074,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
           .map((unit) => unit.toString())
           .join(', ');
     }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
@@ -1054,6 +1082,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            // ----------------- VISITOR LIST TILE -----------------
             ListTile(
               onTap: () {
                 Navigator.push(
@@ -1071,11 +1100,14 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 vertical: 2,
               ),
               leading: CircleAvatar(
-                backgroundImage: widget
-                        .visitorLog.visitor!.visitor_image.isNotEmpty
-                    ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
-                    : NetworkImage(
-                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                backgroundImage:
+                    widget.visitorLog.visitor!.visitor_image.isNotEmpty
+                        ? NetworkImage(
+                            widget.visitorLog.visitor!.visitor_image,
+                          )
+                        : NetworkImage(
+                            'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                          ),
                 child: widget.visitorLog.visitor!.visitor_image.isEmpty
                     ? Text(
                         widget.visitorLog.visitor!.name.isNotEmpty
@@ -1129,9 +1161,11 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           color: Color(0xffFFB080),
                         ),
                       ),
+                      // If you'd like to show the actual UnitList text:
                       // TextSpan(
-                      //     text: unitList,
-                      //     style: Theme.of(context).textTheme.labelSmall),
+                      //   text: ' $unitList',
+                      //   style: Theme.of(context).textTheme.labelSmall,
+                      // ),
                       WidgetSpan(
                         child: Container(
                           margin: const EdgeInsets.only(left: 8),
@@ -1162,43 +1196,30 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                     ? () => _launched =
                         _makePhoneCall(widget.visitorLog.visitor!.mobile)
                     : null,
-
-    // onPressed: () {
-    //               log(
-    //                 'Calling ${visitorLog.visitor!.mobile}',
-    //               );
-    //
-    //               SnackBar(
-    //                 content: Text(
-    //                   'Calling ${visitorLog.visitor!.mobile}',
-    //                   style: Theme.of(context).textTheme.labelMedium,
-    //                 ),
-    //                 action: SnackBarAction(
-    //                   label: 'Close',
-    //                   onPressed: () {
-    //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    //                   },
-    //                 ),
-    //               );
                 icon: Icon(
                   Ionicons.call_outline,
                   color: Colors.green,
                 ),
               ),
             ),
+
             Divider(
               indent: 16,
               endIndent: 16,
               color: Colors.grey[200],
             ),
+
+            // ----------------- IN/OUT + CARD # -----------------
             Container(
               padding: const EdgeInsets.only(bottom: 14.0, top: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  // Check-In Time
                   Tooltip(
-                    message: DateFormat('dd-MM-yyyy hh:mm a')
-                        .format(widget.visitorLog.visitor_check_in!),
+                    message: DateFormat('dd-MM-yyyy hh:mm a').format(
+                      widget.visitorLog.visitor_check_in!,
+                    ),
                     child: RichText(
                       text: TextSpan(
                         children: [
@@ -1210,7 +1231,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           ),
                           TextSpan(
                             text: Utils.convertDateTimeFormat(
-                                widget.visitorLog.visitor_check_in!),
+                              widget.visitorLog.visitor_check_in!,
+                            ),
                             style:
                                 Theme.of(context).textTheme.labelMedium!.merge(
                                       const TextStyle(
@@ -1222,6 +1244,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       ),
                     ),
                   ),
+
+                  // Visitor Card Number, if any
                   widget.visitorLog.visitor_card_number != null
                       ? Container(
                           margin: const EdgeInsets.only(left: 8),
@@ -1251,9 +1275,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                 height: 30,
                                 fit: BoxFit.cover,
                               ),
-                              SizedBox(
-                                width: 5,
-                              ),
+                              SizedBox(width: 5),
                               Text(
                                 widget.visitorLog.visitor_card_number ?? 'N/A',
                                 style: TextStyle(
@@ -1266,6 +1288,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           ),
                         )
                       : SizedBox(),
+
+                  // Check-out Logic
                   (widget.visitorLog.visitor_check_out.toString().isEmpty ||
                           widget.visitorLog.visitor_check_out.toString() ==
                               'null')
@@ -1277,6 +1301,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             ),
                           ),
                           onPressed: () {
+                            // Show a confirmation dialog before checkout
                             showDialog(
                               context: context,
                               builder: (BuildContext context) {
@@ -1352,10 +1377,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                       onPressed: () {
                                         Navigator.of(context).pop();
                                         widget.onCheckOut();
-                                        // context
-                                        //     .read<GatekeeperDashboardBloc>()
-                                        //     .add(
-                                        //         GatekeeperDashboardInitialEvent());
                                       },
                                       child: Text(
                                         'Checkout',
@@ -1382,8 +1403,9 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           ),
                         )
                       : Tooltip(
-                          message: DateFormat('dd-MM-yyyy hh:mm a')
-                              .format(widget.visitorLog.visitor_check_out!),
+                          message: DateFormat('dd-MM-yyyy hh:mm a').format(
+                            widget.visitorLog.visitor_check_out!,
+                          ),
                           child: RichText(
                             text: TextSpan(
                               children: [
@@ -1395,7 +1417,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                 ),
                                 TextSpan(
                                   text: Utils.convertDateTimeFormat(
-                                      widget.visitorLog.visitor_check_out!),
+                                    widget.visitorLog.visitor_check_out!,
+                                  ),
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelMedium!

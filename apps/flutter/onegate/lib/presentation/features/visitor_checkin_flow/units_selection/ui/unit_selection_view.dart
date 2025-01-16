@@ -1,22 +1,15 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/entities/gate/gate.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
 // import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
@@ -25,7 +18,6 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart' as c;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 class UnitSelectionView extends StatefulWidget {
   c.Visitor? searchedVisitor;
@@ -72,6 +64,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     DioSingleton.instance3,
   );
   late Client amqpClient;
+
   // State Data
   Set<int> selectedMembers = {};
   Set<int> selectedUnits = {};
@@ -90,6 +83,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   bool? _membersApproval;
   late Future<void> _initializeFuture;
   bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -356,6 +350,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       ),
     );
   }
+
   Widget _buildMemberListView(
       List<dynamic> filteredMembers, Set<String> selectedMembers) {
     return ListView.builder(
@@ -565,18 +560,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         IconButton(
                           icon: Icon(Icons.arrow_back),
                           onPressed: () {
-                            if(widget.searchedVisitor!= null){
+                            if (widget.searchedVisitor != null) {
                               Navigator.pop(context);
-                            }
-                            else{
-
+                            } else {
                               Navigator.pushAndRemoveUntil(
                                 context,
-                                MaterialPageRoute(builder: (context) => GateDashboardView()),
-                                    (Route<dynamic> route) => false,
+                                MaterialPageRoute(
+                                    builder: (context) => GateDashboardView()),
+                                (Route<dynamic> route) => false,
                               );
                             }
-
                           },
                         ),
                         Text(
@@ -1045,7 +1038,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         log("FCM notification sent successfully: ${response.data}");
         bool isWaitingForApproval = false;
         setState(() => isWaitingForApproval = true);
-        await _notificationSent(context, visitorLogData);
+        await _showApprovedDialog(context, visitorLogData);
       }
     } on DioError catch (e) {
       _handleDioError(e, visitorLogData);
@@ -1054,7 +1047,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   void _handleDioError(DioError e, c.VisitorLog visitorLogData) async {
     if (e.response?.statusCode == 400) {
-
       await _notificationSent(context, visitorLogData);
     } else {
       log("Error during FCM notification: ${e.response?.statusCode} - ${e.response?.data}");
@@ -1315,7 +1307,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Future<void> _notificationSent(BuildContext context, c.VisitorLog data) async {
+  Future<void> _notificationSent(
+      BuildContext context, c.VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1353,7 +1346,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.1),
                           ),
                         ),
                         Lottie.asset(
@@ -1367,7 +1361,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     ),
                     const SizedBox(height: 24),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -1405,95 +1400,105 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     const SizedBox(height: 24),
                     _isLoading
                         ? Column(
-                      children: [
-                        SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Redirecting...",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    )
+                            children: [
+                              SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Redirecting...",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          )
                         : Container(
-                      width: double.infinity,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        gradient: !_isButtonDisabled
-                            ? LinearGradient(
-                          colors: [
-                            Theme.of(context).primaryColor,
-                            Theme.of(context).primaryColor.withOpacity(0.8),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                            : null,
-                        color: _isButtonDisabled ? Colors.grey[300] : null,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: !_isButtonDisabled
-                            ? [
-                          BoxShadow(
-                            color: Theme.of(context).primaryColor.withOpacity(0.3),
-                            spreadRadius: 0,
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                            : null,
-                      ),
-                      child: MaterialButton(
-                        onPressed: _isButtonDisabled
-                            ? null
-                            : () async {
-                          setState(() {
-                            _isLoading = true;
-                            _isButtonDisabled = true;
-                          });
+                            width: double.infinity,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              gradient: !_isButtonDisabled
+                                  ? LinearGradient(
+                                      colors: [
+                                        Theme.of(context).primaryColor,
+                                        Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.8),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : null,
+                              color:
+                                  _isButtonDisabled ? Colors.grey[300] : null,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: !_isButtonDisabled
+                                  ? [
+                                      BoxShadow(
+                                        color: Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.3),
+                                        spreadRadius: 0,
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: MaterialButton(
+                              onPressed: _isButtonDisabled
+                                  ? null
+                                  : () async {
+                                      setState(() {
+                                        _isLoading = true;
+                                        _isButtonDisabled = true;
+                                      });
 
-                          await Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const GateDashboardView(),
-                            ),
-                          );
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.check_circle_outline,
-                              color: _isButtonDisabled ? Colors.grey[500] : Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Check Approval Status",
-                              style: TextStyle(
-                                color: _isButtonDisabled ? Colors.grey[500] : Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                      await Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const GateDashboardView(),
+                                        ),
+                                      );
+                                    },
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_outline,
+                                    color: _isButtonDisabled
+                                        ? Colors.grey[500]
+                                        : Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Check Approval Status",
+                                    style: TextStyle(
+                                      color: _isButtonDisabled
+                                          ? Colors.grey[500]
+                                          : Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
                   ],
                 ),
               ),
