@@ -416,10 +416,9 @@ class _AddStaffState extends State<AddStaff> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
+          SizedBox(
             width: double.infinity,
             height: MediaQuery.of(context).size.height * 0.3,
-            color: Colors.grey[200],
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -449,10 +448,6 @@ class _AddStaffState extends State<AddStaff> {
                 ),
               ],
             ),
-          ),
-          Divider(
-            color: Colors.grey,
-            thickness: 30,
           ),
           const SizedBox(height: 20),
           Form(
@@ -487,7 +482,7 @@ class _AddStaffState extends State<AddStaff> {
                   hintText: '0123456789',
                   prefixIcon: CountryCodePicker(
                     initialSelection: 'IN',
-                    favorite: ['IN'],
+                    favorite: const ['IN'],
                     showFlagMain: true,
                     showFlagDialog: true,
                     boxDecoration: BoxDecoration(
@@ -544,7 +539,7 @@ class _AddStaffState extends State<AddStaff> {
                         FocusScope.of(context).requestFocus();
                       });
                     },
-                    icon: CircleAvatar(
+                    icon: const CircleAvatar(
                       radius: 20,
                       child: Icon(
                         size: 22,
@@ -597,98 +592,81 @@ class _AddStaffState extends State<AddStaff> {
                   },
                   suffixIcon: IconButton(
                     onPressed: _selectDateOfBirth,
-                    icon: const Icon(Icons.calendar_today),
+                    icon: const Icon(
+                      Icons.calendar_today,
+                    ),
                   ),
                 ),
-                categories.isEmpty
-                    ? CircularProgressIndicator()
-                    : DropdownButton<String>(
-                        value: _selectedCategory,
-                        isExpanded: true,
-                        underline: SizedBox(),
-                        items: categories.entries.map((entry) {
-                          return DropdownMenuItem<String>(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          print('New value: $newValue');
-                          print('New Kay: ${categories[newValue]}');
-                          if (newValue != null) {
-                            setState(() {
-                              _selectedCategory = newValue;
-                              _selectedCategoryValue = categories[newValue]!;
-                              print(
-                                  'Selected category: $_selectedCategoryValue');
-                              print('Selected category: $_selectedCategory');
-                            });
-                          }
-                        },
-                      ),
+                // categories.isEmpty
+                //     ? const CircularProgressIndicator()
+                //     : DropdownButton<String>(
+                //         value: _selectedCategory,
+                //         isExpanded: true,
+                //         underline: const SizedBox(),
+                //         items: categories.entries.map((entry) {
+                //           return DropdownMenuItem<String>(
+                //             value: entry.key,
+                //             child: Text(entry.value),
+                //           );
+                //         }).toList(),
+                //         onChanged: (String? newValue) {
+                //           print('New value: $newValue');
+                //           print('New Kay: ${categories[newValue]}');
+                //           if (newValue != null) {
+                //             setState(() {
+                //               _selectedCategory = newValue;
+                //               _selectedCategoryValue = categories[newValue]!;
+                //               print(
+                //                   'Selected category: $_selectedCategoryValue');
+                //               print('Selected category: $_selectedCategory');
+                //             });
+                //           }
+                //         },
+                //       ),
+                CustomDropdown(
+                  title: "Category",
+                  hintText: "Select Category",
+                  items: categories.values.toSet().toList(),
+                  // Ensure unique values
+                  selectedItem: categories[_selectedCategory],
+                  // Ensure selectedItem matches a unique value
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedCategoryValue = newValue;
+                        _selectedCategory = categories.entries
+                            .firstWhere((entry) => entry.value == newValue)
+                            .key;
+                      });
+                    }
+                  },
+                ),
                 // CustomForm.textField(
-                //   "Category",
-                //   hasInitialValue: categories.isNotEmpty
-                //       ? categories[_selectedCategory]
-                //       : null,
+                //   "Qualification",
                 //   isReadOnly: true,
                 //   titleColor: Colors.black,
                 //   hintColor: Colors.black,
-                //   hintText: categories.isNotEmpty
-                //       ? (categories[_selectedCategory] ?? "Select Category")
-                //       : "Loading categories...",
-                //   // Graceful fallback
-                //   suffixIcon: IconButton(
-                //       icon: Icon(Icons.arrow_drop_down),
-                //       onPressed: () {
-                //         categories.isEmpty
-                //             ? CircularProgressIndicator()
-                //             : DropdownButton<String>(
-                //                 value: _selectedCategory,
-                //                 isExpanded: true,
-                //                 underline: SizedBox(),
-                //                 items: categories.entries.map((entry) {
-                //                   return DropdownMenuItem<String>(
-                //                     value: entry.key,
-                //                     child: Text(entry.value),
-                //                   );
-                //                 }).toList(),
-                //                 onChanged: (String? newValue) {
-                //                   if (newValue != null) {
-                //                     setState(() {
-                //                       _selectedCategory = newValue;
-                //                     });
-                //                   }
-                //                 },
-                //               );
-                //       }),
+                //   textController:
+                //       TextEditingController(text: _selectedQualification),
+                //   hintText: "Enter Qualification",
+                //   suffixIcon: DropdownButton<String>(
+                //     underline: SizedBox(),
+                //     icon: Icon(Icons.arrow_drop_down),
+                //     items: qualifications.map((qualification) {
+                //       return DropdownMenuItem<String>(
+                //         value: qualification,
+                //         child: Text(qualification),
+                //       );
+                //     }).toList(),
+                //     onChanged: (String? newValue) {
+                //       if (newValue != null) {
+                //         setState(() {
+                //           _selectedQualification = newValue;
+                //         });
+                //       }
+                //     },
+                //   ),
                 // ),
-                CustomForm.textField(
-                  "Qualification",
-                  isReadOnly: true,
-                  titleColor: Colors.black,
-                  hintColor: Colors.black,
-                  textController:
-                      TextEditingController(text: _selectedQualification),
-                  hintText: "Enter Qualification",
-                  suffixIcon: DropdownButton<String>(
-                    underline: SizedBox(),
-                    icon: Icon(Icons.arrow_drop_down),
-                    items: qualifications.map((qualification) {
-                      return DropdownMenuItem<String>(
-                        value: qualification,
-                        child: Text(qualification),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _selectedQualification = newValue;
-                        });
-                      }
-                    },
-                  ),
-                ),
                 Divider(
                   color: Colors.grey,
                   thickness: 1,
