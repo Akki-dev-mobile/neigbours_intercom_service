@@ -6,27 +6,20 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/entities/gate/gate.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
+
 import 'package:flutter_onegate/utils/shared_pref.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
-// import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:onegate_client/onegate_client.dart' as c;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 class UnitSelectionView extends StatefulWidget {
   c.Visitor? searchedVisitor;
@@ -39,20 +32,23 @@ class UnitSelectionView extends StatefulWidget {
   final String guestname;
   final String mobileNumber;
   final String? visitorNumber;
+  final String? purposeCategoryId;
+  final String? selectedSubCategoryId;
 
-  UnitSelectionView(
-    c.Visitor? searchedVisitor, {
-    Key? key,
-    required this.visitor,
-    required this.purposeCategory,
-    this.comingFrom,
-    this.guestCount,
-    this.companyId,
-    this.visitorId,
-    required this.guestname,
-    required this.mobileNumber,
-    this.visitorNumber,
-  }) : super(key: key);
+  UnitSelectionView(c.Visitor? searchedVisitor,
+      {Key? key,
+      required this.visitor,
+      required this.purposeCategory,
+      this.comingFrom,
+      this.guestCount,
+      this.companyId,
+      this.visitorId,
+      required this.guestname,
+      required this.mobileNumber,
+      this.visitorNumber,
+      this.purposeCategoryId,
+      this.selectedSubCategoryId})
+      : super(key: key);
 
   @override
   State<UnitSelectionView> createState() => _UnitSelectionViewState();
@@ -73,7 +69,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     DioSingleton.instance3,
   );
   late Client amqpClient;
-  // State Data
   Set<int> selectedMembers = {};
   Set<int> selectedUnits = {};
   String? selectedgate;
@@ -911,8 +906,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     return c.VisitorLog(
       visitor_id: widget.visitor.id ?? 0,
-      visitor_purpose_category_id: widget.purposeCategory.categoryId ?? 1,
-      visitor_purpose_sub_category_id: null,
+      visitor_purpose_category_id:
+          int.parse(widget.purposeCategoryId.toString()),
+      visitor_purpose_sub_category_id:
+          int.parse(widget.selectedSubCategoryId.toString()),
       visitor_count: widget.guestCount ?? 0,
       visitor_check_in: DateTime.parse(formattedInTime),
       visitor_card_number: widget.visitorNumber,
@@ -973,8 +970,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final selectedGateName = prefs.getString('selected_gate');
     final visitorLogData = c.VisitorLog(
         visitor_id: widget.visitor.id ?? 0,
-        visitor_purpose_category_id: widget.purposeCategory.categoryId ?? 1,
-        visitor_purpose_sub_category_id: null,
+        visitor_purpose_category_id:
+            int.parse(widget.purposeCategoryId.toString()),
+        visitor_purpose_sub_category_id:
+            int.parse(widget.selectedSubCategoryId.toString()),
         visitor_count: widget.guestCount ?? 0,
         visitor_check_in: DateTime.parse(formattedInTime),
         visitor_card_number: widget.visitorNumber,
@@ -1024,8 +1023,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'visitor_count': widget.guestCount.toString(),
       "member_mobile_number": "918452060059",
       "visitor_id": widget.visitorId?.toString() ?? "",
-      "purpose_category": widget.purposeCategory.categoryId?.toString() ?? "",
-      'purpose_details': "zomato",
+      "purpose_category": widget.purposeCategory.toString(),
+      'visitor_purpose_sub_category_id': widget.selectedSubCategoryId.toString(),
       'coming_from': widget.comingFrom ?? "Unknown",
       "member_id": "${selectedMemberIds.first}",
       "company_name": companyName ?? "",
@@ -1047,7 +1046,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         log("FCM notification sent successfully: ${response.data}");
         bool isWaitingForApproval = false;
         setState(() => isWaitingForApproval = true);
-        await _notificationSent(context, visitorLogData);
+        await  _showApprovedDialog(context, visitorLogData);
       }
     } on DioError catch (e) {
       _handleDioError(e, visitorLogData);
@@ -1056,7 +1055,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   void _handleDioError(DioError e, c.VisitorLog visitorLogData) async {
     if (e.response?.statusCode == 400) {
-      await _notificationSent(context, visitorLogData);
+      await _showApprovedDialog(context, visitorLogData);
     } else {
       log("Error during FCM notification: ${e.response?.statusCode} - ${e.response?.data}");
     }

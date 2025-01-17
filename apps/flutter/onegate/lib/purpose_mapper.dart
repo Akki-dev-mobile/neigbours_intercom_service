@@ -6,7 +6,7 @@ class PurposeCategoryMapper {
   // Convert a single JSON object to a PurposeCategory
   static PurposeCategory1 fromJson(Map<String, dynamic> json) {
     return PurposeCategory1(
-      categoryId: json['id'],
+      categoryId: json['categr'],
       categoryName: json['purpose_category_name'] as String,
       image: json['purpose_img'] as String,
       // isSelected: json['isSelected'] as bool? ?? false,
@@ -14,11 +14,11 @@ class PurposeCategoryMapper {
   }
 
   // Convert a single PurposeCategory to JSON
-  static Map<String, dynamic> toJson(PurposeCategory purposeCategory) {
+  static Map<String, dynamic> toJson(PurposeCategory1 purposeCategory) {
     return {
-      'id': purposeCategory.id,
-      'purpose_category_name': purposeCategory.purpose_category_name,
-      'purpose_img': purposeCategory.purpose_img,
+      'id': purposeCategory.categoryId,
+      'purpose_category_name': purposeCategory.categoryName,
+      'purpose_img': purposeCategory.image,
       'isSelected': purposeCategory.isSelected,
     };
   }
@@ -32,7 +32,7 @@ class PurposeCategoryMapper {
 
   // Convert a list of PurposeCategory to a list of JSON objects
   static List<Map<String, dynamic>> toJsonList(
-      List<PurposeCategory> purposeCategories) {
+      List<PurposeCategory1> purposeCategories) {
     return purposeCategories.map((category) => toJson(category)).toList();
   }
 }

@@ -105,7 +105,8 @@ class _IdInputViewState extends State<IdInputView> {
   @override
   void dispose() {
     _currentIndex = 0;
-    _focusNode.dispose();
+    // mobileController.dispose();
+    mobileController.clear();
     super.dispose();
 
     mobileController.text = '';
@@ -120,7 +121,7 @@ class _IdInputViewState extends State<IdInputView> {
       if (savedPurposes != null) {
         final decoded = jsonDecode(savedPurposes) as List;
         globalSelectedPurposes =
-            decoded.map((e) => PurposeCategoryMapper.fromJson(e)).toList();
+            decoded.map((e) => PurposeCategory1.fromJson(e)).toList();
       }
     } catch (e) {
       debugPrint("Failed to load purposes: $e");
@@ -205,7 +206,7 @@ class _IdInputViewState extends State<IdInputView> {
                 PurposeCategory1? selectedPurpose;
                 if (jsonString != null) {
                   final json = jsonDecode(jsonString);
-                  selectedPurpose = PurposeCategoryMapper.fromJson(json);
+                  selectedPurpose = PurposeCategory1.fromJson(json);
                 }
 
                 Navigator.push(
@@ -244,7 +245,6 @@ class _IdInputViewState extends State<IdInputView> {
                       },
                       titleColor: Theme.of(context).colorScheme.onBackground,
                       hintColor: Theme.of(context).colorScheme.onPrimary,
-                      focusNode: _focusNode,
                       "Visitor Mobile Number",
                       hintText: '0123456789',
                       prefixIcon: CountryCodePicker(
@@ -378,11 +378,11 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
         final jsonList = jsonDecode(jsonString) as List<dynamic>;
         setState(() {
           globalSelectedPurposes = jsonList
-              .map((json) => PurposeCategoryMapper.fromJson(json))
+              .map((json) => PurposeCategory1.fromJson(json))
               .toList();
 
         });
-        print("Global selected purposes loaded: $globalSelectedPurposes");
+        print("Global selected purposes loaded: ${globalSelectedPurposes}");
       } else {
         print("No selected purposes found in SharedPreferences.");
       }
@@ -629,7 +629,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                 FocusScope.of(context).unfocus();
 
                 if (selectedImageIndex != -1) {
-                  final selectedValue = globalSelectedPurposes.length == 0
+                  final selectedValue = globalSelectedPurposes.isEmpty
                       ? widget.purposeCategories[selectedImageIndex]
                       : globalSelectedPurposes[selectedImageIndex];
                   Navigator.pop(

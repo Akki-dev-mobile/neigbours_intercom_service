@@ -188,44 +188,40 @@ class RemoteDataSource {
 
     return null;
   }
+
   Future<List<PurposeCategory1>?> fetchPurpose() async {
     try {
-      String apiUrl = "http://stggateapi.cubeone.in/api/visitor/purposeCategory";
+      String apiUrl = "${ApiUrls.gateBaseUrl}/visitor/purposeCategory";
 
       final response = await http.get(Uri.parse(apiUrl));
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final responseData = json.decode(response.body);
 
-        // Check for success in the response
-        if (jsonResponse['success'] == true) {
-          final List<dynamic> data = jsonResponse['data'];
+        // Check if the response has the expected structure
+        if (responseData['success'] == true && responseData['data'] != null) {
+          final purposesList = responseData['data'] as List;
+          final purposes = purposesList
+              .map((json) => PurposeCategory1.fromJson(json))
+              .toList();
 
-          // Map the data to PurposeCategory objects
-          final purposes = data.map((item) {
-            return PurposeCategory1(
-              categoryId: item['category_id'] ?? 0,
-              categoryName: item['purpose_category_name'] ?? '',
-            image: item['image'] ?? '',
-            subCategories  : (item['sub_categories'] as List<dynamic>).map((sub) {
-                return SubCategory(
-                  subCategoryId: sub['sub_category_id'],
-                  subCategoryName: sub['purpose_sub_category_name'],
-                  image: sub['']
-                );
-              }).toList(),
-            );
-          }).toList();
+          // Debug logging
+          for (var purpose in purposes) {
+            debugPrint('Fetched Purpose: ${purpose.categoryName}');
+            debugPrint(
+                'Subcategories count: ${purpose.subCategories?.length ?? 0}');
+            if (purpose.subCategories != null) {
+              for (var sub in purpose.subCategories!) {
+                debugPrint('  - ${sub.subCategoryName}: ${sub.image}');
+              }
+            }
+          }
 
-          return purposes.reversed.toList(); // Reverse the list if required
-        } else {
-          print("Error: ${jsonResponse['message']}");
+          return purposes;
         }
-      } else {
-        print("Failed to fetch purposes: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error fetching purposes: $e");
+      debugPrint('Error fetching purposes: $e');
     }
     return null;
   }
@@ -815,41 +811,26 @@ class RemoteDataSource {
     }
   }
 
-  /// Check out a visitor
   Future<bool> checkOut(VisitorLog visitorLog) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName =
-          prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName = prefs.getString('selected_gate');
 
-      // Prepare the request payload
       final data = {
         'visitor_log_id': visitorLog.id.toString(),
-        'out_gate': selectedGateName,
+        'out_gate': selectedGateName ?? 'Unknown Gate',
       };
 
-      log("Check-Out Payload: $data");
+      final response = await _dio2?.patch(ApiUrls.visitorCheckout, data: data);
 
-      final response = await _dio2?.patch(
-        ApiUrls.visitorCheckout,
-        data: data,
-        options: Options(
-          headers: {
-            "Content-Type": "application/json",
-          },
-        ),
-      );
-
-      // Handle response
       if (response?.statusCode == 200) {
-        log("Visitor checked out successfully.");
         return true;
       } else {
-        log("Failed to check out visitor: ${response?.statusCode} - ${response?.data}");
+        log('Check-out failed: ${response?.statusCode} - ${response?.data}');
         return false;
       }
     } catch (e) {
-      log("Error during visitor check-out: $e");
+      log('Error during check-out: $e');
       return false;
     }
   }

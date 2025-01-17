@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -50,7 +51,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   late final TextEditingController _guestComingFromController;
   late final TextEditingController _guestCountController;
   late final TextEditingController _visitorNumberController;
-  int selectedCompanyIndex = -1; // To track the selected company index
+  int selectedCompanyIndex = -1;
 
   bool _isSubmitting = false;
   int _guestCount = 1;
@@ -61,6 +62,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     DioSingleton.instance2,
     DioSingleton.instance3,
   );
+  String? selectedSubCategoryId;
 
   @override
   void initState() {
@@ -125,54 +127,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       debugPrint('Error loading purposes: $e');
     }
   }
-
-  final List<Map<String, String>> deliveryCompanies = [
-    {
-      'name': 'Amazon',
-      'image':
-          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUk2zBfHzeV5yxsgE4tRO6Z2q5SozMWph8Og&s',
-    },
-    {
-      'name': 'Flipkart',
-      'image':
-          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcSx1XIyVOaGpvl6bEff5hZCuQze21m_Ph3A&s',
-    },
-    {
-      'name': 'Zomato',
-      'image':
-          'https://content.jdmagicbox.com/v2/comp/mumbai/u1/022pxx22.xx22.170704134830.t7u1/catalogue/zomato-com-mumbai-corporate-companies-1fm7z2kn6v.jpg',
-    },
-    {
-      'name': 'Swiggy',
-      'image':
-          'https://content.jdmagicbox.com/comp/mumbai/z1/022pxx22.xx22.150803125128.z7z1/catalogue/swiggy-com-branch-office-andheri-east-mumbai-online-websites-for-food-delivery-aijodveedn.jpg',
-    },
-    {
-      'name': 'Dunzo',
-      'image':
-          'https://mir-s3-cdn-cf.behance.net/project_modules/1400/c79cc971959541.5bd75efd34d39.jpg',
-    },
-    {
-      'name': 'BigBasket',
-      'image':
-          'https://cdn-images-1.medium.com/max/1200/1*kqElrV8y9kt64NDnfwqf6g.png',
-    },
-    {
-      'name': 'Delhivery',
-      'image':
-          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS2CQIMiyn44Rj9rbUflyH69dj0MaObVOeQPw&s',
-    },
-    {
-      'name': 'Blue Dart',
-      'image':
-          'https://media.licdn.com/dms/image/v2/C4D0BAQGjOwzlSzSwCQ/company-logo_200_200/company-logo_200_200/0/1631329681950?e=2147483647&v=beta&t=oyASYPcfvBB1Iv3p0q3qS0TPae-pkg3oba7DBKXUr5U',
-    },
-    {
-      'name': 'FedEx',
-      'image':
-          'https://content.jdmagicbox.com/v2/comp/bangalore/s1/080pxx80.xx80.231101201423.u9s1/catalogue/fedex-ship-site-bwc-international-kammanahalli-bangalore-international-courier-services-uguu63fg2i.jpg',
-    },
-  ];
 
   Future<String?> _handleMicPress(String field) async {
     final result = await showDialog<String>(
@@ -276,16 +230,25 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     if (!_validateForm()) return;
 
     setState(() => _isSubmitting = true);
-    if (selectedCompanyIndex == -1) {
+    if (widget.selectedValue?.categoryName == 'DELIVERY' &&
+        selectedCompanyIndex == -1) {
       _showErrorSnackBar("Please select a delivery company.");
-    } else {
-      final selectedCompany = deliveryCompanies[selectedCompanyIndex]['name']!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Delivery Company Selected: $selectedCompany"),
-          backgroundColor: Colors.green,
-        ),
-      );
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    try {
+      _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
+        searchedVisitor: widget.searchedVisitor,
+        guestName: _guestNameController.text,
+        guestComingFrom: _guestComingFromController.text,
+        guestCount: _guestCount,
+        purposeCategory: widget.selectedValue!,
+        mobile: widget.mobile,
+      ));
+    } catch (e) {
+      _showErrorSnackBar('An error occurred: ${e.toString()}');
+      setState(() => _isSubmitting = false);
     }
 
     try {
@@ -318,6 +281,29 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _navigateToUnitSelection(VIENavigateToUnitSelectionState state) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UnitSelectionView(
+          widget.searchedVisitor,
+          visitor: state.visitor,
+          visitorId: widget.searchedVisitor?.id,
+          guestname: _guestNameController.text,
+          mobileNumber: widget.mobile,
+          purposeCategory: state.purposeCategory,
+          purposeCategoryId: widget.selectedValue?.categoryId.toString(),
+          selectedSubCategoryId: selectedSubCategoryId,
+          comingFrom: _guestComingFromController.text,
+          guestCount: _guestCount,
+          visitorNumber: _visitorNumberController.text.isNotEmpty
+              ? "V${_visitorNumberController.text}"
+              : _visitorNumberController.text,
+        ),
+      ),
     );
   }
 
@@ -355,24 +341,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
             await _updateVisitor(updatedVisitor);
           }
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UnitSelectionView(
-                widget.searchedVisitor,
-                visitor: state.visitor,
-                visitorId: widget.searchedVisitor?.id,
-                guestname: _guestNameController.text,
-                mobileNumber: widget.mobile,
-                purposeCategory: state.purposeCategory,
-                comingFrom: _guestComingFromController.text,
-                guestCount: _guestCount,
-                visitorNumber: _visitorNumberController.text.isNotEmpty
-                    ? "V${_visitorNumberController.text}"
-                    : _visitorNumberController.text,
-              ),
-            ),
-          );
+          _navigateToUnitSelection(state);
+
           setState(() => _isSubmitting = false);
         } else if (state is VIENavigateToCameraState) {
           // Ensure camera state navigation is handled correctly
@@ -398,8 +368,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
         return MyScrollView(
           isScrollable: true,
-          pageTitle:
-              'Purpose Entry - ${effectivePurpose.categoryName}',
+          pageTitle: 'Purpose Entry - ${effectivePurpose.categoryName}',
           pageBody: _buildPurposeForm(effectivePurpose),
           floatingActionButton: CustomLargeBtn(
             onPressed: _handleSubmit,
@@ -419,9 +388,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       case 'CABS':
         return _buildCabsForm();
       case 'DELIVERY':
-        return _buildDeliveryForm();
+        return _buildDeliveryForm(purpose);
       case 'GUEST':
         return _buildGuestForm();
+
+      case 'VENDOR':
+        return _buildVendorForm(purpose);
       default:
         return const Center(child: Text('Unknown Purpose'));
     }
@@ -450,122 +422,359 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     );
   }
 
-  Widget _buildDeliveryForm() {
+  Widget _buildDeliveryForm(PurposeCategory1 purpose) {
+    final subCategories = purpose.subCategories;
+    if (subCategories == null || subCategories.isEmpty) {
+      return const Center(child: Text("No delivery companies available."));
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Delivery Person Name Field
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 16),
+          child: CustomForm.textField(
+            "Delivery Person Name",
+            hintText: 'Enter delivery person name',
+            textController: _guestNameController,
+            textCapitalization: TextCapitalization.words,
+            titleColor: Theme.of(context).colorScheme.onSurface,
+            hintColor: Theme.of(context).colorScheme.onPrimary,
+            suffixIcon: _buildMicButton(() => _handleMicPress('deliveryName')),
+          ),
+        ),
+
+        // Company Selection Header
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text(
+            'Select Delivery Company',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 0.8,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+            ),
+            itemCount: subCategories.length,
+            itemBuilder: (context, index) {
+              final subCategory = subCategories[index];
+              final isSelected = index == selectedCompanyIndex;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedCompanyIndex = index;
+                    selectedSubCategoryId =
+                        subCategory.subCategoryId.toString();
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFFFEBE6) : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xffC08261)
+                          : Colors.grey.shade300,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xffC08261).withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 10),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedNetworkImage(
+                                    height: 60,
+                                    width: 60,
+                                    fit: BoxFit.contain,
+                                    imageUrl: subCategory?.image ?? '',
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(
+                                      Icons.error_outline,
+                                      color: Colors.red,
+                                      size: 30,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Company Name
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  subCategory?.subCategoryName ?? '',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    // fontSize: 12,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? const Color(0xffC08261)
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Selection Indicator
+                      if (isSelected)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Color(0xffC08261),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVendorForm(PurposeCategory1 purpose) {
+    final subCategories = purpose.subCategories;
+
+    if (subCategories == null || subCategories.isEmpty) {
+      return const Center(child: Text("No vendor categories available."));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 16),
+          child: CustomForm.textField(
+            "Vendor Name",
+            hintText: 'Enter vendor name',
+            textController: _guestNameController,
+            textCapitalization: TextCapitalization.words,
+            titleColor: Theme.of(context).colorScheme.onSurface,
+            hintColor: Theme.of(context).colorScheme.onPrimary,
+            suffixIcon: _buildMicButton(() => _handleMicPress('vendorName')),
+          ),
+        ),
         CustomForm.textField(
-          "Delivery Person Name",
-          hintText: 'Enter Name',
-          textController: _guestNameController,
+          "Coming From",
+          hintText: 'Enter company/organization name',
+          textController: _guestComingFromController,
           textCapitalization: TextCapitalization.words,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('deliveryName')),
+          suffixIcon:
+              _buildMicButton(() => _handleMicPress('vendorComingFrom')),
         ),
-        const SizedBox(height: 16),
-
-        Text(
-          'Select Delivery Company',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 8),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, // Number of columns
-            mainAxisSpacing: 3,
-            crossAxisSpacing: 3,
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text(
+            'Select Vendor Category',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
           ),
-          itemCount: deliveryCompanies.length,
-          itemBuilder: (context, index) {
-            final company = deliveryCompanies[index];
-            final isSelected = index == selectedCompanyIndex;
-
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  selectedCompanyIndex = index;
-                });
-              },
-              child: Stack(
-                children: [
-                  Container(
-                    height: 250,
-                    width: 200,
-                    margin: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0x10C08261)
-                          : Colors.transparent,
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xffC08261)
-                            : Colors.grey,
-                        width: isSelected ? 2 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 7),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child:  CachedNetworkImage(
-                              maxHeightDiskCache: 90,
-                              maxWidthDiskCache: 90,
-                              height: 60,
-                              width: 60,
-                              fit: BoxFit.cover,
-                              imageUrl: company['image']!,
-                              placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
-                              errorWidget: (context, url, error) => const Icon(
-                                Icons.error,
-                                color: Colors.red,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              company['name']!,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? const Color(0xffC08261)
-                                    : Theme.of(context).colorScheme.onSurface,
-                                fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isSelected)
-                    const Positioned(
-                      right: 10,
-                      top: 10,
-                      child: Icon(
-                        size: 20,
-                        Ionicons.checkmark_circle_outline,
-                        color: Color(0xffC08261),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
         ),
-        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 0.8,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+            ),
+            itemCount: subCategories.length,
+            itemBuilder: (context, index) {
+              final subCategory = subCategories[index];
+              final isSelected = index == selectedCompanyIndex;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedCompanyIndex = index;
+                    selectedSubCategoryId =
+                        subCategory.subCategoryId.toString();
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFFFEBE6) : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xffC08261)
+                          : Colors.grey.shade300,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xffC08261).withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 10),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedNetworkImage(
+                                    height: 60,
+                                    width: 60,
+                                    fit: BoxFit.contain,
+                                    imageUrl: subCategory.image ?? '',
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(
+                                      Icons.business,
+                                      color: Color(0xffC08261),
+                                      size: 30,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  subCategory.subCategoryName ?? '',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? const Color(0xffC08261)
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (isSelected)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Color(0xffC08261),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
   }

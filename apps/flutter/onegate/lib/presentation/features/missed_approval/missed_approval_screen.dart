@@ -123,7 +123,7 @@ class TimerManager {
   }
 
   Future<void> loadTimerState(int visitorLogId) async {
-    print("Loading timer state for visitor $visitorLogId"); // Debug print
+    print("Loading timer state for visitor $visitorLogId");
     final prefs = await SharedPreferences.getInstance();
     final savedSeconds = prefs.getInt('timer_$visitorLogId');
     final savedRetry = prefs.getBool('retry_$visitorLogId') ?? false;
@@ -357,11 +357,11 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                       valueListenable: _timerManager.getIsRetryEnabled(widget.visitorInfo.visitorLogId),
                       builder: (context, isRetryEnabled, _) {
                         final buttonColor = isRetryEnabled
-                            ? Color(0xFF2563EB) // Bright blue for enabled state
-                            : Color(0xFFE2E8F0); // Light gray for disabled state
+                            ? Color(0xFF2563EB)
+                            : Color(0xFFE2E8F0);
                         final textColor = isRetryEnabled
                             ? Colors.white
-                            : Color(0xFF64748B); // Slate gray for disabled text
+                            : Color(0xFF64748B);
 
                         return Container(
                           decoration: BoxDecoration(

@@ -35,11 +35,11 @@ class GateDashboardView extends StatefulWidget {
   State<GateDashboardView> createState() => _GateDashboardViewState();
 }
 
-late FocusNode _focusNode;
-final mobileControllerFormKey = GlobalKey<FormState>();
-final passcodeControllerFormKey = GlobalKey<FormState>();
-TextEditingController mobileController = TextEditingController();
-TextEditingController passcodeController = TextEditingController();
+// late FocusNode _focusNode;
+// final mobileControllerFormKey = GlobalKey<FormState>();
+// final passcodeControllerFormKey = GlobalKey<FormState>();
+// TextEditingController mobileController = TextEditingController();
+// TextEditingController passcodeController = TextEditingController();
 int _currentIndex = 0;
 List<String> _labels = ['Mobile', 'Pass Code'];
 String? selectedPassAlpha;
@@ -72,10 +72,10 @@ class _GateDashboardViewState extends State<GateDashboardView>
   void initState() {
     // startKioskMode();
     super.initState();
-    _focusNode = FocusNode();
-    Future.delayed(Duration(milliseconds: 200), () {
-      FocusScope.of(context).requestFocus(_focusNode);
-    });
+    // _focusNode = FocusNode();
+    // Future.delayed(Duration(milliseconds: 200), () {
+    //   FocusScope.of(context).requestFocus(_focusNode);
+    // });
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
   }
 
@@ -93,7 +93,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    // _focusNode.dispose();
     super.dispose();
   }
 
