@@ -1,6 +1,8 @@
+import 'dart:math';
+
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_log_repo.dart';
-import 'package:onegate_client/onegate_client.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 class VisitorLogRepositoryImpl extends VisitorLogRepository {
@@ -34,7 +36,7 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
       int companyId, String dateTime) async {
     try {
       final response =
-          await _remoteDataSource.fetchAllLogs(companyId, dateTime);
+          await _remoteDataSource.fetchAllLogs(companyId,dateTime);
       return response;
     } catch (error) {
       return null;

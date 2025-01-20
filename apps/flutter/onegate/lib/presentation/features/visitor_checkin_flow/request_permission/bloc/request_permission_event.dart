@@ -10,7 +10,7 @@ class AllowButtonClickedEvent extends RequestPermissionEvent{
   final List<MemberUnits> memberUnits;
   final String? comingFrom;
   final int? guestCount;
-  final PurposeCategory purposeCategory;
+  final PurposeCategory1 purposeCategory;
 
   AllowButtonClickedEvent({required this.visitor, required this.memberUnits, required this.comingFrom, required this.guestCount, required this.purposeCategory});
 }

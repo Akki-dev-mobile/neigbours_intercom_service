@@ -191,15 +191,15 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     )),
                 actions: [
 
-                  IconButton(
-                    onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen()));
-                    },
-                    icon: Icon(
-                      Symbols.phone_missed_rounded,
-                      color: Theme.of(context).colorScheme.onBackground,
-                    ),
-                  ),
+            //       IconButton(
+            //         onPressed: () {
+            // Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen()));
+            //         },
+            //         icon: Icon(
+            //           Symbols.phone_missed_rounded,
+            //           color: Theme.of(context).colorScheme.onBackground,
+            //         ),
+            //       ),
                   IconButton(
                     onPressed: () {
                       Navigator.push(

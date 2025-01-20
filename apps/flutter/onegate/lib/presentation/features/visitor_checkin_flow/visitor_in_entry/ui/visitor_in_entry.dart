@@ -15,12 +15,12 @@ import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:onegate_client/onegate_client.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,6 +56,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   bool _isSubmitting = false;
   int _guestCount = 1;
   bool? _visitorCardNumber = false;
+  bool? _visitorAddress = false;
   List<PurposeCategory1> _globalSelectedPurposes = [];
   final remoteDataSource = RemoteDataSource(
     DioSingleton.instance1,
@@ -67,18 +68,32 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   @override
   void initState() {
     super.initState();
-    _initializeControllers();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _initializeControllers();
+      // Use setState if any UI updates are required after initialization
+      setState(() {});
+    });
     _initializeBloc();
     _loadInitialData();
   }
 
-  void _initializeControllers() {
-    _guestNameController =
-        TextEditingController(text: widget.searchedVisitor?.name);
-    _guestComingFromController = TextEditingController();
-    _guestCountController = TextEditingController(text: '1');
+  Future<void> _initializeControllers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final comingFrom = await prefs.getString('visitor_coming_from') ?? "";
+print("kiyu nahi aara$comingFrom");
+    // Initialize controllers with the fetched data
+    _guestNameController = TextEditingController(
+      text: widget.searchedVisitor?.name ?? "",
+    );
+    _guestComingFromController = TextEditingController(
+      text: comingFrom,
+    );
+    _guestCountController = TextEditingController(
+      text: '1',
+    );
     _visitorNumberController = TextEditingController();
   }
+
 
   void _initializeBloc() {
     final remoteDataSource = RemoteDataSource(
@@ -108,6 +123,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _visitorCardNumber = prefs.getBool('visitorCardNumber');
+      _visitorAddress = prefs.getBool('visitorsAddress');
     });
   }
 
@@ -166,6 +182,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       });
     }
   }
+
 
   Future<File?> _captureImageFromCamera(BuildContext context) async {
     CameraController? cameraController;
@@ -273,6 +290,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   bool _validateForm() {
     if (_guestNameController.text.isEmpty) {
       _showErrorSnackBar('Please enter guest name');
+      return false;
+    }
+    if (_guestComingFromController.text.isEmpty && _visitorAddress == true) {
+      _showErrorSnackBar('Please enter coming from ');
+      return false;
+    }
+    if (_visitorNumberController.text.isEmpty && _visitorCardNumber == true) {
+      _showErrorSnackBar('Please enter card number');
       return false;
     }
     return true;
@@ -405,6 +430,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         CustomForm.textField(
           "Cab Driver Name",
           hintText: 'Enter Name',
+          textController: _guestNameController,
           textCapitalization: TextCapitalization.words,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
@@ -413,6 +439,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         CustomForm.textField(
           "Cab Number",
           hintText: 'MH 12 AB 1234',
+          // textController: _visitorNumberController,
           textCapitalization: TextCapitalization.characters,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
@@ -599,6 +626,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     );
   }
 
+
+
   Widget _buildVendorForm(PurposeCategory1 purpose) {
     final subCategories = purpose.subCategories;
 
@@ -610,7 +639,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          margin: const EdgeInsets.symmetric(vertical: 16),
+          margin: const EdgeInsets.symmetric(vertical: 5),
           child: CustomForm.textField(
             "Vendor Name",
             hintText: 'Enter vendor name',
@@ -621,6 +650,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             suffixIcon: _buildMicButton(() => _handleMicPress('vendorName')),
           ),
         ),
+        if (_visitorAddress == true)
         CustomForm.textField(
           "Coming From",
           hintText: 'Enter company/organization name',
@@ -632,7 +662,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               _buildMicButton(() => _handleMicPress('vendorComingFrom')),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Text(
             'Select Vendor Category',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -655,14 +685,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             ],
           ),
           child: GridView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(0),
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              childAspectRatio: 0.8,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
+              childAspectRatio: 0.6,
+              mainAxisSpacing: 18,
+              crossAxisSpacing: 18,
             ),
             itemCount: subCategories.length,
             itemBuilder: (context, index) {
@@ -702,7 +732,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 10),
+                              horizontal: 0, vertical: 0),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -791,6 +821,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           hintColor: Theme.of(context).colorScheme.onPrimary,
           suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
         ),
+        if (_visitorAddress == true)
         CustomForm.textField(
           "Coming From",
           hintText: 'Enter Coming From',

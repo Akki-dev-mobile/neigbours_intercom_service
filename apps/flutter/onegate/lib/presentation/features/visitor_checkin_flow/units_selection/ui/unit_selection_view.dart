@@ -9,7 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -18,12 +21,11 @@ import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:onegate_client/onegate_client.dart' as c;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UnitSelectionView extends StatefulWidget {
-  c.Visitor? searchedVisitor;
-  final c.Visitor visitor;
+  Visitor? searchedVisitor;
+  final Visitor visitor;
   final PurposeCategory1 purposeCategory;
   final String? comingFrom;
   final int? guestCount;
@@ -35,7 +37,7 @@ class UnitSelectionView extends StatefulWidget {
   final String? purposeCategoryId;
   final String? selectedSubCategoryId;
 
-  UnitSelectionView(c.Visitor? searchedVisitor,
+  UnitSelectionView(Visitor? searchedVisitor,
       {Key? key,
       required this.visitor,
       required this.purposeCategory,
@@ -94,6 +96,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _loadVisitorSettings();
     _initializeFuture = _initializeMembers(); // Initialize the Future once
     log("${selectedUnits} here is this");
+    log("${widget.comingFrom} here is this");
   }
 
   Future<void> _loadVisitorSettings() async {
@@ -106,6 +109,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _filteredMembersNotifier.dispose();
     _selectedMembersNotifier.dispose();
     _searchController.dispose();
+    print("here i am${widget.selectedSubCategoryId}");
     super.dispose();
   }
 
@@ -298,7 +302,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       },
       suffixIcon: _searchController.text.isNotEmpty
           ? IconButton(
-              icon: Icon(
+              icon: const Icon(
                 Ionicons.close,
                 color: Colors.red,
               ),
@@ -335,11 +339,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
-            Icons.groups_outlined, // Google Material Icon
+            Icons.groups_outlined,
             size: 60,
-            color: Colors.grey[400], // Subtle grey color for the icon
+            color: Colors.grey[400],
           ),
-          const SizedBox(height: 16), // Spacing between icon and text
+          const SizedBox(height: 16),
           Text(
             'No Members Found.\nSearch members by their name or flat',
             textAlign: TextAlign.center,
@@ -454,10 +458,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  // Selection Handling Methods
   List<Map<String, dynamic>> formattedMemberDetails = [];
 
-  // Update the _handleMemberSelection method
   Future<void> _handleMemberSelection(
     String firstName,
     String userId,
@@ -866,7 +868,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
 // Update the _prepareVisitorLogData method
-  Future<c.VisitorLog> _prepareVisitorLogData() async {
+  Future<VisitorLog> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
     final companyDetails = await gateStorage.getSocietyDetails();
@@ -884,8 +886,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
 
     // Map unit IDs to BuildingAssignment objects
-    List<c.BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
-      return c.BuildingAssignment(
+    List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
+      return BuildingAssignment(
         id: null,
         visitor_id: widget.visitor.id,
         visitor_log_id: null,
@@ -894,7 +896,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         unit_id: [unitId.toString()],
       );
     }).toList();
-
+    print("subbb${widget.selectedSubCategoryId.toString()}");
     // Save formattedMemberDetails to SharedPreferences
     try {
       final String memberDetailsJson = json.encode(formattedMemberDetails);
@@ -904,12 +906,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       print('Error saving member details: $e');
     }
 
-    return c.VisitorLog(
+    return VisitorLog(
       visitor_id: widget.visitor.id ?? 0,
       visitor_purpose_category_id:
           int.parse(widget.purposeCategoryId.toString()),
-      visitor_purpose_sub_category_id:
-          int.parse(widget.selectedSubCategoryId.toString()),
+      visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
+          ? int.parse(widget.selectedSubCategoryId.toString())
+          : null,
       visitor_count: widget.guestCount ?? 0,
       visitor_check_in: DateTime.parse(formattedInTime),
       visitor_card_number: widget.visitorNumber,
@@ -953,10 +956,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           .map((id) => int.parse(id.toString()))
           .toList();
     }
-
+    print("subbb${widget.selectedSubCategoryId.toString()}");
     // Map unit IDs to BuildingAssignment objects
-    List<c.BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
-      return c.BuildingAssignment(
+    List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
+      return BuildingAssignment(
         id: null,
         visitor_id: widget.visitor.id,
         visitor_log_id: null,
@@ -966,14 +969,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       );
     }).toList();
 
-    // Load the selected gate from SharedPreferences
     final selectedGateName = prefs.getString('selected_gate');
-    final visitorLogData = c.VisitorLog(
+    final visitorLogData = VisitorLog(
         visitor_id: widget.visitor.id ?? 0,
         visitor_purpose_category_id:
             int.parse(widget.purposeCategoryId.toString()),
-        visitor_purpose_sub_category_id:
-            int.parse(widget.selectedSubCategoryId.toString()),
+        visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
+            ? int.parse(widget.selectedSubCategoryId.toString())
+            : null,
         visitor_count: widget.guestCount ?? 0,
         visitor_check_in: DateTime.parse(formattedInTime),
         visitor_card_number: widget.visitorNumber,
@@ -988,7 +991,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _processSelectionSubmission(
-      Set<String> selectedMember, c.VisitorLog visitorLogData) async {
+      Set<String> selectedMember, VisitorLog visitorLogData) async {
     final userId = selectedUserIds.first;
     final selectedMobileNumbers = await _getSelectedMobileNumbers();
     final requestData = _prepareRequestData(userId, selectedMobileNumbers);
@@ -1024,7 +1027,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       "member_mobile_number": "918452060059",
       "visitor_id": widget.visitorId?.toString() ?? "",
       "purpose_category": widget.purposeCategory.toString(),
-      'visitor_purpose_sub_category_id': widget.selectedSubCategoryId.toString(),
+      'visitor_purpose_sub_category_id':
+          widget.selectedSubCategoryId.toString(),
       'coming_from': widget.comingFrom ?? "Unknown",
       "member_id": "${selectedMemberIds.first}",
       "company_name": companyName ?? "",
@@ -1032,9 +1036,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _sendFcmNotification(
-      Map<String, String> requestData, c.VisitorLog visitorLogData) async {
+      Map<String, String> requestData, VisitorLog visitorLogData) async {
     try {
-      await remoteDataSource.checkIn(visitorLogData);
+      // await remoteDataSource.checkIn(visitorLogData);
 
       final response = await Dio().post(
         'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
@@ -1046,14 +1050,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         log("FCM notification sent successfully: ${response.data}");
         bool isWaitingForApproval = false;
         setState(() => isWaitingForApproval = true);
-        await  _showApprovedDialog(context, visitorLogData);
+        await _showApprovedDialog(context, visitorLogData);
       }
     } on DioError catch (e) {
       _handleDioError(e, visitorLogData);
     }
   }
 
-  void _handleDioError(DioError e, c.VisitorLog visitorLogData) async {
+  void _handleDioError(DioError e, VisitorLog visitorLogData) async {
     if (e.response?.statusCode == 400) {
       await _showApprovedDialog(context, visitorLogData);
     } else {
@@ -1062,7 +1066,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   void _handleSubmissionError(
-      dynamic error, c.VisitorLog visitorLogData) async {
+      dynamic error, VisitorLog visitorLogData) async {
     log("Unexpected error during submission: $error");
     await _showApprovedDialog(context, visitorLogData);
   }
@@ -1207,7 +1211,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _showApprovedDialog(
-      BuildContext context, c.VisitorLog data) async {
+      BuildContext context, VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1316,7 +1320,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _notificationSent(
-      BuildContext context, c.VisitorLog data) async {
+      BuildContext context, VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false,

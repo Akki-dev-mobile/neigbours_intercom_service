@@ -7,16 +7,17 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
 import 'package:lottie/lottie.dart';
-import 'package:onegate_client/onegate_client.dart';
 
 class RequestPermissionView extends StatefulWidget {
   final List<MemberUnits>? gridData;
   final Visitor visitor;
-  final PurposeCategory purposeCategory;
+  final PurposeCategory1 purposeCategory;
   final String? comingFrom;
   final int? guestCount;
   const RequestPermissionView(
@@ -113,11 +114,11 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.visitor.mobile,
+                            widget.visitor.mobile ?? "",
                             style: Theme.of(context).textTheme.labelMedium,
                           ),
                           Text(
-                            widget.visitor.name,
+                            widget.visitor.name ?? "",
                             style: Theme.of(context).textTheme.displaySmall,
                           ),
                           SizedBox(height: 2),
@@ -129,7 +130,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                                 children: <TextSpan>[
                                   TextSpan(
                                     text: widget
-                                        .purposeCategory.purpose_category_name,
+                                        .purposeCategory.categoryName,
                                     style: TextStyle(
                                       color: Colors.blue[400],
                                     ),

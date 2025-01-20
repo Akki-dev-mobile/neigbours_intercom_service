@@ -1,6 +1,4 @@
-import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:onegate_client/onegate_client.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 
 abstract class VisitorLogRepository {
   Future<VisitorLog?> createVisitorLog(VisitorLog visitorLog);

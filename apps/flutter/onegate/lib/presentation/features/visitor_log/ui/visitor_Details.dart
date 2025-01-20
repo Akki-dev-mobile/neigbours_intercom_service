@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:onegate_client/onegate_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -38,9 +38,9 @@ class VisitorDetailsScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceVariant,
             ),
-            child: visitorLog.visitor!.visitor_image.isNotEmpty
+            child: visitorLog.visitor!.visitor_image!.isNotEmpty
                 ? Image.network(
-              visitorLog.visitor!.visitor_image,
+              visitorLog.visitor!.visitor_image ?? "",
               height: MediaQuery.of(context).size.height * 0.4 ,
               width: double.maxFinite,
               fit: BoxFit.contain,
@@ -51,8 +51,8 @@ class VisitorDetailsScreen extends StatelessWidget {
                 backgroundColor:
                 Theme.of(context).colorScheme.primary,
                 child: Text(
-                  visitorLog.visitor!.name.isNotEmpty
-                      ? visitorLog.visitor!.name[0].toUpperCase()
+                  visitorLog.visitor!.name!.isNotEmpty
+                      ? visitorLog.visitor!.name![0].toUpperCase()
                       : 'G',
                   style: const TextStyle(
                     fontSize: 60,
@@ -75,7 +75,7 @@ class VisitorDetailsScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        visitorLog.visitor!.name,
+                        visitorLog.visitor!.name ?? "",
                         style: Theme.of(context)
                             .textTheme
                             .headlineSmall
@@ -118,8 +118,8 @@ class VisitorDetailsScreen extends StatelessWidget {
                     color: Color(0xffFFEBE6),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Guest',
+                  child:  Text(
+                    "${visitorLog.purpose_sub_category_name}",
                     style: TextStyle(
                       color: Colors.black87,
                       fontWeight: FontWeight.w600,
@@ -132,7 +132,7 @@ class VisitorDetailsScreen extends StatelessWidget {
 
           // Contact Section
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -162,7 +162,7 @@ class VisitorDetailsScreen extends StatelessWidget {
                 ),
               ),
               subtitle: Text(
-                visitorLog.visitor!.mobile,
+                visitorLog.visitor!.mobile ?? "",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -172,7 +172,7 @@ class VisitorDetailsScreen extends StatelessWidget {
                 icon: Icon(Icons.call, size: 18),
                 label: Text('Call'),
                 onPressed: () =>
-                    _makePhoneCall(visitorLog.visitor!.mobile),
+                    _makePhoneCall(visitorLog.visitor!.mobile ?? ""),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,

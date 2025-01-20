@@ -3,14 +3,16 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/society/member_unit.dart';
+import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
-import 'package:onegate_client/onegate_client.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
-import 'package:onegate_client/onegate_client.dart' as c;
 
 part 'request_permission_event.dart';
 part 'request_permission_state.dart';
@@ -34,12 +36,12 @@ class RequestPermissionBloc
         buildingAssignment.visitor_id = event.visitor.id;
       }
       print("${Utils.getCurrentTime().toUtc().toString()}");
-      c.VisitorLog visitorLog = VisitorLog(
+      VisitorLog visitorLog = VisitorLog(
           company_id: _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
           // visitorBu: buildingAssignments,
           visitor_id: event.visitor.id!,
           visitor_count: event.guestCount == null ? 1 : event.guestCount!,
-          visitor_purpose_category_id: event.purposeCategory.id!,
+          visitor_purpose_category_id: event.purposeCategory.categoryId,
           visitor_check_in: Utils.getCurrentTime().toUtc(),
           visitor_coming_from: event.comingFrom,
           // vi: event.visitor,

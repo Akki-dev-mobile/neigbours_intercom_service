@@ -70,44 +70,21 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                   subtitle: "Set visitor card number as mandatory",
                 ),
 
-                // Visitor's Purpose Setting
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Visitor's Purpose",
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Set visitor's purpose as mandatory",
-                            style: Theme.of(context).textTheme.bodySmall,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Switch(
-                      value: purposeProvider.isPurposeToggleOn,
-                      onChanged: (value) async {
-                        await purposeProvider.setPurposeToggleState(value);
+                GateSettingListTile(
+                  title: "Visitor's Purpose",
+                  subtitle: "Set visitor's purpose as mandatory",
+                  switchValue: purposeProvider.isPurposeToggleOn,
+                  onChanged: (value) async {
+                    await purposeProvider.setPurposeToggleState(value);
 
-                        if (value) {
-                          await purposeProvider.fetchPurposes(remoteDataSource);
-                        } else {
-                          await purposeProvider.clearSavedPurposes();
-                        }
-                      },
-                    ),
-                  ],
+                    if (value) {
+                      await purposeProvider.fetchPurposes(remoteDataSource);
+                    } else {
+                      await purposeProvider.clearSavedPurposes();
+                    }
+                  },
                 ),
 
-                // Expanded Purpose List
                 if (purposeProvider.isPurposeToggleOn)
                   purposeProvider.isLoading
                       ? const Center(child: CircularProgressIndicator())
@@ -122,7 +99,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                         ),
                       if (purposeProvider.purposes != null)
                         Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: const EdgeInsets.all(10.0),
                           child: GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -169,44 +146,36 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                   borderRadius: BorderRadius.circular(12),
                                   child: Stack(
                                     children: [
-                                      // Main Content Container
                                       Center(
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                                           child: Column(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              // Purpose Image
-                                              Container(
-                                                width: 60,
-                                                height: 60,
-                                                padding: const EdgeInsets.all(8),
-                                                child: Center(
-                                                  child: purpose.image?.isNotEmpty ?? false
-                                                      ? ClipRRect(
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    child: Image.network(
-                                                      purpose.image!,
-                                                      width: 44,
-                                                      height: 44,
-                                                      fit: BoxFit.contain,
-                                                      errorBuilder: (context, error, stackTrace) =>
-                                                      const Icon(
-                                                        Icons.image,
-                                                        size: 40,
-                                                        color: Colors.grey,
-                                                      ),
+                                              Center(
+                                                child: purpose.image?.isNotEmpty ?? false
+                                                    ? ClipRRect(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  child: Image.network(
+                                                    purpose.image!,
+                                                    width: 50,
+                                                    height: 50,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder: (context, error, stackTrace) =>
+                                                    const Icon(
+                                                      Icons.image,
+                                                      size: 40,
+                                                      color: Colors.grey,
                                                     ),
-                                                  )
-                                                      : const Icon(
-                                                    Icons.image,
-                                                    size: 40,
-                                                    color: Colors.grey,
                                                   ),
+                                                )
+                                                    : const Icon(
+                                                  Icons.image,
+                                                  size: 40,
+                                                  color: Colors.grey,
                                                 ),
                                               ),
                                               const SizedBox(height: 8),
-                                              // Purpose Name
                                               Expanded(
                                                 child: Center(
                                                   child: Text(
@@ -215,7 +184,6 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                                     maxLines: 2,
                                                     overflow: TextOverflow.ellipsis,
                                                     style: TextStyle(
-                                                      fontSize: 14,
                                                       fontWeight: purpose.isSelected
                                                           ? FontWeight.bold
                                                           : FontWeight.normal,
@@ -278,7 +246,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text("Purposes saved successfully!"),
+                          content: Text("Changes saved successfully!"),
                         ),
                       );
                       final role = await GateStorage().getRole();
@@ -286,14 +254,14 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => AdminDashboardView(),
+                            builder: (context) => const AdminDashboardView(),
                           ),
                         );
                       } else {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => GateDashboardView(),
+                            builder: (context) => const GateDashboardView(),
                           ),
                         );
                       }

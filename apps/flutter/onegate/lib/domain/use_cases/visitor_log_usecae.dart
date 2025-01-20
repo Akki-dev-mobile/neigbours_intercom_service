@@ -1,7 +1,7 @@
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_log_repo.dart';
-import 'package:onegate_client/onegate_client.dart';
 
 class VisitorLogUsecase {
   final VisitorLogRepository _repository;

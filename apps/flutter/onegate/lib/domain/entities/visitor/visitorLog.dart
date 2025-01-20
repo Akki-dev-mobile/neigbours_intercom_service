@@ -1,0 +1,95 @@
+import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+
+class VisitorLog {
+  VisitorLog({
+    this.id,
+    this.visitor_id,
+    this.visitor,
+    this.visitor_purpose_category_id,
+    this.visitor_purpose_sub_category_id,
+    this.visitor_building_assignment,
+    this.visitor_count,
+    this.visitor_check_in,
+    this.visitor_check_out,
+    this.visitor_card_number,
+    this.visitor_coming_from,
+    this.visitor_card_id,
+    this.company_id,
+    this.is_checked_out,
+    this.visitor_purpose_Category_name,
+    this.purpose_sub_category_name
+  });
+
+  int? id;
+  int? visitor_id;
+  Visitor? visitor;
+  int? visitor_purpose_category_id;
+  int? visitor_purpose_sub_category_id;
+  List<BuildingAssignment>? visitor_building_assignment;
+  int? visitor_count;
+  DateTime? visitor_check_in;
+  DateTime? visitor_check_out;
+  String? visitor_card_number;
+  String? visitor_coming_from;
+  int? visitor_card_id;
+  int? company_id;
+  bool? is_checked_out;
+  String? visitor_purpose_Category_name;
+  String? purpose_sub_category_name;
+
+  /// Convert the object to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'visitor_id': visitor_id,
+      'visitor': visitor?.toJson(), // Convert nested `Visitor` object to JSON.
+      'visitor_purpose_category_id': visitor_purpose_category_id,
+      'visitor_purpose_sub_category_id': visitor_purpose_sub_category_id,
+      'visitor_building_assignment': visitor_building_assignment
+          ?.map((assignment) => assignment.toJson())
+          .toList(), // Convert nested list to JSON.
+      'visitor_count': visitor_count,
+      'visitor_check_in': visitor_check_in?.toIso8601String(),
+      'visitor_check_out': visitor_check_out?.toIso8601String(),
+      'visitor_card_number': visitor_card_number,
+      'visitor_coming_from': visitor_coming_from,
+      'visitor_card_id': visitor_card_id,
+      'company_id': company_id,
+      'is_checked_out': is_checked_out,
+      'purpose_category_name':visitor_purpose_Category_name,
+      "purpose_sub_category_name":purpose_sub_category_name
+    };
+  }
+
+  /// Create an instance from a JSON map.
+  factory VisitorLog.fromJson(Map<String, dynamic> json) {
+    return VisitorLog(
+      id: json['id'] as int?,
+      visitor_id: json['visitor_id'] as int?,
+      visitor: json['visitor'] != null
+          ? Visitor.fromJson(json['visitor'])
+          : null, // Parse nested `Visitor` object.
+      visitor_purpose_category_id: json['visitor_purpose_category_id'] as int?,
+      visitor_purpose_sub_category_id: json['visitor_purpose_sub_category_id'] as int?,
+      visitor_building_assignment: (json['visitor_building_assignment'] as List<dynamic>?)
+          ?.map((assignment) =>
+          BuildingAssignment.fromJson(assignment as Map<String, dynamic>))
+          .toList(),
+      visitor_count: json['visitor_count'] as int?,
+      visitor_check_in: json['visitor_check_in'] != null
+          ? DateTime.parse(json['visitor_check_in'] as String)
+          : null,
+      visitor_check_out: json['visitor_check_out'] != null
+          ? DateTime.parse(json['visitor_check_out'] as String)
+          : null,
+      visitor_card_number: json['visitor_card_number'] as String?,
+      visitor_coming_from: json['visitor_coming_from'] as String?,
+      visitor_card_id: json['visitor_card_id'] as int?,
+      company_id: json['company_id'] as int?,
+      is_checked_out: json['is_checked_out'] as bool?,
+      visitor_purpose_Category_name: json["purpose_category_name"] as String?,
+        purpose_sub_category_name:json["purpose_sub_category_name"] as String?
+    );
+  }
+}

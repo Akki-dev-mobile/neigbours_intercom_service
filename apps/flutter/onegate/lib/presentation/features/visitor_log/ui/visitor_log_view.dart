@@ -11,6 +11,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -24,7 +25,6 @@ import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:onegate_client/onegate_client.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -92,7 +92,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     // _storeTodayLogsCount(context);
   }
 
-
   @override
   void dispose() {
     _searchFocusNode.dispose();
@@ -100,15 +99,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     super.dispose();
   }
 
-
   Future<void> getSelectedGate() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       selectedGateName = prefs.getString('selected_gate');
     });
   }
-
-
 
   Future<void> _initializeSocietyId() async {
     societyId = await gateStorage.getSocietyId();
@@ -139,7 +135,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 fontSize: 16.0,
               );
               _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
-
             }
             break;
           case VisitorCheckInLogSuccessState:
@@ -175,7 +170,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             }
 
             List<VisitorLog> filteredVisitors = uniqueVisitorLogs
-                .where((visitorLog) => visitorLog.visitor!.name
+                .where((visitorLog) => visitorLog.visitor!.name!
                     .toLowerCase()
                     .contains(_searchText!.toLowerCase()))
                 .toList();
@@ -233,11 +228,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
             return WillPopScope(
               onWillPop: () async {
-
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => GateDashboardView()),
-                      (Route<dynamic> route) => false,
+                  (Route<dynamic> route) => false,
                 );
 
                 return false;
@@ -253,7 +247,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   ),
                 ),
                 actions: [
-
                   if (widget.id == "In Out Book")
                     Padding(
                       padding: const EdgeInsets.only(right: 10.0),
@@ -267,13 +260,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           children: [
                             IconButton(
                               onPressed: () async {
-                                await _showExportBottomSheet(context, visitorLogs);
+                                await _showExportBottomSheet(
+                                    context, visitorLogs);
                               },
                               icon: const Icon(
                                 Icons.download_rounded,
                                 color: Colors.black,
                               ),
-                              tooltip: 'Download Logs',  // Adding tooltip for accessibility
+                              tooltip:
+                                  'Download Logs',
                             ),
                             const Padding(
                               padding: EdgeInsets.only(right: 8.0),
@@ -1072,14 +1067,15 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               ),
               leading: CircleAvatar(
                 backgroundImage: widget
-                        .visitorLog.visitor!.visitor_image.isNotEmpty
-                    ? NetworkImage(widget.visitorLog.visitor!.visitor_image)
+                        .visitorLog.visitor!.visitor_image!.isNotEmpty
+                    ? NetworkImage(
+                        widget.visitorLog.visitor!.visitor_image ?? "")
                     : NetworkImage(
                         'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                child: widget.visitorLog.visitor!.visitor_image.isEmpty
+                child: widget.visitorLog.visitor!.visitor_image!.isEmpty
                     ? Text(
-                        widget.visitorLog.visitor!.name.isNotEmpty
-                            ? widget.visitorLog.visitor!.name[0]
+                        widget.visitorLog.visitor!.name!.isNotEmpty
+                            ? widget.visitorLog.visitor!.name![0]
                             : 'G',
                         style: Theme.of(context).textTheme.bodyMedium,
                       )
@@ -1143,8 +1139,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             color: const Color(0xffFFEBE6),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
-                            'Guest',
+                          child: Text(
+                            "${widget.visitorLog.purpose_sub_category_name}",
                             style: TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w500,
@@ -1160,26 +1156,26 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               trailing: IconButton(
                 onPressed: _hasCallSupport
                     ? () => _launched =
-                        _makePhoneCall(widget.visitorLog.visitor!.mobile)
+                        _makePhoneCall(widget.visitorLog.visitor!.mobile ?? "")
                     : null,
 
-    // onPressed: () {
-    //               log(
-    //                 'Calling ${visitorLog.visitor!.mobile}',
-    //               );
-    //
-    //               SnackBar(
-    //                 content: Text(
-    //                   'Calling ${visitorLog.visitor!.mobile}',
-    //                   style: Theme.of(context).textTheme.labelMedium,
-    //                 ),
-    //                 action: SnackBarAction(
-    //                   label: 'Close',
-    //                   onPressed: () {
-    //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    //                   },
-    //                 ),
-    //               );
+                // onPressed: () {
+                //               log(
+                //                 'Calling ${visitorLog.visitor!.mobile}',
+                //               );
+                //
+                //               SnackBar(
+                //                 content: Text(
+                //                   'Calling ${visitorLog.visitor!.mobile}',
+                //                   style: Theme.of(context).textTheme.labelMedium,
+                //                 ),
+                //                 action: SnackBarAction(
+                //                   label: 'Close',
+                //                   onPressed: () {
+                //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                //                   },
+                //                 ),
+                //               );
                 icon: Icon(
                   Ionicons.call_outline,
                   color: Colors.green,
