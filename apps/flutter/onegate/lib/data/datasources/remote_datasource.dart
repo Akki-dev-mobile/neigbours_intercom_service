@@ -1160,6 +1160,73 @@ class RemoteDataSource {
     }
   }
 
+  Future<dynamic> editStaff(int staffId, Map<String, dynamic> staffData) async {
+    final String? companyId = await gateStorage.getSocietyId();
+    if (companyId == null || companyId.isEmpty) {
+      throw Exception("Company ID is missing. Cannot edit staff.");
+    }
+
+    final String editStaffUrl =
+        'https://societybackend.cubeone.in/api/admin/staffs/editStaff/$staffId?company_id=$companyId';
+
+    try {
+      log('Editing staff with ID: $staffId');
+      log('Incoming staffData: $staffData');
+
+      // Build a JSON body matching your server's expected fields
+      final Map<String, dynamic> requestBody = {
+        'staff_type_id': staffData['category'],
+        'staff_gender': staffData['gender'],
+        'staff_first_name': staffData['name'],
+        'staff_badge_number': staffData['idProofNumber'],
+        'staff_contact_number': staffData['phone'],
+        'staff_email_id': staffData['email'],
+        'staff_address_1': staffData['address'] ?? '',
+        'staff_dob': staffData['dateOfBirth'] != null
+            ? DateTime.parse(staffData['dateOfBirth'])
+                .toIso8601String()
+                .split('T')[0]
+            : '',
+        'staff_qualification': staffData['qualification'],
+        'staff_skill': staffData['categoryValue'] ?? '',
+        'staff_lang_iso_639_3': 'eng',
+        'staff_rfid': staffData['idProofNumber'] ?? '',
+        'staff_note': '',
+        'staff_proof': staffData['idProofImageUrl'],
+      };
+
+      log('Request URL: $editStaffUrl');
+      log('Request Body: $requestBody');
+
+      // Send PUT request with raw JSON
+      final response = await _dio1?.put(
+        editStaffUrl,
+        data: requestBody, // or jsonEncode(requestBody) if needed
+        options: Options(
+          contentType: 'application/json',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      log('Response status: ${response?.statusCode}');
+      log('Response data: ${response?.data}');
+
+      if (response?.statusCode == 200) {
+        log("Staff edited successfully: ${response?.data}");
+        return response?.data;
+      } else {
+        log('Error response: ${response?.data}');
+        throw Exception(
+            'Server returned ${response?.statusCode}: ${response?.data}');
+      }
+    } catch (e) {
+      log('Error editing staff: $e');
+      rethrow;
+    }
+  }
+
   Future<List<dynamic>> getMembersList({bool forceFetch = false}) async {
     try {
       final storedMemberList = await gateStorage.getMemberList();
@@ -1231,6 +1298,12 @@ class RemoteDataSource {
 
   /// Fetch staff list for a company
   Future<List<StaffModel>> fetchStaffList(String companyId) async {
+    final String? companyId = await gateStorage.getSocietyId();
+
+    if (companyId == null || companyId.isEmpty) {
+      throw Exception('Company ID is null or empty.');
+    }
+
     try {
       final response = await _dio2?.get(
         ApiUrls.staffList,
@@ -1239,6 +1312,9 @@ class RemoteDataSource {
 
       if (response?.statusCode == 200) {
         final List<dynamic> data = response?.data?['data'];
+        if (data == null) {
+          throw Exception('Response data is null.');
+        }
         return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
       } else {
         throw Exception('Failed to fetch staff list: ${response?.statusCode}');

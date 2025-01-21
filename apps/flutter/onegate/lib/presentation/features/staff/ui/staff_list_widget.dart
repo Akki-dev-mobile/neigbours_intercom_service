@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
+import 'package:flutter_onegate/presentation/features/staff/ui/edit_staff.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../model/staff_model.dart';
 
 class StaffListWidget extends StatelessWidget {
   final List<dynamic> staffList;
@@ -12,30 +15,50 @@ class StaffListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       shrinkWrap: true,
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.symmetric(vertical: 8),
       physics: const NeverScrollableScrollPhysics(),
       itemCount: staffList.length,
       itemBuilder: (context, index) {
-        final staff = staffList[index];
-        final contactNumber = staff['staff_contact_number'] ?? 'N/A';
+        final staffMap = staffList[index];
+        final contactNumber = staffMap['staff_contact_number'] ?? 'N/A';
 
-        return PrimarySettingsTile(
-          icon: Symbols.person,
-          title: staff['name'] ?? 'No Name',
-          subtitle: 'Contact: $contactNumber',
-          trailing: IconButton(
-            onPressed: () {
-              if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {
-                _launchCaller(contactNumber);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('No contact number available'),
-                  ),
-                );
-              }
-            },
-            icon: const Icon(Symbols.call),
+        return GestureDetector(
+          onTap: () {
+            final staffObj = Staff.fromJson(staffMap);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => EditStaff(staff: staffObj),
+              ),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 5),
+            decoration: BoxDecoration(
+              border: Border.all(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: PrimarySettingsTile(
+              icon: Symbols.person,
+              title: staffMap['name'] ?? 'No Name',
+              subtitle: 'Contact: $contactNumber',
+              trailing: IconButton(
+                onPressed: () {
+                  if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {
+                    _launchCaller(contactNumber);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No contact number available'),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Symbols.call),
+              ),
+            ),
           ),
         );
       },

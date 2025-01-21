@@ -4,7 +4,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/presentation/features/staff/ui/addStaff.dart';
+import 'package:flutter_onegate/presentation/features/staff/ui/addstaff.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
 
 import '../../../../dio_setup.dart';
@@ -20,13 +20,19 @@ class StaffScreen extends StatefulWidget {
 class _StaffScreenState extends State<StaffScreen> {
   final StaffApi _staffApi = StaffApi();
   late Future<List<dynamic>> _staffFuture = Future.value([]);
-  RemoteDataSource _remoteDataSource = RemoteDataSource(
+  final RemoteDataSource _remoteDataSource = RemoteDataSource(
     DioSingleton.instance1,
     DioSingleton.instance2,
     DioSingleton.instance3,
   );
+  final GateStorage _gateStorage = GateStorage();
 
-  GateStorage gateStorage = GateStorage();
+  List<dynamic> _staffListFull = [];
+
+  List<dynamic> _filteredStaffList = [];
+
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -35,47 +41,122 @@ class _StaffScreenState extends State<StaffScreen> {
   }
 
   Future<void> _initializeSocietyId() async {
-    var societyID = await gateStorage.getSocietyId();
+    var societyID = await _gateStorage.getSocietyId();
     log('Society ID: $societyID');
     _staffFuture = _staffApi.fetchStaffList(societyID.toString());
     setState(() {});
   }
 
+  void _filterStaffList(String query) {
+    if (query.isEmpty) {
+      _filteredStaffList = List.from(_staffListFull);
+    } else {
+      _filteredStaffList = _staffListFull.where((staffMap) {
+        final staffName = (staffMap['name'] ?? '').toString().toLowerCase();
+        return staffName.contains(query.toLowerCase());
+      }).toList();
+    }
+    setState(() {});
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _filteredStaffList = List.from(_staffListFull);
+    setState(() {
+      _isSearching = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-      pageTitle: "Staff",
-      pageBody: FutureBuilder<List<dynamic>>(
-        future: _staffFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20.0),
-                child: CircularProgressIndicator(
-                  color: Colors.red,
+      isScrollable: true,
+      pageTitleWidget: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Text('Staff'),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _clearSearch();
+                }
+              });
+            },
+            icon: const Icon(Icons.search),
+          ),
+        ],
+      ),
+      pageBody: Column(
+        children: [
+          if (_isSearching)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  iconColor: Theme.of(context).colorScheme.onSurface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  labelText: 'Search by name',
+                  hintText: 'Enter staff name',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => _clearSearch(),
+                  ),
                 ),
+                onChanged: (query) => _filterStaffList(query),
               ),
-            );
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (snapshot.hasData) {
-            return StaffListWidget(staffList: snapshot.data!);
-          } else {
-            return const Center(child: Text('No Data Available'));
-          }
-        },
+            ),
+          const SizedBox(height: 10),
+          FutureBuilder<List<dynamic>>(
+            future: _staffFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(
+                      color: Colors.red,
+                    ),
+                  ),
+                );
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              } else if (snapshot.hasData) {
+                final freshData = snapshot.data!;
+
+                if (_staffListFull.isEmpty) {
+                  _staffListFull = freshData;
+                  _filteredStaffList = List.from(_staffListFull);
+                }
+
+                return StaffListWidget(staffList: _filteredStaffList);
+              } else {
+                return const Center(child: Text('No Data Available'));
+              }
+            },
+          ),
+          const SizedBox(height: 100),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.onSurface,
+        ),
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => AddStaff(),
+              builder: (context) => const AddStaff(),
             ),
           );
         },
-        child: const Icon(Icons.add),
+        label: const Text('Add Staff'),
+        icon: const Icon(Icons.add),
       ),
     );
   }

@@ -1,48 +1,61 @@
+// edit_staff.dart
+
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../data/datasources/remote_datasource.dart';
 import '../../../../dio_setup.dart';
+import '../model/staff_model.dart';
 
-class AddStaff extends StatefulWidget {
-  const AddStaff({super.key});
+class EditStaff extends StatefulWidget {
+  final Staff staff;
+
+  const EditStaff({
+    Key? key,
+    required this.staff,
+  }) : super(key: key);
 
   @override
-  State<AddStaff> createState() => _AddStaffState();
+  State<EditStaff> createState() => _EditStaffState();
 }
 
-class _AddStaffState extends State<AddStaff> {
+class _EditStaffState extends State<EditStaff> {
   final RemoteDataSource _remoteDataSource = RemoteDataSource(
     DioSingleton.instance1,
     DioSingleton.instance2,
     DioSingleton.instance3,
   );
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _idNumberController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
+  // TextEditingControllers
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+  late TextEditingController _idNumberController;
+  late TextEditingController _addressController;
 
+  // FocusNode
+  late FocusNode _mobileFocusNode;
+
+  // Dropdown values
   String _selectedCategory = "";
   String _selectedCategoryValue = "";
-  DateTime? _selectedDate;
-  XFile? _image;
   String _selectedGender = '';
-  String selectedCountryCodeSE = 'IN';
-  late FocusNode _mobileFocusNode;
-  XFile? _idProofImage;
-
+  String _selectedQualification = 'Bachelor\'s Degree';
   String _selectedIdProof = 'Aadhar Card';
 
-  final _formKey = GlobalKey<FormState>();
+  // Date & Images
+  DateTime? _selectedDate;
+  XFile? _newProfileImage;
+  XFile? _newIdProofImage;
 
+  // Predefined lists/maps
+  static Map<String, String> categories = {};
   final List<String> qualifications = [
     'High School Diploma',
     'Associate Degree',
@@ -51,10 +64,6 @@ class _AddStaffState extends State<AddStaff> {
     'Doctorate',
     'Professional Certification',
   ];
-  String _selectedQualification = 'Bachelor\'s Degree';
-
-  static Map<String, String> categories = {};
-
   final List<String> idProofs = [
     "Aadhar Card",
     "Passport",
@@ -63,10 +72,40 @@ class _AddStaffState extends State<AddStaff> {
     "PAN Card",
   ];
 
+  final _formKey = GlobalKey<FormState>();
+  String selectedCountryCodeSE = 'IN';
+
   @override
   void initState() {
     super.initState();
+
+    _nameController = TextEditingController(text: widget.staff.name);
+    _emailController = TextEditingController(text: widget.staff.email);
+    _phoneController = TextEditingController(text: widget.staff.phone);
+    _idNumberController =
+        TextEditingController(text: widget.staff.idProofNumber);
+    _addressController = TextEditingController(text: widget.staff.address);
+
     _mobileFocusNode = FocusNode();
+
+    _selectedGender = widget.staff.gender;
+    _selectedDate = widget.staff.dateOfBirth;
+    _selectedCategory = widget.staff.category;
+    _selectedCategoryValue = widget.staff.categoryValue;
+    _selectedQualification = widget.staff.qualification;
+    _selectedIdProof = widget.staff.idProofType;
+    selectedCountryCodeSE = widget.staff.countryCode;
+
+    if (!idProofs.contains(_selectedIdProof)) {
+      if (idProofs.isNotEmpty) _selectedIdProof = idProofs.first;
+    }
+
+    if (!qualifications.contains(_selectedQualification)) {
+      if (qualifications.isNotEmpty) {
+        _selectedQualification = qualifications.first;
+      }
+    }
+
     _fetchCategories();
   }
 
@@ -77,6 +116,7 @@ class _AddStaffState extends State<AddStaff> {
     _phoneController.dispose();
     _mobileFocusNode.dispose();
     _idNumberController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -92,11 +132,19 @@ class _AddStaffState extends State<AddStaff> {
           value: (item) => item['category'],
         );
 
+        // Ensure the selectedCategory is valid or fallback to the first
         if (categories.isNotEmpty) {
-          _selectedCategory = categories.keys.first;
+          // If the existing _selectedCategory isn't in the new map, set a default
+          if (!categories.containsKey(_selectedCategory)) {
+            _selectedCategory = categories.keys.first;
+            _selectedCategoryValue = categories.values.first;
+          } else {
+            // We assume the staff.category is the ID, so let's update the text value
+            _selectedCategoryValue = categories[_selectedCategory] ?? '';
+          }
         }
       });
-      print('Categories fetched successfully');
+      log('Categories fetched successfully');
     } catch (e) {
       debugPrint('Error fetching categories: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -108,17 +156,17 @@ class _AddStaffState extends State<AddStaff> {
   Future<dynamic> _openCamera({required bool isIdProof}) async {
     final ImagePicker picker = ImagePicker();
     try {
-      final XFile? capturedImage = (await picker.pickImage(
+      final XFile? capturedImage = await picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 80,
-      ));
+      );
 
       if (capturedImage != null) {
         setState(() {
           if (isIdProof) {
-            _idProofImage = capturedImage;
+            _newIdProofImage = capturedImage;
           } else {
-            _image = capturedImage;
+            _newProfileImage = capturedImage;
           }
         });
       }
@@ -163,33 +211,32 @@ class _AddStaffState extends State<AddStaff> {
     }
   }
 
-  void showCategoryDropdown(BuildContext context) {
-    log('Showing category dropdown');
-    if (categories.isEmpty) {
-      log('No categories to show');
-      return;
-    }
-
-    categories.isEmpty
-        ? CircularProgressIndicator()
-        : DropdownButton<String>(
-            value: _selectedCategory,
-            isExpanded: true,
-            underline: SizedBox(),
-            items: categories.entries.map((entry) {
-              return DropdownMenuItem<String>(
-                value: entry.key,
-                child: Text(entry.key),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                setState(() {
-                  _selectedCategory = newValue;
-                });
-              }
-            },
-          );
+  Future<void> _showConfirmationDialog(
+      BuildContext context, File profileImage, File idProofImage) async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Upload'),
+          content: const Text('Do you want to upload the selected images?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Confirm'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _uploadImages(profileImage, idProofImage);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _uploadImages(File profileImage, File idProofImage) async {
@@ -205,9 +252,9 @@ class _AddStaffState extends State<AddStaff> {
         final idProofImageUrl = idProofImageResponse['url'];
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Images uploaded successfully')),
+          const SnackBar(content: Text('Images uploaded successfully')),
         );
-        _submitStaffData(profileImageUrl, idProofImageUrl);
+        _updateStaffData(profileImageUrl, idProofImageUrl);
       } else {
         throw Exception('Failed to upload images');
       }
@@ -218,37 +265,12 @@ class _AddStaffState extends State<AddStaff> {
     }
   }
 
-  void _showConfirmationDialog(
-      BuildContext context, File profileImage, File idProofImage) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirm Upload'),
-          content: Text('Do you want to upload the selected images?'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Confirm'),
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _uploadImages(profileImage, idProofImage);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _submitStaffData(
-      String profileImageUrl, String idProofImageUrl) async {
+  Future<void> _updateStaffData(
+    String? profileImageUrl,
+    String? idProofImageUrl,
+  ) async {
     try {
+      // Build the map of updated staff data
       final staffData = {
         "name": _nameController.text.trim(),
         "email": _emailController.text.trim(),
@@ -261,31 +283,42 @@ class _AddStaffState extends State<AddStaff> {
         "qualification": _selectedQualification,
         "idProofType": _selectedIdProof,
         "idProofNumber": _idNumberController.text.trim(),
-        "address": addressController.text.trim(),
-        "idProofImageUrl": idProofImageUrl,
+        "address": _addressController.text.trim(),
+        // Use the newly uploaded images if present; otherwise, keep existing
+        "profileImageUrl": profileImageUrl ?? widget.staff.profileImageUrl,
+        "idProofImageUrl": idProofImageUrl ?? widget.staff.idProofImageUrl,
       };
 
-      log('Submitting staff data: $staffData');
+      log('Updating staff data: $staffData');
 
-      final response = await _remoteDataSource.addStaff(staffData);
+      // Call your editStaff method in _remoteDataSource
+      final response =
+          await _remoteDataSource.editStaff(widget.staff.id, staffData);
 
       if (mounted) {
         if (response != null) {
+          // Successfully updated
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Staff added successfully')),
+            const SnackBar(content: Text('Staff updated successfully')),
           );
         }
       }
     } catch (e) {
-      debugPrint('Error adding staff: $e');
+      debugPrint('Error updating staff: $e');
+
       if (mounted) {
         String errorMessage = e.toString();
+
+        // Example: if the server responds with "Phone number is required"
         if (errorMessage.contains("Phone number is required")) {
           errorMessage = "Please enter a valid phone number";
-        } else if (errorMessage.contains('400')) {
+        }
+        // Or if it's a 400 status
+        else if (errorMessage.contains('400')) {
           errorMessage = 'Please check all required fields and try again.';
         }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $errorMessage')),
         );
@@ -318,21 +351,44 @@ class _AddStaffState extends State<AddStaff> {
     }
 
     try {
-      if (_idProofImage != null &&
-          _idProofImage!.path.isNotEmpty &&
-          _image != null &&
-          _image!.path.isNotEmpty) {
-        final idProofFile = File(_idProofImage!.path);
-        final profileFile = File(_image!.path);
+      if (_newIdProofImage != null &&
+          _newIdProofImage!.path.isNotEmpty &&
+          _newProfileImage != null &&
+          _newProfileImage!.path.isNotEmpty) {
+        final idProofFile = File(_newIdProofImage!.path);
+        final profileFile = File(_newProfileImage!.path);
 
         if (await idProofFile.exists() && await profileFile.exists()) {
           _showConfirmationDialog(context, profileFile, idProofFile);
         } else {
           throw Exception('One or both image files not found');
         }
+      } else if (_newIdProofImage != null &&
+          _newIdProofImage!.path.isNotEmpty &&
+          (_newProfileImage == null || _newProfileImage!.path.isEmpty)) {
+        final idProofFile = File(_newIdProofImage!.path);
+        if (await idProofFile.exists()) {
+          await _uploadImages(
+            File(widget.staff.profileImageUrl),
+            idProofFile,
+          );
+        } else {
+          throw Exception('ID Proof image file not found');
+        }
+      } else if (_newProfileImage != null &&
+          _newProfileImage!.path.isNotEmpty &&
+          (_newIdProofImage == null || _newIdProofImage!.path.isEmpty)) {
+        final profileFile = File(_newProfileImage!.path);
+        if (await profileFile.exists()) {
+          await _uploadImages(
+            profileFile,
+            File(widget.staff.idProofImageUrl),
+          );
+        } else {
+          throw Exception('Profile image file not found');
+        }
       } else {
-        throw Exception(
-            'One or both images are not selected or paths are invalid');
+        _updateStaffData(null, null);
       }
     } catch (e) {
       debugPrint('Error: $e');
@@ -374,8 +430,8 @@ class _AddStaffState extends State<AddStaff> {
               const Text('Male'),
               const SizedBox(width: 20),
               Radio<String>(
-                value: 'F',
                 fillColor: WidgetStateProperty.all(Colors.red),
+                value: 'F',
                 groupValue: _selectedGender,
                 onChanged: (String? value) {
                   if (value != null) {
@@ -410,12 +466,11 @@ class _AddStaffState extends State<AddStaff> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-      pageTitle: "Create Staff",
+      pageTitle: "Edit Staff",
       pageBody: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
+          // Profile Image
           SizedBox(
             width: double.infinity,
             height: MediaQuery.of(context).size.height * 0.3,
@@ -425,11 +480,13 @@ class _AddStaffState extends State<AddStaff> {
                 CircleAvatar(
                   radius: 80,
                   backgroundColor: Colors.grey,
-                  backgroundImage: _image != null
-                      ? FileImage(File(_image!.path))
-                      : const NetworkImage(
-                          "https://static.vecteezy.com/system/resources/previews/045/994/896/non_2x/a-man-is-holding-a-camera-and-taking-a-picture-png.png",
-                        ) as ImageProvider,
+                  backgroundImage: _newProfileImage != null
+                      ? FileImage(File(_newProfileImage!.path))
+                      : (widget.staff.profileImageUrl.isNotEmpty
+                          ? NetworkImage(widget.staff.profileImageUrl)
+                          : const NetworkImage(
+                              "https://static.vecteezy.com/system/resources/previews/045/994/896/non_2x/a-man-is-holding-a-camera-and-taking-a-picture-png.png",
+                            )) as ImageProvider,
                 ),
                 Positioned(
                   bottom: 50,
@@ -450,15 +507,19 @@ class _AddStaffState extends State<AddStaff> {
             ),
           ),
           const SizedBox(height: 20),
+
+          // Form
           Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Personal Details',
-                    style: Theme.of(context).textTheme.displaySmall),
+                Text(
+                  'Personal Details',
+                  style: Theme.of(context).textTheme.displaySmall,
+                ),
                 const SizedBox(height: 20),
+
+                // Name
                 CustomForm.textField(
                   "Name",
                   textController: _nameController,
@@ -472,16 +533,20 @@ class _AddStaffState extends State<AddStaff> {
                     return null;
                   },
                 ),
+
+                // Gender
                 _buildGenderSelection(),
+
+                // Mobile Number
                 CustomForm.textField(
                   textController: _phoneController,
                   titleColor: Theme.of(context).colorScheme.onBackground,
                   hintColor: Theme.of(context).colorScheme.onPrimary,
                   focusNode: _mobileFocusNode,
-                  "Visitor Mobile Number",
+                  "Mobile Number",
                   hintText: '0123456789',
                   prefixIcon: CountryCodePicker(
-                    initialSelection: 'IN',
+                    initialSelection: selectedCountryCodeSE,
                     favorite: const ['IN'],
                     showFlagMain: true,
                     showFlagDialog: true,
@@ -527,7 +592,7 @@ class _AddStaffState extends State<AddStaff> {
                     dialogTextStyle: TextStyle(
                       color: Theme.of(context).colorScheme.onBackground,
                     ),
-                    onChanged: (CountryCode countryCode) {
+                    onChanged: (countryCode) {
                       setState(() {
                         selectedCountryCodeSE = countryCode.code!;
                       });
@@ -559,6 +624,8 @@ class _AddStaffState extends State<AddStaff> {
                     return null;
                   },
                 ),
+
+                // Email
                 CustomForm.textField(
                   "Email",
                   textController: _emailController,
@@ -570,19 +637,21 @@ class _AddStaffState extends State<AddStaff> {
                     if (value?.isEmpty ?? true) {
                       return 'Please enter an email';
                     }
-
                     return null;
                   },
                 ),
+
+                // DOB
                 CustomForm.textField(
                   "Date of Birth",
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
                   hintText: 'Enter Date of Birth',
                   textController: TextEditingController(
-                      text: _selectedDate != null
-                          ? "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}"
-                          : ""),
+                    text: _selectedDate != null
+                        ? "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}"
+                        : "",
+                  ),
                   isReadOnly: true,
                   validator: (value) {
                     if (_selectedDate == null) {
@@ -592,19 +661,16 @@ class _AddStaffState extends State<AddStaff> {
                   },
                   suffixIcon: IconButton(
                     onPressed: _selectDateOfBirth,
-                    icon: const Icon(
-                      Icons.calendar_today,
-                    ),
+                    icon: const Icon(Icons.calendar_today),
                   ),
                 ),
 
+                // Category
                 CustomDropdown(
                   title: "Category",
                   hintText: "Select Category",
                   items: categories.values.toSet().toList(),
-                  // Ensure unique values
-                  selectedItem: categories[_selectedCategory],
-                  // Ensure selectedItem matches a unique value
+                  selectedItem: _selectedCategoryValue,
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
@@ -616,33 +682,8 @@ class _AddStaffState extends State<AddStaff> {
                     }
                   },
                 ),
-                // CustomForm.textField(
-                //   "Qualification",
-                //   isReadOnly: true,
-                //   titleColor: Colors.black,
-                //   hintColor: Colors.black,
-                //   textController:
-                //       TextEditingController(text: _selectedQualification),
-                //   hintText: "Enter Qualification",
-                //   suffixIcon: DropdownButton<String>(
-                //     underline: SizedBox(),
-                //     icon: Icon(Icons.arrow_drop_down),
-                //     items: qualifications.map((qualification) {
-                //       return DropdownMenuItem<String>(
-                //         value: qualification,
-                //         child: Text(qualification),
-                //       );
-                //     }).toList(),
-                //     onChanged: (String? newValue) {
-                //       if (newValue != null) {
-                //         setState(() {
-                //           _selectedQualification = newValue;
-                //         });
-                //       }
-                //     },
-                //   ),
-                // ),
 
+                // Qualification
                 CustomDropdown(
                   title: "Qualification",
                   hintText: "Select Qualification",
@@ -661,32 +702,8 @@ class _AddStaffState extends State<AddStaff> {
                   color: Colors.grey,
                   thickness: 1,
                 ),
-                // CustomForm.textField(
-                //   "Enter ID Proof",
-                //   isReadOnly: true,
-                //   titleColor: Colors.black,
-                //   hintColor: Colors.black,
-                //   hintText: "Select ID Proof",
-                //   hasInitialValue: _selectedIdProof,
-                //   suffixIcon: DropdownButton<String>(
-                //     underline: SizedBox(),
-                //     icon: Icon(Icons.arrow_drop_down),
-                //     items: idProofs.map((idProof) {
-                //       return DropdownMenuItem<String>(
-                //         value: idProof,
-                //         child: Text(idProof),
-                //       );
-                //     }).toList(),
-                //     onChanged: (String? newValue) {
-                //       if (newValue != null) {
-                //         setState(() {
-                //           _selectedIdProof = newValue;
-                //         });
-                //       }
-                //     },
-                //   ),
-                // ),
 
+                // ID Proof
                 CustomDropdown(
                   title: "ID Proof",
                   hintText: "Select ID Proof",
@@ -701,6 +718,7 @@ class _AddStaffState extends State<AddStaff> {
                   },
                 ),
 
+                // ID Proof Number + camera icon
                 CustomForm.textField(
                   _selectedIdProof,
                   titleColor: Colors.black,
@@ -719,17 +737,22 @@ class _AddStaffState extends State<AddStaff> {
                   ),
                   counterText: "Upload ID Proof",
                 ),
-                CustomForm.textField("Enter Address",
-                    textController: addressController,
-                    lines: 5,
-                    titleColor: Colors.black,
-                    hintColor: Colors.grey,
-                    hintText: "Enter Address"),
+
+                // Address
+                CustomForm.textField(
+                  "Enter Address",
+                  textController: _addressController,
+                  lines: 5,
+                  titleColor: Colors.black,
+                  hintColor: Colors.grey,
+                  hintText: "Enter Address",
+                ),
+
+                // Update Button
                 CustomLargeBtn(
-                    onPressed: () {
-                      _submitForm();
-                    },
-                    text: "PostData"),
+                  onPressed: _submitForm,
+                  text: "Update Staff",
+                ),
                 const SizedBox(height: 120),
               ],
             ),
@@ -738,16 +761,8 @@ class _AddStaffState extends State<AddStaff> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: CustomLargeBtn(
-        onPressed: () {
-          if (_image != null && _idProofImage != null) {
-            _submitStaffData(_image!.path, _idProofImage!.path);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please select both images')),
-            );
-          }
-        },
-        text: "Add",
+        onPressed: _submitForm,
+        text: "Update",
       ),
     );
   }
