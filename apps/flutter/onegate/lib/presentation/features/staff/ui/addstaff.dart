@@ -67,6 +67,9 @@ class _AddStaffState extends State<AddStaff> {
   void initState() {
     super.initState();
     _mobileFocusNode = FocusNode();
+    if (!qualifications.contains(_selectedQualification)) {
+      _selectedQualification = qualifications.first;
+    }
     _fetchCategories();
   }
 
@@ -228,13 +231,19 @@ class _AddStaffState extends State<AddStaff> {
           content: Text('Do you want to upload the selected images?'),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Confirm'),
+              child: Text(
+                'Confirm',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               onPressed: () async {
                 Navigator.of(context).pop();
                 await _uploadImages(profileImage, idProofImage);
@@ -423,14 +432,12 @@ class _AddStaffState extends State<AddStaff> {
               alignment: Alignment.center,
               children: [
                 CircleAvatar(
-                  radius: 80,
-                  backgroundColor: Colors.grey,
-                  backgroundImage: _image != null
-                      ? FileImage(File(_image!.path))
-                      : const NetworkImage(
-                          "https://static.vecteezy.com/system/resources/previews/045/994/896/non_2x/a-man-is-holding-a-camera-and-taking-a-picture-png.png",
-                        ) as ImageProvider,
-                ),
+                    radius: 80,
+                    backgroundColor: Colors.grey,
+                    backgroundImage: _image != null
+                        ? FileImage(File(_image!.path))
+                        : const NetworkImage(
+                            "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")),
                 Positioned(
                   bottom: 50,
                   right: 90,
@@ -602,9 +609,9 @@ class _AddStaffState extends State<AddStaff> {
                   title: "Category",
                   hintText: "Select Category",
                   items: categories.values.toSet().toList(),
-                  // Ensure unique values
-                  selectedItem: categories[_selectedCategory],
-                  // Ensure selectedItem matches a unique value
+                  selectedItem: _selectedCategoryValue.isNotEmpty
+                      ? _selectedCategoryValue
+                      : null,
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
@@ -616,6 +623,7 @@ class _AddStaffState extends State<AddStaff> {
                     }
                   },
                 ),
+
                 // CustomForm.textField(
                 //   "Qualification",
                 //   isReadOnly: true,
@@ -647,7 +655,9 @@ class _AddStaffState extends State<AddStaff> {
                   title: "Qualification",
                   hintText: "Select Qualification",
                   items: qualifications,
-                  selectedItem: _selectedQualification,
+                  selectedItem: qualifications.contains(_selectedQualification)
+                      ? _selectedQualification
+                      : null,
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
@@ -657,10 +667,6 @@ class _AddStaffState extends State<AddStaff> {
                   },
                 ),
 
-                const Divider(
-                  color: Colors.grey,
-                  thickness: 1,
-                ),
                 // CustomForm.textField(
                 //   "Enter ID Proof",
                 //   isReadOnly: true,
@@ -720,17 +726,144 @@ class _AddStaffState extends State<AddStaff> {
                   ),
                   counterText: "Upload ID Proof",
                 ),
+
+                if (_image != null || _idProofImage != null) ...[
+                  Text(
+                    "Preview images",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Profile Image Container
+                        Container(
+                          height: 120,
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              _image != null
+                                  ? Image.file(
+                                      File(_image!.path),
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey.shade300,
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white70,
+                                        size: 40,
+                                      ),
+                                    ),
+                              if (_image != null)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _image = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.redAccent,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        // ID Proof Image Container
+                        Container(
+                          height: 120,
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              _idProofImage != null
+                                  ? Image.file(
+                                      File(_idProofImage!.path),
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey.shade300,
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white70,
+                                        size: 40,
+                                      ),
+                                    ),
+                              if (_idProofImage != null)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _idProofImage = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.redAccent,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                ],
                 CustomForm.textField("Enter Address",
                     textController: addressController,
                     lines: 5,
                     titleColor: Colors.black,
                     hintColor: Colors.grey,
                     hintText: "Enter Address"),
-                CustomLargeBtn(
-                    onPressed: () {
-                      _submitForm();
-                    },
-                    text: "PostData"),
+                // CustomLargeBtn(
+                //     onPressed: () {
+                //       _submitForm();
+                //     },
+                //     text: "PostData"),
                 const SizedBox(height: 120),
               ],
             ),
@@ -739,9 +872,10 @@ class _AddStaffState extends State<AddStaff> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: CustomLargeBtn(
-        onPressed: () {
+        onPressed: () async {
           if (_image != null && _idProofImage != null) {
             _submitStaffData(_image!.path, _idProofImage!.path);
+            await _submitForm();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Please select both images')),

@@ -18,6 +18,7 @@ class StaffApi {
         queryParameters: {'company_id': companyId},
       );
       if (response.statusCode == 200) {
+        log("api full body with params: https://socbackend.cubeone.in/api/admin/staffs/staffLists?company_id=$companyId");
         log('Staff list fetched successfully');
         log('Staff list: ${response.data['data']}');
         return response.data['data']; // Return list of staff

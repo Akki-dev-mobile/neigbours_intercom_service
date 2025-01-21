@@ -33,7 +33,6 @@ class Staff {
     required this.profileImageUrl,
   });
 
-  /// Convert a JSON-like map into a [Staff] object
   factory Staff.fromJson(Map<String, dynamic> json) {
     return Staff(
       id: json['id'] ?? 0,
@@ -52,5 +51,10 @@ class Staff {
       idProofImageUrl: json['id_proof_image_url'] ?? '',
       profileImageUrl: json['profile_image_url'] ?? '',
     );
+  }
+
+  @override
+  String toString() {
+    return 'Staff{id: $id, name: $name, email: $email, phone: $phone, countryCode: $countryCode, dateOfBirth: $dateOfBirth, category: $category, categoryValue: $categoryValue, gender: $gender, qualification: $qualification, idProofType: $idProofType, idProofNumber: $idProofNumber, address: $address, idProofImageUrl: $idProofImageUrl, profileImageUrl: $profileImageUrl}';
   }
 }

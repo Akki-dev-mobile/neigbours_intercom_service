@@ -93,15 +93,22 @@ class _StaffScreenState extends State<StaffScreen> {
         children: [
           if (_isSearching)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
                   iconColor: Theme.of(context).colorScheme.onSurface,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide:
+                        BorderSide(color: Colors.grey), // Blue border on focus
                   ),
-                  labelText: 'Search by name',
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(
+                        color: Colors.blue), // Blue border on focus
+                  ),
                   hintText: 'Enter staff name',
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.clear),
@@ -118,7 +125,7 @@ class _StaffScreenState extends State<StaffScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: Padding(
-                    padding: EdgeInsets.all(20.0),
+                    padding: EdgeInsets.only(top: 400.0),
                     child: CircularProgressIndicator(
                       color: Colors.red,
                     ),
@@ -133,6 +140,8 @@ class _StaffScreenState extends State<StaffScreen> {
                   _staffListFull = freshData;
                   _filteredStaffList = List.from(_staffListFull);
                 }
+                print("StaffId");
+                print("StaffId: ${_staffListFull[0]['id']} ");
 
                 return StaffListWidget(staffList: _filteredStaffList);
               } else {

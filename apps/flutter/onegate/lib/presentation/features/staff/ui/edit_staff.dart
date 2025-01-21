@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -53,6 +54,7 @@ class _EditStaffState extends State<EditStaff> {
   DateTime? _selectedDate;
   XFile? _newProfileImage;
   XFile? _newIdProofImage;
+  XFile? _image;
 
   // Predefined lists/maps
   static Map<String, String> categories = {};
@@ -74,6 +76,7 @@ class _EditStaffState extends State<EditStaff> {
 
   final _formKey = GlobalKey<FormState>();
   String selectedCountryCodeSE = 'IN';
+  late int _staffId = 0;
 
   @override
   void initState() {
@@ -85,9 +88,9 @@ class _EditStaffState extends State<EditStaff> {
     _idNumberController =
         TextEditingController(text: widget.staff.idProofNumber);
     _addressController = TextEditingController(text: widget.staff.address);
+    _staffId = widget.staff.id;
 
     _mobileFocusNode = FocusNode();
-
     _selectedGender = widget.staff.gender;
     _selectedDate = widget.staff.dateOfBirth;
     _selectedCategory = widget.staff.category;
@@ -99,11 +102,9 @@ class _EditStaffState extends State<EditStaff> {
     if (!idProofs.contains(_selectedIdProof)) {
       if (idProofs.isNotEmpty) _selectedIdProof = idProofs.first;
     }
-
     if (!qualifications.contains(_selectedQualification)) {
-      if (qualifications.isNotEmpty) {
+      if (qualifications.isNotEmpty)
         _selectedQualification = qualifications.first;
-      }
     }
 
     _fetchCategories();
@@ -117,6 +118,7 @@ class _EditStaffState extends State<EditStaff> {
     _mobileFocusNode.dispose();
     _idNumberController.dispose();
     _addressController.dispose();
+
     super.dispose();
   }
 
@@ -132,14 +134,11 @@ class _EditStaffState extends State<EditStaff> {
           value: (item) => item['category'],
         );
 
-        // Ensure the selectedCategory is valid or fallback to the first
         if (categories.isNotEmpty) {
-          // If the existing _selectedCategory isn't in the new map, set a default
           if (!categories.containsKey(_selectedCategory)) {
             _selectedCategory = categories.keys.first;
             _selectedCategoryValue = categories.values.first;
           } else {
-            // We assume the staff.category is the ID, so let's update the text value
             _selectedCategoryValue = categories[_selectedCategory] ?? '';
           }
         }
@@ -221,13 +220,19 @@ class _EditStaffState extends State<EditStaff> {
           content: const Text('Do you want to upload the selected images?'),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: const Text('Confirm'),
+              child: Text(
+                'Confirm',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               onPressed: () async {
                 Navigator.of(context).pop();
                 await _uploadImages(profileImage, idProofImage);
@@ -259,9 +264,9 @@ class _EditStaffState extends State<EditStaff> {
         throw Exception('Failed to upload images');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Error: $e')),
+      // );
     }
   }
 
@@ -270,8 +275,8 @@ class _EditStaffState extends State<EditStaff> {
     String? idProofImageUrl,
   ) async {
     try {
-      // Build the map of updated staff data
       final staffData = {
+        "id": _staffId,
         "name": _nameController.text.trim(),
         "email": _emailController.text.trim(),
         "phone": _phoneController.text,
@@ -284,25 +289,26 @@ class _EditStaffState extends State<EditStaff> {
         "idProofType": _selectedIdProof,
         "idProofNumber": _idNumberController.text.trim(),
         "address": _addressController.text.trim(),
-        // Use the newly uploaded images if present; otherwise, keep existing
         "profileImageUrl": profileImageUrl ?? widget.staff.profileImageUrl,
         "idProofImageUrl": idProofImageUrl ?? widget.staff.idProofImageUrl,
       };
 
       log('Updating staff data: $staffData');
 
-      // Call your editStaff method in _remoteDataSource
       final response =
           await _remoteDataSource.editStaff(widget.staff.id, staffData);
 
-      if (mounted) {
-        if (response != null) {
-          // Successfully updated
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Staff updated successfully')),
-          );
-        }
+      if (mounted && response != null && response.statusCode == 200) {
+        // Navigate to StaffListWidget after successful update
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const StaffListWidget(staffList: [])),
+          (Route<dynamic> route) => false,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Staff updated successfully')),
+        );
       }
     } catch (e) {
       debugPrint('Error updating staff: $e');
@@ -310,13 +316,8 @@ class _EditStaffState extends State<EditStaff> {
       if (mounted) {
         String errorMessage = e.toString();
 
-        // Example: if the server responds with "Phone number is required"
         if (errorMessage.contains("Phone number is required")) {
           errorMessage = "Please enter a valid phone number";
-        }
-        // Or if it's a 400 status
-        else if (errorMessage.contains('400')) {
-          errorMessage = 'Please check all required fields and try again.';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -368,10 +369,8 @@ class _EditStaffState extends State<EditStaff> {
           (_newProfileImage == null || _newProfileImage!.path.isEmpty)) {
         final idProofFile = File(_newIdProofImage!.path);
         if (await idProofFile.exists()) {
-          await _uploadImages(
-            File(widget.staff.profileImageUrl),
-            idProofFile,
-          );
+          _showConfirmationDialog(
+              context, File(widget.staff.profileImageUrl), idProofFile);
         } else {
           throw Exception('ID Proof image file not found');
         }
@@ -380,10 +379,8 @@ class _EditStaffState extends State<EditStaff> {
           (_newIdProofImage == null || _newIdProofImage!.path.isEmpty)) {
         final profileFile = File(_newProfileImage!.path);
         if (await profileFile.exists()) {
-          await _uploadImages(
-            profileFile,
-            File(widget.staff.idProofImageUrl),
-          );
+          _showConfirmationDialog(
+              context, profileFile, File(widget.staff.idProofImageUrl));
         } else {
           throw Exception('Profile image file not found');
         }
@@ -392,9 +389,9 @@ class _EditStaffState extends State<EditStaff> {
       }
     } catch (e) {
       debugPrint('Error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Error: $e')),
+      // );
     }
   }
 
@@ -479,14 +476,14 @@ class _EditStaffState extends State<EditStaff> {
               children: [
                 CircleAvatar(
                   radius: 80,
-                  backgroundColor: Colors.grey,
+                  backgroundColor: Theme.of(context).colorScheme.onSurface,
                   backgroundImage: _newProfileImage != null
                       ? FileImage(File(_newProfileImage!.path))
                       : (widget.staff.profileImageUrl.isNotEmpty
-                          ? NetworkImage(widget.staff.profileImageUrl)
-                          : const NetworkImage(
-                              "https://static.vecteezy.com/system/resources/previews/045/994/896/non_2x/a-man-is-holding-a-camera-and-taking-a-picture-png.png",
-                            )) as ImageProvider,
+                              ? NetworkImage(widget.staff.profileImageUrl)
+                              : const NetworkImage(
+                                  "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"))
+                          as ImageProvider,
                 ),
                 Positioned(
                   bottom: 50,
@@ -512,6 +509,8 @@ class _EditStaffState extends State<EditStaff> {
           Form(
             key: _formKey,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Personal Details',
@@ -634,7 +633,7 @@ class _EditStaffState extends State<EditStaff> {
                   hintColor: Colors.grey,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) {
+                    if (value!.isEmpty) {
                       return 'Please enter an email';
                     }
                     return null;
@@ -670,7 +669,9 @@ class _EditStaffState extends State<EditStaff> {
                   title: "Category",
                   hintText: "Select Category",
                   items: categories.values.toSet().toList(),
-                  selectedItem: _selectedCategoryValue,
+                  selectedItem: categories.containsKey(_selectedCategory)
+                      ? categories[_selectedCategory]
+                      : null,
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
@@ -688,7 +689,9 @@ class _EditStaffState extends State<EditStaff> {
                   title: "Qualification",
                   hintText: "Select Qualification",
                   items: qualifications,
-                  selectedItem: _selectedQualification,
+                  selectedItem: qualifications.contains(_selectedQualification)
+                      ? _selectedQualification
+                      : null,
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
@@ -698,17 +701,14 @@ class _EditStaffState extends State<EditStaff> {
                   },
                 ),
 
-                const Divider(
-                  color: Colors.grey,
-                  thickness: 1,
-                ),
-
                 // ID Proof
                 CustomDropdown(
                   title: "ID Proof",
                   hintText: "Select ID Proof",
                   items: idProofs,
-                  selectedItem: _selectedIdProof,
+                  selectedItem: idProofs.contains(_selectedIdProof)
+                      ? _selectedIdProof
+                      : null,
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
@@ -716,6 +716,7 @@ class _EditStaffState extends State<EditStaff> {
                       });
                     }
                   },
+                  titleColor: null,
                 ),
 
                 // ID Proof Number + camera icon
@@ -723,11 +724,49 @@ class _EditStaffState extends State<EditStaff> {
                   _selectedIdProof,
                   titleColor: Colors.black,
                   hintColor: Colors.black,
-                  hintText: "Enter ID Proof Number",
+                  hintText: "Enter ID ${_selectedIdProof}",
                   textController: _idNumberController,
                   validator: (value) {
                     if (value?.isEmpty ?? true) {
                       return 'Please enter an ID proof number';
+                    }
+                    final input = value!.trim();
+
+                    switch (_selectedIdProof) {
+                      case 'Aadhar Card':
+                        // Aadhaar should be exactly 12 digits
+                        if (!RegExp(r'^\d{12}$').hasMatch(input)) {
+                          return 'Please enter a valid 12-digit Aadhaar number';
+                        }
+                        break;
+                      case 'Passport':
+                        // Passport: typically 8-9 alphanumeric characters (generic validation)
+                        if (input.length < 8 ||
+                            input.length > 9 ||
+                            !RegExp(r'^[A-Za-z0-9]+$').hasMatch(input)) {
+                          return 'Please enter a valid Passport number (8-9 alphanumeric characters)';
+                        }
+                        break;
+                      case 'Driving License':
+                        // Driving License: Check for a reasonable length (can vary by region)
+                        if (input.length < 5) {
+                          return 'Please enter a valid Driving License number';
+                        }
+                        break;
+                      case 'Voter ID':
+                        // Voter ID (Indian format example: 3 letters followed by 7 digits)
+                        if (!RegExp(r'^[A-Za-z]{3}\d{7}$').hasMatch(input)) {
+                          return 'Please enter a valid Voter ID (e.g., ABC1234567)';
+                        }
+                        break;
+                      case 'PAN Card':
+                        // PAN Card: Indian PAN format: 5 letters, 4 digits, 1 letter
+                        if (!RegExp(r'^[A-Z]{5}\d{4}[A-Z]$').hasMatch(input)) {
+                          return 'Please enter a valid PAN card number (e.g., ABCDE1234F)';
+                        }
+                        break;
+                      default:
+                        break;
                     }
                     return null;
                   },
@@ -738,7 +777,136 @@ class _EditStaffState extends State<EditStaff> {
                   counterText: "Upload ID Proof",
                 ),
 
-                // Address
+                SizedBox(
+                  height: 10,
+                ),
+                if (_newProfileImage != null || _newIdProofImage != null) ...[
+                  Text(
+                    "Preview images",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Profile Image Container
+                        Container(
+                          height: 120,
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              _newProfileImage != null
+                                  ? Image.file(
+                                      File(_newProfileImage!.path),
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey.shade300,
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white70,
+                                        size: 40,
+                                      ),
+                                    ),
+                              if (_newProfileImage != null)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _newProfileImage = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.redAccent,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        // ID Proof Image Container
+                        Container(
+                          height: 120,
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              _newIdProofImage != null
+                                  ? Image.file(
+                                      File(_newIdProofImage!.path),
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey.shade300,
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white70,
+                                        size: 40,
+                                      ),
+                                    ),
+                              if (_newIdProofImage != null)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _newIdProofImage = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.redAccent,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                ],
+// Address
                 CustomForm.textField(
                   "Enter Address",
                   textController: _addressController,
@@ -747,13 +915,14 @@ class _EditStaffState extends State<EditStaff> {
                   hintColor: Colors.grey,
                   hintText: "Enter Address",
                 ),
-
-                // Update Button
-                CustomLargeBtn(
-                  onPressed: _submitForm,
-                  text: "Update Staff",
+                SizedBox(
+                  height: 100,
                 ),
-                const SizedBox(height: 120),
+                // CustomLargeBtn(
+                //   onPressed: _submitForm,
+                //   text: "Update Staff",
+                // ),
+                // const SizedBox(height: 120),
               ],
             ),
           ),

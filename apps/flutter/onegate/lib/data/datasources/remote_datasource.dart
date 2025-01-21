@@ -1192,16 +1192,16 @@ class RemoteDataSource {
         'staff_lang_iso_639_3': 'eng',
         'staff_rfid': staffData['idProofNumber'] ?? '',
         'staff_note': '',
-        'staff_proof': staffData['idProofImageUrl'],
+        'staff_proof':
+            'https://storage-as-service.s3.amazonaws.com/1//1737461229_scaled_c394ea13-3bcb-4b65-94ff-4ee0d12b24536548585721313203661.jpg',
       };
 
       log('Request URL: $editStaffUrl');
       log('Request Body: $requestBody');
 
-      // Send PUT request with raw JSON
       final response = await _dio1?.put(
         editStaffUrl,
-        data: requestBody, // or jsonEncode(requestBody) if needed
+        data: requestBody,
         options: Options(
           contentType: 'application/json',
           headers: {
@@ -1223,6 +1223,25 @@ class RemoteDataSource {
       }
     } catch (e) {
       log('Error editing staff: $e');
+
+      if (e is DioError && e.response?.statusCode == 400) {
+        final responseData = e.response?.data.toString().toLowerCase();
+        if (responseData != null &&
+            responseData.contains('mobile number already exist')) {
+          Fluttertoast.showToast(
+              backgroundColor: Colors.red,
+              msg: "User already exists",
+              toastLength: Toast.LENGTH_SHORT);
+        } else {
+          Fluttertoast.showToast(
+              msg: "Please check all required fields and try again.",
+              toastLength: Toast.LENGTH_SHORT);
+        }
+      } else {
+        Fluttertoast.showToast(
+            msg: "Error editing staff: $e", toastLength: Toast.LENGTH_SHORT);
+      }
+
       rethrow;
     }
   }

@@ -1,10 +1,12 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
-import 'package:flutter_onegate/presentation/features/staff/ui/edit_staff.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../model/staff_model.dart';
+import 'edit_staff.dart';
 
 class StaffListWidget extends StatelessWidget {
   final List<dynamic> staffList;
@@ -25,9 +27,14 @@ class StaffListWidget extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             final staffObj = Staff.fromJson(staffMap);
+            log("staffObj: $staffObj");
+
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => EditStaff(staff: staffObj),
+                builder: (context) => EditStaff(
+                  staff: staffObj,
+                  // staffId: staffMap['id'],
+                ),
               ),
             );
           },
@@ -42,7 +49,7 @@ class StaffListWidget extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             child: PrimarySettingsTile(
               icon: Symbols.person,
-              title: staffMap['name'] ?? 'No Name',
+              title: staffMap['name'].toString() ?? 'No Name',
               subtitle: 'Contact: $contactNumber',
               trailing: IconButton(
                 onPressed: () {
