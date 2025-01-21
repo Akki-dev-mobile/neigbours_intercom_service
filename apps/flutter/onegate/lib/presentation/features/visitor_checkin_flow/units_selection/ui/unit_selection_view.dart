@@ -36,10 +36,12 @@ class UnitSelectionView extends StatefulWidget {
   final String? visitorNumber;
   final String? purposeCategoryId;
   final String? selectedSubCategoryId;
+  final String? carNumber;
 
   UnitSelectionView(Visitor? searchedVisitor,
       {Key? key,
       required this.visitor,
+        this.carNumber,
       required this.purposeCategory,
       this.comingFrom,
       this.guestCount,
@@ -919,6 +921,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       visitor_coming_from: widget.comingFrom,
       visitor_card_id: null,
       company_id: int.parse(companyId.toString()),
+      carNumber: widget.carNumber,
       visitor_building_assignment: buildingAssignments,
       is_checked_out: false,
     );
@@ -983,6 +986,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         visitor_coming_from: widget.comingFrom,
         visitor_building_assignment: buildingAssignments,
         visitor_card_id: null,
+        carNumber: widget.carNumber,
         company_id: int.parse(companyId.toString()),
         is_checked_out: false);
     final String memberDetailsJson = json.encode(formattedMemberDetails);

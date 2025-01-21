@@ -1,9 +1,8 @@
-import 'dart:math';
+import 'dart:developer';
 
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_log_repo.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLogMapper.dart';
 
 class VisitorLogRepositoryImpl extends VisitorLogRepository {
   final RemoteDataSource _remoteDataSource;
@@ -24,7 +23,7 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
       int companyId, String dateTime) async {
     try {
       final response =
-          await _remoteDataSource.fetchCheckInLogs(companyId, dateTime);
+      await _remoteDataSource.fetchCheckInLogs();
       return response;
     } catch (error) {
       return null;
@@ -36,9 +35,25 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
       int companyId, String dateTime) async {
     try {
       final response =
-          await _remoteDataSource.fetchAllLogs(companyId,dateTime);
+          await _remoteDataSource.fetchAllLogs(companyId, dateTime);
       return response;
     } catch (error) {
+      return null;
+    }
+  }
+
+  Future<List<VisitorLog>?> fetchCardNumbers(
+      int companyId, String dateTime) async {
+    try {
+      final response =
+          await _remoteDataSource.fetchCheckInLogs();
+
+      final filteredLogs =
+          response.where((log) => log.visitor_card_number != null).toList();
+
+      return filteredLogs;
+    } catch (error) {
+      log("Error fetching card numbers: $error");
       return null;
     }
   }

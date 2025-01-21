@@ -18,7 +18,8 @@ class VisitorLog {
     this.company_id,
     this.is_checked_out,
     this.visitor_purpose_Category_name,
-    this.purpose_sub_category_name
+    this.purpose_sub_category_name,
+    this.carNumber
   });
 
   int? id;
@@ -35,6 +36,7 @@ class VisitorLog {
   int? visitor_card_id;
   int? company_id;
   bool? is_checked_out;
+  String? carNumber;
   String? visitor_purpose_Category_name;
   String? purpose_sub_category_name;
 
@@ -45,6 +47,7 @@ class VisitorLog {
       'visitor_id': visitor_id,
       'visitor': visitor?.toJson(), // Convert nested `Visitor` object to JSON.
       'visitor_purpose_category_id': visitor_purpose_category_id,
+      "vehicle_number":carNumber,
       'visitor_purpose_sub_category_id': visitor_purpose_sub_category_id,
       'visitor_building_assignment': visitor_building_assignment
           ?.map((assignment) => assignment.toJson())
@@ -84,6 +87,7 @@ class VisitorLog {
           ? DateTime.parse(json['visitor_check_out'] as String)
           : null,
       visitor_card_number: json['visitor_card_number'] as String?,
+        carNumber: json['vehicle_number'] as String?,
       visitor_coming_from: json['visitor_coming_from'] as String?,
       visitor_card_id: json['visitor_card_id'] as int?,
       company_id: json['company_id'] as int?,

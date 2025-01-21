@@ -250,6 +250,20 @@ class RemoteDataSource {
     }
   }
 
+  Future<List<VisitorLog>?> fetchCardNumbers() async {
+    try {
+      final response = await fetchCheckInLogs();
+
+      final filteredLogs =
+          response.where((log) => log.visitor_card_number != null).toList();
+
+      return filteredLogs;
+    } catch (error) {
+      log("Error fetching card numbers: $error");
+      return null;
+    }
+  }
+
   /// Check-in a visitor
   Future<VisitorLog?> checkIn(VisitorLog visitorLog) async {
     print("Attempting check-in...");
@@ -400,9 +414,11 @@ class RemoteDataSource {
                 visitor_card_number: item['visitor_card_number'] as String?,
                 visitor_coming_from: item['visitor_coming_from'] as String?,
                 visitor_card_id: null,
-                purpose_sub_category_name: item["purpose_sub_category_name"] as String?,
+                purpose_sub_category_name:
+                    item["purpose_sub_category_name"] as String?,
                 company_id: item['company_id'] as int? ?? 0,
                 is_checked_out: item['is_checked_out'] as bool? ?? false,
+                carNumber: item["vehicle_number"] as String?,
                 visitor_purpose_Category_name:
                     item["purpose_category_name"] as String);
           } catch (mappingError) {
@@ -468,8 +484,7 @@ class RemoteDataSource {
   }
 
   /// Fetch check-in logs
-  Future<List<VisitorLog>> fetchCheckInLogs(
-      int companyId, String dateTime) async {
+  Future<List<VisitorLog>> fetchCheckInLogs() async {
     try {
       // Define the API endpoint
       String apiUrl = ApiUrls.visitorGetLog;
@@ -498,7 +513,7 @@ class RemoteDataSource {
       if (response.statusCode == 200) {
         // Parse the visitor logs from the response
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
+        final List<dynamic> data = responseData['data']['data'] ?? [];
 
         return data.map((item) {
           try {
@@ -509,24 +524,24 @@ class RemoteDataSource {
               visitor_image: item['visitor_image'] as String? ?? "",
             );
             final List<BuildingAssignment>? buildingAssignments =
-            (item['unit_details'] as List<dynamic>?)
-                ?.map((unit) => BuildingAssignment(
-              id: null,
-              visitor_id: item['visitor_id'] as int?,
-              visitor_log_id: item['visitor_log_id'] as int?,
-              company_id: item['company_id'] as int? ?? 0,
-              building_id: 0,
-              unit_id: [unit['building_unit'] as String? ?? ""],
-            ))
-                .toList();
-            final visitorLog =VisitorLog(
+                (item['unit_details'] as List<dynamic>?)
+                    ?.map((unit) => BuildingAssignment(
+                          id: null,
+                          visitor_id: item['visitor_id'] as int?,
+                          visitor_log_id: item['visitor_log_id'] as int?,
+                          company_id: item['company_id'] as int? ?? 0,
+                          building_id: 0,
+                          unit_id: [unit['building_unit'] as String? ?? ""],
+                        ))
+                    .toList();
+            final visitorLog = VisitorLog(
                 id: item['visitor_log_id'] as int?,
                 visitor_id: item['visitor_id'] as int? ?? 0,
                 visitor: visitor,
                 visitor_purpose_category_id:
-                item['visitor_purpose_category_id'] as int? ?? 0,
+                    item['visitor_purpose_category_id'] as int? ?? 0,
                 visitor_purpose_sub_category_id:
-                item["visitor_purpose_category_id"],
+                    item["visitor_purpose_category_id"],
                 visitor_building_assignment: buildingAssignments,
                 visitor_count: item['visitor_count'] as int? ?? 0,
                 visitor_check_in: item['visitor_check_in'] != null
@@ -535,13 +550,16 @@ class RemoteDataSource {
                 visitor_check_out: item['visitor_check_out'] != null
                     ? DateTime.parse(item['visitor_check_out'] as String)
                     : null,
+                carNumber: item["vehicle_number"] as String?,
                 visitor_card_number: item['visitor_card_number'] as String?,
                 visitor_coming_from: item['visitor_coming_from'] as String?,
                 visitor_card_id: null,
                 company_id: item['company_id'] as int? ?? 0,
                 is_checked_out: item['is_checked_out'] as bool? ?? false,
+                purpose_sub_category_name:
+                    item["purpose_sub_category_name"] as String?,
                 visitor_purpose_Category_name:
-                item["purpose_category_name"] as String);
+                    item["purpose_category_name"] as String);
 
             // print("Mapped VisitorLog: ${visitorLog.toJson()}");
             return visitorLog;
@@ -796,7 +814,7 @@ class RemoteDataSource {
       int companyId, String dateTime) async {
     try {
       // Define the API endpoint
-       String apiUrl = ApiUrls.visitorGetLog;
+      String apiUrl = ApiUrls.visitorGetLog;
 
       // Boolean for filtering checked-out logs
       bool isCheckedOut = true;
@@ -828,7 +846,7 @@ class RemoteDataSource {
       if (response.statusCode == 200) {
         // Parse the visitor logs from the response
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
+        final List<dynamic> data = responseData['data']['data'] ?? [];
 
         // Map the JSON data to `VisitorLog` objects
         return data.map((item) {
@@ -844,25 +862,24 @@ class RemoteDataSource {
             );
 
             final List<BuildingAssignment>? buildingAssignments =
-            (item['unit_details'] as List<dynamic>?)
-                ?.map((unit) => BuildingAssignment(
-              id: null,
-              visitor_id: item['visitor_id'] as int?,
-              visitor_log_id: item['visitor_log_id'] as int?,
-              company_id: item['company_id'] as int? ?? 0,
-              building_id: 0,
-              unit_id: [unit['building_unit'] as String? ?? ""],
-            ))
-                .toList();
-            // Create the `VisitorLog` object
+                (item['unit_details'] as List<dynamic>?)
+                    ?.map((unit) => BuildingAssignment(
+                          id: null,
+                          visitor_id: item['visitor_id'] as int?,
+                          visitor_log_id: item['visitor_log_id'] as int?,
+                          company_id: item['company_id'] as int? ?? 0,
+                          building_id: 0,
+                          unit_id: [unit['building_unit'] as String? ?? ""],
+                        ))
+                    .toList();
             final visitorLog = VisitorLog(
                 id: item['visitor_log_id'] as int?,
                 visitor_id: item['visitor_id'] as int? ?? 0,
                 visitor: visitor,
                 visitor_purpose_category_id:
-                item['visitor_purpose_category_id'] as int? ?? 0,
+                    item['visitor_purpose_category_id'] as int? ?? 0,
                 visitor_purpose_sub_category_id:
-                item["visitor_purpose_category_id"],
+                    item["visitor_purpose_category_id"],
                 visitor_building_assignment: buildingAssignments,
                 visitor_count: item['visitor_count'] as int? ?? 0,
                 visitor_check_in: item['visitor_check_in'] != null
@@ -876,8 +893,11 @@ class RemoteDataSource {
                 visitor_card_id: null,
                 company_id: item['company_id'] as int? ?? 0,
                 is_checked_out: item['is_checked_out'] as bool? ?? false,
+                purpose_sub_category_name:
+                    item["purpose_sub_category_name"] as String?,
                 visitor_purpose_Category_name:
-                item["purpose_category_name"] as String);
+                    item["purpose_category_name"] as String,
+                carNumber: item["vehicle_number"] as String?);
 
             // print("Mapped VisitorLog: ${visitorLog.toJson()}");
             return visitorLog;

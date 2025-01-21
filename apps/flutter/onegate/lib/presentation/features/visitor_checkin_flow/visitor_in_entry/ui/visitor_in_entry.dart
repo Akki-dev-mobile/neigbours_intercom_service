@@ -51,6 +51,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   late final TextEditingController _guestComingFromController;
   late final TextEditingController _guestCountController;
   late final TextEditingController _visitorNumberController;
+  late final TextEditingController _carNumberController;
   int selectedCompanyIndex = -1;
 
   bool _isSubmitting = false;
@@ -92,6 +93,7 @@ print("kiyu nahi aara$comingFrom");
       text: '1',
     );
     _visitorNumberController = TextEditingController();
+    _carNumberController = TextEditingController();
   }
 
 
@@ -260,6 +262,7 @@ print("kiyu nahi aara$comingFrom");
         guestName: _guestNameController.text,
         guestComingFrom: _guestComingFromController.text,
         guestCount: _guestCount,
+        carNumber: _carNumberController.text,
         purposeCategory: widget.selectedValue!,
         mobile: widget.mobile,
       ));
@@ -274,6 +277,7 @@ print("kiyu nahi aara$comingFrom");
         guestName: _guestNameController.text,
         guestComingFrom: _guestComingFromController.text,
         guestCount: _guestCount,
+        carNumber: _carNumberController.text,
         purposeCategory: widget.selectedValue!,
         mobile: widget.mobile,
       ));
@@ -288,21 +292,64 @@ print("kiyu nahi aara$comingFrom");
   }
 
   bool _validateForm() {
-    if (_guestNameController.text.isEmpty) {
-      _showErrorSnackBar('Please enter guest name');
-      return false;
+    // Check if purpose is VENDOR
+    if (widget.selectedValue?.categoryName == 'VENDOR') {
+      if (_guestNameController.text.isEmpty) {
+        _showErrorSnackBar('Please enter vendor name');
+        return false;
+      }
+      if (_guestComingFromController.text.isEmpty && _visitorAddress == true) {
+        _showErrorSnackBar('Please enter coming from');
+        return false;
+      }
+      if (selectedCompanyIndex == -1) {
+        _showErrorSnackBar('Please select a vendor category');
+        return false;
+      }
     }
-    if (_guestComingFromController.text.isEmpty && _visitorAddress == true) {
-      _showErrorSnackBar('Please enter coming from ');
-      return false;
+
+    // Check if purpose is CABS
+    else if (widget.selectedValue?.categoryName == 'CABS') {
+      if (_guestNameController.text.isEmpty) {
+        _showErrorSnackBar('Please enter cab driver name');
+        return false;
+      }
+      if (_carNumberController.text.isEmpty) {
+        _showErrorSnackBar('Please enter cab number');
+        return false;
+      }
     }
-    if (_visitorNumberController.text.isEmpty && _visitorCardNumber == true) {
-      _showErrorSnackBar('Please enter card number');
-      return false;
+
+    // Check if purpose is DELIVERY
+    else if (widget.selectedValue?.categoryName == 'DELIVERY') {
+      if (_guestNameController.text.isEmpty) {
+        _showErrorSnackBar('Please enter delivery person name');
+        return false;
+      }
+      if (selectedCompanyIndex == -1) {
+        _showErrorSnackBar('Please select a delivery company');
+        return false;
+      }
     }
+
+    // Check if purpose is GUEST
+    else if (widget.selectedValue?.categoryName == 'GUEST') {
+      if (_guestNameController.text.isEmpty) {
+        _showErrorSnackBar('Please enter guest name');
+        return false;
+      }
+      if (_guestComingFromController.text.isEmpty && _visitorAddress == true) {
+        _showErrorSnackBar('Please enter coming from');
+        return false;
+      }
+      if (_visitorNumberController.text.isEmpty && _visitorCardNumber == true) {
+        _showErrorSnackBar('Please enter card number');
+        return false;
+      }
+    }
+
     return true;
   }
-
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
@@ -318,6 +365,7 @@ print("kiyu nahi aara$comingFrom");
           visitor: state.visitor,
           visitorId: widget.searchedVisitor?.id,
           guestname: _guestNameController.text,
+          carNumber : _carNumberController.text,
           mobileNumber: widget.mobile,
           purposeCategory: state.purposeCategory,
           purposeCategoryId: widget.selectedValue?.categoryId.toString(),
@@ -439,7 +487,8 @@ print("kiyu nahi aara$comingFrom");
         CustomForm.textField(
           "Cab Number",
           hintText: 'MH 12 AB 1234',
-          // textController: _visitorNumberController,
+          textController: _carNumberController,
+
           textCapitalization: TextCapitalization.characters,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
@@ -650,7 +699,6 @@ print("kiyu nahi aara$comingFrom");
             suffixIcon: _buildMicButton(() => _handleMicPress('vendorName')),
           ),
         ),
-        if (_visitorAddress == true)
         CustomForm.textField(
           "Coming From",
           hintText: 'Enter company/organization name',
@@ -690,7 +738,7 @@ print("kiyu nahi aara$comingFrom");
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              childAspectRatio: 0.6,
+              childAspectRatio: 1,
               mainAxisSpacing: 18,
               crossAxisSpacing: 18,
             ),
@@ -821,7 +869,7 @@ print("kiyu nahi aara$comingFrom");
           hintColor: Theme.of(context).colorScheme.onPrimary,
           suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
         ),
-        if (_visitorAddress == true)
+        // if (_visitorAddress == true)
         CustomForm.textField(
           "Coming From",
           hintText: 'Enter Coming From',

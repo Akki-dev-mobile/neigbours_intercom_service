@@ -81,6 +81,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       case "Visitor In":
         _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
+
+      case "Cards":
+        _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
+        break;
       case "Visitor Out":
         _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
         break;
@@ -267,8 +271,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                 Icons.download_rounded,
                                 color: Colors.black,
                               ),
-                              tooltip:
-                                  'Download Logs',
+                              tooltip: 'Download Logs',
                             ),
                             const Padding(
                               padding: EdgeInsets.only(right: 8.0),
@@ -416,7 +419,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             return VisitorLogItem(
                               visitorLog: todayLogs[index - currentIndex - 1],
                               onCheckOut: () {
-                                // Optimistically update the UI before the state is updated
                                 setState(() {
                                   todayLogs[index - currentIndex - 1]
                                           .visitor_check_out =
@@ -1140,7 +1142,9 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            "${widget.visitorLog.purpose_sub_category_name}",
+                            widget.visitorLog.purpose_sub_category_name != null
+                                ? "${widget.visitorLog.purpose_sub_category_name}"
+                                : "${widget.visitorLog.visitor_purpose_Category_name}",
                             style: TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w500,
@@ -1188,9 +1192,9 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               color: Colors.grey[200],
             ),
             Container(
-              padding: const EdgeInsets.only(bottom: 14.0, top: 8),
+              padding: const EdgeInsets.only(bottom: 14.0, top: 8, left: 12,right: 12),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Tooltip(
                     message: DateFormat('dd-MM-yyyy hh:mm a')
@@ -1218,50 +1222,56 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       ),
                     ),
                   ),
-                  widget.visitorLog.visitor_card_number != null
-                      ? Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 2,
-                            horizontal: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: const [
-                                Color.fromRGBO(255, 236, 158, 0.8),
-                                Color.fromRGBO(255, 190, 168, 0.8),
-                              ],
-                              begin: Alignment.topRight,
-                              end: Alignment.bottomLeft,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Color.fromRGBO(255, 190, 168, 1),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Lottie.asset(
-                                'assets/json/idcard.json',
-                                width: 30,
-                                height: 30,
-                                fit: BoxFit.cover,
-                              ),
-                              SizedBox(
-                                width: 5,
-                              ),
-                              Text(
-                                widget.visitorLog.visitor_card_number ?? 'N/A',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : SizedBox(),
+        widget.visitorLog.visitor_card_number != null || widget.visitorLog.carNumber != null
+            ? Container(
+          margin: const EdgeInsets.only(left: 8),
+          padding: const EdgeInsets.symmetric(
+            vertical: 2,
+            horizontal: 10,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: const [
+                Color.fromRGBO(255, 236, 158, 0.8),
+                Color.fromRGBO(255, 190, 168, 0.8),
+              ],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Color.fromRGBO(255, 190, 168, 1),
+            ),
+          ),
+          child: Row(
+            children: [
+          widget.visitorLog.visitor_card_number != null
+          ? Lottie.asset(
+            'assets/json/idcard.json',
+            width: 30,
+            height: 30,
+            fit: BoxFit.cover,
+          )
+              : Icon(
+          Symbols.car_tag_rounded,
+          size: 30,
+          // color: Colors.red, // Optional color for the icon
+        ),
+              const SizedBox(width: 5),
+              Text(
+                widget.visitorLog.visitor_card_number != null
+                    ? widget.visitorLog.visitor_card_number!
+                    : widget.visitorLog.carNumber ?? 'N/A',
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        )
+            : Spacer(),
                   (widget.visitorLog.visitor_check_out.toString().isEmpty ||
                           widget.visitorLog.visitor_check_out.toString() ==
                               'null')

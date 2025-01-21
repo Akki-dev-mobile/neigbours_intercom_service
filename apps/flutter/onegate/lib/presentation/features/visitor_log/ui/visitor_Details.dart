@@ -7,16 +7,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
 
-
 class VisitorDetailsScreen extends StatelessWidget {
   final VisitorLog visitorLog;
   String? unitList;
 
-   VisitorDetailsScreen({
-    Key? key,
-    required this.visitorLog,
-    this.unitList
-  }) : super(key: key);
+  VisitorDetailsScreen({Key? key, required this.visitorLog, this.unitList})
+      : super(key: key);
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -28,10 +24,8 @@ class VisitorDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
     return MyScrollView(
-      pageBody:  Column(
+      pageBody: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
@@ -40,32 +34,30 @@ class VisitorDetailsScreen extends StatelessWidget {
             ),
             child: visitorLog.visitor!.visitor_image!.isNotEmpty
                 ? Image.network(
-              visitorLog.visitor!.visitor_image ?? "",
-              height: MediaQuery.of(context).size.height * 0.4 ,
-              width: double.maxFinite,
-              fit: BoxFit.contain,
-            )
+                    visitorLog.visitor!.visitor_image ?? "",
+                    height: MediaQuery.of(context).size.height * 0.4,
+                    width: double.maxFinite,
+                    fit: BoxFit.contain,
+                  )
                 : Center(
-              child: CircleAvatar(
-                radius: 80,
-                backgroundColor:
-                Theme.of(context).colorScheme.primary,
-                child: Text(
-                  visitorLog.visitor!.name!.isNotEmpty
-                      ? visitorLog.visitor!.name![0].toUpperCase()
-                      : 'G',
-                  style: const TextStyle(
-                    fontSize: 60,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    child: CircleAvatar(
+                      radius: 80,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      child: Text(
+                        visitorLog.visitor!.name!.isNotEmpty
+                            ? visitorLog.visitor!.name![0].toUpperCase()
+                            : 'G',
+                        style: const TextStyle(
+                          fontSize: 60,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
           ),
           // Visitor Info Section
           Container(
-
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,12 +68,10 @@ class VisitorDetailsScreen extends StatelessWidget {
                     Expanded(
                       child: Text(
                         visitorLog.visitor!.name ?? "",
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                     ),
                     if (visitorLog.visitor_count.toString() != '1')
@@ -112,15 +102,16 @@ class VisitorDetailsScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 8),
                 Container(
-                  padding:
-                  EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Color(0xffFFEBE6),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child:  Text(
-                    "${visitorLog.purpose_sub_category_name}",
-                    style: TextStyle(
+                  child: Text(
+                    visitorLog.purpose_sub_category_name != null
+                        ? "${visitorLog.purpose_sub_category_name}"
+                        : "${visitorLog.visitor_purpose_Category_name}",
+                    style: const TextStyle(
                       color: Colors.black87,
                       fontWeight: FontWeight.w600,
                     ),
@@ -176,8 +167,7 @@ class VisitorDetailsScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
-                  padding:
-                  EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -234,7 +224,8 @@ class VisitorDetailsScreen extends StatelessWidget {
                               ),
                               Container(
                                 constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.of(context).size.width * 0.6,
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.6,
                                 ),
                                 child: Text(
                                   unitList ?? "",
@@ -286,47 +277,50 @@ class VisitorDetailsScreen extends StatelessWidget {
           ),
 
           // ID Card Section
-          if (visitorLog.visitor_card_number != null)
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ListTile(
-                contentPadding: EdgeInsets.all(16),
-                leading: Container(
-                  width: 48,
-                  height: 48,
-                  padding: EdgeInsets.all(4),
-                  child: Lottie.asset(
-                    'assets/json/idcard.json',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                title: Text(
-                  'Visitor ID Card',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-                subtitle: Text(
-                  visitorLog.visitor_card_number ?? 'N/A',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
+         // visitorLog.visitor_card_number != null || visitorLog.carNumber != null
+         //      ? Container(
+         //    margin: const EdgeInsets.only(left: 8),
+         //    padding: const EdgeInsets.symmetric(
+         //      vertical: 2,
+         //      horizontal: 10,
+         //    ),
+         //    decoration: BoxDecoration(
+         //      gradient: LinearGradient(
+         //        colors: const [
+         //          Color.fromRGBO(255, 236, 158, 0.8),
+         //          Color.fromRGBO(255, 190, 168, 0.8),
+         //        ],
+         //        begin: Alignment.topRight,
+         //        end: Alignment.bottomLeft,
+         //      ),
+         //      borderRadius: BorderRadius.circular(8),
+         //      border: Border.all(
+         //        color: Color.fromRGBO(255, 190, 168, 1),
+         //      ),
+         //    ),
+         //    child: Row(
+         //      children: [
+         //        Lottie.asset(
+         //          'assets/json/idcard.json',
+         //          width: 30,
+         //          height: 30,
+         //          fit: BoxFit.cover,
+         //        ),
+         //        const SizedBox(width: 5),
+         //        Text(
+         //         visitorLog.visitor_card_number != null
+         //              ? visitorLog.visitor_card_number!
+         //              : visitorLog.carNumber ?? 'N/A',
+         //          style: const TextStyle(
+         //            color: Colors.black,
+         //            fontWeight: FontWeight.w800,
+         //            fontSize: 14,
+         //          ),
+         //        ),
+         //      ],
+         //    ),
+         //  )
+         //      : const SizedBox(),
           SizedBox(height: 20),
         ],
       ),

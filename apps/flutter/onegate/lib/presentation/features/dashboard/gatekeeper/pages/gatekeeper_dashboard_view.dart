@@ -12,6 +12,8 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/commons/ui/dashboard_commons.dart';
@@ -27,6 +29,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../app_intro/ui/keyclock_login.dart';
 import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
+import 'package:intl/intl.dart';
 
 class GateDashboardView extends StatefulWidget {
   const GateDashboardView({super.key});
@@ -52,7 +55,13 @@ List<String> listPassAlpha = [
 
 class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
-
+  List<VisitorLog> cardVisitors = [];
+  bool isLoading = false;
+  final remoteDataSource = RemoteDataSource(
+    DioSingleton.instance1,
+    DioSingleton.instance2,
+    DioSingleton.instance3,
+  );
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
@@ -77,8 +86,21 @@ class _GateDashboardViewState extends State<GateDashboardView>
     //   FocusScope.of(context).requestFocus(_focusNode);
     // });
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
+    _fetchCardNumbers();
   }
 
+  Future<void> _fetchCardNumbers() async {
+    setState(() {
+      isLoading = true;
+    });
+    final visitorLogs = await remoteDataSource.fetchCardNumbers();
+    setState(() {
+      cardVisitors = visitorLogs ?? [];
+      isLoading = false;
+    });
+  }
+
+  @override
   Future<void> logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear(); // Clear all stored preferences
@@ -190,16 +212,15 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
-
-            //       IconButton(
-            //         onPressed: () {
-            // Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen()));
-            //         },
-            //         icon: Icon(
-            //           Symbols.phone_missed_rounded,
-            //           color: Theme.of(context).colorScheme.onBackground,
-            //         ),
-            //       ),
+                  //       IconButton(
+                  //         onPressed: () {
+                  // Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen()));
+                  //         },
+                  //         icon: Icon(
+                  //           Symbols.phone_missed_rounded,
+                  //           color: Theme.of(context).colorScheme.onBackground,
+                  //         ),
+                  //       ),
                   IconButton(
                     onPressed: () {
                       Navigator.push(
@@ -242,8 +263,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                               ),
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     'Are you sure you want to logout?',
@@ -264,11 +284,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     elevation: 0,
-                                    side: BorderSide(
-                                        color: Colors.grey[300]!),
+                                    side: BorderSide(color: Colors.grey[300]!),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                      BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
                                   onPressed: () {
@@ -287,8 +305,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                     backgroundColor: Colors.red,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                      BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
                                   onPressed: () {
@@ -382,10 +399,13 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         ],
                       ),
                     ),
+
                     DashboardBlocks(
                         inBook: successState.inBook,
                         outBook: successState.outBook,
                         bloc: gateDashboardBloc),
+
+
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -458,6 +478,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         ),
                       ),
                     ),
+                    // buildExpansionTile(context, cardVisitors, isLoading)
                   ],
                 ),
               ),
@@ -469,31 +490,205 @@ class _GateDashboardViewState extends State<GateDashboardView>
     );
   }
 
-  Route _createRoute() {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => IdInputView(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(0.0, 1.0);
-        const end = Offset.zero;
-        const curve = Curves.ease;
+  Widget buildExpansionTile(
+      BuildContext context, List<VisitorLog> cardVisitors, bool isLoading) {
+    return ExpansionTile(
+      title: Text(
+        'Visitors with Card Numbers',
+        style: Theme.of(context).textTheme.bodyLarge,
+      ),
+      subtitle: Text(
+        'Tap to view details',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      children: [
+        if (isLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (cardVisitors.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'No visitors with card numbers found.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: cardVisitors.length,
+            itemBuilder: (context, index) {
+              final visitor = cardVisitors[index];
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Material(
+                  borderRadius: BorderRadius.circular(16),
+                  color: const Color(0xFFF5F7F8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    splashColor: const Color(0xFFDCEDF5),
+                    onTap: () {
+                      // Handle tap event
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Visitor: ${visitor.visitor?.name ?? "Unknown"}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        color: Colors.black,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                if (visitor.visitor_card_number == null)
+                                  SizedBox(
+                                    height: 2,
+                                    width: 100,
+                                    child: LinearProgressIndicator(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                      backgroundColor:
+                                          Theme.of(context).colorScheme.surface,
+                                    ),
+                                  )
+                                else
+                                  RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: 'Card: ',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyLarge
+                                              ?.copyWith(
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                        ),
+                                        TextSpan(
+                                          text: visitor.visitor_card_number,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyLarge
+                                              ?.copyWith(
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: () async {
+                              // Perform the checkout
+                              try {
+                                final response = await context
+                                    .read<GatekeeperDashboardBloc>()
+                                    .visitorLogUsecase
+                                    .checkOut(visitor);
 
-        var tween =
-            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        var offsetAnimation = animation.drive(tween);
-
-        var scaleTween = Tween(begin: 0.8, end: 1.0);
-        var scaleAnimation = animation.drive(scaleTween);
-
-        return SlideTransition(
-          position: offsetAnimation,
-          child: ScaleTransition(
-            scale: scaleAnimation,
-            child: child,
+                                if (response) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Visitor checked out successfully!',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                  context
+                                      .read<GatekeeperDashboardBloc>()
+                                      .add(GatekeeperDashboardInitialEvent());
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Failed to check out visitor.',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error: $e',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                            child: Text(
+                              'Checkout',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
+      ],
     );
   }
+}
+
+Route _createRoute() {
+  return PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => IdInputView(),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(0.0, 1.0);
+      const end = Offset.zero;
+      const curve = Curves.ease;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+      var offsetAnimation = animation.drive(tween);
+
+      var scaleTween = Tween(begin: 0.8, end: 1.0);
+      var scaleAnimation = animation.drive(scaleTween);
+
+      return SlideTransition(
+        position: offsetAnimation,
+        child: ScaleTransition(
+          scale: scaleAnimation,
+          child: child,
+        ),
+      );
+    },
+  );
 }
 
 class DashboardShortcut extends StatelessWidget {

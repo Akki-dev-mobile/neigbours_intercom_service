@@ -18,11 +18,11 @@ part 'gatekeeper_dashboard_state.dart';
 class GatekeeperDashboardBloc
     extends Bloc<GatekeeperDashboardEvent, GatekeeperDashboardState> {
   final VisitorUsecase _visitorUsecase;
-  final VisitorLogUsecase _visitorLogUsecase;
+  final VisitorLogUsecase visitorLogUsecase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   bool _hasNavigated = false;
 
-  GatekeeperDashboardBloc(this._visitorUsecase, this._visitorLogUsecase)
+  GatekeeperDashboardBloc(this._visitorUsecase, this.visitorLogUsecase)
       : super(GatekeeperDashboardInitial()) {
     on<GatekeeperDashboardInitialEvent>(onInitialEvent);
     on<GDOnMobileNumberEnteredEvent>(onMobileNumberEnteredEvent);
@@ -78,7 +78,7 @@ class GatekeeperDashboardBloc
       final today = DateTime.now();
 
       final List<VisitorLog>? allCheckedInVisitors =
-      await _visitorLogUsecase.fetchCheckInVisitorLog(int.parse(companyId.toString()),today.toString());
+      await visitorLogUsecase.fetchCheckInVisitorLog(int.parse(companyId.toString()),today.toString());
       final List<VisitorLog> todaysCheckedInVisitors = allCheckedInVisitors?.where((visitor) {
         final DateTime checkInDate = DateTime.parse(visitor.visitor_check_in.toString()); // Replace 'timestamp' with actual field
         return checkInDate.year == today.year &&
@@ -89,7 +89,7 @@ class GatekeeperDashboardBloc
 
 
       final List<VisitorLog>? allCheckedOutVisitors =
-      await _visitorLogUsecase.fetchCheckOutLogs(int.parse(companyId.toString()),today.toString());
+      await visitorLogUsecase.fetchCheckOutLogs(int.parse(companyId.toString()),today.toString());
       final List<VisitorLog> todaysCheckedOutVisitors = allCheckedOutVisitors?.where((visitor) {
         final DateTime checkOutDate = DateTime.parse(visitor.visitor_check_out.toString()); // Replace 'timestamp' with actual field
         return checkOutDate.year == today.year &&
@@ -156,7 +156,7 @@ class GatekeeperDashboardBloc
       final today = DateTime.now();
 
       final List<VisitorLog>? allCheckedInVisitors =
-      await _visitorLogUsecase.fetchCheckInVisitorLog(
+      await visitorLogUsecase.fetchCheckInVisitorLog(
           int.parse(companyId.toString()), today.toString());
       final List<VisitorLog> todaysCheckedInVisitors =
           allCheckedInVisitors
@@ -172,7 +172,7 @@ class GatekeeperDashboardBloc
       final int inBook = todaysCheckedInVisitors.length;
 
       final List<VisitorLog>? allCheckedOutVisitors =
-      await _visitorLogUsecase.fetchCheckOutLogs(
+      await visitorLogUsecase.fetchCheckOutLogs(
           int.parse(companyId.toString()), today.toString());
       final List<VisitorLog> todaysCheckedOutVisitors =
           allCheckedOutVisitors

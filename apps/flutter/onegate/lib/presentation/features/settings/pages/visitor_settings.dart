@@ -158,8 +158,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                                   borderRadius: BorderRadius.circular(8),
                                                   child: Image.network(
                                                     purpose.image!,
-                                                    width: 50,
-                                                    height: 50,
+                                                    // width: 50,
+                                                    // height: 50,
                                                     fit: BoxFit.contain,
                                                     errorBuilder: (context, error, stackTrace) =>
                                                     const Icon(

@@ -11,6 +11,7 @@ class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
   final int guestCount;
   final PurposeCategory1 purposeCategory;
   final String mobile;
+  final String? carNumber;
 
   VIEGuestFormSubmitButtonPressedEvent({
     this.searchedVisitor,
@@ -19,6 +20,7 @@ class VIEGuestFormSubmitButtonPressedEvent extends VisitorInEntryEvent {
     required this.guestCount,
     required this.purposeCategory,
     required this.mobile,
+    this.carNumber,
   });
 }
 
