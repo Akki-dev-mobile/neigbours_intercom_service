@@ -82,8 +82,7 @@ class _StaffScreenState extends State<StaffScreen> {
                 iconColor: Theme.of(context).colorScheme.onSurface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),
-                  borderSide:
-                      BorderSide(color: Colors.grey), // Blue border on focus
+                  borderSide: BorderSide(color: Colors.grey), // Grey border
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),
@@ -161,11 +160,16 @@ class _StaffScreenState extends State<StaffScreen> {
           backgroundColor: Theme.of(context).colorScheme.onSurface,
         ),
         onPressed: () {
-          Navigator.of(context).push(
+          Navigator.of(context)
+              .push(
             MaterialPageRoute(
               builder: (context) => const AddStaff(),
             ),
-          );
+          )
+              .then((_) {
+            // Refresh the staff list after navigation
+            _initializeSocietyId();
+          });
         },
         label: const Text('Add Staff'),
         icon: const Icon(Icons.add),

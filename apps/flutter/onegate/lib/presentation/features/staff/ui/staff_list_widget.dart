@@ -51,7 +51,22 @@ class StaffListWidget extends StatelessWidget {
             child: PrimarySettingsTile(
               icon: Symbols.person,
               title: staffMap['name'].toString() ?? 'No Name',
-              subtitle: 'Category: ${staffMap['category'] ?? 'N/A'}',
+              subtitleWidget: Container(
+                  alignment: Alignment.centerLeft,
+                  margin: EdgeInsets.only(
+                      right: MediaQuery.of(context).size.width * 0.2),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffFFEBE6),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Text(
+                    '${staffMap['category'] ?? 'N/A'}',
+                    overflow: TextOverflow.ellipsis,
+                  )),
               trailing: IconButton(
                 onPressed: () {
                   if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {

@@ -6,6 +6,7 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -350,6 +351,15 @@ class _AddStaffState extends State<AddStaff> {
       if (mounted) {
         if (response != null) {
           Navigator.pop(context);
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) =>
+                    StaffScreen(), // Replace with your list view screen widget
+              ),
+              (route) => false,
+            );
+          }
           Fluttertoast.showToast(
             msg: "Staff updated successfully",
             toastLength: Toast.LENGTH_SHORT,

@@ -5,10 +5,9 @@ import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
+import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -86,6 +85,7 @@ class _EditStaffState extends State<EditStaff> {
   void initState() {
     super.initState();
     print("mydataaaaaaaa ${widget.staff}");
+    _mobileFocusNode = FocusNode();
 
     _nameController = TextEditingController(text: widget.staff.name);
     _emailController = TextEditingController(text: widget.staff.email);
@@ -100,12 +100,10 @@ class _EditStaffState extends State<EditStaff> {
     _selectedDate = widget.staff.dateOfBirth; // Initialize DOB
 
     _selectedCategory = widget.staff.category;
-    _selectedCategoryValue = widget.staff.categoryValue;
+    // _selectedCategoryValue = widget.staff.categoryValue;
 
     log("mydataaaaaaaa $_selectedCategory");
     log("mydataaaaaaaa value $_selectedCategoryValue");
-
-    _mobileFocusNode = FocusNode();
 
     // Set qualification
     _selectedQualification = qualifications.contains(widget.staff.qualification)
@@ -123,10 +121,11 @@ class _EditStaffState extends State<EditStaff> {
 
   @override
   void dispose() {
+    _mobileFocusNode.dispose();
+
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _mobileFocusNode.dispose();
     _idNumberController.dispose();
     _addressController.dispose();
 
@@ -377,26 +376,28 @@ class _EditStaffState extends State<EditStaff> {
       final response =
           await _remoteDataSource.editStaff(widget.staff.id, staffData);
 
-      if (mounted &&
-          response != null &&
-          response is Response &&
-          response.statusCode == 200) {
-        // Navigate to StaffListWidget after successful update
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const StaffListWidget(staffList: [])),
-          (Route<dynamic> route) => false,
-        );
-
-        Fluttertoast.showToast(
-          msg: "Staff updated successfully",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+      if (mounted) {
+        if (response != null) {
+          Navigator.pop(context);
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) =>
+                    StaffScreen(), // Replace with your list view screen widget
+              ),
+              (route) => false,
+            );
+          }
+          Fluttertoast.showToast(
+            msg: "Staff updated successfully",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
+        }
       } else {
         log('Error response: ${response?.data}');
         Fluttertoast.showToast(
@@ -577,7 +578,7 @@ class _EditStaffState extends State<EditStaff> {
               ),
               const Text('Other'),
             ],
-          ),
+          )
         ],
       ),
     );
@@ -776,16 +777,16 @@ class _EditStaffState extends State<EditStaff> {
                   title: "Category",
                   hintText: "Select Category",
                   items: categories.values.toSet().toList(),
-                  selectedItem: _selectedCategoryValue,
-                  // Use prefilled value
-
+                  selectedItem: _selectedCategoryValue.isNotEmpty
+                      ? _selectedCategoryValue
+                      : null,
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
+                        _selectedCategoryValue = newValue;
                         _selectedCategory = categories.entries
                             .firstWhere((entry) => entry.value == newValue)
                             .key;
-                        _selectedCategoryValue = newValue;
                       });
                     }
                   },
