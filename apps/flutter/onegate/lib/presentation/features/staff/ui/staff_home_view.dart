@@ -97,11 +97,12 @@ class _StaffScreenState extends State<StaffScreen> {
                           .onSurface
                           .withOpacity(0.5),
                     ),
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => _clearSearch(),
-                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _clearSearch(),
+                      )
+                    : const SizedBox.shrink(),
               ),
               onChanged: (query) => _filterStaffList(query),
             ),

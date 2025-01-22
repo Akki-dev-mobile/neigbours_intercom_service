@@ -43,15 +43,15 @@ class StaffListWidget extends StatelessWidget {
             margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 5),
             decoration: BoxDecoration(
               border: Border.all(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             padding: const EdgeInsets.all(8),
             child: PrimarySettingsTile(
               icon: Symbols.person,
               title: staffMap['name'].toString() ?? 'No Name',
-              subtitle: 'Contact: $contactNumber',
+              subtitle: 'Category: ${staffMap['category'] ?? 'N/A'}',
               trailing: IconButton(
                 onPressed: () {
                   if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {
@@ -64,7 +64,10 @@ class StaffListWidget extends StatelessWidget {
                     );
                   }
                 },
-                icon: const Icon(Symbols.call),
+                icon: const Icon(
+                  Symbols.call,
+                  color: Colors.green,
+                ),
               ),
             ),
           ),

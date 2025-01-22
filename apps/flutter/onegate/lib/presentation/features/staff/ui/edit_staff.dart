@@ -7,6 +7,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -130,6 +131,46 @@ class _EditStaffState extends State<EditStaff> {
     _addressController.dispose();
 
     super.dispose();
+  }
+
+  List<TextInputFormatter> _getInputFormatters(String idProofType) {
+    switch (idProofType) {
+      case 'Aadhar Card':
+        return [
+          LengthLimitingTextInputFormatter(12), // Limit input to 12 digits
+          FilteringTextInputFormatter.digitsOnly, // Allow only digits
+        ];
+      case 'Passport':
+        return [
+          LengthLimitingTextInputFormatter(9),
+          // Limit input to 9 characters
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+          // Allow alphanumeric
+        ];
+      case 'Driving License':
+        return [
+          LengthLimitingTextInputFormatter(16),
+          // Adjust as per requirement
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+          // Allow alphanumeric
+        ];
+      case 'Voter ID':
+        return [
+          LengthLimitingTextInputFormatter(10),
+          // Limit to 10 characters
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z\d]')),
+          // Allow alphanumeric
+        ];
+      case 'PAN Card':
+        return [
+          LengthLimitingTextInputFormatter(10),
+          // Limit to 10 characters
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Z\d]')),
+          // Allow uppercase letters and digits
+        ];
+      default:
+        return [];
+    }
   }
 
   Future<void> _fetchCategories() async {
@@ -572,12 +613,11 @@ class _EditStaffState extends State<EditStaff> {
                   right: 90,
                   child: InkWell(
                     onTap: () => _openCamera(isIdProof: false),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 20,
-                      backgroundColor: Colors.blue,
                       child: Icon(
                         Icons.camera_alt,
-                        color: Colors.white,
+                        color: Colors.black.withOpacity(0.5),
                       ),
                     ),
                   ),
@@ -796,9 +836,11 @@ class _EditStaffState extends State<EditStaff> {
                 CustomForm.textField(
                   _selectedIdProof,
                   titleColor: Colors.black,
-                  hintColor: Colors.black,
+                  hintColor: Colors.grey,
                   hintText: "Enter ID ${_selectedIdProof}",
                   textController: _idNumberController,
+                  inputFormatters: _getInputFormatters(_selectedIdProof),
+                  // Apply input formatters
                   validator: (value) {
                     if (value?.isEmpty ?? true) {
                       return 'Please enter an ID proof number';
@@ -807,13 +849,11 @@ class _EditStaffState extends State<EditStaff> {
 
                     switch (_selectedIdProof) {
                       case 'Aadhar Card':
-                        // Aadhaar should be exactly 12 digits
                         if (!RegExp(r'^\d{12}$').hasMatch(input)) {
                           return 'Please enter a valid 12-digit Aadhaar number';
                         }
                         break;
                       case 'Passport':
-                        // Passport: typically 8-9 alphanumeric characters (generic validation)
                         if (input.length < 8 ||
                             input.length > 9 ||
                             !RegExp(r'^[A-Za-z0-9]+$').hasMatch(input)) {
@@ -821,19 +861,16 @@ class _EditStaffState extends State<EditStaff> {
                         }
                         break;
                       case 'Driving License':
-                        // Driving License: Check for a reasonable length (can vary by region)
                         if (input.length < 5) {
                           return 'Please enter a valid Driving License number';
                         }
                         break;
                       case 'Voter ID':
-                        // Voter ID (Indian format example: 3 letters followed by 7 digits)
                         if (!RegExp(r'^[A-Za-z]{3}\d{7}$').hasMatch(input)) {
                           return 'Please enter a valid Voter ID (e.g., ABC1234567)';
                         }
                         break;
                       case 'PAN Card':
-                        // PAN Card: Indian PAN format: 5 letters, 4 digits, 1 letter
                         if (!RegExp(r'^[A-Z]{5}\d{4}[A-Z]$').hasMatch(input)) {
                           return 'Please enter a valid PAN card number (e.g., ABCDE1234F)';
                         }
@@ -853,10 +890,8 @@ class _EditStaffState extends State<EditStaff> {
                 SizedBox(
                   height: 10,
                 ),
-                if ((_newProfileImage != null &&
-                        _newProfileImage!.path.isNotEmpty) ||
-                    (_newIdProofImage != null &&
-                        _newIdProofImage!.path.isNotEmpty)) ...[
+                if ((_newIdProofImage != null &&
+                    _newIdProofImage!.path.isNotEmpty)) ...[
                   Text(
                     "Preview Images",
                     style: TextStyle(
@@ -866,15 +901,15 @@ class _EditStaffState extends State<EditStaff> {
                   ),
                   SizedBox(height: 5),
                   Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
+                    // decoration: BoxDecoration(
+                    //   border: Border.all(
+                    //     color: Theme.of(context).colorScheme.onSurface,
+                    //   ),
+                    //   borderRadius: BorderRadius.circular(15),
+                    // ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         // Profile Image Container
                         // if (_newProfileImage != null &&
