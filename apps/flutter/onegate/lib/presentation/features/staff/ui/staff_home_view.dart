@@ -71,59 +71,41 @@ class _StaffScreenState extends State<StaffScreen> {
   Widget build(BuildContext context) {
     return MyScrollView(
       isScrollable: true,
-      pageTitleWidget: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Text('Staff'),
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) {
-                  _clearSearch();
-                }
-              });
-            },
-            icon: const Icon(Icons.search),
-          ),
-        ],
-      ),
+      pageTitle: "Staff",
       pageBody: Column(
         children: [
-          if (_isSearching)
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  iconColor: Theme.of(context).colorScheme.onSurface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide:
-                        BorderSide(color: Colors.grey), // Blue border on focus
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: const BorderSide(
-                        color: Colors.blue), // Blue border on focus
-                  ),
-                  hintText: 'Enter staff name',
-                  hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.5),
-                      ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () => _clearSearch(),
-                  ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                iconColor: Theme.of(context).colorScheme.onSurface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide:
+                      BorderSide(color: Colors.grey), // Blue border on focus
                 ),
-                onChanged: (query) => _filterStaffList(query),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                      color: Colors.blue), // Blue border on focus
+                ),
+                hintText: 'Enter staff name',
+                hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.5),
+                    ),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => _clearSearch(),
+                ),
               ),
+              onChanged: (query) => _filterStaffList(query),
             ),
+          ),
           const SizedBox(height: 10),
           FutureBuilder<List<dynamic>>(
             future: _staffFuture,
@@ -131,7 +113,7 @@ class _StaffScreenState extends State<StaffScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: Padding(
-                    padding: EdgeInsets.only(top: 400.0),
+                    padding: EdgeInsets.only(top: 200.0),
                     child: CircularProgressIndicator(
                       color: Colors.red,
                     ),
@@ -146,10 +128,23 @@ class _StaffScreenState extends State<StaffScreen> {
                   _staffListFull = freshData;
                   _filteredStaffList = List.from(_staffListFull);
                 }
-                print("StaffId");
-                print("StaffId: ${_staffListFull} ");
-                print("StaffId: ${_filteredStaffList}");
 
+                if (_filteredStaffList.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 200.0),
+                      child: Text(
+                        'No such staff available',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                // Show the filtered staff list
                 return StaffListWidget(staffList: _filteredStaffList);
               } else {
                 return const Center(child: Text('No Data Available'));

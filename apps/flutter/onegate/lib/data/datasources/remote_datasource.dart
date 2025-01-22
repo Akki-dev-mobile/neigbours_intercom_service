@@ -1193,7 +1193,8 @@ class RemoteDataSource {
         'staff_rfid': staffData['idProofNumber'] ?? '',
         'staff_note': '',
         'staff_proof':
-            'https://storage-as-service.s3.amazonaws.com/1//1737461229_scaled_c394ea13-3bcb-4b65-94ff-4ee0d12b24536548585721313203661.jpg',
+            "https://storage-as-service.s3.amazonaws.com/1//1737540834_scaled_aa85f48c-f79e-4e65-8334-a4c168dd67867233042262877539451.jpg"
+        // 'staff_proof': staffData['idProofImageUrl'] ?? '',
       };
 
       log('Request URL: $editStaffUrl');
@@ -1242,8 +1243,9 @@ class RemoteDataSource {
               toastLength: Toast.LENGTH_SHORT);
         }
       } else {
-        Fluttertoast.showToast(
-            msg: "Error editing staff: $e", toastLength: Toast.LENGTH_SHORT);
+        log('Error editing staff: $e');
+        // Fluttertoast.showToast(
+        //     msg: "Error editing staff: $e", toastLength: Toast.LENGTH_SHORT);
       }
 
       rethrow;

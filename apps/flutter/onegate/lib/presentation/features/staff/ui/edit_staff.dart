@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -335,7 +336,10 @@ class _EditStaffState extends State<EditStaff> {
       final response =
           await _remoteDataSource.editStaff(widget.staff.id, staffData);
 
-      if (mounted && response != null && response.statusCode == 200) {
+      if (mounted &&
+          response != null &&
+          response is Response &&
+          response.statusCode == 200) {
         // Navigate to StaffListWidget after successful update
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
@@ -352,6 +356,16 @@ class _EditStaffState extends State<EditStaff> {
           textColor: Colors.white,
           fontSize: 16.0,
         );
+      } else {
+        log('Error response: ${response?.data}');
+        Fluttertoast.showToast(
+          msg: "Failed to update staff: ${response?.data}",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
       }
     } catch (e) {
       debugPrint('Error updating staff: $e');
@@ -363,12 +377,16 @@ class _EditStaffState extends State<EditStaff> {
           errorMessage = "Please enter a valid phone number";
         }
 
-        // debubPrint('Error: $errorMessage');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              backgroundColor: Colors.red,
-              content: Text('Error: $errorMessage')),
-        );
+        debugPrint('Error : $errorMessage');
+
+        // Fluttertoast.showToast(
+        //   msg: "Error: $errorMessage",
+        //   toastLength: Toast.LENGTH_SHORT,
+        //   gravity: ToastGravity.BOTTOM,
+        //   backgroundColor: Colors.red,
+        //   textColor: Colors.white,
+        //   fontSize: 16.0,
+        // );
       }
     }
   }
@@ -602,12 +620,12 @@ class _EditStaffState extends State<EditStaff> {
 
                 // Mobile Number
                 CustomForm.textField(
+                  "Mobile Number",
+                  focusNode: _mobileFocusNode,
                   textController: _phoneController,
+                  hintText: "0123456789",
                   titleColor: Theme.of(context).colorScheme.onBackground,
                   hintColor: Theme.of(context).colorScheme.onPrimary,
-                  focusNode: _mobileFocusNode,
-                  "Mobile Number",
-                  hintText: '0123456789',
                   prefixIcon: CountryCodePicker(
                     initialSelection: selectedCountryCodeSE,
                     favorite: const ['IN'],
@@ -633,27 +651,10 @@ class _EditStaffState extends State<EditStaff> {
                       hintStyle: TextStyle(
                         color: Theme.of(context).colorScheme.onBackground,
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(
-                          style: BorderStyle.solid,
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(
-                          style: BorderStyle.solid,
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                      ),
                     ),
                     textStyle: TextStyle(
                       color: Theme.of(context).colorScheme.onBackground,
                       fontSize: 18,
-                    ),
-                    dialogTextStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onBackground,
                     ),
                     onChanged: (countryCode) {
                       setState(() {
@@ -662,7 +663,6 @@ class _EditStaffState extends State<EditStaff> {
                     },
                   ),
                   suffixIcon: IconButton(
-                    focusNode: _mobileFocusNode,
                     onPressed: () {
                       setState(() {
                         _mobileFocusNode.unfocus();
@@ -853,9 +853,12 @@ class _EditStaffState extends State<EditStaff> {
                 SizedBox(
                   height: 10,
                 ),
-                if (_newProfileImage != null || _newIdProofImage != null) ...[
+                if ((_newProfileImage != null &&
+                        _newProfileImage!.path.isNotEmpty) ||
+                    (_newIdProofImage != null &&
+                        _newIdProofImage!.path.isNotEmpty)) ...[
                   Text(
-                    "Preview images",
+                    "Preview Images",
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
@@ -874,30 +877,20 @@ class _EditStaffState extends State<EditStaff> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         // Profile Image Container
-                        // Container(
-                        //   height: 120,
-                        //   padding: const EdgeInsets.only(top: 8.0),
-                        //   child: Stack(
-                        //     alignment: Alignment.topRight,
-                        //     children: [
-                        //       _newProfileImage != null
-                        //           ? Image.file(
-                        //               File(_newProfileImage!.path),
-                        //               width: 100,
-                        //               height: 100,
-                        //               fit: BoxFit.cover,
-                        //             )
-                        //           : Container(
-                        //               width: 100,
-                        //               height: 100,
-                        //               color: Colors.grey.shade300,
-                        //               child: const Icon(
-                        //                 Icons.camera_alt,
-                        //                 color: Colors.white70,
-                        //                 size: 40,
-                        //               ),
-                        //             ),
-                        //       if (_newProfileImage != null)
+                        // if (_newProfileImage != null &&
+                        //     _newProfileImage!.path.isNotEmpty) ...[
+                        //   Container(
+                        //     height: 120,
+                        //     padding: const EdgeInsets.only(top: 8.0),
+                        //     child: Stack(
+                        //       alignment: Alignment.topRight,
+                        //       children: [
+                        //         Image.file(
+                        //           File(_newProfileImage!.path),
+                        //           width: 100,
+                        //           height: 100,
+                        //           fit: BoxFit.cover,
+                        //         ),
                         //         Positioned(
                         //           right: 0,
                         //           top: 0,
@@ -920,35 +913,26 @@ class _EditStaffState extends State<EditStaff> {
                         //             ),
                         //           ),
                         //         ),
-                        //     ],
+                        //       ],
+                        //     ),
                         //   ),
-                        // ),
+                        // ],
 
                         // ID Proof Image Container
-                        Container(
-                          height: 120,
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Stack(
-                            alignment: Alignment.topRight,
-                            children: [
-                              _newIdProofImage != null
-                                  ? Image.file(
-                                      File(_newIdProofImage!.path),
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: Colors.grey.shade300,
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.white70,
-                                        size: 40,
-                                      ),
-                                    ),
-                              if (_newIdProofImage != null)
+                        if (_newIdProofImage != null &&
+                            _newIdProofImage!.path.isNotEmpty) ...[
+                          Container(
+                            height: 120,
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Stack(
+                              alignment: Alignment.topRight,
+                              children: [
+                                Image.file(
+                                  File(_newIdProofImage!.path),
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
                                 Positioned(
                                   right: 0,
                                   top: 0,
@@ -971,14 +955,16 @@ class _EditStaffState extends State<EditStaff> {
                                     ),
                                   ),
                                 ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
                   SizedBox(height: 10),
                 ],
+
 // Address
                 CustomForm.textField(
                   "Enter Address",
