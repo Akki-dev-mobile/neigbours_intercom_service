@@ -56,6 +56,8 @@ List<String> listPassAlpha = [
 class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
   List<VisitorLog> cardVisitors = [];
+  bool? _visitorCardNumber = false;
+
   bool isLoading = false;
   final remoteDataSource = RemoteDataSource(
     DioSingleton.instance1,
@@ -87,6 +89,13 @@ class _GateDashboardViewState extends State<GateDashboardView>
     // });
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
     _fetchCardNumbers();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    await Future.wait([
+      _loadVisitorSettings(),
+    ]);
   }
 
   Future<void> _fetchCardNumbers() async {
@@ -111,6 +120,13 @@ class _GateDashboardViewState extends State<GateDashboardView>
       context,
       MaterialPageRoute(builder: (context) => const MyAppLogin()),
     );
+  }
+
+  Future<void> _loadVisitorSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _visitorCardNumber = prefs.getBool('visitorCardNumber');
+    });
   }
 
   @override
@@ -396,6 +412,29 @@ class _GateDashboardViewState extends State<GateDashboardView>
                               );
                             },
                           ),
+                          if (_visitorCardNumber == true)
+                            DashboardShortcut(
+                              icon: Symbols.badge,
+                              title: 'Cards',
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  PageTransition(
+                                    type: PageTransitionType.leftToRight,
+                                    child: VisitorLogView(
+                                      id: 'Cards',
+                                      logList: const [
+                                        "In Out Book",
+                                        "Visitor In",
+                                        "Visitor Out",
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                              isPremium: false,
+                              isVisible: false,
+                            ),
                         ],
                       ),
                     ),
@@ -404,7 +443,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         inBook: successState.inBook,
                         outBook: successState.outBook,
                         bloc: gateDashboardBloc),
-
 
                     GestureDetector(
                       onTap: () {
@@ -715,7 +753,7 @@ class DashboardShortcut extends StatelessWidget {
       },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 5, vertical: 15),
-        width: MediaQuery.of(context).size.width * 0.28,
+        width: MediaQuery.of(context).size.width * 0.2,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [

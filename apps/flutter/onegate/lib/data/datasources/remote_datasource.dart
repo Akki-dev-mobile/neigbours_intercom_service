@@ -382,7 +382,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data']['data'] ?? [];
+        final List<dynamic> data = responseData['data'] ?? [];
         log("data--$data");
         return data.map((item) {
           try {
@@ -523,7 +523,7 @@ class RemoteDataSource {
       if (response.statusCode == 200) {
         // Parse the visitor logs from the response
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data']['data'] ?? [];
+        final List<dynamic> data = responseData['data'] ?? [];
 
         return data.map((item) {
           try {
@@ -856,7 +856,7 @@ class RemoteDataSource {
       if (response.statusCode == 200) {
         // Parse the visitor logs from the response
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data']['data'] ?? [];
+        final List<dynamic> data = responseData['data'] ?? [];
 
         // Map the JSON data to `VisitorLog` objects
         return data.map((item) {
@@ -1028,47 +1028,33 @@ class RemoteDataSource {
     }
   }
 
+  //
+  // Future<List<dynamic>> getMembersList() async {
+  //   final String? companyId = await gateStorage.getSocietyId();
+  //   if (companyId == null) throw Exception('Company ID not found.');
+  //
+  //   final response = await Dio().get(
+  //     '${ApiUrls.memberList}',
+  //     queryParameters: {'company_id': companyId},
+  //   );
+  //
+  //   return response.data['data'] ?? [];
+  // }
+
   final String cacheKey = 'members_list_cache';
   final String cacheTimestampKey = 'members_list_cache_timestamp';
   final Duration cacheDuration = Duration(minutes: 30); // Cache expiry time
 
   Future<List<dynamic>> getMembersList() async {
-    try {
-      // Check if cached data is still valid
-      final cachedData = await _getCachedData();
-      if (cachedData != null) {
-        return cachedData;
-      }
+    final String? companyId = await gateStorage.getSocietyId();
+    if (companyId == null) throw Exception('Company ID not found.');
 
-      // Fetch new data from the API
-      final String? companyId = await gateStorage.getSocietyId();
-      if (companyId == null) throw Exception('Company ID not found.');
+    final response = await Dio().get(
+      '${ApiUrls.memberList}',
+      queryParameters: {'company_id': companyId},
+    );
 
-      final Map<String, String> queryParams = {
-        "company_id": companyId,
-      };
-      final apiUrl = ApiUrls.memberList;
-      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
-      log(uri.toString());
-
-      final response = await http.get(uri);
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final membersList = responseData['data'] ?? [];
-
-        // Cache the new data
-        await _cacheData(membersList);
-
-        return membersList;
-      } else {
-        log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
-        throw Exception('Failed to fetch member list: ${response.statusCode}');
-      }
-    } catch (e) {
-      log('Error fetching member list: $e');
-      rethrow;
-    }
+    return response.data['data'] ?? [];
   }
 
   // Get cached data if it's still valid

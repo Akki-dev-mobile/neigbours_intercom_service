@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:ionicons/ionicons.dart';
@@ -7,19 +9,32 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
 
-class VisitorDetailsScreen extends StatelessWidget {
+class VisitorDetailsScreen extends StatefulWidget {
   final VisitorLog visitorLog;
   String? unitList;
 
   VisitorDetailsScreen({Key? key, required this.visitorLog, this.unitList})
       : super(key: key);
 
+  @override
+  State<VisitorDetailsScreen> createState() => _VisitorDetailsScreenState();
+}
+
+class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
       path: phoneNumber,
     );
     await launchUrl(launchUri);
+  }
+
+  @override
+  void initState() {
+    log("visitsomethingggggg ${widget.unitList}");
+    print(widget.visitorLog.visitor_building_assignment);
+
+    super.initState();
   }
 
   @override
@@ -32,9 +47,9 @@ class VisitorDetailsScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceVariant,
             ),
-            child: visitorLog.visitor!.visitor_image!.isNotEmpty
+            child: widget.visitorLog.visitor!.visitor_image!.isNotEmpty
                 ? Image.network(
-                    visitorLog.visitor!.visitor_image ?? "",
+                    widget.visitorLog.visitor!.visitor_image ?? "",
                     height: MediaQuery.of(context).size.height * 0.4,
                     width: double.maxFinite,
                     fit: BoxFit.contain,
@@ -44,8 +59,8 @@ class VisitorDetailsScreen extends StatelessWidget {
                       radius: 80,
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       child: Text(
-                        visitorLog.visitor!.name!.isNotEmpty
-                            ? visitorLog.visitor!.name![0].toUpperCase()
+                        widget.visitorLog.visitor!.name!.isNotEmpty
+                            ? widget.visitorLog.visitor!.name![0].toUpperCase()
                             : 'G',
                         style: const TextStyle(
                           fontSize: 60,
@@ -67,14 +82,14 @@ class VisitorDetailsScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        visitorLog.visitor!.name ?? "",
+                        widget.visitorLog.visitor!.name ?? "",
                         style:
                             Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                       ),
                     ),
-                    if (visitorLog.visitor_count.toString() != '1')
+                    if (widget.visitorLog.visitor_count.toString() != '1')
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -90,7 +105,7 @@ class VisitorDetailsScreen extends StatelessWidget {
                             Icon(Icons.people, size: 18),
                             SizedBox(width: 4),
                             Text(
-                              "${visitorLog.visitor_count} visitors",
+                              "${widget.visitorLog.visitor_count} visitors",
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -108,9 +123,9 @@ class VisitorDetailsScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    visitorLog.purpose_sub_category_name != null
-                        ? "${visitorLog.purpose_sub_category_name}"
-                        : "${visitorLog.visitor_purpose_Category_name}",
+                    widget.visitorLog.purpose_sub_category_name != null
+                        ? "${widget.visitorLog.purpose_sub_category_name}"
+                        : "${widget.visitorLog.visitor_purpose_Category_name}",
                     style: const TextStyle(
                       color: Colors.black87,
                       fontWeight: FontWeight.w600,
@@ -153,7 +168,7 @@ class VisitorDetailsScreen extends StatelessWidget {
                 ),
               ),
               subtitle: Text(
-                visitorLog.visitor!.mobile ?? "",
+                widget.visitorLog.visitor!.mobile ?? "",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -163,7 +178,7 @@ class VisitorDetailsScreen extends StatelessWidget {
                 icon: Icon(Icons.call, size: 18),
                 label: Text('Call'),
                 onPressed: () =>
-                    _makePhoneCall(visitorLog.visitor!.mobile ?? ""),
+                    _makePhoneCall(widget.visitorLog.visitor!.mobile ?? ""),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -228,7 +243,9 @@ class VisitorDetailsScreen extends StatelessWidget {
                                       MediaQuery.of(context).size.width * 0.6,
                                 ),
                                 child: Text(
-                                  unitList ?? "",
+                                  widget.unitList == "0001"
+                                      ? "Society Office"
+                                      : widget.unitList!,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
@@ -244,6 +261,118 @@ class VisitorDetailsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                widget.visitorLog.visitor_coming_from != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xffFFB080).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Symbols.location_away_rounded,
+                                    color: Color(0xffFFB080),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Coming From',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Container(
+                                      constraints: BoxConstraints(
+                                        maxWidth:
+                                            MediaQuery.of(context).size.width *
+                                                0.6,
+                                      ),
+                                      child: Text(
+                                        widget.visitorLog.visitor_coming_from
+                                            .toString(),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                        softWrap: true,
+                                        overflow: TextOverflow.visible,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      )
+                    : SizedBox(),
+
+                widget.visitorLog.visitor_card_number != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xffFFB080).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Symbols.badge,
+                                    color: Color(0xffFFB080),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Card Number',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Container(
+                                      constraints: BoxConstraints(
+                                        maxWidth:
+                                            MediaQuery.of(context).size.width *
+                                                0.6,
+                                      ),
+                                      child: Text(
+                                        widget.visitorLog.visitor_card_number
+                                            .toString(),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                        softWrap: true,
+                                        overflow: TextOverflow.visible,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      )
+                    : SizedBox(),
+
                 Divider(
                   indent: 16,
                   endIndent: 16,
@@ -257,15 +386,15 @@ class VisitorDetailsScreen extends StatelessWidget {
                       _buildTimeInfo(
                         context,
                         "Check In Time",
-                        visitorLog.visitor_check_in!,
+                        widget.visitorLog.visitor_check_in!,
                         Colors.green,
                       ),
-                      if (visitorLog.visitor_check_out != null) ...[
+                      if (widget.visitorLog.visitor_check_out != null) ...[
                         SizedBox(height: 16),
                         _buildTimeInfo(
                           context,
                           "Check Out Time",
-                          visitorLog.visitor_check_out!,
+                          widget.visitorLog.visitor_check_out!,
                           Colors.red,
                         ),
                       ],
@@ -277,50 +406,50 @@ class VisitorDetailsScreen extends StatelessWidget {
           ),
 
           // ID Card Section
-         // visitorLog.visitor_card_number != null || visitorLog.carNumber != null
-         //      ? Container(
-         //    margin: const EdgeInsets.only(left: 8),
-         //    padding: const EdgeInsets.symmetric(
-         //      vertical: 2,
-         //      horizontal: 10,
-         //    ),
-         //    decoration: BoxDecoration(
-         //      gradient: LinearGradient(
-         //        colors: const [
-         //          Color.fromRGBO(255, 236, 158, 0.8),
-         //          Color.fromRGBO(255, 190, 168, 0.8),
-         //        ],
-         //        begin: Alignment.topRight,
-         //        end: Alignment.bottomLeft,
-         //      ),
-         //      borderRadius: BorderRadius.circular(8),
-         //      border: Border.all(
-         //        color: Color.fromRGBO(255, 190, 168, 1),
-         //      ),
-         //    ),
-         //    child: Row(
-         //      children: [
-         //        Lottie.asset(
-         //          'assets/json/idcard.json',
-         //          width: 30,
-         //          height: 30,
-         //          fit: BoxFit.cover,
-         //        ),
-         //        const SizedBox(width: 5),
-         //        Text(
-         //         visitorLog.visitor_card_number != null
-         //              ? visitorLog.visitor_card_number!
-         //              : visitorLog.carNumber ?? 'N/A',
-         //          style: const TextStyle(
-         //            color: Colors.black,
-         //            fontWeight: FontWeight.w800,
-         //            fontSize: 14,
-         //          ),
-         //        ),
-         //      ],
-         //    ),
-         //  )
-         //      : const SizedBox(),
+          // visitorLog.visitor_card_number != null || visitorLog.carNumber != null
+          //      ? Container(
+          //    margin: const EdgeInsets.only(left: 8),
+          //    padding: const EdgeInsets.symmetric(
+          //      vertical: 2,
+          //      horizontal: 10,
+          //    ),
+          //    decoration: BoxDecoration(
+          //      gradient: LinearGradient(
+          //        colors: const [
+          //          Color.fromRGBO(255, 236, 158, 0.8),
+          //          Color.fromRGBO(255, 190, 168, 0.8),
+          //        ],
+          //        begin: Alignment.topRight,
+          //        end: Alignment.bottomLeft,
+          //      ),
+          //      borderRadius: BorderRadius.circular(8),
+          //      border: Border.all(
+          //        color: Color.fromRGBO(255, 190, 168, 1),
+          //      ),
+          //    ),
+          //    child: Row(
+          //      children: [
+          //        Lottie.asset(
+          //          'assets/json/idcard.json',
+          //          width: 30,
+          //          height: 30,
+          //          fit: BoxFit.cover,
+          //        ),
+          //        const SizedBox(width: 5),
+          //        Text(
+          //         visitorLog.visitor_card_number != null
+          //              ? visitorLog.visitor_card_number!
+          //              : visitorLog.carNumber ?? 'N/A',
+          //          style: const TextStyle(
+          //            color: Colors.black,
+          //            fontWeight: FontWeight.w800,
+          //            fontSize: 14,
+          //          ),
+          //        ),
+          //      ],
+          //    ),
+          //  )
+          //      : const SizedBox(),
           SizedBox(height: 20),
         ],
       ),
@@ -366,5 +495,19 @@ class VisitorDetailsScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  DateTime _parseDateTime(String? dateTimeString) {
+    if (dateTimeString == null || dateTimeString.isEmpty) {
+      return DateTime
+          .now(); // Return a fallback value if the string is null or empty
+    }
+
+    try {
+      return DateTime.parse(dateTimeString);
+    } catch (e) {
+      // Handle invalid date formats gracefully
+      return DateTime.now(); // Fallback value for invalid format
+    }
   }
 }

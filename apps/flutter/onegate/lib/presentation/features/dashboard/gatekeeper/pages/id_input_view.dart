@@ -165,8 +165,7 @@ class _IdInputViewState extends State<IdInputView> {
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 context: context,
                 builder: (context) => ImageGridBottomSheet(
-                  purposeCategories: state.purposeCategories!
-                      .toList(),
+                  purposeCategories: state.purposeCategories!.toList(),
                   gatekeeperDashboardBloc: gateDashboardBloc,
                 ),
               );
@@ -359,7 +358,7 @@ class ImageGridBottomSheet extends StatefulWidget {
 }
 
 class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
-  int selectedImageIndex = 0;
+  int? selectedImageIndex;
 
   @override
   void initState() {
@@ -377,10 +376,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
       if (jsonString != null) {
         final jsonList = jsonDecode(jsonString) as List<dynamic>;
         setState(() {
-          globalSelectedPurposes = jsonList
-              .map((json) => PurposeCategory1.fromJson(json))
-              .toList();
-
+          globalSelectedPurposes =
+              jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
         });
         print("Global selected purposes loaded: ${globalSelectedPurposes}");
       } else {
@@ -440,11 +437,17 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                       mainAxisSpacing: 3,
                       crossAxisSpacing: 3,
                     ),
-                    itemCount: widget.purposeCategories.length,
+                    itemCount: widget.purposeCategories
+                        .where((purpose) => purpose.categoryName == "GUEST")
+                        .length,
                     itemBuilder: (context, index) {
-                      final purpose = widget.purposeCategories[index];
+                      final guestPurposes = widget.purposeCategories
+                          .where((purpose) => purpose.categoryName == "GUEST")
+                          .toList();
+                      final purpose = guestPurposes[index];
+
                       return GestureDetector(
-                        onTap: () => selectImage(index),
+                        onTap: () => selectImage(4),
                         child: Stack(
                           children: [
                             Container(
@@ -452,14 +455,14 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                               width: 200,
                               margin: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
-                                color: selectedImageIndex == index
+                                color: selectedImageIndex == 4
                                     ? const Color(0x10C08261)
                                     : Colors.transparent,
                                 border: Border.all(
-                                  color: selectedImageIndex == index
+                                  color: selectedImageIndex == 4
                                       ? const Color(0xffC08261)
                                       : Colors.grey,
-                                  width: selectedImageIndex == index ? 2 : 1,
+                                  width: selectedImageIndex == 4 ? 2 : 1,
                                 ),
                                 borderRadius: BorderRadius.circular(15),
                               ),
@@ -477,7 +480,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                         height: 60,
                                         width: 60,
                                         fit: BoxFit.cover,
-                                        imageUrl: purpose.image??"",
+                                        imageUrl: purpose.image ?? "",
                                         placeholder: (context, url) =>
                                             const CircularProgressIndicator(),
                                         errorWidget: (context, url, error) =>
@@ -495,15 +498,14 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                       child: Text(
                                         purpose.categoryName,
                                         style: TextStyle(
-                                          color: selectedImageIndex == index
+                                          color: selectedImageIndex == 4
                                               ? const Color(0xffC08261)
                                               : Theme.of(context)
                                                   .colorScheme
                                                   .onSurface,
-                                          fontWeight:
-                                              selectedImageIndex == index
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
+                                          fontWeight: selectedImageIndex == 4
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
                                         ),
                                       ),
                                     ),
@@ -511,7 +513,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                 ],
                               ),
                             ),
-                            if (selectedImageIndex == index)
+                            if (selectedImageIndex == 4)
                               const Positioned(
                                 right: 10,
                                 top: 10,
@@ -571,7 +573,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                         height: 60,
                                         width: 60,
                                         fit: BoxFit.cover,
-                                        imageUrl: purpose.image ??"",
+                                        imageUrl: purpose.image ?? "",
                                         placeholder: (context, url) =>
                                             const CircularProgressIndicator(),
                                         errorWidget: (context, url, error) =>
@@ -630,8 +632,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
 
                 if (selectedImageIndex != -1) {
                   final selectedValue = globalSelectedPurposes.isEmpty
-                      ? widget.purposeCategories[selectedImageIndex]
-                      : globalSelectedPurposes[selectedImageIndex];
+                      ? widget.purposeCategories[selectedImageIndex!]
+                      : globalSelectedPurposes[selectedImageIndex!];
                   Navigator.pop(
                     context,
                     selectedValue,

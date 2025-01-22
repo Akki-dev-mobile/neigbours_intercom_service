@@ -30,6 +30,8 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       emit(VisitorLogLoadingState());
       DateTime today = DateTime.now();
 
+
+
       // Get today's date in the desired format (yyyy-MM-dd)
       String formattedDate = getFormattedDate(today);
       final visitorLogs = await visitorLogUseCase.fetchAllLogs(

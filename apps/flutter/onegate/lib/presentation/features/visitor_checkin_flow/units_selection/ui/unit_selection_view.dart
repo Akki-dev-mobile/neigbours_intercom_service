@@ -41,7 +41,7 @@ class UnitSelectionView extends StatefulWidget {
   UnitSelectionView(Visitor? searchedVisitor,
       {Key? key,
       required this.visitor,
-        this.carNumber,
+      this.carNumber,
       required this.purposeCategory,
       this.comingFrom,
       this.guestCount,
@@ -90,6 +90,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   bool? _membersApproval;
   late Future<void> _initializeFuture;
   bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -146,94 +147,182 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  void _showSelectedMembersBottomSheet(Set<String> selectedMember) {
+  void _showSelectedMembersBottomSheet(Set<String> selectedMembers) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ValueListenableBuilder<Set<String>>(
-        valueListenable: _selectedMembersNotifier,
-        builder: (context, updatedSelectedMember, _) => Container(
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
           height: MediaQuery.of(context).size.height * 0.7,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              // Header
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey[200]!,
-                      width: 1, // Border thickness
-                    ),
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 1,
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Selected Members (${updatedSelectedMember.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      'Selected Members',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                     IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.red,
-                      ),
+                      icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
+              // Members List
+              // Members List
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: updatedSelectedMember.length,
-                  itemBuilder: (context, index) {
-                    final member = updatedSelectedMember.elementAt(index);
-                    return ListTile(
-                      title: Text(member),
-                      trailing: IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Colors.red,
-                        ),
-                        onPressed: () {
-                          final updatedMembers =
-                              Set<String>.from(_selectedMembersNotifier.value);
-                          updatedMembers.remove(member);
-                          _selectedMembersNotifier.value = updatedMembers;
-                          if (updatedMembers.isEmpty) {
-                            Navigator.pop(context);
-                          }
-                        },
-                      ),
+                child: ValueListenableBuilder<Set<String>>(
+                  valueListenable: _selectedMembersNotifier,
+                  builder: (context, selectedMembers, _) {
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: selectedMembers.length,
+                      itemBuilder: (context, index) {
+                        final member = selectedMembers.elementAt(index);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.grey[200],
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.black,
+                              ),
+                            ),
+                            title: Text(
+                              member,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(
+                                Icons.remove_circle_outline,
+                                color: Colors.red,
+                              ),
+                              onPressed: () {
+                                final updatedMembers = Set<String>.from(
+                                    _selectedMembersNotifier.value);
+                                updatedMembers.remove(member);
+                                _selectedMembersNotifier.value = updatedMembers;
+                                if (updatedMembers.isEmpty) {
+                                  Navigator.pop(context);
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
               ),
-              Padding(
+              // Bottom Buttons
+              Container(
                 padding: const EdgeInsets.all(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: CustomLargeBtn(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _handleSelectionSubmit(updatedSelectedMember);
-                      },
-                      text: 'Allow'),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 1,
+                      offset: const Offset(0, -1),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.black),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _selectedMembersNotifier.value = {};
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          'Clear All',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          // Add your confirm logic here
+                          Navigator.pop(context);
+                          _handleSelectionSubmit(selectedMembers);
+                        },
+                        child: const Text(
+                          'Confirm',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -553,205 +642,441 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         }
       },
       child: Scaffold(
+        appBar: AppBar(
+          title: Text("Select"),
+          // actions: [
+          //   IconButton(
+          //     icon: Icon(Icons.arrow_back),
+          //     onPressed: () {
+          //       if (widget.searchedVisitor != null) {
+          //         Navigator.pop(context);
+          //       } else {
+          //         Navigator.pushAndRemoveUntil(
+          //           context,
+          //           MaterialPageRoute(
+          //               builder: (context) =>
+          //                   GateDashboardView()),
+          //               (Route<dynamic> route) => false,
+          //         );
+          //       }
+          //     },
+          //   ),
+          // ],
+        ),
         body: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  // Header with back button and title
-                  Container(
-                    // padding: const EdgeInsets.all(10),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.arrow_back),
-                          onPressed: () {
-                            if (widget.searchedVisitor != null) {
-                              Navigator.pop(context);
-                            } else {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => GateDashboardView()),
-                                (Route<dynamic> route) => false,
-                              );
-                            }
-                          },
-                        ),
-                        Text(
-                          'Select Units/Members',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ],
+          child: DefaultTabController(
+            length: 2,
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 8),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              // IconButton(
+                              //   icon: Icon(Icons.arrow_back),
+                              //   onPressed: () {
+                              //     if (widget.searchedVisitor != null) {
+                              //       Navigator.pop(context);
+                              //     } else {
+                              //       Navigator.pushAndRemoveUntil(
+                              //         context,
+                              //         MaterialPageRoute(
+                              //             builder: (context) =>
+                              //                 GateDashboardView()),
+                              //         (Route<dynamic> route) => false,
+                              //       );
+                              //     }
+                              //   },
+                              // ),
+                              Expanded(
+                                child: Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: TabBar(
+                                    indicator: BoxDecoration(
+                                      color: Colors.black,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    labelColor: Colors.white,
+                                    unselectedLabelColor: Colors.black,
+                                    dividerColor: Colors.transparent,
+                                    indicatorSize: TabBarIndicatorSize.tab,
+                                    tabs: [
+                                      Tab(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16),
+                                          child: const Text(
+                                            'Select Units/Members',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                      Tab(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16),
+                                          child: const Text(
+                                            'Society Office',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  // Main content
-                  Expanded(
-                    child: FutureBuilder<void>(
-                      future: _initializeFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
+                    // Tab content
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          // First Tab - Select Units/Members
+                          Column(
+                            children: [
+                              Expanded(
+                                child: FutureBuilder<void>(
+                                  future: _initializeFuture,
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return const Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            CircularProgressIndicator(
+                                                color: Colors.grey),
+                                            SizedBox(height: 16),
+                                            Text(
+                                              "Loading Units and Members...",
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    } else if (snapshot.hasError) {
+                                      return Center(
+                                        child: Text(
+                                          'Error: ${snapshot.error}',
+                                          style: TextStyle(
+                                              color: Colors.red, fontSize: 16),
+                                        ),
+                                      );
+                                    }
+                                    return Column(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 0.0, horizontal: 10),
+                                          child: _buildSearchField(context),
+                                        ),
+                                        Expanded(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                                bottom: 40.0),
+                                            child: _buildMemberList(context),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: ValueListenableBuilder<Set<String>>(
+                                  valueListenable: _selectedMembersNotifier,
+                                  builder: (context, selectedMember, _) {
+                                    if (selectedMember.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Builder(
+                                      builder: (context) {
+                                        if (DefaultTabController.of(context)
+                                                .index !=
+                                            0) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return Container(
+                                          color: Colors.black,
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Material(
+                                                elevation: 8,
+                                                color: Colors.black,
+                                                child: InkWell(
+                                                  onTap: () =>
+                                                      _showSelectedMembersBottomSheet(
+                                                          selectedMember),
+                                                  child: Padding(
+                                                    padding: EdgeInsets.only(
+                                                      left: 20,
+                                                      right: 20,
+                                                      top: 16,
+                                                      bottom: MediaQuery.of(
+                                                                      context)
+                                                                  .viewInsets
+                                                                  .bottom >
+                                                              0
+                                                          ? MediaQuery.of(
+                                                                  context)
+                                                              .viewInsets
+                                                              .bottom
+                                                          : 16 +
+                                                              MediaQuery.of(
+                                                                      context)
+                                                                  .padding
+                                                                  .bottom,
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            const Icon(
+                                                                Icons.people,
+                                                                color: Colors
+                                                                    .white),
+                                                            const SizedBox(
+                                                                width: 8),
+                                                            Text(
+                                                              selectedMember
+                                                                          .length >
+                                                                      1
+                                                                  ? '${selectedMember.length} Selected'
+                                                                  : selectedMember
+                                                                      .first,
+                                                              style: Theme.of(
+                                                                      context)
+                                                                  .textTheme
+                                                                  .titleLarge
+                                                                  ?.copyWith(
+                                                                      color: Colors
+                                                                          .white),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        ElevatedButton.icon(
+                                                          style: ButtonStyle(
+                                                            foregroundColor:
+                                                                MaterialStateProperty
+                                                                    .all<Color>(
+                                                              const Color(
+                                                                  0xFF7D7C7C),
+                                                            ),
+                                                            backgroundColor:
+                                                                MaterialStateProperty
+                                                                    .all<Color>(
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .surface,
+                                                            ),
+                                                            elevation:
+                                                                MaterialStateProperty
+                                                                    .resolveWith<
+                                                                        double>(
+                                                              (Set<MaterialState>
+                                                                      states) =>
+                                                                  states.contains(
+                                                                          MaterialState
+                                                                              .pressed)
+                                                                      ? 8
+                                                                      : 0,
+                                                            ),
+                                                            shape: MaterialStateProperty
+                                                                .all<
+                                                                    RoundedRectangleBorder>(
+                                                              RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            15),
+                                                              ),
+                                                            ),
+                                                            padding:
+                                                                MaterialStateProperty
+                                                                    .all<
+                                                                        EdgeInsetsGeometry>(
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                horizontal: 20,
+                                                                vertical: 10,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          onPressed: () =>
+                                                              _showSelectedMembersBottomSheet(
+                                                                  selectedMember),
+                                                          label: Text(
+                                                            "view",
+                                                            style: Theme.of(
+                                                                    context)
+                                                                .textTheme
+                                                                .bodyLarge!
+                                                                .copyWith(
+                                                                  color: Theme.of(
+                                                                          context)
+                                                                      .colorScheme
+                                                                      .onSurface,
+                                                                ),
+                                                          ),
+                                                          icon: Icon(
+                                                            Icons
+                                                                .keyboard_arrow_up,
+                                                            color: Colors.black,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Second Tab - Society Office
+                          // Updated Society Office tab section in the TabBarView
+                          Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                CircularProgressIndicator(color: Colors.grey),
-                                SizedBox(height: 16),
+                                const Icon(
+                                  Icons.business,
+                                  size: 64,
+                                  color: Colors.black,
+                                ),
+                                const SizedBox(height: 16),
                                 Text(
-                                  "Loading Units and Members...",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
+                                  'Society Office',
+                                  style:
+                                      Theme.of(context).textTheme.headlineSmall,
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 32,
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    // Create BuildingAssignment for Society Office
+                                    final buildingAssignment =
+                                        BuildingAssignment(
+                                      id: null,
+                                      visitor_id: widget.visitor.id,
+                                      visitor_log_id: null,
+                                      company_id:
+                                          int.parse(companyId.toString()),
+                                      building_id: 0,
+                                      unit_id: [
+                                        "0001"
+                                      ], // Set unit ID to "001" for Society Office
+                                    );
+
+                                    final visitorLogData = VisitorLog(
+                                      visitor_id: widget.visitor.id ?? 0,
+                                      visitor_purpose_category_id:
+                                          widget.purposeCategoryId == null
+                                              ? 1
+                                              : int.parse(widget
+                                                  .purposeCategoryId
+                                                  .toString()),
+                                      visitor_purpose_sub_category_id:
+                                          widget.selectedSubCategoryId != null
+                                              ? int.parse(widget
+                                                  .selectedSubCategoryId
+                                                  .toString())
+                                              : null,
+                                      visitor_count: widget.guestCount ?? 0,
+                                      visitor: widget.visitor,
+                                      visitor_check_in:
+                                          DateTime.parse(formattedInTime),
+                                      visitor_card_number: widget.visitorNumber,
+                                      visitor_coming_from: widget.comingFrom,
+                                      visitor_building_assignment: [
+                                        buildingAssignment
+                                      ],
+                                      visitor_card_id: null,
+                                      carNumber: widget.carNumber,
+                                      company_id:
+                                          int.parse(companyId.toString()),
+                                      is_checked_out: false,
+                                    );
+
+                                    // Save Society Office details to SharedPreferences
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    final societyOfficeMemberDetails = [
+                                      {
+                                        "name": "Society Office",
+                                        "unit_name": "Cyberone",
+                                        "unit_id": 0001,
+                                        "member_ids": 0,
+                                        "building_unit": "0001"
+                                      }
+                                    ];
+
+                                    await prefs.setString(
+                                        'member_details',
+                                        json.encode(
+                                            societyOfficeMemberDetails));
+
+                                    await _showApprovedDialog(
+                                        context, visitorLogData);
+                                  },
+                                  child: const Text(
+                                    'Tap to Check-in',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          );
-                        } else if (snapshot.hasError) {
-                          return Center(
-                            child: Text(
-                              'Error: ${snapshot.error}',
-                              style: TextStyle(color: Colors.red, fontSize: 16),
-                            ),
-                          );
-                        }
-                        return Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 0.0, horizontal: 10),
-                              child: _buildSearchField(context),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 40.0),
-                                child: _buildMemberList(context),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              // Bottom bar
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: ValueListenableBuilder<Set<String>>(
-                  valueListenable: _selectedMembersNotifier,
-                  builder: (context, selectedMember, _) {
-                    if (selectedMember.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-                    return Container(
-                      color: Colors.black,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Material(
-                            elevation: 8,
-                            color: Colors.black,
-                            child: InkWell(
-                              onTap: () => _showSelectedMembersBottomSheet(
-                                  selectedMember),
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  left: 20,
-                                  right: 20,
-                                  top: 16,
-                                  bottom: MediaQuery.of(context)
-                                              .viewInsets
-                                              .bottom >
-                                          0
-                                      ? MediaQuery.of(context).viewInsets.bottom
-                                      : 16 +
-                                          MediaQuery.of(context).padding.bottom,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.people,
-                                            color: Colors.white),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                            selectedMember.length > 1
-                                                ? '${selectedMember.length} Selected'
-                                                : selectedMember.first,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleLarge
-                                                ?.copyWith(
-                                                    color: Colors.white)),
-                                      ],
-                                    ),
-                                    ElevatedButton.icon(
-                                        style: ButtonStyle(
-                                          foregroundColor:
-                                              WidgetStateProperty.all<Color>(
-                                                  const Color(0xFF7D7C7C)),
-                                          backgroundColor:
-                                              WidgetStateProperty.all<Color>(
-                                            Theme.of(context)
-                                                .colorScheme
-                                                .surface,
-                                          ),
-                                          elevation: WidgetStateProperty
-                                              .resolveWith<double>(
-                                            (Set<WidgetState> states) =>
-                                                states.contains(
-                                                        WidgetState.pressed)
-                                                    ? 8
-                                                    : 0,
-                                          ),
-                                          shape: WidgetStateProperty.all<
-                                              RoundedRectangleBorder>(
-                                            RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(15)),
-                                          ),
-                                          padding: WidgetStateProperty.all<
-                                              EdgeInsetsGeometry>(
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 20, vertical: 10),
-                                          ),
-                                        ),
-                                        onPressed: () =>
-                                            _showSelectedMembersBottomSheet(
-                                                selectedMember),
-                                        label: Text(
-                                          "view",
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyLarge!
-                                              .copyWith(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurface,
-                                              ),
-                                        ),
-                                        icon: Icon(
-                                          Icons.keyboard_arrow_up,
-                                          color: Colors.black,
-                                        )),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ),
                         ],
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -870,7 +1195,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
 // Update the _prepareVisitorLogData method
-  Future<VisitorLog>  _prepareVisitorLogData() async {
+  Future<VisitorLog> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
     final companyDetails = await gateStorage.getSocietyDetails();
@@ -974,8 +1299,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     final visitorLogData = VisitorLog(
         visitor_id: widget.visitor.id ?? 0,
-        visitor_purpose_category_id:widget.purposeCategoryId == null ? 1 :
-            int.parse(widget.purposeCategoryId.toString())  ,
+        visitor_purpose_category_id: widget.purposeCategoryId == null
+            ? 1
+            : int.parse(widget.purposeCategoryId.toString()),
         visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
             ? int.parse(widget.selectedSubCategoryId.toString())
             : null,
@@ -1068,8 +1394,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  void _handleSubmissionError(
-      dynamic error, VisitorLog visitorLogData) async {
+  void _handleSubmissionError(dynamic error, VisitorLog visitorLogData) async {
     log("Unexpected error during submission: $error");
     await _showApprovedDialog(context, visitorLogData);
   }
@@ -1271,30 +1596,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
                               try {
                                 await remoteDataSource.checkIn(data);
-
-                                if (savedMemberUnitDetails.isNotEmpty) {
-                                  log('Sending visitor log details: ${jsonEncode([
-                                        savedMemberUnitDetails
-                                      ])}');
-
-                                  Navigator.pop(context);
-                                  await Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const GateDashboardView(),
-                                    ),
-                                  );
-                                } else {
-                                  log('Error: savedMemberUnitDetails is empty');
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content:
-                                          Text('Error: Missing member details'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
+                                Navigator.pop(context);
+                                await Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const GateDashboardView(),
+                                  ),
+                                );
                               } catch (e) {
                                 log('Error in approved dialog: $e');
                                 setState(() {
@@ -1322,8 +1631,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Future<void> _notificationSent(
-      BuildContext context, VisitorLog data) async {
+  Future<void> _notificationSent(BuildContext context, VisitorLog data) async {
     showDialog(
       context: context,
       barrierDismissible: false,

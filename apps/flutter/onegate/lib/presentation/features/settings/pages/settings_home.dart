@@ -78,7 +78,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           builder: (BuildContext context, StateSetter setState) {
             // Access the provider
             final cameraProvider = Provider.of<CameraSettingsProvider>(context);
-            _cameraValue = cameraProvider.selectedCameraValue;
+            _cameraValue = cameraProvider.selectedCameraValue ?? "back";
 
             return Container(
               decoration: BoxDecoration(
@@ -105,9 +105,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _cameraItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        fillColor: WidgetStateProperty.all(
-                         Colors.black,
-                        ),
+                        fillColor: MaterialStateProperty.all(Colors.black),
                         title: Text(
                           item.label,
                           style: Theme.of(context).textTheme.bodyMedium,
@@ -117,7 +115,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                         onChanged: (value) {
                           if (value != null) {
                             setState(() {
-                              cameraProvider.updateCameraValue(value);
+                              _cameraValue = value; // Update the local value
+                              cameraProvider.updateCameraValue(value); // Update the provider
                             });
                           }
                         },
@@ -126,7 +125,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                   ),
                   CustomLargeBtn(
                     text: 'Confirm',
-                    onPressed: () async{
+                    onPressed: () async {
                       // Check the role and navigate accordingly
                       final role = await GateStorage().getRole();
 
@@ -410,12 +409,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               title: 'Staffs',
               subtitle: 'View your society staffs',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StaffScreen(),
-                  ),
-                );
+              Fluttertoast.showToast(msg: "coming soon", backgroundColor: Colors.green);
               },
             ),
             // Gate Settings (for Admin and Master only)

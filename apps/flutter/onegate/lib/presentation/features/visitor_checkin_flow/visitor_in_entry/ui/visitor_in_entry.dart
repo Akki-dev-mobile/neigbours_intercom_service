@@ -70,7 +70,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   );
   String? selectedSubCategoryId;
 
-
   @override
   void initState() {
     super.initState();
@@ -83,7 +82,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _initializeBloc();
     _loadInitialData();
     _initializeCameras();
-
   }
 
   void _initSpeech() async {
@@ -98,7 +96,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   Future<void> _initializeControllers() async {
     final prefs = await SharedPreferences.getInstance();
     final comingFrom = await prefs.getString('visitor_coming_from') ?? "";
-print("kiyu nahi aara$comingFrom");
+    print("kiyu nahi aara$comingFrom");
     // Initialize controllers with the fetched data
     _guestNameController = TextEditingController(
       text: widget.searchedVisitor?.name ?? "",
@@ -112,7 +110,6 @@ print("kiyu nahi aara$comingFrom");
     _visitorNumberController = TextEditingController();
     _carNumberController = TextEditingController();
   }
-
 
   void _initializeBloc() {
     final remoteDataSource = RemoteDataSource(
@@ -178,7 +175,7 @@ print("kiyu nahi aara$comingFrom");
           case 'guestComingFrom':
             _guestComingFromController.text = result;
             break;
-            case 'cabnumber':
+          case 'cabnumber':
             _carNumberController.text = result;
             break;
         }
@@ -205,13 +202,12 @@ print("kiyu nahi aara$comingFrom");
     }
   }
 
-
   Future<File?> _captureImageFromCamera(BuildContext context) async {
     CameraController? cameraController;
 
     try {
       final cameraProvider =
-      Provider.of<CameraSettingsProvider>(context, listen: false);
+          Provider.of<CameraSettingsProvider>(context, listen: false);
       final selectedCameraValue = cameraProvider.selectedCameraValue;
 
       // Fetch available cameras
@@ -221,12 +217,12 @@ print("kiyu nahi aara$comingFrom");
       // Select the appropriate camera
       if (selectedCameraValue == 'front') {
         selectedCamera = cameras.firstWhere(
-              (camera) => camera.lensDirection == CameraLensDirection.front,
+          (camera) => camera.lensDirection == CameraLensDirection.front,
           orElse: () => throw Exception('Front camera not available'),
         );
       } else {
         selectedCamera = cameras.firstWhere(
-              (camera) => camera.lensDirection == CameraLensDirection.back,
+          (camera) => camera.lensDirection == CameraLensDirection.back,
           orElse: () => throw Exception('Back camera not available'),
         );
       }
@@ -359,6 +355,7 @@ print("kiyu nahi aara$comingFrom");
 
     return true;
   }
+
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
@@ -374,7 +371,7 @@ print("kiyu nahi aara$comingFrom");
           visitor: state.visitor,
           visitorId: widget.searchedVisitor?.id,
           guestname: _guestNameController.text,
-          carNumber : _carNumberController.text,
+          carNumber: _carNumberController.text,
           mobileNumber: widget.mobile,
           purposeCategory: state.purposeCategory,
           purposeCategoryId: widget.selectedValue?.categoryId.toString(),
@@ -433,11 +430,12 @@ print("kiyu nahi aara$comingFrom");
                 guestname: _guestNameController.text,
                 mobileNumber: widget.mobile,
                 purposeCategory: state.purposeCategory,
-                purposeCategoryId: widget.selectedValue?.categoryId.toString() ?? selectedCompanyIndex.toString(),
+                purposeCategoryId:
+                    widget.selectedValue?.categoryId.toString() ??
+                        selectedCompanyIndex.toString(),
                 selectedSubCategoryId: selectedSubCategoryId,
                 comingFrom: _guestComingFromController.text,
                 carNumber: _carNumberController.text,
-
                 guestCount: _guestCount,
                 visitorNumber: _visitorNumberController.text.isNotEmpty
                     ? "V${_visitorNumberController.text}"
@@ -518,7 +516,7 @@ print("kiyu nahi aara$comingFrom");
           "Cab Number",
           hintText: 'MH 12 AB 1234',
           textController: _carNumberController,
-length: 10 ,
+          length: 10,
           textCapitalization: TextCapitalization.characters,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
@@ -593,7 +591,8 @@ length: 10 ,
                 onTap: () {
                   setState(() {
                     selectedCompanyIndex = index;
-                    selectedSubCategoryId = subCategory.subCategoryId?.toString();
+                    selectedSubCategoryId =
+                        subCategory.subCategoryId?.toString();
                     log("Selected Index: $index");
                     log("Selected SubCategoryId: $selectedSubCategoryId");
                   });
@@ -706,8 +705,6 @@ length: 10 ,
     );
   }
 
-
-
   Widget _buildVendorForm(PurposeCategory1 purpose) {
     final subCategories = purpose.subCategories;
 
@@ -737,8 +734,7 @@ length: 10 ,
           textCapitalization: TextCapitalization.words,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon:
-              _buildMicButton(() => _handleMicPress('guestComingFrom')),
+          suffixIcon: _buildMicButton(() => _handleMicPress('guestComingFrom')),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1013,7 +1009,6 @@ length: 10 ,
     _visitorNumberController.dispose();
     super.dispose();
   }
-
 }
 
 class SelectTypeWidget extends StatefulWidget {
@@ -1303,7 +1298,7 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
 
       final CameraController newController = CameraController(
         newCamera,
-        ResolutionPreset.high,
+        ResolutionPreset.low,
       );
 
       await newController.initialize();
