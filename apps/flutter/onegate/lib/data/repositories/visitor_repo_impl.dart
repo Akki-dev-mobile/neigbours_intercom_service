@@ -66,7 +66,7 @@ class VisitorRepoImpl extends VisitorRepository {
   Future<Visitor?> createVisitor(Visitor visitor) async {
     try {
       final response = await _remoteDataSource.createVisitor(visitor);
-      print("createVisitor visitor_repo_impl::: $response");
+      print("createVisitor visitor_repo_impl::: ${response?.name}");
       return response;
     } catch (error) {
       return null;

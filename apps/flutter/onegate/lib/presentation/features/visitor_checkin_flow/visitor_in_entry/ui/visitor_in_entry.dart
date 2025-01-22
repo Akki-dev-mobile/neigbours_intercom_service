@@ -53,6 +53,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   late final TextEditingController _visitorNumberController;
   late final TextEditingController _carNumberController;
   int selectedCompanyIndex = -1;
+  List<CameraDescription>? cachedCameras;
+  bool _speechEnabled = false;
+
+  final stt.SpeechToText _speechToText = stt.SpeechToText();
 
   bool _isSubmitting = false;
   int _guestCount = 1;
@@ -66,6 +70,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   );
   String? selectedSubCategoryId;
 
+
   @override
   void initState() {
     super.initState();
@@ -74,8 +79,20 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       // Use setState if any UI updates are required after initialization
       setState(() {});
     });
+    _initSpeech();
     _initializeBloc();
     _loadInitialData();
+    _initializeCameras();
+
+  }
+
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    setState(() {});
+  }
+
+  Future<void> _initializeCameras() async {
+    cachedCameras ??= await availableCameras();
   }
 
   Future<void> _initializeControllers() async {
@@ -161,6 +178,9 @@ print("kiyu nahi aara$comingFrom");
           case 'guestComingFrom':
             _guestComingFromController.text = result;
             break;
+            case 'cabnumber':
+            _carNumberController.text = result;
+            break;
         }
       });
     }
@@ -191,7 +211,7 @@ print("kiyu nahi aara$comingFrom");
 
     try {
       final cameraProvider =
-          Provider.of<CameraSettingsProvider>(context, listen: false);
+      Provider.of<CameraSettingsProvider>(context, listen: false);
       final selectedCameraValue = cameraProvider.selectedCameraValue;
 
       // Fetch available cameras
@@ -201,12 +221,12 @@ print("kiyu nahi aara$comingFrom");
       // Select the appropriate camera
       if (selectedCameraValue == 'front') {
         selectedCamera = cameras.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.front,
+              (camera) => camera.lensDirection == CameraLensDirection.front,
           orElse: () => throw Exception('Front camera not available'),
         );
       } else {
         selectedCamera = cameras.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.back,
+              (camera) => camera.lensDirection == CameraLensDirection.back,
           orElse: () => throw Exception('Back camera not available'),
         );
       }
@@ -257,21 +277,10 @@ print("kiyu nahi aara$comingFrom");
     }
 
     try {
-      _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
-        searchedVisitor: widget.searchedVisitor,
-        guestName: _guestNameController.text,
-        guestComingFrom: _guestComingFromController.text,
-        guestCount: _guestCount,
-        carNumber: _carNumberController.text,
-        purposeCategory: widget.selectedValue!,
-        mobile: widget.mobile,
-      ));
-    } catch (e) {
-      _showErrorSnackBar('An error occurred: ${e.toString()}');
-      setState(() => _isSubmitting = false);
-    }
+      // Clear the stored coming from value after submission
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('visitor_coming_from');
 
-    try {
       _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
         searchedVisitor: widget.searchedVisitor,
         guestName: _guestNameController.text,
@@ -414,7 +423,28 @@ print("kiyu nahi aara$comingFrom");
 
             await _updateVisitor(updatedVisitor);
           }
-          _navigateToUnitSelection(state);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UnitSelectionView(
+                widget.searchedVisitor,
+                visitor: state.visitor,
+                visitorId: widget.searchedVisitor?.id,
+                guestname: _guestNameController.text,
+                mobileNumber: widget.mobile,
+                purposeCategory: state.purposeCategory,
+                purposeCategoryId: widget.selectedValue?.categoryId.toString() ?? selectedCompanyIndex.toString(),
+                selectedSubCategoryId: selectedSubCategoryId,
+                comingFrom: _guestComingFromController.text,
+                carNumber: _carNumberController.text,
+
+                guestCount: _guestCount,
+                visitorNumber: _visitorNumberController.text.isNotEmpty
+                    ? "V${_visitorNumberController.text}"
+                    : _visitorNumberController.text,
+              ),
+            ),
+          );
 
           setState(() => _isSubmitting = false);
         } else if (state is VIENavigateToCameraState) {
@@ -482,17 +512,17 @@ print("kiyu nahi aara$comingFrom");
           textCapitalization: TextCapitalization.words,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('cabDriverName')),
+          suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
         ),
         CustomForm.textField(
           "Cab Number",
           hintText: 'MH 12 AB 1234',
           textController: _carNumberController,
-
+length: 10 ,
           textCapitalization: TextCapitalization.characters,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('cabNumber')),
+          suffixIcon: _buildMicButton(() => _handleMicPress('cabnumber')),
         ),
       ],
     );
@@ -516,7 +546,7 @@ print("kiyu nahi aara$comingFrom");
             textCapitalization: TextCapitalization.words,
             titleColor: Theme.of(context).colorScheme.onSurface,
             hintColor: Theme.of(context).colorScheme.onPrimary,
-            suffixIcon: _buildMicButton(() => _handleMicPress('deliveryName')),
+            suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
           ),
         ),
 
@@ -563,8 +593,9 @@ print("kiyu nahi aara$comingFrom");
                 onTap: () {
                   setState(() {
                     selectedCompanyIndex = index;
-                    selectedSubCategoryId =
-                        subCategory.subCategoryId.toString();
+                    selectedSubCategoryId = subCategory.subCategoryId?.toString();
+                    log("Selected Index: $index");
+                    log("Selected SubCategoryId: $selectedSubCategoryId");
                   });
                 },
                 child: AnimatedContainer(
@@ -696,7 +727,7 @@ print("kiyu nahi aara$comingFrom");
             textCapitalization: TextCapitalization.words,
             titleColor: Theme.of(context).colorScheme.onSurface,
             hintColor: Theme.of(context).colorScheme.onPrimary,
-            suffixIcon: _buildMicButton(() => _handleMicPress('vendorName')),
+            suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
           ),
         ),
         CustomForm.textField(
@@ -707,7 +738,7 @@ print("kiyu nahi aara$comingFrom");
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onPrimary,
           suffixIcon:
-              _buildMicButton(() => _handleMicPress('vendorComingFrom')),
+              _buildMicButton(() => _handleMicPress('guestComingFrom')),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -971,14 +1002,18 @@ print("kiyu nahi aara$comingFrom");
     return null;
   }
 
-  @override
   void dispose() {
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.remove('visitor_coming_from');
+    });
+
     _guestNameController.dispose();
     _guestComingFromController.dispose();
     _guestCountController.dispose();
     _visitorNumberController.dispose();
     super.dispose();
   }
+
 }
 
 class SelectTypeWidget extends StatefulWidget {

@@ -219,32 +219,42 @@ class RemoteDataSource {
   /// Create a visitor
   Future<Visitor?> createVisitor(Visitor visitor) async {
     try {
+      // Fetch the uploaded image URL from GateStorage
       final uploadImageUrl = await GateStorage().getImage();
 
+      // Prepare the data payload
       final data = {
         "name": visitor.name,
         "mobile_number": visitor.mobile,
         "visitor_image": uploadImageUrl.toString(),
       };
 
-      final response = await _dio2?.post(
+      // Make the POST request to the API
+      final response = await Dio().post(
         ApiUrls.visitorEntry,
         data: data,
       );
 
-      final visitorData = response?.data['data'];
-      if (visitorData == null) {
-        log("Failed to create visitor: No data in response.");
-        return null;
-      }
-
-      log("Visitor created: $visitorData");
-
+      // Parse the response and map it to VisitorMapper
+      final visitorData = response.data['data'];
+      print(visitorData);
+      final visitorId = visitorData['visitor_id'] as int;
+      log("createvisitorresponse $response");
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('visitorId', visitorData['visitor_id'].toString());
+      await prefs.setString('visitorId', visitorId.toString());
+      GlobalStorage.visitorId = visitorId.toString();
 
-      return Visitor.fromJson(visitorData);
+      print("$visitorId visitorId");
+      // Return the VisitorMapper instance
+      log("createdVisitor:$response");
+      return Visitor(
+        id: visitorId,
+        name: visitor.name,
+        mobile: visitor.mobile,
+        visitor_image: uploadImageUrl.toString(),
+      );
     } catch (error) {
+      // Handle any errors
       log('Error creating visitor: $error');
       return null;
     }

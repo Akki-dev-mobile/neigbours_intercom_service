@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
@@ -93,6 +94,7 @@ class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> 
       Emitter<VisitorInEntryState> emit,
       ) async {
     final createdVisitor = await _visitorUsecase.createVisitor(visitor);
+    print("Visitor Name: ${createdVisitor!.name}, Visitor Details:  ");
     if (createdVisitor != null) {
       emit(VIENavigateToUnitSelectionState(createdVisitor, purposeCategory));
     } else {

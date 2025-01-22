@@ -870,14 +870,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
 // Update the _prepareVisitorLogData method
-  Future<VisitorLog> _prepareVisitorLogData() async {
+  Future<VisitorLog>  _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
     final companyDetails = await gateStorage.getSocietyDetails();
     final companyName = companyDetails['societyName'];
     final selectedGateName = prefs.getString('selected_gate');
 
-    // Extract unit IDs from formattedMemberDetails
     List<int> unitIds = [];
     if (formattedMemberDetails != null && formattedMemberDetails is List) {
       unitIds = formattedMemberDetails
@@ -899,7 +898,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       );
     }).toList();
     print("subbb${widget.selectedSubCategoryId.toString()}");
-    // Save formattedMemberDetails to SharedPreferences
     try {
       final String memberDetailsJson = json.encode(formattedMemberDetails);
       await prefs.setString('member_details', memberDetailsJson);
@@ -909,7 +907,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
 
     return VisitorLog(
-      visitor_id: widget.visitor.id ?? 0,
+      visitor_id: int.parse(widget.visitor.id.toString()) ?? 0,
       visitor_purpose_category_id:
           int.parse(widget.purposeCategoryId.toString()),
       visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
@@ -973,10 +971,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }).toList();
 
     final selectedGateName = prefs.getString('selected_gate');
+
     final visitorLogData = VisitorLog(
         visitor_id: widget.visitor.id ?? 0,
-        visitor_purpose_category_id:
-            int.parse(widget.purposeCategoryId.toString()),
+        visitor_purpose_category_id:widget.purposeCategoryId == null ? 1 :
+            int.parse(widget.purposeCategoryId.toString())  ,
         visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
             ? int.parse(widget.selectedSubCategoryId.toString())
             : null,

@@ -17,6 +17,7 @@ import 'package:flutter_onegate/presentation/features/settings/pages/configure_d
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -491,7 +492,7 @@ class _SettingsHomeState extends State<SettingsHome> {
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,
               title: 'Camera Settings',
-              subtitle: "Current Preference: ${cameraValue ?? "Not Selected Camera"}",
+              subtitle: "Current Preference: ${cameraValue ?? "back"}",
               onTap: () {
                 _showCameraSettings(context);
               },
@@ -523,13 +524,14 @@ class _SettingsHomeState extends State<SettingsHome> {
               title: 'Self Entry Settings',
               subtitle: 'Enable/Disable Self Entry',
               onTap: () {
-                _preferenceUtils.setIsSelfTapIn(true);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SelfHomeView(),
-                  ),
-                );
+                Fluttertoast.showToast(msg: "coming soon", backgroundColor: Colors.green);
+                // _preferenceUtils.setIsSelfTapIn(true);
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(
+                //     builder: (context) => SelfHomeView(),
+                //   ),
+                // );
               },
             ),
             if (role == "admin" || role == "master")            PrimarySettingsTile(

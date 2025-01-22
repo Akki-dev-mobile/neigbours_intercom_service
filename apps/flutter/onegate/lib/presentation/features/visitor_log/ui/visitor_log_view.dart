@@ -252,39 +252,39 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 ),
                 actions: [
                   if (widget.id == "In Out Book")
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () async {
-                                await _showExportBottomSheet(
-                                    context, visitorLogs);
-                              },
-                              icon: const Icon(
-                                Icons.download_rounded,
-                                color: Colors.black,
-                              ),
-                              tooltip: 'Download Logs',
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.only(right: 8.0),
-                              child: Text(
-                                'Export',
-                                style: TextStyle(
+                    GestureDetector(
+                      onTap: (){
+                        _showExportBottomSheet(context, visitorLogs);
+                      },
+
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 10.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                            Icon(
+                                  Icons.download_rounded,
                                   color: Colors.black,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                                ),
+
+                              const Padding(
+                                padding: EdgeInsets.only(right: 8.0),
+                                child: Text(
+                                  'Export',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     )
@@ -1192,7 +1192,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               color: Colors.grey[200],
             ),
             Container(
-              padding: const EdgeInsets.only(bottom: 14.0, top: 8, left: 12,right: 12),
+              padding: const EdgeInsets.only(
+                  bottom: 14.0, top: 8, left: 12, right: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1222,56 +1223,57 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       ),
                     ),
                   ),
-        widget.visitorLog.visitor_card_number != null || widget.visitorLog.carNumber != null
-            ? Container(
-          margin: const EdgeInsets.only(left: 8),
-          padding: const EdgeInsets.symmetric(
-            vertical: 2,
-            horizontal: 10,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: const [
-                Color.fromRGBO(255, 236, 158, 0.8),
-                Color.fromRGBO(255, 190, 168, 0.8),
-              ],
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-            ),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Color.fromRGBO(255, 190, 168, 1),
-            ),
-          ),
-          child: Row(
-            children: [
-          widget.visitorLog.visitor_card_number != null
-          ? Lottie.asset(
-            'assets/json/idcard.json',
-            width: 30,
-            height: 30,
-            fit: BoxFit.cover,
-          )
-              : Icon(
-          Symbols.car_tag_rounded,
-          size: 30,
-          // color: Colors.red, // Optional color for the icon
-        ),
-              const SizedBox(width: 5),
-              Text(
-                widget.visitorLog.visitor_card_number != null
-                    ? widget.visitorLog.visitor_card_number!
-                    : widget.visitorLog.carNumber ?? 'N/A',
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        )
-            : Spacer(),
+                  widget.visitorLog.visitor_card_number != null ||
+                          widget.visitorLog.carNumber != null
+                      ? Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 2,
+                            horizontal: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: const [
+                                Color.fromRGBO(255, 236, 158, 0.8),
+                                Color.fromRGBO(255, 190, 168, 0.8),
+                              ],
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color.fromRGBO(255, 190, 168, 1),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              widget.visitorLog.visitor_card_number != null
+                                  ? Lottie.asset(
+                                      'assets/json/idcard.json',
+                                      width: 30,
+                                      height: 30,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Icon(
+                                      Symbols.car_tag_rounded,
+                                      size: 30,
+                                      // color: Colors.red, // Optional color for the icon
+                                    ),
+                              const SizedBox(width: 5),
+                              Text(
+                                widget.visitorLog.visitor_card_number != null
+                                    ? widget.visitorLog.visitor_card_number!
+                                    : widget.visitorLog.carNumber ?? 'N/A',
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Spacer(),
                   (widget.visitorLog.visitor_check_out.toString().isEmpty ||
                           widget.visitorLog.visitor_check_out.toString() ==
                               'null')

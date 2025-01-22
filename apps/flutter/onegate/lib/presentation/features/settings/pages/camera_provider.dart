@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CameraSettingsProvider with ChangeNotifier {
-  static String _selectedCameraValue = '';
+  static String _selectedCameraValue = 'back';
   static const String _cameraPreferenceKey = 'selected_camera';
 
   CameraSettingsProvider() {
