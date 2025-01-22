@@ -28,6 +28,7 @@ class StaffListWidget extends StatelessWidget {
           onTap: () {
             final staffObj = Staff.fromJson(staffMap);
             log("staffObj: $staffObj");
+            log("staffMap: $staffMap");
 
             Navigator.of(context).push(
               MaterialPageRoute(

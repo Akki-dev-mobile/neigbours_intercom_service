@@ -7,6 +7,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -49,6 +50,7 @@ class _EditStaffState extends State<EditStaff> {
   String _selectedGender = '';
   String _selectedQualification = 'Bachelor\'s Degree';
   String _selectedIdProof = 'Aadhar Card';
+  String _dob = '';
 
   // Date & Images
   DateTime? _selectedDate;
@@ -81,31 +83,38 @@ class _EditStaffState extends State<EditStaff> {
   @override
   void initState() {
     super.initState();
+    print("mydataaaaaaaa ${widget.staff}");
 
     _nameController = TextEditingController(text: widget.staff.name);
     _emailController = TextEditingController(text: widget.staff.email);
     _phoneController = TextEditingController(text: widget.staff.phone);
     _idNumberController =
         TextEditingController(text: widget.staff.idProofNumber);
-    _addressController = TextEditingController(text: widget.staff.address);
-    _staffId = widget.staff.id;
 
-    _mobileFocusNode = FocusNode();
-    _selectedGender = widget.staff.gender;
-    _selectedDate = widget.staff.dateOfBirth;
+    print("Staff ID: ${widget.staff.category}");
+    _addressController = TextEditingController(text: widget.staff.address);
+    _dob = widget.staff.dateOfBirth.toString();
+
+    _selectedDate = widget.staff.dateOfBirth; // Initialize DOB
+
     _selectedCategory = widget.staff.category;
     _selectedCategoryValue = widget.staff.categoryValue;
-    _selectedQualification = widget.staff.qualification;
+
+    log("mydataaaaaaaa $_selectedCategory");
+    log("mydataaaaaaaa value $_selectedCategoryValue");
+
+    _mobileFocusNode = FocusNode();
+
+    // Set qualification
+    _selectedQualification = qualifications.contains(widget.staff.qualification)
+        ? widget.staff.qualification
+        : qualifications.first;
+
     _selectedIdProof = widget.staff.idProofType;
     selectedCountryCodeSE = widget.staff.countryCode;
 
-    if (!idProofs.contains(_selectedIdProof)) {
-      if (idProofs.isNotEmpty) _selectedIdProof = idProofs.first;
-    }
-    if (!qualifications.contains(_selectedQualification)) {
-      if (qualifications.isNotEmpty)
-        _selectedQualification = qualifications.first;
-    }
+    // Set gender
+    _selectedGender = widget.staff.gender;
 
     _fetchCategories();
   }
@@ -128,26 +137,42 @@ class _EditStaffState extends State<EditStaff> {
       final data = response['data'];
 
       setState(() {
-        categories = Map<String, String>.fromIterable(
-          data,
-          key: (item) => item['id'].toString(),
-          value: (item) => item['category'],
-        );
+        categories = {
+          for (var item in data) item['id'].toString(): item['category']
+        };
+
+        print("mydataaaaaaaa $categories ");
 
         if (categories.isNotEmpty) {
-          if (!categories.containsKey(_selectedCategory)) {
-            _selectedCategory = categories.keys.first;
-            _selectedCategoryValue = categories.values.first;
+          print("mycategories if1 $_selectedCategoryValue ");
+          if (categories.containsKey(_selectedCategory)) {
+            _selectedCategoryValue = categories[_selectedCategory]!;
+            print("mycategories if2 $_selectedCategoryValue ");
           } else {
-            _selectedCategoryValue = categories[_selectedCategory] ?? '';
+            // Set to the first available category if the prefilled one is not found
+            _selectedCategory = categories.keys.first;
+            _selectedCategoryValue = categories[_selectedCategory]!;
+
+            print(
+                "categories else1 $_selectedCategoryValue : $_selectedCategory");
           }
+        } else {
+          _selectedCategory = '';
+          _selectedCategoryValue = '';
+          print(
+              "categories else2 $_selectedCategoryValue : $_selectedCategory");
         }
       });
       log('Categories fetched successfully');
     } catch (e) {
       debugPrint('Error fetching categories: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load categories.')),
+      Fluttertoast.showToast(
+        msg: "Failed to load categories",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -172,8 +197,14 @@ class _EditStaffState extends State<EditStaff> {
     } catch (e) {
       debugPrint('Error capturing image: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to capture image')),
+        Fluttertoast.showToast(
+          msg: "Failed to capture image",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
         );
       }
     }
@@ -256,8 +287,14 @@ class _EditStaffState extends State<EditStaff> {
         final profileImageUrl = profileImageResponse['url'];
         final idProofImageUrl = idProofImageResponse['url'];
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Images uploaded successfully')),
+        Fluttertoast.showToast(
+          msg: "Images uploaded successfully",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 16.0,
         );
         _updateStaffData(profileImageUrl, idProofImageUrl);
       } else {
@@ -306,8 +343,14 @@ class _EditStaffState extends State<EditStaff> {
           (Route<dynamic> route) => false,
         );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Staff updated successfully')),
+        Fluttertoast.showToast(
+          msg: "Staff updated successfully",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 16.0,
         );
       }
     } catch (e) {
@@ -320,8 +363,11 @@ class _EditStaffState extends State<EditStaff> {
           errorMessage = "Please enter a valid phone number";
         }
 
+        // debubPrint('Error: $errorMessage');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $errorMessage')),
+          SnackBar(
+              backgroundColor: Colors.red,
+              content: Text('Error: $errorMessage')),
         );
       }
     }
@@ -331,22 +377,40 @@ class _EditStaffState extends State<EditStaff> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedGender.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a gender')),
+      Fluttertoast.showToast(
+        msg: "Please select a gender",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
 
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select date of birth')),
+      Fluttertoast.showToast(
+        msg: "Please select date of birth",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
 
     if (_selectedCategory.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category')),
+      Fluttertoast.showToast(
+        msg: "Please select a category",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
@@ -598,9 +662,10 @@ class _EditStaffState extends State<EditStaff> {
                     },
                   ),
                   suffixIcon: IconButton(
+                    focusNode: _mobileFocusNode,
                     onPressed: () {
                       setState(() {
-                        FocusScope.of(context).requestFocus();
+                        _mobileFocusNode.unfocus();
                       });
                     },
                     icon: const CircleAvatar(
@@ -645,10 +710,12 @@ class _EditStaffState extends State<EditStaff> {
                   "Date of Birth",
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
-                  hintText: 'Enter Date of Birth',
+                  hintText: _dob,
                   textController: TextEditingController(
                     text: _selectedDate != null
-                        ? "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}"
+                        ? "${_selectedDate!.day.toString().padLeft(2, '0')}/"
+                            "${_selectedDate!.month.toString().padLeft(2, '0')}/"
+                            "${_selectedDate!.year}"
                         : "",
                   ),
                   isReadOnly: true,
@@ -669,16 +736,16 @@ class _EditStaffState extends State<EditStaff> {
                   title: "Category",
                   hintText: "Select Category",
                   items: categories.values.toSet().toList(),
-                  selectedItem: categories.containsKey(_selectedCategory)
-                      ? categories[_selectedCategory]
-                      : null,
+                  selectedItem: _selectedCategoryValue,
+                  // Use prefilled value
+
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
-                        _selectedCategoryValue = newValue;
                         _selectedCategory = categories.entries
                             .firstWhere((entry) => entry.value == newValue)
                             .key;
+                        _selectedCategoryValue = newValue;
                       });
                     }
                   },
@@ -688,6 +755,7 @@ class _EditStaffState extends State<EditStaff> {
                 CustomDropdown(
                   title: "Qualification",
                   hintText: "Select Qualification",
+                  initialValue: _selectedQualification,
                   items: qualifications,
                   selectedItem: qualifications.contains(_selectedQualification)
                       ? _selectedQualification
@@ -706,11 +774,16 @@ class _EditStaffState extends State<EditStaff> {
                   title: "ID Proof",
                   hintText: "Select ID Proof",
                   items: idProofs,
+                  initialValue: idProofs.contains(_selectedIdProof)
+                      ? _selectedIdProof
+                      : idProofs.first,
+                  // Ensure valid initial value
                   selectedItem: idProofs.contains(_selectedIdProof)
                       ? _selectedIdProof
                       : null,
+                  // Validate selected value
                   onChanged: (String? newValue) {
-                    if (newValue != null) {
+                    if (newValue != null && newValue.isNotEmpty) {
                       setState(() {
                         _selectedIdProof = newValue;
                       });
@@ -801,55 +874,55 @@ class _EditStaffState extends State<EditStaff> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         // Profile Image Container
-                        Container(
-                          height: 120,
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Stack(
-                            alignment: Alignment.topRight,
-                            children: [
-                              _newProfileImage != null
-                                  ? Image.file(
-                                      File(_newProfileImage!.path),
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: Colors.grey.shade300,
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.white70,
-                                        size: 40,
-                                      ),
-                                    ),
-                              if (_newProfileImage != null)
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _newProfileImage = null;
-                                      });
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.redAccent,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
+                        // Container(
+                        //   height: 120,
+                        //   padding: const EdgeInsets.only(top: 8.0),
+                        //   child: Stack(
+                        //     alignment: Alignment.topRight,
+                        //     children: [
+                        //       _newProfileImage != null
+                        //           ? Image.file(
+                        //               File(_newProfileImage!.path),
+                        //               width: 100,
+                        //               height: 100,
+                        //               fit: BoxFit.cover,
+                        //             )
+                        //           : Container(
+                        //               width: 100,
+                        //               height: 100,
+                        //               color: Colors.grey.shade300,
+                        //               child: const Icon(
+                        //                 Icons.camera_alt,
+                        //                 color: Colors.white70,
+                        //                 size: 40,
+                        //               ),
+                        //             ),
+                        //       if (_newProfileImage != null)
+                        //         Positioned(
+                        //           right: 0,
+                        //           top: 0,
+                        //           child: GestureDetector(
+                        //             onTap: () {
+                        //               setState(() {
+                        //                 _newProfileImage = null;
+                        //               });
+                        //             },
+                        //             child: Container(
+                        //               decoration: BoxDecoration(
+                        //                 shape: BoxShape.circle,
+                        //                 color: Colors.redAccent,
+                        //               ),
+                        //               child: const Icon(
+                        //                 Icons.close,
+                        //                 color: Colors.white,
+                        //                 size: 20,
+                        //               ),
+                        //             ),
+                        //           ),
+                        //         ),
+                        //     ],
+                        //   ),
+                        // ),
 
                         // ID Proof Image Container
                         Container(

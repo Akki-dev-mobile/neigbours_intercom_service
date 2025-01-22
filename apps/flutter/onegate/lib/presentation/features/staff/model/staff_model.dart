@@ -40,11 +40,13 @@ class Staff {
       email: json['email'] ?? '',
       phone: json['staff_contact_number'] ?? '',
       countryCode: json['country_code'] ?? 'IN',
-      dateOfBirth: json['dob'] != null ? DateTime.tryParse(json['dob']) : null,
+      dateOfBirth: json['staff_dob'] != null
+          ? DateTime.tryParse(json['staff_dob'])
+          : null,
       category: json['category'] ?? '',
-      categoryValue: json['category_value'] ?? '',
+      categoryValue: json['categoryValue'] ?? '',
       gender: json['gender'] ?? '',
-      qualification: json['qualification'] ?? '',
+      qualification: json['staff_qualification'] ?? '',
       idProofType: json['id_proof_type'] ?? '',
       idProofNumber: json['id_proof_number'] ?? '',
       address: json['address'] ?? '',

@@ -110,6 +110,12 @@ class _StaffScreenState extends State<StaffScreen> {
                         color: Colors.blue), // Blue border on focus
                   ),
                   hintText: 'Enter staff name',
+                  hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.5),
+                      ),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.clear),
                     onPressed: () => _clearSearch(),
@@ -141,7 +147,8 @@ class _StaffScreenState extends State<StaffScreen> {
                   _filteredStaffList = List.from(_staffListFull);
                 }
                 print("StaffId");
-                print("StaffId: ${_staffListFull[0]['id']} ");
+                print("StaffId: ${_staffListFull} ");
+                print("StaffId: ${_filteredStaffList}");
 
                 return StaffListWidget(staffList: _filteredStaffList);
               } else {

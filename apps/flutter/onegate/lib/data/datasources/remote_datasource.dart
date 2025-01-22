@@ -1215,6 +1215,10 @@ class RemoteDataSource {
 
       if (response?.statusCode == 200) {
         log("Staff edited successfully: ${response?.data}");
+        Fluttertoast.showToast(
+            backgroundColor: Colors.green,
+            msg: "Staff edited successfully",
+            toastLength: Toast.LENGTH_SHORT);
         return response?.data;
       } else {
         log('Error response: ${response?.data}');

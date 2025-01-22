@@ -5,6 +5,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -80,6 +81,7 @@ class _AddStaffState extends State<AddStaff> {
     _phoneController.dispose();
     _mobileFocusNode.dispose();
     _idNumberController.dispose();
+    addressController.dispose();
     super.dispose();
   }
 
@@ -102,9 +104,9 @@ class _AddStaffState extends State<AddStaff> {
       print('Categories fetched successfully');
     } catch (e) {
       debugPrint('Error fetching categories: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load categories.')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Failed to load categories.')),
+      // );
     }
   }
 
@@ -128,9 +130,18 @@ class _AddStaffState extends State<AddStaff> {
     } catch (e) {
       debugPrint('Error capturing image: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to capture image')),
+        Fluttertoast.showToast(
+          msg: "Failed to capture images",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
         );
+// ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(content: Text('Failed to capture image')),
+        // );
       }
     }
   }
@@ -207,17 +218,34 @@ class _AddStaffState extends State<AddStaff> {
         final profileImageUrl = profileImageResponse['url'];
         final idProofImageUrl = idProofImageResponse['url'];
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Images uploaded successfully')),
+        Fluttertoast.showToast(
+          msg: "Images uploaded successfully",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 16.0,
         );
         _submitStaffData(profileImageUrl, idProofImageUrl);
       } else {
         throw Exception('Failed to upload images');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+      debugPrint('Error uploading images: $e');
+      Fluttertoast.showToast(
+        msg: "Failed to upload images",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
+
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Error: $e')),
+      // );
     }
   }
 
@@ -281,8 +309,14 @@ class _AddStaffState extends State<AddStaff> {
       if (mounted) {
         if (response != null) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Staff added successfully')),
+          Fluttertoast.showToast(
+            msg: "Staff updated successfully",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            fontSize: 16.0,
           );
         }
       }
@@ -295,9 +329,10 @@ class _AddStaffState extends State<AddStaff> {
         } else if (errorMessage.contains('400')) {
           errorMessage = 'Please check all required fields and try again.';
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $errorMessage')),
-        );
+        debugPrint('Error: $errorMessage');
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text('Error: $errorMessage')),
+        // );
       }
     }
   }
@@ -306,22 +341,40 @@ class _AddStaffState extends State<AddStaff> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedGender.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a gender')),
+      Fluttertoast.showToast(
+        msg: "Please select a gender",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
 
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select date of birth')),
+      Fluttertoast.showToast(
+        msg: "Please select date of birth",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
 
     if (_selectedCategory.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category')),
+      Fluttertoast.showToast(
+        msg: "Please select a category",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
@@ -345,9 +398,9 @@ class _AddStaffState extends State<AddStaff> {
       }
     } catch (e) {
       debugPrint('Error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Error: $e')),
+      // );
     }
   }
 
@@ -543,7 +596,7 @@ class _AddStaffState extends State<AddStaff> {
                   suffixIcon: IconButton(
                     onPressed: () {
                       setState(() {
-                        FocusScope.of(context).requestFocus();
+                        FocusScope.of(context).unfocus();
                       });
                     },
                     icon: const CircleAvatar(
@@ -785,56 +838,56 @@ class _AddStaffState extends State<AddStaff> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // Profile Image Container
-                        Container(
-                          height: 120,
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Stack(
-                            alignment: Alignment.topRight,
-                            children: [
-                              _image != null
-                                  ? Image.file(
-                                      File(_image!.path),
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: Colors.grey.shade300,
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.white70,
-                                        size: 40,
-                                      ),
-                                    ),
-                              if (_image != null)
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _image = null;
-                                      });
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.redAccent,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
+                        //   // Profile Image Container
+                        //   Container(
+                        //     height: 120,
+                        //     padding: const EdgeInsets.only(top: 8.0),
+                        //     child: Stack(
+                        //       alignment: Alignment.topRight,
+                        //       children: [
+                        //       _image != null
+                        //           ? Image.file(
+                        //               File(_image!.path),
+                        //               width: 100,
+                        //               height: 100,
+                        //               fit: BoxFit.cover,
+                        //             )
+                        //           : Container(
+                        //               width: 100,
+                        //               height: 100,
+                        //               color: Colors.grey.shade300,
+                        //               child: const Icon(
+                        //                 Icons.camera_alt,
+                        //                 color: Colors.white70,
+                        //                 size: 40,
+                        //               ),
+                        //             ),
+                        //       if (_image != null)
+                        //         Positioned(
+                        //           right: 0,
+                        //           top: 0,
+                        //           child: GestureDetector(
+                        //             onTap: () {
+                        //               setState(() {
+                        //                 _image = null;
+                        //               });
+                        //             },
+                        //             child: Container(
+                        //               decoration: BoxDecoration(
+                        //                 shape: BoxShape.circle,
+                        //                 color: Colors.redAccent,
+                        //               ),
+                        //               child: const Icon(
+                        //                 Icons.close,
+                        //                 color: Colors.white,
+                        //                 size: 20,
+                        //               ),
+                        //             ),
+                        //           ),
+                        //         ),
+                        //     ],
+                        //   ),
+                        // ),
 
                         // ID Proof Image Container
                         Container(
@@ -915,8 +968,14 @@ class _AddStaffState extends State<AddStaff> {
             _submitStaffData(_image!.path, _idProofImage!.path);
             await _submitForm();
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please select both images')),
+            Fluttertoast.showToast(
+              msg: "Please select both images",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              fontSize: 16.0,
             );
           }
         },
