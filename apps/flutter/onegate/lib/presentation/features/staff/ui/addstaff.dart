@@ -712,11 +712,49 @@ class _AddStaffState extends State<AddStaff> {
                   _selectedIdProof,
                   titleColor: Colors.black,
                   hintColor: Colors.black,
-                  hintText: "Enter ID Proof Number",
+                  hintText: "Enter ID ${_selectedIdProof}",
                   textController: _idNumberController,
                   validator: (value) {
                     if (value?.isEmpty ?? true) {
                       return 'Please enter an ID proof number';
+                    }
+                    final input = value!.trim();
+
+                    switch (_selectedIdProof) {
+                      case 'Aadhar Card':
+                        // Aadhaar should be exactly 12 digits
+                        if (!RegExp(r'^\d{12}$').hasMatch(input)) {
+                          return 'Please enter a valid 12-digit Aadhaar number';
+                        }
+                        break;
+                      case 'Passport':
+                        // Passport: typically 8-9 alphanumeric characters (generic validation)
+                        if (input.length < 8 ||
+                            input.length > 9 ||
+                            !RegExp(r'^[A-Za-z0-9]+$').hasMatch(input)) {
+                          return 'Please enter a valid Passport number (8-9 alphanumeric characters)';
+                        }
+                        break;
+                      case 'Driving License':
+                        // Driving License: Check for a reasonable length (can vary by region)
+                        if (input.length < 5) {
+                          return 'Please enter a valid Driving License number';
+                        }
+                        break;
+                      case 'Voter ID':
+                        // Voter ID (Indian format example: 3 letters followed by 7 digits)
+                        if (!RegExp(r'^[A-Za-z]{3}\d{7}$').hasMatch(input)) {
+                          return 'Please enter a valid Voter ID (e.g., ABC1234567)';
+                        }
+                        break;
+                      case 'PAN Card':
+                        // PAN Card: Indian PAN format: 5 letters, 4 digits, 1 letter
+                        if (!RegExp(r'^[A-Z]{5}\d{4}[A-Z]$').hasMatch(input)) {
+                          return 'Please enter a valid PAN card number (e.g., ABCDE1234F)';
+                        }
+                        break;
+                      default:
+                        break;
                     }
                     return null;
                   },
