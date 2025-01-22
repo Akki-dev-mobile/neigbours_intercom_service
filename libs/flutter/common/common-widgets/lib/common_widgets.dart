@@ -298,3 +298,215 @@ class CustomLargeBtn extends StatelessWidget {
     );
   }
 }
+
+class CustomDropdown extends StatelessWidget {
+
+  final String title;
+
+  final String hintText;
+
+  final List<String> items;
+
+  final String? selectedItem;
+
+  final ValueChanged<String?> onChanged;
+
+  final Color? titleColor;
+
+  final Color? hintColor;
+
+  final bool isEnabled;
+
+
+
+  const CustomDropdown({
+
+    Key? key,
+
+    required this.title,
+
+    required this.hintText,
+
+    required this.items,
+
+    this.selectedItem,
+
+    required this.onChanged,
+
+     this.titleColor,
+
+     this.hintColor,
+
+    this.isEnabled = true,
+
+  }) : super(key: key);
+
+
+
+  @override
+
+  Widget build(BuildContext context) {
+
+    return Container(
+
+      margin: const EdgeInsets.only(bottom: 2),
+
+      child: Column(
+
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: <Widget>[
+
+          const SizedBox(
+
+            height: 10,
+
+          ),
+
+          Text(
+
+            title,
+
+            style: TextStyle(
+
+              fontWeight: FontWeight.w600,
+
+              fontSize: 15,
+
+              color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+
+            ),
+
+          ),
+
+          const SizedBox(
+
+            height: 5,
+
+          ),
+
+          DropdownButtonFormField<String>(
+
+            value: selectedItem,
+
+            isExpanded: true,
+
+            style: TextStyle(
+
+              color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+
+              fontSize: 18,
+
+            ),
+
+            decoration: InputDecoration(
+
+              contentPadding: const EdgeInsets.symmetric(
+
+                vertical: 20,
+
+                horizontal: 15,
+
+              ),
+
+              hintText: hintText ,
+
+              hintStyle: TextStyle(
+
+                color: hintColor ?? Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+
+              ),
+
+              border: OutlineInputBorder(
+
+                borderRadius: BorderRadius.circular(15),
+
+                borderSide: BorderSide(
+
+                  style: BorderStyle.solid,
+
+                  color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+
+                ),
+
+              ),
+
+              enabledBorder: OutlineInputBorder(
+
+                borderRadius: BorderRadius.circular(15),
+
+                borderSide: BorderSide(
+
+                  color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+
+                  style: BorderStyle.solid,
+
+                ),
+
+              ),
+
+              focusedBorder: OutlineInputBorder(
+
+                borderRadius: BorderRadius.circular(15),
+
+                borderSide: const BorderSide(
+
+                  style: BorderStyle.solid,
+
+                  width: 2,
+
+                  color: Colors.blue,
+
+                ),
+
+              ),
+
+              disabledBorder: OutlineInputBorder(
+
+                borderRadius: BorderRadius.circular(15),
+
+                borderSide: BorderSide(
+
+                  color: hintColor ?? Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+
+                  style: BorderStyle.solid,
+
+                ),
+
+              ),
+
+            ),
+
+            dropdownColor: Colors.white,
+
+            items: items.map((String value) {
+
+              return DropdownMenuItem<String>(
+
+                value: value,
+
+                child: Text(value),
+
+              );
+
+            }).toList(),
+
+            onChanged: isEnabled ? onChanged : null,
+
+          ),
+
+          const SizedBox(
+
+            height: 8,
+
+          ),
+
+        ],
+
+      ),
+
+    );
+
+  }
+
+}
