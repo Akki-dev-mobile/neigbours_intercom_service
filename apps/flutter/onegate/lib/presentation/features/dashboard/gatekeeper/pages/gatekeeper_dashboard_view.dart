@@ -17,7 +17,6 @@ import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/commons/ui/dashboard_commons.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -25,6 +24,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app_intro/ui/keyclock_login.dart';
+import '../../../parcel/parcel_list.dart';
 import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
 
@@ -52,8 +52,6 @@ List<String> listPassAlpha = [
 
 class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
-
-
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
         VisitorRepoImpl(
@@ -190,10 +188,12 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
-
                   IconButton(
                     onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen()));
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => MissedApprovalsScreen()));
                     },
                     icon: Icon(
                       Symbols.phone_missed_rounded,
@@ -242,8 +242,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                               ),
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     'Are you sure you want to logout?',
@@ -264,11 +263,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     elevation: 0,
-                                    side: BorderSide(
-                                        color: Colors.grey[300]!),
+                                    side: BorderSide(color: Colors.grey[300]!),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                      BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
                                   onPressed: () {
@@ -287,8 +284,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                     backgroundColor: Colors.red,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                      BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
                                   onPressed: () {
@@ -351,15 +347,18 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             isPremium: false,
                             isVisible: true,
                             onTap: () {
-                              Fluttertoast.showToast(
-                                msg: "Parcel, coming soon",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.CENTER,
-                                timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.black,
-                                textColor: Colors.white,
-                                fontSize: 16.0,
-                              );
+                              Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                      builder: (context) => ParcelList()));
+                              // Fluttertoast.showToast(
+                              //   msg: "Parcel, coming soon",
+                              //   toastLength: Toast.LENGTH_SHORT,
+                              //   gravity: ToastGravity.CENTER,
+                              //   timeInSecForIosWeb: 1,
+                              //   backgroundColor: Colors.black,
+                              //   textColor: Colors.white,
+                              //   fontSize: 16.0,
+                              // );
                             },
                           ),
                           DashboardShortcut(

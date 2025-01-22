@@ -45,7 +45,7 @@ class StaffListWidget extends StatelessWidget {
               border: Border.all(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
               ),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(15),
             ),
             padding: const EdgeInsets.all(8),
             child: PrimarySettingsTile(
@@ -54,7 +54,7 @@ class StaffListWidget extends StatelessWidget {
               subtitleWidget: Container(
                   alignment: Alignment.centerLeft,
                   margin: EdgeInsets.only(
-                      right: MediaQuery.of(context).size.width * 0.2),
+                      right: MediaQuery.of(context).size.width * 0.1),
                   padding: EdgeInsets.symmetric(
                     horizontal: 7,
                     vertical: 2,
@@ -63,9 +63,24 @@ class StaffListWidget extends StatelessWidget {
                     color: const Color(0xffFFEBE6),
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Text(
-                    '${staffMap['category'] ?? 'N/A'}',
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // const Icon(
+                      //   Symbols.work,
+                      //   size: 15,
+                      //   color: Colors.red,
+                      // ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        '${staffMap['category'] ?? 'N/A'}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   )),
               trailing: IconButton(
                 onPressed: () {

@@ -74,37 +74,19 @@ class _StaffScreenState extends State<StaffScreen> {
       pageTitle: "Staff",
       pageBody: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                iconColor: Theme.of(context).colorScheme.onSurface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide(color: Colors.grey), // Grey border
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: const BorderSide(
-                      color: Colors.blue), // Blue border on focus
-                ),
-                hintText: 'Enter staff name',
-                hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.5),
-                    ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => _clearSearch(),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              onChanged: (query) => _filterStaffList(query),
-            ),
+          CustomForm.textField(
+            "Search Staff",
+            textController: _searchController,
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => _clearSearch(),
+                  )
+                : const SizedBox.shrink(),
+            onChanged: (query) => _filterStaffList(query),
+            titleColor: Colors.black,
+            hintColor: Colors.grey,
+            hintText: 'Enter Staff Name',
           ),
           const SizedBox(height: 10),
           FutureBuilder<List<dynamic>>(
