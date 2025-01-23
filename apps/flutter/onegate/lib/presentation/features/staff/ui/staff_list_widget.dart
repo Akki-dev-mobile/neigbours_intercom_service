@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
@@ -49,12 +50,28 @@ class StaffListWidget extends StatelessWidget {
             ),
             padding: const EdgeInsets.all(8),
             child: PrimarySettingsTile(
-              icon: Symbols.person,
+              leadingIcon: CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.grey[200],
+                foregroundImage: staffMap['staff_image'] != null
+                    ? (staffMap['staff_image'].startsWith('http')
+                        ? NetworkImage(staffMap['staff_image'])
+                        : FileImage(File(staffMap['staff_image'])))
+                    : null,
+                child: staffMap['staff_image'] == null
+                    ? const Icon(
+                        Icons.person,
+                        color: Colors.grey,
+                      )
+                    : null,
+              ),
               title: staffMap['name'].toString() ?? 'No Name',
+              titleStyle: Theme.of(context).textTheme.bodyLarge,
+              subtitleStyle: Theme.of(context).textTheme.bodyMedium,
               subtitleWidget: Container(
                   alignment: Alignment.centerLeft,
                   margin: EdgeInsets.only(
-                      right: MediaQuery.of(context).size.width * 0.1),
+                      right: MediaQuery.of(context).size.width * 0.25),
                   padding: EdgeInsets.symmetric(
                     horizontal: 7,
                     vertical: 2,
@@ -76,9 +93,12 @@ class StaffListWidget extends StatelessWidget {
                       const SizedBox(
                         width: 10,
                       ),
-                      Text(
-                        '${staffMap['category'] ?? 'N/A'}',
-                        overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Text(
+                          '${staffMap['category'] ?? 'N/A'}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   )),

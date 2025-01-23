@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 
 class StaffApi {
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'https://socbackend.cubeone.in/api/',
+    baseUrl: 'https://societybackend.cubeone.in/api/',
     connectTimeout: 5000,
     receiveTimeout: 5000,
   ));

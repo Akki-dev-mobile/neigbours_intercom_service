@@ -1,5 +1,3 @@
-// edit_staff.dart
-
 import 'dart:developer';
 import 'dart:io';
 
@@ -85,6 +83,7 @@ class _EditStaffState extends State<EditStaff> {
   void initState() {
     super.initState();
     print("mydataaaaaaaa ${widget.staff}");
+    print('mydataaaaaaaa ${widget.staff}');
     _mobileFocusNode = FocusNode();
 
     _nameController = TextEditingController(text: widget.staff.name);
@@ -92,6 +91,8 @@ class _EditStaffState extends State<EditStaff> {
     _phoneController = TextEditingController(text: widget.staff.phone);
     _idNumberController =
         TextEditingController(text: widget.staff.idProofNumber);
+
+    print("mydataaaaaaaa ${widget.staff.idProofNumber}");
 
     print("Staff ID: ${widget.staff.category}");
     _addressController = TextEditingController(text: widget.staff.address);
@@ -288,7 +289,7 @@ class _EditStaffState extends State<EditStaff> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Upload'),
+          title: Text('Confirm Upload'),
           content: const Text('Do you want to upload the selected images?'),
           actions: <Widget>[
             TextButton(
@@ -388,14 +389,35 @@ class _EditStaffState extends State<EditStaff> {
               (route) => false,
             );
           }
-          Fluttertoast.showToast(
-            msg: "Staff updated successfully",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            timeInSecForIosWeb: 1,
-            backgroundColor: Colors.green,
-            textColor: Colors.white,
-            fontSize: 16.0,
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              Future.delayed(const Duration(seconds: 2), () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
+              });
+              return AlertDialog(
+                title: Container(
+                  height: MediaQuery.of(context).size.height * 0.1,
+                  width: MediaQuery.of(context).size.width * 0.2,
+                  child: Image.network(
+                      'https://uxwing.com/wp-content/themes/uxwing/download/editing-user-action/tick-mark-user-color-icon.png'),
+                ),
+                content: Text('Staff updated successfully'),
+                // actions: <Widget>[
+                //   TextButton(
+                //     child: Text(
+                //       'OK',
+                //       style: Theme.of(context).textTheme.bodyMedium,
+                //     ),
+                //     onPressed: () {
+                //       Navigator.of(context).pop();
+                //     },
+                //   ),
+                // ],
+              );
+            },
           );
         }
       } else {
@@ -601,7 +623,7 @@ class _EditStaffState extends State<EditStaff> {
                 CircleAvatar(
                   radius: 80,
                   backgroundColor: Theme.of(context).colorScheme.onSurface,
-                  backgroundImage: _newProfileImage != null
+                  foregroundImage: _newProfileImage != null
                       ? FileImage(File(_newProfileImage!.path))
                       : (widget.staff.profileImageUrl.isNotEmpty
                               ? NetworkImage(widget.staff.profileImageUrl)
@@ -836,9 +858,10 @@ class _EditStaffState extends State<EditStaff> {
                 // ID Proof Number + camera icon
                 CustomForm.textField(
                   _selectedIdProof,
+                  // hasInitialValue: _idNumberController.toString(),
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
-                  hintText: "Enter ID ${_selectedIdProof}",
+                  hintText: _idNumberController.toString(),
                   textController: _idNumberController,
                   inputFormatters: _getInputFormatters(_selectedIdProof),
                   // Apply input formatters
@@ -955,20 +978,30 @@ class _EditStaffState extends State<EditStaff> {
                         // ],
 
                         // ID Proof Image Container
-                        if (_newIdProofImage != null &&
-                            _newIdProofImage!.path.isNotEmpty) ...[
+                        if ((_newIdProofImage != null &&
+                                _newIdProofImage!.path.isNotEmpty) ||
+                            (widget.staff.idProofImageUrl.isNotEmpty &&
+                                _newIdProofImage == null)) ...[
                           Container(
                             height: 120,
-                            padding: const EdgeInsets.only(top: 8.0),
+                            padding: EdgeInsets.only(top: 8.0),
                             child: Stack(
                               alignment: Alignment.topRight,
                               children: [
-                                Image.file(
-                                  File(_newIdProofImage!.path),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                ),
+                                _newIdProofImage != null &&
+                                        _newIdProofImage!.path.isNotEmpty
+                                    ? Image.file(
+                                        File(_newIdProofImage!.path),
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.network(
+                                        widget.staff.idProofImageUrl,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
                                 Positioned(
                                   right: 0,
                                   top: 0,

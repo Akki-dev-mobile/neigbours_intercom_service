@@ -37,7 +37,7 @@ class Staff {
     return Staff(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
-      email: json['email'] ?? '',
+      email: json['staff_email_id'] ?? '',
       phone: json['staff_contact_number'] ?? '',
       countryCode: json['country_code'] ?? 'IN',
       dateOfBirth: json['staff_dob'] != null
@@ -45,13 +45,13 @@ class Staff {
           : null,
       category: json['category'] ?? '',
       categoryValue: json['categoryValue'] ?? '',
-      gender: json['gender'] ?? '',
+      gender: json['staff_gender'] ?? '',
       qualification: json['staff_qualification'] ?? '',
       idProofType: json['id_proof_type'] ?? '',
-      idProofNumber: json['id_proof_number'] ?? '',
-      address: json['address'] ?? '',
-      idProofImageUrl: json['id_proof_image_url'] ?? '',
-      profileImageUrl: json['profile_image_url'] ?? '',
+      idProofNumber: json['staff_badge_number'] ?? '',
+      address: json['staff_address_1'] ?? '',
+      idProofImageUrl: json['staff_proof'] ?? '',
+      profileImageUrl: json['staff_image'] ?? '',
     );
   }
 
