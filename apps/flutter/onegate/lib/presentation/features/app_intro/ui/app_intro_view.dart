@@ -2,6 +2,7 @@
 
 import 'package:concentric_transition/concentric_transition.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -54,8 +55,9 @@ class AppIntroView extends StatelessWidget {
           ),
         ),
         physics: NeverScrollableScrollPhysics(),
-        onFinish: () {
-          _preferenceUtils.setIsAppIntroShown(true);
+        onFinish: () async {
+          // bool isLoggedIn = await keycloakWrapper.login();
+
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -108,9 +110,7 @@ class _Page extends StatelessWidget {
           padding: const EdgeInsets.all(8.0),
           child: _Text(
             page: page,
-            style: TextStyle(
-              fontSize: 18,
-            ),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
         ),
       ],
@@ -133,7 +133,7 @@ class _Text extends StatelessWidget {
     return Text(
       page.title ?? '',
       style: TextStyle(
-        color: page.textColor,
+        color: Colors.grey[800],
         fontWeight: FontWeight.w600,
         fontFamily: 'Helvetica',
         letterSpacing: 0.0,

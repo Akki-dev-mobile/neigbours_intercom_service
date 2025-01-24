@@ -9,17 +9,20 @@ import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
 
 part 'visitor_log_event.dart';
+
 part 'visitor_log_state.dart';
 
 class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
   final VisitorLogUsecase visitorLogUseCase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+
   VisitorLogBloc(this.visitorLogUseCase) : super(VisitorLogInitial()) {
     on<FetchVisitorLogEvent>(fetchVisitorLogEvent);
     on<CheckOutEvent>(checkOutEvent);
     on<FetchCheckInLogEvent>(fetchCheckInLogEvent);
     on<FetchCheckOutLogEvent>(fetchCheckOutLogEvent);
   }
+
   String getFormattedDate(DateTime date) {
     return DateFormat('yyyy-MM-dd').format(date);
   }
@@ -30,13 +33,10 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       emit(VisitorLogLoadingState());
       DateTime today = DateTime.now();
 
-
-
       // Get today's date in the desired format (yyyy-MM-dd)
       String formattedDate = getFormattedDate(today);
       final visitorLogs = await visitorLogUseCase.fetchAllLogs(
           _preferenceUtils.getSelectedCompany()?.companyId ?? 0, formattedDate);
-
 
       emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
@@ -54,7 +54,6 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       final response = await visitorLogUseCase.checkOut(event.visitorLog);
 
       if (response) {
-        // Update the local visitor log's checkout fields optimistically
         event.visitorLog.visitor_check_out = DateTime.now();
         event.visitorLog.is_checked_out = true;
 
@@ -64,7 +63,8 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
           DateTime today = DateTime.now();
           String formattedDate = getFormattedDate(today);
           final visitorLogs = await visitorLogUseCase.fetchAllLogs(
-              _preferenceUtils.getSelectedCompany()?.companyId ?? 0, formattedDate);
+              _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
+              formattedDate);
 
           // Emit success state with updated logs
           emit(VisitorLogSuccessState(visitorLogs));

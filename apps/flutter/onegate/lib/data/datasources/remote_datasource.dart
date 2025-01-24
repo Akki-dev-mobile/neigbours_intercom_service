@@ -197,9 +197,9 @@ class RemoteDataSource {
               .toList();
 
           for (var purpose in purposes) {
-            debugPrint('Fetched Purpose: ${purpose.categoryName}');
-            debugPrint(
-                'Subcategories count: ${purpose.subCategories?.length ?? 0}');
+            // debugPrint('Fetched Purpose: ${purpose.categoryName}');
+            // debugPrint(
+            //     'Subcategories count: ${purpose.subCategories?.length ?? 0}');
             if (purpose.subCategories != null) {
               for (var sub in purpose.subCategories!) {
                 debugPrint('  - ${sub.subCategoryName}: ${sub.image}');
@@ -365,8 +365,12 @@ class RemoteDataSource {
           prefs.getString('selected_gate') ?? "Default Gate";
       final companyDetails = await gateStorage.getSocietyId();
       final resolvedCompanyId = companyDetails;
-
+      final DateTime now = DateTime.now();
+      final String formattedDate =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       final Map<String, String> queryParams = {
+        "from_date": formattedDate,
+        "to_date": formattedDate,
         "company_id": resolvedCompanyId.toString(),
         "in_gate": selectedGateName,
       };
@@ -378,12 +382,12 @@ class RemoteDataSource {
         headers: {"Content-Type": "application/json"},
       );
 
-      print("Response: ${response.body}");
+      // print("Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data'] ?? [];
-        log("data--$data");
+        // log("data--$data");
         return data.map((item) {
           try {
             final visitor = Visitor(
@@ -506,8 +510,14 @@ class RemoteDataSource {
           prefs.getString('selected_gate') ?? "Default Gate";
       final companyDetails = await gateStorage.getSocietyId();
       final resolvedCompanyId = companyDetails;
+      final DateTime now = DateTime.now();
+      final String formattedDate =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
       // Prepare the request payload
       final Map<String, dynamic> requestBody = {
+        "from_date": formattedDate,
+        "to_date": formattedDate,
         "company_id": resolvedCompanyId,
         "in_gate": selectedGateName,
         "only_checkout": isCheckedOut,
@@ -828,7 +838,9 @@ class RemoteDataSource {
 
       // Boolean for filtering checked-out logs
       bool isCheckedOut = true;
-
+      final DateTime now = DateTime.now();
+      final String formattedDate =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       // Get the gate and company details from preferences and storage
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
@@ -838,6 +850,8 @@ class RemoteDataSource {
       // Prepare the request payload
       final Map<String, dynamic> requestBody = {
         "company_id": resolvedCompanyId,
+        "from_date": formattedDate,
+        "to_date": formattedDate,
         "in_gate": selectedGateName,
         "only_checkout": isCheckedOut,
       };
@@ -1046,15 +1060,43 @@ class RemoteDataSource {
   final Duration cacheDuration = Duration(minutes: 30); // Cache expiry time
 
   Future<List<dynamic>> getMembersList() async {
-    final String? companyId = await gateStorage.getSocietyId();
-    if (companyId == null) throw Exception('Company ID not found.');
+    try {
+      // Check if cached data is still valid
+      final cachedData = await _getCachedData();
+      if (cachedData != null) {
+        log('Using cached data.');
+        return cachedData;
+      }
 
-    final response = await Dio().get(
-      '${ApiUrls.memberList}',
-      queryParameters: {'company_id': companyId},
-    );
+      final String? companyId = await gateStorage.getSocietyId();
+      if (companyId == null) throw Exception('Company ID not found.');
 
-    return response.data['data'] ?? [];
+      final Map<String, String> queryParams = {
+        "company_id": companyId,
+      };
+      final apiUrl = ApiUrls.memberList;
+      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
+      log('API URL: $uri');
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+        final membersList = responseData['data'] ?? [];
+        log('Fetched members list: $membersList');
+
+        // Cache the new data
+        await _cacheData(membersList);
+
+        return membersList;
+      } else {
+        log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to fetch member list: ${response.statusCode}');
+      }
+    } catch (e) {
+      log('Error fetching member list: $e');
+      rethrow;
+    }
   }
 
   // Get cached data if it's still valid

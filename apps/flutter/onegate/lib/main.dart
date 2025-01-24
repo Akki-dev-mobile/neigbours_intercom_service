@@ -5,8 +5,11 @@ import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/app_intro_view.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
@@ -37,7 +40,6 @@ void main() async {
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-
   ]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -123,7 +125,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
+    // isLoggedIn();
     // Initialize and start the AMQP receiver
     // _amqpReceiver = AmqpReceiver();
     // _amqpReceiver.startListening();
@@ -152,7 +154,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    Widget initialScreen = const MyAppLogin();
+    Widget initialScreen = MyAppLogin();
     // LoginView();
 
     return MaterialApp(
@@ -166,7 +168,51 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           },
         ),
       ),
-      home: initialScreen,
+      home: WillPopScope(
+          onWillPop: () async {
+            final shouldExit = await showExitConfirmationDialog(context);
+            debugPrint('Exit confirmation result: $shouldExit'); // Debug log
+            return shouldExit ?? false;
+          },
+          child: initialScreen),
+    );
+  }
+
+  Future<bool?> showExitConfirmationDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.exit_to_app, color: Colors.red),
+              SizedBox(width: 8),
+              Text(
+                'Exit App',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to exit the app?',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false), // Cancel exit
+              child:
+                  const Text('Cancel', style: TextStyle(color: Colors.black)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true), // Confirm exit
+              child: const Text('Exit', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

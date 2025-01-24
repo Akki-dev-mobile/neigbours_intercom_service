@@ -629,11 +629,18 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               text: 'Next',
               onPressed: () async {
                 FocusScope.of(context).unfocus();
+                if (selectedImageIndex == null) {
+                  Fluttertoast.showToast(
+                      msg: "please select purpose",
+                      backgroundColor: Colors.red);
+                  return;
+                }
 
                 if (selectedImageIndex != -1) {
                   final selectedValue = globalSelectedPurposes.isEmpty
                       ? widget.purposeCategories[selectedImageIndex!]
                       : globalSelectedPurposes[selectedImageIndex!];
+
                   Navigator.pop(
                     context,
                     selectedValue,

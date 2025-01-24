@@ -6,13 +6,16 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'domain/entities/visitor/purpose/purpose.dart';
+
 class PurposeProvider extends ChangeNotifier {
   List<PurposeCategory1>? _purposes = [];
   bool _isLoading = false;
   bool _isPurposeToggleOn = true;
 
   List<PurposeCategory1>? get purposes => _purposes;
+
   bool get isLoading => _isLoading;
+
   bool get isPurposeToggleOn => _isPurposeToggleOn;
 
   PurposeProvider() {
@@ -27,13 +30,15 @@ class PurposeProvider extends ChangeNotifier {
       final jsonString = prefs.getString('selected_purposes');
       if (jsonString != null) {
         final jsonList = jsonDecode(jsonString) as List<dynamic>;
-        _purposes = jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
+        _purposes =
+            jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
 
         print("this is$_purposes");
 
         for (var purpose in _purposes ?? []) {
           debugPrint('Purpose: ${purpose.categoryName}');
-          debugPrint('Subcategories count: ${purpose.subCategories?.length ?? 0}');
+          debugPrint(
+              'Subcategories count: ${purpose.subCategories?.length ?? 0}');
           if (purpose.subCategories != null) {
             for (var sub in purpose.subCategories!) {
               debugPrint('  - ${sub.subCategoryName}');
@@ -47,6 +52,7 @@ class PurposeProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
   Future<void> fetchPurposes(RemoteDataSource remoteDataSource) async {
     _isLoading = true;
     notifyListeners();
@@ -59,19 +65,19 @@ class PurposeProvider extends ChangeNotifier {
           purpose.isSelected = true; // Select the purpose by default
           if (purpose.subCategories != null) {
             purpose.subCategories = purpose.subCategories!.map((subCat) {
-              subCat.isSelected = true; // Select all subcategories by default
+              subCat.isSelected = true;
               return subCat;
             }).toList();
           }
           return purpose;
         }).toList();
 
-        debugPrint("Purposes fetched successfully: ${_purposes!.length}");
-        for (var purpose in _purposes!) {
-          debugPrint("Purpose: ${purpose.categoryName}, Subcategories: ${purpose.subCategories?.length ?? 0}");
-        }
+        // debugPrint("Purposes fetched successfully: ${_purposes!.length}");
+        // for (var purpose in _purposes!) {
+        //   debugPrint(
+        //       "Purpose: ${purpose.categoryName}, Subcategories: ${purpose.subCategories?.length ?? 0}");
+        // }
 
-        // Save the purposes to shared preferences
         await saveSelectedPurposes(_purposes!);
       }
     } catch (e) {
@@ -88,6 +94,7 @@ class PurposeProvider extends ChangeNotifier {
     await prefs.setBool('purpose_toggle', value);
     notifyListeners();
   }
+
   Future<void> saveSelectedPurposes(List<PurposeCategory1> purposes) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -95,7 +102,8 @@ class PurposeProvider extends ChangeNotifier {
         final json = p.toJson();
         // Ensure subcategories are properly serialized
         if (p.subCategories != null) {
-          json['sub_categories'] = p.subCategories!.map((s) => s.toJson()).toList();
+          json['sub_categories'] =
+              p.subCategories!.map((s) => s.toJson()).toList();
         }
         return json;
       }).toList());
@@ -107,7 +115,6 @@ class PurposeProvider extends ChangeNotifier {
       debugPrint("Failed to save purposes: $e");
     }
   }
-
 
   void updatePurposeSelection(int index, bool isSelected) {
     if (_purposes != null && index >= 0 && index < _purposes!.length) {

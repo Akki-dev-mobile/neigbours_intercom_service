@@ -38,11 +38,6 @@ class GateDashboardView extends StatefulWidget {
   State<GateDashboardView> createState() => _GateDashboardViewState();
 }
 
-// late FocusNode _focusNode;
-// final mobileControllerFormKey = GlobalKey<FormState>();
-// final passcodeControllerFormKey = GlobalKey<FormState>();
-// TextEditingController mobileController = TextEditingController();
-// TextEditingController passcodeController = TextEditingController();
 int _currentIndex = 0;
 List<String> _labels = ['Mobile', 'Pass Code'];
 String? selectedPassAlpha;
@@ -57,7 +52,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
   List<VisitorLog> cardVisitors = [];
   bool? _visitorCardNumber = false;
-
+  String? selectedGateName;
   bool isLoading = false;
   final remoteDataSource = RemoteDataSource(
     DioSingleton.instance1,
@@ -81,15 +76,12 @@ class _GateDashboardViewState extends State<GateDashboardView>
 
   @override
   void initState() {
-    // startKioskMode();
     super.initState();
-    // _focusNode = FocusNode();
-    // Future.delayed(Duration(milliseconds: 200), () {
-    //   FocusScope.of(context).requestFocus(_focusNode);
-    // });
+
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
     _fetchCardNumbers();
     _loadInitialData();
+    getSelectedGate();
   }
 
   Future<void> _loadInitialData() async {
@@ -106,6 +98,13 @@ class _GateDashboardViewState extends State<GateDashboardView>
     setState(() {
       cardVisitors = visitorLogs ?? [];
       isLoading = false;
+    });
+  }
+
+  Future<void> getSelectedGate() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedGateName = prefs.getString('selected_gate');
     });
   }
 
@@ -131,7 +130,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
 
   @override
   void dispose() {
-    // _focusNode.dispose();
     super.dispose();
   }
 
@@ -143,7 +141,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
           current is GatekeeperDashboardActionState,
       buildWhen: (previous, current) =>
           current is! GatekeeperDashboardActionState,
-      listener: (context, state) {
+      listener: (context, state) async {
         switch (state.runtimeType) {
           case GDInAndOutButtonPressedState:
             log('In and Out button pressed');
@@ -160,7 +158,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
             //     ),
             //   ),
             // );
-            Navigator.push(
+            await Navigator.push(
               context,
               PageTransition(
                 type: PageTransitionType.leftToRight,
@@ -176,7 +174,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
             );
             break;
           case GDVisitorsInButtonPressedState:
-            Navigator.push(
+            await Navigator.push(
               context,
               PageTransition(
                 type: PageTransitionType.topToBottom,
@@ -192,7 +190,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
             );
             break;
           case GDVisitorsOutButtonPressedState:
-            Navigator.push(
+            await Navigator.push(
               context,
               PageTransition(
                 type: PageTransitionType.rightToLeft,
@@ -224,7 +222,14 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 pageTitleWidget: Hero(
                     tag: 'gate_dashboard',
                     child: Text(
-                      'Gate One',
+                      selectedGateName
+                          .toString()
+                          .split(' ')
+                          .map((word) => word.isNotEmpty
+                              ? word[0].toUpperCase() +
+                                  word.substring(1).toLowerCase()
+                              : '')
+                          .join(' '),
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
@@ -254,102 +259,102 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       color: Theme.of(context).colorScheme.onBackground,
                     ),
                   ),
-                  TextButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              title: Row(
-                                children: const [
-                                  Icon(Icons.warning_amber_rounded,
-                                      color: Colors.red),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Confirm Logout',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Are you sure you want to logout?',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'This action cannot be undone.',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              actions: [
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    elevation: 0,
-                                    side: BorderSide(color: Colors.grey[300]!),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Text(
-                                    'Cancel',
-                                    style: TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    logout(context);
-                                  },
-                                  child: Text(
-                                    'Logout',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              actionsPadding: EdgeInsets.all(16),
-                              actionsAlignment: MainAxisAlignment.end,
-                            );
-                          },
-                        );
-                      },
-                      icon: Icon(
-                        Icons.logout,
-                        color: Theme.of(context).colorScheme.onBackground,
-                      ),
-                      label: Text(
-                        'Logout',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      )),
+                  // TextButton.icon(
+                  //     onPressed: () {
+                  //       showDialog(
+                  //         context: context,
+                  //         builder: (BuildContext context) {
+                  //           return AlertDialog(
+                  //             shape: RoundedRectangleBorder(
+                  //               borderRadius: BorderRadius.circular(16),
+                  //             ),
+                  //             title: Row(
+                  //               children: const [
+                  //                 Icon(Icons.warning_amber_rounded,
+                  //                     color: Colors.red),
+                  //                 SizedBox(width: 8),
+                  //                 Text(
+                  //                   'Confirm Logout',
+                  //                   style: TextStyle(
+                  //                     fontSize: 18,
+                  //                     fontWeight: FontWeight.bold,
+                  //                   ),
+                  //                 ),
+                  //               ],
+                  //             ),
+                  //             content: Column(
+                  //               mainAxisSize: MainAxisSize.min,
+                  //               crossAxisAlignment: CrossAxisAlignment.start,
+                  //               children: [
+                  //                 Text(
+                  //                   'Are you sure you want to logout?',
+                  //                   style: TextStyle(fontSize: 16),
+                  //                 ),
+                  //                 SizedBox(height: 8),
+                  //                 Text(
+                  //                   'This action cannot be undone.',
+                  //                   style: TextStyle(
+                  //                     fontSize: 14,
+                  //                     color: Colors.grey[600],
+                  //                   ),
+                  //                 ),
+                  //               ],
+                  //             ),
+                  //             actions: [
+                  //               ElevatedButton(
+                  //                 style: ElevatedButton.styleFrom(
+                  //                   backgroundColor: Colors.white,
+                  //                   elevation: 0,
+                  //                   side: BorderSide(color: Colors.grey[300]!),
+                  //                   shape: RoundedRectangleBorder(
+                  //                     borderRadius: BorderRadius.circular(8),
+                  //                   ),
+                  //                 ),
+                  //                 onPressed: () {
+                  //                   Navigator.of(context).pop();
+                  //                 },
+                  //                 child: Text(
+                  //                   'Cancel',
+                  //                   style: TextStyle(
+                  //                     color: Colors.black87,
+                  //                     fontWeight: FontWeight.w500,
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //               ElevatedButton(
+                  //                 style: ElevatedButton.styleFrom(
+                  //                   backgroundColor: Colors.red,
+                  //                   elevation: 0,
+                  //                   shape: RoundedRectangleBorder(
+                  //                     borderRadius: BorderRadius.circular(8),
+                  //                   ),
+                  //                 ),
+                  //                 onPressed: () {
+                  //                   logout(context);
+                  //                 },
+                  //                 child: Text(
+                  //                   'Logout',
+                  //                   style: TextStyle(
+                  //                     color: Colors.white,
+                  //                     fontWeight: FontWeight.w500,
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //             actionsPadding: EdgeInsets.all(16),
+                  //             actionsAlignment: MainAxisAlignment.end,
+                  //           );
+                  //         },
+                  //       );
+                  //     },
+                  //     icon: Icon(
+                  //       Icons.logout,
+                  //       color: Theme.of(context).colorScheme.onBackground,
+                  //     ),
+                  //     label: Text(
+                  //       'Logout',
+                  //       style: Theme.of(context).textTheme.bodyMedium,
+                  //     )),
                 ],
                 pageBody: Column(
                   children: [

@@ -70,6 +70,8 @@ dependencies:
   url_launcher: ^6.3.1
   calendar_date_picker2: ^0.5.3
   flutter_dotenv: ^5.2.1
+  infinite_scroll_pagination: ^4.1.0
+  
 
 
 
@@ -84,7 +86,6 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   flutter_launcher_icons: ^0.13.1
   speech_to_text: ^6.3.0
-
 
 dependency_overrides:
 

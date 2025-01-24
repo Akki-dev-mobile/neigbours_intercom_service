@@ -2,6 +2,7 @@
 
 import 'dart:developer';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/foundation.dart';
@@ -13,9 +14,7 @@ import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
@@ -28,7 +27,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:provider/provider.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -185,23 +183,29 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             /// - visitor name
             /// - visitor_card_number
             /// - any assigned unit ID
+
+// Adjust search logic based on widget.id
             List<VisitorLog> filteredVisitors = uniqueVisitorLogs.where((vLog) {
-              final vName = vLog.visitor?.name?.toLowerCase() ?? '';
-              final vCardNo = vLog.visitor_card_number?.toLowerCase() ?? '';
+              if (widget.id == "Cards") {
+                // When the ID is "Cards", search only card numbers
+                final vCardNo = vLog.visitor_card_number?.toLowerCase() ?? '';
+                return vCardNo.contains(searchLower);
+              } else {
+                // General search logic for other cases
+                final vName = vLog.visitor?.name?.toLowerCase() ?? '';
+                final vCardNo = vLog.visitor_card_number?.toLowerCase() ?? '';
+                final unitIds = vLog.visitor_building_assignment
+                        ?.expand((assignment) => assignment.unit_id ?? [])
+                        .map((unit) => unit.toString().toLowerCase())
+                        .toList() ??
+                    [];
 
-              // Flatten all unit IDs under building_assignment
-              final unitIds = vLog.visitor_building_assignment
-                      ?.expand((assignment) => assignment.unit_id ?? [])
-                      .map((unit) => unit.toString().toLowerCase())
-                      .toList() ??
-                  [];
+                final matchName = vName.contains(searchLower);
+                final matchCard = vCardNo.contains(searchLower);
+                final matchUnit = unitIds.any((u) => u.contains(searchLower));
 
-              // If name, cardNo, or any of the unit IDs match
-              final matchName = vName.contains(searchLower);
-              final matchCard = vCardNo.contains(searchLower);
-              final matchUnit = unitIds.any((u) => u.contains(searchLower));
-
-              return matchName || matchCard || matchUnit;
+                return matchName || matchCard || matchUnit;
+              }
             }).toList();
             // ----------------------------------------------------------------
 
@@ -252,29 +256,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               final checkInDate = log.visitor_check_in!;
               return checkInDate.isBefore(startOfYesterday);
             }).toList();
-
-            bool _isPopping = false;
-
-            void _safePop(BuildContext context) {
-              if (!_isPopping) {
-                _isPopping = true;
-                Navigator.of(context).pop();
-                Future.delayed(Duration(milliseconds: 300), () {
-                  _isPopping = false;
-                });
-              }
-            }
-
-            return WillPopScope(
-              onWillPop: () async {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => GateDashboardView()),
-                  (Route<dynamic> route) => false,
-                );
-
-                return false;
-              },
+            return PopScope(
+              canPop: false,
               child: MyScrollView(
                 // isScrollable: false,
                 hasBackButton: true,
@@ -286,6 +269,22 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   ),
                 ),
                 actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10.0),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GateDashboardView(),
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.home,
+                      ),
+                    ),
+                  ),
                   if (widget.id == "In Out Book")
                     GestureDetector(
                       onTap: () {
@@ -473,6 +472,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   todayLogs[index - currentIndex - 1],
                                   widget.id,
                                 ));
+
+                                // Navigate to the dashboard after checkout
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        GateDashboardView(), // Replace with your dashboard widget
+                                  ),
+                                );
                               },
                             );
                           }
@@ -1084,6 +1092,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => VisitorDetailsScreen(
+                      image: widget.visitorLog.visitor?.visitor_image,
                       unitList: unitList,
                       visitorLog: widget.visitorLog,
                     ),
@@ -1095,12 +1104,15 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 vertical: 2,
               ),
               leading: CircleAvatar(
-                backgroundImage: widget
-                        .visitorLog.visitor!.visitor_image!.isNotEmpty
-                    ? NetworkImage(
-                        widget.visitorLog.visitor!.visitor_image ?? "")
-                    : NetworkImage(
-                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                backgroundImage: CachedNetworkImageProvider(
+                  widget.visitorLog.visitor?.visitor_image?.isNotEmpty == true
+                      ? widget.visitorLog.visitor!.visitor_image!
+                      : 'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                ),
+                onBackgroundImageError: (_, __) {
+                  // Handle the error and provide a fallback image
+                  return;
+                },
                 child: widget.visitorLog.visitor!.visitor_image!.isEmpty
                     ? Text(
                         widget.visitorLog.visitor!.name!.isNotEmpty
@@ -1384,13 +1396,9 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                               BorderRadius.circular(8),
                                         ),
                                       ),
-                                      onPressed: () {
+                                      onPressed: () async {
                                         Navigator.of(context).pop();
-                                        widget.onCheckOut();
-                                        // context
-                                        //     .read<GatekeeperDashboardBloc>()
-                                        //     .add(
-                                        //         GatekeeperDashboardInitialEvent());
+                                        await widget.onCheckOut();
                                       },
                                       child: Text(
                                         'Checkout',

@@ -11,6 +11,7 @@ import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
 
 part 'login_event.dart';
+
 part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
@@ -134,7 +135,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         }
       } else {
         Gate? selectedGate = _preferenceUtils.getSelectedGate();
-        print("Selected Gate: $selectedGate");
+        // print("Selected Gate: $selectedGate");
         if (selectedGate != null) {
           _preferenceUtils.setIsLogin(true);
           print(

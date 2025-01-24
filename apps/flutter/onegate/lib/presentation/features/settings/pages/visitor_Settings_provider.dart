@@ -16,7 +16,8 @@ class VisitorSettingsProvider with ChangeNotifier {
     visitorsAddress = prefs.getBool('visitorsAddress') ?? false;
     membersApproval = prefs.getBool('membersApproval') ?? false;
     gateIdToggleValue = prefs.getBool('gateIdToggleValue') ?? false;
-    visitorCardNumber = prefs.getBool('visitorCardNumber') ?? false; // Load visitorCardNumber
+    visitorCardNumber =
+        prefs.getBool('visitorCardNumber') ?? false; // Load visitorCardNumber
     notifyListeners();
   }
 
@@ -35,7 +36,7 @@ class VisitorSettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateVisitorCardNumber(bool value) { // New update method
+  void updateVisitorCardNumber(bool value) {
     visitorCardNumber = value;
     notifyListeners();
   }
@@ -50,6 +51,7 @@ class VisitorSettingsProvider with ChangeNotifier {
     await prefs.setBool('visitorsAddress', visitorsAddress);
     await prefs.setBool('membersApproval', membersApproval);
     await prefs.setBool('gateIdToggleValue', gateIdToggleValue);
-    await prefs.setBool('visitorCardNumber', visitorCardNumber); // Save visitorCardNumber
+    await prefs.setBool(
+        'visitorCardNumber', visitorCardNumber); // Save visitorCardNumber
   }
 }

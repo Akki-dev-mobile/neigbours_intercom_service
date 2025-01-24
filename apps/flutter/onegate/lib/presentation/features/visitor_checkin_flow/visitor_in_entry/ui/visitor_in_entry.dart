@@ -9,6 +9,7 @@ import 'package:camera/camera.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
@@ -1260,18 +1261,17 @@ class ListeningDialogState extends State<ListeningDialog>
 class CameraPreviewScreen extends StatefulWidget {
   final CameraController cameraController;
 
-// String? mobile;
   CameraPreviewScreen({
     Key? key,
     required this.cameraController,
-    // this.mobile
   }) : super(key: key);
 
   @override
   _CameraPreviewScreenState createState() => _CameraPreviewScreenState();
 }
 
-class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
+class _CameraPreviewScreenState extends State<CameraPreviewScreen>
+    with WidgetsBindingObserver {
   late CameraController _cameraController;
   late CameraDescription _currentCamera;
   XFile? _capturedImage;
@@ -1279,8 +1279,39 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance
+        .addObserver(this); // Add observer for orientation changes
     _currentCamera = widget.cameraController.description;
     _cameraController = widget.cameraController;
+    _updateCameraOrientation(); // Set initial camera orientation
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Remove observer
+    _cameraController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    _updateCameraOrientation(); // Update camera orientation on screen rotation
+  }
+
+  Future<void> _updateCameraOrientation() async {
+    final orientation = MediaQuery.of(context).orientation;
+
+    // Lock the camera orientation based on the device's current orientation
+    if (_cameraController.value.isInitialized) {
+      if (orientation == Orientation.portrait) {
+        await _cameraController
+            .lockCaptureOrientation(DeviceOrientation.portraitUp);
+      } else if (orientation == Orientation.landscape) {
+        await _cameraController
+            .lockCaptureOrientation(DeviceOrientation.landscapeLeft);
+      }
+    }
   }
 
   Future<void> _switchCamera() async {
@@ -1302,6 +1333,7 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
       );
 
       await newController.initialize();
+      await _updateCameraOrientation(); // Update orientation after switching camera
 
       setState(() {
         _cameraController = newController;
@@ -1311,12 +1343,6 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
     } catch (e) {
       print('Error switching cameras: $e');
     }
-  }
-
-  @override
-  void dispose() {
-    _cameraController.dispose();
-    super.dispose();
   }
 
   @override

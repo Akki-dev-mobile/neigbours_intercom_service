@@ -116,7 +116,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                           if (value != null) {
                             setState(() {
                               _cameraValue = value; // Update the local value
-                              cameraProvider.updateCameraValue(value); // Update the provider
+                              cameraProvider.updateCameraValue(
+                                  value); // Update the provider
                             });
                           }
                         },
@@ -383,7 +384,9 @@ class _SettingsHomeState extends State<SettingsHome> {
       },
     );
   }
+
   String? role;
+
   Future<void> _initializeRole() async {
     role = await GateStorage().getRole();
     setState(() {});
@@ -391,7 +394,6 @@ class _SettingsHomeState extends State<SettingsHome> {
 
   @override
   Widget build(BuildContext context) {
-
     return MyScrollView(
       pageTitle: "Settings",
       pageBody: SingleChildScrollView(
@@ -409,7 +411,8 @@ class _SettingsHomeState extends State<SettingsHome> {
               title: 'Staffs',
               subtitle: 'View your society staffs',
               onTap: () {
-              Fluttertoast.showToast(msg: "coming soon", backgroundColor: Colors.green);
+                Fluttertoast.showToast(
+                    msg: "coming soon", backgroundColor: Colors.green);
               },
             ),
             // Gate Settings (for Admin and Master only)
@@ -417,7 +420,8 @@ class _SettingsHomeState extends State<SettingsHome> {
               PrimarySettingsTile(
                 icon: Ionicons.grid_outline,
                 title: 'Gate Settings',
-                subtitle: 'Current Preference: ${selectedGateName ?? "Not Selected Gate"}',
+                subtitle:
+                    'Current Preference: ${selectedGateName ?? "Not Selected Gate"}',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -429,56 +433,57 @@ class _SettingsHomeState extends State<SettingsHome> {
               ),
             if (role == "admin" || role == "master")
               PrimarySettingsTile(
-              icon: Ionicons.person_outline,
-              title: 'Visitors and Vehicles Settings',
-              subtitle: 'All visitors will be auto approved',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GateSettingView(),
-                  ),
-                );
-              },
-            ),
-            // Visitor Settings (for Admin and Master only)
-            // if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-                icon: Ionicons.people_outline,
-                title: 'Visitors Settings',
-                subtitle: 'Mark mandatory fields for visitors',
+                icon: Ionicons.person_outline,
+                title: 'Visitors and Vehicles Settings',
+                subtitle: 'All visitors will be auto approved',
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => VisitorSettingsView(),
+                      builder: (context) => GateSettingView(),
                     ),
                   );
                 },
               ),
-            if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-              icon: Ionicons.time_outline,
-              title: 'Visitor Approval Time',
-              subtitle: 'Current Preference: ${_visitorApprovalTimeValue ?? "100 seconds"}',
-              onTap: () {
-                _showVisitorApprovalTime(context);
-              },
-            ),
-            if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-              icon: Ionicons.alarm_outline,
-              title: 'Configure Duty Alarms',
-              subtitle: 'Enable/Disable Duty Alarms',
+            // Visitor Settings (for Admin and Master only)
+            // if (role == "admin" || role == "master")
+            PrimarySettingsTile(
+              icon: Ionicons.people_outline,
+              title: 'Visitors Settings',
+              subtitle: 'Mark mandatory fields for visitors',
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ConfigureDutyAlarms(),
+                    builder: (context) => VisitorSettingsView(),
                   ),
                 );
               },
             ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+                icon: Ionicons.time_outline,
+                title: 'Visitor Approval Time',
+                subtitle:
+                    'Current Preference: ${_visitorApprovalTimeValue ?? "100 seconds"}',
+                onTap: () {
+                  _showVisitorApprovalTime(context);
+                },
+              ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+                icon: Ionicons.alarm_outline,
+                title: 'Configure Duty Alarms',
+                subtitle: 'Enable/Disable Duty Alarms',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ConfigureDutyAlarms(),
+                    ),
+                  );
+                },
+              ),
             SecondarySettingsTile(
               title: 'Application Settings',
             ),
@@ -491,34 +496,38 @@ class _SettingsHomeState extends State<SettingsHome> {
                 _showCameraSettings(context);
               },
             ),
-            if (role == "admin" || role == "master")            PrimarySettingsTile(
-              icon: Ionicons.file_tray_full_outline,
-              title: 'Data Storage',
-              subtitle: 'Current Preference: ${_dataStorageValue ?? "6 Months"}',
-              onTap: () {
-                _showDataStorage(context);
-              },
-            ),
-            if (role == "admin" || role == "master")            PrimarySettingsTile(
-              icon: Ionicons.options_outline,
-              title: 'Configure Permissions',
-              subtitle: 'All Approved',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AppPermissions(),
-                  ),
-                );
-              },
-            ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+                icon: Ionicons.file_tray_full_outline,
+                title: 'Data Storage',
+                subtitle:
+                    'Current Preference: ${_dataStorageValue ?? "6 Months"}',
+                onTap: () {
+                  _showDataStorage(context);
+                },
+              ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+                icon: Ionicons.options_outline,
+                title: 'Configure Permissions',
+                subtitle: 'All Approved',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AppPermissions(),
+                    ),
+                  );
+                },
+              ),
             // Self Entry Settings (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.options_outline,
               title: 'Self Entry Settings',
               subtitle: 'Enable/Disable Self Entry',
               onTap: () {
-                Fluttertoast.showToast(msg: "coming soon", backgroundColor: Colors.green);
+                Fluttertoast.showToast(
+                    msg: "coming soon", backgroundColor: Colors.green);
                 // _preferenceUtils.setIsSelfTapIn(true);
                 // Navigator.push(
                 //   context,
@@ -528,22 +537,24 @@ class _SettingsHomeState extends State<SettingsHome> {
                 // );
               },
             ),
-            if (role == "admin" || role == "master")            PrimarySettingsTile(
-              icon: Ionicons.shield_half_outline,
-              title: 'Change Password',
-              subtitle: 'Change your password',
-              onTap: () {
-                // Add password change logic here
-              },
-            ),
-            if (role == "admin" || role == "master")            PrimarySettingsTile(
-              icon: Ionicons.language_outline,
-              title: 'Change Language',
-              subtitle: 'Current Preference: ${_languageValue ?? "English"}',
-              onTap: () {
-                _showLanguageSettings(context);
-              },
-            ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+                icon: Ionicons.shield_half_outline,
+                title: 'Change Password',
+                subtitle: 'Change your password',
+                onTap: () {
+                  // Add password change logic here
+                },
+              ),
+            if (role == "admin" || role == "master")
+              PrimarySettingsTile(
+                icon: Ionicons.language_outline,
+                title: 'Change Language',
+                subtitle: 'Current Preference: ${_languageValue ?? "English"}',
+                onTap: () {
+                  _showLanguageSettings(context);
+                },
+              ),
             // Logout (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.log_out_outline,
@@ -559,8 +570,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       ),
                       title: Row(
                         children: const [
-                          Icon(Icons.warning_amber_rounded,
-                              color: Colors.red),
+                          Icon(Icons.warning_amber_rounded, color: Colors.red),
                           SizedBox(width: 8),
                           Text(
                             'Confirm Logout',
@@ -573,8 +583,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                       ),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Are you sure you want to logout?',
@@ -595,11 +604,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             elevation: 0,
-                            side: BorderSide(
-                                color: Colors.grey[300]!),
+                            side: BorderSide(color: Colors.grey[300]!),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           onPressed: () {
@@ -618,12 +625,11 @@ class _SettingsHomeState extends State<SettingsHome> {
                             backgroundColor: Colors.red,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           onPressed: () {
-                      logout(context);
+                            logout(context);
                           },
                           child: Text(
                             'Logout',
@@ -665,12 +671,12 @@ class _SettingsHomeState extends State<SettingsHome> {
       selectedGateName = prefs.getString('selected_gate');
     });
   }
+
   Future<void> getCameraValue() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       cameraValue = prefs.getString('selected_camera');
     });
-
   }
 }
 
@@ -721,6 +727,7 @@ class PrimarySettingsTile extends StatelessWidget {
 class MultiSelectItem<T> {
   final String label;
   final T value;
+
   MultiSelectItem(this.label, this.value);
 }
 
@@ -756,6 +763,7 @@ class SecondarySettingsTile extends StatelessWidget {
     super.key,
     required this.title,
   });
+
   final String title;
 
   @override

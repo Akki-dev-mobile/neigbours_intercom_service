@@ -11,9 +11,11 @@ import 'package:common_widgets/common_widgets.dart';
 
 class VisitorDetailsScreen extends StatefulWidget {
   final VisitorLog visitorLog;
+  String? image;
   String? unitList;
 
-  VisitorDetailsScreen({Key? key, required this.visitorLog, this.unitList})
+  VisitorDetailsScreen(
+      {Key? key, required this.visitorLog, this.unitList, this.image})
       : super(key: key);
 
   @override
@@ -47,9 +49,9 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceVariant,
             ),
-            child: widget.visitorLog.visitor!.visitor_image!.isNotEmpty
+            child: widget.image != null
                 ? Image.network(
-                    widget.visitorLog.visitor!.visitor_image ?? "",
+                    widget.image ?? "",
                     height: MediaQuery.of(context).size.height * 0.4,
                     width: double.maxFinite,
                     fit: BoxFit.contain,

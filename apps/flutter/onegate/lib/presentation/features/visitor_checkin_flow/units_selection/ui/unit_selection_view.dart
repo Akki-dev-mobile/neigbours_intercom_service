@@ -643,162 +643,90 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text("Select"),
-          // actions: [
-          //   IconButton(
-          //     icon: Icon(Icons.arrow_back),
-          //     onPressed: () {
-          //       if (widget.searchedVisitor != null) {
-          //         Navigator.pop(context);
-          //       } else {
-          //         Navigator.pushAndRemoveUntil(
-          //           context,
-          //           MaterialPageRoute(
-          //               builder: (context) =>
-          //                   GateDashboardView()),
-          //               (Route<dynamic> route) => false,
-          //         );
-          //       }
-          //     },
-          //   ),
-          // ],
+          title: const Text("Select"),
         ),
         body: SafeArea(
           child: DefaultTabController(
             length: 2,
-            child: Stack(
+            child: Column(
               children: [
-                Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 8),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              // IconButton(
-                              //   icon: Icon(Icons.arrow_back),
-                              //   onPressed: () {
-                              //     if (widget.searchedVisitor != null) {
-                              //       Navigator.pop(context);
-                              //     } else {
-                              //       Navigator.pushAndRemoveUntil(
-                              //         context,
-                              //         MaterialPageRoute(
-                              //             builder: (context) =>
-                              //                 GateDashboardView()),
-                              //         (Route<dynamic> route) => false,
-                              //       );
-                              //     }
-                              //   },
-                              // ),
-                              Expanded(
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TabBar(
+                            indicator: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            labelColor: Colors.white,
+                            unselectedLabelColor: Colors.black,
+                            dividerColor: Colors.transparent,
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            tabs: [
+                              Tab(
                                 child: Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(8),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  child: const Text(
+                                    'Select Units/Members',
+                                    textAlign: TextAlign.center,
                                   ),
-                                  child: TabBar(
-                                    indicator: BoxDecoration(
-                                      color: Colors.black,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    labelColor: Colors.white,
-                                    unselectedLabelColor: Colors.black,
-                                    dividerColor: Colors.transparent,
-                                    indicatorSize: TabBarIndicatorSize.tab,
-                                    tabs: [
-                                      Tab(
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16),
-                                          child: const Text(
-                                            'Select Units/Members',
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                      Tab(
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16),
-                                          child: const Text(
-                                            'Society Office',
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                ),
+                              ),
+                              Tab(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  child: const Text(
+                                    'Society Office',
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                    // Tab content
-                    Expanded(
-                      child: TabBarView(
-                        children: [
-                          // First Tab - Select Units/Members
-                          Column(
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      // First Tab - Select Units/Members
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Stack(
+                            fit: StackFit.expand,
                             children: [
-                              Expanded(
-                                child: FutureBuilder<void>(
-                                  future: _initializeFuture,
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return const Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            CircularProgressIndicator(
-                                                color: Colors.grey),
-                                            SizedBox(height: 16),
-                                            Text(
-                                              "Loading Units and Members...",
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    } else if (snapshot.hasError) {
-                                      return Center(
-                                        child: Text(
-                                          'Error: ${snapshot.error}',
-                                          style: TextStyle(
-                                              color: Colors.red, fontSize: 16),
-                                        ),
-                                      );
-                                    }
-                                    return Column(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 0.0, horizontal: 10),
-                                          child: _buildSearchField(context),
-                                        ),
-                                        Expanded(
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 40.0),
-                                            child: _buildMemberList(context),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
+                              Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 0.0, horizontal: 10),
+                                    child: _buildSearchField(context),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 40.0),
+                                      child: _buildMemberList(context),
+                                    ),
+                                  ),
+                                ],
                               ),
+
+                              // Selected Members Bottom Sheet
                               Positioned(
                                 left: 0,
                                 right: 0,
@@ -942,7 +870,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                                       .onSurface,
                                                                 ),
                                                           ),
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                             Icons
                                                                 .keyboard_arrow_up,
                                                             color: Colors.black,
@@ -962,118 +890,111 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 ),
                               ),
                             ],
-                          ),
-                          // Second Tab - Society Office
-                          // Updated Society Office tab section in the TabBarView
-                          Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.business,
-                                  size: 64,
-                                  color: Colors.black,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Society Office',
-                                  style:
-                                      Theme.of(context).textTheme.headlineSmall,
-                                ),
-                                const SizedBox(height: 24),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 32,
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  onPressed: () async {
-                                    // Create BuildingAssignment for Society Office
-                                    final buildingAssignment =
-                                        BuildingAssignment(
-                                      id: null,
-                                      visitor_id: widget.visitor.id,
-                                      visitor_log_id: null,
-                                      company_id:
-                                          int.parse(companyId.toString()),
-                                      building_id: 0,
-                                      unit_id: [
-                                        "0001"
-                                      ], // Set unit ID to "001" for Society Office
-                                    );
-
-                                    final visitorLogData = VisitorLog(
-                                      visitor_id: widget.visitor.id ?? 0,
-                                      visitor_purpose_category_id:
-                                          widget.purposeCategoryId == null
-                                              ? 1
-                                              : int.parse(widget
-                                                  .purposeCategoryId
-                                                  .toString()),
-                                      visitor_purpose_sub_category_id:
-                                          widget.selectedSubCategoryId != null
-                                              ? int.parse(widget
-                                                  .selectedSubCategoryId
-                                                  .toString())
-                                              : null,
-                                      visitor_count: widget.guestCount ?? 0,
-                                      visitor: widget.visitor,
-                                      visitor_check_in:
-                                          DateTime.parse(formattedInTime),
-                                      visitor_card_number: widget.visitorNumber,
-                                      visitor_coming_from: widget.comingFrom,
-                                      visitor_building_assignment: [
-                                        buildingAssignment
-                                      ],
-                                      visitor_card_id: null,
-                                      carNumber: widget.carNumber,
-                                      company_id:
-                                          int.parse(companyId.toString()),
-                                      is_checked_out: false,
-                                    );
-
-                                    // Save Society Office details to SharedPreferences
-                                    final prefs =
-                                        await SharedPreferences.getInstance();
-                                    final societyOfficeMemberDetails = [
-                                      {
-                                        "name": "Society Office",
-                                        "unit_name": "Cyberone",
-                                        "unit_id": 0001,
-                                        "member_ids": 0,
-                                        "building_unit": "0001"
-                                      }
-                                    ];
-
-                                    await prefs.setString(
-                                        'member_details',
-                                        json.encode(
-                                            societyOfficeMemberDetails));
-
-                                    await _showApprovedDialog(
-                                        context, visitorLogData);
-                                  },
-                                  child: const Text(
-                                    'Tap to Check-in',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                  ],
+
+                      // Second Tab - Society Office
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.business,
+                              size: 64,
+                              color: Colors.black,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Society Office',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () async {
+                                // Existing Society Office check-in logic
+                                final buildingAssignment = BuildingAssignment(
+                                  id: null,
+                                  visitor_id: widget.visitor.id,
+                                  visitor_log_id: null,
+                                  company_id: int.parse(companyId.toString()),
+                                  building_id: 0,
+                                  unit_id: ["0001"],
+                                );
+
+                                final visitorLogData = VisitorLog(
+                                  visitor_id: widget.visitor.id ?? 0,
+                                  visitor_purpose_category_id: widget
+                                              .purposeCategoryId ==
+                                          null
+                                      ? 1
+                                      : int.parse(
+                                          widget.purposeCategoryId.toString()),
+                                  visitor_purpose_sub_category_id:
+                                      widget.selectedSubCategoryId != null
+                                          ? int.parse(widget
+                                              .selectedSubCategoryId
+                                              .toString())
+                                          : null,
+                                  visitor_count: widget.guestCount ?? 0,
+                                  visitor: widget.visitor,
+                                  visitor_check_in:
+                                      DateTime.parse(formattedInTime),
+                                  visitor_card_number: widget.visitorNumber,
+                                  visitor_coming_from: widget.comingFrom,
+                                  visitor_building_assignment: [
+                                    buildingAssignment
+                                  ],
+                                  visitor_card_id: null,
+                                  carNumber: widget.carNumber,
+                                  company_id: int.parse(companyId.toString()),
+                                  is_checked_out: false,
+                                );
+
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                final societyOfficeMemberDetails = [
+                                  {
+                                    "name": "Society Office",
+                                    "unit_name": "Cyberone",
+                                    "unit_id": 0001,
+                                    "member_ids": 0,
+                                    "building_unit": "0001"
+                                  }
+                                ];
+
+                                await prefs.setString(
+                                  'member_details',
+                                  json.encode(societyOfficeMemberDetails),
+                                );
+
+                                await _showApprovedDialog(
+                                    context, visitorLogData);
+                              },
+                              child: const Text(
+                                'Tap to Check-in',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
