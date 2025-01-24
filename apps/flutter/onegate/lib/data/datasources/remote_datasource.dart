@@ -1124,6 +1124,7 @@ class RemoteDataSource {
         'staff_rfid': staffData['idProofNumber'] ?? '',
         'staff_note': '',
         'staff_proof': staffData['idProofImageUrl'],
+        'staff_image': staffData['profileImageUrl'],
       };
 
       final formData = FormData.fromMap(formMap);

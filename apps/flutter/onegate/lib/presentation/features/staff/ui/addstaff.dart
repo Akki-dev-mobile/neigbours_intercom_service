@@ -2,11 +2,14 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../dio_setup.dart';
 
@@ -34,6 +37,8 @@ class _AddStaffState extends State<AddStaff> {
   String _selectedCategoryValue = "";
   DateTime? _selectedDate;
   XFile? _image;
+  String? _profileImageUrl;
+  String? _idProofImageUrl;
   String _selectedGender = '';
   String selectedCountryCodeSE = 'IN';
   late FocusNode _mobileFocusNode;
@@ -84,6 +89,46 @@ class _AddStaffState extends State<AddStaff> {
     super.dispose();
   }
 
+  List<TextInputFormatter> _getInputFormatters(String idProofType) {
+    switch (idProofType) {
+      case 'Aadhar Card':
+        return [
+          LengthLimitingTextInputFormatter(12), // Limit input to 12 digits
+          FilteringTextInputFormatter.digitsOnly, // Allow only digits
+        ];
+      case 'Passport':
+        return [
+          LengthLimitingTextInputFormatter(9),
+          // Limit input to 9 characters
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+          // Allow alphanumeric
+        ];
+      case 'Driving License':
+        return [
+          LengthLimitingTextInputFormatter(16),
+          // Adjust as per requirement
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+          // Allow alphanumeric
+        ];
+      case 'Voter ID':
+        return [
+          LengthLimitingTextInputFormatter(10),
+          // Limit to 10 characters
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z\d]')),
+          // Allow alphanumeric
+        ];
+      case 'PAN Card':
+        return [
+          LengthLimitingTextInputFormatter(10),
+          // Limit to 10 characters
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Z\d]')),
+          // Allow uppercase letters and digits
+        ];
+      default:
+        return [];
+    }
+  }
+
   Future<void> _fetchCategories() async {
     try {
       final response = await _remoteDataSource.fetchStaffCategory();
@@ -103,16 +148,19 @@ class _AddStaffState extends State<AddStaff> {
       print('Categories fetched successfully');
     } catch (e) {
       debugPrint('Error fetching categories: $e');
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Failed to load categories.')),
+      // );
     }
   }
 
-  Future<void> _openCamera({required bool isIdProof}) async {
+  Future<dynamic> _openCamera({required bool isIdProof}) async {
     final ImagePicker picker = ImagePicker();
     try {
-      final XFile? capturedImage = await picker.pickImage(
+      final XFile? capturedImage = (await picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 80,
-      );
+      ));
 
       if (capturedImage != null) {
         setState(() {
@@ -125,14 +173,20 @@ class _AddStaffState extends State<AddStaff> {
       }
     } catch (e) {
       debugPrint('Error capturing image: $e');
-      Fluttertoast.showToast(
-        msg: "Failed to capture images",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: "Failed to capture images",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+// ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(content: Text('Failed to capture image')),
+        // );
+      }
     }
   }
 
@@ -167,40 +221,75 @@ class _AddStaffState extends State<AddStaff> {
     }
   }
 
-  Future<void> _uploadImages() async {
+  void showCategoryDropdown(BuildContext context) {
+    log('Showing category dropdown');
+    if (categories.isEmpty) {
+      log('No categories to show');
+      return;
+    }
+
+    categories.isEmpty
+        ? CircularProgressIndicator()
+        : DropdownButton<String>(
+            value: _selectedCategory,
+            isExpanded: true,
+            underline: SizedBox(),
+            items: categories.entries.map((entry) {
+              return DropdownMenuItem<String>(
+                value: entry.key,
+                child: Text(entry.key),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  _selectedCategory = newValue;
+                });
+              }
+            },
+          );
+  }
+
+  Future<void> _uploadImages(File profileImage, File idProofImage) async {
     try {
-      if (_image == null || _idProofImage == null) {
-        throw Exception("Please select both profile and ID proof images");
-      }
-
-      final File profileFile = File(_image!.path);
-      final File idProofFile = File(_idProofImage!.path);
-
-      if (!await profileFile.exists() || !await idProofFile.exists()) {
-        throw Exception("One or both image files are missing");
-      }
-
+      final int companyId = 1;
       final profileImageResponse =
-          await _remoteDataSource.uploadStaffImages(profileFile, 1);
+          await _remoteDataSource.uploadStaffImages(profileImage, companyId);
       final idProofImageResponse =
-          await _remoteDataSource.uploadStaffImages(idProofFile, 1);
+          await _remoteDataSource.uploadStaffImages(idProofImage, companyId);
 
-      if (profileImageResponse?['statusCode'] == 200 &&
-          idProofImageResponse?['statusCode'] == 200) {
-        final profileImageUrl = profileImageResponse!['url'];
-        final idProofImageUrl = idProofImageResponse!['url'];
+      if (profileImageResponse != null && idProofImageResponse != null) {
+        final profileImageUrl = profileImageResponse['data']?.first;
+        final idProofImageUrl = idProofImageResponse['data']?.first;
 
-        // Show confirmation dialog with image URLs
-        _showConfirmationDialog(profileImageUrl, idProofImageUrl);
+        if (profileImageUrl != null && idProofImageUrl != null) {
+          setState(() {
+            _profileImageUrl = profileImageUrl;
+            _idProofImageUrl = idProofImageUrl;
+          });
+
+          Fluttertoast.showToast(
+            msg: "Images uploaded successfully",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
+        } else {
+          throw Exception('Image URLs are null');
+        }
       } else {
-        throw Exception("Image upload failed with non-200 status");
+        throw Exception('Failed to upload images');
       }
     } catch (e) {
       debugPrint('Error uploading images: $e');
       Fluttertoast.showToast(
-        msg: "Failed to upload images: $e",
+        msg: "Failed to upload images",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
         backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
@@ -208,29 +297,33 @@ class _AddStaffState extends State<AddStaff> {
     }
   }
 
-  void _showConfirmationDialog(String profileImageUrl, String idProofImageUrl) {
+  void _showConfirmationDialog(
+      BuildContext context, String profileImageUrl, String idProofImageUrl) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(
-            'Confirm Action',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          content: const Text('Do you want to add this staff member?'),
-          actions: [
+          title: const Text('Confirm Upload'),
+          content: const Text('Do you want to upload the selected images?'),
+          actions: <Widget>[
             TextButton(
+              child: Text(
+                'Cancel',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
             ),
             TextButton(
+              child: Text(
+                'Confirm',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               onPressed: () async {
                 Navigator.of(context).pop(); // Close dialog
                 await _submitStaffData(profileImageUrl, idProofImageUrl);
               },
-              child: const Text('Confirm'),
             ),
           ],
         );
@@ -259,37 +352,204 @@ class _AddStaffState extends State<AddStaff> {
       };
 
       log('Submitting staff data: $staffData');
+
       final response = await _remoteDataSource.addStaff(staffData);
 
-      if (response != null) {
-        Fluttertoast.showToast(
-          msg: "Staff added successfully",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-
-        // Navigate to the staff list page
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => StaffScreen(),
-          ),
-          (route) => false,
-        );
+      if (mounted) {
+        if (response != null) {
+          Navigator.pop(context);
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) =>
+                    StaffScreen(), // Replace with your list view screen widget
+              ),
+              (route) => false,
+            );
+          }
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              Future.delayed(const Duration(seconds: 2), () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
+              });
+              return AlertDialog(
+                title: Container(
+                  height: MediaQuery.of(context).size.height * 0.1,
+                  width: MediaQuery.of(context).size.width * 0.2,
+                  child: Image.network(
+                      'https://uxwing.com/wp-content/themes/uxwing/download/editing-user-action/tick-mark-user-color-icon.png'),
+                ),
+                content: Text(
+                  'Staff added successfully',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              );
+            },
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error adding staff: $e');
+      if (mounted) {
+        String errorMessage = e.toString();
+        if (errorMessage.contains("Phone number is required")) {
+          errorMessage = "Please enter a valid phone number";
+        } else if (errorMessage.contains('400')) {
+          errorMessage = 'Please check all required fields and try again.';
+        }
+        debugPrint('Error: $errorMessage');
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text('Error: $errorMessage')),
+        // );
+      }
+    }
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedGender.isEmpty) {
       Fluttertoast.showToast(
-        msg: "Failed to add staff: $e",
+        msg: "Please select a gender",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    if (_selectedDate == null) {
+      Fluttertoast.showToast(
+        msg: "Please select date of birth",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    if (_selectedCategory.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "Please select a category",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    try {
+      if (_idProofImage != null &&
+          _idProofImage!.path.isNotEmpty &&
+          _image != null &&
+          _image!.path.isNotEmpty) {
+        final idProofFile = File(_idProofImage!.path);
+        final profileFile = File(_image!.path);
+
+        if (await idProofFile.exists() && await profileFile.exists()) {
+          await _uploadImages(profileFile, idProofFile);
+          if (_profileImageUrl != null && _idProofImageUrl != null) {
+            _showConfirmationDialog(
+                context, _profileImageUrl!, _idProofImageUrl!);
+          } else {
+            throw Exception('Image URLs are null');
+          }
+        } else {
+          throw Exception('One or both image files not found');
+        }
+      } else {
+        throw Exception(
+            'One or both images are not selected or paths are invalid');
+      }
+    } catch (e) {
+      debugPrint('Error: $e');
+      Fluttertoast.showToast(
+        msg: "Error: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
         backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );
     }
+  }
+
+  Widget _buildGenderSelection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Gender',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Radio<String>(
+                fillColor: WidgetStateProperty.all(Colors.red),
+                value: 'M',
+                groupValue: _selectedGender,
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedGender = value;
+                    });
+                  }
+                },
+              ),
+              const Text('Male'),
+              const SizedBox(width: 20),
+              Radio<String>(
+                value: 'F',
+                fillColor: WidgetStateProperty.all(Colors.red),
+                groupValue: _selectedGender,
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedGender = value;
+                    });
+                  }
+                },
+              ),
+              const Text('Female'),
+              const SizedBox(width: 20),
+              Radio<String>(
+                fillColor: WidgetStateProperty.all(Colors.red),
+                value: 'O',
+                groupValue: _selectedGender,
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedGender = value;
+                    });
+                  }
+                },
+              ),
+              const Text('Other'),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -301,20 +561,496 @@ class _AddStaffState extends State<AddStaff> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Profile Image and Form
-          // ... (same as before)
+          SizedBox(
+            width: double.infinity,
+            height: MediaQuery.of(context).size.height * 0.3,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                    radius: 80,
+                    backgroundColor: Colors.grey,
+                    backgroundImage: _image != null
+                        ? FileImage(File(_image!.path))
+                        : const NetworkImage(
+                            "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")),
+                Positioned(
+                  bottom: 50,
+                  right: 90,
+                  child: InkWell(
+                    onTap: () => _openCamera(isIdProof: false),
+                    child: CircleAvatar(
+                      radius: 20,
+                      child: Icon(
+                        Icons.camera_alt,
+                        color: Colors.grey.withOpacity(0.8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Personal Details',
+                    style: Theme.of(context).textTheme.displaySmall),
+                const SizedBox(height: 20),
+                CustomForm.textField(
+                  "Name",
+                  textController: _nameController,
+                  titleColor: Colors.black,
+                  hintColor: Colors.grey,
+                  hintText: "Enter Name",
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Please enter a name';
+                    }
+                    return null;
+                  },
+                ),
+                _buildGenderSelection(),
+                CustomForm.textField(
+                  textController: _phoneController,
+                  titleColor: Theme.of(context).colorScheme.onBackground,
+                  hintColor: Theme.of(context).colorScheme.onPrimary,
+                  focusNode: _mobileFocusNode,
+                  "Visitor Mobile Number",
+                  hintText: '0123456789',
+                  prefixIcon: CountryCodePicker(
+                    initialSelection: 'IN',
+                    favorite: const ['IN'],
+                    showFlagMain: true,
+                    showFlagDialog: true,
+                    boxDecoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.background,
+                    ),
+                    barrierColor: Theme.of(context)
+                        .colorScheme
+                        .background
+                        .withOpacity(0.5),
+                    closeIcon: Icon(
+                      Icons.close,
+                      color: Theme.of(context).colorScheme.onBackground,
+                    ),
+                    searchDecoration: InputDecoration(
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Theme.of(context).colorScheme.onBackground,
+                      ),
+                      hintText: 'Search',
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onBackground,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(
+                          style: BorderStyle.solid,
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(
+                          style: BorderStyle.solid,
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                      ),
+                    ),
+                    textStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onBackground,
+                      fontSize: 18,
+                    ),
+                    dialogTextStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onBackground,
+                    ),
+                    onChanged: (CountryCode countryCode) {
+                      setState(() {
+                        selectedCountryCodeSE = countryCode.code!;
+                      });
+                    },
+                  ),
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        FocusScope.of(context).unfocus();
+                      });
+                    },
+                    icon: const CircleAvatar(
+                      radius: 20,
+                      child: Icon(
+                        size: 22,
+                        Symbols.done,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  length: 10,
+                  validator: (value) {
+                    if (value!.isEmpty) {
+                      return 'Mobile number is required';
+                    } else if (value.length != 10) {
+                      return 'Please enter a 10-digit number';
+                    }
+                    return null;
+                  },
+                ),
+                CustomForm.textField(
+                  "Email",
+                  textController: _emailController,
+                  hintText: "Enter Email",
+                  titleColor: Colors.black,
+                  hintColor: Colors.grey,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Please enter an email';
+                    }
+
+                    return null;
+                  },
+                ),
+                CustomForm.textField(
+                  "Date of Birth",
+                  titleColor: Colors.black,
+                  hintColor: Colors.grey,
+                  hintText: 'Enter Date of Birth',
+                  textController: TextEditingController(
+                      text: _selectedDate != null
+                          ? "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}"
+                          : ""),
+                  isReadOnly: true,
+                  validator: (value) {
+                    if (_selectedDate == null) {
+                      return 'Please select date of birth';
+                    }
+                    return null;
+                  },
+                  suffixIcon: IconButton(
+                    onPressed: _selectDateOfBirth,
+                    icon: const Icon(
+                      Icons.calendar_today,
+                    ),
+                  ),
+                ),
+
+                CustomDropdown(
+                  title: "Category",
+                  hintText: "Select Category",
+                  items: categories.values.toSet().toList(),
+                  selectedItem: _selectedCategoryValue.isNotEmpty
+                      ? _selectedCategoryValue
+                      : null,
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedCategoryValue = newValue;
+                        _selectedCategory = categories.entries
+                            .firstWhere((entry) => entry.value == newValue)
+                            .key;
+                      });
+                    }
+                  },
+                ),
+
+                // CustomForm.textField(
+                //   "Qualification",
+                //   isReadOnly: true,
+                //   titleColor: Colors.black,
+                //   hintColor: Colors.black,
+                //   textController:
+                //       TextEditingController(text: _selectedQualification),
+                //   hintText: "Enter Qualification",
+                //   suffixIcon: DropdownButton<String>(
+                //     underline: SizedBox(),
+                //     icon: Icon(Icons.arrow_drop_down),
+                //     items: qualifications.map((qualification) {
+                //       return DropdownMenuItem<String>(
+                //         value: qualification,
+                //         child: Text(qualification),
+                //       );
+                //     }).toList(),
+                //     onChanged: (String? newValue) {
+                //       if (newValue != null) {
+                //         setState(() {
+                //           _selectedQualification = newValue;
+                //         });
+                //       }
+                //     },
+                //   ),
+                // ),
+
+                CustomDropdown(
+                  title: "Qualification",
+                  hintText: "Select Qualification",
+                  items: qualifications,
+                  selectedItem: qualifications.contains(_selectedQualification)
+                      ? _selectedQualification
+                      : null,
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedQualification = newValue;
+                      });
+                    }
+                  },
+                ),
+
+                // CustomForm.textField(
+                //   "Enter ID Proof",
+                //   isReadOnly: true,
+                //   titleColor: Colors.black,
+                //   hintColor: Colors.black,
+                //   hintText: "Select ID Proof",
+                //   hasInitialValue: _selectedIdProof,
+                //   suffixIcon: DropdownButton<String>(
+                //     underline: SizedBox(),
+                //     icon: Icon(Icons.arrow_drop_down),
+                //     items: idProofs.map((idProof) {
+                //       return DropdownMenuItem<String>(
+                //         value: idProof,
+                //         child: Text(idProof),
+                //       );
+                //     }).toList(),
+                //     onChanged: (String? newValue) {
+                //       if (newValue != null) {
+                //         setState(() {
+                //           _selectedIdProof = newValue;
+                //         });
+                //       }
+                //     },
+                //   ),c
+                // ),
+
+                CustomDropdown(
+                  title: "ID Proof",
+                  hintText: "Select ID Proof",
+                  items: idProofs,
+                  selectedItem: _selectedIdProof,
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedIdProof = newValue;
+                      });
+                    }
+                  },
+                  titleColor: null,
+                ),
+
+                CustomForm.textField(
+                  _selectedIdProof,
+                  titleColor: Colors.black,
+                  hintColor: Colors.grey,
+                  hintText: "Enter $_selectedIdProof",
+                  textController: _idNumberController,
+                  inputFormatters: _getInputFormatters(_selectedIdProof),
+                  // Apply input formatters
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Please enter an ID proof number';
+                    }
+                    final input = value!.trim();
+
+                    switch (_selectedIdProof) {
+                      case 'Aadhar Card':
+                        if (!RegExp(r'^\d{12}$').hasMatch(input)) {
+                          return 'Please enter a valid 12-digit Aadhaar number';
+                        }
+                        break;
+                      case 'Passport':
+                        if (input.length < 8 ||
+                            input.length > 9 ||
+                            !RegExp(r'^[A-Za-z0-9]+$').hasMatch(input)) {
+                          return 'Please enter a valid Passport number (8-9 alphanumeric characters)';
+                        }
+                        break;
+                      case 'Driving License':
+                        if (input.length < 5) {
+                          return 'Please enter a valid Driving License number';
+                        }
+                        break;
+                      case 'Voter ID':
+                        if (!RegExp(r'^[A-Za-z]{3}\d{7}$').hasMatch(input)) {
+                          return 'Please enter a valid Voter ID (e.g., ABC1234567)';
+                        }
+                        break;
+                      case 'PAN Card':
+                        if (!RegExp(r'^[A-Z]{5}\d{4}[A-Z]$').hasMatch(input)) {
+                          return 'Please enter a valid PAN card number (e.g., ABCDE1234F)';
+                        }
+                        break;
+                      default:
+                        break;
+                    }
+                    return null;
+                  },
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.camera_alt),
+                    onPressed: () => _openCamera(isIdProof: true),
+                  ),
+                  counterText: "Upload ID Proof",
+                ),
+                if (_idProofImage != null) ...[
+                  Text(
+                    "Preview images",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Container(
+                    // decoration: BoxDecoration(
+                    //   border: Border.all(
+                    //     color: Theme.of(context).colorScheme.onSurface,
+                    //   ),
+                    //   borderRadius: BorderRadius.circular(15),
+                    // ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        //   // Profile Image Container
+                        //   Container(
+                        //     height: 120,
+                        //     padding: const EdgeInsets.only(top: 8.0),
+                        //     child: Stack(
+                        //       alignment: Alignment.topRight,
+                        //       children: [
+                        //       _image != null
+                        //           ? Image.file(
+                        //               File(_image!.path),
+                        //               width: 100,
+                        //               height: 100,
+                        //               fit: BoxFit.cover,
+                        //             )
+                        //           : Container(
+                        //               width: 100,
+                        //               height: 100,
+                        //               color: Colors.grey.shade300,
+                        //               child: const Icon(
+                        //                 Icons.camera_alt,
+                        //                 color: Colors.white70,
+                        //                 size: 40,
+                        //               ),
+                        //             ),
+                        //       if (_image != null)
+                        //         Positioned(
+                        //           right: 0,
+                        //           top: 0,
+                        //           child: GestureDetector(
+                        //             onTap: () {
+                        //               setState(() {
+                        //                 _image = null;
+                        //               });
+                        //             },
+                        //             child: Container(
+                        //               decoration: BoxDecoration(
+                        //                 shape: BoxShape.circle,
+                        //                 color: Colors.redAccent,
+                        //               ),
+                        //               child: const Icon(
+                        //                 Icons.close,
+                        //                 color: Colors.white,
+                        //                 size: 20,
+                        //               ),
+                        //             ),
+                        //           ),
+                        //         ),
+                        //     ],
+                        //   ),
+                        // ),
+
+                        // ID Proof Image Container
+                        Container(
+                          height: 120,
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              _idProofImage != null
+                                  ? Image.file(
+                                      File(_idProofImage!.path),
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey.shade300,
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white70,
+                                        size: 40,
+                                      ),
+                                    ),
+                              if (_idProofImage != null)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _idProofImage = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.redAccent,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                ],
+                CustomForm.textField("Enter Address",
+                    textController: addressController,
+                    lines: 5,
+                    titleColor: Colors.black,
+                    hintColor: Colors.grey,
+                    hintText: "Enter Address"),
+                // CustomLargeBtn(
+                //     onPressed: () {
+                //       _submitForm();
+                //     },
+                //     text: "PostData"),
+                const SizedBox(height: 120),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: CustomLargeBtn(
         onPressed: () async {
           if (_image != null && _idProofImage != null) {
-            await _uploadImages(); // Upload images first
+            // _submitStaffData(_image!.path, _idProofImage!.path);
+            await _submitForm();
           } else {
             Fluttertoast.showToast(
               msg: "Please select both images",
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
               backgroundColor: Colors.red,
               textColor: Colors.white,
               fontSize: 16.0,

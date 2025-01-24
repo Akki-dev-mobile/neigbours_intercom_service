@@ -71,7 +71,7 @@ class StaffListWidget extends StatelessWidget {
               subtitleWidget: Container(
                   alignment: Alignment.centerLeft,
                   margin: EdgeInsets.only(
-                      right: MediaQuery.of(context).size.width * 0.25),
+                      right: MediaQuery.of(context).size.width * 0.1),
                   padding: EdgeInsets.symmetric(
                     horizontal: 7,
                     vertical: 2,
@@ -85,11 +85,11 @@ class StaffListWidget extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // const Icon(
-                      //   Symbols.work,
-                      //   size: 15,
-                      //   color: Colors.red,
-                      // ),
+                      const Icon(
+                        Symbols.work,
+                        size: 15,
+                        color: Colors.red,
+                      ),
                       const SizedBox(
                         width: 10,
                       ),

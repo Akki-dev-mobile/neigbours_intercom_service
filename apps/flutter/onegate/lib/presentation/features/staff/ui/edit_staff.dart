@@ -349,6 +349,71 @@ class _EditStaffState extends State<EditStaff> {
     }
   }
 
+  Widget _buildGenderSelection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Gender',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Radio<String>(
+                fillColor: WidgetStateProperty.all(Colors.red),
+                value: 'M',
+                groupValue: _selectedGender,
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedGender = value;
+                    });
+                  }
+                },
+              ),
+              const Text('Male'),
+              const SizedBox(width: 20),
+              Radio<String>(
+                fillColor: WidgetStateProperty.all(Colors.red),
+                value: 'F',
+                groupValue: _selectedGender,
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedGender = value;
+                    });
+                  }
+                },
+              ),
+              const Text('Female'),
+              const SizedBox(width: 20),
+              Radio<String>(
+                fillColor: WidgetStateProperty.all(Colors.red),
+                value: 'O',
+                groupValue: _selectedGender,
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedGender = value;
+                    });
+                  }
+                },
+              ),
+              const Text('Other'),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
   Future<void> _updateStaffData(
     String? profileImageUrl,
     String? idProofImageUrl,
@@ -539,71 +604,6 @@ class _EditStaffState extends State<EditStaff> {
       //   SnackBar(content: Text('Error: $e')),
       // );
     }
-  }
-
-  Widget _buildGenderSelection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Gender',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Radio<String>(
-                fillColor: WidgetStateProperty.all(Colors.red),
-                value: 'M',
-                groupValue: _selectedGender,
-                onChanged: (String? value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedGender = value;
-                    });
-                  }
-                },
-              ),
-              const Text('Male'),
-              const SizedBox(width: 20),
-              Radio<String>(
-                fillColor: WidgetStateProperty.all(Colors.red),
-                value: 'F',
-                groupValue: _selectedGender,
-                onChanged: (String? value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedGender = value;
-                    });
-                  }
-                },
-              ),
-              const Text('Female'),
-              const SizedBox(width: 20),
-              Radio<String>(
-                fillColor: WidgetStateProperty.all(Colors.red),
-                value: 'O',
-                groupValue: _selectedGender,
-                onChanged: (String? value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedGender = value;
-                    });
-                  }
-                },
-              ),
-              const Text('Other'),
-            ],
-          )
-        ],
-      ),
-    );
   }
 
   @override
