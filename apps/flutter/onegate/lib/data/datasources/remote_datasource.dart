@@ -351,6 +351,87 @@ class RemoteDataSource {
     return null;
   }
 
+  Future<List<dynamic>> fetchParcels() async {
+    final String url =
+        'https://stggateapi.cubeone.in/api/visitor/parcelData/8191';
+
+    try {
+      final response = await Dio().get(url);
+
+      if (response.statusCode == 200) {
+        log('Parcels fetched successfully: ${response.data}');
+        // Extract the data array from the response
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data['data'];
+          if (data is List<dynamic>) {
+            return data;
+          }
+        }
+        return [];
+      } else {
+        log('Failed to fetch parcels: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      log('Error fetching parcels: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyParcelOtp(
+      String parcelId, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtpVerify"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'parcel_id': parcelId,
+          'otp': otp,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        log("Parcel OTP verified successfully: ${response.body}");
+        return jsonDecode(response.body);
+      } else {
+        log("Failed to verify parcel OTP: ${response.statusCode} - ${response.body}");
+        throw Exception('Failed to verify parcel OTP');
+      }
+    } catch (e) {
+      log("Error in verifyParcelOtp: $e");
+      throw Exception('Failed to verify parcel OTP');
+    }
+  }
+
+  Future<Map<String, dynamic>> getParcelOtp(
+      String parcelId, String mobileNumber) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtp"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'parcel_id': parcelId, // Corrected key
+          'mobile_number': mobileNumber,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        log("Parcel OTP fetched successfully: ${response.body}");
+        return jsonDecode(response.body);
+      } else {
+        log("Failed to load parcel OTP: ${response.statusCode} - ${response.body}");
+        throw Exception('Failed to load parcel OTP');
+      }
+    } catch (e) {
+      log("Error in getParcelOtp: $e");
+      throw Exception('Failed to load parcel OTP');
+    }
+  }
+
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
       const String apiUrl = 'https://gateapi.cubeone.in/api/visitor/getLog';

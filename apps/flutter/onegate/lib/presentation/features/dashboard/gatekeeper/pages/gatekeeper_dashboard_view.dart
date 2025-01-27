@@ -24,7 +24,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app_intro/ui/keyclock_login.dart';
-import '../../../parcel/parcel_list.dart';
+import '../../../parcel/ui/parcel_list.dart';
 import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
 
