@@ -347,9 +347,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             isPremium: false,
                             isVisible: true,
                             onTap: () {
-                              Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                      builder: (context) => ParcelList()));
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ParcelList(),
+                                ),
+                              );
                               // Fluttertoast.showToast(
                               //   msg: "Parcel, coming soon",
                               //   toastLength: Toast.LENGTH_SHORT,
