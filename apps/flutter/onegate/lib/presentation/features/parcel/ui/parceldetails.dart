@@ -84,7 +84,8 @@ class ParcelDetails extends StatelessWidget {
                 color: const Color(0xffFFEBE6),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(parcel['purpose_sub_category_name']),
+              child:
+                  Text(parcel['purpose_sub_category_name'].toString() ?? 'NA'),
             ),
             Container(
               margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),

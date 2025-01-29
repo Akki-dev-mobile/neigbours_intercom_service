@@ -9,7 +9,6 @@ import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
-import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
@@ -76,6 +75,15 @@ void main() async {
           ChangeNotifierProvider<CameraSettingsProvider>(
             create: (_) => CameraSettingsProvider(),
           ),
+          // BlocProvider<ParcelBloc>(
+          //   create: (context) => ParcelBloc(
+          //     RemoteDataSource(
+          //       DioSingleton.instance1,
+          //       DioSingleton.instance2,
+          //       DioSingleton.instance3,
+          //     ),
+          //   ),
+          // ),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -96,15 +104,6 @@ void main() async {
                       DioSingleton.instance3,
                     ),
                   ),
-                ),
-              ),
-            ),
-            BlocProvider<ParcelBloc>(
-              create: (context) => ParcelBloc(
-                RemoteDataSource(
-                  DioSingleton.instance1,
-                  DioSingleton.instance2,
-                  DioSingleton.instance3,
                 ),
               ),
             ),

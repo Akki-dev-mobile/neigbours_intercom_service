@@ -44,6 +44,10 @@ class _ParcelListState extends State<ParcelList> {
     });
   }
 
+  void _refreshPage() {
+    context.read<ParcelBloc>().add(FetchParcels());
+  }
+
   @override
   void dispose() {
     searchController.dispose();
@@ -99,6 +103,7 @@ class _ParcelListState extends State<ParcelList> {
                   }
 
                   return ListView.builder(
+                    padding: EdgeInsets.only(top: 10),
                     shrinkWrap: true,
                     itemCount: parcels.length,
                     itemBuilder: (context, index) {
@@ -217,8 +222,7 @@ class _ParcelListState extends State<ParcelList> {
                                                   BorderRadius.circular(15),
                                             ),
                                             child: Text(
-                                              parcel['purpose_sub_category_name']
-                                                      ?.toString() ??
+                                              parcel['purpose_sub_category_name'] ??
                                                   'N/A',
                                               style: const TextStyle(
                                                 color: Colors.black,
