@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -35,395 +36,118 @@ class ParcelDetails extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
+              height: 200,
+              width: double.maxFinite,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,
-              ),
-              child: parcel['parcel_image'].isNotEmpty
-                  ? Image.network(
-                      parcel['parcel_image'],
-                      height: MediaQuery.of(context).size.height * 0.4,
-                      width: double.maxFinite,
-                      fit: BoxFit.contain,
-                    )
-                  : Center(
-                      child: CircleAvatar(
-                        radius: 80,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        child: Text(
-                          parcel['visitor_image'],
-                          style: const TextStyle(
-                            fontSize: 60,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                color: Theme.of(context).colorScheme.onSurface,
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(20),
+                ),
+                image: parcel['parcel_image'].isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(
+                          parcel['parcel_image'],
                         ),
-                      ),
-                    ),
+                      )
+                    : null,
+              ),
+              // parcel['parcel_image'].isNotEmpty
+              //     ? NetworkImage(
+              //         parcel['parcel_image'],
+              //         height: MediaQuery.of(context).size.height * 0.4,
+              //         width: double.maxFinite,
+              //         fit: BoxFit.contain,
+              //       )
+              //     : Center(
+              //         child: CircleAvatar(
+              //           radius: 80,
+              //           backgroundColor: Theme.of(context).colorScheme.primary,
+              //           child: Text(
+              //             parcel['visitor_image'],
+              //             style: const TextStyle(
+              //               fontSize: 60,
+              //               color: Colors.white,
+              //               fontWeight: FontWeight.bold,
+              //             ),
+              //           ),
+              //         ),
+              //       ),
             ),
             SizedBox(height: 16),
-            Container(
-              margin: const EdgeInsets.only(left: 8),
-              child: Text(
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
                 parcel['member_name'] ?? 'No Name',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
               ),
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            Container(
-              margin: const EdgeInsets.only(left: 8),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 7,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xffFFEBE6),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child:
-                  Text(parcel['purpose_sub_category_name'].toString() ?? 'NA'),
-            ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Ionicons.call_outline, color: Colors.green),
-                ),
-                title: Text(
-                  'Phone Number',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-                subtitle: Text(
-                  parcel['memb_mobile_number'] ?? 'No Number',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                  ),
-                ),
-                trailing: ElevatedButton.icon(
-                  icon: Icon(Icons.call, size: 18),
-                  label: Text('Call'),
-                  onPressed: () =>
-                      _makePhoneCall(parcel['visitor_mobile'] ?? ''),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
+              subtitle: Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFFEBE6),
                       borderRadius: BorderRadius.circular(8),
                     ),
+                    child: Text(
+                        parcel['purpose_sub_category_name'].toString() ?? 'NA'),
+                  ),
+                ],
+              ),
+            ),
+            InfoListTileWidget(
+              icon: Ionicons.call_outline,
+              iconColor: Colors.green,
+              title: 'Phone Number',
+              subtitle: parcel['visitor_mobile'] ?? 'No Number',
+              trailing: ElevatedButton.icon(
+                icon: Icon(Icons.call, size: 18),
+                label: const Text('Call'),
+                onPressed: () => _makePhoneCall(parcel['visitor_mobile'] ?? ''),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
             ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Unit Details
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Color(0xffFFB080).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Symbols.apartment,
-                                color: const Color(0xffFFB080),
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Visiting Unit',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Container(
-                                  constraints: BoxConstraints(
-                                    maxWidth:
-                                        MediaQuery.of(context).size.width * 0.6,
-                                  ),
-                                  child: Text(
-                                    parcel['unit_name'] ?? 'No Unit',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            InfoListTileWidget(
+              icon: Ionicons.calendar_outline,
+              iconColor: Colors.green,
+              title: 'Unit Name',
+              subtitle: parcel['unit_name'] ?? 'N/A',
             ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Unit Details
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Color(0xffFFB080).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Symbols.clock_loader_10,
-                                color: Colors.green,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  ' Check- In',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Container(
-                                  constraints: BoxConstraints(
-                                    maxWidth:
-                                        MediaQuery.of(context).size.width * 0.6,
-                                  ),
-                                  child: Text(
-                                    parcel['log_created_at'] ?? 'No Unit',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: Colors.green),
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            InfoListTileWidget(
+              icon: Ionicons.time_outline,
+              iconColor: Colors.green,
+              title: 'Check In',
+              subtitle: parcel['log_created_at'] ?? 'No Time',
+              subTitleStyle: TextStyle(color: Colors.green),
             ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Unit Details
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Color(0xffFFB080).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Symbols.clock_loader_20,
-                                color: Colors.red,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  ' Check- Out',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Container(
-                                  constraints: BoxConstraints(
-                                    maxWidth:
-                                        MediaQuery.of(context).size.width * 0.6,
-                                  ),
-                                  child: Text(
-                                    parcel['log_veified_at'] ??
-                                        'Not Picked Yet',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: Colors.red),
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            InfoListTileWidget(
+              icon: Ionicons.time_outline,
+              iconColor: Colors.red,
+              title: 'Parcel Picked AT',
+              subtitle: parcel['log_veified_at'] ?? 'No Time',
+              subTitleStyle: TextStyle(color: Colors.red),
             ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Unit Details
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Color(0xffFFB080).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Symbols.detector_status,
-                                color: parcel['parcel_status'] != 'picked'
-                                    ? Colors.red
-                                    : Colors.green,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Status',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Container(
-                                  constraints: BoxConstraints(
-                                    maxWidth:
-                                        MediaQuery.of(context).size.width * 0.6,
-                                  ),
-                                  child: Text(
-                                    parcel['parcel_status'] ?? 'No Unit',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: parcel['parcel_status'] != 'picked'
-                                          ? Colors.red
-                                          : Colors.green,
-                                    ),
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            InfoListTileWidget(
+              icon: Symbols.delivery_truck_speed,
+              iconColor: parcel['parcel_status'] == 'picked'
+                  ? Colors.green
+                  : Colors.red,
+              title: 'Parcel Status',
+              subtitle: parcel['parcel_status'] ?? 'N/A',
+              subTitleStyle: TextStyle(
+                  color: parcel['parcel_status'] == 'picked'
+                      ? Colors.green
+                      : Colors.red),
             ),
             const SizedBox(height: 150),
           ],
