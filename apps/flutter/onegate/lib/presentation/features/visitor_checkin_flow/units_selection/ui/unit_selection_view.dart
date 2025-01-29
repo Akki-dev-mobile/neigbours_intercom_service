@@ -14,6 +14,7 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -22,6 +23,8 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
   Visitor? searchedVisitor;
@@ -304,8 +307,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         ),
                         onPressed: () {
                           // Add your confirm logic here
-                          Navigator.pop(context);
-                          _handleSelectionSubmit(selectedMembers);
+                          Navigator.push(context, MaterialPageRoute(builder: (context)=>RequestPermissionPage(visitor: widget.visitor,)));
+                          // Navigator.pop(context);
+                          // _handleSelectionSubmit(selectedMembers);
                         },
                         child: const Text(
                           'Confirm',

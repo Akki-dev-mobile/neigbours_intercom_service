@@ -1,3 +1,4 @@
+import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,6 +35,7 @@ void main() async {
   await dotenv.load(fileName: "assets/.env");
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
+  await Alarm.init();
   await GateStorage().init();
   await setupDependencies();
   await setupLocator();

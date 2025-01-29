@@ -236,7 +236,7 @@ class CustomLargeBtn extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.text,
-    this.isText = true,
+    this.isText = true,this.width ,
     this.widgetChild,
     this.heroTag,
     this.disabled = false,
@@ -246,14 +246,14 @@ class CustomLargeBtn extends StatelessWidget {
   final String text;
   final String? heroTag;
   final bool isText;
-  final Widget? widgetChild;
+  final Widget? widgetChild; final double? width;
   final bool disabled; // New field to handle button's disabled state
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      width: MediaQuery.of(context).size.width * 0.85,
+      width: width??MediaQuery.of(context).size.width * 0.85,
       height: 60,
       child: ElevatedButton(
         style: ButtonStyle(
@@ -287,7 +287,7 @@ class CustomLargeBtn extends StatelessWidget {
             text,
             style: TextStyle(
               color: Theme.of(context).colorScheme.surface,
-              fontSize: 22,
+              fontSize: width!=null?15:22,
               wordSpacing: 1.2,
               fontWeight: FontWeight.w500,
             ),

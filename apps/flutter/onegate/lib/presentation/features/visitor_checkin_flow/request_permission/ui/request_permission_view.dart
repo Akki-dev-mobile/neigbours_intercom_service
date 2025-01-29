@@ -186,7 +186,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                           crossAxisSpacing: 10.0,
                           mainAxisSpacing: 10.0,
                         ),
-                        itemCount: gridData!.length,
+                        itemCount: 2,
                         itemBuilder: (BuildContext context, int index) {
                           return Container(
                             decoration: BoxDecoration(
@@ -199,7 +199,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                             ),
                             child: Center(
                               child: Text(
-                                gridData![index].unitFlatNumber,
+                                "1306",
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium!
