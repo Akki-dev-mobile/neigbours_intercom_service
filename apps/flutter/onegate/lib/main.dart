@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/dio_setup.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
+import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
@@ -23,7 +25,6 @@ import 'data/repositories/visitor_log_repo_impl.dart';
 import 'data/repositories/visitor_repo_impl.dart';
 import 'domain/use_cases/visitor_log_usecae.dart';
 import 'domain/use_cases/visitor_usecase.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -95,6 +96,15 @@ void main() async {
                       DioSingleton.instance3,
                     ),
                   ),
+                ),
+              ),
+            ),
+            BlocProvider<ParcelBloc>(
+              create: (context) => ParcelBloc(
+                RemoteDataSource(
+                  DioSingleton.instance1,
+                  DioSingleton.instance2,
+                  DioSingleton.instance3,
                 ),
               ),
             ),

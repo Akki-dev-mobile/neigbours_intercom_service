@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
@@ -37,9 +38,9 @@ class ParcelDetails extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceVariant,
               ),
-              child: parcel['visitor_image'].isNotEmpty
+              child: parcel['parcel_image'].isNotEmpty
                   ? Image.network(
-                      parcel['visitor_image'],
+                      parcel['parcel_image'],
                       height: MediaQuery.of(context).size.height * 0.4,
                       width: double.maxFinite,
                       fit: BoxFit.contain,
@@ -63,7 +64,7 @@ class ParcelDetails extends StatelessWidget {
             Container(
               margin: const EdgeInsets.only(left: 8),
               child: Text(
-                parcel['visitor_name'] ?? 'No Name',
+                parcel['member_name'] ?? 'No Name',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -115,7 +116,7 @@ class ParcelDetails extends StatelessWidget {
                   ),
                 ),
                 subtitle: Text(
-                  parcel['visitor_mobile'] ?? 'No Number',
+                  parcel['memb_mobile_number'] ?? 'No Number',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 16,
@@ -238,7 +239,7 @@ class ParcelDetails extends StatelessWidget {
                               ),
                               child: Icon(
                                 Symbols.clock_loader_10,
-                                color: const Color(0xffFFB080),
+                                color: Colors.green,
                               ),
                             ),
                             SizedBox(width: 12),
@@ -258,11 +259,82 @@ class ParcelDetails extends StatelessWidget {
                                         MediaQuery.of(context).size.width * 0.6,
                                   ),
                                   child: Text(
-                                    parcel['visitor_check_in'] ?? 'No Unit',
+                                    parcel['log_created_at'] ?? 'No Unit',
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.green),
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Unit Details
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Color(0xffFFB080).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Symbols.clock_loader_20,
+                                color: Colors.red,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  ' Check- Out',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Container(
+                                  constraints: BoxConstraints(
+                                    maxWidth:
+                                        MediaQuery.of(context).size.width * 0.6,
+                                  ),
+                                  child: Text(
+                                    parcel['log_veified_at'] ??
+                                        'Not Picked Yet',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.red),
                                     softWrap: true,
                                     overflow: TextOverflow.visible,
                                   ),
@@ -308,7 +380,9 @@ class ParcelDetails extends StatelessWidget {
                               ),
                               child: Icon(
                                 Symbols.detector_status,
-                                color: const Color(0xffFFB080),
+                                color: parcel['parcel_status'] != 'picked'
+                                    ? Colors.red
+                                    : Colors.green,
                               ),
                             ),
                             SizedBox(width: 12),
@@ -329,9 +403,12 @@ class ParcelDetails extends StatelessWidget {
                                   ),
                                   child: Text(
                                     parcel['parcel_status'] ?? 'No Unit',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
+                                      color: parcel['parcel_status'] != 'picked'
+                                          ? Colors.red
+                                          : Colors.green,
                                     ),
                                     softWrap: true,
                                     overflow: TextOverflow.visible,
@@ -347,23 +424,6 @@ class ParcelDetails extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            if (parcel['parcel_image'] != null)
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 16.0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
-                    parcel['parcel_image'],
-                    fit: BoxFit.cover,
-                    height: 200,
-                    width: double.infinity,
-                  ),
-                ),
-              ),
             const SizedBox(height: 150),
           ],
         ),
@@ -379,124 +439,10 @@ class ParcelDetails extends StatelessWidget {
               context: context,
               isScrollControlled: true,
               builder: (BuildContext context) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom,
-                  ),
-                  child: Container(
-                    padding: EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Enter OTP',
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                        SizedBox(height: 16),
-                        Container(
-                          height: MediaQuery.of(context).size.height * 0.07,
-                          width: MediaQuery.of(context).size.width * 0.8,
-                          child: Pinput(
-                            length: 6,
-                            onCompleted: (String pin) {
-                              print("Completed: $pin");
-                            },
-                            focusNode: FocusNode(),
-                            controller: otpController,
-                            submittedPinTheme: PinTheme(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.green),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                            ),
-                            focusedPinTheme: PinTheme(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.blue),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                            ),
-                            followingPinTheme: PinTheme(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                remoteDataSource.getParcelOtp(
-                                  parcel['parcel_id'].toString(),
-                                  parcel['memb_mobile_number'].toString(),
-                                );
-                              },
-                              child: Text(
-                                'Resend',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.35,
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[200],
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                onPressed: () async {
-                                  String otp = otpController.text;
-                                  try {
-                                    final result =
-                                        await remoteDataSource.verifyParcelOtp(
-                                      parcel['parcel_id'].toString(),
-                                      otp,
-                                    );
-                                    Fluttertoast.showToast(
-                                      toastLength: Toast.LENGTH_SHORT,
-                                      gravity: ToastGravity.BOTTOM,
-                                      backgroundColor: Colors.green,
-                                      textColor: Colors.white,
-                                      fontSize: 16.0,
-                                      msg: result['message'],
-                                    );
-                                    log("OTP verified: $result");
-                                  } catch (e) {
-                                    log("OTP verification failed: $e");
-                                    Fluttertoast.showToast(
-                                      msg: 'Invalid OTP',
-                                      toastLength: Toast.LENGTH_SHORT,
-                                      gravity: ToastGravity.BOTTOM,
-                                      backgroundColor: Colors.red,
-                                      textColor: Colors.white,
-                                      fontSize: 16.0,
-                                    );
-                                  }
-                                  Navigator.of(context).pop();
-                                },
-                                label: Text(
-                                  'Submit',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                icon: Icon(
-                                  Icons.check,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 20,
-                        ),
-                      ],
-                    ),
-                  ),
+                return OtpBottomSheet(
+                  remoteDataSource: remoteDataSource,
+                  parcel: parcel,
+                  otpController: otpController,
                 );
               },
             );
@@ -506,7 +452,6 @@ class ParcelDetails extends StatelessWidget {
   }
 }
 
-// Detail Row Widget
 Widget _buildDetailRow(BuildContext context, String label, String value) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -529,4 +474,176 @@ Widget _buildDetailRow(BuildContext context, String label, String value) {
       ],
     ),
   );
+}
+
+class OtpBottomSheet extends StatefulWidget {
+  final RemoteDataSource remoteDataSource;
+  final Map<String, dynamic> parcel;
+  final TextEditingController otpController;
+
+  OtpBottomSheet({
+    required this.remoteDataSource,
+    required this.parcel,
+    required this.otpController,
+  });
+
+  @override
+  _OtpBottomSheetState createState() => _OtpBottomSheetState();
+}
+
+class _OtpBottomSheetState extends State<OtpBottomSheet> {
+  int _timer = 0;
+  Timer? _countdownTimer;
+
+  void _startTimer() {
+    setState(() {
+      _timer = 5;
+    });
+    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (_timer > 0) {
+        setState(() {
+          _timer--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        height: MediaQuery.of(context).size.height * 0.4,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Enter OTP',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            SizedBox(height: 16),
+            Container(
+              height: MediaQuery.of(context).size.height * 0.07,
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Pinput(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                length: 6,
+                onCompleted: (String pin) {
+                  print("Completed: $pin");
+                },
+                focusNode: FocusNode(),
+                controller: widget.otpController,
+                submittedPinTheme: PinTheme(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.green),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+                focusedPinTheme: PinTheme(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+                followingPinTheme: PinTheme(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _timer == 0
+                      ? () {
+                          widget.remoteDataSource.getParcelOtp(
+                            widget.parcel['parcel_id'].toString(),
+                            widget.parcel['memb_mobile_number'].toString(),
+                          );
+                          _startTimer();
+                        }
+                      : null,
+                  child: Text(
+                    _timer == 0 ? 'Resend' : 'Resend in $_timer sec',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.40,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () async {
+                      String otp = widget.otpController.text;
+                      try {
+                        final result =
+                            await widget.remoteDataSource.verifyParcelOtp(
+                          widget.parcel['parcel_id'].toString(),
+                          otp,
+                        );
+                        Fluttertoast.showToast(
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.BOTTOM,
+                          backgroundColor: Colors.green,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                          msg: result['message'],
+                        );
+                        log("OTP verified: $result");
+                      } catch (e) {
+                        log("OTP verification failed: $e");
+                        Fluttertoast.showToast(
+                          msg: 'Invalid OTP',
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.BOTTOM,
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                      }
+                      Navigator.of(context).pop();
+                    },
+                    label: Text(
+                      'Submit',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.surface),
+                    ),
+                    icon: Icon(
+                      Icons.check,
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(
+              height: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
