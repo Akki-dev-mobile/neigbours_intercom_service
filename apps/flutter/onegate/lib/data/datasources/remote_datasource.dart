@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
@@ -9,14 +10,9 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
-import 'package:flutter_onegate/data/datasources/gate_storage.dart';
-import 'package:flutter_onegate/data/models/staff_model.dart';
-import 'package:flutter_onegate/common/environment.dart';
-
-import 'package:http/http.dart' as http;
 
 final keycloakConfig = KeycloakConfig(
   bundleIdentifier: 'com.example.keyclockflutter',
@@ -356,6 +352,87 @@ class RemoteDataSource {
     return null;
   }
 
+  Future<List<dynamic>> fetchParcels() async {
+    final String url =
+        'https://stggateapi.cubeone.in/api/visitor/parcelData/8191';
+
+    try {
+      final response = await Dio().get(url);
+
+      if (response.statusCode == 200) {
+        log('Parcels fetched successfully: ${response.data}');
+        // Extract the data array from the response
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data['data'];
+          if (data is List<dynamic>) {
+            return data;
+          }
+        }
+        return [];
+      } else {
+        log('Failed to fetch parcels: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      log('Error fetching parcels: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyParcelOtp(
+      String parcelId, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtpVerify"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'parcel_id': parcelId,
+          'otp': otp,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        log("Parcel OTP verified successfully: ${response.body}");
+        return jsonDecode(response.body);
+      } else {
+        log("Failed to verify parcel OTP: ${response.statusCode} - ${response.body}");
+        throw Exception('Failed to verify parcel OTP');
+      }
+    } catch (e) {
+      log("Error in verifyParcelOtp: $e");
+      throw Exception('Failed to verify parcel OTP');
+    }
+  }
+
+  Future<Map<String, dynamic>> getParcelOtp(
+      String parcelId, String mobileNumber) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtp"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'parcel_id': parcelId, // Corrected key
+          'mobile_number': mobileNumber,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        log("Parcel OTP fetched successfully: ${response.body}");
+        return jsonDecode(response.body);
+      } else {
+        log("Failed to load parcel OTP: ${response.statusCode} - ${response.body}");
+        throw Exception('Failed to load parcel OTP');
+      }
+    } catch (e) {
+      log("Error in getParcelOtp: $e");
+      throw Exception('Failed to load parcel OTP');
+    }
+  }
+
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
       String apiUrl = ApiUrls.visitorGetLog;
@@ -626,6 +703,8 @@ class RemoteDataSource {
         ),
       );
 
+      log("getMember response: ${response?.data}");
+
       return response?.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching members: $e');
@@ -699,6 +778,7 @@ class RemoteDataSource {
         ),
       );
 
+      log("getMemberUnit response: ${response?.data}");
       return response?.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching member units: $e');
@@ -1042,35 +1122,277 @@ class RemoteDataSource {
     }
   }
 
-  //
   // Future<List<dynamic>> getMembersList() async {
-  //   final String? companyId = await gateStorage.getSocietyId();
-  //   if (companyId == null) throw Exception('Company ID not found.');
+  //   try {
+  //     final String? companyId = await gateStorage.getSocietyId();
+  //     if (companyId == null) throw Exception('Company ID not found.');
   //
-  //   final response = await Dio().get(
-  //     '${ApiUrls.memberList}',
-  //     queryParameters: {'company_id': companyId},
-  //   );
+  //     final headers = await Environment.getHeaders();
   //
-  //   return response.data['data'] ?? [];
+  //     final Map<String, String> queryParams = {
+  //       "company_id": companyId,
+  //     };
+  //     final apiUrl = ApiUrls.memberList;
+  //     final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
+  //     log(uri.toString());
+  //     final response = await http.get(
+  //       uri,
+  //       // headers: headers,
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final responseData = jsonDecode(response.body);
+  //
+  //       log("getMembersList $responseData ");
+  //
+  //       return responseData['data'] ?? [];
+  //     } else {
+  //       log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
+  //       throw Exception('Failed to fetch member list: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     log('Error fetching member list: $e');
+  //     rethrow;
+  //   }
   // }
 
-  final String cacheKey = 'members_list_cache';
-  final String cacheTimestampKey = 'members_list_cache_timestamp';
-  final Duration cacheDuration = Duration(minutes: 30); // Cache expiry time
+  Future<Map<String, dynamic>?> uploadStaffImages(
+      File file, int companyId) async {
+    final String uploadUrl =
+        'https://societybackend.cubeone.in/api/admin/file-upload?company_id=$companyId';
 
-  Future<List<dynamic>> getMembersList() async {
     try {
-      // Check if cached data is still valid
-      final cachedData = await _getCachedData();
-      if (cachedData != null) {
-        log('Using cached data.');
-        return cachedData;
+      FormData formData = FormData.fromMap({
+        'files[]': await MultipartFile.fromFile(file.path,
+            filename: file.path.split('/').last),
+      });
+
+      Dio dio = Dio();
+
+      Response response = await dio.post(
+        uploadUrl,
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print("images${response.data}");
+        return response.data as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to upload image: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
+
+  Future<dynamic> fetchStaffCategory() async {
+    final String? companyId = await gateStorage.getSocietyId();
+    if (companyId == null) throw Exception('Company ID not found.');
+
+    final String url =
+        'https://societybackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
+
+    try {
+      final response = await _dio1?.get(url);
+
+      if (response?.statusCode == 200) {
+        log("Categories${response!.data.toString()}");
+        return response?.data;
+      } else {
+        throw Exception(
+            'Failed to fetch staff category: ${response?.statusCode}');
+      }
+    } catch (e) {
+      log('Error fetching staff category: $e');
+      throw Exception('Failed to fetch staff category: $e');
+    }
+  }
+
+  Future<dynamic> addStaff(Map<String, dynamic> staffData) async {
+    final String? companyId = await gateStorage.getSocietyId();
+    if (companyId == null || companyId.isEmpty) {
+      throw Exception("Company ID is missing. Cannot add staff.");
+    }
+
+    final String addStaffUrl =
+        'https://societybackend.cubeone.in/api/admin/staffs/addStaff?company_id=$companyId';
+
+    try {
+      log('Incoming staffData: $staffData');
+
+      final Map<String, dynamic> formMap = {
+        'staff_type_id': staffData['category'],
+        'staff_gender': staffData['gender'],
+        'staff_first_name': staffData['name'],
+        'staff_badge_number': staffData['idProofNumber'],
+        'staff_contact_number': staffData['phone'],
+        'staff_email_id': staffData['email'],
+        'staff_address_1': staffData['address'] ?? '',
+        'staff_dob': staffData['dateOfBirth'] != null
+            ? DateTime.parse(staffData['dateOfBirth'])
+                .toIso8601String()
+                .split('T')[0]
+            : '',
+        'staff_qualification': staffData['qualification'],
+        'staff_skill': staffData['categoryValue'] ?? '',
+        'staff_lang_iso_639_3': 'eng',
+        'staff_rfid': staffData['idProofNumber'] ?? '',
+        'staff_note': '',
+        'staff_proof': staffData['idProofImageUrl'],
+        'staff_image': staffData['profileImageUrl'],
+      };
+
+      final formData = FormData.fromMap(formMap);
+
+      log('Request URL: $addStaffUrl');
+      log('FormData fields: ${formData.fields}');
+      log('FormData files: ${formData.files.length} files');
+
+      final response = await _dio1?.post(
+        addStaffUrl,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      log('Response status: ${response?.statusCode}');
+      log('Response data: ${response?.data}');
+
+      if (response?.statusCode == 200) {
+        log("Staff added successfully: ${response?.data}");
+        return response?.data;
+      } else {
+        log('Error response: ${response?.data}');
+        throw Exception(
+            'Server returned ${response?.statusCode}: ${response?.data}');
+      }
+    } catch (e) {
+      log('Error adding staff: $e');
+      rethrow;
+    }
+  }
+
+  Future<dynamic> editStaff(int staffId, Map<String, dynamic> staffData) async {
+    final String? companyId = await gateStorage.getSocietyId();
+    if (companyId == null || companyId.isEmpty) {
+      throw Exception("Company ID is missing. Cannot edit staff.");
+    }
+
+    final String editStaffUrl =
+        'https://societybackend.cubeone.in/api/admin/staffs/editStaff/$staffId?company_id=$companyId';
+
+    try {
+      log('Editing staff with ID: $staffId');
+      log('Incoming staffData: $staffData');
+
+      // Build a JSON body matching your server's expected fields
+      final Map<String, dynamic> requestBody = {
+        'staff_type_id': staffData['category'],
+        'staff_gender': staffData['gender'],
+        'staff_first_name': staffData['name'],
+        'staff_badge_number': staffData['idProofNumber'],
+        'staff_contact_number': staffData['phone'],
+        'staff_email_id': staffData['email'],
+        'staff_address_1': staffData['address'] ?? '',
+        'staff_dob': staffData['dateOfBirth'] != null
+            ? DateTime.parse(staffData['dateOfBirth'])
+                .toIso8601String()
+                .split('T')[0]
+            : '',
+        'staff_qualification': staffData['qualification'],
+        'staff_skill': staffData['categoryValue'] ?? '',
+        'staff_lang_iso_639_3': 'eng',
+        'staff_rfid': staffData['idProofNumber'] ?? '',
+        'staff_note': '',
+        'staff_proof':
+            "https://storage-as-service.s3.amazonaws.com/1//1737540834_scaled_aa85f48c-f79e-4e65-8334-a4c168dd67867233042262877539451.jpg"
+        // 'staff_proof': staffData['idProofImageUrl'] ?? '',
+      };
+
+      log('Request URL: $editStaffUrl');
+      log('Request Body: $requestBody');
+
+      final response = await _dio1?.put(
+        editStaffUrl,
+        data: requestBody,
+        options: Options(
+          contentType: 'application/json',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      log('Response status: ${response?.statusCode}');
+      log('Response data: ${response?.data}');
+
+      if (response?.statusCode == 200) {
+        log("Staff edited successfully: ${response?.data}");
+        Fluttertoast.showToast(
+            backgroundColor: Colors.green,
+            msg: "Staff edited successfully",
+            toastLength: Toast.LENGTH_SHORT);
+
+        return response?.data;
+      } else {
+        log('Error response: ${response?.data}');
+        throw Exception(
+            'Server returned ${response?.statusCode}: ${response?.data}');
+      }
+    } catch (e) {
+      log('Error editing staff: $e');
+
+      if (e is DioError && e.response?.statusCode == 400) {
+        final responseData = e.response?.data.toString().toLowerCase();
+        if (responseData != null &&
+            responseData.contains('mobile number already exist')) {
+          Fluttertoast.showToast(
+              backgroundColor: Colors.red,
+              msg: "User already exists",
+              toastLength: Toast.LENGTH_SHORT);
+        } else {
+          Fluttertoast.showToast(
+              msg: "Please check all required fields and try again.",
+              toastLength: Toast.LENGTH_SHORT);
+        }
+      } else {
+        log('Error editing staff: $e');
+        // Fluttertoast.showToast(
+        //     msg: "Error editing staff: $e", toastLength: Toast.LENGTH_SHORT);
       }
 
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getMembersList({bool forceFetch = false}) async {
+    try {
+      final storedMemberList = await gateStorage.getMemberList();
+
+      // 1. Attempt to fetch from local storage if NOT forcing an API call
+      if (!forceFetch) {
+        if (storedMemberList != null && storedMemberList.isNotEmpty) {
+          log("getMembersList Returning member list from local storage !forceFetch");
+          return storedMemberList;
+        }
+      }
+
+      // 2. If forcing an API call OR local storage is empty, then call the API
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
 
+      final headers = await Environment.getHeaders();
       final Map<String, String> queryParams = {
         "company_id": companyId,
       };
@@ -1156,6 +1478,12 @@ class RemoteDataSource {
 
   /// Fetch staff list for a company
   Future<List<StaffModel>> fetchStaffList(String companyId) async {
+    final String? companyId = await gateStorage.getSocietyId();
+
+    if (companyId == null || companyId.isEmpty) {
+      throw Exception('Company ID is null or empty.');
+    }
+
     try {
       final response = await _dio2?.get(
         ApiUrls.staffList,
@@ -1164,6 +1492,9 @@ class RemoteDataSource {
 
       if (response?.statusCode == 200) {
         final List<dynamic> data = response?.data?['data'];
+        if (data == null) {
+          throw Exception('Response data is null.');
+        }
         return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
       } else {
         throw Exception('Failed to fetch staff list: ${response?.statusCode}');

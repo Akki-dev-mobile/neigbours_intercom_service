@@ -2,6 +2,7 @@ import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/dio_setup.dart';
@@ -27,7 +28,6 @@ import 'data/repositories/visitor_log_repo_impl.dart';
 import 'data/repositories/visitor_repo_impl.dart';
 import 'domain/use_cases/visitor_log_usecae.dart';
 import 'domain/use_cases/visitor_usecase.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -81,6 +81,15 @@ void main() async {
           ChangeNotifierProvider<CameraSettingsProvider>(
             create: (_) => CameraSettingsProvider(),
           ),
+          // BlocProvider<ParcelBloc>(
+          //   create: (context) => ParcelBloc(
+          //     RemoteDataSource(
+          //       DioSingleton.instance1,
+          //       DioSingleton.instance2,
+          //       DioSingleton.instance3,
+          //     ),
+          //   ),
+          // ),
         ],
         child: MultiBlocProvider(
           providers: [

@@ -19,7 +19,6 @@ import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/commons/ui/dashboard_commons.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -27,6 +26,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app_intro/ui/keyclock_login.dart';
+import '../../../parcel/ui/parcel_list.dart';
 import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
 import 'package:intl/intl.dart';
@@ -389,15 +389,20 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             isPremium: false,
                             isVisible: true,
                             onTap: () {
-                              Fluttertoast.showToast(
-                                msg: "Parcel, coming soon",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.CENTER,
-                                timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.black,
-                                textColor: Colors.white,
-                                fontSize: 16.0,
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ParcelList(),
+                                ),
                               );
+                              // Fluttertoast.showToast(
+                              //   msg: "Parcel, coming soon",
+                              //   toastLength: Toast.LENGTH_SHORT,
+                              //   gravity: ToastGravity.CENTER,
+                              //   timeInSecForIosWeb: 1,
+                              //   backgroundColor: Colors.black,
+                              //   textColor: Colors.white,
+                              //   fontSize: 16.0,
+                              // );
                             },
                           ),
                           DashboardShortcut(

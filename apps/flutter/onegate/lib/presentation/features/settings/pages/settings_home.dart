@@ -9,7 +9,6 @@ import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
@@ -20,11 +19,11 @@ import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../self_entry/self_home_view.dart';
 import 'settings_gate.dart';
-import 'package:provider/provider.dart';
 
 class SettingsHome extends StatefulWidget {
   const SettingsHome({super.key});
@@ -684,15 +683,23 @@ class PrimarySettingsTile extends StatelessWidget {
   const PrimarySettingsTile({
     super.key,
     this.icon,
+    this.leadingIcon,
     required this.title,
     this.subtitle,
     this.onTap,
+    this.subtitleWidget,
     this.trailing,
+    this.titleStyle,
+    this.subtitleStyle,
   });
 
   final IconData? icon;
   final String title;
   final String? subtitle;
+  final Widget? leadingIcon;
+  final Widget? subtitleWidget;
+  final TextStyle? subtitleStyle;
+  final TextStyle? titleStyle;
   final VoidCallback? onTap;
   final Widget? trailing;
 
@@ -700,24 +707,28 @@ class PrimarySettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        icon,
-        size: 22,
-        color: Theme.of(context).colorScheme.onSurface,
-      ),
+      leading: leadingIcon ??
+          Icon(
+            icon,
+            size: 22,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
       title: Text(
         title,
-        style: Theme.of(context).textTheme.bodyMedium,
+        style: titleStyle ?? Theme.of(context).textTheme.bodyMedium,
       ),
-      subtitle: Text(
-        subtitle ?? '',
-        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(
-                    0.6,
-                  ),
-            ),
-      ),
+      subtitle: subtitleWidget ??
+          Text(
+            subtitle ?? '',
+            style: subtitleStyle ??
+                Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: 16,
+                      color:
+                          Theme.of(context).colorScheme.onSurface.withOpacity(
+                                0.6,
+                              ),
+                    ),
+          ),
       onTap: onTap,
       trailing: trailing,
     );
