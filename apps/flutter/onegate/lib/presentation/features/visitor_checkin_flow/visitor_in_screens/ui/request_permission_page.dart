@@ -3,6 +3,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
@@ -23,7 +24,7 @@ class RequestPermissionPage extends StatefulWidget {
 class _RequestPermissionView1State extends State<RequestPermissionPage> {
   @override
   Widget build(BuildContext context) {
-    Color colortoshow = Color(0xffFFB080);
+    Color colortoshow = const Color(0xffFFB080);
     RequestType requestType = RequestType.leaveAtGate;
 
     Size screensize = MediaQuery.of(context).size;
@@ -41,7 +42,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => GateDashboardView()));
+                          builder: (context) => const GateDashboardView()));
                 },
                 child: Icon(
                   Icons.home_outlined,
@@ -54,146 +55,163 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(25),
-              child: Image.network(
-                  width: screensize.width * 0.5,
-                  height: screensize.height * 0.2,
-                  fit: BoxFit.fill,
-                  "https://t4.ftcdn.net/jpg/03/64/21/11/360_F_364211147_1qgLVxv1Tcq0Ohz3FawUfrtONzz8nq3e.jpg"),
-            ),
+          Container(
+            height: 200,
+            width: double.maxFinite,
+            decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurface,
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(20),
+                ),
+                image: const DecorationImage(
+                  image: NetworkImage(
+                    "https://t4.ftcdn.net/jpg/03/64/21/11/360_F_364211147_1qgLVxv1Tcq0Ohz3FawUfrtONzz8nq3e.jpg",
+                  ),
+                )),
           ),
-          SizedBox(height: 20),
+
+          const SizedBox(height: 20),
           Text(
             widget.visitor.name ?? "",
-            style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
           ),
           Container(
             decoration: BoxDecoration(
               color: colortoshow.withOpacity(0.4),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
+            child: const Padding(
+              padding: EdgeInsets.all(8.0),
               child: Text("GUEST"),
             ),
           ),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.all(16),
-                  leading: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Ionicons.call_outline, color: Colors.green),
-                  ),
-                  title: Text(
-                    'Phone Number',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-
-                    //  TextStyle(
-                    //   color: Colors.grey[600],
-                    //   fontSize: 14,
-                    // ),
-                  ),
-                  subtitle: Text(
-                    widget.visitor.mobile ?? "",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                    softWrap: true,
-                    overflow: TextOverflow.visible,
-                  ),
-
-                  // trailing: ElevatedButton.icon(
-                  //   icon: Icon(Icons.call, size: 18, color:Colors.black),
-                  //   label: Text('Call',style: Theme.of(context).textTheme.bodySmall),
-                  //   onPressed: () => {},
-                  //   // _makePhoneCall(widget.visitorLog.visitor!.mobile ?? ""),
-                  //   style: ElevatedButton.styleFrom(
-                  //     backgroundColor: colortoshow,
-                  //     foregroundColor: Colors.white,
-                  //     padding:
-                  //         EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  //     shape: RoundedRectangleBorder(
-                  //       borderRadius: BorderRadius.circular(8),
-                  //     ),
-                  //   ),
-                  // ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 18.0, bottom: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colortoshow.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Symbols.apartment,
-                          color: colortoshow,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Visiting Unit',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                          Container(
-                            constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width * 0.6,
-                            ),
-                            child: Text(
-                              "Society Office",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          InfoListTileWidget(
+            icon: Ionicons.call_outline,
+            iconColor: Colors.green,
+            title: 'Phone Number',
+            subtitle: widget.visitor.mobile!,
           ),
+          InfoListTileWidget(
+            icon: Ionicons.calendar_outline,
+            iconColor: colortoshow,
+            title: 'Unit Name',
+            subtitle: 'N/A',
+          ),
+          // Container(
+          //   margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          //   decoration: BoxDecoration(
+          //     color: Colors.white,
+          //     borderRadius: BorderRadius.circular(12),
+          //     boxShadow: [
+          //       BoxShadow(
+          //         color: Colors.black.withOpacity(0.05),
+          //         blurRadius: 10,
+          //         offset: const Offset(0, 2),
+          //       ),
+          //     ],
+          //   ),
+          //   child: Column(
+          //     children: [
+          //       ListTile(
+          //         contentPadding: const EdgeInsets.all(16),
+          //         leading: Container(
+          //           padding: const EdgeInsets.all(8),
+          //           decoration: BoxDecoration(
+          //             color: Colors.green.withOpacity(0.2),
+          //             borderRadius: BorderRadius.circular(8),
+          //           ),
+          //           child:
+          //               const Icon(Ionicons.call_outline, color: Colors.green),
+          //         ),
+          //         title: Text(
+          //           'Phone Number',
+          //           style: TextStyle(
+          //             color: Colors.grey[600],
+          //             fontSize: 14,
+          //           ),
+          //           //  TextStyle(
+          //           //   color: Colors.grey[600],
+          //           //   fontSize: 14,
+          //           // ),
+          //         ),
+          //         subtitle: Text(
+          //           widget.visitor.mobile ?? "",
+          //           style: const TextStyle(
+          //             fontWeight: FontWeight.bold,
+          //             fontSize: 16,
+          //           ),
+          //           softWrap: true,
+          //           overflow: TextOverflow.visible,
+          //         ),
+          //         // trailing: ElevatedButton.icon(
+          //         //   icon: Icon(Icons.call, size: 18, color:Colors.black),
+          //         //   label: Text('Call',style: Theme.of(context).textTheme.bodySmall),
+          //         //   onPressed: () => {},
+          //         //   // _makePhoneCall(widget.visitorLog.visitor!.mobile ?? ""),
+          //         //   style: ElevatedButton.styleFrom(
+          //         //     backgroundColor: colortoshow,
+          //         //     foregroundColor: Colors.white,
+          //         //     padding:
+          //         //         EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          //         //     shape: RoundedRectangleBorder(
+          //         //       borderRadius: BorderRadius.circular(8),
+          //         //     ),
+          //         //   ),
+          //         // ),
+          //       ),
+          //       Padding(
+          //         padding: const EdgeInsets.only(left: 18.0, bottom: 8),
+          //         child: Row(
+          //           children: [
+          //             Container(
+          //               padding: const EdgeInsets.all(8),
+          //               decoration: BoxDecoration(
+          //                 color: colortoshow.withOpacity(0.2),
+          //                 borderRadius: BorderRadius.circular(8),
+          //               ),
+          //               child: Icon(
+          //                 Symbols.apartment,
+          //                 color: colortoshow,
+          //               ),
+          //             ),
+          //             const SizedBox(width: 12),
+          //             Column(
+          //               crossAxisAlignment: CrossAxisAlignment.start,
+          //               children: [
+          //                 Text(
+          //                   'Visiting Unit',
+          //                   style: TextStyle(
+          //                     color: Colors.grey[600],
+          //                     fontSize: 14,
+          //                   ),
+          //                 ),
+          //                 Container(
+          //                   constraints: BoxConstraints(
+          //                     maxWidth: MediaQuery.of(context).size.width * 0.6,
+          //                   ),
+          //                   child: const Text(
+          //                     "Society Office",
+          //                     style: TextStyle(
+          //                       fontWeight: FontWeight.bold,
+          //                       fontSize: 16,
+          //                     ),
+          //                     softWrap: true,
+          //                     overflow: TextOverflow.visible,
+          //                   ),
+          //                 ),
+          //               ],
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+
           Center(
             child: GestureDetector(
               child: Container(
-                margin: EdgeInsets.only(top: 10, bottom: 20),
+                margin: const EdgeInsets.only(top: 10, bottom: 20),
                 width: double.infinity,
                 child: _getLottieAnimation(requestType),
               ),
@@ -263,8 +281,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
           'Not Recheable',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color:
-                    Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
         );
       case RequestType.approved:
