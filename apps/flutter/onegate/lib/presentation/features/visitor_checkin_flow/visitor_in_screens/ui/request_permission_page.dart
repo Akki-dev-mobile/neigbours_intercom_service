@@ -22,210 +22,160 @@ class RequestPermissionPage extends StatefulWidget {
 }
 
 class _RequestPermissionView1State extends State<RequestPermissionPage> {
+  double lottieAnimationSize = 250;
+  RequestType requestType = RequestType.rejected;
+
   @override
   Widget build(BuildContext context) {
+    List<RequestType> requestTypes = [
+      RequestType.approved,
+      RequestType.rejected,
+      RequestType.leaveAtGate,
+      RequestType.notRecheable,
+      RequestType.request,
+      RequestType.waiting,
+      RequestType.allowByGatekeeper
+    ];
+
     Color colortoshow = const Color(0xffFFB080);
-    RequestType requestType = RequestType.leaveAtGate;
 
     Size screensize = MediaQuery.of(context).size;
     return MyScrollView(
-      pageTitleWidget: Container(
-          width: screensize.width * 0.15,
-          decoration: BoxDecoration(
-            color: colortoshow.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(5),
+      pageTitleWidget: Column(
+        children: [
+          SizedBox(
+            height: screensize.height * 0.02,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const GateDashboardView()));
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                  // width: screensize.width * 0.15,
+                  decoration: BoxDecoration(
+                    color: colortoshow.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const GateDashboardView()));
+                        },
+                        child: Icon(
+                          Icons.home_outlined,
+                          color: colortoshow,
+                        )),
+                  )),
+              DropdownButton<RequestType>(
+                value: requestType,
+                hint: const Text("Select Request Type"),
+                items: requestTypes.map((RequestType type) {
+                  return DropdownMenuItem<RequestType>(
+                    value: type,
+                    child: Text(
+                        type.toString().split('.').last), // Extracts enum name
+                  );
+                }).toList(),
+                onChanged: (RequestType? newValue) {
+                  setState(() {
+                    requestType = newValue!;
+                  });
                 },
-                child: Icon(
-                  Icons.home_outlined,
-                  color: colortoshow,
-                )),
-          )),
+              ),
+            ],
+          ),
+        ],
+      ),
       hasBackButton: EditableText.debugDeterministicCursor,
       floatingActionButton: _getbutton(requestType),
       pageBody: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Container(
-            height: 200,
-            width: double.maxFinite,
-            decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurface,
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(20),
-                ),
-                image: const DecorationImage(
-                  image: NetworkImage(
-                    "https://t4.ftcdn.net/jpg/03/64/21/11/360_F_364211147_1qgLVxv1Tcq0Ohz3FawUfrtONzz8nq3e.jpg",
+          SizedBox(
+            height: screensize.height * 0.01,
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(50),
+                        child: Image.network(
+                            width: screensize.height * 0.1,
+                            height: screensize.height * 0.1,
+                            fit: BoxFit.cover,
+                            "https://t4.ftcdn.net/jpg/03/64/21/11/360_F_364211147_1qgLVxv1Tcq0Ohz3FawUfrtONzz8nq3e.jpg"),
+                      ),
+                      SizedBox(width: screensize.width * 0.1),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: screensize.width * 0.4,
+                            child: Text(
+                              widget.visitor.name ?? "",
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: colortoshow.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text("GUEST",
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall!
+                                      .copyWith(fontSize: 10)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                )),
-          ),
-
-          const SizedBox(height: 20),
-          Text(
-            widget.visitor.name ?? "",
-            style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: colortoshow.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(20),
+                  const SizedBox(height: 10),
+                  const Divider(
+                    thickness: 0.2,
+                  ),
+                  InfoLileWidget(
+                    icon: Symbols.call,
+                    iconColor: Colors.green,
+                    title: widget.visitor.mobile!,
+                  ),
+                  InfoLileWidget(
+                    icon: Symbols.apartment,
+                    iconColor: colortoshow,
+                    title: 'N/A',
+                  ),
+                ],
+              ),
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text("GUEST"),
-            ),
           ),
-          InfoListTileWidget(
-            icon: Ionicons.call_outline,
-            iconColor: Colors.green,
-            title: 'Phone Number',
-            subtitle: widget.visitor.mobile!,
-          ),
-          InfoListTileWidget(
-            icon: Ionicons.calendar_outline,
-            iconColor: colortoshow,
-            title: 'Unit Name',
-            subtitle: 'N/A',
-          ),
-          // Container(
-          //   margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          //   decoration: BoxDecoration(
-          //     color: Colors.white,
-          //     borderRadius: BorderRadius.circular(12),
-          //     boxShadow: [
-          //       BoxShadow(
-          //         color: Colors.black.withOpacity(0.05),
-          //         blurRadius: 10,
-          //         offset: const Offset(0, 2),
-          //       ),
-          //     ],
-          //   ),
-          //   child: Column(
-          //     children: [
-          //       ListTile(
-          //         contentPadding: const EdgeInsets.all(16),
-          //         leading: Container(
-          //           padding: const EdgeInsets.all(8),
-          //           decoration: BoxDecoration(
-          //             color: Colors.green.withOpacity(0.2),
-          //             borderRadius: BorderRadius.circular(8),
-          //           ),
-          //           child:
-          //               const Icon(Ionicons.call_outline, color: Colors.green),
-          //         ),
-          //         title: Text(
-          //           'Phone Number',
-          //           style: TextStyle(
-          //             color: Colors.grey[600],
-          //             fontSize: 14,
-          //           ),
-          //           //  TextStyle(
-          //           //   color: Colors.grey[600],
-          //           //   fontSize: 14,
-          //           // ),
-          //         ),
-          //         subtitle: Text(
-          //           widget.visitor.mobile ?? "",
-          //           style: const TextStyle(
-          //             fontWeight: FontWeight.bold,
-          //             fontSize: 16,
-          //           ),
-          //           softWrap: true,
-          //           overflow: TextOverflow.visible,
-          //         ),
-          //         // trailing: ElevatedButton.icon(
-          //         //   icon: Icon(Icons.call, size: 18, color:Colors.black),
-          //         //   label: Text('Call',style: Theme.of(context).textTheme.bodySmall),
-          //         //   onPressed: () => {},
-          //         //   // _makePhoneCall(widget.visitorLog.visitor!.mobile ?? ""),
-          //         //   style: ElevatedButton.styleFrom(
-          //         //     backgroundColor: colortoshow,
-          //         //     foregroundColor: Colors.white,
-          //         //     padding:
-          //         //         EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          //         //     shape: RoundedRectangleBorder(
-          //         //       borderRadius: BorderRadius.circular(8),
-          //         //     ),
-          //         //   ),
-          //         // ),
-          //       ),
-          //       Padding(
-          //         padding: const EdgeInsets.only(left: 18.0, bottom: 8),
-          //         child: Row(
-          //           children: [
-          //             Container(
-          //               padding: const EdgeInsets.all(8),
-          //               decoration: BoxDecoration(
-          //                 color: colortoshow.withOpacity(0.2),
-          //                 borderRadius: BorderRadius.circular(8),
-          //               ),
-          //               child: Icon(
-          //                 Symbols.apartment,
-          //                 color: colortoshow,
-          //               ),
-          //             ),
-          //             const SizedBox(width: 12),
-          //             Column(
-          //               crossAxisAlignment: CrossAxisAlignment.start,
-          //               children: [
-          //                 Text(
-          //                   'Visiting Unit',
-          //                   style: TextStyle(
-          //                     color: Colors.grey[600],
-          //                     fontSize: 14,
-          //                   ),
-          //                 ),
-          //                 Container(
-          //                   constraints: BoxConstraints(
-          //                     maxWidth: MediaQuery.of(context).size.width * 0.6,
-          //                   ),
-          //                   child: const Text(
-          //                     "Society Office",
-          //                     style: TextStyle(
-          //                       fontWeight: FontWeight.bold,
-          //                       fontSize: 16,
-          //                     ),
-          //                     softWrap: true,
-          //                     overflow: TextOverflow.visible,
-          //                   ),
-          //                 ),
-          //               ],
-          //             ),
-          //           ],
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
-
           Center(
             child: GestureDetector(
               child: Container(
                 margin: const EdgeInsets.only(top: 10, bottom: 20),
-                width: double.infinity,
+                width: double.maxFinite,
                 child: _getLottieAnimation(requestType),
               ),
               onTap: () {},
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: _getIconLabel(requestType),
-              ),
-            ],
+          FittedBox(
+            alignment: Alignment.topRight,
+            // fit: BoxFit.fill,
+            child: _getIconLabel(requestType),
           ),
         ],
       ),
@@ -234,42 +184,47 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
 
   Widget _getLottieAnimation(RequestType requestType) {
     switch (requestType) {
+      case RequestType.allowByGatekeeper:
+        return Lottie.network(
+            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z',
+            height: lottieAnimationSize,
+            fit: BoxFit.contain);
       case RequestType.notRecheable:
         return Lottie.network(
-          'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/Animation_1738144371860_6ed19f54ff.json',
-          height: 200,
-        );
+            'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/Animation_1738144371860_6ed19f54ff.json',
+            height: lottieAnimationSize,
+            fit: BoxFit.contain);
       case RequestType.approved:
         return Lottie.network(
-          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json?updated_at=2023-08-23T06:28:49.810Z',
-          height: 200,
-        );
+            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json?updated_at=2023-08-23T06:28:49.810Z',
+            height: lottieAnimationSize,
+            fit: BoxFit.contain);
       case RequestType.leaveAtGate:
         return Lottie.network(
           'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/leave_at_gate_048fedfdb6.json?updated_at=2023-08-23T06:28:51.200Z',
-          height: 200,
+          height: lottieAnimationSize,
         );
       case RequestType.request:
         return Lottie.network(
-          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/request_permission_b6ef131475.json?updated_at=2023-08-23T06:28:52.175Z',
-          height: 200,
-        );
+            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/request_permission_b6ef131475.json?updated_at=2023-08-23T06:28:52.175Z',
+            height: lottieAnimationSize,
+            fit: BoxFit.contain);
       case RequestType.rejected:
         return Lottie.network(
-          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/rejected_4bcdedc751.json?updated_at=2023-08-23T06:28:51.894Z',
-          height: 200,
-        );
+            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/rejected_4bcdedc751.json?updated_at=2023-08-23T06:28:51.894Z',
+            height: lottieAnimationSize * 0.8,
+            fit: BoxFit.contain);
       case RequestType.waiting:
         return Lottie.network(
-          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json?updated_at=2023-08-23T06:28:52.591Z',
-          height: 200,
-        );
+            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json?updated_at=2023-08-23T06:28:52.591Z',
+            height: lottieAnimationSize,
+            fit: BoxFit.contain);
       default:
         {
           return Lottie.network(
-            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/walk_e471a69550.json?updated_at=2023-08-23T06:28:52.519Z',
-            height: 200,
-          );
+              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/walk_e471a69550.json?updated_at=2023-08-23T06:28:52.519Z',
+              height: lottieAnimationSize,
+              fit: BoxFit.contain);
         }
     }
   }
@@ -278,48 +233,87 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
     switch (requestType) {
       case RequestType.notRecheable:
         return Text(
-          'Not Recheable',
+          'Member not reachable !!',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                color: const Color(0xffffc720),
+                // fontWeight: FontWeight.bold,
+                fontSize: 25,
+              ),
+        );
+      case RequestType.allowByGatekeeper:
+        return Text(
+          'Allowed by gatekeeper',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                color: const Color(0xffFFB080),
+                // fontWeight: FontWeight.bold,
+                fontSize: 25,
               ),
         );
       case RequestType.approved:
         return Text(
-          'Approved',
+          'Visitor approved',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                fontSize: 25,
+                color: const Color(0xff02af46),
+                // fontWeight: FontWeight.bold
+              ),
         );
       case RequestType.leaveAtGate:
         return Text(
-          'Leave At Gate',
+          'Leave at gate',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                color: const Color.fromARGB(255, 169, 116, 96),
+                // fontWeight: FontWeight.bold,
+                fontSize: 25,
+              ),
         );
       case RequestType.request:
-        return Text(
-          'Request permission from member',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+        return SizedBox(
+          width: 250,
+          child: Text(
+            'Request permission from member',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  color: const Color(0xfffeb080),
+                  // fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                ),
+          ),
         );
       case RequestType.rejected:
         return Text(
-          'Rejected',
+          'Visitor rejected',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                color: Colors.red,
+                // fontWeight: FontWeight.bold,
+                fontSize: 25,
+              ),
         );
       case RequestType.waiting:
         return Text(
-          'Initializing Request',
+          'Initializing request...',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                color: Colors.black,
+                // fontWeight: FontWeight.bold,
+                fontSize: 25,
+              ),
         );
       default:
         {
           return Text(
             'Request permission from member',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  color: Colors.black,
+                  // fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                ),
           );
         }
     }
@@ -332,8 +326,59 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              ElevatedButton(
+                  style: ButtonStyle(
+                    foregroundColor: WidgetStateProperty.all<Color>(
+                      const Color(0xFF7D7C7C),
+                    ),
+                    backgroundColor:
+                        WidgetStateProperty.all<Color>(Colors.white),
+                    elevation: WidgetStateProperty.resolveWith<double>(
+                      (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return 8;
+                        }
+                        return 0;
+                      },
+                    ),
+                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                        side: const BorderSide(color: Colors.black, width: 1),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+                  onPressed: () {},
+                  child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.3,
+                      height: 60,
+                      child: const Center(
+                          child: Text(
+                        "Allow",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 15,
+                          wordSpacing: 1.2,
+                          // fontWeight: FontWeight.w500,
+                        ),
+                      )))),
+              // CustomLargeBtn(
+              //     width: MediaQuery.of(context).size.width * 0.45,
+              //     onPressed: () {
+              //       Navigator.push(
+              //           context,
+              //           MaterialPageRoute(
+              //               builder: (context) => RequestPermissionView(
+              //                     visitor: Visitor(),
+              //                     purposeCategory: PurposeCategory1(
+              //                         categoryId: 123,
+              //                         categoryName: "categoryName"),
+              //                   )));
+              //     },
+              //     text: "Allow"),
+
               CustomLargeBtn(
-                  width: MediaQuery.of(context).size.width * 0.4,
+                  width: MediaQuery.of(context).size.width * 0.45,
                   onPressed: () {
                     Navigator.push(
                         context,
@@ -345,21 +390,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                                       categoryName: "categoryName"),
                                 )));
                   },
-                  text: "allow by gatekeeper".toUpperCase()),
-              CustomLargeBtn(
-                  width: MediaQuery.of(context).size.width * 0.4,
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => RequestPermissionView(
-                                  visitor: Visitor(),
-                                  purposeCategory: PurposeCategory1(
-                                      categoryId: 123,
-                                      categoryName: "categoryName"),
-                                )));
-                  },
-                  text: "Homepage".toUpperCase()),
+                  text: "Try Again"),
             ],
           ),
         );
@@ -375,7 +406,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                                 categoryId: 123, categoryName: "categoryName"),
                           )));
             },
-            text: "Finish".toUpperCase());
+            text: "Finish");
       case RequestType.leaveAtGate:
         return CustomLargeBtn(
             onPressed: () {
@@ -388,7 +419,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                                 categoryId: 123, categoryName: "categoryName"),
                           )));
             },
-            text: "Capture Photo".toUpperCase());
+            text: "Capture photo");
       case RequestType.request:
         return CustomLargeBtn(
             onPressed: () {
@@ -401,7 +432,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                                 categoryId: 123, categoryName: "categoryName"),
                           )));
             },
-            text: "Request permission".toUpperCase());
+            text: "Request permission");
       case RequestType.rejected:
         return CustomLargeBtn(
             onPressed: () {
@@ -414,7 +445,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                                 categoryId: 123, categoryName: "categoryName"),
                           )));
             },
-            text: "go to homespage".toUpperCase());
+            text: "Finish");
       case RequestType.waiting:
         return Container();
       default:
@@ -431,7 +462,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                                   categoryName: "categoryName"),
                             )));
               },
-              text: "go to homespage".toUpperCase());
+              text: "Finish");
         }
     }
   }
