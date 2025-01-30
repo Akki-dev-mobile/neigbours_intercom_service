@@ -12,14 +12,12 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/commons/ui/dashboard_commons.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -29,7 +27,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../app_intro/ui/keyclock_login.dart';
 import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
-import 'package:intl/intl.dart';
 
 class GateDashboardView extends StatefulWidget {
   const GateDashboardView({super.key});
@@ -233,15 +230,15 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
-                  //       IconButton(
-                  //         onPressed: () {
-                  // Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen()));
-                  //         },
-                  //         icon: Icon(
-                  //           Symbols.phone_missed_rounded,
-                  //           color: Theme.of(context).colorScheme.onBackground,
-                  //         ),
-                  //       ),
+                        IconButton(
+                          onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen()));
+                          },
+                          icon: Icon(
+                            Symbols.phone_missed_rounded,
+                            color: Theme.of(context).colorScheme.onBackground,
+                          ),
+                        ),
                   IconButton(
                     onPressed: () {
                       Navigator.push(

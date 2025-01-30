@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:common_widgets/common_widgets.dart';
 
 class MissedApprovalsScreen extends StatelessWidget {
   final remoteDataSource = RemoteDataSource(
@@ -20,15 +21,9 @@ class MissedApprovalsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Missed Approvals'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: FutureBuilder<List<dynamic>>(
+    return MyScrollView(
+      pageTitle: 'Missed Approvals',
+      pageBody: FutureBuilder<List<dynamic>>(
         future: remoteDataSource.fetchApprovals(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -44,7 +39,7 @@ class MissedApprovalsScreen extends StatelessWidget {
           }
 
           final missedApprovals =
-          snapshot.data!.map((data) => VisitorInfo.fromJson(data)).toList();
+              snapshot.data!.map((data) => VisitorInfo.fromJson(data)).toList();
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -63,7 +58,9 @@ class MissedApprovalsScreen extends StatelessWidget {
 
 class TimerManager {
   static final TimerManager _instance = TimerManager._internal();
+
   factory TimerManager() => _instance;
+
   TimerManager._internal();
 
   final Map<int, Timer> _timers = {};
@@ -188,8 +185,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
         'member_mobile_number': "918452060059",
         'visitor_id': widget.visitorInfo.visitorId,
         "member_id": "29",
-        'purpose_category':
-        1.toString(),
+        'purpose_category': 1.toString(),
       };
 
       final response = await _dio.post(
@@ -222,15 +218,17 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Card(
-        elevation: 3,
-        shadowColor: Theme.of(context).shadowColor.withOpacity(0.3),
+        elevation: 2,
+        shadowColor: theme.shadowColor.withOpacity(0.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: theme.dividerColor.withOpacity(0.05),
             width: 1,
           ),
         ),
@@ -238,7 +236,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
+                color: theme.cardColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
@@ -250,24 +248,26 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                   tag: 'visitor_${widget.visitorInfo.visitorId}',
                   child: CircleAvatar(
                     radius: 28,
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.15),
+                    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                     child: CircleAvatar(
                       radius: 27,
-                      backgroundImage: widget.visitorInfo.visitorImage.isNotEmpty
-                          ? NetworkImage(widget.visitorInfo.visitorImage)
-                          : null,
-                      backgroundColor: Colors.white,
+                      backgroundImage:
+                          widget.visitorInfo.visitorImage.isNotEmpty
+                              ? NetworkImage(widget.visitorInfo.visitorImage)
+                              : null,
+                      backgroundColor: theme.cardColor,
                       child: widget.visitorInfo.visitorImage.isEmpty
                           ? Text(
-                        widget.visitorInfo.visitorName.isNotEmpty
-                            ? widget.visitorInfo.visitorName[0].toUpperCase()
-                            : 'G',
-                        style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                        ),
-                      )
+                              widget.visitorInfo.visitorName.isNotEmpty
+                                  ? widget.visitorInfo.visitorName[0]
+                                      .toUpperCase()
+                                  : 'G',
+                              style: TextStyle(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                              ),
+                            )
                           : null,
                     ),
                   ),
@@ -291,10 +291,14 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.15),
+                            color: Theme.of(context)
+                                .primaryColor
+                                .withOpacity(0.15),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Theme.of(context).primaryColor.withOpacity(0.3),
+                              color: Theme.of(context)
+                                  .primaryColor
+                                  .withOpacity(0.3),
                               width: 1,
                             ),
                           ),
@@ -324,17 +328,20 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                     _buildInfoRow(
                       Icons.person_outline,
                       'Member: ${widget.visitorInfo.memberInfo.name}',
-                      Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                      Theme.of(context).textTheme.bodyLarge?.color ??
+                          Colors.black87,
                     ),
                     _buildInfoRow(
                       Icons.location_on_outlined,
                       'Gate: ${widget.visitorInfo.inGate}',
-                      Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black54,
+                      Theme.of(context).textTheme.bodyMedium?.color ??
+                          Colors.black54,
                     ),
                     _buildInfoRow(
                       Icons.access_time,
                       'Time: ${DateFormat('hh:mm a').format(DateTime.parse(widget.visitorInfo.logCreatedAt))}',
-                      Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black54,
+                      Theme.of(context).textTheme.bodyMedium?.color ??
+                          Colors.black54,
                     ),
                   ],
                 ),
@@ -354,28 +361,33 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     ValueListenableBuilder<bool>(
-                      valueListenable: _timerManager.getIsRetryEnabled(widget.visitorInfo.visitorLogId),
+                      valueListenable: _timerManager
+                          .getIsRetryEnabled(widget.visitorInfo.visitorLogId),
                       builder: (context, isRetryEnabled, _) {
                         final buttonColor = isRetryEnabled
-                            ? Color(0xFF2563EB)
-                            : Color(0xFFE2E8F0);
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.surfaceVariant;
                         final textColor = isRetryEnabled
-                            ? Colors.white
-                            : Color(0xFF64748B);
+                            ? theme.colorScheme.onPrimary
+                            : theme.colorScheme.onSurfaceVariant;
 
                         return Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: isRetryEnabled ? [
-                              BoxShadow(
-                                color: buttonColor.withOpacity(0.25),
-                                offset: Offset(0, 2),
-                                blurRadius: 6,
-                              ),
-                            ] : [],
+                            boxShadow: isRetryEnabled
+                                ? [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.2),
+                                      offset: const Offset(0, 2),
+                                      blurRadius: 6,
+                                    ),
+                                  ]
+                                : [],
                           ),
                           child: ElevatedButton.icon(
-                            onPressed: _sendFcmNotification,
+                            onPressed:
+                                isRetryEnabled ? _sendFcmNotification : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: buttonColor,
                               foregroundColor: textColor,
@@ -396,7 +408,7 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                             ),
                             label: Text(
                               isRetryEnabled ? 'Retry Now' : 'Processing',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -406,10 +418,12 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                       },
                     ),
                     ValueListenableBuilder<int>(
-                      valueListenable: _timerManager.getSecondsRemaining(widget.visitorInfo.visitorLogId),
+                      valueListenable: _timerManager
+                          .getSecondsRemaining(widget.visitorInfo.visitorLogId),
                       builder: (context, secondsRemaining, _) {
                         return ValueListenableBuilder<bool>(
-                          valueListenable: _timerManager.getIsRetryEnabled(widget.visitorInfo.visitorLogId),
+                          valueListenable: _timerManager.getIsRetryEnabled(
+                              widget.visitorInfo.visitorLogId),
                           builder: (context, isRetryEnabled, _) {
                             final timerColor = isRetryEnabled
                                 ? Color(0xFFDC2626) // Red for expired state
@@ -548,7 +562,7 @@ class VisitorInfo {
       ),
       visitorComingFrom: json['visitor_coming_from']?.toString(),
       visitorPurposeCategoryId:
-      _parseToInt(json['visitor_purpose_category_id']),
+          _parseToInt(json['visitor_purpose_category_id']),
     );
   }
 
@@ -572,8 +586,8 @@ class MemberInfo {
 
   MemberInfo(
       {required this.name,
-        this.mobileNumber,
-        this.email,
-        this.unitId,
-        this.memberId});
+      this.mobileNumber,
+      this.email,
+      this.unitId,
+      this.memberId});
 }

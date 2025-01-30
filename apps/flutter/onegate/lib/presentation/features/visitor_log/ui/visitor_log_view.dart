@@ -1,12 +1,11 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:developer';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -14,7 +13,6 @@ import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
@@ -27,6 +25,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -50,6 +49,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   String? _searchText = "";
   var selectedGateName;
   late FocusNode _searchFocusNode;
+  static const _pageSize = 15;
+
+  final PagingController<int, VisitorLog> _pagingController =
+      PagingController(firstPageKey: 0);
 
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
@@ -71,6 +74,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   @override
   void initState() {
     super.initState();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
     selectedId = widget.id;
 
     switch (widget.id) {
@@ -80,11 +86,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       case "Visitor In":
         _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
-
       case "Cards":
         _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
-
-        // _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
       case "Visitor Out":
         _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
@@ -93,15 +96,50 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     _initializeSocietyId();
     getSelectedGate();
     _searchFocusNode = FocusNode();
-
-    // _storeTodayLogsCount(context);
   }
 
   @override
   void dispose() {
+    _pagingController.dispose();
     _searchFocusNode.dispose();
-
     super.dispose();
+  }
+
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      final newItems = await _getVisitorLogsForPage(pageKey);
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
+      }
+    } catch (error) {
+      _pagingController.error = error;
+    }
+  }
+
+  Future<List<VisitorLog>> _getVisitorLogsForPage(int pageKey) async {
+    final state = _visitorLogBloc.state;
+
+    if (state is VisitorLogSuccessState) {
+      final allLogs = state.visitorLogs ?? [];
+      final filteredLogs = _getFilteredVisitors(allLogs);
+
+      final startIndex = pageKey;
+      final endIndex = startIndex + _pageSize;
+
+      if (startIndex >= filteredLogs.length) {
+        return [];
+      }
+
+      return filteredLogs.sublist(
+        startIndex,
+        endIndex > filteredLogs.length ? filteredLogs.length : endIndex,
+      );
+    }
+    return [];
   }
 
   Future<void> getSelectedGate() async {
@@ -118,395 +156,226 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final yesterday = today.subtract(Duration(days: 1));
-
-    return BlocConsumer<VisitorLogBloc, VisitorLogState>(
-      bloc: _visitorLogBloc,
-      listenWhen: (previous, current) => current is VisitorLogActionState,
-      buildWhen: (previous, current) => current is! VisitorLogActionState,
-      listener: (context, state) {
-        switch (state.runtimeType) {
-          case VisitorLogCheckOutSuccessState:
-            final successState = state as VisitorLogCheckOutSuccessState;
-            if (successState.isCheckOut!) {
-              Fluttertoast.showToast(
-                msg: "User Checked Out Successfully",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-              _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
-            }
-            break;
-          case VisitorCheckInLogSuccessState:
-            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
+    return MyScrollView(
+      pageBody: BlocConsumer<VisitorLogBloc, VisitorLogState>(
+        bloc: _visitorLogBloc,
+        listenWhen: (previous, current) => current is VisitorLogActionState,
+        buildWhen: (previous, current) => current is! VisitorLogActionState,
+        listener: (context, state) {
+          if (state is VisitorLogCheckOutSuccessState &&
+              state.isCheckOut == true) {
             Fluttertoast.showToast(
-              msg: "Visitor Checked Out Successfully",
+              msg: "User Checked Out Successfully",
               toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.CENTER,
-              timeInSecForIosWeb: 1,
+              gravity: ToastGravity.BOTTOM,
               backgroundColor: Colors.green,
               textColor: Colors.white,
-              fontSize: 16.0,
             );
-            break;
-        }
-      },
-      builder: (context, state) {
-        switch (state.runtimeType) {
-          case VisitorLogLoadingState:
+          } else if (state is VisitorCheckInLogSuccessState) {
+            Fluttertoast.showToast(
+              msg: "Visitor Checked In Successfully",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: Colors.blue,
+              textColor: Colors.white,
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is VisitorLogLoadingState) {
             return LoaderView();
-          case VisitorLogSuccessState:
-            final successState = state as VisitorLogSuccessState;
-            final visitorLogs = successState.visitorLogs ?? [];
-            List<VisitorLog> uniqueVisitorLogs = [];
-            Set<String> checkInTimes = {};
+          } else if (state is VisitorLogSuccessState) {
+            final visitorLogs = state.visitorLogs ?? [];
+            final uniqueVisitorLogs = _getUniqueVisitorLogs(visitorLogs);
+            final filteredVisitors = _getFilteredVisitors(uniqueVisitorLogs);
 
-            for (var log in visitorLogs) {
-              final checkInTime = log.visitor_check_in?.toIso8601String();
-              if (!checkInTimes.contains(checkInTime)) {
-                checkInTimes.add(checkInTime!);
-                uniqueVisitorLogs.add(log);
-              }
-            }
-
-            // ----------------------------------------------------------------
-            //      SEARCH LOGIC (NAME, CARD_NUMBER, UNIT_ID)
-            // ----------------------------------------------------------------
-            final searchLower = _searchText!.toLowerCase();
-
-            /// Filter visitors if search text is present in:
-            /// - visitor name
-            /// - visitor_card_number
-            /// - any assigned unit ID
-
-// Adjust search logic based on widget.id
-            List<VisitorLog> filteredVisitors = uniqueVisitorLogs.where((vLog) {
-              if (widget.id == "Cards") {
-                // When the ID is "Cards", search only card numbers
-                final vCardNo = vLog.visitor_card_number?.toLowerCase() ?? '';
-                return vCardNo.contains(searchLower);
-              } else {
-                // General search logic for other cases
-                final vName = vLog.visitor?.name?.toLowerCase() ?? '';
-                final vCardNo = vLog.visitor_card_number?.toLowerCase() ?? '';
-                final unitIds = vLog.visitor_building_assignment
-                        ?.expand((assignment) => assignment.unit_id ?? [])
-                        .map((unit) => unit.toString().toLowerCase())
-                        .toList() ??
-                    [];
-
-                final matchName = vName.contains(searchLower);
-                final matchCard = vCardNo.contains(searchLower);
-                final matchUnit = unitIds.any((u) => u.contains(searchLower));
-
-                return matchName || matchCard || matchUnit;
-              }
-            }).toList();
-            // ----------------------------------------------------------------
-
-            /// Create day-based groupings for filtered logs
-            final today = DateTime.now();
-            final startOfToday = DateTime(today.year, today.month, today.day);
-            final endOfToday = startOfToday.add(const Duration(days: 1));
-            final startOfYesterday =
-                startOfToday.subtract(const Duration(days: 1));
-            final endOfYesterday = startOfToday;
-
-            // * For storing 'today' logs count
-            List<VisitorLog> todayLogs = filteredVisitors.where((log) {
-              final checkInDate = log.visitor_check_in!;
-              return checkInDate.isAfter(startOfToday) &&
-                  checkInDate.isBefore(endOfToday);
-            }).toList();
-
-            // * For storing 'checkout' logs count
-            List<VisitorLog> todayCheckoutLogs = filteredVisitors.where((log) {
-              final checkOutDate = log.visitor_check_out;
-              return checkOutDate != null &&
-                  checkOutDate.isAfter(startOfToday) &&
-                  checkOutDate.isBefore(endOfToday);
-            }).toList();
-
-            // Store the counts in SharedPreferences for use elsewhere
-            Future<void> _storeTodayLogsCount(int count, String key) async {
-              final prefs = await SharedPreferences.getInstance();
-              prefs.setInt(key, count);
-            }
-
-            _storeTodayLogsCount(todayLogs.length, 'todayLogsCount');
-            _storeTodayLogsCount(
-              todayCheckoutLogs.length,
-              'todayCheckoutLogsCount',
-            );
-
-            // Yesterday logs
-            List<VisitorLog> yesterdayLogs = filteredVisitors.where((log) {
-              final checkInDate = log.visitor_check_in!;
-              return checkInDate.isAfter(startOfYesterday) &&
-                  checkInDate.isBefore(endOfYesterday);
-            }).toList();
-
-            // Older logs
-            List<VisitorLog> olderLogs = filteredVisitors.where((log) {
-              final checkInDate = log.visitor_check_in!;
-              return checkInDate.isBefore(startOfYesterday);
-            }).toList();
-            return PopScope(
-              canPop: false,
-              child: MyScrollView(
-                // isScrollable: false,
-                hasBackButton: true,
-                pageTitleWidget: Hero(
-                  tag: 'page_title',
-                  child: Text(
-                    widget.id,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10.0),
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => GateDashboardView(),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.home,
-                      ),
-                    ),
-                  ),
-                  if (widget.id == "In Out Book")
-                    GestureDetector(
-                      onTap: () {
-                        _showExportBottomSheet(context, visitorLogs);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 10.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.download_rounded,
-                                  color: Colors.black,
-                                ),
-                                const Padding(
-                                  padding: EdgeInsets.only(right: 8.0),
-                                  child: Text(
-                                    'Export',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
+            return Container(
+                padding: const EdgeInsets.only(bottom: 100),
+                height: MediaQuery.of(context).size.height,
+                child: Column(children: [
+                  _buildSearchField(),
+                  if (filteredVisitors.isEmpty)
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.person_search_rounded,
+                                      size: 64,
+                                      color: Colors.grey[400],
                                     ),
-                                  ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No Visitor Logs Found',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey[700],
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'There are no visitor logs to display',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     )
-                ],
-                pageBody: Column(
-                  children: [
-                    CustomForm.textField(
-                      widget.selectedBuilding ?? 'Search',
-                      focusNode: _searchFocusNode,
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onSurface,
-                      hintText:
-                          'Search ${widget.id != 'Cards' ? 'visitor' : 'card number'}',
-                      textCapitalization: TextCapitalization.words,
-                      textInputAction: TextInputAction.search,
-                      onFieldSubmitted: (value) {
-                        if (kDebugMode) {
-                          print(value);
-                        }
-                      },
-                      onChanged: (value) {
-                        setState(() {
-                          _searchText = value;
-                        });
-                      },
-                      prefixIcon: IconButton(
-                        onPressed: () {},
-                        icon: Icon(
-                          Ionicons.search_outline,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                ]));
+          }
+          return Center(child: Text("Unexpected error occurred."));
+        },
+      ),
+      actions: _buildActions(context, []),
+      pageTitle: widget.id,
+    );
+  }
+
+// Utility functions for filtering logs
+  List<VisitorLog> _getUniqueVisitorLogs(List<VisitorLog> logs) {
+    Set<String> checkInTimes = {};
+    return logs.where((log) {
+      final checkInTime = log.visitor_check_in?.toIso8601String();
+      if (checkInTime != null && !checkInTimes.contains(checkInTime)) {
+        checkInTimes.add(checkInTime);
+        return true;
+      }
+      return false;
+    }).toList();
+  }
+
+  List<VisitorLog> _getFilteredVisitors(List<VisitorLog> logs) {
+    if (_searchText == null || _searchText!.isEmpty) {
+      return logs; // Return all logs if no search text
+    }
+
+    final searchLower = _searchText!.toLowerCase();
+
+    return logs.where((log) {
+      final visitorName = log.visitor?.name?.toLowerCase() ?? '';
+      final cardNumber = log.visitor_card_number?.toLowerCase() ?? '';
+      final unitIds = log.visitor_building_assignment
+              ?.expand((assignment) => assignment.unit_id ?? [])
+              .map((unit) => unit.toLowerCase())
+              .toList() ??
+          [];
+
+      return visitorName.contains(searchLower) ||
+          cardNumber.contains(searchLower) ||
+          unitIds.any((u) => u.contains(searchLower));
+    }).toList();
+  }
+
+// Widgets for reusable UI components
+  List<Widget> _buildActions(BuildContext context, List<VisitorLog> logs) {
+    return [
+      if (widget.id == "In Out Book")
+        GestureDetector(
+          onTap: () => _showExportBottomSheet(context, logs),
+          child: Padding(
+            padding: const EdgeInsets.only(right: 10.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.download_rounded, color: Colors.black),
+                    SizedBox(width: 8),
+                    Text(
+                      'Export',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          _showLogBookConfigBottomSheet(context);
-                        },
-                        icon: Icon(
-                          Ionicons.funnel_outline,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                    if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.person_off_outlined,
-                              size: 48,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No such visitors found in log',
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.7),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (todayLogs.isEmpty && _searchText!.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.person_off_outlined,
-                              size: 48,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No visitors today',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'When visitors check in, they will appear here',
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.7),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ListView.builder(
-                      physics: BouncingScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: todayLogs.length +
-                          yesterdayLogs.length +
-                          olderLogs.length +
-                          (todayLogs.isNotEmpty ? 1 : 0) +
-                          (yesterdayLogs.isNotEmpty ? 1 : 0) +
-                          (olderLogs.isNotEmpty ? 1 : 0), // Add headers count
-                      itemBuilder: (context, index) {
-                        int currentIndex = 0;
-
-                        // Today Section
-                        if (todayLogs.isNotEmpty) {
-                          if (index == currentIndex) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [],
-                            );
-                          }
-                          if (index > currentIndex &&
-                              index <= currentIndex + todayLogs.length) {
-                            return VisitorLogItem(
-                              visitorLog: todayLogs[index - currentIndex - 1],
-                              onCheckOut: () {
-                                setState(() {
-                                  todayLogs[index - currentIndex - 1]
-                                          .visitor_check_out =
-                                      Utils.getCurrentTime();
-                                  todayLogs[index - currentIndex - 1]
-                                      .is_checked_out = true;
-                                });
-
-                                // Emit a success state with updated logs directly
-                                _visitorLogBloc
-                                    .emit(VisitorLogSuccessState(todayLogs));
-
-                                // Trigger the Bloc event to process the checkout for backend synchronization
-                                _visitorLogBloc.add(CheckOutEvent(
-                                  todayLogs[index - currentIndex - 1],
-                                  widget.id,
-                                ));
-
-                                // Navigate to the dashboard after checkout
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        GateDashboardView(), // Replace with your dashboard widget
-                                  ),
-                                );
-                              },
-                            );
-                          }
-                          currentIndex +=
-                              todayLogs.length + 1; // Add 1 for header
-                        }
-
-                        return const SizedBox
-                            .shrink(); // Fallback in case of unexpected index
-                      },
-                    ),
-                    const SizedBox(
-                      height: 100,
                     ),
                   ],
                 ),
               ),
-            );
-          default:
-            return Container();
-        }
+            ),
+          ),
+        ),
+    ];
+  }
+
+  Widget _buildSearchField() {
+    return CustomForm.textField(
+      widget.selectedBuilding ?? 'Search',
+      focusNode: _searchFocusNode,
+      titleColor: Theme.of(context).colorScheme.onSurface,
+      hintColor: Theme.of(context).colorScheme.onSurface,
+      hintText: 'Search ${widget.id != 'Cards' ? 'visitor' : 'card number'}',
+      textCapitalization: TextCapitalization.words,
+      textInputAction: TextInputAction.search,
+      onChanged: (value) {
+        setState(() {
+          _searchText = value;
+        });
+        _pagingController.refresh();
       },
+      prefixIcon: Icon(Ionicons.search_outline),
+      suffixIcon: IconButton(
+        onPressed: () {
+          _showLogBookConfigBottomSheet(context);
+        },
+        icon: Icon(
+          Ionicons.funnel_outline,
+          color: Theme.of(context).colorScheme.onSurface,
+          size: 24,
+        ),
+      ),
     );
   }
 
-  bool isLoading = false;
+  Widget _buildNoSearchResults() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.person_off_outlined, size: 48),
+          SizedBox(height: 16),
+          Text('No such visitors found in log'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoItemsFound() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.person_off_outlined, size: 48),
+          SizedBox(height: 16),
+          Text('No visitors found'),
+        ],
+      ),
+    );
+  }
 
   Future<void> _showExportBottomSheet(
       BuildContext context, List<VisitorLog> visitorLogs) async {

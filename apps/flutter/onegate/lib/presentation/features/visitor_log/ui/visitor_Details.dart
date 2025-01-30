@@ -23,6 +23,11 @@ class VisitorDetailsScreen extends StatefulWidget {
 }
 
 class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
+  late ScrollController _scrollController;
+  double _imageHeight = 160.0; // Initial circular height
+  final double _maxImageHeight = 300.0; // Maximum expanded height
+  bool _isExpanded = false;
+
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
@@ -35,481 +40,375 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
   void initState() {
     log("visitsomethingggggg ${widget.unitList}");
     print(widget.visitorLog.visitor_building_assignment);
-
+    _scrollController = ScrollController()
+      ..addListener(() {
+        _handleScroll();
+      });
     super.initState();
+  }
+
+  void _handleScroll() {
+    final double offset = _scrollController.offset;
+    setState(() {
+      if (offset < 0) {
+        // Expanding
+        _imageHeight = _maxImageHeight;
+        _isExpanded = true;
+      } else if (offset > 50) {
+        // Collapsing
+        _imageHeight = 160.0;
+        _isExpanded = false;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
-      pageBody: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
-            ),
-            child: widget.image != null
-                ? Image.network(
-                    widget.image ?? "",
-                    height: MediaQuery.of(context).size.height * 0.4,
-                    width: double.maxFinite,
-                    fit: BoxFit.contain,
-                  )
-                : Center(
-                    child: CircleAvatar(
-                      radius: 80,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Text(
-                        widget.visitorLog.visitor!.name!.isNotEmpty
-                            ? widget.visitorLog.visitor!.name![0].toUpperCase()
-                            : 'G',
-                        style: const TextStyle(
-                          fontSize: 60,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-          ),
-          // Visitor Info Section
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.visitorLog.visitor!.name ?? "",
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                    ),
-                    if (widget.visitorLog.visitor_count.toString() != '1')
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Color(0xffFFB080),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.people, size: 18),
-                            SizedBox(width: 4),
-                            Text(
-                              "${widget.visitorLog.visitor_count} visitors",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Color(0xffFFEBE6),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    widget.visitorLog.purpose_sub_category_name != null
-                        ? "${widget.visitorLog.purpose_sub_category_name}"
-                        : "${widget.visitorLog.visitor_purpose_Category_name}",
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Contact Section
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ListTile(
-              contentPadding: EdgeInsets.all(16),
-              leading: Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Ionicons.call_outline, color: Colors.green),
-              ),
-              title: Text(
-                'Phone Number',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
-              subtitle: Text(
-                widget.visitorLog.visitor!.mobile ?? "",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              trailing: ElevatedButton.icon(
-                icon: Icon(Icons.call, size: 18),
-                label: Text('Call'),
-                onPressed: () =>
-                    _makePhoneCall(widget.visitorLog.visitor!.mobile ?? ""),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Visit Details Section
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Unit Details
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Color(0xffFFB080).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Symbols.apartment,
-                              color: Color(0xffFFB080),
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Visiting Unit',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Container(
-                                constraints: BoxConstraints(
-                                  maxWidth:
-                                      MediaQuery.of(context).size.width * 0.6,
-                                ),
-                                child: Text(
-                                  widget.unitList == "0001"
-                                      ? "Society Office"
-                                      : widget.unitList!,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible,
-                                ),
-                              ),
-                            ],
-                          ),
+    return Scaffold(
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 280,
+            pinned: true,
+            stretch: true,
+            backgroundColor: Theme.of(context).primaryColor,
+            flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [StretchMode.zoomBackground],
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  widget.image != null && widget.image!.isNotEmpty
+                      ? Image.network(
+                          widget.image!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildFallbackImage(context),
+                        )
+                      : _buildFallbackImage(context),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.6),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                widget.visitorLog.visitor_coming_from != null
-                    ? Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Color(0xffFFB080).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Symbols.location_away_rounded,
-                                    color: Color(0xffFFB080),
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Coming From',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    Container(
-                                      constraints: BoxConstraints(
-                                        maxWidth:
-                                            MediaQuery.of(context).size.width *
-                                                0.6,
-                                      ),
-                                      child: Text(
-                                        widget.visitorLog.visitor_coming_from
-                                            .toString(),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                        softWrap: true,
-                                        overflow: TextOverflow.visible,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      )
-                    : SizedBox(),
-
-                widget.visitorLog.visitor_card_number != null
-                    ? Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Color(0xffFFB080).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Symbols.badge,
-                                    color: Color(0xffFFB080),
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Card Number',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    Container(
-                                      constraints: BoxConstraints(
-                                        maxWidth:
-                                            MediaQuery.of(context).size.width *
-                                                0.6,
-                                      ),
-                                      child: Text(
-                                        widget.visitorLog.visitor_card_number
-                                            .toString(),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                        softWrap: true,
-                                        overflow: TextOverflow.visible,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      )
-                    : SizedBox(),
-
-                Divider(
-                  indent: 16,
-                  endIndent: 16,
-                  color: Colors.grey[200],
-                ),
-                // Check In/Out Times
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _buildTimeInfo(
-                        context,
-                        "Check In Time",
-                        widget.visitorLog.visitor_check_in!,
-                        Colors.green,
-                      ),
-                      if (widget.visitorLog.visitor_check_out != null) ...[
-                        SizedBox(height: 16),
-                        _buildTimeInfo(
-                          context,
-                          "Check Out Time",
-                          widget.visitorLog.visitor_check_out!,
-                          Colors.red,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-
-          // ID Card Section
-          // visitorLog.visitor_card_number != null || visitorLog.carNumber != null
-          //      ? Container(
-          //    margin: const EdgeInsets.only(left: 8),
-          //    padding: const EdgeInsets.symmetric(
-          //      vertical: 2,
-          //      horizontal: 10,
-          //    ),
-          //    decoration: BoxDecoration(
-          //      gradient: LinearGradient(
-          //        colors: const [
-          //          Color.fromRGBO(255, 236, 158, 0.8),
-          //          Color.fromRGBO(255, 190, 168, 0.8),
-          //        ],
-          //        begin: Alignment.topRight,
-          //        end: Alignment.bottomLeft,
-          //      ),
-          //      borderRadius: BorderRadius.circular(8),
-          //      border: Border.all(
-          //        color: Color.fromRGBO(255, 190, 168, 1),
-          //      ),
-          //    ),
-          //    child: Row(
-          //      children: [
-          //        Lottie.asset(
-          //          'assets/json/idcard.json',
-          //          width: 30,
-          //          height: 30,
-          //          fit: BoxFit.cover,
-          //        ),
-          //        const SizedBox(width: 5),
-          //        Text(
-          //         visitorLog.visitor_card_number != null
-          //              ? visitorLog.visitor_card_number!
-          //              : visitorLog.carNumber ?? 'N/A',
-          //          style: const TextStyle(
-          //            color: Colors.black,
-          //            fontWeight: FontWeight.w800,
-          //            fontSize: 14,
-          //          ),
-          //        ),
-          //      ],
-          //    ),
-          //  )
-          //      : const SizedBox(),
-          SizedBox(height: 20),
+          SliverList(
+            delegate: SliverChildListDelegate([
+              Container(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.visitorLog.visitor?.name ?? "Guest",
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ),
+                        if (widget.visitorLog.visitor_count.toString() != '1')
+                          _buildChip(
+                            "${widget.visitorLog.visitor_count} visitors",
+                            Icons.people,
+                            Color(0xffFFB080),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    _buildChip(
+                      widget.visitorLog.purpose_sub_category_name ??
+                          widget.visitorLog.visitor_purpose_Category_name ??
+                          "",
+                      Icons.category_rounded,
+                      Color(0xffFFEBE6),
+                    ),
+                    SizedBox(height: 16),
+                    _buildSection(
+                      title: "Contact Information",
+                      children: [
+                        _buildInfoTile(
+                          icon: Icons.phone,
+                          title: "Phone Number",
+                          subtitle: widget.visitorLog.visitor?.mobile ?? "N/A",
+                          iconColor: Colors.green,
+                          trailing: _buildCallButton(),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    _buildSection(
+                      title: "Visit Details",
+                      children: [
+                        _buildInfoTile(
+                          icon: Icons.apartment,
+                          title: "Visiting Unit",
+                          subtitle: widget.unitList == "0001"
+                              ? "Society Office"
+                              : widget.unitList ?? "N/A",
+                          iconColor: Color(0xffFFB080),
+                        ),
+                        if (widget.visitorLog.visitor_coming_from != null)
+                          _buildInfoTile(
+                            icon: Icons.location_on,
+                            title: "Coming From",
+                            subtitle: widget.visitorLog.visitor_coming_from
+                                .toString(),
+                            iconColor: Color(0xffFFB080),
+                          ),
+                        if (widget.visitorLog.visitor_card_number != null)
+                          _buildInfoTile(
+                            icon: Icons.badge,
+                            title: "Card Number",
+                            subtitle: widget.visitorLog.visitor_card_number
+                                .toString(),
+                            iconColor: Color(0xffFFB080),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    _buildSection(
+                      title: "Timeline",
+                      children: [
+                        _buildTimelineTile(
+                          "Check In",
+                          widget.visitorLog.visitor_check_in!,
+                          Colors.green,
+                          isFirst: true,
+                          isLast: widget.visitorLog.visitor_check_out == null,
+                        ),
+                        if (widget.visitorLog.visitor_check_out != null)
+                          _buildTimelineTile(
+                            "Check Out",
+                            widget.visitorLog.visitor_check_out!,
+                            Colors.red,
+                            isFirst: false,
+                            isLast: true,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ]),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTimeInfo(
-    BuildContext context,
+  Widget _buildTimelineTile(
     String label,
     DateTime time,
-    Color color,
-  ) {
+    Color color, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+        SizedBox(
+          width: 24,
+          child: Column(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color, width: 2),
+                ),
+                child: Icon(
+                  isFirst ? Icons.login : Icons.logout,
+                  size: 12,
+                  color: color,
+                ),
+              ),
+              if (!isLast)
+                Container(
+                  width: 2,
+                  height: 40,
+                  margin: EdgeInsets.symmetric(vertical: 4),
+                  color: Colors.grey.withOpacity(0.3),
+                ),
+            ],
           ),
-          child: Icon(Symbols.schedule, color: color),
         ),
-        SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
+        SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
               ),
-            ),
-            Text(
-              DateFormat('dd MMM yyyy, hh:mm a').format(time),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: color,
+              SizedBox(height: 4),
+              Text(
+                DateFormat('dd MMM yyyy, hh:mm a').format(time),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
               ),
-            ),
-          ],
+              if (!isLast) SizedBox(height: 24),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  DateTime _parseDateTime(String? dateTimeString) {
-    if (dateTimeString == null || dateTimeString.isEmpty) {
-      return DateTime
-          .now(); // Return a fallback value if the string is null or empty
-    }
+  Widget _buildSection(
+      {required String title, required List<Widget> children}) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
 
-    try {
-      return DateTime.parse(dateTimeString);
-    } catch (e) {
-      // Handle invalid date formats gracefully
-      return DateTime.now(); // Fallback value for invalid format
-    }
+  Widget _buildInfoTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    Widget? trailing,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: iconColor),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChip(String label, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCallButton() {
+    return ElevatedButton.icon(
+      icon: Icon(Icons.call, size: 16),
+      label: Text('Call'),
+      onPressed: () => _makePhoneCall(widget.visitorLog.visitor?.mobile ?? ""),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackImage(BuildContext context) {
+    return Container(
+      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+      width: double.infinity,
+      height: _imageHeight,
+      child: Center(
+        child: Text(
+          widget.visitorLog.visitor?.name?.isNotEmpty == true
+              ? widget.visitorLog.visitor!.name![0].toUpperCase()
+              : 'G',
+          style: TextStyle(
+            fontSize: _isExpanded ? 100 : 60,
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -1280,10 +1280,10 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance
-        .addObserver(this); // Add observer for orientation changes
+        .addObserver(this); // Add observer for lifecycle changes
     _currentCamera = widget.cameraController.description;
     _cameraController = widget.cameraController;
-    _updateCameraOrientation(); // Set initial camera orientation
+    _lockCameraToPortrait(); // Lock camera to portrait mode
   }
 
   @override
@@ -1296,21 +1296,14 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    _updateCameraOrientation(); // Update camera orientation on screen rotation
+    // Prevent updating the camera orientation dynamically
   }
 
-  Future<void> _updateCameraOrientation() async {
-    final orientation = MediaQuery.of(context).orientation;
-
-    // Lock the camera orientation based on the device's current orientation
+  Future<void> _lockCameraToPortrait() async {
+    // Always lock the camera orientation to portraitUp
     if (_cameraController.value.isInitialized) {
-      if (orientation == Orientation.portrait) {
-        await _cameraController
-            .lockCaptureOrientation(DeviceOrientation.portraitUp);
-      } else if (orientation == Orientation.landscape) {
-        await _cameraController
-            .lockCaptureOrientation(DeviceOrientation.landscapeLeft);
-      }
+      await _cameraController
+          .lockCaptureOrientation(DeviceOrientation.portraitUp);
     }
   }
 
@@ -1329,11 +1322,12 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
 
       final CameraController newController = CameraController(
         newCamera,
-        ResolutionPreset.low,
+        ResolutionPreset.high,
+        enableAudio: false, // Disable audio if not needed
       );
 
       await newController.initialize();
-      await _updateCameraOrientation(); // Update orientation after switching camera
+      await newController.lockCaptureOrientation(DeviceOrientation.portraitUp);
 
       setState(() {
         _cameraController = newController;
@@ -1348,103 +1342,190 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Capture Image'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Take Photo',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
           if (_capturedImage == null)
             _cameraController.value.isInitialized
-                ? Center(
-                    child: CameraPreview(
-                      _cameraController,
+                ? ClipRRect(
+                    child: Transform.scale(
+                      scale: 1.0,
+                      child: AspectRatio(
+                        aspectRatio: _cameraController.value.aspectRatio,
+                        child: CameraPreview(_cameraController),
+                      ),
                     ),
                   )
-                : const Center(child: CircularProgressIndicator())
+                : const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
           else
-            Center(
-              child: Image.file(
-                File(_capturedImage!.path),
-                fit: BoxFit.contain,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black,
+                image: DecorationImage(
+                  image: FileImage(File(_capturedImage!.path)),
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          // Camera controls overlay
+          if (_capturedImage == null)
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.3),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.5),
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
               ),
             ),
           if (_capturedImage == null)
             Positioned(
-              bottom: 20,
+              bottom: 40,
               left: 0,
               right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Switch camera button
-                  FloatingActionButton(
-                    heroTag: 'switchCamera',
-                    onPressed: _switchCamera,
-                    child: const Icon(Icons.switch_camera),
-                  ),
-                  // Capture button
-                  FloatingActionButton(
-                    heroTag: 'captureImage',
-                    onPressed: () async {
-                      try {
-                        final XFile image =
-                            await _cameraController.takePicture();
-                        setState(() {
-                          _capturedImage = image;
-                        });
-                      } catch (e) {
-                        print('Error capturing image: $e');
-                      }
-                    },
-                    child: const Icon(Icons.camera),
-                  ),
-                ],
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildControlButton(
+                      onPressed: _switchCamera,
+                      icon: Icons.flip_camera_ios_rounded,
+                      size: 30,
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          final image = await _cameraController.takePicture();
+                          setState(() => _capturedImage = image);
+                        } catch (e) {
+                          print('Error capturing image: $e');
+                        }
+                      },
+                      child: Container(
+                        height: 80,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          color: Colors.white24,
+                        ),
+                        child: Center(
+                          child: Container(
+                            height: 60,
+                            width: 60,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 30), // Balance the layout
+                  ],
+                ),
               ),
             )
           else
             Positioned(
-              bottom: 20,
+              bottom: 40,
               left: 0,
               right: 0,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Cross icon for Retake
-                  FloatingActionButton(
-                    heroTag: 'retake',
-                    onPressed: () {
-                      setState(() {
-                        _capturedImage = null; // Retake the picture
-                      });
-                    },
-                    backgroundColor: Colors.white,
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.red,
-                    ),
+                  _buildActionButton(
+                    onPressed: () => setState(() => _capturedImage = null),
+                    icon: Icons.close,
+                    label: 'Retake',
+                    color: Colors.red,
                   ),
-                  // Tick icon for Go Ahead
-                  FloatingActionButton(
-                    heroTag: 'goAhead',
-                    onPressed: () {
-                      Navigator.pop(
-                          context, _capturedImage); // Proceed with the image
-                    },
-                    backgroundColor: Colors.white,
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.green,
-                    ),
+                  _buildActionButton(
+                    onPressed: () => Navigator.pop(context, _capturedImage),
+                    icon: Icons.check,
+                    label: 'Use Photo',
+                    color: Colors.green,
                   ),
                 ],
               ),
-            )
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    double size = 24,
+  }) {
+    return Container(
+      height: 50,
+      width: 50,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.black26,
+        border: Border.all(color: Colors.white54, width: 1),
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white, size: size),
+        padding: EdgeInsets.zero,
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 60,
+            width: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withOpacity(0.2),
+              border: Border.all(color: color, width: 2),
+            ),
+            child: Icon(icon, color: color, size: 30),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
