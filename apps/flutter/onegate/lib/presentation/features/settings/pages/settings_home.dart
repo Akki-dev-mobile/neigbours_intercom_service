@@ -16,7 +16,6 @@ import 'package:flutter_onegate/presentation/features/settings/pages/configure_d
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
@@ -77,7 +76,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           builder: (BuildContext context, StateSetter setState) {
             // Access the provider
             final cameraProvider = Provider.of<CameraSettingsProvider>(context);
-            _cameraValue = cameraProvider.selectedCameraValue ?? "back";
+            _cameraValue = cameraProvider.selectedCameraValue;
 
             return Container(
               decoration: BoxDecoration(
@@ -104,7 +103,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _cameraItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        fillColor: MaterialStateProperty.all(Colors.black),
+                        fillColor: WidgetStateProperty.all(
+                          Colors.black,
+                        ),
                         title: Text(
                           item.label,
                           style: Theme.of(context).textTheme.bodyMedium,
@@ -114,9 +115,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                         onChanged: (value) {
                           if (value != null) {
                             setState(() {
-                              _cameraValue = value; // Update the local value
-                              cameraProvider.updateCameraValue(
-                                  value); // Update the provider
+                              cameraProvider.updateCameraValue(value);
                             });
                           }
                         },
@@ -410,8 +409,12 @@ class _SettingsHomeState extends State<SettingsHome> {
               title: 'Staffs',
               subtitle: 'View your society staffs',
               onTap: () {
-                Fluttertoast.showToast(
-                    msg: "coming soon", backgroundColor: Colors.green);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StaffScreen(),
+                  ),
+                );
               },
             ),
             // Gate Settings (for Admin and Master only)
@@ -490,7 +493,8 @@ class _SettingsHomeState extends State<SettingsHome> {
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,
               title: 'Camera Settings',
-              subtitle: "Current Preference: ${cameraValue ?? "back"}",
+              subtitle:
+                  "Current Preference: ${cameraValue ?? "Not Selected Camera"}",
               onTap: () {
                 _showCameraSettings(context);
               },
@@ -525,15 +529,13 @@ class _SettingsHomeState extends State<SettingsHome> {
               title: 'Self Entry Settings',
               subtitle: 'Enable/Disable Self Entry',
               onTap: () {
-                Fluttertoast.showToast(
-                    msg: "coming soon", backgroundColor: Colors.green);
-                // _preferenceUtils.setIsSelfTapIn(true);
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (context) => SelfHomeView(),
-                //   ),
-                // );
+                _preferenceUtils.setIsSelfTapIn(true);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SelfHomeView(),
+                  ),
+                );
               },
             ),
             if (role == "admin" || role == "master")

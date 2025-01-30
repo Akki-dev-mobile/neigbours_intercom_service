@@ -4,6 +4,9 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/common/environment.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
@@ -12,6 +15,7 @@ import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final keycloakConfig = KeycloakConfig(
@@ -352,87 +356,6 @@ class RemoteDataSource {
     return null;
   }
 
-  Future<List<dynamic>> fetchParcels() async {
-    final String url =
-        'https://stggateapi.cubeone.in/api/visitor/parcelData/8191';
-
-    try {
-      final response = await Dio().get(url);
-
-      if (response.statusCode == 200) {
-        log('Parcels fetched successfully: ${response.data}');
-        // Extract the data array from the response
-        if (response.data is Map<String, dynamic>) {
-          final data = response.data['data'];
-          if (data is List<dynamic>) {
-            return data;
-          }
-        }
-        return [];
-      } else {
-        log('Failed to fetch parcels: ${response.statusCode}');
-        return [];
-      }
-    } catch (e) {
-      log('Error fetching parcels: $e');
-      return [];
-    }
-  }
-
-  Future<Map<String, dynamic>> verifyParcelOtp(
-      String parcelId, String otp) async {
-    try {
-      final response = await http.post(
-        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtpVerify"),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, String>{
-          'parcel_id': parcelId,
-          'otp': otp,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        log("Parcel OTP verified successfully: ${response.body}");
-        return jsonDecode(response.body);
-      } else {
-        log("Failed to verify parcel OTP: ${response.statusCode} - ${response.body}");
-        throw Exception('Failed to verify parcel OTP');
-      }
-    } catch (e) {
-      log("Error in verifyParcelOtp: $e");
-      throw Exception('Failed to verify parcel OTP');
-    }
-  }
-
-  Future<Map<String, dynamic>> getParcelOtp(
-      String parcelId, String mobileNumber) async {
-    try {
-      final response = await http.post(
-        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtp"),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, String>{
-          'parcel_id': parcelId, // Corrected key
-          'mobile_number': mobileNumber,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        log("Parcel OTP fetched successfully: ${response.body}");
-        return jsonDecode(response.body);
-      } else {
-        log("Failed to load parcel OTP: ${response.statusCode} - ${response.body}");
-        throw Exception('Failed to load parcel OTP');
-      }
-    } catch (e) {
-      log("Error in getParcelOtp: $e");
-      throw Exception('Failed to load parcel OTP');
-    }
-  }
-
   Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
     try {
       String apiUrl = ApiUrls.visitorGetLog;
@@ -703,8 +626,6 @@ class RemoteDataSource {
         ),
       );
 
-      log("getMember response: ${response?.data}");
-
       return response?.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching members: $e');
@@ -778,7 +699,6 @@ class RemoteDataSource {
         ),
       );
 
-      log("getMemberUnit response: ${response?.data}");
       return response?.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching member units: $e');
@@ -1122,73 +1042,216 @@ class RemoteDataSource {
     }
   }
 
+  //
   // Future<List<dynamic>> getMembersList() async {
-  //   try {
-  //     final String? companyId = await gateStorage.getSocietyId();
-  //     if (companyId == null) throw Exception('Company ID not found.');
+  //   final String? companyId = await gateStorage.getSocietyId();
+  //   if (companyId == null) throw Exception('Company ID not found.');
   //
-  //     final headers = await Environment.getHeaders();
+  //   final response = await Dio().get(
+  //     '${ApiUrls.memberList}',
+  //     queryParameters: {'company_id': companyId},
+  //   );
   //
-  //     final Map<String, String> queryParams = {
-  //       "company_id": companyId,
-  //     };
-  //     final apiUrl = ApiUrls.memberList;
-  //     final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
-  //     log(uri.toString());
-  //     final response = await http.get(
-  //       uri,
-  //       // headers: headers,
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final responseData = jsonDecode(response.body);
-  //
-  //       log("getMembersList $responseData ");
-  //
-  //       return responseData['data'] ?? [];
-  //     } else {
-  //       log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
-  //       throw Exception('Failed to fetch member list: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     log('Error fetching member list: $e');
-  //     rethrow;
-  //   }
+  //   return response.data['data'] ?? [];
   // }
 
-  Future<Map<String, dynamic>?> uploadStaffImages(
-      File file, int companyId) async {
-    final String uploadUrl =
-        'https://societybackend.cubeone.in/api/admin/file-upload?company_id=$companyId';
+  final String cacheKey = 'members_list_cache';
+  final String cacheTimestampKey = 'members_list_cache_timestamp';
+  final Duration cacheDuration = Duration(minutes: 30); // Cache expiry time
+
+  Future<List<dynamic>> getMembersList() async {
+    try {
+      // Check if cached data is still valid
+      final cachedData = await _getCachedData();
+      if (cachedData != null) {
+        log('Using cached data.');
+        return cachedData;
+      }
+
+      final String? companyId = await gateStorage.getSocietyId();
+      if (companyId == null) throw Exception('Company ID not found.');
+
+      final Map<String, String> queryParams = {
+        "company_id": companyId,
+      };
+      final apiUrl = ApiUrls.memberList;
+      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
+      log('API URL: $uri');
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+        final membersList = responseData['data'] ?? [];
+        log('Fetched members list: $membersList');
+
+        // Cache the new data
+        await _cacheData(membersList);
+
+        return membersList;
+      } else {
+        log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to fetch member list: ${response.statusCode}');
+      }
+    } catch (e) {
+      log('Error fetching member list: $e');
+      rethrow;
+    }
+  }
+
+  // Get cached data if it's still valid
+  Future<List<dynamic>?> _getCachedData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Check if cached data exists
+    final cachedJson = prefs.getString(cacheKey);
+    if (cachedJson == null) return null;
+
+    // Check if the cache is still valid
+    final cachedTimestamp = prefs.getInt(cacheTimestampKey);
+    if (cachedTimestamp == null) return null;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final cacheAge = Duration(milliseconds: now - cachedTimestamp);
+
+    if (cacheAge <= cacheDuration) {
+      // Cache is still valid
+      return jsonDecode(cachedJson) as List<dynamic>;
+    } else {
+      // Cache is expired
+      return null;
+    }
+  }
+
+  // Cache the data with a timestamp
+  Future<void> _cacheData(List<dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonData = jsonEncode(data);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    await prefs.setString(cacheKey, jsonData);
+    await prefs.setInt(cacheTimestampKey, timestamp);
+  }
+
+  /// Fetch units for a specific building
+  Future<List<dynamic>> getUnitsList(int buildingId) async {
+    try {
+      final String? companyId = await gateStorage.getSocietyId();
+      if (companyId == null) throw Exception('Company ID not found.');
+
+      final response = await _dio2?.get(
+        ApiUrls.unitList,
+        queryParameters: {
+          'company_id': companyId,
+          'building_id': buildingId,
+        },
+      );
+
+      return response?.data?['data'] ?? [];
+    } catch (e) {
+      log('Error fetching unit list: $e');
+      rethrow;
+    }
+  }
+
+  /// Fetch staff list for a company
+  Future<List<StaffModel>> fetchStaffList(String companyId) async {
+    try {
+      final response = await _dio2?.get(
+        ApiUrls.staffList,
+        queryParameters: {'company_id': companyId},
+      );
+
+      if (response?.statusCode == 200) {
+        final List<dynamic> data = response?.data?['data'];
+        return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
+      } else {
+        throw Exception('Failed to fetch staff list: ${response?.statusCode}');
+      }
+    } catch (e) {
+      log('Error fetching staff list: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> fetchParcels() async {
+    final String url =
+        'https://stggateapi.cubeone.in/api/visitor/parcelData/8191';
 
     try {
-      FormData formData = FormData.fromMap({
-        'files[]': await MultipartFile.fromFile(file.path,
-            filename: file.path.split('/').last),
-      });
+      final response = await Dio().get(url);
 
-      Dio dio = Dio();
+      if (response.statusCode == 200) {
+        log('Parcels fetched successfully: ${response.data}');
+        // Extract the data array from the response
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data['data'];
+          if (data is List<dynamic>) {
+            return data;
+          }
+        }
+        return [];
+      } else {
+        log('Failed to fetch parcels: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      log('Error fetching parcels: $e');
+      return [];
+    }
+  }
 
-      Response response = await dio.post(
-        uploadUrl,
-        data: formData,
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Accept': 'application/json',
-          },
-        ),
+  Future<Map<String, dynamic>> verifyParcelOtp(
+      String parcelId, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtpVerify"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'parcel_id': parcelId,
+          'otp': otp,
+        }),
       );
 
       if (response.statusCode == 200) {
-        print("images${response.data}");
-        return response.data as Map<String, dynamic>;
+        log("Parcel OTP verified successfully: ${response.body}");
+        return jsonDecode(response.body);
       } else {
-        throw Exception('Failed to upload image: ${response.statusCode}');
+        log("Failed to verify parcel OTP: ${response.statusCode} - ${response.body}");
+        throw Exception('Failed to verify parcel OTP');
       }
     } catch (e) {
-      print('Error uploading image: $e');
-      return null;
+      log("Error in verifyParcelOtp: $e");
+      throw Exception('Failed to verify parcel OTP');
+    }
+  }
+
+  Future<Map<String, dynamic>> getParcelOtp(
+      String parcelId, String mobileNumber) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtp"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'parcel_id': parcelId, // Corrected key
+          'mobile_number': mobileNumber,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        log("Parcel OTP fetched successfully: ${response.body}");
+        return jsonDecode(response.body);
+      } else {
+        log("Failed to load parcel OTP: ${response.statusCode} - ${response.body}");
+        throw Exception('Failed to load parcel OTP');
+      }
+    } catch (e) {
+      log("Error in getParcelOtp: $e");
+      throw Exception('Failed to load parcel OTP');
     }
   }
 
@@ -1376,132 +1439,39 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<dynamic>> getMembersList({bool forceFetch = false}) async {
+  Future<Map<String, dynamic>?> uploadStaffImages(
+      File file, int companyId) async {
+    final String uploadUrl =
+        'https://societybackend.cubeone.in/api/admin/file-upload?company_id=$companyId';
+
     try {
-      final storedMemberList = await gateStorage.getMemberList();
+      FormData formData = FormData.fromMap({
+        'files[]': await MultipartFile.fromFile(file.path,
+            filename: file.path.split('/').last),
+      });
 
-      // 1. Attempt to fetch from local storage if NOT forcing an API call
-      if (!forceFetch) {
-        if (storedMemberList != null && storedMemberList.isNotEmpty) {
-          log("getMembersList Returning member list from local storage !forceFetch");
-          return storedMemberList;
-        }
-      }
+      Dio dio = Dio();
 
-      // 2. If forcing an API call OR local storage is empty, then call the API
-      final String? companyId = await gateStorage.getSocietyId();
-      if (companyId == null) throw Exception('Company ID not found.');
-
-      final headers = await Environment.getHeaders();
-      final Map<String, String> queryParams = {
-        "company_id": companyId,
-      };
-      final apiUrl = ApiUrls.memberList;
-      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
-      log('API URL: $uri');
-
-      final response = await http.get(uri);
+      Response response = await dio.post(
+        uploadUrl,
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+          },
+        ),
+      );
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-        final membersList = responseData['data'] ?? [];
-        log('Fetched members list: $membersList');
-
-        // Cache the new data
-        await _cacheData(membersList);
-
-        return membersList;
+        print("images${response.data}");
+        return response.data as Map<String, dynamic>;
       } else {
-        log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
-        throw Exception('Failed to fetch member list: ${response.statusCode}');
+        throw Exception('Failed to upload image: ${response.statusCode}');
       }
     } catch (e) {
-      log('Error fetching member list: $e');
-      rethrow;
-    }
-  }
-
-  // Get cached data if it's still valid
-  Future<List<dynamic>?> _getCachedData() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Check if cached data exists
-    final cachedJson = prefs.getString(cacheKey);
-    if (cachedJson == null) return null;
-
-    // Check if the cache is still valid
-    final cachedTimestamp = prefs.getInt(cacheTimestampKey);
-    if (cachedTimestamp == null) return null;
-
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final cacheAge = Duration(milliseconds: now - cachedTimestamp);
-
-    if (cacheAge <= cacheDuration) {
-      // Cache is still valid
-      return jsonDecode(cachedJson) as List<dynamic>;
-    } else {
-      // Cache is expired
+      print('Error uploading image: $e');
       return null;
-    }
-  }
-
-  // Cache the data with a timestamp
-  Future<void> _cacheData(List<dynamic> data) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonData = jsonEncode(data);
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-    await prefs.setString(cacheKey, jsonData);
-    await prefs.setInt(cacheTimestampKey, timestamp);
-  }
-
-  /// Fetch units for a specific building
-  Future<List<dynamic>> getUnitsList(int buildingId) async {
-    try {
-      final String? companyId = await gateStorage.getSocietyId();
-      if (companyId == null) throw Exception('Company ID not found.');
-
-      final response = await _dio2?.get(
-        ApiUrls.unitList,
-        queryParameters: {
-          'company_id': companyId,
-          'building_id': buildingId,
-        },
-      );
-
-      return response?.data?['data'] ?? [];
-    } catch (e) {
-      log('Error fetching unit list: $e');
-      rethrow;
-    }
-  }
-
-  /// Fetch staff list for a company
-  Future<List<StaffModel>> fetchStaffList(String companyId) async {
-    final String? companyId = await gateStorage.getSocietyId();
-
-    if (companyId == null || companyId.isEmpty) {
-      throw Exception('Company ID is null or empty.');
-    }
-
-    try {
-      final response = await _dio2?.get(
-        ApiUrls.staffList,
-        queryParameters: {'company_id': companyId},
-      );
-
-      if (response?.statusCode == 200) {
-        final List<dynamic> data = response?.data?['data'];
-        if (data == null) {
-          throw Exception('Response data is null.');
-        }
-        return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
-      } else {
-        throw Exception('Failed to fetch staff list: ${response?.statusCode}');
-      }
-    } catch (e) {
-      log('Error fetching staff list: $e');
-      rethrow;
     }
   }
 

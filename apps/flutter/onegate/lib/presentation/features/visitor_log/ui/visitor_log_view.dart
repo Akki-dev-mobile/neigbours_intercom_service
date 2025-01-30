@@ -25,7 +25,6 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -55,10 +54,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
   final remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
-  );
+      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
   var societyId;
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
@@ -77,7 +73,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     super.initState();
     selectedId = widget.id;
 
-    /// Depending on which log type is passed, fetch that subset
     switch (widget.id) {
       case "In Out Book":
         _visitorLogBloc.add(FetchVisitorLogEvent(Utils.getCurrentTime()));
@@ -95,15 +90,17 @@ class _VisitorLogViewState extends State<VisitorLogView> {
         _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
         break;
     }
-
     _initializeSocietyId();
     getSelectedGate();
     _searchFocusNode = FocusNode();
+
+    // _storeTodayLogsCount(context);
   }
 
   @override
   void dispose() {
     _searchFocusNode.dispose();
+
     super.dispose();
   }
 
@@ -163,12 +160,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
         switch (state.runtimeType) {
           case VisitorLogLoadingState:
             return LoaderView();
-
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
             final visitorLogs = successState.visitorLogs ?? [];
-
-            /// Remove duplicate logs if any
             List<VisitorLog> uniqueVisitorLogs = [];
             Set<String> checkInTimes = {};
 
@@ -332,9 +326,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 ],
                 pageBody: Column(
                   children: [
-                    // --------------------------------------------------------
-                    //                   SEARCH TEXTFIELD
-                    // --------------------------------------------------------
                     CustomForm.textField(
                       widget.selectedBuilding ?? 'Search',
                       focusNode: _searchFocusNode,
@@ -372,8 +363,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         ),
                       ),
                     ),
-
-                    // If user typed something that doesn't match any logs
                     if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -391,7 +380,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No matching logs found',
+                              'No such visitors found in log',
                               style: TextStyle(
                                 color: Theme.of(context)
                                     .colorScheme
@@ -403,8 +392,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           ],
                         ),
                       ),
-
-                    // If no one visited today (and user isn't searching)
                     if (todayLogs.isEmpty && _searchText!.isEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -443,27 +430,24 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           ],
                         ),
                       ),
-
-                    /// Display only the "Today" logs in this example.
-                    /// You can similarly display Yesterday & Older logs if you wish.
                     ListView.builder(
                       physics: BouncingScrollPhysics(),
                       shrinkWrap: true,
-                      itemCount: todayLogs.length,
+                      itemCount: todayLogs.length +
+                          yesterdayLogs.length +
+                          olderLogs.length +
+                          (todayLogs.isNotEmpty ? 1 : 0) +
+                          (yesterdayLogs.isNotEmpty ? 1 : 0) +
+                          (olderLogs.isNotEmpty ? 1 : 0), // Add headers count
                       itemBuilder: (context, index) {
-                        return VisitorLogItem(
-                          visitorLog: todayLogs[index],
-                          onCheckOut: () {
-                            // Optimistically update UI before the state is updated
-                            setState(() {
-                              todayLogs[index].visitor_check_out =
-                                  Utils.getCurrentTime();
-                              todayLogs[index].is_checked_out = true;
-                            });
+                        int currentIndex = 0;
 
-                            // Emit a success state with updated logs directly
-                            _visitorLogBloc.emit(
-                              VisitorLogSuccessState(todayLogs),
+                        // Today Section
+                        if (todayLogs.isNotEmpty) {
+                          if (index == currentIndex) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [],
                             );
                           }
                           if (index > currentIndex &&
@@ -499,12 +483,18 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                 );
                               },
                             );
-                          },
-                        );
+                          }
+                          currentIndex +=
+                              todayLogs.length + 1; // Add 1 for header
+                        }
+
+                        return const SizedBox
+                            .shrink(); // Fallback in case of unexpected index
                       },
                     ),
-
-                    const SizedBox(height: 100),
+                    const SizedBox(
+                      height: 100,
+                    ),
                   ],
                 ),
               ),
@@ -516,9 +506,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
-  // ----------------------------------------------------------------------------
-  //                              EXPORT BOTTOM SHEET
-  // ----------------------------------------------------------------------------
   bool isLoading = false;
 
   Future<void> _showExportBottomSheet(
@@ -778,12 +765,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
-  Widget _buildDateField(
-    BuildContext context, {
-    required String label,
-    DateTime? date,
-    required String placeholder,
-  }) {
+  Widget _buildDateField(BuildContext context,
+      {required String label, DateTime? date, required String placeholder}) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -903,6 +886,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     child: Text(
                       message,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            // color: Colors.green,
                             height: 1.5,
                           ),
                     ),
@@ -929,8 +913,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
+                          backgroundColor:
+                              Colors.black, // Set the background color to black
+                          foregroundColor:
+                              Colors.white, // Set the text color to white
                         ),
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -956,9 +942,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     );
   }
 
-  // ----------------------------------------------------------------------------
-  //                              FILTER BOTTOM SHEET
-  // ----------------------------------------------------------------------------
   void _showLogBookConfigBottomSheet(BuildContext context) async {
     showModalBottomSheet(
       useSafeArea: true,
@@ -1011,7 +994,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(
+                    height: 30,
+                  ),
                   CustomLargeBtn(
                     text: 'Confirm',
                     onPressed: () {
@@ -1040,11 +1025,18 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       },
     );
   }
+
+  // Add a method to update today's counts
+  Future<void> _updateTodayLogsCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentCount = prefs.getInt('todayLogsCount') ?? 0;
+    await prefs.setInt('todayLogsCount', currentCount - 1);
+
+    final currentCheckoutCount = prefs.getInt('todayCheckoutLogsCount') ?? 0;
+    await prefs.setInt('todayCheckoutLogsCount', currentCheckoutCount + 1);
+  }
 }
 
-// =============================================================================
-//                          VISITOR LOG ITEM WIDGET
-// =============================================================================
 class VisitorLogItem extends StatefulWidget {
   final VisitorLog visitorLog;
   final Function onCheckOut;
@@ -1078,7 +1070,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
 
   @override
   Widget build(BuildContext context) {
-    // Construct a comma-separated list of unit IDs, if any
     String unitList = '';
 
     if (widget.visitorLog.visitor_building_assignment != null &&
@@ -1088,7 +1079,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
           .map((unit) => unit.toString())
           .join(', ');
     }
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
@@ -1096,7 +1086,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // ----------------- VISITOR LIST TILE -----------------
             ListTile(
               onTap: () {
                 Navigator.push(
@@ -1177,11 +1166,9 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           color: Color(0xffFFB080),
                         ),
                       ),
-                      // If you'd like to show the actual UnitList text:
                       // TextSpan(
-                      //   text: ' $unitList',
-                      //   style: Theme.of(context).textTheme.labelSmall,
-                      // ),
+                      //     text: unitList,
+                      //     style: Theme.of(context).textTheme.labelSmall),
                       WidgetSpan(
                         child: Container(
                           margin: const EdgeInsets.only(left: 8),
@@ -1238,25 +1225,20 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 ),
               ),
             ),
-
             Divider(
               indent: 16,
               endIndent: 16,
               color: Colors.grey[200],
             ),
-
-            // ----------------- IN/OUT + CARD # -----------------
             Container(
               padding: const EdgeInsets.only(
                   bottom: 14.0, top: 8, left: 12, right: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Check-In Time
                   Tooltip(
-                    message: DateFormat('dd-MM-yyyy hh:mm a').format(
-                      widget.visitorLog.visitor_check_in!,
-                    ),
+                    message: DateFormat('dd-MM-yyyy hh:mm a')
+                        .format(widget.visitorLog.visitor_check_in!),
                     child: RichText(
                       text: TextSpan(
                         children: [
@@ -1268,8 +1250,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           ),
                           TextSpan(
                             text: Utils.convertDateTimeFormat(
-                              widget.visitorLog.visitor_check_in!,
-                            ),
+                                widget.visitorLog.visitor_check_in!),
                             style:
                                 Theme.of(context).textTheme.labelMedium!.merge(
                                       const TextStyle(
@@ -1343,7 +1324,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             ),
                           ),
                           onPressed: () {
-                            // Show a confirmation dialog before checkout
                             showDialog(
                               context: context,
                               builder: (BuildContext context) {
@@ -1445,9 +1425,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           ),
                         )
                       : Tooltip(
-                          message: DateFormat('dd-MM-yyyy hh:mm a').format(
-                            widget.visitorLog.visitor_check_out!,
-                          ),
+                          message: DateFormat('dd-MM-yyyy hh:mm a')
+                              .format(widget.visitorLog.visitor_check_out!),
                           child: RichText(
                             text: TextSpan(
                               children: [
@@ -1459,8 +1438,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                 ),
                                 TextSpan(
                                   text: Utils.convertDateTimeFormat(
-                                    widget.visitorLog.visitor_check_out!,
-                                  ),
+                                      widget.visitorLog.visitor_check_out!),
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelMedium!
