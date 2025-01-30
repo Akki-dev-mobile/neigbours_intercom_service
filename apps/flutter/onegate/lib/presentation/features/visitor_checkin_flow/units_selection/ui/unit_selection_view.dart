@@ -22,6 +22,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class UnitSelectionView extends StatefulWidget {
   Visitor? searchedVisitor;
@@ -1244,7 +1245,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       Set<String> selectedMember, VisitorLog visitorLogData) async {
     final userId = selectedUserIds.first;
     final selectedMobileNumbers = await _getSelectedMobileNumbers();
-    final requestData = _prepareRequestData(userId, selectedMobileNumbers);
+    final requestData =
+        await _prepareRequestData(userId, selectedMobileNumbers);
 
     try {
       await _sendFcmNotification(requestData, visitorLogData);
@@ -1264,45 +1266,79 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
   }
 
-  Map<String, String> _prepareRequestData(
-      String userId, List<String> savedMobileNumbers) {
+  Future<Map<String, String>> _prepareRequestData(
+      String userId,
+      List<String> savedMobileNumbers,
+      ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final visitorLogId = prefs.getString("visitor_log") ?? "";
+    final String? visitorId = prefs.getString('visitorId');
+
+    // Log for debugging
+    log("Visitor Log ID: $visitorLogId");
+
     return {
-      'company_id': companyId.toString(),
-      'name': widget.guestname,
-      'mobile': widget.mobileNumber,
-      'purpose': "meeting",
-      'in_time': formattedInTime,
-      'user_id': (int.tryParse(userId) ?? 5243243).toString(),
-      'visitor_count': widget.guestCount.toString(),
-      "member_mobile_number": "918452060059",
-      "visitor_id": widget.visitorId?.toString() ?? "",
-      "purpose_category": widget.purposeCategory.toString(),
-      'visitor_purpose_sub_category_id':
-          widget.selectedSubCategoryId.toString(),
-      'coming_from': widget.comingFrom ?? "Unknown",
-      "member_id": "${selectedMemberIds.first}",
-      "company_name": companyName ?? "",
+      'company_id': companyId.toString(), // Ensure companyId is defined
+      'name': widget.guestname, // Ensure widget.guestname is defined
+      'mobile': widget.mobileNumber, // Ensure widget.mobileNumber is defined
+      'purpose': "Guest", // Hardcoded as per the curl request
+      'in_time': formattedInTime, // Ensure formattedInTime is defined
+      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+          ? "234567" // Default value as per the curl request
+          : int.parse(userId).toString(),
+      'visitor_count': widget.guestCount.toString(), // Ensure widget.guestCount is defined
+      'member_mobile_number': "8452060059", // Hardcoded as per the curl request
+      'visitor_id': visitorId ?? "1", // Default value as per the curl request
+      'purpose_category': widget.purposeCategory.categoryId.toString(), // Ensure widget.purposeCategory is defined
+      'visitor_log_id': visitorLogId,
+      'coming_from': widget.comingFrom ?? "Bandra", // Default value as per the curl request
+      'member_id': selectedMemberIds.isNotEmpty
+          ? selectedMemberIds.first.toString() // Ensure selectedMemberIds is defined
+          : "232", // Default value as per the curl request
+      'company_name': companyName ?? "", // Ensure companyName is defined
+      'purpose_details': "Guest", // Hardcoded as per the curl request
     };
   }
 
   Future<void> _sendFcmNotification(
       Map<String, String> requestData, VisitorLog visitorLogData) async {
     try {
-      // await remoteDataSource.checkIn(visitorLogData);
+      await remoteDataSource.checkIn(visitorLogData);
 
       final response = await Dio().post(
-        'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
+        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
 
       if (response.statusCode == 200) {
         log("FCM notification sent successfully: ${response.data}");
+        log("anna$requestData");
+        Fluttertoast.showToast(
+            msg: "FCM notification sent successfully: ${response.data}",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            fontSize: 16.0);
         bool isWaitingForApproval = false;
         setState(() => isWaitingForApproval = true);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove("visitor_log");
         await _showApprovedDialog(context, visitorLogData);
       }
     } on DioError catch (e) {
+      log("anna$requestData");
+
+      Fluttertoast.showToast(
+          msg: "NOt Send${e.toString()}",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0);
       _handleDioError(e, visitorLogData);
     }
   }
@@ -1516,7 +1552,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               });
 
                               try {
-                                await remoteDataSource.checkIn(data);
+                                _membersApproval == true
+                                    ? null
+                                    : await remoteDataSource.checkIn(data);
                                 Navigator.pop(context);
                                 await Navigator.pushReplacement(
                                   context,

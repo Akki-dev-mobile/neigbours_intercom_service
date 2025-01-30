@@ -6,9 +6,9 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'dart:math' as math;
 
 class MissedApprovalsScreen extends StatelessWidget {
   final remoteDataSource = RemoteDataSource(
@@ -41,14 +41,18 @@ class MissedApprovalsScreen extends StatelessWidget {
           final missedApprovals =
               snapshot.data!.map((data) => VisitorInfo.fromJson(data)).toList();
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: missedApprovals.length,
-            itemBuilder: (context, index) {
-              return MissedApprovalItem(
-                visitorInfo: missedApprovals[index],
-              );
-            },
+          return SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: missedApprovals.length,
+              itemBuilder: (context, index) {
+                return MissedApprovalItem(
+                  visitorInfo: missedApprovals[index],
+                );
+              },
+            ),
           );
         },
       ),
@@ -58,88 +62,172 @@ class MissedApprovalsScreen extends StatelessWidget {
 
 class TimerManager {
   static final TimerManager _instance = TimerManager._internal();
-
   factory TimerManager() => _instance;
-
   TimerManager._internal();
 
-  final Map<int, Timer> _timers = {};
-  final Map<int, ValueNotifier<int>> _secondsRemaining = {};
-  final Map<int, ValueNotifier<bool>> _isRetryEnabled = {};
+  final Map<String, Timer> _timers = {};
+  final Map<String, ValueNotifier<int>> _secondsRemaining = {};
+  final Map<String, ValueNotifier<bool>> _isRetryEnabled = {};
+  final Map<String, DateTime> _timerStartTimes = {};
+  final int _initialDuration = 120; // 2 minutes in seconds
 
-  void startTimer(int visitorLogId) {
-    print("Starting timer for visitor $visitorLogId"); // Debug print
+  String _getTimerKey(int? visitorLogId) {
+    return 'timer_$visitorLogId';
+  }
 
-    // Cancel existing timer if any
-    _timers[visitorLogId]?.cancel();
+  bool isTimerActive(int? visitorLogId) {
+    final key = _getTimerKey(visitorLogId);
+    return _timers.containsKey(key) && _timers[key]!.isActive;
+  }
 
-    // Initialize notifiers if they don't exist
-    _secondsRemaining[visitorLogId] ??= ValueNotifier<int>(120);
-    _isRetryEnabled[visitorLogId] ??= ValueNotifier<bool>(false);
+  ValueNotifier<bool> getIsRetryEnabled(int? visitorLogId) {
+    final key = _getTimerKey(visitorLogId);
+    if (!_isRetryEnabled.containsKey(key)) {
+      _isRetryEnabled[key] = ValueNotifier<bool>(false);
+    }
+    return _isRetryEnabled[key]!;
+  }
 
-    // Reset values
-    _secondsRemaining[visitorLogId]!.value = 120;
-    _isRetryEnabled[visitorLogId]!.value = false;
-    _saveTimerState(visitorLogId); // Save initial state
+  ValueNotifier<int> getSecondsRemaining(int? visitorLogId) {
+    final key = _getTimerKey(visitorLogId);
+    if (!_secondsRemaining.containsKey(key)) {
+      _secondsRemaining[key] = ValueNotifier<int>(_initialDuration);
+    }
+    return _secondsRemaining[key]!;
+  }
+
+  Future<void> resetAndStartTimer(int? visitorLogId) async {
+    if (visitorLogId == null) return;
+    final key = _getTimerKey(visitorLogId);
+
+    // Cancel existing timer
+    _timers[key]?.cancel();
+
+    // Reset values immediately
+    _secondsRemaining[key]?.value = _initialDuration;
+    _isRetryEnabled[key]?.value = false;
+    _timerStartTimes[key] = DateTime.now();
+
+    // Save state
+    await _saveTimerState(visitorLogId);
 
     // Start new timer
-    _timers[visitorLogId] = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsRemaining[visitorLogId]!.value > 0) {
-        _secondsRemaining[visitorLogId]!.value--;
+    _timers[key] = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining[key]!.value > 0) {
+        _secondsRemaining[key]!.value--;
         _saveTimerState(visitorLogId);
-        print(
-            "Timer tick: ${_secondsRemaining[visitorLogId]!.value}"); // Debug print
       } else {
         timer.cancel();
-        _isRetryEnabled[visitorLogId]!.value = true;
+        _isRetryEnabled[key]!.value = true;
         _saveTimerState(visitorLogId);
-        print("Timer expired for visitor $visitorLogId"); // Debug print
       }
     });
+
+    // Notify listeners explicitly
+    _secondsRemaining[key]?.notifyListeners();
+    _isRetryEnabled[key]?.notifyListeners();
   }
 
-  ValueNotifier<int> getSecondsRemaining(int visitorLogId) {
-    if (_secondsRemaining[visitorLogId] == null) {
-      _secondsRemaining[visitorLogId] = ValueNotifier<int>(120);
-      startTimer(visitorLogId); // Start timer if it doesn't exist
+  Future<void> startTimer(int? visitorLogId) async {
+    if (visitorLogId == null) return;
+    await resetAndStartTimer(visitorLogId);
+  }
+
+  void checkAndUpdateTimerState(int? visitorLogId) {
+    if (visitorLogId == null) return;
+    final key = _getTimerKey(visitorLogId);
+
+    if (_secondsRemaining[key] != null) {
+      _secondsRemaining[key]!.notifyListeners();
     }
-    return _secondsRemaining[visitorLogId]!;
-  }
 
-  ValueNotifier<bool> getIsRetryEnabled(int visitorLogId) {
-    _isRetryEnabled[visitorLogId] ??= ValueNotifier<bool>(false);
-    return _isRetryEnabled[visitorLogId]!;
-  }
-
-  Future<void> _saveTimerState(int visitorLogId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(
-        'timer_$visitorLogId', _secondsRemaining[visitorLogId]!.value);
-    await prefs.setBool(
-        'retry_$visitorLogId', _isRetryEnabled[visitorLogId]!.value);
-  }
-
-  Future<void> loadTimerState(int visitorLogId) async {
-    print("Loading timer state for visitor $visitorLogId");
-    final prefs = await SharedPreferences.getInstance();
-    final savedSeconds = prefs.getInt('timer_$visitorLogId');
-    final savedRetry = prefs.getBool('retry_$visitorLogId') ?? false;
-
-    if (savedSeconds != null && savedSeconds > 0 && !savedRetry) {
-      _secondsRemaining[visitorLogId] = ValueNotifier<int>(savedSeconds);
-      _isRetryEnabled[visitorLogId] = ValueNotifier<bool>(false);
-      startTimer(visitorLogId);
-    } else {
-      // If no saved state or timer expired, start fresh
-      startTimer(visitorLogId);
+    if (_isRetryEnabled[key] != null) {
+      _isRetryEnabled[key]!.notifyListeners();
     }
   }
 
-  void dispose(int visitorLogId) {
-    _timers[visitorLogId]?.cancel();
-    _timers.remove(visitorLogId);
-    _secondsRemaining.remove(visitorLogId);
-    _isRetryEnabled.remove(visitorLogId);
+  Future<void> _saveTimerState(int? visitorLogId) async {
+    if (visitorLogId == null) return;
+
+    try {
+      final key = _getTimerKey(visitorLogId);
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString('timer_start_$visitorLogId',
+          _timerStartTimes[key]!.toIso8601String());
+      await prefs.setBool(
+          'retry_enabled_$visitorLogId', _isRetryEnabled[key]!.value);
+      await prefs.setInt(
+          'seconds_remaining_$visitorLogId', _secondsRemaining[key]!.value);
+    } catch (e) {
+      print('Error saving timer state: $e');
+    }
+  }
+
+  Future<void> loadTimerState(int? visitorLogId) async {
+    if (visitorLogId == null) return;
+
+    try {
+      final key = _getTimerKey(visitorLogId);
+      final prefs = await SharedPreferences.getInstance();
+
+      final startTimeStr = prefs.getString('timer_start_$visitorLogId');
+      final savedSeconds = prefs.getInt('seconds_remaining_$visitorLogId');
+      final savedRetry = prefs.getBool('retry_enabled_$visitorLogId') ?? false;
+
+      if (startTimeStr != null && savedSeconds != null) {
+        final startTime = DateTime.parse(startTimeStr);
+        final now = DateTime.now();
+        final elapsed = now.difference(startTime).inSeconds;
+        final remaining = math.max(0, savedSeconds - elapsed);
+
+        // Initialize notifiers
+        _secondsRemaining[key] = ValueNotifier<int>(remaining);
+        _isRetryEnabled[key] = ValueNotifier<bool>(remaining <= 0);
+
+        if (remaining > 0 && !savedRetry) {
+          _timerStartTimes[key] = startTime;
+          await startTimer(visitorLogId);
+        } else {
+          _secondsRemaining[key]!.value = 0;
+          _isRetryEnabled[key]!.value = true;
+        }
+      } else {
+        await startTimer(visitorLogId);
+      }
+    } catch (e) {
+      print('Error loading timer state: $e');
+      await startTimer(visitorLogId);
+    }
+  }
+
+  void dispose(int? visitorLogId) {
+    if (visitorLogId == null) return;
+
+    final key = _getTimerKey(visitorLogId);
+    _timers[key]?.cancel();
+    _timers.remove(key);
+    _secondsRemaining[key]?.dispose();
+    _secondsRemaining.remove(key);
+    _isRetryEnabled[key]?.dispose();
+    _isRetryEnabled.remove(key);
+    _timerStartTimes.remove(key);
+  }
+
+  void disposeAll() {
+    for (var timer in _timers.values) {
+      timer.cancel();
+    }
+    for (var notifier in _secondsRemaining.values) {
+      notifier.dispose();
+    }
+    for (var notifier in _isRetryEnabled.values) {
+      notifier.dispose();
+    }
+    _timers.clear();
+    _secondsRemaining.clear();
+    _isRetryEnabled.clear();
+    _timerStartTimes.clear();
   }
 }
 
@@ -155,10 +243,13 @@ class MissedApprovalItem extends StatefulWidget {
   State<MissedApprovalItem> createState() => _MissedApprovalItemState();
 }
 
-class _MissedApprovalItemState extends State<MissedApprovalItem> {
-  final Dio _dio = Dio();
+class _MissedApprovalItemState extends State<MissedApprovalItem>
+    with AutomaticKeepAliveClientMixin {
   final TimerManager _timerManager = TimerManager();
   bool _isInitialized = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -166,16 +257,27 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
     _initializeTimer();
   }
 
+  @override
+  void didUpdateWidget(MissedApprovalItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visitorInfo.visitorLogId != widget.visitorInfo.visitorLogId) {
+      _initializeTimer();
+    }
+  }
+
   Future<void> _initializeTimer() async {
     if (!_isInitialized) {
-      await _timerManager.loadTimerState(widget.visitorInfo.visitorLogId);
+      await _timerManager.loadTimerState(widget.visitorInfo.visitorLogId ?? 0);
       _isInitialized = true;
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
   @override
   void dispose() {
-    _timerManager.dispose(widget.visitorInfo.visitorLogId);
+    _timerManager.dispose(widget.visitorInfo.visitorLogId ?? 0);
     super.dispose();
   }
 
@@ -185,33 +287,39 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
         'member_mobile_number': "918452060059",
         'visitor_id': widget.visitorInfo.visitorId,
         "member_id": "29",
+        "visitor_log_id": widget.visitorInfo.visitorLogId?.toString() ?? "0",
         'purpose_category': 1.toString(),
       };
 
-      final response = await _dio.post(
+      final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/visitor/exotel/call',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
 
       if (response.statusCode == 200) {
-        Fluttertoast.showToast(
-          msg: "Notification Resent Successfully",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
-        _timerManager.startTimer(widget.visitorInfo.visitorLogId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Notification Resent Successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Reset and start timer immediately after successful API call
+          await _timerManager
+              .resetAndStartTimer(widget.visitorInfo.visitorLogId);
+          setState(() {}); // Trigger UI update
+        }
       }
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: "Failed to resend notification",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to resend notification'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       print("Error sending FCM notification: $e");
     }
   }
@@ -361,8 +469,8 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     ValueListenableBuilder<bool>(
-                      valueListenable: _timerManager
-                          .getIsRetryEnabled(widget.visitorInfo.visitorLogId),
+                      valueListenable: _timerManager.getIsRetryEnabled(
+                          widget.visitorInfo.visitorLogId ?? 0),
                       builder: (context, isRetryEnabled, _) {
                         final buttonColor = isRetryEnabled
                             ? theme.colorScheme.primary
@@ -418,16 +526,16 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                       },
                     ),
                     ValueListenableBuilder<int>(
-                      valueListenable: _timerManager
-                          .getSecondsRemaining(widget.visitorInfo.visitorLogId),
+                      valueListenable: _timerManager.getSecondsRemaining(
+                          widget.visitorInfo.visitorLogId ?? 0),
                       builder: (context, secondsRemaining, _) {
                         return ValueListenableBuilder<bool>(
                           valueListenable: _timerManager.getIsRetryEnabled(
-                              widget.visitorInfo.visitorLogId),
+                              widget.visitorInfo.visitorLogId ?? 0),
                           builder: (context, isRetryEnabled, _) {
                             final timerColor = isRetryEnabled
-                                ? Color(0xFFDC2626) // Red for expired state
-                                : Color(0xFF2563EB); // Blue for active state
+                                ? Color(0xFFDC2626)
+                                : Color(0xFF2563EB);
 
                             return Container(
                               padding: const EdgeInsets.symmetric(
@@ -462,12 +570,12 @@ class _MissedApprovalItemState extends State<MissedApprovalItem> {
                                   const SizedBox(width: 8),
                                   Text(
                                     isRetryEnabled
-                                        ? 'Expired'
+                                        ? 'Try Again'
                                         : '${(secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(secondsRemaining % 60).toString().padLeft(2, '0')}',
                                     style: TextStyle(
                                       color: timerColor,
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 16,
+                                      fontSize: 10,
                                     ),
                                   ),
                                 ],
@@ -519,7 +627,7 @@ class VisitorInfo {
   final String visitorMobile;
   final String visitorImage;
   final String allowStatus;
-  final int visitorLogId;
+  final int? visitorLogId; // Changed to nullable (int?)
   final int companyId;
   final String inGate;
   final String logCreatedAt;
@@ -533,7 +641,7 @@ class VisitorInfo {
     required this.visitorMobile,
     required this.visitorImage,
     required this.allowStatus,
-    required this.visitorLogId,
+    this.visitorLogId, // Made optional since it's nullable
     required this.companyId,
     required this.inGate,
     required this.logCreatedAt,
@@ -549,7 +657,9 @@ class VisitorInfo {
       visitorMobile: json['visitor_mobile']?.toString() ?? '',
       visitorImage: json['visitor_image']?.toString() ?? '',
       allowStatus: json['allow_status']?.toString() ?? '',
-      visitorLogId: _parseToInt(json['visitor_log_id']),
+      visitorLogId: json['visitor_log_id'] != null
+          ? _parseToInt(json['visitor_log_id'])
+          : null, // Updated to handle null
       companyId: _parseToInt(json['company_id']),
       inGate: json['in_gate']?.toString() ?? '',
       logCreatedAt: json['log_created_at']?.toString() ?? '',

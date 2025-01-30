@@ -334,6 +334,11 @@ class RemoteDataSource {
           // Use `fromJson` for deserialization
           final visitorLogResult = VisitorLog.fromJson(responseData['data']);
           log("Success - $visitorLogResult");
+          final prefs = await SharedPreferences.getInstance();
+
+          prefs.setString("visitor_log", response.data["data"]["visitor_log_id"].toString());
+
+
           return visitorLogResult;
         } else {
           print("API Response Error: ${responseData['message']}");
