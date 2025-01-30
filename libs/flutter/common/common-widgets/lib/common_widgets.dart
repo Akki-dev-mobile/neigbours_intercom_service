@@ -5,21 +5,20 @@ import 'package:flutter/services.dart';
 import 'package:ionicons/ionicons.dart';
 
 class MyScrollView extends StatelessWidget {
-  const MyScrollView({
-    super.key,
-    required this.pageBody,
-    this.pageTitle,
-    this.pageTitleWidget,
-    this.floatingActionButton,
-    this.bottomSheet,
-    this.controller,
-    this.hasBackButton = true,
-    this.backButtonPressed,
-    this.isScrollable = true,
-    this.actions,
-    this.bottomNavigationBar,
-    this.floatingActionButtonLocation
-  });
+  const MyScrollView(
+      {super.key,
+      required this.pageBody,
+      this.pageTitle,
+      this.pageTitleWidget,
+      this.floatingActionButton,
+      this.bottomSheet,
+      this.controller,
+      this.hasBackButton = true,
+      this.backButtonPressed,
+      this.isScrollable = true,
+      this.actions,
+      this.bottomNavigationBar,
+      this.floatingActionButtonLocation});
 
   final Widget pageBody;
   final String? pageTitle;
@@ -51,22 +50,22 @@ class MyScrollView extends StatelessWidget {
             automaticallyImplyLeading: false,
             leading: hasBackButton
                 ? IconButton(
-              icon: Icon(
-                Ionicons.arrow_back_outline,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              onPressed: backButtonPressed ??
-                      () {
-                    Navigator.pop(context);
-                  },
-            )
+                    icon: Icon(
+                      Ionicons.arrow_back_outline,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    onPressed: backButtonPressed ??
+                        () {
+                          Navigator.pop(context);
+                        },
+                  )
                 : null,
             pinned: true,
             title: pageTitle != null
                 ? Text(
-              pageTitle ?? '',
-              style: Theme.of(context).textTheme.bodyLarge,
-            )
+                    pageTitle ?? '',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  )
                 : pageTitleWidget,
             actions: actions,
             // expandedHeight: 50,
@@ -100,7 +99,8 @@ class MyScrollView extends StatelessWidget {
       ),
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: bottomNavigationBar,
-      floatingActionButtonLocation:floatingActionButtonLocation ?? FloatingActionButtonLocation.centerFloat ,
+      floatingActionButtonLocation: floatingActionButtonLocation ??
+          FloatingActionButtonLocation.centerFloat,
       bottomSheet: bottomSheet,
     );
   }
@@ -108,30 +108,30 @@ class MyScrollView extends StatelessWidget {
 
 class CustomForm {
   static Widget textField(
-      String title, {
-        required Color titleColor,
-        required Color hintColor,
-        TextInputType? keyboardType,
-        bool isObscureText = false,
-        required String hintText,
-        int? length,
-        String? hasInitialValue,
-        TextEditingController? textController,
-        int lines = 1,
-        String? counterText,
-        bool isEnabled = true,
-        Widget? suffixIcon,
-        Widget? prefixIcon,
-        TextCapitalization textCapitalization = TextCapitalization.none,
-        FocusNode? focusNode,
-        FormFieldValidator<String>? validator,
-        TextInputAction? textInputAction,
-        ValueChanged<String>? onChanged,
-        ValueChanged<String>? onFieldSubmitted,
-        String? errorText,
-        List<TextInputFormatter>? inputFormatters,
-        bool? isReadOnly,
-      }) {
+    String title, {
+    required Color titleColor,
+    required Color hintColor,
+    TextInputType? keyboardType,
+    bool isObscureText = false,
+    required String hintText,
+    int? length,
+    String? hasInitialValue,
+    TextEditingController? textController,
+    int lines = 1,
+    String? counterText,
+    bool isEnabled = true,
+    Widget? suffixIcon,
+    Widget? prefixIcon,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    FocusNode? focusNode,
+    FormFieldValidator<String>? validator,
+    TextInputAction? textInputAction,
+    ValueChanged<String>? onChanged,
+    ValueChanged<String>? onFieldSubmitted,
+    String? errorText,
+    List<TextInputFormatter>? inputFormatters,
+    bool? isReadOnly,
+  }) {
     return Container(
       margin: EdgeInsets.only(bottom: 2),
       child: Column(
@@ -169,7 +169,7 @@ class CustomForm {
             controller: textController,
             maxLength: length ?? 499,
             validator: validator ??
-                    (value) {
+                (value) {
                   if (value!.isEmpty) {
                     return '$title is required';
                   }
@@ -237,6 +237,7 @@ class CustomLargeBtn extends StatelessWidget {
     required this.onPressed,
     required this.text,
     this.isText = true,
+    this.width,
     this.widgetChild,
     this.heroTag,
     this.disabled = false,
@@ -247,53 +248,166 @@ class CustomLargeBtn extends StatelessWidget {
   final String? heroTag;
   final bool isText;
   final Widget? widgetChild;
+  final double? width;
   final bool disabled; // New field to handle button's disabled state
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      width: MediaQuery.of(context).size.width * 0.85,
+      width: width ?? MediaQuery.of(context).size.width * 0.85,
       height: 60,
       child: ElevatedButton(
         style: ButtonStyle(
-          foregroundColor: MaterialStateProperty.all<Color>(
+          foregroundColor: WidgetStateProperty.all<Color>(
             Color(0xFF7D7C7C),
           ),
-          backgroundColor: MaterialStateProperty.all<Color>(
+          backgroundColor: WidgetStateProperty.all<Color>(
             disabled
                 ? Colors.grey // Set a different color for the disabled state
                 : Theme.of(context).colorScheme.onSurface,
           ),
-          elevation: MaterialStateProperty.resolveWith<double>(
-                (Set<MaterialState> states) {
-              if (states.contains(MaterialState.pressed)) {
+          elevation: WidgetStateProperty.resolveWith<double>(
+            (Set<WidgetState> states) {
+              if (states.contains(WidgetState.pressed)) {
                 return 8;
               }
               return 0;
             },
           ),
-          shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+          shape: WidgetStateProperty.all<RoundedRectangleBorder>(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
           ),
         ),
-        onPressed: disabled ? null : onPressed, // Disable button if `disabled` is true
+        onPressed:
+            disabled ? null : onPressed, // Disable button if `disabled` is true
         child: Hero(
           tag: heroTag ?? 'btn',
           child: isText
               ? Text(
-            text,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.surface,
-              fontSize: 22,
-              wordSpacing: 1.2,
-              fontWeight: FontWeight.w500,
-            ),
-          )
+                  text,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.surface,
+                    fontSize: width != null ? 15 : 22,
+                    wordSpacing: 1.2,
+                    fontWeight: FontWeight.w500,
+                  ),
+                )
               : widgetChild ?? const SizedBox.shrink(),
         ),
+      ),
+    );
+  }
+}
+
+class CustomDropdown extends StatelessWidget {
+  final String title;
+  final String hintText;
+  final List<String> items;
+  final String? selectedItem;
+  final String? initialValue;
+  final ValueChanged<String?> onChanged;
+  final Color? titleColor;
+  final Color? hintColor;
+  final bool isEnabled;
+
+  const CustomDropdown({
+    Key? key,
+    required this.title,
+    required this.hintText,
+    required this.items,
+    this.selectedItem,
+    required this.onChanged,
+    this.titleColor,
+    this.initialValue,
+    this.hintColor,
+    this.isEnabled = true,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const SizedBox(
+            height: 10,
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(
+            height: 5,
+          ),
+          DropdownButtonFormField<String>(
+            value: selectedItem ?? initialValue,
+            isExpanded: true,
+            style: TextStyle(
+              color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+              fontSize: 18,
+            ),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 20,
+                horizontal: 15,
+              ),
+              hintText: hintText,
+              hintStyle: TextStyle(
+                color: hintColor ??
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(
+                  style: BorderStyle.solid,
+                  color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(
+                  color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: const BorderSide(
+                  style: BorderStyle.solid,
+                  width: 2,
+                  color: Colors.blue,
+                ),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(
+                  color: hintColor ??
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  style: BorderStyle.solid,
+                ),
+              ),
+            ),
+            dropdownColor: Colors.white,
+            items: items.map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+            onChanged: isEnabled ? onChanged : null,
+          ),
+          const SizedBox(
+            height: 8,
+          ),
+        ],
       ),
     );
   }

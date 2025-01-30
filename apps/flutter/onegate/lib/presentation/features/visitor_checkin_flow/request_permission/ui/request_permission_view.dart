@@ -39,7 +39,8 @@ enum RequestType {
   approved,
   notRecheable,
   waiting,
-  request
+  request,
+  allowByGatekeeper
 }
 
 class _RequestPermissionViewState extends State<RequestPermissionView> {
@@ -129,8 +130,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                                 style: Theme.of(context).textTheme.labelMedium,
                                 children: <TextSpan>[
                                   TextSpan(
-                                    text: widget
-                                        .purposeCategory.categoryName,
+                                    text: widget.purposeCategory.categoryName,
                                     style: TextStyle(
                                       color: Colors.blue[400],
                                     ),
@@ -186,7 +186,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                           crossAxisSpacing: 10.0,
                           mainAxisSpacing: 10.0,
                         ),
-                        itemCount: gridData!.length,
+                        itemCount: 2,
                         itemBuilder: (BuildContext context, int index) {
                           return Container(
                             decoration: BoxDecoration(
@@ -199,7 +199,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                             ),
                             child: Center(
                               child: Text(
-                                gridData![index].unitFlatNumber,
+                                "1306",
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium!
@@ -320,8 +320,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
           'Allow by gatekeeper',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color:
-                    Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
         );
       case RequestType.approved:

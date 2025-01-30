@@ -25,6 +25,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app_intro/ui/keyclock_login.dart';
+import '../../../parcel/ui/parcel_list.dart';
 import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
 
@@ -386,15 +387,20 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             isPremium: false,
                             isVisible: true,
                             onTap: () {
-                              Fluttertoast.showToast(
-                                msg: "Parcel, coming soon",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.CENTER,
-                                timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.black,
-                                textColor: Colors.white,
-                                fontSize: 16.0,
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ParcelList(),
+                                ),
                               );
+                              // Fluttertoast.showToast(
+                              //   msg: "Parcel, coming soon",
+                              //   toastLength: Toast.LENGTH_SHORT,
+                              //   gravity: ToastGravity.CENTER,
+                              //   timeInSecForIosWeb: 1,
+                              //   backgroundColor: Colors.black,
+                              //   textColor: Colors.white,
+                              //   fontSize: 16.0,
+                              // );
                             },
                           ),
                           DashboardShortcut(

@@ -50,6 +50,7 @@ class GateStorage {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_societyIdKey);
   }
+
   Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_accessTokenKey);
@@ -172,11 +173,38 @@ class GateStorage {
     await prefs.remove(_visitorLogIdKey);
     print("VisitorLog ID removed from SharedPreferences");
   }
+
   bool? getTooglevalue(String key) {
     return _prefs?.getBool(key);
   }
 
   Future<void> setToogleValue(String key, bool value) async {
     await _prefs?.setBool(key, value);
+  }
+
+  /// Save the entire member list as a JSON String
+  Future<void> saveMemberList(List<dynamic> memberList) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Convert the list to a JSON string before storing
+    final jsonString = jsonEncode(memberList);
+    await prefs.setString('member_list', jsonString);
+    log("Member list saved to SharedPreferences");
+  }
+
+  /// Retrieve the stored member list (if any)
+  Future<List<dynamic>?> getMemberList() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('member_list');
+    if (jsonString != null) {
+      try {
+        final data = jsonDecode(jsonString);
+        if (data is List) {
+          return data;
+        }
+      } catch (e) {
+        log("Error parsing stored member list: $e");
+      }
+    }
+    return null;
   }
 }

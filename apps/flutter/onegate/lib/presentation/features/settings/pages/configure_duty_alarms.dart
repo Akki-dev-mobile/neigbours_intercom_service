@@ -1,8 +1,9 @@
 import 'dart:io';
 
+import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
-import 'package:alarm/alarm.dart';
+// import 'package:alarm/alarm.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ConfigureDutyAlarms extends StatefulWidget {
@@ -28,6 +29,8 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
         child: Column(
           children: [
             ElevatedButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.red)),
               onPressed: () async {
                 final time = await showTimePicker(
                   context: context,
@@ -44,6 +47,8 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                   : 'Start Time: ${startTime!.format(context)}'),
             ),
             ElevatedButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.red)),
               onPressed: () async {
                 final time = await showTimePicker(
                   context: context,
@@ -60,6 +65,8 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                   : 'End Time: ${endTime!.format(context)}'),
             ),
             ElevatedButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.red)),
               onPressed: () async {
                 final duration = await showDurationPicker(
                   context: context,
@@ -76,6 +83,8 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                   : 'Interval: ${interval!.inMinutes} minutes'),
             ),
             ElevatedButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.red)),
               onPressed: () {
                 print(
                     'Start Time: $startTime, End Time: $endTime, Interval: $interval');
@@ -92,6 +101,8 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
               child: const Text('Set Up Alarms'),
             ),
             ElevatedButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.red)),
               onPressed: () {
                 deleteAllAlarms();
               },
@@ -101,9 +112,19 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
               child: ListView.builder(
                 itemCount: log.length,
                 itemBuilder: (context, index) {
-                  return ListTile(
-                    tileColor: Colors.red,
-                    title: Text(log[index]),
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Container(color: Colors.red,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(log[index]),
+                          ),
+                        ),
+                        IconButton(onPressed: (){Alarm.stop(allalarmTime[index].hashCode);}, icon: Icon(Icons.stop))
+                      ],
+                    ),
                   );
                 },
               ),
@@ -158,10 +179,11 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
           'Schedule exact alarm permission ${res.isGranted ? '' : 'not'} granted.');
     }
   }
+List<DateTime> allalarmTime=[];
 
   void setupAlarms() async {
     await checkAndroidScheduleExactAlarmPermission();
-
+    print("checkAndroidScheduleExactAlarmPermission Done");
     if (startTime == null || endTime == null || interval == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -195,32 +217,34 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
       );
       return;
     }
-
-    DateTime alarmTime = startDateTime;
-    while (alarmTime.isBefore(endDateTime)) {
-      await Alarm.set(
-        alarmSettings: AlarmSettings(
-          id: alarmTime.hashCode,
-          dateTime: alarmTime,
-          assetAudioPath: 'assets/media/audio/alarm.mp3',
-          androidFullScreenIntent: true,
-          loopAudio: true,
-          vibrate: true,
-          fadeDuration: 3.0,
-          notificationSettings: const NotificationSettings(
-            title: 'Duty Alarm',
-            body: 'This is a duty alarm',
-            stopButton: 'Stop the alarm',
-            icon: 'notification_icon',
-          ),
+    DateTime alarmTime = startDateTime.add(interval!);
+    print(alarmTime.isBefore(endDateTime));
+    while (endDateTime.isAfter(alarmTime)) {
+    await Alarm.set(
+      alarmSettings: AlarmSettings(
+        id: alarmTime.hashCode,
+        dateTime: alarmTime,
+        assetAudioPath: 'assets/media/audio/alarm.mp3',
+        androidFullScreenIntent: true,
+        loopAudio: true,
+        vibrate: true,
+        fadeDuration: 3.0,
+        notificationSettings: const NotificationSettings(
+          title: 'Duty Alarm',
+          body: 'This is a duty alarm',
+          stopButton: 'Stop the alarm',
+          icon: 'notification_icon',
         ),
-      );
+      ),
+    );
+    allalarmTime.add(alarmTime);
 
-      setState(() {
-        log.add('Alarm set for ${alarmTime.toLocal()}');
-      });
+    setState(() {
+      log.add('Alarm set for ${alarmTime.toLocal()}');
+      print('Alarm set for ${alarmTime.toLocal()}');
+    });
 
-      alarmTime = alarmTime.add(interval!);
+    alarmTime = alarmTime.add(interval!);
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -230,8 +254,31 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
     );
   }
 
-  void deleteAllAlarms() {
-    Alarm.stop(0);
+  void deleteAllAlarms() async{
+        final now = DateTime.now();
+    final startDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      startTime!.hour,
+      startTime!.minute,
+    );
+    final endDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      endTime!.hour,
+      endTime!.minute,
+    );
+        // Alarm.stop(551035148);
+
+        // DateTime alarmTime = startDateTime.add(interval!);
+int len=log.length;
+    for (DateTime alarmTime in allalarmTime) {
+    await Alarm.stop(alarmTime.hashCode);
+
+    }
+
     setState(() {
       log.clear();
     });
@@ -264,22 +311,25 @@ class _DurationPickerState extends State<DurationPicker> {
     duration = widget.duration;
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Slider(
-          value: duration.inMinutes.toDouble(),
-          min: 1,
-          max: 120,
-          divisions: 119,
-          label: '${duration.inMinutes} minutes',
-          onChanged: (value) {
-            setState(() {
-              duration = Duration(minutes: value.toInt());
-              widget.onChange(duration);
-            });
-          },
+        Container(color: Colors.black,
+          child: Slider(
+            value: duration.inMinutes.toDouble(),
+            min: 1,
+            max: 120,
+            divisions: 119,
+            label: '${duration.inMinutes} minutes',
+            onChanged: (value) {
+              setState(() {
+                duration = Duration(minutes: value.toInt());
+                widget.onChange(duration);
+              });
+            },
+          ),
         ),
       ],
     );
