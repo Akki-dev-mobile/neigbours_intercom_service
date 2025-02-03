@@ -12,6 +12,7 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:shimmer/shimmer.dart';
 
 class RequestPermissionPage extends StatefulWidget {
   final Visitor visitor;
@@ -241,89 +242,124 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
   Widget _getIconLabel(RequestType requestType) {
     switch (requestType) {
       case RequestType.notRecheable:
-        return Text(
-          'Member not reachable !!',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: const Color(0xffffc720),
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
+        return Shimmer.fromColors(
+            baseColor: const Color(0xffffc720),
+            highlightColor: const Color.fromARGB(51, 255, 199, 32),
+            child: Text(
+              'Member not reachable !!',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    color: const Color(0xffffc720),
+                    // fontWeight: FontWeight.bold,
+                    fontSize: 25,
+                  ),
+            ));
+
       case RequestType.allowByGatekeeper:
-        return Text(
-          'Allowed by gatekeeper',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: const Color(0xffFFB080),
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
+        return Shimmer.fromColors(
+            baseColor: const Color(0xffFFB080),
+            highlightColor: const Color.fromARGB(51, 255, 177, 128),
+            child: Text(
+              'Allowed by gatekeeper',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    color: const Color(0xffFFB080),
+                    // fontWeight: FontWeight.bold,
+                    fontSize: 25,
+                  ),
+            ));
       case RequestType.approved:
-        return Text(
-          'Visitor approved',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                fontSize: 25,
-                color: const Color(0xff02af46),
-                // fontWeight: FontWeight.bold
-              ),
-        );
+        return Shimmer.fromColors(
+            baseColor: const Color(0xff02af46),
+            highlightColor: const Color.fromARGB(51, 2, 175, 71),
+            child: Text(
+              'Visitor approved',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    fontSize: 25,
+                    color: const Color(0xff02af46),
+                    // fontWeight: FontWeight.bold
+                  ),
+            ));
+
       case RequestType.leaveAtGate:
-        return Text(
-          'Leave at gate',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: const Color.fromARGB(255, 169, 116, 96),
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
+        return Shimmer.fromColors(
+            baseColor: const Color.fromARGB(255, 169, 116, 96),
+            highlightColor: const Color.fromARGB(51, 169, 116, 96),
+            child: Text(
+              'Leave at gate',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    color: const Color.fromARGB(255, 169, 116, 96),
+                    // fontWeight: FontWeight.bold,
+                    fontSize: 25,
+                  ),
+            ));
+
       case RequestType.request:
-        return SizedBox(
-          width: 250,
-          child: Text(
-            'Request permission from member',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  color: const Color(0xfffeb080),
-                  // fontWeight: FontWeight.bold,
-                  fontSize: 25,
-                ),
-          ),
-        );
+        return Shimmer.fromColors(
+            baseColor: const Color(0xfffeb080),
+            highlightColor: const Color.fromARGB(51, 254, 176, 128),
+            child: SizedBox(
+              width: 250,
+              child: Text(
+                'Request permission from member',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                      color: const Color(0xfffeb080),
+                      // fontWeight: FontWeight.bold,
+                      fontSize: 25,
+                    ),
+              ),
+            ));
+
       case RequestType.rejected:
-        return Text(
-          'Visitor rejected',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: Colors.red,
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
+        return Shimmer.fromColors(
+            baseColor: Colors.red,
+            highlightColor: const Color.fromARGB(51, 244, 67, 54),
+            child: SizedBox(
+                width: 250,
+                child: Text(
+                  'Visitor rejected',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                        color: Colors.red,
+                        // fontWeight: FontWeight.bold,
+                        fontSize: 25,
+                      ),
+                )));
+
       case RequestType.waiting:
-        return Text(
-          'Initializing request...',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: Colors.black,
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
+        return Shimmer.fromColors(
+            baseColor: Colors.black,
+            highlightColor: const Color.fromARGB(51, 0, 0, 0),
+            child: SizedBox(
+                width: 250,
+                child: Text(
+                  'Initializing request...',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                        color: Colors.black,
+                        // fontWeight: FontWeight.bold,
+                        fontSize: 25,
+                      ),
+                )));
       default:
         {
-          return Text(
-            'Request permission from member',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  color: Colors.black,
-                  // fontWeight: FontWeight.bold,
-                  fontSize: 25,
-                ),
-          );
+          return Shimmer.fromColors(
+              baseColor: Colors.black,
+              highlightColor: const Color.fromARGB(51, 0, 0, 0),
+              child: SizedBox(
+                  width: 250,
+                  child: Text(
+                    'Initializing request...',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          color: Colors.black,
+                          // fontWeight: FontWeight.bold,
+                          fontSize: 25,
+                        ),
+                  )));
         }
     }
   }
