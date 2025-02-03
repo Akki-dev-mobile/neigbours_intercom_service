@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
@@ -13,7 +14,7 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/ui/request_permission_page.dart';
 
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -22,8 +23,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../visitor_in_screens/ui/request_permission_page.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class UnitSelectionView extends StatefulWidget {
   Visitor? searchedVisitor;
@@ -100,13 +100,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _fetchCompanyId();
     _loadVisitorSettings();
     _initializeFuture = _initializeMembers(); // Initialize the Future once
-    log("${selectedUnits} here is this");
+    log("$selectedUnits here is this");
     log("${widget.comingFrom} here is this");
   }
 
   Future<void> _loadVisitorSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _membersApproval = await prefs.getBool('membersApproval');
+    _membersApproval = prefs.getBool('membersApproval');
   }
 
   @override
@@ -306,7 +306,19 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         ),
                         onPressed: () {
                           // Add your confirm logic here
-                          Navigator.push(context, MaterialPageRoute(builder: (context)=>RequestPermissionPage(visitor: widget.visitor,)));
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => RequestPermissionPage(
+                                        selectedBuildingUnits:
+                                            selectedBuildingUnits,
+                                        selectedMembers: selectedMembers,
+                                        visitor: widget.visitor,
+                                        handleMemberSelectionfun: () {
+                                          return _handleSelectionSubmit(
+                                              selectedMembers);
+                                        },
+                                      )));
                           // Navigator.pop(context);
                           // _handleSelectionSubmit(selectedMembers);
                         },
@@ -638,7 +650,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         } else {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => GateDashboardView()),
+            MaterialPageRoute(builder: (context) => const GateDashboardView()),
             (Route<dynamic> route) => false,
           );
           return false; // Prevent default back navigation.
@@ -812,31 +824,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                         ElevatedButton.icon(
                                                           style: ButtonStyle(
                                                             foregroundColor:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<Color>(
                                                               const Color(
                                                                   0xFF7D7C7C),
                                                             ),
                                                             backgroundColor:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<Color>(
                                                               Theme.of(context)
                                                                   .colorScheme
                                                                   .surface,
                                                             ),
                                                             elevation:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .resolveWith<
                                                                         double>(
-                                                              (Set<MaterialState>
+                                                              (Set<WidgetState>
                                                                       states) =>
                                                                   states.contains(
-                                                                          MaterialState
+                                                                          WidgetState
                                                                               .pressed)
                                                                       ? 8
                                                                       : 0,
                                                             ),
-                                                            shape: MaterialStateProperty
+                                                            shape: WidgetStateProperty
                                                                 .all<
                                                                     RoundedRectangleBorder>(
                                                               RoundedRectangleBorder(
@@ -847,7 +859,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                               ),
                                                             ),
                                                             padding:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<
                                                                         EdgeInsetsGeometry>(
                                                               const EdgeInsets
@@ -1127,13 +1139,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final selectedGateName = prefs.getString('selected_gate');
 
     List<int> unitIds = [];
-    if (formattedMemberDetails != null && formattedMemberDetails is List) {
-      unitIds = formattedMemberDetails
-          .map((member) => member['unit_id'])
-          .where((id) => id != null)
-          .map((id) => int.parse(id.toString()))
-          .toList();
-    }
+    unitIds = formattedMemberDetails
+        .map((member) => member['unit_id'])
+        .where((id) => id != null)
+        .map((id) => int.parse(id.toString()))
+        .toList();
 
     // Map unit IDs to BuildingAssignment objects
     List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
@@ -1199,13 +1209,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final companyName = companyDetails['societyName'];
     // Extract unit IDs from formattedMemberDetails
     List<int> unitIds = [];
-    if (formattedMemberDetails != null && formattedMemberDetails is List) {
-      unitIds = formattedMemberDetails
-          .map((member) => member['unit_id'])
-          .where((id) => id != null)
-          .map((id) => int.parse(id.toString()))
-          .toList();
-    }
+    unitIds = formattedMemberDetails
+        .map((member) => member['unit_id'])
+        .where((id) => id != null)
+        .map((id) => int.parse(id.toString()))
+        .toList();
     print("subbb${widget.selectedSubCategoryId.toString()}");
     // Map unit IDs to BuildingAssignment objects
     List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
@@ -1247,7 +1255,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       Set<String> selectedMember, VisitorLog visitorLogData) async {
     final userId = selectedUserIds.first;
     final selectedMobileNumbers = await _getSelectedMobileNumbers();
-    final requestData = _prepareRequestData(userId, selectedMobileNumbers);
+    final requestData =
+        await _prepareRequestData(userId, selectedMobileNumbers);
 
     try {
       await _sendFcmNotification(requestData, visitorLogData);
@@ -1267,45 +1276,83 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
   }
 
-  Map<String, String> _prepareRequestData(
-      String userId, List<String> savedMobileNumbers) {
+  Future<Map<String, String>> _prepareRequestData(
+    String userId,
+    List<String> savedMobileNumbers,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final visitorLogId = prefs.getString("visitor_log") ?? "";
+    final String? visitorId = prefs.getString('visitorId');
+
+    // Log for debugging
+    log("Visitor Log ID: $visitorLogId");
+
     return {
-      'company_id': companyId.toString(),
-      'name': widget.guestname,
-      'mobile': widget.mobileNumber,
-      'purpose': "meeting",
-      'in_time': formattedInTime,
-      'user_id': (int.tryParse(userId) ?? 5243243).toString(),
-      'visitor_count': widget.guestCount.toString(),
-      "member_mobile_number": "918452060059",
-      "visitor_id": widget.visitorId?.toString() ?? "",
-      "purpose_category": widget.purposeCategory.toString(),
-      'visitor_purpose_sub_category_id':
-          widget.selectedSubCategoryId.toString(),
-      'coming_from': widget.comingFrom ?? "Unknown",
-      "member_id": "${selectedMemberIds.first}",
-      "company_name": companyName ?? "",
+      'company_id': companyId.toString(), // Ensure companyId is defined
+      'name': widget.guestname, // Ensure widget.guestname is defined
+      'mobile': widget.mobileNumber, // Ensure widget.mobileNumber is defined
+      'purpose': "Guest", // Hardcoded as per the curl request
+      'in_time': formattedInTime, // Ensure formattedInTime is defined
+      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+          ? "234567" // Default value as per the curl request
+          : int.parse(userId).toString(),
+      'visitor_count':
+          widget.guestCount.toString(), // Ensure widget.guestCount is defined
+      'member_mobile_number': "8452060059", // Hardcoded as per the curl request
+      'visitor_id': visitorId ?? "1", // Default value as per the curl request
+      'purpose_category': widget.purposeCategory.categoryId
+          .toString(), // Ensure widget.purposeCategory is defined
+      'visitor_log_id': visitorLogId,
+      'coming_from': widget.comingFrom ??
+          "Bandra", // Default value as per the curl request
+      'member_id': selectedMemberIds.isNotEmpty
+          ? selectedMemberIds.first
+              .toString() // Ensure selectedMemberIds is defined
+          : "232", // Default value as per the curl request
+      'company_name': companyName ?? "", // Ensure companyName is defined
+      'purpose_details': "Guest", // Hardcoded as per the curl request
     };
   }
 
   Future<void> _sendFcmNotification(
       Map<String, String> requestData, VisitorLog visitorLogData) async {
     try {
-      // await remoteDataSource.checkIn(visitorLogData);
+      await remoteDataSource.checkIn(visitorLogData);
 
       final response = await Dio().post(
-        'https://gateapi.cubeone.in/api/visitor/sendFcmNotification',
+        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
 
       if (response.statusCode == 200) {
         log("FCM notification sent successfully: ${response.data}");
+        log("anna$requestData");
+        Fluttertoast.showToast(
+            msg: "FCM notification sent successfully.",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            fontSize: 16.0);
         bool isWaitingForApproval = false;
         setState(() => isWaitingForApproval = true);
+        final prefs = await SharedPreferences.getInstance();
+        // await prefs.remove("visitor_log");
         await _showApprovedDialog(context, visitorLogData);
       }
     } on DioError catch (e) {
+      log("anna$requestData");
+
+      Fluttertoast.showToast(
+          msg: "NOt Send${e.toString()}",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0);
       _handleDioError(e, visitorLogData);
     }
   }
@@ -1519,7 +1566,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               });
 
                               try {
-                                await remoteDataSource.checkIn(data);
+                                _membersApproval == true
+                                    ? null
+                                    : await remoteDataSource.checkIn(data);
                                 Navigator.pop(context);
                                 await Navigator.pushReplacement(
                                   context,

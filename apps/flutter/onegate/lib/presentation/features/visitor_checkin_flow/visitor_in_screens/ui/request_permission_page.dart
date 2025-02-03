@@ -1,21 +1,30 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 class RequestPermissionPage extends StatefulWidget {
   final Visitor visitor;
+  final Future<void> Function() handleMemberSelectionfun;
+  final Set<String> selectedMembers;
+  final List<String> selectedBuildingUnits;
 
-  const RequestPermissionPage({
-    super.key,
-    required this.visitor,
-  });
+  const RequestPermissionPage(
+      {super.key,
+      required this.visitor,
+      required this.handleMemberSelectionfun,
+      required this.selectedMembers,
+      required this.selectedBuildingUnits});
 
   @override
   State<RequestPermissionPage> createState() => _RequestPermissionView1State();
@@ -23,7 +32,7 @@ class RequestPermissionPage extends StatefulWidget {
 
 class _RequestPermissionView1State extends State<RequestPermissionPage> {
   double lottieAnimationSize = 250;
-  RequestType requestType = RequestType.rejected;
+  RequestType requestType = RequestType.request;
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +121,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                             width: screensize.height * 0.1,
                             height: screensize.height * 0.1,
                             fit: BoxFit.cover,
-                            "https://t4.ftcdn.net/jpg/03/64/21/11/360_F_364211147_1qgLVxv1Tcq0Ohz3FawUfrtONzz8nq3e.jpg"),
+                            widget.visitor.visitor_image ?? ""),
                       ),
                       SizedBox(width: screensize.width * 0.1),
                       Column(
@@ -156,7 +165,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                   InfoLileWidget(
                     icon: Symbols.apartment,
                     iconColor: colortoshow,
-                    title: 'N/A',
+                    title: widget.selectedBuildingUnits.toString(),
                   ),
                 ],
               ),
@@ -206,7 +215,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
         );
       case RequestType.request:
         return Lottie.network(
-            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/request_permission_b6ef131475.json?updated_at=2023-08-23T06:28:52.175Z',
+            'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/request_permission_5d72ff6325.json',
             height: lottieAnimationSize,
             fit: BoxFit.contain);
       case RequestType.rejected:
@@ -423,14 +432,16 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
       case RequestType.request:
         return CustomLargeBtn(
             onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => RequestPermissionView(
-                            visitor: Visitor(),
-                            purposeCategory: PurposeCategory1(
-                                categoryId: 123, categoryName: "categoryName"),
-                          )));
+              widget.handleMemberSelectionfun();
+
+              // Navigator.push(
+              //     context,
+              //     MaterialPageRoute(
+              //         builder: (context) => RequestPermissionView(
+              //               visitor: Visitor(),
+              //               purposeCategory: PurposeCategory1(
+              //                   categoryId: 123, categoryName: "categoryName"),
+              //             )));
             },
             text: "Request permission");
       case RequestType.rejected:
