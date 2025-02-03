@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -9,51 +9,53 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 class RequestPermissionPage extends StatefulWidget {
   final Visitor visitor;
-  String? logID;
+  final String? logID;
 
-  RequestPermissionPage({
-    super.key,
-    required this.visitor,
-    this.logID,
-  });
+  const RequestPermissionPage({super.key, required this.visitor, this.logID});
 
   @override
-  State<RequestPermissionPage> createState() => _RequestPermissionView1State();
+  State<RequestPermissionPage> createState() => _RequestPermissionPageState();
 }
 
-class _RequestPermissionView1State extends State<RequestPermissionPage> {
+class _RequestPermissionPageState extends State<RequestPermissionPage> {
   double lottieAnimationSize = 250;
-  List<dynamic> _approvals = [];
-  RequestType requestType = RequestType.rejected;
+  RequestType requestType = RequestType.waiting;
+  bool isLoading = true;
+  Timer? _timer;
   final remoteDataSource = RemoteDataSource(
       DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
 
+  @override
   void initState() {
-    _fetchApprovals(widget.logID);
+    super.initState();
+    _startFetchingApprovals();
+  }
+
+  void _startFetchingApprovals() {
+    // Run the function every 5 seconds
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _fetchApprovals(widget.logID);
+    });
   }
 
   Future<void> _fetchApprovals(String? logID) async {
     try {
-      // Fetch approvals from remoteDataSource
       final approvals = await remoteDataSource.fetchApprovals(logID ?? "");
+      log("Fetched Approvals: $approvals");
 
       if (approvals.isEmpty) {
         log("No approvals found for logID: $logID");
         return;
       }
 
-      log("Missed approvals: $approvals");
-
-      // Find the correct visitor log entry using logID
       final matchingApproval = approvals.firstWhere(
         (approval) => approval["visitor_log_id"].toString() == logID,
-        orElse: () => null, // Handle case where no match is found
+        orElse: () => null,
       );
 
       if (matchingApproval == null) {
@@ -61,320 +63,132 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
         return;
       }
 
-      // Update state with the matched approval
-      setState(() {
-        _approvals = [matchingApproval]; // Store only the matched approval
-        requestType = _mapAllowStatusToRequestType(
-            matchingApproval["allow_status"]?.toString().toLowerCase());
-      });
+      if (mounted) {
+        setState(() {
+          requestType = _mapAllowStatusToRequestType(
+              matchingApproval["allow_status"]?.toString().toLowerCase());
+          isLoading = false;
+        });
+      }
     } catch (e) {
       log("Error fetching approvals: $e");
     }
   }
 
+  @override
+  void dispose() {
+    _timer?.cancel(); // Stop the timer when the widget is disposed
+    super.dispose();
+  }
+
   RequestType _mapAllowStatusToRequestType(String? status) {
     switch (status) {
-      case "approved":
+      case "allowed":
         return RequestType.approved;
-      case "rejected":
+      case "denied":
         return RequestType.rejected;
-      case "leave_at_gate":
+      case "leave":
         return RequestType.leaveAtGate;
-      case "not_reachable":
+      case "invalid":
         return RequestType.notRecheable;
       case "request":
         return RequestType.request;
-      case "waiting":
+      case "pending":
         return RequestType.waiting;
-      case "allow_by_gatekeeper":
+      case "always_allowed":
         return RequestType.allowByGatekeeper;
       default:
-        return RequestType.rejected; // Default fallback
+        return RequestType.rejected;
     }
   }
+
+  // Lottie Animation Map
+  final Map<RequestType, String> _lottieAnimations = {
+    RequestType.approved:
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json',
+    RequestType.rejected:
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/rejected_4bcdedc751.json',
+    RequestType.leaveAtGate:
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/leave_at_gate_048fedfdb6.json',
+    RequestType.notRecheable:
+        'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/Animation_1738144371860_6ed19f54ff.json',
+    RequestType.request:
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/request_permission_b6ef131475.json',
+    RequestType.allowByGatekeeper:
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json',
+    RequestType.waiting:
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json',
+  };
+
+  // Text Label Map
+  final Map<RequestType, String> _requestMessages = {
+    RequestType.approved: "Visitor approved",
+    RequestType.rejected: "Visitor rejected",
+    RequestType.leaveAtGate: "Leave at gate",
+    RequestType.notRecheable: "Member not reachable !!",
+    RequestType.request: "Request permission from member",
+    RequestType.allowByGatekeeper: "Allowed by gatekeeper",
+    RequestType.waiting: "Initializing request...",
+  };
 
   @override
   Widget build(BuildContext context) {
     Color colortoshow = const Color(0xffFFB080);
-
     Size screensize = MediaQuery.of(context).size;
+
     return MyScrollView(
-      pageTitleWidget: Column(
-        children: [
-          SizedBox(
-            height: screensize.height * 0.02,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                  // width: screensize.width * 0.15,
-                  decoration: BoxDecoration(
-                    color: colortoshow.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const GateDashboardView()));
-                        },
-                        child: Icon(
-                          Icons.home_outlined,
-                          color: colortoshow,
-                        )),
-                  )),
-              DropdownButton<RequestType>(
-                value: requestType,
-                hint: const Text("Select Request Type"),
-                items: RequestType.values.map((RequestType type) {
-                  // Corrected
-                  return DropdownMenuItem<RequestType>(
-                    value: type,
-                    child: Text(type.toString().split('.').last),
-                  );
-                }).toList(),
-                onChanged: (RequestType? newValue) {
-                  setState(() {
-                    requestType = newValue!;
-                  });
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
+      pageTitleWidget: _buildHeader(colortoshow),
       hasBackButton: EditableText.debugDeterministicCursor,
       floatingActionButton: _getbutton(requestType),
-      pageBody: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          SizedBox(
-            height: screensize.height * 0.01,
-          ),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(50),
-                        child: Image.network(
-                            width: screensize.height * 0.1,
-                            height: screensize.height * 0.1,
-                            fit: BoxFit.cover,
-                            widget.visitor.visitor_image ?? ""),
-                      ),
-                      SizedBox(width: screensize.width * 0.1),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: screensize.width * 0.4,
-                            child: Text(
-                              widget.visitor.name ?? "",
-                              style: const TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: colortoshow.withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text("GUEST",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall!
-                                      .copyWith(fontSize: 10)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  const Divider(
-                    thickness: 0.2,
-                  ),
-                  InfoLileWidget(
-                    icon: Symbols.call,
-                    iconColor: Colors.green,
-                    title: widget.visitor.mobile!,
-                  ),
-                  InfoLileWidget(
-                    icon: Symbols.apartment,
-                    iconColor: colortoshow,
-                    title: 'N/A',
-                  ),
-                ],
-              ),
+      pageBody: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildVisitorCard(colortoshow, screensize),
+                _buildLottieAnimation(),
+                _buildStatusText(),
+              ],
             ),
-          ),
-          Center(
-            child: GestureDetector(
-              child: Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 20),
-                width: double.maxFinite,
-                child: _getLottieAnimation(requestType),
-              ),
-              onTap: () {},
-            ),
-          ),
-          FittedBox(
-            alignment: Alignment.topRight,
-            // fit: BoxFit.fill,
-            child: _getIconLabel(requestType),
-          ),
-        ],
-      ),
     );
   }
 
-  Widget _getLottieAnimation(RequestType requestType) {
-    switch (requestType) {
-      case RequestType.allowByGatekeeper:
-        return Lottie.network(
-            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z',
-            height: lottieAnimationSize,
-            fit: BoxFit.contain);
-      case RequestType.notRecheable:
-        return Lottie.network(
-            'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/Animation_1738144371860_6ed19f54ff.json',
-            height: lottieAnimationSize,
-            fit: BoxFit.contain);
-      case RequestType.approved:
-        return Lottie.network(
-            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json?updated_at=2023-08-23T06:28:49.810Z',
-            height: lottieAnimationSize,
-            fit: BoxFit.contain);
-      case RequestType.leaveAtGate:
-        return Lottie.network(
-          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/leave_at_gate_048fedfdb6.json?updated_at=2023-08-23T06:28:51.200Z',
-          height: lottieAnimationSize,
-        );
-      case RequestType.request:
-        return Lottie.network(
-            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/request_permission_b6ef131475.json?updated_at=2023-08-23T06:28:52.175Z',
-            height: lottieAnimationSize,
-            fit: BoxFit.contain);
-      case RequestType.rejected:
-        return Lottie.network(
-            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/rejected_4bcdedc751.json?updated_at=2023-08-23T06:28:51.894Z',
-            height: lottieAnimationSize * 0.8,
-            fit: BoxFit.contain);
-      case RequestType.waiting:
-        return Lottie.network(
-            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json?updated_at=2023-08-23T06:28:52.591Z',
-            height: lottieAnimationSize,
-            fit: BoxFit.contain);
-      default:
-        {
-          return Lottie.network(
-              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/walk_e471a69550.json?updated_at=2023-08-23T06:28:52.519Z',
-              height: lottieAnimationSize,
-              fit: BoxFit.contain);
-        }
-    }
+  Widget _buildHeader(Color colortoshow) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        InkWell(
+          onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const GateDashboardView())),
+          child: Icon(Icons.home_outlined, color: colortoshow, size: 30),
+        ),
+      ],
+    );
   }
 
-  Widget _getIconLabel(RequestType requestType) {
-    switch (requestType) {
-      case RequestType.notRecheable:
-        return Text(
-          'Member not reachable !!',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: const Color(0xffffc720),
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
-      case RequestType.allowByGatekeeper:
-        return Text(
-          'Allowed by gatekeeper',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: const Color(0xffFFB080),
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
-      case RequestType.approved:
-        return Text(
-          'Visitor approved',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                fontSize: 25,
-                color: const Color(0xff02af46),
-                // fontWeight: FontWeight.bold
-              ),
-        );
-      case RequestType.leaveAtGate:
-        return Text(
-          'Leave at gate',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: const Color.fromARGB(255, 169, 116, 96),
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
-      case RequestType.request:
-        return SizedBox(
-          width: 250,
-          child: Text(
-            'Request permission from member',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  color: const Color(0xfffeb080),
-                  // fontWeight: FontWeight.bold,
-                  fontSize: 25,
-                ),
-          ),
-        );
-      case RequestType.rejected:
-        return Text(
-          'Visitor rejected',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: Colors.red,
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
-      case RequestType.waiting:
-        return Text(
-          'Initializing request...',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: Colors.black,
-                // fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
-        );
-      default:
-        {
-          return Text(
-            'Request permission from member',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  color: Colors.black,
-                  // fontWeight: FontWeight.bold,
-                  fontSize: 25,
-                ),
-          );
-        }
-    }
+  Widget _buildVisitorCard(Color colortoshow, Size screensize) {
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundImage: NetworkImage(widget.visitor.visitor_image ?? ""),
+          radius: screensize.height * 0.05,
+        ),
+        title: Text(widget.visitor.name ?? "",
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InfoLileWidget(
+                icon: Symbols.call,
+                iconColor: Colors.green,
+                title: widget.visitor.mobile!),
+            InfoLileWidget(
+                icon: Symbols.apartment, iconColor: colortoshow, title: 'N/A'),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _getbutton(RequestType requestType) {
@@ -523,5 +337,21 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
               text: "Finish");
         }
     }
+  }
+
+  Widget _buildLottieAnimation() {
+    return Lottie.network(_lottieAnimations[requestType] ?? "",
+        height: lottieAnimationSize, fit: BoxFit.contain);
+  }
+
+  Widget _buildStatusText() {
+    return Text(
+      _requestMessages[requestType] ?? "",
+      textAlign: TextAlign.center,
+      style: TextStyle(
+          fontSize: 25,
+          color:
+              requestType == RequestType.rejected ? Colors.red : Colors.black),
+    );
   }
 }

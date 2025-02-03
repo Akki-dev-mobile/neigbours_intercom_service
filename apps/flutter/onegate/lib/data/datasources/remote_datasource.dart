@@ -336,8 +336,8 @@ class RemoteDataSource {
           log("Success - $visitorLogResult");
           final prefs = await SharedPreferences.getInstance();
 
-          prefs.setString("visitor_log", response.data["data"]["visitor_log_id"].toString());
-
+          prefs.setString("visitor_log",
+              response.data["data"]["visitor_log_id"].toString());
 
           return visitorLogResult;
         } else {
@@ -951,14 +951,16 @@ class RemoteDataSource {
     try {
       // Retrieve the selected gate name from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
 
       // Fetch the company details (e.g., society ID) from a local storage
       final companyDetails = await gateStorage.getSocietyId();
       final resolvedCompanyId = companyDetails;
 
       // Construct the base URL for the API request
-      final String baseUrl = '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
+      final String baseUrl =
+          '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
 
       // Add query parameters if `logID` is not null
       final Map<String, dynamic> queryParams = {};
@@ -976,7 +978,8 @@ class RemoteDataSource {
         return data;
       } else {
         // Throw an exception if the request fails
-        throw Exception('Failed to fetch approvals: ${response?.statusCode}, ${response?.data}');
+        throw Exception(
+            'Failed to fetch approvals: ${response?.statusCode}, ${response?.data}');
       }
     } catch (e) {
       // Log any errors that occur during the process
@@ -986,6 +989,7 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
   /// Send visitor logs
   Future<void> sendLogs(Map<String, dynamic> visitorData) async {
     try {
@@ -1010,6 +1014,34 @@ class RemoteDataSource {
       log('Error sending logs: $e');
       Fluttertoast.showToast(
         msg: "Error sending logs: $e",
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
+  }
+
+  /// Send visitor logs
+  Future<void> readStatus(memberID, visitorId) async {
+    try {
+      final response = await _dio2?.post(
+        ApiUrls.readStatus,
+        data: {
+          member_id
+        },
+        options: Options(
+          headers: {"Content-Type": "application/json"},
+        ),
+      );
+
+      if (response?.statusCode == 200) {
+        log("Success");
+      } else {
+        log('Failed to readStatus: ${response?.statusMessage}');
+      }
+    } catch (e) {
+      log('Error readStatus: $e');
+      Fluttertoast.showToast(
+        msg: " failed to readStatus $e",
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );

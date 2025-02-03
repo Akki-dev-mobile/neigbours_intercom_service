@@ -13,6 +13,7 @@ class ApiUrls {
   static String get visitorLog => '$gateBaseUrl/visitor/log';
   static String get visitorCheckout => '$gateBaseUrl/visitor/checkout';
   static String get visitorSendLogs => '$gateBaseUrl/visitor/sendLogs';
+  static String get readStatus => '$gateBaseUrl/visitor/requestApproval';
   static String get visitorGetLog => '$gateBaseUrl/visitor/getLog';
   static String get visitorApprovals => '$gateBaseUrl/visitor/approvals';
 

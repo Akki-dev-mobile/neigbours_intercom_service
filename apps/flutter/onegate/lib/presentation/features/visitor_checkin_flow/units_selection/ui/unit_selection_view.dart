@@ -309,7 +309,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           // // Add your confirm logic here
                           Navigator.pop(context);
                           _handleSelectionSubmit(selectedMembers);
-
                         },
                         child: const Text(
                           'Confirm',
@@ -1294,14 +1293,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     } on DioError catch (e) {
       log("anna$requestData");
 
-      Fluttertoast.showToast(
-          msg: "NOt Send${e.toString()}",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0);
       _handleDioError(e, visitorLogData);
     }
   }
@@ -1519,16 +1510,32 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     ? null
                                     : await remoteDataSource.checkIn(data);
                                 Navigator.pop(context);
-                                final prefs = await SharedPreferences.getInstance();
-                        final logID    =    prefs.getString("visitor_log",);
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                final logID = prefs.getString(
+                                  "visitor_log",
+                                );
+                                final status =
+                                    await remoteDataSource.readStatus(selectedMemberIds.first,widget.visitor);
 
-                                await    Navigator.push(
+                                if (status["message"] ==
+                                    "New approval required.") {
+                                  await Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) => RequestPermissionPage(
-                                          visitor: widget.visitor,
-logID : logID
-                                        )));
+                                      builder: (context) =>
+                                          const GateDashboardView(),
+                                    ),
+                                  );
+                                } else {
+                                  await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              RequestPermissionPage(
+                                                  visitor: widget.visitor,
+                                                  logID: logID)));
+                                }
                               } catch (e) {
                                 log('Error in approved dialog: $e');
                                 setState(() {
