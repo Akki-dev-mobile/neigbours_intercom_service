@@ -13,7 +13,6 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -80,6 +79,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<int> selectedUnits = {};
   String? selectedgate;
   List<dynamic> _allMembers = [];
+  List<dynamic> _approvals = [];
   String? companyId;
   String? companyName;
   bool isLoading = true;
@@ -306,10 +306,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           ),
                         ),
                         onPressed: () {
-                          // Add your confirm logic here
-                          Navigator.push(context, MaterialPageRoute(builder: (context)=>RequestPermissionPage(visitor: widget.visitor,)));
-                          // Navigator.pop(context);
-                          // _handleSelectionSubmit(selectedMembers);
+                          // // Add your confirm logic here
+                          Navigator.pop(context);
+                          _handleSelectionSubmit(selectedMembers);
+
                         },
                         child: const Text(
                           'Confirm',
@@ -327,46 +327,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildBottomBar(Set<String> selectedMember) {
-    return GestureDetector(
-      onTap: () => _showSelectedMembersBottomSheet(selectedMember),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.people),
-                const SizedBox(width: 8),
-                Text(
-                  selectedMember.length > 1
-                      ? '${selectedMember.length} Selected'
-                      : selectedMember.first,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: Colors.white),
-                ),
-              ],
-            ),
-            const Icon(Icons.keyboard_arrow_up),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1270,9 +1230,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<Map<String, String>> _prepareRequestData(
-      String userId,
-      List<String> savedMobileNumbers,
-      ) async {
+    String userId,
+    List<String> savedMobileNumbers,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final visitorLogId = prefs.getString("visitor_log") ?? "";
     final String? visitorId = prefs.getString('visitorId');
@@ -1281,7 +1241,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     log("Visitor Log ID: $visitorLogId");
 
     return {
-      'company_id': companyId.toString(), // Ensure companyId is defined
+      'company_id': companyId.toString(),
       'name': widget.guestname, // Ensure widget.guestname is defined
       'mobile': widget.mobileNumber, // Ensure widget.mobileNumber is defined
       'purpose': "Guest", // Hardcoded as per the curl request
@@ -1289,14 +1249,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567" // Default value as per the curl request
           : int.parse(userId).toString(),
-      'visitor_count': widget.guestCount.toString(), // Ensure widget.guestCount is defined
-      'member_mobile_number': "8452060059", // Hardcoded as per the curl request
-      'visitor_id': visitorId ?? "1", // Default value as per the curl request
-      'purpose_category': widget.purposeCategory.categoryId.toString(), // Ensure widget.purposeCategory is defined
+      'visitor_count': widget.guestCount.toString(),
+      'member_mobile_number': "8452060059",
+      'visitor_id': visitorId ?? "1",
+      'purpose_category': widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
-      'coming_from': widget.comingFrom ?? "Bandra", // Default value as per the curl request
+      'coming_from': widget.comingFrom ?? "Bandra",
       'member_id': selectedMemberIds.isNotEmpty
-          ? selectedMemberIds.first.toString() // Ensure selectedMemberIds is defined
+          ? selectedMemberIds.first.toString()
           : "232", // Default value as per the curl request
       'company_name': companyName ?? "", // Ensure companyName is defined
       'purpose_details': "Guest", // Hardcoded as per the curl request
@@ -1559,13 +1519,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     ? null
                                     : await remoteDataSource.checkIn(data);
                                 Navigator.pop(context);
-                                await Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const GateDashboardView(),
-                                  ),
-                                );
+                                final prefs = await SharedPreferences.getInstance();
+                        final logID    =    prefs.getString("visitor_log",);
+
+                                await    Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => RequestPermissionPage(
+                                          visitor: widget.visitor,
+logID : logID
+                                        )));
                               } catch (e) {
                                 log('Error in approved dialog: $e');
                                 setState(() {

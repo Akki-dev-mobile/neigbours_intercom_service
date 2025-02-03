@@ -1,5 +1,9 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -11,10 +15,12 @@ import 'package:material_symbols_icons/symbols.dart';
 
 class RequestPermissionPage extends StatefulWidget {
   final Visitor visitor;
+  String? logID;
 
-  const RequestPermissionPage({
+  RequestPermissionPage({
     super.key,
     required this.visitor,
+    this.logID,
   });
 
   @override
@@ -23,20 +29,72 @@ class RequestPermissionPage extends StatefulWidget {
 
 class _RequestPermissionView1State extends State<RequestPermissionPage> {
   double lottieAnimationSize = 250;
+  List<dynamic> _approvals = [];
   RequestType requestType = RequestType.rejected;
+  final remoteDataSource = RemoteDataSource(
+      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
+
+  void initState() {
+    _fetchApprovals(widget.logID);
+  }
+
+  Future<void> _fetchApprovals(String? logID) async {
+    try {
+      // Fetch approvals from remoteDataSource
+      final approvals = await remoteDataSource.fetchApprovals(logID ?? "");
+
+      if (approvals.isEmpty) {
+        log("No approvals found for logID: $logID");
+        return;
+      }
+
+      log("Missed approvals: $approvals");
+
+      // Find the correct visitor log entry using logID
+      final matchingApproval = approvals.firstWhere(
+        (approval) => approval["visitor_log_id"].toString() == logID,
+        orElse: () => null, // Handle case where no match is found
+      );
+
+      if (matchingApproval == null) {
+        log("No matching visitor_log_id found for logID: $logID");
+        return;
+      }
+
+      // Update state with the matched approval
+      setState(() {
+        _approvals = [matchingApproval]; // Store only the matched approval
+        requestType = _mapAllowStatusToRequestType(
+            matchingApproval["allow_status"]?.toString().toLowerCase());
+      });
+    } catch (e) {
+      log("Error fetching approvals: $e");
+    }
+  }
+
+  RequestType _mapAllowStatusToRequestType(String? status) {
+    switch (status) {
+      case "approved":
+        return RequestType.approved;
+      case "rejected":
+        return RequestType.rejected;
+      case "leave_at_gate":
+        return RequestType.leaveAtGate;
+      case "not_reachable":
+        return RequestType.notRecheable;
+      case "request":
+        return RequestType.request;
+      case "waiting":
+        return RequestType.waiting;
+      case "allow_by_gatekeeper":
+        return RequestType.allowByGatekeeper;
+      default:
+        return RequestType.rejected; // Default fallback
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    List<RequestType> requestTypes = [
-      RequestType.approved,
-      RequestType.rejected,
-      RequestType.leaveAtGate,
-      RequestType.notRecheable,
-      RequestType.request,
-      RequestType.waiting,
-      RequestType.allowByGatekeeper
-    ];
-
     Color colortoshow = const Color(0xffFFB080);
 
     Size screensize = MediaQuery.of(context).size;
@@ -73,11 +131,11 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
               DropdownButton<RequestType>(
                 value: requestType,
                 hint: const Text("Select Request Type"),
-                items: requestTypes.map((RequestType type) {
+                items: RequestType.values.map((RequestType type) {
+                  // Corrected
                   return DropdownMenuItem<RequestType>(
                     value: type,
-                    child: Text(
-                        type.toString().split('.').last), // Extracts enum name
+                    child: Text(type.toString().split('.').last),
                   );
                 }).toList(),
                 onChanged: (RequestType? newValue) {
@@ -112,7 +170,7 @@ class _RequestPermissionView1State extends State<RequestPermissionPage> {
                             width: screensize.height * 0.1,
                             height: screensize.height * 0.1,
                             fit: BoxFit.cover,
-                            "https://t4.ftcdn.net/jpg/03/64/21/11/360_F_364211147_1qgLVxv1Tcq0Ohz3FawUfrtONzz8nq3e.jpg"),
+                            widget.visitor.visitor_image ?? ""),
                       ),
                       SizedBox(width: screensize.width * 0.1),
                       Column(

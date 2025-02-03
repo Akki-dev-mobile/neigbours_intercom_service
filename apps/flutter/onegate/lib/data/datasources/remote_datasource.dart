@@ -947,31 +947,45 @@ class RemoteDataSource {
   }
 
   /// Fetch approvals
-  Future<List<dynamic>> fetchApprovals() async {
+  Future<List<dynamic>> fetchApprovals([logID]) async {
     try {
+      // Retrieve the selected gate name from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName =
-          prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
 
+      // Fetch the company details (e.g., society ID) from a local storage
       final companyDetails = await gateStorage.getSocietyId();
       final resolvedCompanyId = companyDetails;
-      final String url =
-          '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
 
-      final response = await _dio2?.get(url);
+      // Construct the base URL for the API request
+      final String baseUrl = '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
+
+      // Add query parameters if `logID` is not null
+      final Map<String, dynamic> queryParams = {};
+      if (logID != null) {
+        queryParams['logID'] = logID;
+      }
+
+      // Make an HTTP GET request using the `_dio2` instance with query parameters
+      final response = await _dio2?.get(baseUrl, queryParameters: queryParams);
+
+      // Check if the response status code is 200 (OK)
       if (response?.statusCode == 200) {
+        // Extract the data from the response and return it
         final List<dynamic> data = response?.data['data'] ?? [];
         return data;
       } else {
-        throw Exception(
-            'Failed to fetch approvals: ${response?.statusCode}, ${response?.data}');
+        // Throw an exception if the request fails
+        throw Exception('Failed to fetch approvals: ${response?.statusCode}, ${response?.data}');
       }
     } catch (e) {
+      // Log any errors that occur during the process
       log('Error fetching approvals: $e');
+
+      // Rethrow the exception to propagate it to the caller
       rethrow;
     }
   }
-
   /// Send visitor logs
   Future<void> sendLogs(Map<String, dynamic> visitorData) async {
     try {
