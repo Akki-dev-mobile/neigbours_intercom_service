@@ -6,7 +6,9 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:lottie/lottie.dart';
@@ -15,8 +17,10 @@ import 'package:material_symbols_icons/symbols.dart';
 class RequestPermissionPage extends StatefulWidget {
   final Visitor visitor;
   final String? logID;
+  final VisitorLog? visitorLog;
 
-  const RequestPermissionPage({super.key, required this.visitor, this.logID});
+  const RequestPermissionPage(
+      {super.key, required this.visitor, this.logID, this.visitorLog});
 
   @override
   State<RequestPermissionPage> createState() => _RequestPermissionPageState();
@@ -37,7 +41,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   void _startFetchingApprovals() {
-    // Run the function every 5 seconds
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _fetchApprovals(widget.logID);
     });
@@ -45,7 +48,13 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   Future<void> _fetchApprovals(String? logID) async {
     try {
-      final approvals = await remoteDataSource.fetchApprovals(logID ?? "");
+      if (logID == null || logID.isEmpty) {
+        log("Invalid logID provided");
+        return;
+      }
+
+      final List<VisitorInfo> approvals =
+          await remoteDataSource.fetchApprovals(logID);
       log("Fetched Approvals: $approvals");
 
       if (approvals.isEmpty) {
@@ -53,12 +62,20 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         return;
       }
 
-      final matchingApproval = approvals.firstWhere(
-        (approval) => approval["visitor_log_id"].toString() == logID,
-        orElse: () => null,
-      );
+      final matchingApprovals = approvals
+          .where(
+            (approval) => approval.visitorLogId?.toString() == logID,
+          )
+          .toList();
 
-      if (matchingApproval == null) {
+      if (matchingApprovals.isEmpty) {
+        log("No matching visitor_log_id found for logID: $logID");
+        return;
+      }
+
+      final matchingApproval = matchingApprovals.first;
+
+      if (matchingApproval.visitorLogId == null) {
         log("No matching visitor_log_id found for logID: $logID");
         return;
       }
@@ -66,18 +83,30 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       if (mounted) {
         setState(() {
           requestType = _mapAllowStatusToRequestType(
-              matchingApproval["allow_status"]?.toString().toLowerCase());
+              matchingApproval.allowStatus.toLowerCase());
           isLoading = false;
         });
       }
+
+      if (requestType == RequestType.approved ||
+          requestType == RequestType.rejected ||
+          requestType == RequestType.leaveAtGate) {
+        _timer?.cancel();
+        log("Stopping API polling as requestType is: $requestType");
+      }
     } catch (e) {
       log("Error fetching approvals: $e");
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Stop the timer when the widget is disposed
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -168,6 +197,15 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   Widget _buildVisitorCard(Color colortoshow, Size screensize) {
+    String unitList = '';
+
+    if (widget.visitorLog?.visitor_building_assignment != null &&
+        widget.visitorLog!.visitor_building_assignment!.isNotEmpty) {
+      unitList = widget.visitorLog!.visitor_building_assignment!
+          .expand((assignment) => assignment.unit_id ?? [])
+          .map((unit) => unit.toString())
+          .join(', ');
+    }
     return Card(
       child: ListTile(
         leading: CircleAvatar(
@@ -184,7 +222,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                 iconColor: Colors.green,
                 title: widget.visitor.mobile!),
             InfoLileWidget(
-                icon: Symbols.apartment, iconColor: colortoshow, title: 'N/A'),
+                icon: Symbols.apartment,
+                iconColor: colortoshow,
+                title: unitList),
           ],
         ),
       ),
@@ -275,7 +315,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                       builder: (context) => RequestPermissionView(
                             visitor: Visitor(),
                             purposeCategory: PurposeCategory1(
-                                categoryId: 123, categoryName: "categoryName"),
+                                categoryId: widget.visitorLog
+                                        ?.visitor_purpose_category_id ??
+                                    0,
+                                categoryName: widget.visitorLog
+                                        ?.visitor_purpose_Category_name ??
+                                    ""),
                           )));
             },
             text: "Finish");
@@ -301,7 +346,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                       builder: (context) => RequestPermissionView(
                             visitor: Visitor(),
                             purposeCategory: PurposeCategory1(
-                                categoryId: 123, categoryName: "categoryName"),
+                                categoryId: widget.visitorLog
+                                        ?.visitor_purpose_category_id ??
+                                    0,
+                                categoryName: widget.visitorLog
+                                        ?.visitor_purpose_Category_name ??
+                                    ""),
                           )));
             },
             text: "Request permission");
@@ -314,7 +364,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                       builder: (context) => RequestPermissionView(
                             visitor: Visitor(),
                             purposeCategory: PurposeCategory1(
-                                categoryId: 123, categoryName: "categoryName"),
+                                categoryId: widget.visitorLog
+                                        ?.visitor_purpose_category_id ??
+                                    0,
+                                categoryName: widget.visitorLog
+                                        ?.visitor_purpose_Category_name ??
+                                    ""),
                           )));
             },
             text: "Finish");
@@ -330,8 +385,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                         builder: (context) => RequestPermissionView(
                               visitor: Visitor(),
                               purposeCategory: PurposeCategory1(
-                                  categoryId: 123,
-                                  categoryName: "categoryName"),
+                                  categoryId: widget.visitorLog
+                                          ?.visitor_purpose_category_id ??
+                                      0,
+                                  categoryName: widget.visitorLog
+                                          ?.visitor_purpose_Category_name ??
+                                      ""),
                             )));
               },
               text: "Finish");

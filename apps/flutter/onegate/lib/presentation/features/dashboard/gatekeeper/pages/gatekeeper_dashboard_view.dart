@@ -233,7 +233,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 actions: [
                         IconButton(
                           onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen(remoteDataSource: remoteDataSource,)));
                           },
                           icon: Icon(
                             Symbols.phone_missed_rounded,

@@ -1249,7 +1249,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? "234567" // Default value as per the curl request
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "8452060059",
+      'member_mobile_number': "917378880544",
       'visitor_id': visitorId ?? "1",
       'purpose_category': widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
@@ -1258,14 +1258,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? selectedMemberIds.first.toString()
           : "232", // Default value as per the curl request
       'company_name': companyName ?? "", // Ensure companyName is defined
-      'purpose_details': "Guest", // Hardcoded as per the curl request
     };
   }
 
   Future<void> _sendFcmNotification(
       Map<String, String> requestData, VisitorLog visitorLogData) async {
     try {
-      await remoteDataSource.checkIn(visitorLogData);
+      await remoteDataSource.checkIn(visitorLogData, statusallowed);
 
       final response = await Dio().post(
         'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
@@ -1449,6 +1448,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     });
   }
 
+  bool statusallowed = false;
+
   Future<void> _showApprovedDialog(
       BuildContext context, VisitorLog data) async {
     showDialog(
@@ -1488,7 +1489,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               CircularProgressIndicator(),
                               SizedBox(height: 16),
                               Text(
-                                "please wait checkin",
+                                "Please wait, checking in...",
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
@@ -1506,36 +1507,25 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               });
 
                               try {
-                                _membersApproval == true
-                                    ? null
-                                    : await remoteDataSource.checkIn(data);
+                                // _membersApproval == true
+                                //     ? null
+                                //     :
+                                await remoteDataSource.checkIn(
+                                    data, statusallowed);
                                 Navigator.pop(context);
                                 final prefs =
                                     await SharedPreferences.getInstance();
                                 final logID = prefs.getString(
                                   "visitor_log",
                                 );
-                                final status =
-                                    await remoteDataSource.readStatus(selectedMemberIds.first,widget.visitor);
 
-                                if (status["message"] ==
-                                    "New approval required.") {
-                                  await Navigator.pushReplacement(
+                                await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          const GateDashboardView(),
-                                    ),
-                                  );
-                                } else {
-                                  await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              RequestPermissionPage(
-                                                  visitor: widget.visitor,
-                                                  logID: logID)));
-                                }
+                                        builder: (context) =>
+                                            RequestPermissionPage(
+                                                visitor: widget.visitor,
+                                                logID: logID)));
                               } catch (e) {
                                 log('Error in approved dialog: $e');
                                 setState(() {

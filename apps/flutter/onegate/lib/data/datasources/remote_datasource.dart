@@ -18,6 +18,8 @@ import 'package:intl/intl.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../presentation/features/missed_approval/missed_approval_screen.dart';
+
 final keycloakConfig = KeycloakConfig(
   bundleIdentifier: 'com.example.keyclockflutter',
   clientId: 'onegate-sso',
@@ -275,7 +277,8 @@ class RemoteDataSource {
   }
 
   /// Check-in a visitor
-  Future<VisitorLog?> checkIn(VisitorLog visitorLog) async {
+  Future<VisitorLog?> checkIn(VisitorLog visitorLog,
+      [bool? statusallowed]) async {
     print("Attempting check-in...");
 
     try {
@@ -309,6 +312,7 @@ class RemoteDataSource {
         'in_gate': selectedGateName,
         'company_name': companyName,
         'member_details': memberDetails,
+        "is_always_allowed": statusallowed
       });
 
       print("Final Payload: $data");
@@ -946,48 +950,72 @@ class RemoteDataSource {
     }
   }
 
-  /// Fetch approvals
-  Future<List<dynamic>> fetchApprovals([logID]) async {
+  Future<List<VisitorInfo>> fetchApprovals([String? logID]) async {
     try {
-      // Retrieve the selected gate name from SharedPreferences
+      // Get gate name from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
           prefs.getString('selected_gate') ?? "Default Gate";
 
-      // Fetch the company details (e.g., society ID) from a local storage
-      final companyDetails = await gateStorage.getSocietyId();
-      final resolvedCompanyId = companyDetails;
+      // Get company details
+      final resolvedCompanyId = await gateStorage.getSocietyId();
 
-      // Construct the base URL for the API request
+      // Construct URL and query parameters
       final String baseUrl =
           '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
+      final Map<String, dynamic> queryParams =
+          logID != null ? {'logID': logID} : {};
 
-      // Add query parameters if `logID` is not null
-      final Map<String, dynamic> queryParams = {};
-      if (logID != null) {
-        queryParams['logID'] = logID;
-      }
-
-      // Make an HTTP GET request using the `_dio2` instance with query parameters
+      // Make API request
       final response = await _dio2?.get(baseUrl, queryParameters: queryParams);
 
-      // Check if the response status code is 200 (OK)
       if (response?.statusCode == 200) {
-        // Extract the data from the response and return it
         final List<dynamic> data = response?.data['data'] ?? [];
-        return data;
+
+        // Manual mapping of the data to VisitorInfo objects
+        return data.map((json) {
+          // Map MemberInfo first
+          final memberInfo = MemberInfo(
+              name: json['member_name']?.toString() ?? '',
+              mobileNumber: json['memb_mobile_number']?.toString(),
+              email: json['memb_email']?.toString(),
+              memberId: _parseToInt(json['member_id']),
+              unitId: _parseToInt(json['unit_id']));
+
+          // Then create VisitorInfo with the mapped MemberInfo
+          return VisitorInfo(
+              visitorId: _parseToInt(json['visitor_id']),
+              visitorName: json['visitor_name']?.toString() ?? '',
+              visitorMobile: json['visitor_mobile']?.toString() ?? '',
+              visitorImage: json['visitor_image']?.toString() ?? '',
+              allowStatus: json['allow_status']?.toString() ?? '',
+              visitorLogId: _parseToInt(json['visitor_log_id']),
+              companyId: _parseToInt(json['company_id']),
+              inGate: json['in_gate']?.toString() ?? '',
+              logCreatedAt: json['log_created_at']?.toString() ?? '',
+              memberInfo: memberInfo,
+              visitorComingFrom: json['visitor_coming_from']?.toString(),
+              visitorPurposeCategoryId:
+                  _parseToInt(json['visitor_purpose_category_id']));
+        }).toList();
       } else {
-        // Throw an exception if the request fails
         throw Exception(
             'Failed to fetch approvals: ${response?.statusCode}, ${response?.data}');
       }
     } catch (e) {
-      // Log any errors that occur during the process
       log('Error fetching approvals: $e');
-
-      // Rethrow the exception to propagate it to the caller
       rethrow;
     }
+  }
+
+  // Helper method to safely parse integers
+  int _parseToInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return 0;
   }
 
   /// Send visitor logs
@@ -1020,13 +1048,18 @@ class RemoteDataSource {
     }
   }
 
-  /// Send visitor logs
-  Future<void> readStatus(memberID, visitorId) async {
+  /// read status
+  Future<Response?> readStatus(String memberID, String visitorId) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final String? visitorId1 = prefs.getString('visitorId');
+
       final response = await _dio2?.post(
         ApiUrls.readStatus,
         data: {
-          member_id
+          "member_id": memberID,
+          "visitor_id": visitorId1,
         },
         options: Options(
           headers: {"Content-Type": "application/json"},
@@ -1034,17 +1067,15 @@ class RemoteDataSource {
       );
 
       if (response?.statusCode == 200) {
-        log("Success");
+        log("Success: ${response?.data}");
+        return response;
       } else {
         log('Failed to readStatus: ${response?.statusMessage}');
+        return null;
       }
     } catch (e) {
       log('Error readStatus: $e');
-      Fluttertoast.showToast(
-        msg: " failed to readStatus $e",
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+      return null;
     }
   }
 
