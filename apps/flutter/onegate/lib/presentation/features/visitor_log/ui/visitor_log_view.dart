@@ -1,11 +1,11 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:developer';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -13,6 +13,9 @@ import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
@@ -25,14 +28,13 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:provider/provider.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
   final List<String> logList;
   final String? selectedBuilding;
   int? societyID;
-
   VisitorLogView({
     required this.id,
     required this.logList,
@@ -49,10 +51,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   String? _searchText = "";
   var selectedGateName;
   late FocusNode _searchFocusNode;
-  static const _pageSize = 15;
-
-  final PagingController<int, VisitorLog> _pagingController =
-      PagingController(firstPageKey: 0);
 
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
@@ -74,9 +72,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   @override
   void initState() {
     super.initState();
-    _pagingController.addPageRequestListener((pageKey) {
-      _fetchPage(pageKey);
-    });
     selectedId = widget.id;
 
     switch (widget.id) {
@@ -86,6 +81,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       case "Visitor In":
         _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
+
       case "Cards":
         _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
@@ -96,50 +92,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     _initializeSocietyId();
     getSelectedGate();
     _searchFocusNode = FocusNode();
+
+    // _storeTodayLogsCount(context);
   }
 
   @override
   void dispose() {
-    _pagingController.dispose();
     _searchFocusNode.dispose();
+
     super.dispose();
-  }
-
-  Future<void> _fetchPage(int pageKey) async {
-    try {
-      final newItems = await _getVisitorLogsForPage(pageKey);
-      final isLastPage = newItems.length < _pageSize;
-      if (isLastPage) {
-        _pagingController.appendLastPage(newItems);
-      } else {
-        final nextPageKey = pageKey + newItems.length;
-        _pagingController.appendPage(newItems, nextPageKey);
-      }
-    } catch (error) {
-      _pagingController.error = error;
-    }
-  }
-
-  Future<List<VisitorLog>> _getVisitorLogsForPage(int pageKey) async {
-    final state = _visitorLogBloc.state;
-
-    if (state is VisitorLogSuccessState) {
-      final allLogs = state.visitorLogs ?? [];
-      final filteredLogs = _getFilteredVisitors(allLogs);
-
-      final startIndex = pageKey;
-      final endIndex = startIndex + _pageSize;
-
-      if (startIndex >= filteredLogs.length) {
-        return [];
-      }
-
-      return filteredLogs.sublist(
-        startIndex,
-        endIndex > filteredLogs.length ? filteredLogs.length : endIndex,
-      );
-    }
-    return [];
   }
 
   Future<void> getSelectedGate() async {
@@ -156,234 +117,357 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
-      pageBody: BlocConsumer<VisitorLogBloc, VisitorLogState>(
-        bloc: _visitorLogBloc,
-        listenWhen: (previous, current) => current is VisitorLogActionState,
-        buildWhen: (previous, current) => current is! VisitorLogActionState,
-        listener: (context, state) {
-          if (state is VisitorLogCheckOutSuccessState &&
-              state.isCheckOut == true) {
+    final today = DateTime.now();
+    final yesterday = today.subtract(Duration(days: 1));
+
+    return BlocConsumer<VisitorLogBloc, VisitorLogState>(
+      bloc: _visitorLogBloc,
+      listenWhen: (previous, current) => current is VisitorLogActionState,
+      buildWhen: (previous, current) => current is! VisitorLogActionState,
+      listener: (context, state) {
+        switch (state.runtimeType) {
+          case VisitorLogCheckOutSuccessState:
+            final successState = state as VisitorLogCheckOutSuccessState;
+            if (successState.isCheckOut!) {
+              Fluttertoast.showToast(
+                msg: "User Checked Out Successfully",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.CENTER,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0,
+              );
+              _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
+            }
+            break;
+          case VisitorCheckInLogSuccessState:
+            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
             Fluttertoast.showToast(
-              msg: "User Checked Out Successfully",
+              msg: "Visitor Checked Out Successfully",
               toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
+              gravity: ToastGravity.CENTER,
+              timeInSecForIosWeb: 1,
               backgroundColor: Colors.green,
               textColor: Colors.white,
+              fontSize: 16.0,
             );
-          } else if (state is VisitorCheckInLogSuccessState) {
-            Fluttertoast.showToast(
-              msg: "Visitor Checked In Successfully",
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
-              backgroundColor: Colors.blue,
-              textColor: Colors.white,
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is VisitorLogLoadingState) {
+            break;
+        }
+      },
+      builder: (context, state) {
+        switch (state.runtimeType) {
+          case VisitorLogLoadingState:
             return LoaderView();
-          } else if (state is VisitorLogSuccessState) {
-            final visitorLogs = state.visitorLogs ?? [];
-            final uniqueVisitorLogs = _getUniqueVisitorLogs(visitorLogs);
-            final filteredVisitors = _getFilteredVisitors(uniqueVisitorLogs);
+          case VisitorLogSuccessState:
+            final successState = state as VisitorLogSuccessState;
+            final visitorLogs = successState.visitorLogs ?? [];
+            List<VisitorLog> uniqueVisitorLogs = [];
+            Set<String> checkInTimes = {};
 
-            return Container(
-                padding: const EdgeInsets.only(bottom: 100),
-                height: MediaQuery.of(context).size.height,
-                child: Column(children: [
-                  _buildSearchField(),
-                  if (filteredVisitors.isEmpty)
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SingleChildScrollView(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight,
+            for (var log in visitorLogs) {
+              final checkInTime = log.visitor_check_in?.toIso8601String();
+              if (!checkInTimes.contains(checkInTime)) {
+                checkInTimes.add(checkInTime!);
+                uniqueVisitorLogs.add(log);
+              }
+            }
+
+            List<VisitorLog> filteredVisitors = uniqueVisitorLogs
+                .where((visitorLog) => visitorLog.visitor!.name!
+                .toLowerCase()
+                .contains(_searchText!.toLowerCase()))
+                .toList();
+
+            final today = DateTime.now();
+            final startOfToday = DateTime(today.year, today.month, today.day);
+            final endOfToday = startOfToday.add(const Duration(days: 1));
+            final startOfYesterday =
+            startOfToday.subtract(const Duration(days: 1));
+            final endOfYesterday = startOfToday;
+
+            List<VisitorLog> todayLogs = filteredVisitors.where((log) {
+              final checkInDate = log.visitor_check_in!;
+              return checkInDate.isAfter(startOfToday) &&
+                  checkInDate.isBefore(endOfToday);
+            }).toList();
+
+            List<VisitorLog> todayCheckoutLogs = filteredVisitors.where((log) {
+              final checkOutDate = log.visitor_check_out;
+              return checkOutDate != null &&
+                  checkOutDate.isAfter(startOfToday) &&
+                  checkOutDate.isBefore(endOfToday);
+            }).toList();
+
+            Future<void> _storeTodayLogsCount(int count, String key) async {
+              final prefs = await SharedPreferences.getInstance();
+              prefs.setInt(key, count);
+            }
+
+            _storeTodayLogsCount(todayLogs.length, 'todayLogsCount');
+            _storeTodayLogsCount(
+                todayCheckoutLogs.length, 'todayCheckoutLogsCount');
+
+            List<VisitorLog> yesterdayLogs = filteredVisitors.where((log) {
+              final checkInDate = log.visitor_check_in!;
+              return checkInDate.isAfter(startOfYesterday) &&
+                  checkInDate.isBefore(endOfYesterday);
+            }).toList();
+
+            List<VisitorLog> olderLogs = filteredVisitors.where((log) {
+              final checkInDate = log.visitor_check_in!;
+              return checkInDate.isBefore(startOfYesterday);
+            }).toList();
+            bool _isPopping = false;
+
+            void _safePop(BuildContext context) {
+              if (!_isPopping) {
+                _isPopping = true;
+                Navigator.of(context).pop();
+                Future.delayed(Duration(milliseconds: 300), () {
+                  _isPopping = false;
+                });
+              }
+            }
+
+            return WillPopScope(
+              onWillPop: () async {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => GateDashboardView()),
+                      (Route<dynamic> route) => false,
+                );
+
+                return false;
+              },
+              child: MyScrollView(
+                // isScrollable: false,
+                hasBackButton: false,
+                pageTitleWidget: Hero(
+                  tag: 'page_title',
+                  child: Text(
+                    widget.id,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+                actions: [
+                  if (widget.id == "In Out Book")
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () async {
+                                await _showExportBottomSheet(
+                                    context, visitorLogs);
+                              },
+                              icon: const Icon(
+                                Icons.download_rounded,
+                                color: Colors.black,
                               ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.person_search_rounded,
-                                      size: 64,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No Visitor Logs Found',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey[700],
-                                          ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'There are no visitor logs to display',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
+                              tooltip: 'Download Logs',
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.only(right: 8.0),
+                              child: Text(
+                                'Export',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
                     )
-                ]));
-          }
-          return Center(child: Text("Unexpected error occurred."));
-        },
-      ),
-      actions: _buildActions(context, []),
-      pageTitle: widget.id,
-    );
-  }
-
-// Utility functions for filtering logs
-  List<VisitorLog> _getUniqueVisitorLogs(List<VisitorLog> logs) {
-    Set<String> checkInTimes = {};
-    return logs.where((log) {
-      final checkInTime = log.visitor_check_in?.toIso8601String();
-      if (checkInTime != null && !checkInTimes.contains(checkInTime)) {
-        checkInTimes.add(checkInTime);
-        return true;
-      }
-      return false;
-    }).toList();
-  }
-
-  List<VisitorLog> _getFilteredVisitors(List<VisitorLog> logs) {
-    if (_searchText == null || _searchText!.isEmpty) {
-      return logs; // Return all logs if no search text
-    }
-
-    final searchLower = _searchText!.toLowerCase();
-
-    return logs.where((log) {
-      final visitorName = log.visitor?.name?.toLowerCase() ?? '';
-      final cardNumber = log.visitor_card_number?.toLowerCase() ?? '';
-      final unitIds = log.visitor_building_assignment
-              ?.expand((assignment) => assignment.unit_id ?? [])
-              .map((unit) => unit.toLowerCase())
-              .toList() ??
-          [];
-
-      return visitorName.contains(searchLower) ||
-          cardNumber.contains(searchLower) ||
-          unitIds.any((u) => u.contains(searchLower));
-    }).toList();
-  }
-
-// Widgets for reusable UI components
-  List<Widget> _buildActions(BuildContext context, List<VisitorLog> logs) {
-    return [
-      if (widget.id == "In Out Book")
-        GestureDetector(
-          onTap: () => _showExportBottomSheet(context, logs),
-          child: Padding(
-            padding: const EdgeInsets.only(right: 10.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.download_rounded, color: Colors.black),
-                    SizedBox(width: 8),
-                    Text(
-                      'Export',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                ],
+                pageBody: Column(
+                  children: [
+                    CustomForm.textField(
+                      widget.selectedBuilding ?? 'Search',
+                      focusNode: _searchFocusNode,
+                      titleColor: Theme.of(context).colorScheme.onSurface,
+                      hintColor: Theme.of(context).colorScheme.onSurface,
+                      hintText: 'Search Visitor',
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.search,
+                      onFieldSubmitted: (value) {
+                        if (kDebugMode) {
+                          print(value);
+                        }
+                      },
+                      onChanged: (value) {
+                        setState(() {
+                          _searchText = value;
+                        });
+                      },
+                      prefixIcon: IconButton(
+                        onPressed: () {},
+                        icon: Icon(
+                          Ionicons.search_outline,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          _showLogBookConfigBottomSheet(context);
+                        },
+                        icon: Icon(
+                          Ionicons.funnel_outline,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                    if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_off_outlined,
+                              size: 48,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No such visitors found in log',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.7),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (todayLogs.isEmpty && _searchText!.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_off_outlined,
+                              size: 48,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No visitors today',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'When visitors check in, they will appear here',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.7),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ListView.builder(
+                      physics: BouncingScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: todayLogs.length +
+                          yesterdayLogs.length +
+                          olderLogs.length +
+                          (todayLogs.isNotEmpty ? 1 : 0) +
+                          (yesterdayLogs.isNotEmpty ? 1 : 0) +
+                          (olderLogs.isNotEmpty ? 1 : 0), // Add headers count
+                      itemBuilder: (context, index) {
+                        int currentIndex = 0;
+
+                        // Today Section
+                        if (todayLogs.isNotEmpty) {
+                          if (index == currentIndex) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [],
+                            );
+                          }
+                          if (index > currentIndex &&
+                              index <= currentIndex + todayLogs.length) {
+                            return VisitorLogItem(
+                              visitorLog: todayLogs[index - currentIndex - 1],
+                              onCheckOut: () {
+                                setState(() {
+                                  todayLogs[index - currentIndex - 1]
+                                      .visitor_check_out =
+                                      Utils.getCurrentTime();
+                                  todayLogs[index - currentIndex - 1]
+                                      .is_checked_out = true;
+                                });
+
+                                // Emit a success state with updated logs directly
+                                _visitorLogBloc
+                                    .emit(VisitorLogSuccessState(todayLogs));
+
+                                // Trigger the Bloc event to process the checkout for backend synchronization
+                                _visitorLogBloc.add(CheckOutEvent(
+                                  todayLogs[index - currentIndex - 1],
+                                  widget.id,
+                                ));
+                              },
+                            );
+                          }
+                          currentIndex +=
+                              todayLogs.length + 1; // Add 1 for header
+                        }
+
+                        return const SizedBox
+                            .shrink(); // Fallback in case of unexpected index
+                      },
+                    ),
+                    const SizedBox(
+                      height: 100,
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-        ),
-    ];
-  }
-
-  Widget _buildSearchField() {
-    return CustomForm.textField(
-      widget.selectedBuilding ?? 'Search',
-      focusNode: _searchFocusNode,
-      titleColor: Theme.of(context).colorScheme.onSurface,
-      hintColor: Theme.of(context).colorScheme.onSurface,
-      hintText: 'Search ${widget.id != 'Cards' ? 'visitor' : 'card number'}',
-      textCapitalization: TextCapitalization.words,
-      textInputAction: TextInputAction.search,
-      onChanged: (value) {
-        setState(() {
-          _searchText = value;
-        });
-        _pagingController.refresh();
+            );
+          default:
+            return Container();
+        }
       },
-      prefixIcon: Icon(Ionicons.search_outline),
-      suffixIcon: IconButton(
-        onPressed: () {
-          _showLogBookConfigBottomSheet(context);
-        },
-        icon: Icon(
-          Ionicons.funnel_outline,
-          color: Theme.of(context).colorScheme.onSurface,
-          size: 24,
-        ),
-      ),
     );
   }
 
-  Widget _buildNoSearchResults() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.person_off_outlined, size: 48),
-          SizedBox(height: 16),
-          Text('No such visitors found in log'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoItemsFound() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.person_off_outlined, size: 48),
-          SizedBox(height: 16),
-          Text('No visitors found'),
-        ],
-      ),
-    );
-  }
-
+  bool isLoading = false;
   Future<void> _showExportBottomSheet(
       BuildContext context, List<VisitorLog> visitorLogs) async {
-    final TextEditingController emailController = TextEditingController();
-    final TextEditingController nameController = TextEditingController();
+    TextEditingController emailController = TextEditingController();
+    TextEditingController nameController = TextEditingController();
     DateTime? startDate;
     DateTime? endDate;
-    bool isLoading = false;
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final storedEmail = prefs.getString('email') ?? '';
@@ -397,220 +481,233 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-          return Container(
-            padding: EdgeInsets.only(
-              top: 16,
-              left: 16,
-              right: 16,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.background,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Form(
-              key: exportFormKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Export Logs',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomForm.textField(
-                      "Email",
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      hintText: "Enter email for export",
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value!.isEmpty) {
-                          return 'Please enter email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
-                      textController: emailController,
-                    ),
-                    const SizedBox(height: 20),
-                    FormField<DateTime>(
-                      validator: (value) {
-                        if (startDate == null) {
-                          return "Please select a start date";
-                        }
-                        return null;
-                      },
-                      builder: (fieldState) {
-                        return InkWell(
-                          onTap: () async {
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: startDate ?? DateTime.now(),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime.now(),
-                              builder: (BuildContext context, Widget? child) {
-                                return Theme(
-                                  data: ThemeData.light().copyWith(
-                                    colorScheme: ColorScheme.light(
-                                      primary: Colors.black,
-                                    ),
-                                    textButtonTheme: TextButtonThemeData(
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                startDate = picked;
-                                if (endDate != null &&
-                                    startDate!.isAfter(endDate!)) {
-                                  endDate = null;
-                                }
-                                fieldState.didChange(picked);
-                              });
-                            }
-                          },
-                          child: _buildDateField(
-                            context,
-                            label: 'From Date',
-                            date: startDate,
-                            placeholder: 'Select From Date',
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    FormField<DateTime>(
-                      validator: (value) {
-                        if (endDate == null) {
-                          return "Please select an end date";
-                        }
-                        if (startDate != null &&
-                            endDate!.isBefore(startDate!)) {
-                          return "End date cannot be earlier than start date";
-                        }
-                        return null;
-                      },
-                      builder: (fieldState) {
-                        return InkWell(
-                          onTap: () async {
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: endDate ?? DateTime.now(),
-                              firstDate: startDate ?? DateTime(2000),
-                              lastDate: DateTime.now(),
-                              builder: (BuildContext context, Widget? child) {
-                                return Theme(
-                                  data: ThemeData.light().copyWith(
-                                    colorScheme: ColorScheme.light(
-                                      primary: Colors.black,
-                                    ),
-                                    textButtonTheme: TextButtonThemeData(
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                endDate = picked;
-                                fieldState.didChange(picked);
-                              });
-                            }
-                          },
-                          child: _buildDateField(
-                            context,
-                            label: 'To Date',
-                            date: endDate,
-                            placeholder: 'Select To Date',
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    if (isLoading)
-                      const CircularProgressIndicator()
-                    else
-                      CustomLargeBtn(
-                        onPressed: () async {
-                          if (startDate == null || endDate == null) {
-                            Fluttertoast.showToast(
-                              msg: "Please select valid dates",
-                              toastLength: Toast.LENGTH_SHORT,
-                              gravity: ToastGravity.BOTTOM,
-                              backgroundColor: Colors.red,
-                              textColor: Colors.white,
-                              fontSize: 16.0,
-                            );
-                            return;
+          builder: (context, setState) {
+            return Container(
+              padding: EdgeInsets.only(
+                top: 16,
+                left: 16,
+                right: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.background,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Form(
+                key: exportFormKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Export Logs',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      CustomForm.textField(
+                        "Email",
+                        titleColor: Theme.of(context).colorScheme.onSurface,
+                        hintColor: Theme.of(context).colorScheme.onPrimary,
+                        hintText: "Enter email for export",
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value!.isEmpty) {
+                            return 'Please enter email';
                           }
-                          if (exportFormKey.currentState!.validate()) {
-                            setState(() => isLoading = true);
-
-                            await prefs.setString(
-                                'email', emailController.text);
-
-                            final formattedFromDate =
-                                DateFormat('yyyy-MM-dd').format(startDate!);
-                            final formattedToDate =
-                                DateFormat('yyyy-MM-dd').format(endDate!);
-
-                            final email = emailController.text.trim();
-                            final visitorData = {
-                              "company_id": societyId,
-                              "name": nameController.text,
-                              "to_mail": email,
-                              "from_date": formattedFromDate,
-                              "to_date": formattedToDate,
-                              "in_gate": selectedGateName,
-                            };
-
-                            try {
-                              await remoteDataSource.exportLogs(visitorData);
-                              Navigator.pop(context);
-                              showSuccessDialog(
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                        textController: emailController,
+                      ),
+                      const SizedBox(height: 20),
+                      // Start Date with Validation
+                      FormField<DateTime>(
+                        validator: (value) {
+                          if (startDate == null) {
+                            return "Please select a start date";
+                          }
+                          return null;
+                        },
+                        builder: (fieldState) {
+                          return InkWell(
+                            onTap: () async {
+                              final DateTime? picked = await showDatePicker(
                                 context: context,
-                                title: "Export logs",
-                                message: "Visitor logs exported successfully.",
+                                initialDate: startDate ?? DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime.now(),
+                                builder: (BuildContext context, Widget? child) {
+                                  return Theme(
+                                    data: ThemeData.light().copyWith(
+                                      colorScheme: ColorScheme.light(
+                                        primary: Colors
+                                            .black, // Primary color for dialog
+                                      ),
+                                      textButtonTheme: TextButtonThemeData(
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors
+                                              .black, // Black text for "Cancel" and "OK"
+                                        ),
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
                               );
-                            } catch (e) {
-                              setState(() => isLoading = false);
+                              if (picked != null) {
+                                setState(() {
+                                  startDate = picked;
+                                  // Ensure "To Date" is valid
+                                  if (endDate != null &&
+                                      startDate!.isAfter(endDate!)) {
+                                    endDate = null;
+                                  }
+                                  fieldState.didChange(picked);
+                                });
+                              }
+                            },
+                            child: _buildDateField(
+                              context,
+                              label: 'From Date',
+                              date: startDate,
+                              placeholder: 'Select From Date',
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      // End Date with Validation
+                      FormField<DateTime>(
+                        validator: (value) {
+                          if (endDate == null) {
+                            return "Please select an end date";
+                          }
+                          if (startDate != null &&
+                              endDate!.isBefore(startDate!)) {
+                            return "End date cannot be earlier than start date";
+                          }
+                          return null;
+                        },
+                        builder: (fieldState) {
+                          return InkWell(
+                            onTap: () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: endDate ?? DateTime.now(),
+                                firstDate: startDate ?? DateTime(2000),
+                                lastDate: DateTime.now(),
+                                builder: (BuildContext context, Widget? child) {
+                                  return Theme(
+                                    data: ThemeData.light().copyWith(
+                                      colorScheme: ColorScheme.light(
+                                        primary: Colors
+                                            .black, // Primary color for dialog
+                                      ),
+                                      textButtonTheme: TextButtonThemeData(
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors
+                                              .black, // Black text for "Cancel" and "OK"
+                                        ),
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  endDate = picked;
+                                  fieldState.didChange(picked);
+                                });
+                              }
+                            },
+                            child: _buildDateField(
+                              context,
+                              label: 'To Date',
+                              date: endDate,
+                              placeholder: 'Select To Date',
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      if (isLoading)
+                        const CircularProgressIndicator()
+                      else
+                        CustomLargeBtn(
+                          onPressed: () async {
+                            if (startDate == null) {
                               Fluttertoast.showToast(
-                                msg: "Failed to export logs",
+                                msg: "Please select a start date",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.BOTTOM,
+                                timeInSecForIosWeb: 1,
                                 backgroundColor: Colors.red,
                                 textColor: Colors.white,
                                 fontSize: 16.0,
                               );
-                            } finally {
-                              setState(() => isLoading = false);
+                              return;
                             }
-                          }
-                        },
-                        text: "Export",
-                      ),
-                  ],
+                            if (endDate == null) {
+                              Fluttertoast.showToast(
+                                msg: "Please select an end date",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                              return;
+                            }
+                            if (exportFormKey.currentState!.validate()) {
+                              await prefs.setString(
+                                  'email', emailController.text);
+
+                              final formattedFromDate =
+                              DateFormat('yyyy-MM-dd').format(startDate!);
+                              final formattedToDate =
+                              DateFormat('yyyy-MM-dd').format(endDate!);
+
+                              final gateProvider = Provider.of<GateProvider>(
+                                  context,
+                                  listen: false);
+                              final selectedGate = gateProvider.selectedGate;
+                              final email = emailController.text.trim();
+
+                              final visitorData = {
+                                "company_id": societyId,
+                                "name": nameController.text,
+                                "to_mail": email,
+                                "from_date": formattedFromDate,
+                                "to_date": formattedToDate,
+                                "in_gate": selectedGateName,
+                              };
+
+                              try {
+                                await remoteDataSource.exportLogs(visitorData);
+                                Navigator.pop(context);
+                                showSuccessDialog(
+                                    context: context,
+                                    title: "Export logs",
+                                    message:
+                                    "Visitor logs exported successfully.");
+                              } catch (e) {
+                                // Handle error case
+                              }
+                            }
+                          },
+                          text: "Export",
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
@@ -686,7 +783,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           scale: Tween<double>(begin: 0.5, end: 1.0).animate(curvedAnimation),
           child: FadeTransition(
             opacity:
-                Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
+            Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
             child: AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16.0),
@@ -727,9 +824,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       child: Text(
                         title,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ],
@@ -755,9 +852,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     child: Text(
                       message,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            // color: Colors.green,
-                            height: 1.5,
-                          ),
+                        // color: Colors.green,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -783,9 +880,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       child: FilledButton(
                         style: FilledButton.styleFrom(
                           backgroundColor:
-                              Colors.black, // Set the background color to black
+                          Colors.black, // Set the background color to black
                           foregroundColor:
-                              Colors.white, // Set the text color to white
+                          Colors.white, // Set the text color to white
                         ),
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -841,8 +938,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     title: Text(
                       'Filters',
                       style: Theme.of(context).textTheme.displaySmall!.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   Expanded(
@@ -940,7 +1037,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
   @override
   Widget build(BuildContext context) {
     String unitList = '';
-
     if (widget.visitorLog.visitor_building_assignment != null &&
         widget.visitorLog.visitor_building_assignment!.isNotEmpty) {
       unitList = widget.visitorLog.visitor_building_assignment!
@@ -961,7 +1057,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => VisitorDetailsScreen(
-                      image: widget.visitorLog.visitor?.visitor_image,
                       unitList: unitList,
                       visitorLog: widget.visitorLog,
                     ),
@@ -973,22 +1068,19 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 vertical: 2,
               ),
               leading: CircleAvatar(
-                backgroundImage: CachedNetworkImageProvider(
-                  widget.visitorLog.visitor?.visitor_image?.isNotEmpty == true
-                      ? widget.visitorLog.visitor!.visitor_image!
-                      : 'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-                ),
-                onBackgroundImageError: (_, __) {
-                  // Handle the error and provide a fallback image
-                  return;
-                },
+                backgroundImage: widget
+                    .visitorLog.visitor!.visitor_image!.isNotEmpty
+                    ? NetworkImage(
+                    widget.visitorLog.visitor!.visitor_image ?? "")
+                    : NetworkImage(
+                    'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
                 child: widget.visitorLog.visitor!.visitor_image!.isEmpty
                     ? Text(
-                        widget.visitorLog.visitor!.name!.isNotEmpty
-                            ? widget.visitorLog.visitor!.name![0]
-                            : 'G',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      )
+                  widget.visitorLog.visitor!.name!.isNotEmpty
+                      ? widget.visitorLog.visitor!.name![0]
+                      : 'G',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                )
                     : null,
               ),
               title: RichText(
@@ -1001,24 +1093,24 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                     WidgetSpan(
                       child: widget.visitorLog.visitor_count.toString() != '1'
                           ? Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xffFFB080),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                "+ ${widget.visitorLog.visitor_count.toString()}",
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            )
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffFFB080),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "+ ${widget.visitorLog.visitor_count.toString()}",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      )
                           : SizedBox(),
                     ),
                   ],
@@ -1068,7 +1160,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               trailing: IconButton(
                 onPressed: _hasCallSupport
                     ? () => _launched =
-                        _makePhoneCall(widget.visitorLog.visitor!.mobile ?? "")
+                    _makePhoneCall(widget.visitorLog.visitor!.mobile ?? "")
                     : null,
 
                 // onPressed: () {
@@ -1100,8 +1192,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               color: Colors.grey[200],
             ),
             Container(
-              padding: const EdgeInsets.only(
-                  bottom: 14.0, top: 8, left: 12, right: 12),
+              padding: const EdgeInsets.only(bottom: 14.0, top: 8, left: 12,right: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1121,206 +1212,209 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             text: Utils.convertDateTimeFormat(
                                 widget.visitorLog.visitor_check_in!),
                             style:
-                                Theme.of(context).textTheme.labelMedium!.merge(
-                                      const TextStyle(
-                                        color: Colors.green,
-                                      ),
-                                    ),
+                            Theme.of(context).textTheme.labelMedium!.merge(
+                              const TextStyle(
+                                color: Colors.green,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  widget.visitorLog.visitor_card_number != null ||
-                          widget.visitorLog.carNumber != null
+                  widget.visitorLog.visitor_card_number != null || widget.visitorLog.carNumber != null
                       ? Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 2,
-                            horizontal: 10,
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 2,
+                      horizontal: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: const [
+                          Color.fromRGBO(255, 236, 158, 0.8),
+                          Color.fromRGBO(255, 190, 168, 0.8),
+                        ],
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomLeft,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Color.fromRGBO(255, 190, 168, 1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        widget.visitorLog.visitor_card_number != null
+                            ? Lottie.asset(
+                          'assets/json/idcard.json',
+                          width: 30,
+                          height: 30,
+                          fit: BoxFit.cover,
+                        )
+                            : Icon(
+                          Symbols.car_tag_rounded,
+                          size: 30,
+                          // color: Colors.red, // Optional color for the icon
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          widget.visitorLog.visitor_card_number != null
+                              ? widget.visitorLog.visitor_card_number!
+                              : widget.visitorLog.carNumber ?? 'N/A',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
                           ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: const [
-                                Color.fromRGBO(255, 236, 158, 0.8),
-                                Color.fromRGBO(255, 190, 168, 0.8),
+                        ),
+                      ],
+                    ),
+                  )
+                      : Spacer(),
+                  (widget.visitorLog.visitor_check_out.toString().isEmpty ||
+                      widget.visitorLog.visitor_check_out.toString() ==
+                          'null')
+                      ? ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            title: Row(
+                              children: const [
+                                Icon(Icons.warning_amber_rounded,
+                                    color: Colors.red),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Confirm Checkout',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
-                              begin: Alignment.topRight,
-                              end: Alignment.bottomLeft,
                             ),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Color.fromRGBO(255, 190, 168, 1),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Are you sure you want to checkout?',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'This action cannot be undone.',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              widget.visitorLog.visitor_card_number != null
-                                  ? Lottie.asset(
-                                      'assets/json/idcard.json',
-                                      width: 30,
-                                      height: 30,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Icon(
-                                      Symbols.car_tag_rounded,
-                                      size: 30,
-                                      // color: Colors.red, // Optional color for the icon
-                                    ),
-                              const SizedBox(width: 5),
-                              Text(
-                                widget.visitorLog.visitor_card_number != null
-                                    ? widget.visitorLog.visitor_card_number!
-                                    : widget.visitorLog.carNumber ?? 'N/A',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
+                            actions: [
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  elevation: 0,
+                                  side: BorderSide(
+                                      color: Colors.grey[300]!),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  widget.onCheckOut();
+                                  // context
+                                  //     .read<GatekeeperDashboardBloc>()
+                                  //     .add(
+                                  //         GatekeeperDashboardInitialEvent());
+                                },
+                                child: Text(
+                                  'Checkout',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
-                          ),
-                        )
-                      : Spacer(),
-                  (widget.visitorLog.visitor_check_out.toString().isEmpty ||
-                          widget.visitorLog.visitor_check_out.toString() ==
-                              'null')
-                      ? ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  title: Row(
-                                    children: const [
-                                      Icon(Icons.warning_amber_rounded,
-                                          color: Colors.red),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Confirm Checkout',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Are you sure you want to checkout?',
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        'This action cannot be undone.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  actions: [
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        elevation: 0,
-                                        side: BorderSide(
-                                            color: Colors.grey[300]!),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                      child: Text(
-                                        'Cancel',
-                                        style: TextStyle(
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      onPressed: () async {
-                                        Navigator.of(context).pop();
-                                        await widget.onCheckOut();
-                                      },
-                                      child: Text(
-                                        'Checkout',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  actionsPadding: EdgeInsets.all(16),
-                                  actionsAlignment: MainAxisAlignment.end,
-                                );
-                              },
-                            );
-                          },
-                          child: Text(
-                            'Checkout',
-                            style:
-                                Theme.of(context).textTheme.labelSmall!.merge(
-                                      const TextStyle(
-                                          color: Colors.white, fontSize: 14),
-                                    ),
-                          ),
-                        )
+                            actionsPadding: EdgeInsets.all(16),
+                            actionsAlignment: MainAxisAlignment.end,
+                          );
+                        },
+                      );
+                    },
+                    child: Text(
+                      'Checkout',
+                      style:
+                      Theme.of(context).textTheme.labelSmall!.merge(
+                        const TextStyle(
+                            color: Colors.white, fontSize: 14),
+                      ),
+                    ),
+                  )
                       : Tooltip(
-                          message: DateFormat('dd-MM-yyyy hh:mm a')
-                              .format(widget.visitorLog.visitor_check_out!),
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                const WidgetSpan(
-                                  child: Icon(
-                                    Symbols.directions_walk_rounded,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: Utils.convertDateTimeFormat(
-                                      widget.visitorLog.visitor_check_out!),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium!
-                                      .merge(
-                                        const TextStyle(
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                ),
-                              ],
+                    message: DateFormat('dd-MM-yyyy hh:mm a')
+                        .format(widget.visitorLog.visitor_check_out!),
+                    child: RichText(
+                      text: TextSpan(
+                        children: [
+                          const WidgetSpan(
+                            child: Icon(
+                              Symbols.directions_walk_rounded,
+                              color: Colors.red,
                             ),
                           ),
-                        ),
+                          TextSpan(
+                            text: Utils.convertDateTimeFormat(
+                                widget.visitorLog.visitor_check_out!),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelMedium!
+                                .merge(
+                              const TextStyle(
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

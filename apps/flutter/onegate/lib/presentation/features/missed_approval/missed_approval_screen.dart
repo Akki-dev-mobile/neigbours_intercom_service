@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:intl/intl.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:common_widgets/common_widgets.dart';
 
 // Timer Service
 class TimerState {
@@ -30,32 +33,52 @@ class TimerService {
       endTime: endTime,
       isRetryEnabled: false,
     );
-    await _saveTimerState(visitorLogId, endTime);
+    await saveTimerState(visitorLogId, endTime);
   }
 
-  Future<void> _saveTimerState(int visitorLogId, DateTime endTime) async {
+  Future<void> saveTimerState(int visitorLogId, DateTime endTime) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('timer_$visitorLogId', endTime.toIso8601String());
+    await prefs.setString(
+        'timer_${visitorLogId.toString()}', endTime.toIso8601String());
   }
 
   Future<void> loadTimerState(int visitorLogId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedEndTime = prefs.getString('timer_$visitorLogId');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String timerKey = 'timer_${visitorLogId.toString()}';
 
-    if (savedEndTime != null) {
-      final endTime = DateTime.parse(savedEndTime);
-      if (endTime.isAfter(DateTime.now())) {
+      // First, try to get the value without type assumption
+      final dynamic savedValue = prefs.get(timerKey);
+
+      DateTime? endTime;
+
+      if (savedValue != null) {
+        if (savedValue is int) {
+          // Handle legacy integer (timestamp) format
+          endTime = DateTime.fromMillisecondsSinceEpoch(savedValue);
+        } else if (savedValue is String) {
+          // Handle ISO8601 string format
+          try {
+            endTime = DateTime.parse(savedValue);
+          } catch (e) {
+            log("❌ Error parsing DateTime string: $savedValue, Error: $e");
+          }
+        }
+      }
+
+      if (endTime != null) {
         _timers[visitorLogId] = TimerState(
           endTime: endTime,
-          isRetryEnabled: false,
+          isRetryEnabled: endTime.isBefore(DateTime.now()),
         );
       } else {
-        _timers[visitorLogId] = TimerState(
-          endTime: DateTime.now(),
-          isRetryEnabled: true,
-        );
+        // If no valid time was found or parsed, start a new timer
+        await startTimer(visitorLogId);
       }
-    } else {
+    } catch (e, stackTrace) {
+      log("❌ Error in loadTimerState: $e");
+      log("Stack trace: $stackTrace");
+      // Fallback to starting a new timer
       await startTimer(visitorLogId);
     }
   }
@@ -186,7 +209,6 @@ class TimerDisplay extends StatelessWidget {
   }
 }
 
-// Data Models
 class VisitorInfo {
   final int visitorId;
   final String visitorName;
@@ -248,6 +270,26 @@ class VisitorInfo {
     }
     return 0;
   }
+
+  /// ✅ **Override `toString()` for readable logging**
+  @override
+  String toString() {
+    return '''
+    VisitorInfo(
+      visitorId: $visitorId, 
+      visitorName: $visitorName, 
+      visitorMobile: $visitorMobile, 
+      allowStatus: $allowStatus, 
+      visitorLogId: $visitorLogId, 
+      companyId: $companyId, 
+      inGate: $inGate, 
+      logCreatedAt: $logCreatedAt, 
+      visitorComingFrom: $visitorComingFrom, 
+      visitorPurposeCategoryId: $visitorPurposeCategoryId, 
+      memberInfo: $memberInfo
+    )
+    ''';
+  }
 }
 
 class MemberInfo {
@@ -266,8 +308,8 @@ class MemberInfo {
   });
 }
 
-// Main Screen
-class MissedApprovalsScreen extends StatelessWidget {
+// Main Screen with Search
+class MissedApprovalsScreen extends StatefulWidget {
   final RemoteDataSource remoteDataSource;
 
   const MissedApprovalsScreen({
@@ -276,65 +318,311 @@ class MissedApprovalsScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<MissedApprovalsScreen> createState() => _MissedApprovalsScreenState();
+}
+
+class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
+  late TextEditingController _searchController;
+  late FocusNode _searchFocusNode;
+  late Future<List<VisitorInfo>> _futureApprovals;
+  String _searchQuery = '';
+  Timer? _refreshTimer;
+  Timer? _timeUpdateTimer;
+  bool _isRefreshing = false;
+  DateTime _lastRefreshTime = DateTime.now();
+  String _currentTime = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _searchFocusNode = FocusNode();
+    _futureApprovals = widget.remoteDataSource.fetchApprovals();
+    _lastRefreshTime = DateTime.now();
+    _updateCurrentTime();
+    _startAutoRefresh();
+    _startTimeUpdate();
+  }
+
+  void _startTimeUpdate() {
+    // Update time every second
+    _timeUpdateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        _updateCurrentTime();
+      }
+    });
+  }
+
+  void _updateCurrentTime() {
+    setState(() {
+      _currentTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    });
+  }
+
+  void _startAutoRefresh() {
+    // Refresh every 30 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        _refreshData();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    _refreshTimer?.cancel();
+    _timeUpdateTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshData() async {
+    if (_isRefreshing || !mounted) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      await widget.remoteDataSource.fetchApprovals().then((data) {
+        if (mounted) {
+          setState(() {
+            _lastRefreshTime = DateTime.now();
+            _futureApprovals = Future.value(data);
+          });
+        }
+      });
+    } catch (e) {
+      log("❌ Error refreshing data: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildSearchField() {
+    return CustomForm.textField(
+      "Search",
+      hintText: "Search by Visitor Name",
+      titleColor: Theme.of(context).colorScheme.onSurface,
+      hintColor: Theme.of(context).colorScheme.onSurface,
+      focusNode: _searchFocusNode,
+      prefixIcon: const Icon(Ionicons.search_outline),
+      suffixIcon: _searchQuery.isNotEmpty
+          ? IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+            )
+          : null,
+      textController: _searchController,
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value;
+        });
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Missed Approvals',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            const Text(
+              'Missed Approvals',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            if (_isRefreshing)
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+          ],
         ),
+        actions: [
+          // Current time display
+          // Center(
+          //   child: Padding(
+          //     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          //     child: Text(
+          //       _currentTime,
+          //       style: const TextStyle(
+          //         fontSize: 14,
+          //         fontWeight: FontWeight.w500,
+          //       ),
+          //     ),
+          //   ),
+          // ),
+          // Refresh button
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _isRefreshing ? null : _refreshData,
+            tooltip: 'Refresh',
+          ),
+        ],
         elevation: 0,
       ),
-      body: FutureBuilder<List<VisitorInfo>>(
-        future: remoteDataSource.fetchApprovals(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator.adaptive());
-          }
+      body: Column(
+        children: [
+          // Last refresh time indicator
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            color: Theme.of(context).colorScheme.surface,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Text(
+                //   'Last updated: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(_lastRefreshTime)}',
+                //   style: TextStyle(
+                //     color: Colors.grey[600],
+                //     fontSize: 12,
+                //   ),
+                // ),
+                if (_isRefreshing)
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: _buildSearchField(),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refreshData,
+              child: FutureBuilder<List<VisitorInfo>>(
+                future: _futureApprovals,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !_isRefreshing) {
+                    return const Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    );
+                  }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Error: ${snapshot.error}',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _refreshData,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No missed approvals'));
-          }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.inbox_outlined,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No missed approvals',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Pull to refresh',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-          return ApprovalsList(approvals: snapshot.data!);
-        },
+                  return ApprovalsList(
+                    approvals: snapshot.data!,
+                    searchQuery: _searchQuery,
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// List Widget
+// Modified ApprovalsList with Search
 class ApprovalsList extends StatelessWidget {
   final List<VisitorInfo> approvals;
+  final String searchQuery;
 
   const ApprovalsList({
     Key? key,
     required this.approvals,
+    required this.searchQuery,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Filter out visitors who are already allowed
-    final filteredApprovals = approvals
-        .where((visitor) =>
-    visitor.allowStatus.toLowerCase() != "allowed" &&
-        visitor.allowStatus.toLowerCase() != "always_allowed")
-        .toList();
+    // Apply search filter
+    final filteredApprovals = approvals.where((visitor) {
+      final query = searchQuery.toLowerCase();
+      return visitor.visitorName.toLowerCase().contains(query) ||
+          visitor.memberInfo.name.toLowerCase().contains(query) ||
+          visitor.inGate.toLowerCase().contains(query);
+    }).toList();
 
-    // Sorting by logCreatedAt in descending order (newest first)
-    filteredApprovals.sort((a, b) =>
-        DateTime.parse(b.logCreatedAt).compareTo(DateTime.parse(a.logCreatedAt)));
+    // Sort by logCreatedAt (newest first)
+    filteredApprovals.sort((a, b) => DateTime.parse(b.logCreatedAt)
+        .compareTo(DateTime.parse(a.logCreatedAt)));
 
-    // If there are no pending approvals, show a message
+    // Log to verify the final list
+    log("🔍 Filtered Approvals List (Query: '$searchQuery'): ${filteredApprovals.map((e) => e.toString()).toList()}");
+
+    // Display message if no results match search
     if (filteredApprovals.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          "No pending approvals",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          searchQuery.isNotEmpty
+              ? "No results found for '$searchQuery'"
+              : "No approvals found",
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       );
     }
@@ -351,7 +639,6 @@ class ApprovalsList extends StatelessWidget {
     );
   }
 }
-
 
 // Card Widget
 class MissedApprovalCard extends StatefulWidget {
@@ -380,6 +667,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     await _timerService.loadTimerState(widget.visitorInfo.visitorLogId ?? 0);
     if (mounted) setState(() {});
   }
+
   RequestType _getRequestType(String status) {
     switch (status) {
       case "allowed":
@@ -407,7 +695,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     setState(() => _isLoading = true);
 
     RequestType requestType =
-    _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
+        _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
 
     if (requestType == RequestType.approved ||
         requestType == RequestType.allowByGatekeeper) {
@@ -426,7 +714,6 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       return;
     }
 
-    // If visitor is not already allowed, proceed with retry logic
     try {
       final dio = Dio();
       final response = await dio.post(
@@ -437,7 +724,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
           'visitor_id': widget.visitorInfo.visitorId,
           'member_id': widget.visitorInfo.memberInfo.memberId,
           'visitor_log_id': widget.visitorInfo.visitorLogId,
-          'purpose_category': widget.visitorInfo.visitorPurposeCategoryId.toString(),
+          'purpose_category':
+              widget.visitorInfo.visitorPurposeCategoryId.toString(),
         },
       );
 
@@ -453,7 +741,6 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
@@ -609,41 +896,175 @@ class TimerActionSection extends StatelessWidget {
         final remaining = timerState.endTime.difference(now);
         final isEnabled = remaining.isNegative || timerState.isRetryEnabled;
 
+        final allowStatus = visitorInfo.allowStatus.toLowerCase();
+
+        // ✅ Define different states
         final isVisitorAllowed =
-            visitorInfo.allowStatus.toLowerCase() == "allowed" ||
-                visitorInfo.allowStatus.toLowerCase() == "always_allowed";
+            allowStatus == "allowed" || allowStatus == "always_allowed";
+
+        final isVisitorDeclined =
+            allowStatus == "declined" || allowStatus == "denied";
+
+        final isVisitorPending =
+            allowStatus == "pending" || allowStatus == "request";
+
+        final isVisitorWaiting = allowStatus == "waiting";
+
+        final isVisitorLeave = allowStatus == "leave";
+
+        final isVisitorNotReachable =
+            allowStatus == "invalid" || allowStatus == "not_reachable";
 
         return Padding(
           padding: const EdgeInsets.all(16),
-          child: isVisitorAllowed
-              ? Row(
+          child: Column(
             children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 24),
-              const SizedBox(width: 8),
-              Text(
-                "Visitor allowed",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
+              // ✅ Case: Visitor Allowed
+              if (isVisitorAllowed)
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle,
+                        color: Colors.green, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Visitor has been allowed.",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                )
+
+              // ✅ Case: Visitor Declined
+              else if (isVisitorDeclined)
+                Row(
+                  children: [
+                    const Icon(Icons.cancel, color: Colors.red, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Visitor has been declined.",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
+                  ],
+                )
+
+              // ✅ Case: Visitor is Pending Approval
+              else if (isVisitorPending)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.hourglass_empty,
+                            color: Colors.orange, size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Approval is pending...",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8), // Adds spacing
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RetryButton(
+                            onRetry: onRetry,
+                            isEnabled: isEnabled && !isLoading,
+                            isLoading: isLoading,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        TimerDisplay(
+                          remaining: remaining,
+                          isEnabled: isEnabled,
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+
+              // ✅ Case: Visitor is Waiting
+              else if (isVisitorWaiting)
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, color: Colors.blue, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Visitor is waiting at the gate.",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ],
+                )
+
+              // ✅ Case: Visitor has Left
+              else if (isVisitorLeave)
+                Row(
+                  children: [
+                    const Icon(Icons.directions_walk,
+                        color: Colors.brown, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Visitor has left the premises.",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.brown.shade700,
+                      ),
+                    ),
+                  ],
+                )
+
+              // ✅ Case: Visitor is Not Reachable
+              else if (isVisitorNotReachable)
+                Row(
+                  children: [
+                    const Icon(Icons.signal_wifi_off,
+                        color: Colors.grey, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Visitor is not reachable.",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                )
+
+              // ✅ Default Case: Retry Action
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: RetryButton(
+                        onRetry: onRetry,
+                        isEnabled: isEnabled && !isLoading,
+                        isLoading: isLoading,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    TimerDisplay(
+                      remaining: remaining,
+                      isEnabled: isEnabled,
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          )
-              : Row(
-            children: [
-              Expanded(
-                child: RetryButton(
-                  onRetry: onRetry,
-                  isEnabled: isEnabled && !isLoading,
-                  isLoading: isLoading,
-                ),
-              ),
-              const SizedBox(width: 16),
-              TimerDisplay(
-                remaining: remaining,
-                isEnabled: isEnabled,
-              ),
             ],
           ),
         );
@@ -651,5 +1072,3 @@ class TimerActionSection extends StatelessWidget {
     );
   }
 }
-
-

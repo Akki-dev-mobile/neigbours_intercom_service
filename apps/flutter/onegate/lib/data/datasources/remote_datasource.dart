@@ -395,8 +395,8 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
-        // log("data--$data");
+        final List<dynamic> data = responseData["data"] ?? [];
+        log("data--$data");
         return data.map((item) {
           try {
             final visitor = Visitor(
@@ -879,7 +879,7 @@ class RemoteDataSource {
       if (response.statusCode == 200) {
         // Parse the visitor logs from the response
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
+        final List<dynamic> data = responseData["data"] ?? [];
 
         // Map the JSON data to `VisitorLog` objects
         return data.map((item) {
@@ -944,7 +944,7 @@ class RemoteDataSource {
             'Failed to fetch checkout logs: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      // Handle errors and log them
+      // Handle errors and log themE
       // print('Error in fetchCheckOutLogs: $e');
       rethrow;
     }
@@ -952,58 +952,79 @@ class RemoteDataSource {
 
   Future<List<VisitorInfo>> fetchApprovals([String? logID]) async {
     try {
-      // Get gate name from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
           prefs.getString('selected_gate') ?? "Default Gate";
 
-      // Get company details
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
-      // Construct URL and query parameters
       final String baseUrl =
           '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
       final Map<String, dynamic> queryParams =
           logID != null ? {'logID': logID} : {};
 
-      // Make API request
       final response = await _dio2?.get(baseUrl, queryParameters: queryParams);
 
       if (response?.statusCode == 200) {
-        final List<dynamic> data = response?.data['data'] ?? [];
+        final responseData = response?.data;
 
-        // Manual mapping of the data to VisitorInfo objects
-        return data.map((json) {
-          // Map MemberInfo first
+        // 🔹 Log the complete API response before processing
+        log("📡 Full API Response: ${jsonEncode(responseData)}");
+
+        // Ensure 'data' key exists and is a List
+        if (responseData == null || !responseData.containsKey('data')) {
+          log("🚨 API Response does not contain 'data' key.");
+          return [];
+        }
+
+        final List<dynamic> data = responseData['data'];
+        if (data.isEmpty) {
+          log("🚫 No approvals found in response.");
+          return [];
+        }
+
+        // 🔹 Log each approval object before mapping
+        for (var item in data) {
+          log("🔍 Approval Item: ${jsonEncode(item)}");
+        }
+
+        // Map JSON data to VisitorInfo list
+        final List<VisitorInfo> visitorList = data.map((json) {
           final memberInfo = MemberInfo(
-              name: json['member_name']?.toString() ?? '',
-              mobileNumber: json['memb_mobile_number']?.toString(),
-              email: json['memb_email']?.toString(),
-              memberId: _parseToInt(json['member_id']),
-              unitId: _parseToInt(json['unit_id']));
+            name: json['member_name']?.toString() ?? '',
+            mobileNumber: json['memb_mobile_number']?.toString(),
+            email: json['memb_email']?.toString(),
+            memberId: _parseToInt(json['member_id']),
+            unitId: _parseToInt(json['unit_id']),
+          );
 
-          // Then create VisitorInfo with the mapped MemberInfo
           return VisitorInfo(
-              visitorId: _parseToInt(json['visitor_id']),
-              visitorName: json['visitor_name']?.toString() ?? '',
-              visitorMobile: json['visitor_mobile']?.toString() ?? '',
-              visitorImage: json['visitor_image']?.toString() ?? '',
-              allowStatus: json['allow_status']?.toString() ?? '',
-              visitorLogId: _parseToInt(json['visitor_log_id']),
-              companyId: _parseToInt(json['company_id']),
-              inGate: json['in_gate']?.toString() ?? '',
-              logCreatedAt: json['log_created_at']?.toString() ?? '',
-              memberInfo: memberInfo,
-              visitorComingFrom: json['visitor_coming_from']?.toString(),
-              visitorPurposeCategoryId:
-                  _parseToInt(json['visitor_purpose_category_id']));
+            visitorId: _parseToInt(json['visitor_id']),
+            visitorName: json['visitor_name']?.toString() ?? '',
+            visitorMobile: json['visitor_mobile']?.toString() ?? '',
+            visitorImage: json['visitor_image']?.toString() ?? '',
+            allowStatus: json['allow_status']?.toString() ?? '',
+            visitorLogId: _parseToInt(json['visitor_log_id']),
+            companyId: _parseToInt(json['company_id']),
+            inGate: json['in_gate']?.toString() ?? '',
+            logCreatedAt: json['log_created_at']?.toString() ?? '',
+            memberInfo: memberInfo,
+            visitorComingFrom: json['visitor_coming_from']?.toString(),
+            visitorPurposeCategoryId:
+                _parseToInt(json['visitor_purpose_category_id']),
+          );
         }).toList();
+
+        // 🔹 Log formatted visitor list
+        log("✅ Formatted Visitor List: ${jsonEncode(visitorList.map((e) => e.toString()).toList())}");
+
+        return visitorList;
       } else {
         throw Exception(
-            'Failed to fetch approvals: ${response?.statusCode}, ${response?.data}');
+            '❌ Failed to fetch approvals: ${response?.statusCode}, ${response?.data}');
       }
     } catch (e) {
-      log('Error fetching approvals: $e');
+      log('❌ Error fetching approvals: $e');
       rethrow;
     }
   }

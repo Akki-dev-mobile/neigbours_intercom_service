@@ -19,39 +19,85 @@ class VisitorLog {
     this.is_checked_out,
     this.visitor_purpose_Category_name,
     this.purpose_sub_category_name,
-    this.carNumber
+    this.carNumber,
   });
 
-  int? id;
-  int? visitor_id;
-  Visitor? visitor;
-  int? visitor_purpose_category_id;
-  int? visitor_purpose_sub_category_id;
-  List<BuildingAssignment>? visitor_building_assignment;
-  int? visitor_count;
-  DateTime? visitor_check_in;
-  DateTime? visitor_check_out;
-  String? visitor_card_number;
-  String? visitor_coming_from;
-  int? visitor_card_id;
-  int? company_id;
-  bool? is_checked_out;
-  String? carNumber;
-  String? visitor_purpose_Category_name;
-  String? purpose_sub_category_name;
+  final int? id;
+  final int? visitor_id;
+  final Visitor? visitor;
+  final int? visitor_purpose_category_id;
+  final int? visitor_purpose_sub_category_id;
+  final List<BuildingAssignment>? visitor_building_assignment;
+  final int? visitor_count;
+   DateTime? visitor_check_in;
+   DateTime? visitor_check_out;
+  final String? visitor_card_number;
+  final String? visitor_coming_from;
+  final int? visitor_card_id;
+  final int? company_id;
+   bool? is_checked_out;
+  final String? carNumber;
+  final String? visitor_purpose_Category_name;
+  final String? purpose_sub_category_name;
 
-  /// Convert the object to a JSON map.
+  /// Creates a copy of this VisitorLog with the given fields replaced with new values
+  VisitorLog copyWith({
+    int? id,
+    int? visitor_id,
+    Visitor? visitor,
+    int? visitor_purpose_category_id,
+    int? visitor_purpose_sub_category_id,
+    List<BuildingAssignment>? visitor_building_assignment,
+    int? visitor_count,
+    DateTime? visitor_check_in,
+    DateTime? visitor_check_out,
+    String? visitor_card_number,
+    String? visitor_coming_from,
+    int? visitor_card_id,
+    int? company_id,
+    bool? is_checked_out,
+    String? carNumber,
+    String? visitor_purpose_Category_name,
+    String? purpose_sub_category_name,
+  }) {
+    return VisitorLog(
+      id: id ?? this.id,
+      visitor_id: visitor_id ?? this.visitor_id,
+      visitor: visitor ?? this.visitor,
+      visitor_purpose_category_id:
+      visitor_purpose_category_id ?? this.visitor_purpose_category_id,
+      visitor_purpose_sub_category_id:
+      visitor_purpose_sub_category_id ?? this.visitor_purpose_sub_category_id,
+      visitor_building_assignment:
+      visitor_building_assignment ?? this.visitor_building_assignment,
+      visitor_count: visitor_count ?? this.visitor_count,
+      visitor_check_in: visitor_check_in ?? this.visitor_check_in,
+      visitor_check_out: visitor_check_out ?? this.visitor_check_out,
+      visitor_card_number: visitor_card_number ?? this.visitor_card_number,
+      visitor_coming_from: visitor_coming_from ?? this.visitor_coming_from,
+      visitor_card_id: visitor_card_id ?? this.visitor_card_id,
+      company_id: company_id ?? this.company_id,
+      is_checked_out: is_checked_out ?? this.is_checked_out,
+      carNumber: carNumber ?? this.carNumber,
+      visitor_purpose_Category_name:
+      visitor_purpose_Category_name ?? this.visitor_purpose_Category_name,
+      purpose_sub_category_name:
+      purpose_sub_category_name ?? this.purpose_sub_category_name,
+    );
+  }
+
+  /// Convert the object to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'visitor_id': visitor_id,
-      'visitor': visitor?.toJson(), // Convert nested `Visitor` object to JSON.
+      'visitor': visitor?.toJson(),
       'visitor_purpose_category_id': visitor_purpose_category_id,
-      "vehicle_number":carNumber,
+      'vehicle_number': carNumber,
       'visitor_purpose_sub_category_id': visitor_purpose_sub_category_id,
       'visitor_building_assignment': visitor_building_assignment
           ?.map((assignment) => assignment.toJson())
-          .toList(), // Convert nested list to JSON.
+          .toList(),
       'visitor_count': visitor_count,
       'visitor_check_in': visitor_check_in?.toIso8601String(),
       'visitor_check_out': visitor_check_out?.toIso8601String(),
@@ -60,23 +106,24 @@ class VisitorLog {
       'visitor_card_id': visitor_card_id,
       'company_id': company_id,
       'is_checked_out': is_checked_out,
-      'purpose_category_name':visitor_purpose_Category_name,
-      "purpose_sub_category_name":purpose_sub_category_name
+      'purpose_category_name': visitor_purpose_Category_name,
+      'purpose_sub_category_name': purpose_sub_category_name,
     };
   }
 
-  /// Create an instance from a JSON map.
+  /// Create an instance from a JSON map
   factory VisitorLog.fromJson(Map<String, dynamic> json) {
     return VisitorLog(
       id: json['id'] as int?,
       visitor_id: json['visitor_id'] as int?,
       visitor: json['visitor'] != null
-          ? Visitor.fromJson(json['visitor'])
-          : null, // Parse nested `Visitor` object.
+          ? Visitor.fromJson(json['visitor'] as Map<String, dynamic>)
+          : null,
       visitor_purpose_category_id: json['visitor_purpose_category_id'] as int?,
-      visitor_purpose_sub_category_id: json['visitor_purpose_sub_category_id'] as int?,
-      visitor_building_assignment: (json['visitor_building_assignment'] as List<dynamic>?)
-          ?.map((assignment) =>
+      visitor_purpose_sub_category_id:
+      json['visitor_purpose_sub_category_id'] as int?,
+      visitor_building_assignment: (json['visitor_building_assignment']
+      as List<dynamic>?)?.map((assignment) =>
           BuildingAssignment.fromJson(assignment as Map<String, dynamic>))
           .toList(),
       visitor_count: json['visitor_count'] as int?,
@@ -87,13 +134,32 @@ class VisitorLog {
           ? DateTime.parse(json['visitor_check_out'] as String)
           : null,
       visitor_card_number: json['visitor_card_number'] as String?,
-        carNumber: json['vehicle_number'] as String?,
+      carNumber: json['vehicle_number'] as String?,
       visitor_coming_from: json['visitor_coming_from'] as String?,
       visitor_card_id: json['visitor_card_id'] as int?,
       company_id: json['company_id'] as int?,
       is_checked_out: json['is_checked_out'] as bool?,
-      visitor_purpose_Category_name: json["purpose_category_name"] as String?,
-        purpose_sub_category_name:json["purpose_sub_category_name"] as String?
+      visitor_purpose_Category_name: json['purpose_category_name'] as String?,
+      purpose_sub_category_name: json['purpose_sub_category_name'] as String?,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is VisitorLog &&
+              runtimeType == other.runtimeType &&
+              id == other.id &&
+              visitor_id == other.visitor_id &&
+              visitor == other.visitor &&
+              visitor_purpose_category_id == other.visitor_purpose_category_id &&
+              visitor_purpose_sub_category_id == other.visitor_purpose_sub_category_id;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      visitor_id.hashCode ^
+      visitor.hashCode ^
+      visitor_purpose_category_id.hashCode ^
+      visitor_purpose_sub_category_id.hashCode;
 }

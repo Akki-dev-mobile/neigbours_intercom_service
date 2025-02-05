@@ -22,8 +22,7 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
   Future<List<VisitorLog>?> fetchCheckInVisitorLog(
       int companyId, String dateTime) async {
     try {
-      final response =
-      await _remoteDataSource.fetchCheckInLogs();
+      final response = await _remoteDataSource.fetchCheckInLogs();
       return response;
     } catch (error) {
       return null;
@@ -45,8 +44,7 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
   Future<List<VisitorLog>?> fetchCardNumbers(
       int companyId, String dateTime) async {
     try {
-      final response =
-          await _remoteDataSource.fetchCheckInLogs();
+      final response = await _remoteDataSource.fetchCheckInLogs();
 
       final filteredLogs =
           response.where((log) => log.visitor_card_number != null).toList();

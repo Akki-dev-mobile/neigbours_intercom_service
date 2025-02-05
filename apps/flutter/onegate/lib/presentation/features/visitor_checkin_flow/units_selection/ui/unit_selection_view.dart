@@ -587,6 +587,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _selectedUnitsNotifier.value = updateUnits;
   }
 
+  bool _isCheckedIn = false; // ✅ Ensures check-in happens only once
+
   // Main Build Method
   @override
   Widget build(BuildContext context) {
@@ -1053,21 +1055,186 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     log("Handling selection submit...");
     await saveMemberAndUnitToPrefs(selectedMember, selectedUnits);
 
-    // Validate the selection
-    if (!_validateSelection(selectedMember)) return;
+    try {
+      final visitorLogData = await _prepareVisitorLogData();
 
-    // Prepare the visitor log data
-    final visitorLogData = await _prepareVisitorLogData();
-
-    if (_membersApproval = true) {
-      // If membersApproval is true, send FCM notification
-      log("Members approval is required. Sending notification...");
-      await _processSelectionSubmission(selectedMember, visitorLogData);
-    } else {
-      // If membersApproval is false, directly show the approval dialog
-      log("Members approval is not required. Directly showing approval dialog...");
-      await _showApprovedDialog(context, visitorLogData);
+      if (selectedMember.length == 1) {
+        // Single member selection flow
+        await _handleSingleMemberSelection(visitorLogData);
+      } else {
+        // Multiple members selection flow
+        await _handleMultipleMemberSelection(visitorLogData);
+      }
+    } catch (e) {
+      log("Error in selection submit: $e");
+      _showErrorSnackbar("Error processing selection");
     }
+  }
+
+  Future<void> _handleSingleMemberSelection(VisitorLog visitorLogData) async {
+    // Step 1: Check-in
+    if (!_isCheckedIn) {
+      await remoteDataSource.checkIn(visitorLogData, statusallowed);
+      _isCheckedIn = true;
+    }
+
+    // Step 2: Send FCM notification and navigate
+    try {
+      final userId = selectedUserIds.first;
+      final selectedMobileNumbers = await _getSelectedMobileNumbers();
+      final requestData =
+          await _prepareRequestData(userId, selectedMobileNumbers);
+
+      final response = await Dio().post(
+        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ FCM notification sent successfully");
+
+        // Parse the response
+        final responseData = response.data;
+        final message = responseData['message'] as String?;
+
+        if (message?.toLowerCase() == "visitor is always allowed") {
+          await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+
+          await Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const GateDashboardView(),
+            ),
+          );
+        } else {
+          // Normal flow - navigate to RequestPermissionPage
+          final prefs = await SharedPreferences.getInstance();
+          final logID = prefs.getString("visitor_log");
+
+          await Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RequestPermissionPage(
+                visitor: widget.visitor,
+                logID: logID,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      log("Error sending FCM notification: $e");
+      _showErrorSnackbar("Error sending notification");
+    }
+  }
+
+  Future<void> _handleMultipleMemberSelection(VisitorLog visitorLogData) async {
+    await _showApprovedDialog(context, visitorLogData, onSuccess: () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const GateDashboardView()),
+      );
+    });
+  }
+
+  Future<void> _showApprovedDialog(BuildContext context, VisitorLog data,
+      {VoidCallback? onSuccess}) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Lottie.asset(
+                      'assets/json/approved.json',
+                      width: 150,
+                      height: 150,
+                      repeat: false,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Visitor Allowed By Gatekeeper",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _isLoading
+                        ? const _LoadingIndicator()
+                        : CustomLargeBtn(
+                            onPressed: () async {
+                              if (_isButtonDisabled) return;
+                              await _handleApprovedDialogButton(
+                                context,
+                                data,
+                                setState,
+                                onSuccess,
+                              );
+                            },
+                            text: "Continue",
+                            disabled: _isButtonDisabled,
+                          ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _handleApprovedDialogButton(
+    BuildContext context,
+    VisitorLog data,
+    StateSetter setState,
+    VoidCallback? onSuccess,
+  ) async {
+    setState(() {
+      _isLoading = true;
+      _isButtonDisabled = true;
+    });
+
+    try {
+      if (!_isCheckedIn) {
+        await remoteDataSource.checkIn(data, statusallowed);
+        _isCheckedIn = true;
+      }
+
+      Navigator.pop(context);
+
+      if (onSuccess != null) {
+        onSuccess();
+      }
+    } catch (e) {
+      log('Error in approved dialog: $e');
+      setState(() {
+        _isLoading = false;
+        _isButtonDisabled = false;
+      });
+      _showErrorSnackbar('Error processing approval');
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   bool _validateSelection(Set<String> selectedMember) {
@@ -1203,20 +1370,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     await _showApprovedDialog(context, visitorLogData);
   }
 
-  Future<void> _processSelectionSubmission(
-      Set<String> selectedMember, VisitorLog visitorLogData) async {
-    final userId = selectedUserIds.first;
-    final selectedMobileNumbers = await _getSelectedMobileNumbers();
-    final requestData =
-        await _prepareRequestData(userId, selectedMobileNumbers);
-
-    try {
-      await _sendFcmNotification(requestData, visitorLogData);
-    } catch (e) {
-      _handleSubmissionError(e, visitorLogData);
-    }
-  }
-
   Future<List<String>> _getSelectedMobileNumbers() async {
     final prefs = await SharedPreferences.getInstance();
     final savedMobileNumbersJson =
@@ -1241,72 +1394,24 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     return {
       'company_id': companyId.toString(),
-      'name': widget.guestname, // Ensure widget.guestname is defined
-      'mobile': widget.mobileNumber, // Ensure widget.mobileNumber is defined
-      'purpose': "Guest", // Hardcoded as per the curl request
-      'in_time': formattedInTime, // Ensure formattedInTime is defined
+      'name': widget.guestname,
+      'mobile': widget.mobileNumber,
+      'purpose': "Guest",
+      'in_time': formattedInTime,
       'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
-          ? "234567" // Default value as per the curl request
+          ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "917378880544",
+      'member_mobile_number': "918452060059",
       'visitor_id': visitorId ?? "1",
       'purpose_category': widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
       'coming_from': widget.comingFrom ?? "Bandra",
       'member_id': selectedMemberIds.isNotEmpty
           ? selectedMemberIds.first.toString()
-          : "232", // Default value as per the curl request
-      'company_name': companyName ?? "", // Ensure companyName is defined
+          : "232",
+      'company_name': companyName ?? "",
     };
-  }
-
-  Future<void> _sendFcmNotification(
-      Map<String, String> requestData, VisitorLog visitorLogData) async {
-    try {
-      await remoteDataSource.checkIn(visitorLogData, statusallowed);
-
-      final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
-        data: requestData,
-      );
-
-      if (response.statusCode == 200) {
-        log("FCM notification sent successfully: ${response.data}");
-        log("anna$requestData");
-        Fluttertoast.showToast(
-            msg: "FCM notification sent successfully: ${response.data}",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.CENTER,
-            timeInSecForIosWeb: 1,
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-            fontSize: 16.0);
-        bool isWaitingForApproval = false;
-        setState(() => isWaitingForApproval = true);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove("visitor_log");
-        await _showApprovedDialog(context, visitorLogData);
-      }
-    } on DioError catch (e) {
-      log("anna$requestData");
-
-      _handleDioError(e, visitorLogData);
-    }
-  }
-
-  void _handleDioError(DioError e, VisitorLog visitorLogData) async {
-    if (e.response?.statusCode == 400) {
-      await _showApprovedDialog(context, visitorLogData);
-    } else {
-      log("Error during FCM notification: ${e.response?.statusCode} - ${e.response?.data}");
-    }
-  }
-
-  void _handleSubmissionError(dynamic error, VisitorLog visitorLogData) async {
-    log("Unexpected error during submission: $error");
-    await _showApprovedDialog(context, visitorLogData);
   }
 
   Future<void> setupAMQPReceiver() async {
@@ -1449,109 +1554,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   bool statusallowed = false;
-
-  Future<void> _showApprovedDialog(
-      BuildContext context, VisitorLog data) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Lottie.asset(
-                      'assets/json/approved.json',
-                      width: 150,
-                      height: 150,
-                      repeat: false,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Visitor Allowed By Gatekeeper",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _isLoading
-                        ? const Column(
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 16),
-                              Text(
-                                "Please wait, checking in...",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          )
-                        : CustomLargeBtn(
-                            onPressed: () async {
-                              if (_isButtonDisabled) return;
-
-                              setState(() {
-                                _isLoading = true;
-                                _isButtonDisabled = true;
-                              });
-
-                              try {
-                                // _membersApproval == true
-                                //     ? null
-                                //     :
-                                await remoteDataSource.checkIn(
-                                    data, statusallowed);
-                                Navigator.pop(context);
-                                final prefs =
-                                    await SharedPreferences.getInstance();
-                                final logID = prefs.getString(
-                                  "visitor_log",
-                                );
-
-                                await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            RequestPermissionPage(
-                                                visitor: widget.visitor,
-                                                logID: logID)));
-                              } catch (e) {
-                                log('Error in approved dialog: $e');
-                                setState(() {
-                                  _isLoading = false;
-                                  _isButtonDisabled = false;
-                                });
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Error processing approval'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
-                            text: "Continue",
-                            disabled: _isButtonDisabled,
-                          ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 
   Future<void> _notificationSent(BuildContext context, VisitorLog data) async {
     showDialog(
@@ -1751,6 +1753,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           },
         );
       },
+    );
+  }
+}
+
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        CircularProgressIndicator(),
+        SizedBox(height: 16),
+        Text(
+          "Please wait, checking in...",
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+      ],
     );
   }
 }
