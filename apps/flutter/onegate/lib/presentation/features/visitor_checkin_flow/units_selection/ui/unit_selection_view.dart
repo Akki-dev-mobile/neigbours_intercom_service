@@ -875,6 +875,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                             const SizedBox(height: 24),
+                            // In the Society Office tab, update the ElevatedButton onPressed handler:
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.black,
@@ -887,73 +888,128 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 ),
                               ),
                               onPressed: () async {
-                                // Existing Society Office check-in logic
-                                final buildingAssignment = BuildingAssignment(
-                                  id: null,
-                                  visitor_id: widget.visitor.id,
-                                  visitor_log_id: null,
-                                  company_id: int.parse(companyId.toString()),
-                                  building_id: 0,
-                                  unit_id: ["0001"],
-                                );
+                                try {
+                                  setState(() {
+                                    _isLoading = true; // Show loading state
+                                  });
 
-                                final visitorLogData = VisitorLog(
-                                  visitor_id: widget.visitor.id ?? 0,
-                                  visitor_purpose_category_id: widget
-                                              .purposeCategoryId ==
-                                          null
-                                      ? 1
-                                      : int.parse(
-                                          widget.purposeCategoryId.toString()),
-                                  visitor_purpose_sub_category_id:
-                                      widget.selectedSubCategoryId != null
-                                          ? int.parse(widget
-                                              .selectedSubCategoryId
-                                              .toString())
-                                          : null,
-                                  visitor_count: widget.guestCount ?? 0,
-                                  visitor: widget.visitor,
-                                  visitor_check_in:
-                                      DateTime.parse(formattedInTime),
-                                  visitor_card_number: widget.visitorNumber,
-                                  visitor_coming_from: widget.comingFrom,
-                                  visitor_building_assignment: [
-                                    buildingAssignment
-                                  ],
-                                  visitor_card_id: null,
-                                  carNumber: widget.carNumber,
-                                  company_id: int.parse(companyId.toString()),
-                                  is_checked_out: false,
-                                );
+                                  // Create building assignment
+                                  final buildingAssignment = BuildingAssignment(
+                                    id: null,
+                                    visitor_id: widget.visitor.id,
+                                    visitor_log_id: null,
+                                    company_id: int.parse(companyId.toString()),
+                                    building_id: 0,
+                                    unit_id: ["0001"],
+                                  );
 
-                                final prefs =
-                                    await SharedPreferences.getInstance();
-                                final societyOfficeMemberDetails = [
-                                  {
-                                    "name": "Society Office",
-                                    "unit_name": "Cyberone",
-                                    "unit_id": 0001,
-                                    "member_ids": 0,
-                                    "building_unit": "0001"
+                                  // Create visitor log data
+                                  final visitorLogData = VisitorLog(
+                                    visitor_id: widget.visitor.id ?? 0,
+                                    visitor_purpose_category_id:
+                                        widget.purposeCategoryId == null
+                                            ? 1
+                                            : int.parse(widget.purposeCategoryId
+                                                .toString()),
+                                    visitor_purpose_sub_category_id:
+                                        widget.selectedSubCategoryId != null
+                                            ? int.parse(widget
+                                                .selectedSubCategoryId
+                                                .toString())
+                                            : null,
+                                    visitor_count: widget.guestCount ?? 0,
+                                    visitor: widget.visitor,
+                                    visitor_check_in:
+                                        DateTime.parse(formattedInTime),
+                                    visitor_card_number: widget.visitorNumber,
+                                    visitor_coming_from: widget.comingFrom,
+                                    visitor_building_assignment: [
+                                      buildingAssignment
+                                    ],
+                                    visitor_card_id: null,
+                                    carNumber: widget.carNumber,
+                                    company_id: int.parse(companyId.toString()),
+                                    is_checked_out: false,
+                                  );
+
+                                  // Save society office details to preferences
+                                  final prefs =
+                                      await SharedPreferences.getInstance();
+                                  final societyOfficeMemberDetails = [
+                                    {
+                                      "name": "Society Office",
+                                      "unit_name": "Cyberone",
+                                      "unit_id": 0001,
+                                      "member_ids": 0,
+                                      "building_unit": "0001"
+                                    }
+                                  ];
+
+                                  await prefs.setString(
+                                    'member_details',
+                                    json.encode(societyOfficeMemberDetails),
+                                  );
+
+                                  // Perform check-in
+                                  await remoteDataSource.checkIn(
+                                      visitorLogData, true);
+
+                                  // Show success message
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Visitor checked in successfully'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+
+                                  // Navigate to dashboard
+                                  if (mounted) {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const GateDashboardView(),
+                                      ),
+                                      (route) => false,
+                                    );
                                   }
-                                ];
-
-                                await prefs.setString(
-                                  'member_details',
-                                  json.encode(societyOfficeMemberDetails),
-                                );
-
-                                await _showApprovedDialog(
-                                    context, visitorLogData);
+                                } catch (e) {
+                                  log('Error during check-in: $e');
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'Error during check-in. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isLoading = false;
+                                    });
+                                  }
+                                }
                               },
-                              child: const Text(
-                                'Tap to Check-in',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Tap to Check-in',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ],
                         ),

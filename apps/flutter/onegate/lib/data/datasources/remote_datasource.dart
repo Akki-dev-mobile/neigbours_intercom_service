@@ -968,30 +968,47 @@ class RemoteDataSource {
       return false;
     }
   }
-
   Future<List<VisitorInfo>> fetchApprovals([String? logID]) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName =
-          prefs.getString('selected_gate') ?? "Default Gate";
-
+      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
-      final String baseUrl =
-          '${ApiUrls.visitorApprovals}/$resolvedCompanyId/$selectedGateName';
-      final Map<String, dynamic> queryParams =
-          logID != null ? {'logID': logID} : {};
+      // Ensure the base URL matches the one from your cURL command
+      final String baseUrl = 'https://stggateapi.cubeone.in/api/visitor/approvals/';
 
-      final response = await _dio2?.get(baseUrl, queryParameters: queryParams);
+      final DateTime now = DateTime.now();
+      final String formattedDate =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
-      if (response?.statusCode == 200) {
-        final responseData = response?.data;
+      // Construct Request Body
+      final Map<String, dynamic> requestBody = {
+        "company_id": resolvedCompanyId,  // Ensure this is an int, not a string
+        "in_gate": selectedGateName,
+        "from_date": formattedDate,
+        "to_date": formattedDate
+      };
 
-        // 🔹 Log the complete API response before processing
+      final uri = Uri.parse(baseUrl);
+
+      // Log the URL and body for debugging
+      log("🔍 Sending request to: $baseUrl");
+      log("📦 Request Body: ${jsonEncode(requestBody)}");
+
+      final response = await http.post(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      // Handle Response
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
         log("📡 Full API Response: ${jsonEncode(responseData)}");
 
-        // Ensure 'data' key exists and is a List
-        if (responseData == null || !responseData.containsKey('data')) {
+        if (!responseData.containsKey('data')) {
           log("🚨 API Response does not contain 'data' key.");
           return [];
         }
@@ -1002,12 +1019,6 @@ class RemoteDataSource {
           return [];
         }
 
-        // 🔹 Log each approval object before mapping
-        for (var item in data) {
-          log("🔍 Approval Item: ${jsonEncode(item)}");
-        }
-
-        // Map JSON data to VisitorInfo list
         final List<VisitorInfo> visitorList = data.map((json) {
           final memberInfo = MemberInfo(
             name: json['member_name']?.toString() ?? '',
@@ -1029,18 +1040,15 @@ class RemoteDataSource {
             logCreatedAt: json['log_created_at']?.toString() ?? '',
             memberInfo: memberInfo,
             visitorComingFrom: json['visitor_coming_from']?.toString(),
-            visitorPurposeCategoryId:
-                _parseToInt(json['visitor_purpose_category_id']),
+            visitorPurposeCategoryId: _parseToInt(json['visitor_purpose_category_id']),
           );
         }).toList();
 
-        // 🔹 Log formatted visitor list
         log("✅ Formatted Visitor List: ${jsonEncode(visitorList.map((e) => e.toString()).toList())}");
-
         return visitorList;
       } else {
         throw Exception(
-            '❌ Failed to fetch approvals: ${response?.statusCode}, ${response?.data}');
+            '❌ Failed to fetch approvals: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
       log('❌ Error fetching approvals: $e');
