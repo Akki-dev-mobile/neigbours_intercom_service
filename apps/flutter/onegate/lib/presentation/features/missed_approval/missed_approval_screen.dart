@@ -7,6 +7,7 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/reque
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -145,30 +146,44 @@ class RetryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: isEnabled ? onRetry : null,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      icon: isLoading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : const Icon(
-              Icons.refresh,
-              color: Colors.black,
+    return InkWell(
+      onTap: isEnabled ? onRetry : null,
+      // style: ElevatedButton.styleFrom(
+      //   padding: const EdgeInsets.symmetric(vertical: 12),
+      //   shape: RoundedRectangleBorder(
+      //     borderRadius: BorderRadius.circular(8),
+      //   ),
+      // ),
+      child: Container(
+        height: 40,
+        decoration: BoxDecoration(
+            border: Border.all(), borderRadius: BorderRadius.circular(10)),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                    ),
+                  )
+                : const Icon(
+                    Icons.refresh,
+                    size: 15,
+                    color: Colors.black,
+                  ),
+            const SizedBox(
+              width: 5,
             ),
-      label: Text(
-        isLoading ? 'Sending...' : 'Retry Notification',
-        style: Theme.of(context).textTheme.bodyLarge,
+            Text(
+              isLoading ? 'Sending...' : 'Retry',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -188,12 +203,12 @@ class TimerDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isEnabled) {
-      return const Text(
+      return Text(
         'Time ELapsed',
-        style: TextStyle(
-          color: Colors.green,
-          fontWeight: FontWeight.bold,
-        ),
+        style: Theme.of(context).textTheme.titleSmall!.copyWith(
+              color: Colors.green,
+              fontWeight: FontWeight.bold,
+            ),
       );
     }
 
@@ -754,71 +769,195 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        children: [
-          VisitorInfoSection(visitorInfo: widget.visitorInfo),
-          const Divider(height: 1),
-          TimerActionSection(
-            visitorInfo: widget.visitorInfo,
-            visitorLogId: widget.visitorInfo.visitorLogId ?? 0,
-            onRetry: _handleRetry,
-            isLoading: _isLoading,
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        VisitorInfoSection(
+          visitorInfo: widget.visitorInfo,
+          onRetry: _handleRetry,
+          isLoading: _isLoading,
+        ),
+      ],
     );
   }
 }
 
 // Info Section Widget
+// class VisitorInfoSection extends StatelessWidget {
+//   final VisitorInfo visitorInfo;
+//   const VisitorInfoSection({
+//     Key? key,
+//     required this.visitorInfo,
+//   }) : super(key: key);
+//   @override
+//   Widget build(BuildContext context) {
+//     return Padding(
+//       padding: const EdgeInsets.all(16),
+//       child: Row(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           VisitorAvatar(visitorInfo: visitorInfo),
+//           const SizedBox(width: 16),
+//           Expanded(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text(
+//                   visitorInfo.visitorName,
+//                   style: const TextStyle(
+//                     fontSize: 18,
+//                     fontWeight: FontWeight.bold,
+//                   ),
+//                 ),
+//                 const SizedBox(height: 8),
+//                 Text(
+//                   'Member: ${visitorInfo.memberInfo.name}',
+//                   style: const TextStyle(fontSize: 14),
+//                 ),
+//                 Text(
+//                   'Gate: ${visitorInfo.inGate}',
+//                   style: const TextStyle(fontSize: 14),
+//                 ),
+//                 Text(
+//                   'Time: ${DateFormat('hh:mm a').format(DateTime.parse(visitorInfo.logCreatedAt))}',
+//                   style: const TextStyle(fontSize: 14),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
 class VisitorInfoSection extends StatelessWidget {
+  final VoidCallback onRetry;
+  final bool isLoading;
+
   final VisitorInfo visitorInfo;
 
-  const VisitorInfoSection({
-    Key? key,
-    required this.visitorInfo,
-  }) : super(key: key);
+  const VisitorInfoSection(
+      {Key? key,
+      required this.visitorInfo,
+      required this.onRetry,
+      required this.isLoading})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          VisitorAvatar(visitorInfo: visitorInfo),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  visitorInfo.visitorName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        elevation: 2,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ListTile(
+              onTap: () {},
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 2,
+              ),
+              leading: CircleAvatar(
+                backgroundImage: visitorInfo.visitorImage.isNotEmpty
+                    ? NetworkImage(visitorInfo.visitorImage)
+                    : const NetworkImage(
+                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                child: visitorInfo.visitorImage.isEmpty
+                    ? Text(
+                        visitorInfo.visitorImage.isNotEmpty
+                            ? visitorInfo.visitorName[0]
+                            : 'G',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      )
+                    : null,
+              ),
+              title: Text(
+                visitorInfo.visitorName,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFFEBE6),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            visitorInfo.visitorComingFrom ?? "Guest",
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall!
+                                .copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Member: ${visitorInfo.memberInfo.name}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                Text(
-                  'Gate: ${visitorInfo.inGate}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                Text(
-                  'Time: ${DateFormat('hh:mm a').format(DateTime.parse(visitorInfo.logCreatedAt))}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: RichText(
+                      text: TextSpan(
+                        children: [
+                          const WidgetSpan(
+                            child: Icon(
+                              Symbols.apartment,
+                              color: Color(0xffFFB080),
+                            ),
+                          ),
+                          // TextSpan(
+                          //     text: unitList,
+                          //     style: Theme.of(context).textTheme.labelSmall),
+                          WidgetSpan(
+                            child: Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffFFEBE6),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                visitorInfo.memberInfo.unitId.toString(),
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              color: Colors.grey[200],
+            ),
+            TimerActionSection(
+              visitorInfo: visitorInfo,
+              visitorLogId: visitorInfo.visitorLogId ?? 0,
+              onRetry: onRetry,
+              isLoading: isLoading,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -928,11 +1067,10 @@ class TimerActionSection extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       "Visitor has been allowed.",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
                     ),
                   ],
                 )
@@ -945,11 +1083,10 @@ class TimerActionSection extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       "Visitor has been declined.",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade700,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade700,
+                          ),
                     ),
                   ],
                 )
@@ -966,29 +1103,31 @@ class TimerActionSection extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           "Approval is pending...",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade700,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange.shade700,
+                                  ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8), // Adds spacing
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Expanded(
-                          child: RetryButton(
-                            onRetry: onRetry,
-                            isEnabled: isEnabled && !isLoading,
-                            isLoading: isLoading,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        TimerDisplay(
-                          remaining: remaining,
-                          isEnabled: isEnabled,
-                        ),
+                        isEnabled
+                            ? SizedBox(
+                                width: MediaQuery.of(context).size.width * 0.3,
+                                child: RetryButton(
+                                  onRetry: onRetry,
+                                  isEnabled: isEnabled && !isLoading,
+                                  isLoading: isLoading,
+                                ),
+                              )
+                            : TimerDisplay(
+                                remaining: remaining,
+                                isEnabled: isEnabled,
+                              ),
                       ],
                     ),
                   ],
@@ -1002,11 +1141,10 @@ class TimerActionSection extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       "Visitor is waiting at the gate.",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
                     ),
                   ],
                 )
@@ -1018,12 +1156,17 @@ class TimerActionSection extends StatelessWidget {
                     const Icon(Icons.directions_walk,
                         color: Colors.brown, size: 24),
                     const SizedBox(width: 8),
-                    Text(
-                      "Delivery person has left the parcel",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.brown.shade700,
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          "Delivery person has left the parcel",
+                          style:
+                              Theme.of(context).textTheme.titleSmall!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.brown.shade700,
+                                  ),
+                        ),
                       ),
                     ),
                   ],
@@ -1038,11 +1181,10 @@ class TimerActionSection extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       "Visitor is not reachable.",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade700,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
                     ),
                   ],
                 )

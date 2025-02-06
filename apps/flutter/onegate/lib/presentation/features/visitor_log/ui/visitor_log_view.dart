@@ -199,13 +199,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   checkOutDate.isBefore(endOfToday);
             }).toList();
 
-            Future<void> _storeTodayLogsCount(int count, String key) async {
+            Future<void> storeTodayLogsCount(int count, String key) async {
               final prefs = await SharedPreferences.getInstance();
               prefs.setInt(key, count);
             }
 
-            _storeTodayLogsCount(todayLogs.length, 'todayLogsCount');
-            _storeTodayLogsCount(
+            storeTodayLogsCount(todayLogs.length, 'todayLogsCount');
+            storeTodayLogsCount(
                 todayCheckoutLogs.length, 'todayCheckoutLogsCount');
 
             List<VisitorLog> yesterdayLogs = filteredVisitors.where((log) {
@@ -218,14 +218,14 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               final checkInDate = log.visitor_check_in!;
               return checkInDate.isBefore(startOfYesterday);
             }).toList();
-            bool _isPopping = false;
+            bool isPopping = false;
 
-            void _safePop(BuildContext context) {
-              if (!_isPopping) {
-                _isPopping = true;
+            void safePop(BuildContext context) {
+              if (!isPopping) {
+                isPopping = true;
                 Navigator.of(context).pop();
                 Future.delayed(Duration(milliseconds: 300), () {
-                  _isPopping = false;
+                  isPopping = false;
                 });
               }
             }
@@ -334,14 +334,14 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.person_off_outlined,
-                              size: 48,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                            ),
+                            // Icon(
+                            //   Icons.person_off_outlined,
+                            //   size: 48,
+                            //   color: Theme.of(context)
+                            //       .colorScheme
+                            //       .onSurface
+                            //       .withOpacity(0.6),
+                            // ),
                             const SizedBox(height: 16),
                             Text(
                               'No such visitors found in log',
@@ -490,7 +490,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 bottom: MediaQuery.of(context).viewInsets.bottom + 16,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Form(
