@@ -950,6 +950,25 @@ class RemoteDataSource {
     }
   }
 
+  Future<bool> uploadParcelImage({
+    required int visitorLogId,
+    required String imageUrl,
+  }) async {
+    try {
+      final response = await Dio().post(
+        '${ApiUrls.gateBaseUrl}/visitor/parcelData/',
+        data: {
+          'visitor_log_id': visitorLogId,
+          'parcel_image': imageUrl,
+        },
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      log('Error uploading parcel image: $e');
+      return false;
+    }
+  }
+
   Future<List<VisitorInfo>> fetchApprovals([String? logID]) async {
     try {
       final prefs = await SharedPreferences.getInstance();

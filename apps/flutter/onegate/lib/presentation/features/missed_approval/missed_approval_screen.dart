@@ -1019,7 +1019,7 @@ class TimerActionSection extends StatelessWidget {
                         color: Colors.brown, size: 24),
                     const SizedBox(width: 8),
                     Text(
-                      "Visitor has left the premises.",
+                      "Delivery person has left the parcel",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

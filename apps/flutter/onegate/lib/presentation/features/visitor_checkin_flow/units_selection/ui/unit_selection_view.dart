@@ -1117,6 +1117,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             MaterialPageRoute(
               builder: (context) => RequestPermissionPage(
                 visitor: widget.visitor,
+                visitorLog: visitorLogData,
                 logID: logID,
               ),
             ),
@@ -1404,7 +1405,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'visitor_count': widget.guestCount.toString(),
       'member_mobile_number': "918452060059",
       'visitor_id': visitorId ?? "1",
-      'purpose_category': widget.purposeCategory.categoryId.toString(),
+      'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
+          ? "delivery"
+          : widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
       'coming_from': widget.comingFrom ?? "Bandra",
       'member_id': selectedMemberIds.isNotEmpty

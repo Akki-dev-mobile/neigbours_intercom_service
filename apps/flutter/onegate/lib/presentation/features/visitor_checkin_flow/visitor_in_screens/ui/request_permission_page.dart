@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -11,6 +14,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -21,7 +25,8 @@ enum RequestType {
   notRecheable,
   request,
   allowByGatekeeper,
-  waiting
+  waiting,
+  uploading
 }
 
 class RequestPermissionPage extends StatefulWidget {
@@ -64,6 +69,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json',
     RequestType.waiting:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json',
+    RequestType.uploading:
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/uploading_animation.json', // Add this line
   };
 
   static const Map<RequestType, String> _requestMessages = {
@@ -74,6 +81,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     RequestType.request: "Request permission from member",
     RequestType.allowByGatekeeper: "Allowed by gatekeeper",
     RequestType.waiting: "Initializing request...",
+    RequestType.uploading: "Uploading image...",
   };
 
   @override
@@ -170,23 +178,23 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     }
   }
 
+  bool _isUploading = false;
+  double _uploadProgress = 0;
+
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
-      pageTitleWidget: _buildHeader(),
-      hasBackButton: EditableText.debugDeterministicCursor,
-      floatingActionButton: _buildActionButton(),
-      pageBody: Stack(
-        children: [
-          _buildContent(),
-          // if (_isLoading)
-          //   Container(
-          //     color: Colors.white.withOpacity(0.8),
-          //     child: const Center(
-          //       child: CircularProgressIndicator(),
-          //     ),
-          //   ),
-        ],
+    return LoadingOverlay(
+      isUploading: _isUploading,
+      progress: _uploadProgress,
+      child: MyScrollView(
+        pageTitleWidget: _buildHeader(),
+        hasBackButton: EditableText.debugDeterministicCursor,
+        floatingActionButton: _buildActionButton(),
+        pageBody: Stack(
+          children: [
+            _buildContent(),
+          ],
+        ),
       ),
     );
   }
@@ -238,7 +246,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             InfoLileWidget(
               icon: Symbols.apartment,
               iconColor: const Color(0xffFFB080),
-              title: matchingApproval?.memberInfo.unitId.toString(),
+              title: unitList,
             ),
           ],
         ),
@@ -273,7 +281,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         fontSize: 25,
         color: _requestType == RequestType.rejected ? Colors.red : Colors.black,
       ),
-
     );
   }
 
@@ -299,10 +306,145 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   Widget _buildCapturePhotoButton() {
     return CustomLargeBtn(
-        onPressed: () => _navigateToRequestPermission(
-              PurposeCategory1(categoryId: 123, categoryName: "categoryName"),
-            ),
-        text: "Capture photo");
+      onPressed: () => _handleImageCapture(),
+      text: "Capture photo",
+    );
+  }
+
+// Modify the _handleImageCapture method
+  Future<void> _handleImageCapture() async {
+    try {
+      final XFile? image = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+
+      if (image == null) {
+        _showErrorSnackBar('No image captured');
+        return;
+      }
+
+      // Show image preview
+      if (!mounted) return;
+
+      final bool? shouldUpload = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return ImagePreviewDialog(
+            imageFile: File(image.path),
+            onConfirm: () => Navigator.pop(context, true),
+            onRetake: () => Navigator.pop(context, false),
+          );
+        },
+      );
+
+      if (shouldUpload != true) {
+        // User wants to retake the photo
+        _handleImageCapture();
+        return;
+      }
+
+      // Show uploading animation
+      setState(() {
+        _requestType = RequestType.uploading;
+      });
+
+      final String imageUrl = await _uploadImage(File(image.path));
+
+      final success = await _remoteDataSource.uploadParcelImage(
+        visitorLogId: int.parse(widget.logID ?? '0'),
+        imageUrl: imageUrl,
+      );
+
+      if (success) {
+        _showSuccessSnackBar('Image uploaded successfully');
+        _navigateToRequestPermission(
+          PurposeCategory1(categoryId: 123, categoryName: "categoryName"),
+        );
+      } else {
+        _showErrorSnackBar('Failed to upload image');
+        setState(() {
+          _requestType = RequestType.leaveAtGate;
+        });
+      }
+    } catch (e) {
+      log('Error handling image capture: $e');
+      _showErrorSnackBar('Error processing image');
+      setState(() {
+        _requestType = RequestType.leaveAtGate;
+      });
+    }
+  }
+
+// Update the _uploadImage method to show upload progress
+  Future<String> _uploadImage(File imageFile) async {
+    try {
+      setState(() {
+        _isUploading = true;
+        _uploadProgress = 0;
+      });
+
+      var data = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: '${widget.visitorLog?.visitor?.mobile}.jpg',
+        ),
+        'company_id': '${widget.visitorLog?.company_id}',
+        'uuid': widget.visitorLog?.visitor?.mobile,
+        'path': imageFile.path,
+      });
+
+      var dio = Dio();
+      var response = await dio.post(
+        'http://35.154.173.226:8005/api/visitor/uploadFile',
+        data: data,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+        onSendProgress: (int sent, int total) {
+          setState(() {
+            _uploadProgress = sent / total;
+          });
+        },
+      );
+
+      if (response.statusCode == 200) {
+        log('Successfully uploaded: ${json.encode(response.data)}');
+        var filePath = response.data['data']?['file_path'];
+        if (filePath != null && filePath is String) {
+          return filePath;
+        }
+      }
+      throw Exception('Upload failed: ${response.statusMessage}');
+    } catch (e) {
+      log('Error uploading image: $e');
+      rethrow;
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   Widget _buildNotReacheableButtons() {
@@ -362,8 +504,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       foregroundColor: MaterialStateProperty.all<Color>(
         const Color(0xFF7D7C7C),
       ),
-      backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
-      elevation: MaterialStateProperty.resolveWith<double>(
+      backgroundColor: WidgetStateProperty.all<Color>(Colors.white),
+      elevation: WidgetStateProperty.resolveWith<double>(
         (Set<MaterialState> states) {
           if (states.contains(MaterialState.pressed)) {
             return 8;
@@ -383,12 +525,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void _navigateToRequestPermission(PurposeCategory1 purposeCategory) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => RequestPermissionView(
-          visitor: Visitor(),
-          purposeCategory: purposeCategory,
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => const GateDashboardView()),
     );
   }
 
@@ -559,5 +696,125 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               text: "Finish");
         }
     }
+  }
+}
+
+class ImagePreviewDialog extends StatelessWidget {
+  final File imageFile;
+  final VoidCallback onConfirm;
+  final VoidCallback onRetake;
+
+  const ImagePreviewDialog({
+    Key? key,
+    required this.imageFile,
+    required this.onConfirm,
+    required this.onRetake,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            child: ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.file(
+                imageFile,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: onRetake,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Retake'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: onConfirm,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Upload'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LoadingOverlay extends StatelessWidget {
+  final Widget child;
+  final bool isUploading;
+  final double progress;
+
+  const LoadingOverlay({
+    Key? key,
+    required this.child,
+    this.isUploading = false,
+    this.progress = 0,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        if (isUploading)
+          Container(
+            color: Colors.black54,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Uploading... ${(progress * 100).toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
