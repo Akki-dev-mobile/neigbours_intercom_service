@@ -15,6 +15,7 @@ import 'package:flutter_onegate/presentation/features/missed_approval/missed_app
 import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -33,9 +34,13 @@ class RequestPermissionPage extends StatefulWidget {
   final Visitor visitor;
   final String? logID;
   final VisitorLog? visitorLog;
-
-  const RequestPermissionPage(
-      {Key? key, required this.visitor, this.logID, this.visitorLog})
+  List<String>? unitList;
+  RequestPermissionPage(
+      {Key? key,
+      required this.visitor,
+      this.logID,
+      this.visitorLog,
+      this.unitList})
       : super(key: key);
 
   @override
@@ -215,54 +220,163 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   Widget _buildContent() {
     return Column(
       children: [
-        _buildVisitorCard(),
+        _buildVisitorCard(context),
         _buildLottieAnimation(),
         _buildStatusText(),
       ],
     );
   }
 
-  Widget _buildVisitorCard() {
-    final unitList = _getUnitList();
+  Widget _buildVisitorCard(BuildContext context) {
+    Color colortoshow = const Color(0xffFFB080);
+    Size screensize = MediaQuery.of(context).size;
 
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(widget.visitor.visitor_image ?? ""),
-          radius: MediaQuery.of(context).size.height * 0.05,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(25),
+            child: Image.network(
+                width: screensize.width * 0.5,
+                height: screensize.height * 0.2,
+                fit: BoxFit.fill,
+                "https://t4.ftcdn.net/jpg/03/64/21/11/360_F_364211147_1qgLVxv1Tcq0Ohz3FawUfrtONzz8nq3e.jpg"),
+          ),
         ),
-        title: Text(
+        SizedBox(height: 20),
+        Text(
           widget.visitor.name ?? "",
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InfoLileWidget(
-              icon: Symbols.call,
-              iconColor: Colors.green,
-              title: widget.visitor.mobile!,
-            ),
-            InfoLileWidget(
-              icon: Symbols.apartment,
-              iconColor: const Color(0xffFFB080),
-              title: unitList,
-            ),
-          ],
+        Container(
+          decoration: BoxDecoration(
+            color: colortoshow.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+                widget.visitorLog?.purpose_sub_category_name != null
+                    ? "${widget.visitorLog?.purpose_sub_category_name}"
+                    : "${widget.visitorLog?.visitor_purpose_Category_name}",
+                    ),
+          ),
         ),
-      ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.all(16),
+                leading: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Ionicons.call_outline, color: Colors.green),
+                ),
+                title: Text(
+                  'Phone Number',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+
+                  //  TextStyle(
+                  //   color: Colors.grey[600],
+                  //   fontSize: 14,
+                  // ),
+                ),
+                subtitle: Text(
+                  widget.visitor.mobile ?? "",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                ),
+
+                // trailing: ElevatedButton.icon(
+                //   icon: Icon(Icons.call, size: 18, color:Colors.black),
+                //   label: Text('Call',style: Theme.of(context).textTheme.bodySmall),
+                //   onPressed: () => {},
+                //   // _makePhoneCall(widget.visitorLog.visitor!.mobile ?? ""),
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: colortoshow,
+                //     foregroundColor: Colors.white,
+                //     padding:
+                //         EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                //     shape: RoundedRectangleBorder(
+                //       borderRadius: BorderRadius.circular(8),
+                //     ),
+                //   ),
+                // ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 18.0, bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colortoshow.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Symbols.apartment,
+                        color: colortoshow,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Visiting Unit',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                        Container(
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.6,
+                          ),
+                          child: Text(
+                            widget.unitList!.first,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
-  }
-
-  String _getUnitList() {
-    if (widget.visitorLog?.visitor_building_assignment == null ||
-        widget.visitorLog!.visitor_building_assignment!.isEmpty) {
-      return '';
-    }
-
-    return widget.visitorLog!.visitor_building_assignment!
-        .expand((assignment) => assignment.unit_id ?? [])
-        .join(', ');
   }
 
   Widget _buildLottieAnimation() {

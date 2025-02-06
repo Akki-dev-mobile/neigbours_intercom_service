@@ -13,6 +13,7 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
 
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -1025,30 +1026,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Widget _buildMainContent() {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      child: Column(
-        children: [
-          _buildSearchField(context),
-          Expanded(child: _buildMemberList(context)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFloatingActionButton() {
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: _selectedMembersNotifier,
-      builder: (context, selectedMember, child) {
-        if (selectedMembers.isEmpty && selectedMember.isEmpty) {
-          return const SizedBox();
-        }
-        return _buildSelectionBar(selectedMember);
-      },
-    );
-  }
-
   Widget _buildSelectionBar(Set<String> selectedMember) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -1173,6 +1150,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             MaterialPageRoute(
               builder: (context) => RequestPermissionPage(
                 visitor: widget.visitor,
+                unitList: selectedBuildingUnits,
                 visitorLog: visitorLogData,
                 logID: logID,
               ),
@@ -1460,12 +1438,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
       'member_mobile_number': "918452060059",
-      'visitor_id': visitorId ?? "1",
+      'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
           ? "delivery"
           : widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
-      'coming_from': widget.comingFrom ?? "Bandra",
+      'coming_from': widget.comingFrom.toString() ?? "Bandra",
       'member_id': selectedMemberIds.isNotEmpty
           ? selectedMemberIds.first.toString()
           : "232",

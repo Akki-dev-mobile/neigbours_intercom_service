@@ -175,15 +175,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
             List<VisitorLog> filteredVisitors = uniqueVisitorLogs
                 .where((visitorLog) => visitorLog.visitor!.name!
-                .toLowerCase()
-                .contains(_searchText!.toLowerCase()))
+                    .toLowerCase()
+                    .contains(_searchText!.toLowerCase()))
                 .toList();
 
             final today = DateTime.now();
             final startOfToday = DateTime(today.year, today.month, today.day);
             final endOfToday = startOfToday.add(const Duration(days: 1));
             final startOfYesterday =
-            startOfToday.subtract(const Duration(days: 1));
+                startOfToday.subtract(const Duration(days: 1));
             final endOfYesterday = startOfToday;
 
             List<VisitorLog> todayLogs = filteredVisitors.where((log) {
@@ -235,7 +235,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => GateDashboardView()),
-                      (Route<dynamic> route) => false,
+                  (Route<dynamic> route) => false,
                 );
 
                 return false;
@@ -421,7 +421,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               onCheckOut: () {
                                 setState(() {
                                   todayLogs[index - currentIndex - 1]
-                                      .visitor_check_out =
+                                          .visitor_check_out =
                                       Utils.getCurrentTime();
                                   todayLogs[index - currentIndex - 1]
                                       .is_checked_out = true;
@@ -667,9 +667,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   'email', emailController.text);
 
                               final formattedFromDate =
-                              DateFormat('yyyy-MM-dd').format(startDate!);
+                                  DateFormat('yyyy-MM-dd').format(startDate!);
                               final formattedToDate =
-                              DateFormat('yyyy-MM-dd').format(endDate!);
+                                  DateFormat('yyyy-MM-dd').format(endDate!);
 
                               final gateProvider = Provider.of<GateProvider>(
                                   context,
@@ -693,7 +693,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                     context: context,
                                     title: "Export logs",
                                     message:
-                                    "Visitor logs exported successfully.");
+                                        "Visitor logs exported successfully.");
                               } catch (e) {
                                 // Handle error case
                               }
@@ -783,7 +783,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           scale: Tween<double>(begin: 0.5, end: 1.0).animate(curvedAnimation),
           child: FadeTransition(
             opacity:
-            Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
+                Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
             child: AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16.0),
@@ -824,9 +824,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       child: Text(
                         title,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                     ),
                   ],
@@ -852,9 +852,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     child: Text(
                       message,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        // color: Colors.green,
-                        height: 1.5,
-                      ),
+                            // color: Colors.green,
+                            height: 1.5,
+                          ),
                     ),
                   ),
                 ),
@@ -880,9 +880,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       child: FilledButton(
                         style: FilledButton.styleFrom(
                           backgroundColor:
-                          Colors.black, // Set the background color to black
+                              Colors.black, // Set the background color to black
                           foregroundColor:
-                          Colors.white, // Set the text color to white
+                              Colors.white, // Set the text color to white
                         ),
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -938,8 +938,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                     title: Text(
                       'Filters',
                       style: Theme.of(context).textTheme.displaySmall!.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
                   Expanded(
@@ -1037,6 +1037,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
   @override
   Widget build(BuildContext context) {
     String unitList = '';
+
     if (widget.visitorLog.visitor_building_assignment != null &&
         widget.visitorLog.visitor_building_assignment!.isNotEmpty) {
       unitList = widget.visitorLog.visitor_building_assignment!
@@ -1069,18 +1070,18 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               ),
               leading: CircleAvatar(
                 backgroundImage: widget
-                    .visitorLog.visitor!.visitor_image!.isNotEmpty
+                        .visitorLog.visitor!.visitor_image!.isNotEmpty
                     ? NetworkImage(
-                    widget.visitorLog.visitor!.visitor_image ?? "")
+                        widget.visitorLog.visitor!.visitor_image ?? "")
                     : NetworkImage(
-                    'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
                 child: widget.visitorLog.visitor!.visitor_image!.isEmpty
                     ? Text(
-                  widget.visitorLog.visitor!.name!.isNotEmpty
-                      ? widget.visitorLog.visitor!.name![0]
-                      : 'G',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                )
+                        widget.visitorLog.visitor!.name!.isNotEmpty
+                            ? widget.visitorLog.visitor!.name![0]
+                            : 'G',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      )
                     : null,
               ),
               title: RichText(
@@ -1093,24 +1094,24 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                     WidgetSpan(
                       child: widget.visitorLog.visitor_count.toString() != '1'
                           ? Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffFFB080),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          "+ ${widget.visitorLog.visitor_count.toString()}",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      )
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffFFB080),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                "+ ${widget.visitorLog.visitor_count.toString()}",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            )
                           : SizedBox(),
                     ),
                   ],
@@ -1160,7 +1161,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               trailing: IconButton(
                 onPressed: _hasCallSupport
                     ? () => _launched =
-                    _makePhoneCall(widget.visitorLog.visitor!.mobile ?? "")
+                        _makePhoneCall(widget.visitorLog.visitor!.mobile ?? "")
                     : null,
 
                 // onPressed: () {
@@ -1192,7 +1193,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               color: Colors.grey[200],
             ),
             Container(
-              padding: const EdgeInsets.only(bottom: 14.0, top: 8, left: 12,right: 12),
+              padding: const EdgeInsets.only(
+                  bottom: 14.0, top: 8, left: 12, right: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1212,209 +1214,210 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             text: Utils.convertDateTimeFormat(
                                 widget.visitorLog.visitor_check_in!),
                             style:
-                            Theme.of(context).textTheme.labelMedium!.merge(
-                              const TextStyle(
-                                color: Colors.green,
-                              ),
-                            ),
+                                Theme.of(context).textTheme.labelMedium!.merge(
+                                      const TextStyle(
+                                        color: Colors.green,
+                                      ),
+                                    ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  widget.visitorLog.visitor_card_number != null || widget.visitorLog.carNumber != null
+                  widget.visitorLog.visitor_card_number != null ||
+                          widget.visitorLog.carNumber != null
                       ? Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 2,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: const [
-                          Color.fromRGBO(255, 236, 158, 0.8),
-                          Color.fromRGBO(255, 190, 168, 0.8),
-                        ],
-                        begin: Alignment.topRight,
-                        end: Alignment.bottomLeft,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Color.fromRGBO(255, 190, 168, 1),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        widget.visitorLog.visitor_card_number != null
-                            ? Lottie.asset(
-                          'assets/json/idcard.json',
-                          width: 30,
-                          height: 30,
-                          fit: BoxFit.cover,
-                        )
-                            : Icon(
-                          Symbols.car_tag_rounded,
-                          size: 30,
-                          // color: Colors.red, // Optional color for the icon
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          widget.visitorLog.visitor_card_number != null
-                              ? widget.visitorLog.visitor_card_number!
-                              : widget.visitorLog.carNumber ?? 'N/A',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 2,
+                            horizontal: 10,
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                      : Spacer(),
-                  (widget.visitorLog.visitor_check_out.toString().isEmpty ||
-                      widget.visitorLog.visitor_check_out.toString() ==
-                          'null')
-                      ? ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            title: Row(
-                              children: const [
-                                Icon(Icons.warning_amber_rounded,
-                                    color: Colors.red),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Confirm Checkout',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: const [
+                                Color.fromRGBO(255, 236, 158, 0.8),
+                                Color.fromRGBO(255, 190, 168, 0.8),
                               ],
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
                             ),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Are you sure you want to checkout?',
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'This action cannot be undone.',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color.fromRGBO(255, 190, 168, 1),
                             ),
-                            actions: [
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  elevation: 0,
-                                  side: BorderSide(
-                                      color: Colors.grey[300]!),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(8),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(8),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  widget.onCheckOut();
-                                  // context
-                                  //     .read<GatekeeperDashboardBloc>()
-                                  //     .add(
-                                  //         GatekeeperDashboardInitialEvent());
-                                },
-                                child: Text(
-                                  'Checkout',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                          ),
+                          child: Row(
+                            children: [
+                              widget.visitorLog.visitor_card_number != null
+                                  ? Lottie.asset(
+                                      'assets/json/idcard.json',
+                                      width: 30,
+                                      height: 30,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Icon(
+                                      Symbols.car_tag_rounded,
+                                      size: 30,
+                                      // color: Colors.red, // Optional color for the icon
+                                    ),
+                              const SizedBox(width: 5),
+                              Text(
+                                widget.visitorLog.visitor_card_number != null
+                                    ? widget.visitorLog.visitor_card_number!
+                                    : widget.visitorLog.carNumber ?? 'N/A',
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
-                            actionsPadding: EdgeInsets.all(16),
-                            actionsAlignment: MainAxisAlignment.end,
-                          );
-                        },
-                      );
-                    },
-                    child: Text(
-                      'Checkout',
-                      style:
-                      Theme.of(context).textTheme.labelSmall!.merge(
-                        const TextStyle(
-                            color: Colors.white, fontSize: 14),
-                      ),
-                    ),
-                  )
+                          ),
+                        )
+                      : Spacer(),
+                  (widget.visitorLog.visitor_check_out.toString().isEmpty ||
+                          widget.visitorLog.visitor_check_out.toString() ==
+                              'null')
+                      ? ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  title: Row(
+                                    children: const [
+                                      Icon(Icons.warning_amber_rounded,
+                                          color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Confirm Checkout',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Are you sure you want to checkout?',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'This action cannot be undone.',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        elevation: 0,
+                                        side: BorderSide(
+                                            color: Colors.grey[300]!),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: Text(
+                                        'Cancel',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                        widget.onCheckOut();
+                                        // context
+                                        //     .read<GatekeeperDashboardBloc>()
+                                        //     .add(
+                                        //         GatekeeperDashboardInitialEvent());
+                                      },
+                                      child: Text(
+                                        'Checkout',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  actionsPadding: EdgeInsets.all(16),
+                                  actionsAlignment: MainAxisAlignment.end,
+                                );
+                              },
+                            );
+                          },
+                          child: Text(
+                            'Checkout',
+                            style:
+                                Theme.of(context).textTheme.labelSmall!.merge(
+                                      const TextStyle(
+                                          color: Colors.white, fontSize: 14),
+                                    ),
+                          ),
+                        )
                       : Tooltip(
-                    message: DateFormat('dd-MM-yyyy hh:mm a')
-                        .format(widget.visitorLog.visitor_check_out!),
-                    child: RichText(
-                      text: TextSpan(
-                        children: [
-                          const WidgetSpan(
-                            child: Icon(
-                              Symbols.directions_walk_rounded,
-                              color: Colors.red,
+                          message: DateFormat('dd-MM-yyyy hh:mm a')
+                              .format(widget.visitorLog.visitor_check_out!),
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                const WidgetSpan(
+                                  child: Icon(
+                                    Symbols.directions_walk_rounded,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: Utils.convertDateTimeFormat(
+                                      widget.visitorLog.visitor_check_out!),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium!
+                                      .merge(
+                                        const TextStyle(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                ),
+                              ],
                             ),
                           ),
-                          TextSpan(
-                            text: Utils.convertDateTimeFormat(
-                                widget.visitorLog.visitor_check_out!),
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelMedium!
-                                .merge(
-                              const TextStyle(
-                                color: Colors.red,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
                 ],
               ),
             ),
