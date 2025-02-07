@@ -14,6 +14,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
+import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -65,6 +66,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final Dio _dio = Dio();
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage gateStorage = GateStorage();
+  final SocketService socketService = SocketService(); // ✅ Add this line
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
       ValueNotifier([]);
@@ -101,23 +103,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _searchController.addListener(_filterMembers);
     _fetchCompanyId();
     _loadVisitorSettings();
+    _initializeSocketConnection(); // ✅ Initialize socket connection
     _initializeFuture = _initializeMembers(); // Initialize the Future once
     log("${selectedUnits} here is this");
     log("${widget.comingFrom} here is this");
-  }
-
-  Future<void> _loadVisitorSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    _membersApproval = await prefs.getBool('membersApproval');
-  }
-
-  @override
-  void dispose() {
-    _filteredMembersNotifier.dispose();
-    _selectedMembersNotifier.dispose();
-    _searchController.dispose();
-    print("here i am${widget.selectedSubCategoryId}");
-    super.dispose();
   }
 
   // API Methods
@@ -127,6 +116,26 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     companyName = companyDetails['societyName'];
 
     setState(() {});
+  }
+
+  void _initializeSocketConnection() {
+    log("this is123 ${companyId.toString()}");
+    socketService.initSocket(companyId.toString(), "onegate");
+  }
+
+  Future<void> _loadVisitorSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _membersApproval = await prefs.getBool('membersApproval');
+  }
+
+  @override
+  void dispose() {
+    socketService.disconnect();
+    _filteredMembersNotifier.dispose();
+    _selectedMembersNotifier.dispose();
+    _searchController.dispose();
+    print("here i am${widget.selectedSubCategoryId}");
+    super.dispose();
   }
 
   Future<void> _initializeMembers() async {
@@ -1106,63 +1115,85 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _handleSingleMemberSelection(VisitorLog visitorLogData) async {
-    // Step 1: Check-in
     if (!_isCheckedIn) {
       await remoteDataSource.checkIn(visitorLogData, statusallowed);
       _isCheckedIn = true;
     }
 
-    // Step 2: Send FCM notification and navigate
     try {
       final userId = selectedUserIds.first;
       final selectedMobileNumbers = await _getSelectedMobileNumbers();
       final requestData =
           await _prepareRequestData(userId, selectedMobileNumbers);
 
-      final response = await Dio().post(
+      log("✅ Sending FCM notification via WebSocket & API...");
+
+      // Send WebSocket event
+      if (socketService.socket != null && socketService.socket!.connected) {
+        log("📡 Sending WebSocket event: sendFcmNotification...");
+        socketService.socket!.emit("sendFcmNotification", requestData);
+      } else {
+        log("⚠️ WebSocket not connected, but proceeding with API request.");
+      }
+
+      // Send API request concurrently
+      final apiResponse = Dio().post(
         'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
 
+      // Listen for WebSocket response
+      socketService.socket!.on("fcmResponse", (responseData) async {
+        log("📩 WebSocket Response Received: $responseData");
+        await _handleFcmResponse(responseData, visitorLogData);
+      });
+
+      // Wait for API response
+      final response = await apiResponse;
       if (response.statusCode == 200) {
-        log("✅ FCM notification sent successfully");
-
-        log(requestData.toString());
-        // Parse the response
-        final responseData = response.data;
-        final message = responseData['message'] as String?;
-
-        if (message?.toLowerCase() == "visitor is always allowed") {
-          await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-
-          await Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const GateDashboardView(),
-            ),
-          );
-        } else {
-          // Normal flow - navigate to RequestPermissionPage
-          final prefs = await SharedPreferences.getInstance();
-          final logID = prefs.getString("visitor_log");
-
-          await Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RequestPermissionPage(
-                visitor: widget.visitor,
-                unitList: selectedBuildingUnits,
-                visitorLog: visitorLogData,
-                logID: logID,
-              ),
-            ),
-          );
-        }
+        log("✅ API Response Received: ${response.data}");
+        await _handleFcmResponse(response.data, visitorLogData);
+      } else {
+        log("❌ API Request Failed: ${response.statusCode}");
+        _showErrorSnackbar("Error sending notification via API.");
       }
     } catch (e) {
-      log("Error sending FCM notification: $e");
-      _showErrorSnackbar("Error sending notification");
+      log("❌ Error sending FCM notification: $e");
+      _showErrorSnackbar("Error sending notification. Try again.");
+    }
+  }
+
+  Future<void> _handleFcmResponse(
+      dynamic responseData, VisitorLog visitorLogData) async {
+    final message = responseData['message'] as String?;
+
+    if (message?.toLowerCase() == "visitor is always allowed") {
+      await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const GateDashboardView()),
+        );
+      }
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      final logID = prefs.getString("visitor_log");
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RequestPermissionPage(
+              visitor: widget.visitor,
+              unitList: selectedBuildingUnits,
+              visitorLog: visitorLogData,
+              logID: logID,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -1438,9 +1469,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
-          ? "234567"
-          : int.parse(userId).toString(),
+      'user_id': "77525",
+
+      // (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+      //     ? "234567"
+      //     : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
       'member_mobile_number': "918452060059",
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),

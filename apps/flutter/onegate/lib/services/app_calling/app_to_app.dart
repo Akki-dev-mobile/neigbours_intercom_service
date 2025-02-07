@@ -1,38 +1,99 @@
+import 'dart:async';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class SocketService {
-  late IO.Socket socket;
+  IO.Socket? socket;
+  final StreamController<Map<String, dynamic>> _messageStreamController =
+      StreamController.broadcast(); // Stream for multiple listeners
 
+  Stream<Map<String, dynamic>> get messageStream =>
+      _messageStreamController.stream;
+
+  /// Initializes WebSocket connection and starts listening
   void initSocket(String companyId, String appId) {
-    socket = IO.io('http://192.168.1.200:3000/',
-        IO.OptionBuilder().setTransports(['websocket']).build());
+    if (socket != null && socket!.connected) {
+      print('⚡ WebSocket already connected');
+      return;
+    }
 
-    socket.onConnect((_) {
-      print('Connected to Socket.IO server');
-      print('companyId: $companyId, appId: $appId');
-
-      socket.emit('joinRoom', {'companyId': companyId, 'clientName': appId});
+    socket = IO.io('http://192.168.1.200:3000/', {
+      'transports': ['websocket'],
+      'autoConnect': true,
+      'reconnection': true,
+      'reconnectionAttempts': 5,
+      'reconnectionDelay': 2000,
     });
 
-    socket.on('message', (data) {
-      print('Received message: $data');
+    socket!.onConnect((_) {
+      print('✅ Connected to WebSocket server');
+      socket!.emit('joinRoom', {'companyId': "8191", 'clientName': appId});
     });
 
-    socket.onError((data) => print('Socket Error: $data'));
-    socket.onDisconnect((_) => print('Disconnected from server'));
+    // ✅ Listen for incoming messages
+    _listenToEvent('message');
+    _listenToEvent('notification');
+    _listenToEvent('userJoined');
 
-    socket.connect();
+    socket!.onError((data) => print('⚠️ WebSocket Error: $data'));
+    socket!.onDisconnect((_) => print('❌ Disconnected from WebSocket'));
+
+    socket!.connect();
   }
 
-  void sendMessage(String message, String? userId, String? visitorLogId) {
-    socket.emit('sendMessage', {
-      'user_id': userId,
-      'visitor_log_id': visitorLogId,
-      'allow_status': message
+  /// ✅ Generic event listener
+  void _listenToEvent(String eventName) {
+    socket!.on(eventName, (data) {
+      print('📩 Received Event: $eventName, Data: $data');
+      _messageStreamController.add({'event': eventName, 'data': data});
     });
   }
 
+  /// ✅ Wait for a specific message before proceeding
+  Future<void> waitForMessage(String expectedEvent,
+      {int timeoutSeconds = 10}) async {
+    print(
+        "⏳ Waiting for '$expectedEvent' message for $timeoutSeconds seconds...");
+
+    try {
+      final Completer<Map<String, dynamic>> messageCompleter = Completer();
+
+      // ✅ Listen for the event
+      StreamSubscription<Map<String, dynamic>>? subscription;
+      subscription = messageStream.listen((message) {
+        if (message['event'] == expectedEvent) {
+          print("✅ Message received: $message");
+          messageCompleter.complete(message);
+        }
+      });
+
+      // ✅ Wait for message or timeout
+      final result = await messageCompleter.future.timeout(
+        Duration(seconds: timeoutSeconds),
+        onTimeout: () {
+          print("❌ Timeout: No message received for '$expectedEvent'.");
+          return {
+            'event': expectedEvent,
+            'data': 'Timeout - No message received'
+          };
+        },
+      );
+
+      // ✅ Cancel the subscription after receiving the message
+      await subscription.cancel();
+      print("📩 Final message received: $result");
+    } catch (e) {
+      print("❌ Error while waiting for message: $e");
+    }
+  }
+
+  /// ✅ Disconnect and clean up WebSocket connection
   void disconnect() {
-    socket.disconnect();
+    if (socket != null) {
+      socket!.disconnect();
+      socket!.dispose();
+      socket = null;
+      _messageStreamController.close();
+      print('🚪 WebSocket disconnected and disposed');
+    }
   }
 }
