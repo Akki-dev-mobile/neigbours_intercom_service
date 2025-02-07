@@ -96,8 +96,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   Future<void> _initializeControllers() async {
     final prefs = await SharedPreferences.getInstance();
-    final comingFrom = await prefs.getString('visitor_coming_from') ?? "";
-    print("kiyu nahi aara$comingFrom");
+
+    // Fetch the stored "coming from" value
+    final comingFrom = prefs.getString('visitor_coming_from') ?? "";
+
+    log("Fetched Coming From: $comingFrom");  // Log fetched value
+
+    // Clear the stored value immediately after fetching
+    await prefs.remove('visitor_coming_from');
+
+    log("visitor_coming_from removed from SharedPreferences");
+
     // Initialize controllers with the fetched data
     _guestNameController = TextEditingController(
       text: widget.searchedVisitor?.name ?? "",
@@ -111,6 +120,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _visitorNumberController = TextEditingController();
     _carNumberController = TextEditingController();
   }
+
 
   void _initializeBloc() {
     final remoteDataSource = RemoteDataSource(

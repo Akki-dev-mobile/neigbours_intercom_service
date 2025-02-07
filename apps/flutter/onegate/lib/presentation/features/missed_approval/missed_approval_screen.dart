@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -237,7 +238,9 @@ class VisitorInfo {
   final MemberInfo memberInfo;
   final String? visitorComingFrom;
   final int? visitorPurposeCategoryId;
-
+  final String? purposeCategoryName; // Added field
+  final String? purposeSubCategoryName;
+  final UnitDetails unitDetails;
   VisitorInfo({
     required this.visitorId,
     required this.visitorName,
@@ -245,15 +248,57 @@ class VisitorInfo {
     required this.visitorImage,
     required this.allowStatus,
     this.visitorLogId,
+    required this.unitDetails,
     required this.companyId,
     required this.inGate,
     required this.logCreatedAt,
     required this.memberInfo,
     this.visitorComingFrom,
     this.visitorPurposeCategoryId,
+    this.purposeCategoryName,
+    this.purposeSubCategoryName,
   });
 
   factory VisitorInfo.fromJson(Map<String, dynamic> json) {
+    List<UnitDetails> parsedUnitDetails = [];
+
+    try {
+      final unitDetailsString = json['unit_details'];
+
+      if (unitDetailsString is String) {
+        final List<dynamic> decodedUnitDetails = jsonDecode(unitDetailsString);
+
+        if (decodedUnitDetails is List) {
+          parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
+            final unit = UnitDetails(
+              unitId: _parseToInt(unitJson['unit_id']),
+              building_unit: unitJson["building_unit"]?.toString() ?? '',
+            );
+
+            log("🔍 Parsed building_unit: ${unit.building_unit}");
+
+            return unit;
+          }).toList();
+        }
+      } else if (unitDetailsString is List) {
+        parsedUnitDetails = unitDetailsString.map<UnitDetails>((unitJson) {
+          final unit = UnitDetails(
+            unitId: _parseToInt(unitJson['unit_id']),
+            building_unit: unitJson["building_unit"]?.toString() ?? '',
+          );
+
+          log("🔍 Parsed building_unit: ${unit.building_unit}");
+
+          return unit;
+        }).toList();
+      }
+    } catch (e) {
+      log("❌ Error decoding unit details: $e");
+    }
+
+    // 🔍 Print final assigned building_unit
+    log("✅ Final assigned building_unit: ${parsedUnitDetails.isNotEmpty ? parsedUnitDetails.first.building_unit : 'N/A'}");
+
     return VisitorInfo(
       visitorId: _parseToInt(json['visitor_id']),
       visitorName: json['visitor_name']?.toString() ?? '',
@@ -264,16 +309,22 @@ class VisitorInfo {
       companyId: _parseToInt(json['company_id']),
       inGate: json['in_gate']?.toString() ?? '',
       logCreatedAt: json['log_created_at']?.toString() ?? '',
+      unitDetails: parsedUnitDetails.isNotEmpty
+          ? parsedUnitDetails.first
+          : UnitDetails(unitId: 0, building_unit: ''),
       memberInfo: MemberInfo(
         name: json['member_name']?.toString() ?? '',
         mobileNumber: json['memb_mobile_number']?.toString(),
         email: json['memb_email']?.toString(),
         memberId: _parseToInt(json['member_id']),
         unitId: _parseToInt(json['unit_id']),
+        building_unit: json["building_unit"]?.toString(),
       ),
       visitorComingFrom: json['visitor_coming_from']?.toString(),
       visitorPurposeCategoryId:
           _parseToInt(json['visitor_purpose_category_id']),
+      purposeCategoryName: json['purpose_category_name']?.toString(),
+      purposeSubCategoryName: json['purpose_sub_category_name']?.toString(),
     );
   }
 
@@ -286,7 +337,6 @@ class VisitorInfo {
     return 0;
   }
 
-  /// ✅ **Override `toString()` for readable logging**
   @override
   String toString() {
     return '''
@@ -300,8 +350,11 @@ class VisitorInfo {
       inGate: $inGate, 
       logCreatedAt: $logCreatedAt, 
       visitorComingFrom: $visitorComingFrom, 
-      visitorPurposeCategoryId: $visitorPurposeCategoryId, 
+      visitorPurposeCategoryId: $visitorPurposeCategoryId,
+      purposeCategoryName: $purposeCategoryName,
+      purposeSubCategoryName: $purposeSubCategoryName,
       memberInfo: $memberInfo
+      unit_details:$unitDetails
     )
     ''';
   }
@@ -313,14 +366,23 @@ class MemberInfo {
   final String? email;
   final int? unitId;
   final int? memberId;
+  final String? building_unit;
 
-  MemberInfo({
-    required this.name,
-    this.mobileNumber,
-    this.email,
-    this.unitId,
-    this.memberId,
-  });
+  MemberInfo(
+      {required this.name,
+      this.mobileNumber,
+      this.email,
+      this.unitId,
+      this.memberId,
+      this.building_unit});
+}
+
+class UnitDetails {
+  final int? unitId;
+
+  final String? building_unit;
+
+  UnitDetails({this.unitId, this.building_unit});
 }
 
 // Main Screen with Search
@@ -890,7 +952,9 @@ class VisitorInfoSection extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            visitorInfo.visitorComingFrom ?? "Guest",
+                            visitorInfo.purposeSubCategoryName ??
+                                visitorInfo.purposeCategoryName ??
+                                "",
                             style: Theme.of(context)
                                 .textTheme
                                 .titleSmall!
@@ -929,7 +993,7 @@ class VisitorInfoSection extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                visitorInfo.memberInfo.unitId.toString(),
+                                visitorInfo.unitDetails.building_unit ?? "",
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w500,

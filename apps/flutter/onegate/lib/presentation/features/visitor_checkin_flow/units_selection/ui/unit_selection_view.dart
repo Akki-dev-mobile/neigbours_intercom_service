@@ -876,7 +876,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                             const SizedBox(height: 24),
-                            // In the Society Office tab, update the ElevatedButton onPressed handler:
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.black,
@@ -920,6 +919,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                             : null,
                                     visitor_count: widget.guestCount ?? 0,
                                     visitor: widget.visitor,
+                                    visitor_purpose_Category_name:
+                                        widget.purposeCategory.categoryName,
                                     visitor_check_in:
                                         DateTime.parse(formattedInTime),
                                     visitor_card_number: widget.visitorNumber,
@@ -1127,6 +1128,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       if (response.statusCode == 200) {
         log("✅ FCM notification sent successfully");
 
+        log(requestData.toString());
         // Parse the response
         final responseData = response.data;
         final message = responseData['message'] as String?;
@@ -1321,6 +1323,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       visitor_id: int.parse(widget.visitor.id.toString()) ?? 0,
       visitor_purpose_category_id:
           int.parse(widget.purposeCategoryId.toString()),
+      visitor_purpose_Category_name: widget.purposeCategory.categoryName,
+      purpose_sub_category_name:
+          widget.purposeCategory.subCategories?.first.subCategoryName,
       visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
           ? int.parse(widget.selectedSubCategoryId.toString())
           : null,

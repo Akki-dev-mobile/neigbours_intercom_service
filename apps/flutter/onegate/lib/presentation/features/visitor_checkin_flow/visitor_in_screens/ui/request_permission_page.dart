@@ -58,6 +58,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   bool _isLoading = true;
   bool _isFetching = false;
   Timer? _timer;
+  final TimerService _timerService = TimerService();
 
   static const Map<RequestType, String> _lottieAnimations = {
     RequestType.approved:
@@ -92,7 +93,25 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   @override
   void initState() {
     super.initState();
+
+    // Start polling for visitor approval status
     _startPolling();
+
+    // Start the timer for this visitor log ID
+    if (widget.logID != null && widget.logID!.isNotEmpty) {
+      _initializeTimer(int.parse(widget.logID!));
+    }
+  }
+
+  Future<void> _initializeTimer(int visitorLogId) async {
+    await _timerService.loadTimerState(visitorLogId);
+
+    // If timer is not found, start a new one
+    if (_timerService.getTimerState(visitorLogId) == null) {
+      await _timerService.startTimer(visitorLogId);
+    }
+
+    setState(() {}); // Ensure UI updates after loading the timer
   }
 
   void _startPolling() {
@@ -242,7 +261,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                 width: screensize.width * 0.5,
                 height: screensize.height * 0.2,
                 fit: BoxFit.fill,
-                "https://t4.ftcdn.net/jpg/03/64/21/11/360_F_364211147_1qgLVxv1Tcq0Ohz3FawUfrtONzz8nq3e.jpg"),
+                widget.visitor.visitor_image!),
           ),
         ),
         SizedBox(height: 20),
@@ -257,11 +276,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           ),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(
-                widget.visitorLog?.purpose_sub_category_name != null
-                    ? "${widget.visitorLog?.purpose_sub_category_name}"
-                    : "${widget.visitorLog?.visitor_purpose_Category_name}",
-                    ),
+            child: Text(widget.visitorLog?.visitor_purpose_Category_name ?? ""),
           ),
         ),
         Container(
@@ -388,13 +403,38 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   Widget _buildStatusText() {
-    return Text(
-      _requestMessages[_requestType] ?? "",
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 25,
-        color: _requestType == RequestType.rejected ? Colors.red : Colors.black,
-      ),
+    final int visitorLogId = int.tryParse(widget.logID ?? '0') ?? 0;
+    final timerState = _timerService.getTimerState(visitorLogId);
+    final now = DateTime.now();
+    final remaining = timerState?.endTime.difference(now) ?? Duration.zero;
+    final isTimeElapsed = remaining.isNegative;
+
+    return Column(
+      children: [
+        Text(
+          _requestMessages[_requestType] ?? "",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 25,
+            color: _requestType == RequestType.rejected
+                ? Colors.red
+                : Colors.black,
+          ),
+        ),
+
+        // Only show "Retry in" timer if the request is "waiting"
+        if (_requestType == RequestType.waiting && !isTimeElapsed)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              "Retry in: ${remaining.inMinutes.toString().padLeft(2, '0')}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}",
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

@@ -842,15 +842,12 @@ class RemoteDataSource {
   Future<List<VisitorLog>> fetchCheckOutLogs(
       int companyId, String dateTime) async {
     try {
-      // Define the API endpoint
       String apiUrl = ApiUrls.visitorGetLog;
 
-      // Boolean for filtering checked-out logs
       bool isCheckedOut = true;
       final DateTime now = DateTime.now();
       final String formattedDate =
           "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-      // Get the gate and company details from preferences and storage
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
           prefs.getString('selected_gate') ?? "Default Gate";
@@ -974,8 +971,7 @@ class RemoteDataSource {
       final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
-      // Ensure the base URL matches the one from your cURL command
-      final String baseUrl = 'https://stggateapi.cubeone.in/api/visitor/approvals/';
+      final String baseUrl = '${ApiUrls.gateBaseUrl}/visitor/approvals/';
 
       final DateTime now = DateTime.now();
       final String formattedDate =
@@ -983,7 +979,7 @@ class RemoteDataSource {
 
       // Construct Request Body
       final Map<String, dynamic> requestBody = {
-        "company_id": resolvedCompanyId,  // Ensure this is an int, not a string
+        "company_id": resolvedCompanyId,
         "in_gate": selectedGateName,
         "from_date": formattedDate,
         "to_date": formattedDate
@@ -991,7 +987,6 @@ class RemoteDataSource {
 
       final uri = Uri.parse(baseUrl);
 
-      // Log the URL and body for debugging
       log("🔍 Sending request to: $baseUrl");
       log("📦 Request Body: ${jsonEncode(requestBody)}");
 
@@ -1003,7 +998,6 @@ class RemoteDataSource {
         body: jsonEncode(requestBody),
       );
 
-      // Handle Response
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         log("📡 Full API Response: ${jsonEncode(responseData)}");
@@ -1019,14 +1013,44 @@ class RemoteDataSource {
           return [];
         }
 
+        // ✅ Parse the API Response to a List of VisitorInfo Objects
         final List<VisitorInfo> visitorList = data.map((json) {
-          final memberInfo = MemberInfo(
-            name: json['member_name']?.toString() ?? '',
-            mobileNumber: json['memb_mobile_number']?.toString(),
-            email: json['memb_email']?.toString(),
-            memberId: _parseToInt(json['member_id']),
-            unitId: _parseToInt(json['unit_id']),
-          );
+          List<UnitDetails> parsedUnitDetails = [];
+
+          try {
+            // 🔍 Log the raw `unit_details` value before decoding
+            log("🔍 Raw unit_details: ${json['unit_details']}");
+
+            final dynamic unitDetailsValue = json['unit_details'];
+
+            if (unitDetailsValue is String) {
+              // ✅ Step 1: Remove unnecessary backslashes and extra quotes
+              final String cleanedJsonString = unitDetailsValue
+                  .replaceAll(r'\"', '"') // Fix escaped double quotes
+                  .replaceAll('"[', '[') // Fix opening array bracket
+                  .replaceAll(']"', ']'); // Fix closing array bracket
+
+              // ✅ Step 2: Decode the cleaned JSON string
+              final List<dynamic> decodedUnitDetails = jsonDecode(cleanedJsonString);
+
+              // ✅ Step 3: Convert JSON list to `UnitDetails` objects
+              if (decodedUnitDetails is List) {
+                parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
+                  return UnitDetails(
+                    unitId: _parseToInt(unitJson['unit_id']),
+                    building_unit: unitJson["building_unit"]?.toString() ?? '',
+                  );
+                }).toList();
+              }
+            }
+          } catch (e) {
+            log("❌ Error decoding unit details: $e");
+          }
+
+
+
+          // 🔍 Log parsed `unitDetails`
+          log("✅ Parsed unitDetails: ${parsedUnitDetails.map((u) => u.building_unit).toList()}");
 
           return VisitorInfo(
             visitorId: _parseToInt(json['visitor_id']),
@@ -1038,9 +1062,21 @@ class RemoteDataSource {
             companyId: _parseToInt(json['company_id']),
             inGate: json['in_gate']?.toString() ?? '',
             logCreatedAt: json['log_created_at']?.toString() ?? '',
-            memberInfo: memberInfo,
+            unitDetails: parsedUnitDetails.isNotEmpty
+                ? parsedUnitDetails.first
+                : UnitDetails(unitId: 0, building_unit: ''), // Assign default
+            memberInfo: MemberInfo(
+              name: json['member_name']?.toString() ?? '',
+              mobileNumber: json['memb_mobile_number']?.toString(),
+              email: json['memb_email']?.toString(),
+              memberId: _parseToInt(json['member_id']),
+              unitId: _parseToInt(json['unit_id']),
+              building_unit: json["building_unit"]?.toString(),
+            ),
             visitorComingFrom: json['visitor_coming_from']?.toString(),
             visitorPurposeCategoryId: _parseToInt(json['visitor_purpose_category_id']),
+            purposeCategoryName: json['purpose_category_name']?.toString(),
+            purposeSubCategoryName: json['purpose_sub_category_name']?.toString(),
           );
         }).toList();
 
@@ -1055,6 +1091,10 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
+
+
+
 
   // Helper method to safely parse integers
   int _parseToInt(dynamic value) {

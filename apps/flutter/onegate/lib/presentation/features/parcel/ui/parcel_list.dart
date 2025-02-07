@@ -140,8 +140,8 @@ class _ParcelListState extends State<ParcelList> {
                 },
               ),
               Container(
-                constraints: const BoxConstraints(
-                  maxHeight: 700,
+                constraints:  BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height,
                 ),
                 child: BlocBuilder<ParcelBloc, ParcelState>(
                   builder: (context, state) {
@@ -163,7 +163,7 @@ class _ParcelListState extends State<ParcelList> {
                       }
 
                       return ListView.builder(
-                        padding: EdgeInsets.only(top: 10,bottom: 100),
+                        padding: const EdgeInsets.only(top: 10,bottom: 100),
                         shrinkWrap: false,
                         itemCount: parcels.length,
                         itemBuilder: (context, index) {
@@ -214,7 +214,7 @@ class _ParcelListState extends State<ParcelList> {
                                           );
                                         }
                                       },
-                                      icon: Icon(
+                                      icon: const Icon(
                                         Ionicons.call_outline,
                                         color: Colors.green,
                                       ),
@@ -274,7 +274,7 @@ class _ParcelListState extends State<ParcelList> {
                                             ),
                                             WidgetSpan(
                                               child: Container(
-                                                margin: EdgeInsets.only(left: 8),
+                                                margin: const EdgeInsets.only(left: 8),
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                   horizontal: 7,
@@ -394,11 +394,11 @@ class _ParcelListState extends State<ParcelList> {
                                             )
                                           : Row(
                                               children: [
-                                                Icon(
+                                                const Icon(
                                                   Icons.verified,
                                                   color: Colors.green,
                                                 ),
-                                                SizedBox(width: 4),
+                                                const SizedBox(width: 4),
                                                 Text(
                                                     parcel['parcel_status'] ??
                                                         'N/A',
