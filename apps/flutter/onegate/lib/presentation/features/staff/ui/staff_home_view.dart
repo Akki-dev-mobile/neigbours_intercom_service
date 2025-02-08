@@ -20,10 +20,8 @@ class StaffScreen extends StatefulWidget {
 class _StaffScreenState extends State<StaffScreen> {
   final StaffApi _staffApi = StaffApi();
   late Future<List<dynamic>> _staffFuture = Future.value([]);
-  final RemoteDataSource _remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
+  final RemoteDataSource remoteDataSource = RemoteDataSource(
+
   );
   final GateStorage _gateStorage = GateStorage();
 

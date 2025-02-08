@@ -18,7 +18,8 @@ class ParcelDetails extends StatelessWidget {
 
   ParcelDetails({Key? key, required this.parcel}) : super(key: key);
   RemoteDataSource remoteDataSource = RemoteDataSource(
-      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
+
+  );
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(

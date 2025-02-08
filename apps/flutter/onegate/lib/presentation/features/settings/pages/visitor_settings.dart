@@ -19,9 +19,7 @@ class VisitorSettingsView extends StatefulWidget {
 class _VisitorSettingsViewState extends State<VisitorSettingsView> {
   String? selectedGateName;
   final RemoteDataSource remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
+
   );
 
   void initState() {

@@ -1,3 +1,5 @@
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/admin_dash_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
@@ -27,23 +29,36 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/reque
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/bloc/units_selection_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/bloc/visitor_in_entry_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
+import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
+import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt locator = GetIt.instance;
 
- setupLocator() {
+setupLocator() {
   // Register Dio instance
-  // You can configure Dio here
   final dioInstance = Dio();
   locator.registerLazySingleton(() => dioInstance);
 
   // Register RemoteDataSource
-  locator.registerLazySingleton(
-      () => RemoteDataSource(locator<Dio>(), locator<Dio>(), locator<Dio>()));
+  locator.registerLazySingleton(() => RemoteDataSource());
+
+  // Register GateStorage
+  locator.registerLazySingleton(() => GateStorage());
+
+  // ✅ Register AuthService properly
+  locator.registerLazySingleton<AuthService>(
+    () => AuthService(
+      keycloakWrapper:
+          KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
+      gateStorage: locator<GateStorage>(),
+      remoteDataSource: locator<RemoteDataSource>(),
+    ),
+  );
 
   // Register AuthenticationRepository
   locator.registerLazySingleton<AuthenticationRepository>(
@@ -54,7 +69,7 @@ final GetIt locator = GetIt.instance;
   locator.registerLazySingleton(
       () => LoginUseCase(locator<AuthenticationRepository>()));
 
-  // Register LoginBloc
+  // ✅ Register LoginBloc and pass AuthService
   locator.registerFactory(
       () => LoginBloc(locator<LoginUseCase>(), locator<GateUseCase>()));
 
@@ -91,6 +106,7 @@ final GetIt locator = GetIt.instance;
   locator.registerLazySingleton(
       () => VisitorUsecase(locator<VisitorRepository>()));
 
+  // ✅ Register GatekeeperDashboardBloc
   locator.registerFactory(() => GatekeeperDashboardBloc(
       locator<VisitorUsecase>(), locator<VisitorLogUsecase>()));
 
@@ -108,6 +124,7 @@ final GetIt locator = GetIt.instance;
 
   locator.registerFactory(
       () => RequestPermissionBloc(locator<VisitorLogUsecase>()));
+
   locator.registerFactory(() => VisitorLogBloc(locator<VisitorLogUsecase>()));
 
   locator.registerLazySingleton<VisitorLogRepository>(
@@ -117,13 +134,11 @@ final GetIt locator = GetIt.instance;
   locator.registerLazySingleton(
       () => VisitorLogUsecase(locator<VisitorLogRepository>()));
 
-  locator.registerFactory(
-      () => SelfEntryBloc(locator<VisitorUsecase>()));
+  locator.registerFactory(() => SelfEntryBloc(locator<VisitorUsecase>()));
 }
 
- setupDependencies() async {
+setupDependencies() async {
   final preferencesInstance = await SharedPreferences.getInstance();
   final preferenceUtilsInstance = PreferenceUtils(preferencesInstance);
   locator.registerSingleton<PreferenceUtils>(preferenceUtilsInstance);
-  
 }

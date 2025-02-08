@@ -47,8 +47,10 @@ class _SelfEntryViewState extends State<SelfEntryView>
   final FocusNode _hostFocusNode = FocusNode();
 
   final SelfEntryBloc selfEntryBloc = SelfEntryBloc(VisitorUsecase(
-      VisitorRepoImpl(RemoteDataSource(DioSingleton.instance1,
-          DioSingleton.instance2, DioSingleton.instance3))));
+      VisitorRepoImpl(RemoteDataSource(
+
+
+      ))));
 
   /// The above code is using the "late" keyword in Dart. The "late" keyword is used to declare a
   /// variable that will be initialized at a later point in time, but not immediately.

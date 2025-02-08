@@ -72,11 +72,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
-  final remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
-  );
+   final RemoteDataSource remoteDataSource = RemoteDataSource(
+     );
   late Client amqpClient;
   Set<int> selectedMembers = {};
   Set<int> selectedUnits = {};

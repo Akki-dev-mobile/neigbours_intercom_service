@@ -52,7 +52,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   static const Duration _pollingInterval = Duration(seconds: 5);
 
   final RemoteDataSource _remoteDataSource = RemoteDataSource(
-      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
+     );
 
   RequestType _requestType = RequestType.waiting;
   bool _isLoading = true;

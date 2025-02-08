@@ -24,9 +24,7 @@ class ParcelList extends StatefulWidget {
 
 class _ParcelListState extends State<ParcelList> {
   RemoteDataSource remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
+
   );
 
   TextEditingController searchController = TextEditingController();

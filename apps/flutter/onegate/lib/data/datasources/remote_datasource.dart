@@ -31,14 +31,10 @@ final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {
-  final Dio? _dio1;
-  final Dio? _dio2;
-  final Dio? _dio3;
+
 
   RemoteDataSource(
-    this._dio1,
-    this._dio2,
-    this._dio3,
+
   );
 
   final GateStorage gateStorage = GateStorage();
@@ -63,7 +59,7 @@ class RemoteDataSource {
 
       log('Keycloak login successful. Access Token: ${keycloakWrapper.accessToken}');
 
-      final response = await _dio2?.post(
+      final response = await Dio()?.post(
         ApiUrls.gateLogin,
         options: Options(
           headers: {
@@ -149,7 +145,7 @@ class RemoteDataSource {
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
       // API call to fetch visitor details
-      final response = await _dio2?.get(
+      final response = await Dio()?.get(
         ApiUrls.visitorEntry,
         queryParameters: {'mobile_number': mobileNumber},
       );
@@ -622,7 +618,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
 
-      final response = await _dio2?.get(
+      final response = await Dio()?.get(
         ApiUrls.memberList,
         queryParameters: {
           'company_id': userId,
@@ -655,7 +651,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
 
-      final response = await _dio2?.get(
+      final response = await Dio()?.get(
         ApiUrls.visitorGetLog,
         queryParameters: {
           'company_id': userId,
@@ -694,7 +690,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
 
-      final response = await _dio2?.get(
+      final response = await Dio()?.get(
         ApiUrls.unitList,
         queryParameters: {
           'company_id': companyId,
@@ -729,7 +725,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
 
-      final response = await _dio2?.get(
+      final response = await Dio()?.get(
         ApiUrls.buildingList,
         queryParameters: {'company_id': userId},
         options: Options(
@@ -754,7 +750,7 @@ class RemoteDataSource {
         throw Exception('Company ID not found. Please select a company.');
       }
 
-      final response = await _dio2?.get(
+      final response = await Dio()?.get(
         ApiUrls.buildingList,
         queryParameters: {'company_id': companyId},
       );
@@ -769,7 +765,7 @@ class RemoteDataSource {
   /// Send OTP to a mobile number
   Future<String?> sendOTP(String mobileNumber) async {
     try {
-      final response = await _dio1?.get(
+      final response = await Dio().get(
         '${ApiUrls.gateBaseUrl}/sms/verification-code',
         queryParameters: {'phoneNumber': '91$mobileNumber'},
       );
@@ -795,7 +791,7 @@ class RemoteDataSource {
   /// Verify OTP for a mobile number
   Future<String?> verifyOTP(String mobileNumber, String otp) async {
     try {
-      final response = await _dio1?.post(
+      final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/sms/verify',
         data: {'phoneNumber': '91$mobileNumber', 'otp': otp},
       );
@@ -824,7 +820,7 @@ class RemoteDataSource {
         'out_gate': selectedGateName ?? 'Unknown Gate',
       };
 
-      final response = await _dio2?.patch(ApiUrls.visitorCheckout, data: data);
+      final response = await Dio()?.patch(ApiUrls.visitorCheckout, data: data);
 
       if (response?.statusCode == 200) {
         return true;
@@ -965,10 +961,12 @@ class RemoteDataSource {
       return false;
     }
   }
+
   Future<List<VisitorInfo>> fetchApprovals([String? logID]) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? "Default Gate";
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? "Default Gate";
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
       final String baseUrl = '${ApiUrls.gateBaseUrl}/visitor/approvals/';
@@ -1024,30 +1022,26 @@ class RemoteDataSource {
             final dynamic unitDetailsValue = json['unit_details'];
 
             if (unitDetailsValue is String) {
-              // ✅ Step 1: Remove unnecessary backslashes and extra quotes
               final String cleanedJsonString = unitDetailsValue
-                  .replaceAll(r'\"', '"') // Fix escaped double quotes
-                  .replaceAll('"[', '[') // Fix opening array bracket
-                  .replaceAll(']"', ']'); // Fix closing array bracket
+                  .replaceAll(r'\"', '"')
+                  .replaceAll('"[', '[')
+                  .replaceAll(']"', ']');
 
               // ✅ Step 2: Decode the cleaned JSON string
-              final List<dynamic> decodedUnitDetails = jsonDecode(cleanedJsonString);
+              final List<dynamic> decodedUnitDetails =
+                  jsonDecode(cleanedJsonString);
 
-              // ✅ Step 3: Convert JSON list to `UnitDetails` objects
-              if (decodedUnitDetails is List) {
-                parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
-                  return UnitDetails(
-                    unitId: _parseToInt(unitJson['unit_id']),
-                    building_unit: unitJson["building_unit"]?.toString() ?? '',
-                  );
-                }).toList();
-              }
-            }
+              parsedUnitDetails =
+                  decodedUnitDetails.map<UnitDetails>((unitJson) {
+                return UnitDetails(
+                  unitId: _parseToInt(unitJson['unit_id']),
+                  building_unit: unitJson["building_unit"]?.toString() ?? '',
+                );
+              }).toList();
+                        }
           } catch (e) {
             log("❌ Error decoding unit details: $e");
           }
-
-
 
           // 🔍 Log parsed `unitDetails`
           log("✅ Parsed unitDetails: ${parsedUnitDetails.map((u) => u.building_unit).toList()}");
@@ -1074,9 +1068,11 @@ class RemoteDataSource {
               building_unit: json["building_unit"]?.toString(),
             ),
             visitorComingFrom: json['visitor_coming_from']?.toString(),
-            visitorPurposeCategoryId: _parseToInt(json['visitor_purpose_category_id']),
+            visitorPurposeCategoryId:
+                _parseToInt(json['visitor_purpose_category_id']),
             purposeCategoryName: json['purpose_category_name']?.toString(),
-            purposeSubCategoryName: json['purpose_sub_category_name']?.toString(),
+            purposeSubCategoryName:
+                json['purpose_sub_category_name']?.toString(),
           );
         }).toList();
 
@@ -1092,10 +1088,6 @@ class RemoteDataSource {
     }
   }
 
-
-
-
-
   // Helper method to safely parse integers
   int _parseToInt(dynamic value) {
     if (value == null) return 0;
@@ -1109,7 +1101,7 @@ class RemoteDataSource {
   /// Send visitor logs
   Future<void> sendLogs(Map<String, dynamic> visitorData) async {
     try {
-      final response = await _dio2?.post(
+      final response = await Dio()?.post(
         ApiUrls.visitorSendLogs,
         data: visitorData,
         options: Options(
@@ -1143,7 +1135,7 @@ class RemoteDataSource {
 
       final String? visitorId1 = prefs.getString('visitorId');
 
-      final response = await _dio2?.post(
+      final response = await Dio()?.post(
         ApiUrls.readStatus,
         data: {
           "member_id": memberID,
@@ -1309,7 +1301,7 @@ class RemoteDataSource {
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
 
-      final response = await _dio2?.get(
+      final response = await Dio()?.get(
         ApiUrls.unitList,
         queryParameters: {
           'company_id': companyId,
@@ -1327,7 +1319,7 @@ class RemoteDataSource {
   /// Fetch staff list for a company
   Future<List<StaffModel>> fetchStaffList(String companyId) async {
     try {
-      final response = await _dio2?.get(
+      final response = await Dio()?.get(
         ApiUrls.staffList,
         queryParameters: {'company_id': companyId},
       );
@@ -1345,15 +1337,13 @@ class RemoteDataSource {
   }
 
   Future<List<dynamic>> fetchParcels() async {
-    final String url =
+    const String url =
         'https://stggateapi.cubeone.in/api/visitor/parcelData/8191';
 
     try {
       final response = await Dio().get(url);
-
       if (response.statusCode == 200) {
         log('Parcels fetched successfully: ${response.data}');
-        // Extract the data array from the response
         if (response.data is Map<String, dynamic>) {
           final data = response.data['data'];
           if (data is List<dynamic>) {
@@ -1433,11 +1423,11 @@ class RemoteDataSource {
         'https://societybackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
 
     try {
-      final response = await _dio1?.get(url);
+      final response = await Dio().get(url);
 
       if (response?.statusCode == 200) {
         log("Categories${response!.data.toString()}");
-        return response?.data;
+        return response.data;
       } else {
         throw Exception(
             'Failed to fetch staff category: ${response?.statusCode}');
@@ -1488,7 +1478,7 @@ class RemoteDataSource {
       log('FormData fields: ${formData.fields}');
       log('FormData files: ${formData.files.length} files');
 
-      final response = await _dio1?.post(
+      final response = await Dio().post(
         addStaffUrl,
         data: formData,
         options: Options(
@@ -1556,7 +1546,7 @@ class RemoteDataSource {
       log('Request URL: $editStaffUrl');
       log('Request Body: $requestBody');
 
-      final response = await _dio1?.put(
+      final response = await Dio().put(
         editStaffUrl,
         data: requestBody,
         options: Options(
@@ -1692,8 +1682,8 @@ class RemoteDataSource {
 }
 
 class GlobalStorage {
-  static String? _visitorLogId; // Private field for visitorLogId
-  static String? _visitorId; // Private field for visitorId
+  static String? _visitorLogId;
+  static String? _visitorId;
 
   // Getter for visitorLogId
   static String? get visitorLogId => _visitorLogId;

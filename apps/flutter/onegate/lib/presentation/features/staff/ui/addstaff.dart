@@ -22,9 +22,7 @@ class AddStaff extends StatefulWidget {
 
 class _AddStaffState extends State<AddStaff> {
   final RemoteDataSource _remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
+
   );
 
   final TextEditingController _nameController = TextEditingController();

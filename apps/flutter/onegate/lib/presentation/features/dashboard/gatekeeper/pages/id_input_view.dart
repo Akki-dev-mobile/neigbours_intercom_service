@@ -85,21 +85,22 @@ class _IdInputViewState extends State<IdInputView> {
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
         VisitorRepoImpl(
-          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
-              DioSingleton.instance3),
+          RemoteDataSource(
+
+          ),
         ),
       ),
       VisitorLogUsecase(
         VisitorLogRepositoryImpl(
-          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
-              DioSingleton.instance3),
+          RemoteDataSource(
+
+
+          ),
         ),
       ));
   final provider = PurposeProvider();
   RemoteDataSource remoteDataSource = new RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
+
   );
 
   @override

@@ -31,14 +31,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
   final AdminDashboardBloc adminDashboardBloc = AdminDashboardBloc(
       AdminDashboardUseCase(
         AdminDashboardRepositoryImpl(
-          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
-              DioSingleton.instance3),
+          RemoteDataSource(
+
+          ),
         ),
       ),
-      VisitorLogUsecase(VisitorLogRepositoryImpl(RemoteDataSource(
-          DioSingleton.instance1,
-          DioSingleton.instance2,
-          DioSingleton.instance3))));
+      VisitorLogUsecase(VisitorLogRepositoryImpl( RemoteDataSource(
+     ))));
 
   @override
   void initState() {

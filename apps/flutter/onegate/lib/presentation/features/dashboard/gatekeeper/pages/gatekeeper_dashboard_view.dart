@@ -52,23 +52,23 @@ class _GateDashboardViewState extends State<GateDashboardView>
   bool? _visitorCardNumber = false;
   String? selectedGateName;
   bool isLoading = false;
-  final remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
-  );
+   final RemoteDataSource _remoteDataSource = RemoteDataSource(
+     );
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
         VisitorRepoImpl(
-          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
-              DioSingleton.instance3),
+          RemoteDataSource(
+
+          )
+          ,
         ),
       ),
       VisitorLogUsecase(
         VisitorLogRepositoryImpl(
-          RemoteDataSource(DioSingleton.instance1, DioSingleton.instance2,
-              DioSingleton.instance3),
+          RemoteDataSource(
+
+          ),
         ),
       ));
 
@@ -92,7 +92,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
     setState(() {
       isLoading = true;
     });
-    final visitorLogs = await remoteDataSource.fetchCardNumbers();
+    final visitorLogs = await _remoteDataSource.fetchCardNumbers();
     setState(() {
       cardVisitors = visitorLogs ?? [];
       isLoading = false;
@@ -233,7 +233,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 actions: [
                         IconButton(
                           onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen(remoteDataSource: remoteDataSource,)));
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen(remoteDataSource: _remoteDataSource,)));
                           },
                           icon: Icon(
                             Symbols.phone_missed_rounded,

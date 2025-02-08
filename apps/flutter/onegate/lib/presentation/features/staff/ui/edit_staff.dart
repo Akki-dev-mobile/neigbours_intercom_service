@@ -28,9 +28,7 @@ class EditStaff extends StatefulWidget {
 
 class _EditStaffState extends State<EditStaff> {
   final RemoteDataSource _remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
+
   );
 
   // TextEditingControllers

@@ -55,15 +55,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
   final remoteDataSource = RemoteDataSource(
-      DioSingleton.instance1, DioSingleton.instance2, DioSingleton.instance3);
+    );
   var societyId;
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
       VisitorLogRepositoryImpl(
         RemoteDataSource(
-          DioSingleton.instance1,
-          DioSingleton.instance2,
-          DioSingleton.instance3,
+
         ),
       ),
     ),

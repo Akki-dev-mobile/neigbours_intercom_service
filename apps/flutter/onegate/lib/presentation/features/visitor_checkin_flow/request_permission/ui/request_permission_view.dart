@@ -47,10 +47,8 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
   RequestType requestType = RequestType.notRecheable;
   final List<MemberUnits>? gridData;
   final RequestPermissionBloc requestPermissionBloc = RequestPermissionBloc(
-      VisitorLogUsecase(VisitorLogRepositoryImpl(RemoteDataSource(
-          DioSingleton.instance1,
-          DioSingleton.instance2,
-          DioSingleton.instance3))));
+      VisitorLogUsecase(VisitorLogRepositoryImpl( RemoteDataSource(
+     ))));
 
   _RequestPermissionViewState({this.gridData});
 

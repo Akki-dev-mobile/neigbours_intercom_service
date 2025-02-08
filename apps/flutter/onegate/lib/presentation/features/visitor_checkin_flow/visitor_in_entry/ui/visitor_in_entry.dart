@@ -64,11 +64,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   bool? _visitorCardNumber = false;
   bool? _visitorAddress = false;
   List<PurposeCategory1> _globalSelectedPurposes = [];
-  final remoteDataSource = RemoteDataSource(
-    DioSingleton.instance1,
-    DioSingleton.instance2,
-    DioSingleton.instance3,
-  );
+  final RemoteDataSource remoteDataSource = RemoteDataSource();
   String? selectedSubCategoryId;
 
   @override
@@ -100,7 +96,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Fetch the stored "coming from" value
     final comingFrom = prefs.getString('visitor_coming_from') ?? "";
 
-    log("Fetched Coming From: $comingFrom");  // Log fetched value
+    log("Fetched Coming From: $comingFrom"); // Log fetched value
 
     // Clear the stored value immediately after fetching
     await prefs.remove('visitor_coming_from');
@@ -121,13 +117,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _carNumberController = TextEditingController();
   }
 
-
   void _initializeBloc() {
-    final remoteDataSource = RemoteDataSource(
-      DioSingleton.instance1,
-      DioSingleton.instance2,
-      DioSingleton.instance3,
-    );
 
     _bloc = VisitorInEntryBloc(
       VisitorUsecase(VisitorRepoImpl(remoteDataSource)),

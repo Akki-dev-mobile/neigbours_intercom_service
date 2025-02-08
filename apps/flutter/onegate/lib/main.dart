@@ -9,6 +9,7 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/app_intro_view.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/auth/pages/login_provider.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -17,6 +18,7 @@ import 'package:flutter_onegate/presentation/features/settings/pages/camera_prov
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
+import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/timeprovider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -38,9 +40,10 @@ void main() async {
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
   await Alarm.init();
+  await setupLocator();
   await GateStorage().init();
   await setupDependencies();
-  await setupLocator();
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -77,6 +80,9 @@ void main() async {
           ChangeNotifierProvider<VisitorSettingsProvider>(
             create: (_) => VisitorSettingsProvider(),
           ),
+          ChangeNotifierProvider<LoginProvider>(
+            create: (_) => LoginProvider(authService: GetIt.I<AuthService>()),
+          ),
           ChangeNotifierProvider<GateProvider>(
             create: (_) => GateProvider(),
           ),
@@ -87,34 +93,17 @@ void main() async {
             create: (_) => VisitorApprovalTimeProvider(),
           ),
           ChangeNotifierProvider(create: (context) => TimerService()),
-          // BlocProvider<ParcelBloc>(
-          //   create: (context) => ParcelBloc(
-          //     RemoteDataSource(
-          //       DioSingleton.instance1,
-          //       DioSingleton.instance2,
-          //       DioSingleton.instance3,
-          //     ),
-          //   ),
-          // ),
         ],
         child: MultiBlocProvider(
           providers: [
             BlocProvider<GatekeeperDashboardBloc>(
               create: (context) => GatekeeperDashboardBloc(
                 VisitorUsecase(
-                  VisitorRepoImpl(RemoteDataSource(
-                    DioSingleton.instance1,
-                    DioSingleton.instance2,
-                    DioSingleton.instance3,
-                  )), // Pass dependencies
+                  VisitorRepoImpl(RemoteDataSource()), // Pass dependencies
                 ),
                 VisitorLogUsecase(
                   VisitorLogRepositoryImpl(
-                    RemoteDataSource(
-                      DioSingleton.instance1,
-                      DioSingleton.instance2,
-                      DioSingleton.instance3,
-                    ),
+                    RemoteDataSource(),
                   ),
                 ),
               ),
@@ -142,37 +131,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // isLoggedIn();
-    // Initialize and start the AMQP receiver
-    // _amqpReceiver = AmqpReceiver();
-    // _amqpReceiver.startListening();
+
   }
 
-  // @override
-  // void didChangeAppLifecycleState(AppLifecycleState state) {
-  //   super.didChangeAppLifecycleState(state);
 
-  //   if (state == AppLifecycleState.resumed) {
-  //     // Resume listening when the app is reopened
-  //     _amqpReceiver.startListening();
-  //   } else if (state == AppLifecycleState.inactive ||
-  //       state == AppLifecycleState.paused) {
-  //     // Stop listening when the app is inactive or paused
-  //     _amqpReceiver.stopListening();
-  //   }
-  // }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // _amqpReceiver.stopListening();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     Widget initialScreen = MyAppLogin();
-    // LoginView();
 
     return MaterialApp(
       navigatorKey: navigatorKey,
