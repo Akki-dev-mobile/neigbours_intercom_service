@@ -94,24 +94,21 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void initState() {
     super.initState();
 
-    // Start polling for visitor approval status
     _startPolling();
 
-    // Start the timer for this visitor log ID
     if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
     }
   }
 
   Future<void> _initializeTimer(int visitorLogId) async {
-    await _timerService.loadTimerState(visitorLogId);
+    await _timerService.loadTimerState(visitorLogId, context);
 
-    // If timer is not found, start a new one
     if (_timerService.getTimerState(visitorLogId) == null) {
-      await _timerService.startTimer(visitorLogId);
+      await _timerService.startTimer(visitorLogId, context);
     }
 
-    setState(() {}); // Ensure UI updates after loading the timer
+    setState(() {});
   }
 
   void _startPolling() {

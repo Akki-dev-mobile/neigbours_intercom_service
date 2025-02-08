@@ -10,11 +10,13 @@ import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_logi
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
+import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
+import 'package:flutter_onegate/timeprovider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
@@ -231,8 +233,9 @@ class _SettingsHomeState extends State<SettingsHome> {
       },
     );
   }
+  void _showVisitorApprovalTime(BuildContext context) {
+    int selectedValue = context.read<VisitorApprovalTimeProvider>().approvalTime;
 
-  void _showVisitorApprovalTime(BuildContext context) async {
     showModalBottomSheet(
       isScrollControlled: true,
       useSafeArea: true,
@@ -260,7 +263,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Select an option',
+                    'Select Approval Time',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   SizedBox(height: 16.0),
@@ -270,20 +273,18 @@ class _SettingsHomeState extends State<SettingsHome> {
                     itemCount: _visitorApprovalTimeItems.length,
                     itemBuilder: (context, index) {
                       final item = _visitorApprovalTimeItems[index];
-                      return RadioListTile<String>(
+                      return RadioListTile<int>(
                         contentPadding: EdgeInsets.zero,
-                        fillColor: WidgetStateProperty.all(
-                          Colors.black,
-                        ),
+                        fillColor: WidgetStateProperty.all(Colors.black),
                         title: Text(
                           item.label,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        value: item.value,
-                        groupValue: _visitorApprovalTimeValue,
-                        onChanged: (value) {
+                        value: int.parse(item.value), // Convert value
+                        groupValue: selectedValue,
+                        onChanged: (int? value) {
                           setState(() {
-                            _cameraValue = value!;
+                            selectedValue = value!;
                           });
                         },
                       );
@@ -292,9 +293,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                   CustomLargeBtn(
                     text: 'Confirm',
                     onPressed: () {
-                      setState(() {
-                        _visitorApprovalTimeValue = _visitorApprovalTimeValue;
-                      });
+                      context.read<VisitorApprovalTimeProvider>().setApprovalTime(selectedValue);
                       Navigator.pop(context);
                     },
                   ),
@@ -307,6 +306,9 @@ class _SettingsHomeState extends State<SettingsHome> {
       },
     );
   }
+
+
+
 
   void _showDataStorage(BuildContext context) async {
     showModalBottomSheet(
@@ -462,17 +464,19 @@ class _SettingsHomeState extends State<SettingsHome> {
                 );
               },
             ),
-            if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-                icon: Ionicons.time_outline,
-                title: 'Visitor Approval Time',
-                subtitle:
-                    'Current Preference: ${_visitorApprovalTimeValue ?? "100 seconds"}',
-                onTap: () {
-                  _showVisitorApprovalTime(context);
-                },
-              ),
-            if (role == "admin" || role == "master")
+            // if (role == "admin" || role == "master")
+
+    PrimarySettingsTile(
+    icon: Ionicons.time_outline,
+    title: 'Visitor Approval Time',
+    subtitle: 'Current Preference: ${context.watch<VisitorApprovalTimeProvider>().approvalTime} seconds',
+    onTap: () {
+    _showVisitorApprovalTime(context);
+    },
+    ),
+
+
+    if (role == "admin" || role == "master")
               PrimarySettingsTile(
                 icon: Ionicons.alarm_outline,
                 title: 'Configure Duty Alarms',

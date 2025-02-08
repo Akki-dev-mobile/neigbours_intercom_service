@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
+import 'package:flutter_onegate/timeprovider.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
@@ -12,6 +13,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:provider/provider.dart';
 
 // Timer Service
 class TimerState {
@@ -21,16 +23,26 @@ class TimerState {
   TimerState({required this.endTime, required this.isRetryEnabled});
 }
 
-class TimerService {
+
+
+class TimerService extends ChangeNotifier {
   static final TimerService _instance = TimerService._internal();
   factory TimerService() => _instance;
   TimerService._internal();
 
   final Map<int, TimerState> _timers = {};
-  final _duration = const Duration(minutes: 2);
+  int _approvalTime = 120; // Default approval time
 
-  Future<void> startTimer(int visitorLogId) async {
-    final endTime = DateTime.now().add(_duration);
+  Duration get approvalDuration => Duration(seconds: _approvalTime);
+
+  Future<void> loadApprovalTime(BuildContext context) async {
+    _approvalTime = context.read<VisitorApprovalTimeProvider>().approvalTime;
+    notifyListeners();
+  }
+
+  Future<void> startTimer(int visitorLogId, BuildContext context) async {
+    await loadApprovalTime(context); // Get latest approval time
+    final endTime = DateTime.now().add(approvalDuration);
     _timers[visitorLogId] = TimerState(
       endTime: endTime,
       isRetryEnabled: false,
@@ -40,31 +52,23 @@ class TimerService {
 
   Future<void> saveTimerState(int visitorLogId, DateTime endTime) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        'timer_${visitorLogId.toString()}', endTime.toIso8601String());
+    await prefs.setString('timer_$visitorLogId', endTime.toIso8601String());
   }
 
-  Future<void> loadTimerState(int visitorLogId) async {
+  Future<void> loadTimerState(int visitorLogId, BuildContext context) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String timerKey = 'timer_${visitorLogId.toString()}';
-
-      // First, try to get the value without type assumption
+      final String timerKey = 'timer_$visitorLogId';
       final dynamic savedValue = prefs.get(timerKey);
-
       DateTime? endTime;
 
-      if (savedValue != null) {
-        if (savedValue is int) {
-          // Handle legacy integer (timestamp) format
-          endTime = DateTime.fromMillisecondsSinceEpoch(savedValue);
-        } else if (savedValue is String) {
-          // Handle ISO8601 string format
-          try {
-            endTime = DateTime.parse(savedValue);
-          } catch (e) {
-            log("❌ Error parsing DateTime string: $savedValue, Error: $e");
-          }
+      if (savedValue is int) {
+        endTime = DateTime.fromMillisecondsSinceEpoch(savedValue);
+      } else if (savedValue is String) {
+        try {
+          endTime = DateTime.parse(savedValue);
+        } catch (e) {
+          debugPrint("❌ Error parsing DateTime string: $savedValue, Error: $e");
         }
       }
 
@@ -74,27 +78,29 @@ class TimerService {
           isRetryEnabled: endTime.isBefore(DateTime.now()),
         );
       } else {
-        // If no valid time was found or parsed, start a new timer
-        await startTimer(visitorLogId);
+        // Correct way to restart the timer
+        await startTimer(visitorLogId, context);
       }
-    } catch (e, stackTrace) {
-      log("❌ Error in loadTimerState: $e");
-      log("Stack trace: $stackTrace");
-      // Fallback to starting a new timer
-      await startTimer(visitorLogId);
+    } catch (e) {
+      debugPrint("❌ Error in loadTimerState: $e");
+
+      // Fallback: Start timer if any error occurs
+      await startTimer(visitorLogId, context);
     }
   }
 
+
   TimerState? getTimerState(int visitorLogId) => _timers[visitorLogId];
 
-  void dispose(int visitorLogId) {
+  void disposeTimer(int visitorLogId) {
     _timers.remove(visitorLogId);
   }
 
-  void disposeAll() {
+  void disposeAllTimers() {
     _timers.clear();
   }
 }
+
 
 // Timer Builder Widget
 class TimerBuilder extends StatefulWidget {
@@ -739,11 +745,11 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     super.initState();
     _initializeTimer();
   }
-
   Future<void> _initializeTimer() async {
-    await _timerService.loadTimerState(widget.visitorInfo.visitorLogId ?? 0);
+    await context.read<TimerService>().loadTimerState(widget.visitorInfo.visitorLogId ?? 0, context);
     if (mounted) setState(() {});
   }
+
 
   RequestType _getRequestType(String status) {
     switch (status) {
@@ -765,19 +771,20 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         return RequestType.rejected;
     }
   }
-
-  Future<void> _handleRetry() async {
+  Future<void> _handleRetry(BuildContext context) async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
 
     RequestType requestType =
-        _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
+    _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
 
     if (requestType == RequestType.approved ||
         requestType == RequestType.allowByGatekeeper) {
       _showSnackBar('Visitor is already allowed', isError: false);
-      await _timerService.startTimer(widget.visitorInfo.visitorLogId ?? 0);
+
+      await context.read<TimerService>().startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
+
       setState(() {}); // Ensure UI updates
       return;
     } else if (requestType == RequestType.rejected) {
@@ -802,22 +809,25 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
           'member_id': widget.visitorInfo.memberInfo.memberId,
           'visitor_log_id': widget.visitorInfo.visitorLogId,
           'purpose_category':
-              widget.visitorInfo.visitorPurposeCategoryId.toString(),
+          widget.visitorInfo.visitorPurposeCategoryId.toString(),
         },
       );
 
       if (response.statusCode == 200) {
-        await _timerService.startTimer(widget.visitorInfo.visitorLogId ?? 0);
+        await context.read<TimerService>().startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
+
         setState(() {});
         _showSnackBar('Notification resent successfully', isError: false);
       }
     } catch (e) {
-      await _timerService.startTimer(widget.visitorInfo.visitorLogId ?? 0);
+      await context.read<TimerService>().startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
       _showSnackBar('Failed to resend notification', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
@@ -835,7 +845,9 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       children: [
         VisitorInfoSection(
           visitorInfo: widget.visitorInfo,
-          onRetry: _handleRetry,
+          onRetry: (){
+            _handleRetry(context);
+          },
           isLoading: _isLoading,
         ),
       ],

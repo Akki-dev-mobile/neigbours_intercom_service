@@ -103,8 +103,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _searchController.addListener(_filterMembers);
     _fetchCompanyId();
     _loadVisitorSettings();
-    _initializeSocketConnection(); // ✅ Initialize socket connection
-    _initializeFuture = _initializeMembers(); // Initialize the Future once
+    _initializeSocketConnection();
+    _initializeFuture = _initializeMembers();
     log("${selectedUnits} here is this");
     log("${widget.comingFrom} here is this");
   }
@@ -113,13 +113,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> _fetchCompanyId() async {
     companyId = await gateStorage.getSocietyId();
     final companyDetails = await gateStorage.getSocietyDetails();
-    companyName = companyDetails['societyName'];
 
+    companyName = companyDetails['societyName'];
+// companyId = companyDetails['societyId'];
     setState(() {});
   }
 
   void _initializeSocketConnection() {
-    log("this is123 ${companyId.toString()}");
     socketService.initSocket(companyId.toString(), "onegate");
   }
 
@@ -523,7 +523,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   List<Map<String, dynamic>> formattedMemberDetails = [];
-
+  Set<String> selectedMobileNumbers = {};
   Future<void> _handleMemberSelection(
     String firstName,
     String userId,
@@ -537,29 +537,80 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     if (_selectedMembersNotifier.value.contains(firstName)) {
       updatedMembers.remove(firstName);
       selectedUserIds.remove(userId);
-      selectedMemberIds.remove(memberId);
+      _removeMemberId(memberId); // ✅ Remove only this member's ID
+      _removeMobileNumber(memberMobileNo); // ✅ Remove only this member's mobile
       selectedBuildingUnits.remove(buildingUnit);
       formattedMemberDetails
           .removeWhere((member) => member["name"] == firstName);
     } else {
       updatedMembers.add(firstName);
       selectedUserIds.add(userId);
-      _addMemberIds(memberId);
+      _addSingleMemberId(memberId); // ✅ Store only this member's ID
+      _addSingleMobileNumber(
+          memberMobileNo); // ✅ Store only this member's mobile
       selectedBuildingUnits.add(buildingUnit);
 
-      // Add formatted member details
+      // ✅ Add correct mapping between member and their own data
       formattedMemberDetails.add({
         "name": firstName,
         "unit_id": unitId,
-        "member_ids": memberId,
-        "building_unit": buildingUnit
+        "member_ids": memberId, // ✅ Only this member's ID
+        "building_unit": buildingUnit,
+        "mobile_number": memberMobileNo // ✅ Only this member's mobile number
       });
-
-      await _saveMemberMobileNumber(memberMobileNo);
     }
 
     _selectedMembersNotifier.value = updatedMembers;
     _updateSelectedUnits(unitId);
+  }
+
+  void _addSingleMobileNumber(String? memberMobileNo) {
+    if (memberMobileNo != null && memberMobileNo.isNotEmpty) {
+      if (!selectedMobileNumbers.contains(memberMobileNo)) {
+        selectedMobileNumbers.add(memberMobileNo); // ✅ Only this mobile number
+      }
+    }
+  }
+
+  void _removeMobileNumber(String? memberMobileNo) {
+    if (memberMobileNo != null && memberMobileNo.isNotEmpty) {
+      selectedMobileNumbers.remove(memberMobileNo); // ✅ Remove only this mobile
+    }
+  }
+
+  void _addSingleMemberId(dynamic memberId) {
+    // Ensure only this member ID is added
+    if (memberId != null) {
+      final idList = memberId.toString().split(',').map((id) => id.trim());
+      for (final id in idList) {
+        if (id.isNotEmpty) {
+          try {
+            int parsedId = int.parse(id);
+            if (!selectedMemberIds.contains(parsedId)) {
+              selectedMemberIds.add(parsedId); // ✅ Only this ID
+            }
+          } catch (e) {
+            log("Error parsing member ID: $id, Error: $e");
+          }
+        }
+      }
+    }
+  }
+
+  void _removeMemberId(dynamic memberId) {
+    if (memberId != null) {
+      final idList = memberId.toString().split(',').map((id) => id.trim());
+      for (final id in idList) {
+        if (id.isNotEmpty) {
+          try {
+            int parsedId = int.parse(id);
+            selectedMemberIds.remove(parsedId); // ✅ Remove only this ID
+          } catch (e) {
+            log("Error removing member ID: $id, Error: $e");
+          }
+        }
+      }
+    }
   }
 
   void _addMemberIds(dynamic memberId) {

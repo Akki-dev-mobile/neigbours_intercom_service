@@ -17,6 +17,7 @@ import 'package:flutter_onegate/presentation/features/settings/pages/camera_prov
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
+import 'package:flutter_onegate/timeprovider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
@@ -28,6 +29,7 @@ import 'data/repositories/visitor_log_repo_impl.dart';
 import 'data/repositories/visitor_repo_impl.dart';
 import 'domain/use_cases/visitor_log_usecae.dart';
 import 'domain/use_cases/visitor_usecase.dart';
+import 'presentation/features/missed_approval/missed_approval_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -81,6 +83,10 @@ void main() async {
           ChangeNotifierProvider<CameraSettingsProvider>(
             create: (_) => CameraSettingsProvider(),
           ),
+          ChangeNotifierProvider<VisitorApprovalTimeProvider>(
+            create: (_) => VisitorApprovalTimeProvider(),
+          ),
+          ChangeNotifierProvider(create: (context) => TimerService()),
           // BlocProvider<ParcelBloc>(
           //   create: (context) => ParcelBloc(
           //     RemoteDataSource(
