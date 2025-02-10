@@ -6,13 +6,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
-import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
@@ -51,8 +49,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   static const double _lottieAnimationSize = 250;
   static const Duration _pollingInterval = Duration(seconds: 5);
 
-  final RemoteDataSource _remoteDataSource = RemoteDataSource(
-     );
+  final RemoteDataSource _remoteDataSource = RemoteDataSource();
 
   RequestType _requestType = RequestType.waiting;
   bool _isLoading = true;

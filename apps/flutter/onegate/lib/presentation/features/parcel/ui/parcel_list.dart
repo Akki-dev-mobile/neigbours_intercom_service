@@ -23,9 +23,7 @@ class ParcelList extends StatefulWidget {
 }
 
 class _ParcelListState extends State<ParcelList> {
-  RemoteDataSource remoteDataSource = RemoteDataSource(
-
-  );
+  RemoteDataSource remoteDataSource = RemoteDataSource();
 
   TextEditingController searchController = TextEditingController();
   List<dynamic> filteredParcels = [];
@@ -138,7 +136,7 @@ class _ParcelListState extends State<ParcelList> {
                 },
               ),
               Container(
-                constraints:  BoxConstraints(
+                constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(context).size.height,
                 ),
                 child: BlocBuilder<ParcelBloc, ParcelState>(
@@ -161,12 +159,13 @@ class _ParcelListState extends State<ParcelList> {
                       }
 
                       return ListView.builder(
-                        padding: const EdgeInsets.only(top: 10,bottom: 100),
+                        padding: const EdgeInsets.only(top: 10, bottom: 100),
                         shrinkWrap: false,
                         itemCount: parcels.length,
                         itemBuilder: (context, index) {
                           final parcel = parcels[index] as Map<String, dynamic>;
-                          final contactNumber = parcel['visitor_mobile'] ?? 'N/A';
+                          final contactNumber =
+                              parcel['visitor_mobile'] ?? 'N/A';
                           final checkIn = parcel['visitor_check_in'];
 
                           return Padding(
@@ -175,7 +174,8 @@ class _ParcelListState extends State<ParcelList> {
                               elevation: 2,
                               margin: const EdgeInsets.all(8.0),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
                                 children: [
                                   ListTile(
                                     contentPadding: const EdgeInsets.symmetric(
@@ -219,8 +219,9 @@ class _ParcelListState extends State<ParcelList> {
                                     ),
                                     title: Text(
                                       parcel['member_name'] ?? 'N/A',
-                                      style:
-                                          Theme.of(context).textTheme.bodyMedium,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
                                     ),
                                     subtitle: Padding(
                                       padding: const EdgeInsets.only(top: 5),
@@ -243,7 +244,8 @@ class _ParcelListState extends State<ParcelList> {
                                                   vertical: 2,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xffFFEBE6),
+                                                  color:
+                                                      const Color(0xffFFEBE6),
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                 ),
@@ -272,14 +274,16 @@ class _ParcelListState extends State<ParcelList> {
                                             ),
                                             WidgetSpan(
                                               child: Container(
-                                                margin: const EdgeInsets.only(left: 8),
+                                                margin: const EdgeInsets.only(
+                                                    left: 8),
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                   horizontal: 7,
                                                   vertical: 2,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xffFFEBE6),
+                                                  color:
+                                                      const Color(0xffFFEBE6),
                                                   borderRadius:
                                                       BorderRadius.circular(15),
                                                 ),
@@ -307,7 +311,8 @@ class _ParcelListState extends State<ParcelList> {
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceAround,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       Tooltip(
                                         message: checkIn != null
@@ -322,12 +327,14 @@ class _ParcelListState extends State<ParcelList> {
                                             children: [
                                               const WidgetSpan(
                                                 child: Icon(
-                                                  Symbols.directions_walk_rounded,
+                                                  Symbols
+                                                      .directions_walk_rounded,
                                                   color: Colors.green,
                                                 ),
                                               ),
                                               TextSpan(
-                                                text: parcel['log_created_at'] !=
+                                                text: parcel[
+                                                            'log_created_at'] !=
                                                         null
                                                     ? DateFormat('dd MMM HH:mm')
                                                         .format(
@@ -363,7 +370,8 @@ class _ParcelListState extends State<ParcelList> {
                                                     otpController =
                                                     TextEditingController();
                                                 remoteDataSource.getParcelOtp(
-                                                  parcel['parcel_id'].toString(),
+                                                  parcel['parcel_id']
+                                                      .toString(),
                                                   parcel['memb_mobile_number']
                                                       .toString(),
                                                 );
