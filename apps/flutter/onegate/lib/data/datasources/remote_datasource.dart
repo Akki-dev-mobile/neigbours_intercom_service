@@ -229,7 +229,6 @@ class RemoteDataSource {
         data: data,
       );
 
-      // Parse the response and map it to VisitorMapper
       final visitorData = response.data['data'];
       print(visitorData);
       final visitorId = visitorData['visitor_id'] as int;
@@ -239,7 +238,6 @@ class RemoteDataSource {
       GlobalStorage.visitorId = visitorId.toString();
 
       print("$visitorId visitorId");
-      // Return the VisitorMapper instance
       log("createdVisitor:$response");
       return Visitor(
         id: visitorId,
@@ -287,7 +285,6 @@ class RemoteDataSource {
             _formatDateTime(visitorLog.visitor_check_out!);
       }
 
-      // Retrieve SharedPreferences data
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName = prefs.getString('selected_gate') ?? "";
       final memberDetailsJson = prefs.getString('member_details');
@@ -295,11 +292,9 @@ class RemoteDataSource {
           ? List<Map<String, dynamic>>.from(json.decode(memberDetailsJson))
           : [];
 
-      // Retrieve company details
       final companyDetails = await gateStorage.getSocietyDetails();
       final companyName = companyDetails['societyName'] ?? "";
 
-      // Add additional data to the payload
       data.addAll({
         'in_gate': selectedGateName,
         'company_name': companyName,
@@ -323,11 +318,9 @@ class RemoteDataSource {
 
       print("VisitorLog Response: ${response.data}");
 
-      // Handle API response
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
         if (responseData['success'] == true && responseData['data'] != null) {
-          // Use `fromJson` for deserialization
           final visitorLogResult = VisitorLog.fromJson(responseData['data']);
           log("Success - $visitorLogResult");
           final prefs = await SharedPreferences.getInstance();
@@ -341,7 +334,6 @@ class RemoteDataSource {
         }
       }
     } on DioError catch (e) {
-      // Handle Dio-specific errors
       if (e.response != null) {
         print("Dio Error: ${e.response?.data}");
         print("Status Code: ${e.response?.statusCode}");
@@ -349,7 +341,6 @@ class RemoteDataSource {
         print("Dio Error: ${e.message}");
       }
     } catch (e, stackTrace) {
-      // Handle unexpected errors
       print("Unexpected error during check-in: $e");
       print("Stack trace: $stackTrace");
     }
@@ -614,11 +605,11 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
 
-      final response = await Dio()?.get(
+      final response = await Dio().get(
         ApiUrls.memberList,
         queryParameters: {
           'company_id': userId,
-          'current_tab': 'approved', // Default tab for approved members
+          'current_tab': 'approved',
         },
         options: Options(
           headers: {
@@ -686,7 +677,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
 
-      final response = await Dio()?.get(
+      final response = await Dio().get(
         ApiUrls.unitList,
         queryParameters: {
           'company_id': companyId,
@@ -700,7 +691,7 @@ class RemoteDataSource {
         ),
       );
 
-      return response?.data?['data'] ?? [];
+      return response.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching member units: $e');
       rethrow;
@@ -766,12 +757,12 @@ class RemoteDataSource {
         queryParameters: {'phoneNumber': '91$mobileNumber'},
       );
 
-      if (response?.statusCode == 200) {
-        final expiresIn = response?.data?['data']['expires_in'];
+      if (response.statusCode == 200) {
+        final expiresIn = response.data?['data']['expires_in'];
         log('OTP sent successfully. Expires in: $expiresIn');
         return expiresIn;
       } else {
-        log('Failed to send OTP: ${response?.statusCode}');
+        log('Failed to send OTP: ${response.statusCode}');
         return null;
       }
     } catch (e) {
