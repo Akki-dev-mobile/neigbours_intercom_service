@@ -72,8 +72,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
-   final RemoteDataSource remoteDataSource = RemoteDataSource(
-     );
+  final RemoteDataSource remoteDataSource = RemoteDataSource();
   late Client amqpClient;
   Set<int> selectedMembers = {};
   Set<int> selectedUnits = {};
@@ -610,31 +609,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  void _addMemberIds(dynamic memberId) {
-    final cleanedMemberIds = memberId
-        .toString()
-        .split(',')
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toList();
-
-    for (final id in cleanedMemberIds) {
-      try {
-        selectedMemberIds.add(int.parse(id));
-      } catch (e) {
-        log("Error parsing ID: $id, Error: $e");
-      }
-    }
-  }
-
-  Future<void> _saveMemberMobileNumber(String? memberMobileNo) async {
-    if (memberMobileNo != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('selected_member_mobile_numbers', memberMobileNo);
-      log("Saved selected member mobile number: $memberMobileNo");
-    }
-  }
-
   void _updateSelectedUnits(dynamic unitId) {
     final updateUnits = Set<int>.from(selectedUnits);
     if (selectedUnits.contains(unitId)) {
@@ -1084,44 +1058,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Widget _buildSelectionBar(Set<String> selectedMember) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      color: Theme.of(context).colorScheme.onSurface,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        mainAxisSize: MainAxisSize.max,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            selectedMember.length > 1
-                ? "${selectedMember.first} +${selectedMember.length - 1}"
-                : selectedMember.first,
-            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.surface,
-                ),
-          ),
-          ElevatedButton.icon(
-            style: _buildElevatedButtonStyle(),
-            onPressed: () => _handleSelectionSubmit(selectedMember),
-            label: Text(
-              (selectedMember.length > 1) ? "Allow" : "Next",
-              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-            ),
-            icon: Icon(
-              Icons.navigate_before,
-              size: 32,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   ButtonStyle _buildElevatedButtonStyle() {
     return ButtonStyle(
       foregroundColor: WidgetStateProperty.all<Color>(const Color(0xFF7D7C7C)),
@@ -1176,7 +1112,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       log("✅ Sending FCM notification via WebSocket & API...");
 
-      // Send WebSocket event
+      // Send WebSocket eventFF
       if (socketService.socket != null && socketService.socket!.connected) {
         log("📡 Sending WebSocket event: sendFcmNotification...");
         socketService.socket!.emit("sendFcmNotification", requestData);
@@ -1191,6 +1127,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         data: requestData,
       );
 
+      print("response $apiResponse");
       // Listen for WebSocket response
       socketService.socket!.on("fcmResponse", (responseData) async {
         log("📩 WebSocket Response Received: $responseData");
@@ -1442,8 +1379,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final prefs = await SharedPreferences.getInstance();
     final String? visitorId = prefs.getString('visitorId');
     final companyDetails = await gateStorage.getSocietyDetails();
-    final companyName = companyDetails['societyName'];
-    // Extract unit IDs from formattedMemberDetails
+
     List<int> unitIds = [];
     if (formattedMemberDetails != null && formattedMemberDetails is List) {
       unitIds = formattedMemberDetails
@@ -1464,8 +1400,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         unit_id: [unitId.toString()],
       );
     }).toList();
-
-    final selectedGateName = prefs.getString('selected_gate');
 
     final visitorLogData = VisitorLog(
         visitor_id: widget.visitor.id ?? 0,
@@ -1493,7 +1427,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final prefs = await SharedPreferences.getInstance();
     final savedMobileNumbersJson =
         prefs.getString('selected_member_mobile_numbers') ?? '[]';
-    // Load the selected gate from SharedPreferences
     selectedgate = prefs.getString('selected_gate');
     final cleanedJson =
         savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
@@ -1517,11 +1450,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id': "77525",
-
-      // (int.tryParse(userId) == null || int.tryParse(userId) == 0)
-      //     ? "234567"
-      //     : int.parse(userId).toString(),
+      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+          ? "234567"
+          : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
       'member_mobile_number': "918452060059",
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
@@ -1599,12 +1530,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
           showApprovalDialog(status);
 
-          // Update the dialog dynamically
-          // setState(() {
-          //   approvalStatus = status;
-          // });
-
-          // Acknowledge the message
           message.ack();
         } catch (e) {
           log("Error processing message: $e");
@@ -1616,7 +1541,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> showApprovalDialog(approvalStatusNew) async {
-    // Ensure `approvalStatus` starts with "Waiting for approval..."
     setState(() {
       approvalStatus = "Waiting for approval...";
     });
@@ -1677,207 +1601,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   bool statusallowed = false;
-
-  Future<void> _notificationSent(BuildContext context, VisitorLog data) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color:
-                                Theme.of(context).primaryColor.withOpacity(0.1),
-                          ),
-                        ),
-                        Lottie.asset(
-                          'assets/json/approved.json',
-                          width: 180,
-                          height: 180,
-                          repeat: false,
-                          fit: BoxFit.contain,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            color: Theme.of(context).primaryColor,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Notification Sent Successfully",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Please wait for member's response. You can check the status in the approval screen.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.5,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _isLoading
-                        ? Column(
-                            children: [
-                              SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Theme.of(context).primaryColor,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                "Redirecting...",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Container(
-                            width: double.infinity,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              gradient: !_isButtonDisabled
-                                  ? LinearGradient(
-                                      colors: [
-                                        Theme.of(context).primaryColor,
-                                        Theme.of(context)
-                                            .primaryColor
-                                            .withOpacity(0.8),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    )
-                                  : null,
-                              color:
-                                  _isButtonDisabled ? Colors.grey[300] : null,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: !_isButtonDisabled
-                                  ? [
-                                      BoxShadow(
-                                        color: Theme.of(context)
-                                            .primaryColor
-                                            .withOpacity(0.3),
-                                        spreadRadius: 0,
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: MaterialButton(
-                              onPressed: _isButtonDisabled
-                                  ? null
-                                  : () async {
-                                      setState(() {
-                                        _isLoading = true;
-                                        _isButtonDisabled = true;
-                                      });
-
-                                      await Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const GateDashboardView(),
-                                        ),
-                                      );
-                                    },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.check_circle_outline,
-                                    color: _isButtonDisabled
-                                        ? Colors.grey[500]
-                                        : Colors.white,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "Check Approval Status",
-                                    style: TextStyle(
-                                      color: _isButtonDisabled
-                                          ? Colors.grey[500]
-                                          : Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 }
 
 class _LoadingIndicator extends StatelessWidget {

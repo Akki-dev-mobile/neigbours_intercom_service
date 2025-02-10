@@ -31,11 +31,7 @@ final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {
-
-
-  RemoteDataSource(
-
-  );
+  RemoteDataSource();
 
   final GateStorage gateStorage = GateStorage();
 
@@ -1038,7 +1034,7 @@ class RemoteDataSource {
                   building_unit: unitJson["building_unit"]?.toString() ?? '',
                 );
               }).toList();
-                        }
+            }
           } catch (e) {
             log("❌ Error decoding unit details: $e");
           }

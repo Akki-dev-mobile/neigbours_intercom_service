@@ -48,11 +48,11 @@ class VisitorsInEntry extends StatefulWidget {
 
 class _VisitorsInEntryState extends State<VisitorsInEntry> {
   late final VisitorInEntryBloc _bloc;
-  late final TextEditingController _guestNameController;
-  late final TextEditingController _guestComingFromController;
-  late final TextEditingController _guestCountController;
-  late final TextEditingController _visitorNumberController;
-  late final TextEditingController _carNumberController;
+  late final TextEditingController? _guestNameController;
+  late final TextEditingController? _guestComingFromController;
+  late final TextEditingController? _guestCountController;
+  late final TextEditingController? _visitorNumberController;
+  late final TextEditingController? _carNumberController;
   int selectedCompanyIndex = -1;
   List<CameraDescription>? cachedCameras;
   bool _speechEnabled = false;
@@ -118,7 +118,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   void _initializeBloc() {
-
     _bloc = VisitorInEntryBloc(
       VisitorUsecase(VisitorRepoImpl(remoteDataSource)),
       VisitorLogUsecase(VisitorLogRepositoryImpl(remoteDataSource)),
@@ -171,13 +170,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       setState(() {
         switch (field) {
           case 'guestName':
-            _guestNameController.text = result;
+            _guestNameController?.text = result;
             break;
           case 'guestComingFrom':
-            _guestComingFromController.text = result;
+            _guestComingFromController?.text = result;
             break;
           case 'cabnumber':
-            _carNumberController.text = result;
+            _carNumberController?.text = result;
             break;
         }
       });
@@ -189,7 +188,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     if (_guestCount < 99) {
       setState(() {
         _guestCount++;
-        _guestCountController.text = _guestCount.toString();
+        _guestCountController?.text = _guestCount.toString();
       });
     }
   }
@@ -198,7 +197,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     if (_guestCount > 1) {
       setState(() {
         _guestCount--;
-        _guestCountController.text = _guestCount.toString();
+        _guestCountController?.text = _guestCount.toString();
       });
     }
   }
@@ -280,10 +279,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
       _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
         searchedVisitor: widget.searchedVisitor,
-        guestName: _guestNameController.text,
-        guestComingFrom: _guestComingFromController.text,
+        guestName: _guestNameController?.text,
+        guestComingFrom: _guestComingFromController?.text ?? "",
         guestCount: _guestCount,
-        carNumber: _carNumberController.text,
+        carNumber: _carNumberController?.text,
         purposeCategory: widget.selectedValue!,
         mobile: widget.mobile,
       ));
@@ -300,11 +299,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   bool _validateForm() {
     // Check if purpose is VENDOR
     if (widget.selectedValue?.categoryName == 'VENDOR') {
-      if (_guestNameController.text.isEmpty) {
+      if ((_guestNameController?.text ?? "").isEmpty) {
         _showErrorSnackBar('Please enter vendor name');
         return false;
       }
-      if (_guestComingFromController.text.isEmpty && _visitorAddress == true) {
+      if ((_guestComingFromController?.text ?? "").isEmpty &&
+          _visitorAddress == true) {
         _showErrorSnackBar('Please enter coming from');
         return false;
       }
@@ -316,11 +316,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     // Check if purpose is CABS
     else if (widget.selectedValue?.categoryName == 'CABS') {
-      if (_guestNameController.text.isEmpty) {
+      if ((_guestNameController?.text ?? "").isEmpty) {
         _showErrorSnackBar('Please enter cab driver name');
         return false;
       }
-      if (_carNumberController.text.isEmpty) {
+      if ((_carNumberController?.text ?? "").isEmpty) {
         _showErrorSnackBar('Please enter cab number');
         return false;
       }
@@ -328,7 +328,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     // Check if purpose is DELIVERY
     else if (widget.selectedValue?.categoryName == 'DELIVERY') {
-      if (_guestNameController.text.isEmpty) {
+      if ((_guestNameController?.text ?? "").isEmpty) {
         _showErrorSnackBar('Please enter delivery person name');
         return false;
       }
@@ -340,15 +340,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     // Check if purpose is GUEST
     else if (widget.selectedValue?.categoryName == 'GUEST') {
-      if (_guestNameController.text.isEmpty) {
+      if ((_guestNameController?.text ?? "").isEmpty) {
         _showErrorSnackBar('Please enter guest name');
         return false;
       }
-      if (_guestComingFromController.text.isEmpty && _visitorAddress == true) {
+      if ((_guestComingFromController?.text ?? "").isEmpty &&
+          _visitorAddress == true) {
         _showErrorSnackBar('Please enter coming from');
         return false;
       }
-      if (_visitorNumberController.text.isEmpty && _visitorCardNumber == true) {
+      if ((_visitorNumberController?.text ?? "").isEmpty &&
+          _visitorCardNumber == true) {
         _showErrorSnackBar('Please enter card number');
         return false;
       }
@@ -371,17 +373,19 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           widget.searchedVisitor,
           visitor: state.visitor,
           visitorId: widget.searchedVisitor?.id,
-          guestname: _guestNameController.text,
-          carNumber: _carNumberController.text,
+          guestname: _guestNameController?.text ?? "",
+          carNumber: _carNumberController?.text,
           mobileNumber: widget.mobile,
           purposeCategory: state.purposeCategory,
           purposeCategoryId: widget.selectedValue?.categoryId.toString(),
           selectedSubCategoryId: selectedSubCategoryId,
-          comingFrom: _guestComingFromController.text,
+          comingFrom: _guestComingFromController?.text,
           guestCount: _guestCount,
-          visitorNumber: _visitorNumberController.text.isNotEmpty
-              ? "V${_visitorNumberController.text}"
-              : _visitorNumberController.text,
+          visitorNumber: _visitorNumberController?.text.isNotEmpty == true
+              ? "V${_visitorNumberController!.text}"
+              : (_visitorNumberController?.text.isEmpty == true
+                  ? null
+                  : _visitorNumberController?.text),
         ),
       ),
     );
@@ -415,7 +419,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           if (widget.searchedVisitor != null) {
             final Visitor updatedVisitor = Visitor(
                 id: int.parse(searched_id.toString()),
-                name: _guestNameController.text,
+                name: _guestNameController?.text,
                 mobile: widget.mobile,
                 visitor_image: "");
 
@@ -428,19 +432,21 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 widget.searchedVisitor,
                 visitor: state.visitor,
                 visitorId: widget.searchedVisitor?.id,
-                guestname: _guestNameController.text,
+                guestname: _guestNameController?.text ?? "",
                 mobileNumber: widget.mobile,
                 purposeCategory: state.purposeCategory,
                 purposeCategoryId:
                     widget.selectedValue?.categoryId.toString() ??
                         selectedCompanyIndex.toString(),
                 selectedSubCategoryId: selectedSubCategoryId,
-                comingFrom: _guestComingFromController.text,
-                carNumber: _carNumberController.text,
+                comingFrom: _guestComingFromController?.text,
+                carNumber: _carNumberController?.text,
                 guestCount: _guestCount,
-                visitorNumber: _visitorNumberController.text.isNotEmpty
-                    ? "V${_visitorNumberController.text}"
-                    : _visitorNumberController.text,
+                visitorNumber: _visitorNumberController?.text.isNotEmpty == true
+                    ? "V${_visitorNumberController!.text}"
+                    : (_visitorNumberController?.text.isEmpty == true
+                        ? null
+                        : _visitorNumberController?.text),
               ),
             ),
           );
@@ -1012,10 +1018,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       prefs.remove('visitor_coming_from');
     });
 
-    _guestNameController.dispose();
-    _guestComingFromController.dispose();
-    _guestCountController.dispose();
-    _visitorNumberController.dispose();
+    _guestNameController?.dispose();
+    _guestComingFromController?.dispose();
+    _guestCountController?.dispose();
+    _visitorNumberController?.dispose();
     super.dispose();
   }
 }

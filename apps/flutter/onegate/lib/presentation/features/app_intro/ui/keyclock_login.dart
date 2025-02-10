@@ -1,11 +1,16 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+
+// Import local packages
 import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -90,6 +95,7 @@ class LoginService {
     List<String> roles =
         userRoles.map((role) => _mapRole(role.toString())).toList();
 
+    // If user is admin, add both admin and gatekeeper roles
     if (roles.contains('admin')) {
       roles = ['admin', 'gatekeeper'];
     }
@@ -143,7 +149,9 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       keycloakWrapper:
           KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
       gateStorage: GateStorage(),
-      remoteDataSource: RemoteDataSource(),
+      remoteDataSource: RemoteDataSource(
+
+      ),
     );
     _loginState = ValueNotifier(const LoginState1());
     _initialize();
@@ -250,6 +258,19 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     }
   }
 
+  // void _showError(String message) {
+  //   if (context.mounted) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(message)),
+  //     );
+  //   }
+  // }
+
+  // void _showError(String message) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(content: Text(message)),
+  //   );
+  // }
   Future<void> _handleLogin() async {
     try {
       _loginState.value = _loginState.value.copyWith(isLoading: true);
@@ -322,7 +343,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SocietySelectionScreen(
+      builder: (context) => SocietySelectionSheet(
         societies: societies,
         onSelected: (society) async {
           try {
@@ -343,7 +364,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => RoleSelectionScreen(
+      builder: (context) => RoleSelectionSheet(
         availableRoles: availableRoles,
         onRoleSelected: _handleRoleSelected,
       ),
@@ -370,17 +391,20 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   Future<void> _showGateSelection(
       List<dynamic> gates, String selectedRole) async {
     try {
+      // Ensure gates list is populated
       if (gates.isEmpty) {
         _showError('No gates available for selection.');
         return;
       }
 
+      // If only one gate, directly select it and navigate
       if (gates.length == 1) {
         final singleGate = gates.first;
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('selected_gate', singleGate["gate_name"]);
         log("Automatically selected single gate: ${singleGate['gate_name']}");
 
+        // Show a SnackBar indicating navigation
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -389,10 +413,12 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           );
         }
 
+        // Navigate directly to the destination
         await _navigateBasedOnRole(selectedRole);
         return;
       }
 
+      // For multiple gates, show the bottom sheet
       log("Opening gate selection sheet...");
       await showModalBottomSheet(
         context: context,
@@ -400,7 +426,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        builder: (context) => GateSelectionScreen(
+        builder: (context) => GateSelectionSheet(
           gates: gates,
           onGateSelected: (gate) async {
             try {
@@ -424,6 +450,9 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   void _showError(String message) {
     if (!mounted) return;
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(content: Text(message)),
+    // );
   }
 
   @override
@@ -527,95 +556,12 @@ class LoginContent extends StatelessWidget {
   }
 }
 
-class SelectionScreen extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final List<Widget> children;
-
-  const SelectionScreen({
-    Key? key,
-    required this.title,
-    required this.subtitle,
-    required this.children,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-
-    return Scaffold(
-      body: SafeArea(
-        bottom: true,
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: true,
-              snap: false,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
-              ),
-              expandedHeight: 140, // Increased height to accommodate content
-              flexibleSpace: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  return FlexibleSpaceBar(
-                    expandedTitleScale: 1.0,
-                    titlePadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    title: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleLarge,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.7),
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: mediaQuery.padding.bottom + 16,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate(children),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Society Selection Screen
-class SocietySelectionScreen extends StatelessWidget {
+// Society Selection Sheet
+class SocietySelectionSheet extends StatelessWidget {
   final List<dynamic> societies;
   final Function(Map<String, dynamic>) onSelected;
 
-  const SocietySelectionScreen({
+  const SocietySelectionSheet({
     Key? key,
     required this.societies,
     required this.onSelected,
@@ -623,78 +569,61 @@ class SocietySelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SelectionScreen(
-      title: 'Select Society',
-      subtitle: 'Choose the society you want to access',
-      children: societies.map((society) {
-        final societyId = society['company_id']?.toString();
-        final societyName = society['company_name'];
-
-        if (societyId == null) {
-          return const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: Card(
-              child: ListTile(
-                title: Text('Invalid Society'),
-                subtitle: Text('This entry has no valid ID'),
-              ),
-            ),
-          );
-        }
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Card(
-            elevation: 2,
-            child: InkWell(
-              onTap: () => onSelected(Map<String, dynamic>.from(society)),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      societyName ?? 'Unknown Society',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.business,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'ID: $societyId',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 20),
+          ListTile(
+            title: Text(
+              'Select Society',
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
-        );
-      }).toList(),
+          const Divider(
+            indent: 20,
+            endIndent: 20,
+            height: 1,
+          ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: societies.length,
+            itemBuilder: (context, index) {
+              final society = societies[index];
+              final societyId = society['company_id']?.toString();
+              final societyName = society['company_name'];
+
+              if (societyId == null) {
+                return const ListTile(
+                  title: Text('Invalid Society'),
+                  subtitle: Text('This entry has no valid ID'),
+                );
+              }
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(societyName ?? 'Unknown Society'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => onSelected(Map<String, dynamic>.from(society)),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 }
 
-// Role Selection Screen
-class RoleSelectionScreen extends StatelessWidget {
+// Role Selection Sheet
+class RoleSelectionSheet extends StatelessWidget {
   final List<String> availableRoles;
   final Function(String) onRoleSelected;
 
-  const RoleSelectionScreen({
+  const RoleSelectionSheet({
     Key? key,
     required this.availableRoles,
     required this.onRoleSelected,
@@ -722,162 +651,176 @@ class RoleSelectionScreen extends StatelessWidget {
     }
   }
 
-  IconData _getRoleIcon(String role) {
-    switch (role) {
-      case 'admin':
-        return Icons.admin_panel_settings;
-      case 'gatekeeper':
-        return Icons.security;
-      default:
-        return Icons.person;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return SelectionScreen(
-      title: 'Select Role',
-      subtitle: 'Choose your role for this session',
-      children: availableRoles.map((role) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Card(
-            elevation: 2,
-            child: InkWell(
-              onTap: () => onRoleSelected(role),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Icon(
-                        _getRoleIcon(role),
-                        size: 28,
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _getRoleDisplayName(role),
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _getRoleDescription(role),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.secondary,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.black,
-                    ),
-                  ],
-                ),
-              ),
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        );
-      }).toList(),
+          ListTile(
+            title: Text(
+              'Select Role',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            subtitle: const Text('Choose your role for this session'),
+          ),
+          const Divider(
+            indent: 20,
+            endIndent: 20,
+            height: 1,
+          ),
+          Expanded(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableRoles.length,
+              itemBuilder: (context, index) {
+                final role = availableRoles[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      _getRoleDisplayName(role),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    subtitle: Text(
+                      _getRoleDescription(role),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => onRoleSelected(role),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 }
 
-// Gate Selection Screen
-class GateSelectionScreen extends StatelessWidget {
+// Gate Selection Sheet
+class GateSelectionSheet extends StatefulWidget {
   final List<dynamic> gates;
   final Function(Map<String, dynamic>) onGateSelected;
 
-  const GateSelectionScreen({
+  const GateSelectionSheet({
     Key? key,
     required this.gates,
     required this.onGateSelected,
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return SelectionScreen(
-      title: 'Select Gate',
-      subtitle: 'Choose the gate you want to manage',
-      children: gates.map((gate) {
-        final gateName = gate['gate_name'] ?? 'Unknown Gate';
-        final gateType = gate['gate_type'] ?? 'Standard Gate';
+  State<GateSelectionSheet> createState() => _GateSelectionSheetState();
+}
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Card(
-            elevation: 2,
-            child: InkWell(
-              onTap: () => onGateSelected(Map<String, dynamic>.from(gate)),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Icon(
-                        Icons.door_back_door_outlined,
-                        size: 28,
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            gateName,
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            gateType,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.secondary,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                    ),
-                  ],
-                ),
-              ),
+class _GateSelectionSheetState extends State<GateSelectionSheet> {
+  int? selectedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        );
-      }).toList(),
+          ListTile(
+            title: Text(
+              'Select Gate',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            subtitle: const Text('Choose the gate you want to manage'),
+          ),
+          const Divider(
+            indent: 20,
+            endIndent: 20,
+            height: 1,
+          ),
+          Expanded(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: widget.gates.length,
+              itemBuilder: (context, index) {
+                final gate = widget.gates[index];
+                final gateName = gate['gate_name'] ?? 'Unknown Gate';
+                final isSelected = selectedIndex == index;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      gateName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
+                    ),
+                    trailing: isSelected
+                        ? Icon(
+                            Icons.check_circle,
+                            color: Theme.of(context).colorScheme.primary,
+                          )
+                        : const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () async {
+                      setState(() {
+                        selectedIndex = index;
+                      });
+
+                      try {
+                        final gateProvider =
+                            Provider.of<GateProvider>(context, listen: false);
+                        await gateProvider.selectGate(index);
+                        widget.onGateSelected(Map<String, dynamic>.from(gate));
+                      } catch (e) {
+                        if (mounted) {
+                          // ScaffoldMessenger.of(context).showSnackBar(
+                          //   SnackBar(content: Text('Failed to select gate: $e')),
+                          // );
+                        }
+                      }
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 }
