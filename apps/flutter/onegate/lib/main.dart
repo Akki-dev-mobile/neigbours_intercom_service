@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:alarm/alarm.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +9,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/dio_setup.dart';
+import 'package:flutter_onegate/no_internet_connection.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/app_intro_view.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
@@ -124,27 +128,37 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  // late final AmqpReceiver _amqpReceiver;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  late StreamSubscription<ConnectivityResult> _subscription;
+  bool _hasInternet = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
+    _checkInternetConnection(); // Start monitoring network status
   }
 
-
+  void _checkInternetConnection() {
+    _subscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult result) {
+      setState(() {
+        _hasInternet = (result != ConnectivityResult.none);
+      });
+    });
+  }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _subscription.cancel(); // Stop monitoring network status
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget initialScreen = MyAppLogin();
+    Widget initialScreen = const MyAppLogin();
 
     return MaterialApp(
       navigatorKey: navigatorKey,
@@ -158,13 +172,24 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
       ),
       home: WillPopScope(
-          onWillPop: () async {
-            final shouldExit = await showExitConfirmationDialog(context);
-            debugPrint('Exit confirmation result: $shouldExit'); // Debug log
-            return shouldExit ?? false;
-          },
-          child: initialScreen),
+        onWillPop: () async {
+          final shouldExit = await showExitConfirmationDialog(context);
+          return shouldExit ?? false;
+        },
+        child: _hasInternet
+            ? initialScreen
+            : NoInternetScreen(onRetry: _retryConnection),
+      ),
     );
+  }
+
+  void _retryConnection() async {
+    final result = await Connectivity().checkConnectivity();
+    if (result != ConnectivityResult.none) {
+      setState(() {
+        _hasInternet = true;
+      });
+    }
   }
 
   Future<bool?> showExitConfirmationDialog(BuildContext context) {
@@ -175,8 +200,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Row(
-            children: const [
+          title: const Row(
+            children: [
               Icon(Icons.exit_to_app, color: Colors.red),
               SizedBox(width: 8),
               Text(

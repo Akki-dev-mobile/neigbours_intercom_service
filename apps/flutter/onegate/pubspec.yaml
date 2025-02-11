@@ -75,6 +75,7 @@ dependencies:
   infinite_scroll_pagination: ^4.1.0
   flutter_image_compress: ^2.4.0
   socket_io_client: ^3.0.2
+  connectivity_plus: ^5.0.2
 
 
 

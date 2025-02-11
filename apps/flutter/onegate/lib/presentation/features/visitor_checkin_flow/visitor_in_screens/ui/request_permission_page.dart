@@ -16,6 +16,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 enum RequestType {
   approved,
@@ -119,7 +121,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   VisitorInfo? matchingApproval;
   Future<void> _fetchApprovals() async {
     if (widget.logID == null || widget.logID!.isEmpty) {
-      log("Invalid logID provided");
+      log("❌ Invalid logID provided");
       return;
     }
 
@@ -131,7 +133,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       if (!mounted) return;
 
       if (approvals.isEmpty) {
-        log("No approvals found for logID: ${widget.logID}");
+        log("⚠️ No approvals found for logID: ${widget.logID}");
         return;
       }
 
@@ -152,10 +154,28 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         _stopPolling();
       }
     } catch (e) {
-      log("Error fetching approvals: $e");
+      log("❌ Error fetching approvals: $e");
     } finally {
       _isFetching = false;
     }
+  }
+
+  void _showLoadingIndicator(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            CircularProgressIndicator(color: Colors.white),
+            const SizedBox(width: 12),
+            Text(message),
+          ],
+        ),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   bool _shouldStopPolling(RequestType type) {
@@ -403,6 +423,15 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     final remaining = timerState?.endTime.difference(now) ?? Duration.zero;
     final isTimeElapsed = remaining.isNegative;
 
+    // If the timer has expired, update the request type to "not reachable"
+    if (isTimeElapsed && _requestType == RequestType.waiting) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _requestType = RequestType.notRecheable;
+        });
+      });
+    }
+
     return Column(
       children: [
         Text(
@@ -434,14 +463,13 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   Widget _buildActionButton() {
     switch (_requestType) {
+      case RequestType.notRecheable:
+        return _buildNotReacheableButtons();
       case RequestType.approved:
-        return _buildFinishButton();
       case RequestType.rejected:
         return _buildFinishButton();
       case RequestType.leaveAtGate:
         return _buildCapturePhotoButton();
-      case RequestType.notRecheable:
-        return _buildNotReacheableButtons();
       case RequestType.request:
         return _buildRequestPermissionButton();
       case RequestType.waiting:
@@ -450,6 +478,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         return _buildFinishButton();
     }
   }
+
 // Inside _RequestPermissionPageState class
 
   Widget _buildCapturePhotoButton() {
@@ -599,39 +628,110 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Allow Button
+        // Allow by Gatekeeper Button
         Expanded(
           child: ElevatedButton(
             style: _getAllowButtonStyle(),
-            onPressed: () {},
+            onPressed: () {
+              _navigateToRequestPermission(
+                PurposeCategory1(
+                    categoryId: 999, categoryName: "Allowed by Gatekeeper"),
+              );
+            },
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.3,
               height: 60,
               child: const Center(
-                  child: Text(
-                "Allow",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 15,
-                  wordSpacing: 1.2,
+                child: Text(
+                  "Allow by Gatekeeper",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 15,
+                    wordSpacing: 1.2,
+                  ),
                 ),
-              )),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 8), // Add spacing between buttons
+
         // Try Again Button
         Expanded(
           child: CustomLargeBtn(
-              width: MediaQuery.of(context).size.width * 0.45,
-              onPressed: () => _navigateToRequestPermission(
-                    PurposeCategory1(
-                        categoryId: 123, categoryName: "categoryName"),
-                  ),
-              text: "Try Again"),
+            width: MediaQuery.of(context).size.width * 0.45,
+            onPressed: () async {
+              await _handleTryAgain();
+            },
+            text: "Try Again",
+          ),
         ),
       ],
     );
+  }
+
+  Future<void> _handleTryAgain() async {
+    log("🔄 Retrying approval process...");
+    _showLoadingIndicator("Sending request...");
+
+    await _sendFcmNotification(); // Send request
+
+    await Future.delayed(Duration(seconds: 3)); // Give server time to process
+
+    _fetchApprovals(); // Re-check approval status
+  }
+
+  String formattedInTime =
+      DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+  Future<void> _sendFcmNotification() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? userId = prefs.getString('visitorId');
+      final String? visitorLogId = prefs.getString("visitor_log");
+      final String? visitorId = widget.visitor.id.toString();
+
+      final requestData = {
+        'company_id': widget.visitorLog?.company_id.toString() ?? "",
+        'name': widget.visitor.name,
+        'mobile': widget.visitor.mobile,
+        'purpose': "Guest",
+        'in_time': formattedInTime,
+        'user_id': (int.tryParse(userId ?? "0") == null ||
+                int.tryParse(userId ?? "0") == 0)
+            ? "234567"
+            : int.parse(userId!).toString(),
+        'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
+        'member_mobile_number': "918452060059",
+        'visitor_id': visitorId ?? "",
+        'purpose_category':
+            widget.visitorLog?.visitor_purpose_category_id.toString() == "3"
+                ? "delivery"
+                : widget.visitorLog?.visitor_purpose_category_id.toString(),
+        'visitor_log_id': visitorLogId ?? "",
+        'coming_from': widget.visitorLog?.visitor_coming_from ?? "Bandra",
+        'member_id': "232",
+        'company_name': widget.visitorLog?.company_id.toString() ?? "",
+      };
+
+      log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
+
+      final response = await Dio().post(
+        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ FCM Notification Sent Successfully: ${response.data}");
+        _showSuccessSnackBar("Notification sent successfully!");
+      } else {
+        log("❌ FCM Notification Failed: ${response.statusMessage}");
+        _showErrorSnackBar("Error sending notification.");
+      }
+    } catch (e) {
+      log("❌ Error in _sendFcmNotification: $e");
+      _showErrorSnackBar("Failed to send notification.");
+    }
   }
 
   Widget _buildRequestPermissionButton() {
