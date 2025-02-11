@@ -23,8 +23,6 @@ class TimerState {
   TimerState({required this.endTime, required this.isRetryEnabled});
 }
 
-
-
 class TimerService extends ChangeNotifier {
   static final TimerService _instance = TimerService._internal();
   factory TimerService() => _instance;
@@ -89,7 +87,6 @@ class TimerService extends ChangeNotifier {
     }
   }
 
-
   TimerState? getTimerState(int visitorLogId) => _timers[visitorLogId];
 
   void disposeTimer(int visitorLogId) {
@@ -100,7 +97,6 @@ class TimerService extends ChangeNotifier {
     _timers.clear();
   }
 }
-
 
 // Timer Builder Widget
 class TimerBuilder extends StatefulWidget {
@@ -274,18 +270,16 @@ class VisitorInfo {
       if (unitDetailsString is String) {
         final List<dynamic> decodedUnitDetails = jsonDecode(unitDetailsString);
 
-        if (decodedUnitDetails is List) {
-          parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
-            final unit = UnitDetails(
-              unitId: _parseToInt(unitJson['unit_id']),
-              building_unit: unitJson["building_unit"]?.toString() ?? '',
-            );
+        parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
+          final unit = UnitDetails(
+            unitId: _parseToInt(unitJson['unit_id']),
+            building_unit: unitJson["building_unit"]?.toString() ?? '',
+          );
 
-            log("🔍 Parsed building_unit: ${unit.building_unit}");
+          log("🔍 Parsed building_unit: ${unit.building_unit}");
 
-            return unit;
-          }).toList();
-        }
+          return unit;
+        }).toList();
       } else if (unitDetailsString is List) {
         parsedUnitDetails = unitDetailsString.map<UnitDetails>((unitJson) {
           final unit = UnitDetails(
@@ -745,11 +739,13 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     super.initState();
     _initializeTimer();
   }
+
   Future<void> _initializeTimer() async {
-    await context.read<TimerService>().loadTimerState(widget.visitorInfo.visitorLogId ?? 0, context);
+    await context
+        .read<TimerService>()
+        .loadTimerState(widget.visitorInfo.visitorLogId ?? 0, context);
     if (mounted) setState(() {});
   }
-
 
   RequestType _getRequestType(String status) {
     switch (status) {
@@ -771,19 +767,22 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         return RequestType.rejected;
     }
   }
+
   Future<void> _handleRetry(BuildContext context) async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
 
     RequestType requestType =
-    _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
+        _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
 
     if (requestType == RequestType.approved ||
         requestType == RequestType.allowByGatekeeper) {
       _showSnackBar('Visitor is already allowed', isError: false);
 
-      await context.read<TimerService>().startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
+      await context
+          .read<TimerService>()
+          .startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
 
       setState(() {}); // Ensure UI updates
       return;
@@ -809,25 +808,27 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
           'member_id': widget.visitorInfo.memberInfo.memberId,
           'visitor_log_id': widget.visitorInfo.visitorLogId,
           'purpose_category':
-          widget.visitorInfo.visitorPurposeCategoryId.toString(),
+              widget.visitorInfo.visitorPurposeCategoryId.toString(),
         },
       );
 
       if (response.statusCode == 200) {
-        await context.read<TimerService>().startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
+        await context
+            .read<TimerService>()
+            .startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
 
         setState(() {});
         _showSnackBar('Notification resent successfully', isError: false);
       }
     } catch (e) {
-      await context.read<TimerService>().startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
+      await context
+          .read<TimerService>()
+          .startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
       _showSnackBar('Failed to resend notification', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
@@ -845,7 +846,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       children: [
         VisitorInfoSection(
           visitorInfo: widget.visitorInfo,
-          onRetry: (){
+          onRetry: () {
             _handleRetry(context);
           },
           isLoading: _isLoading,

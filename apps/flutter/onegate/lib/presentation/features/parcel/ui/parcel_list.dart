@@ -16,7 +16,7 @@ import '../../../../dio_setup.dart';
 import '../bloc/parcel_state.dart';
 
 class ParcelList extends StatefulWidget {
-  ParcelList({super.key});
+  const ParcelList({super.key});
 
   @override
   _ParcelListState createState() => _ParcelListState();
@@ -29,11 +29,17 @@ class _ParcelListState extends State<ParcelList> {
   List<dynamic> filteredParcels = [];
   Timer? _refreshTimer; // Add this
   bool _isRefreshing = false; // Add this
+  late TextEditingController _searchController;
+  late FocusNode _searchFocusNode;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _startAutoRefresh();
+    _searchController = TextEditingController();
+
+    _searchFocusNode = FocusNode();
   }
 
   void _startAutoRefresh() {
@@ -84,6 +90,394 @@ class _ParcelListState extends State<ParcelList> {
     });
   }
 
+  Widget _buildSearchField() {
+    return CustomForm.textField(
+      "Search",
+      hintText: "Search Members",
+      titleColor: Theme.of(context).colorScheme.onSurface,
+      hintColor: Theme.of(context).colorScheme.onSurface,
+      focusNode: _searchFocusNode,
+      prefixIcon: const Icon(Ionicons.search_outline),
+      suffixIcon: _searchQuery.isNotEmpty
+          ? IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+            )
+          : null,
+      textController: _searchController,
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value;
+        });
+      },
+    );
+  }
+
+  Widget parsalView(Map<String, dynamic> parcel) {
+    final contactNumber = parcel['visitor_mobile'] ?? 'N/A';
+    final checkIn = parcel['visitor_check_in'];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        elevation: 2,
+        margin: const EdgeInsets.all(8.0),
+        child: Padding(
+          padding: const EdgeInsets.only(
+            bottom: 8.0,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 2,
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ParcelDetails(parcel: parcel),
+                    ),
+                  );
+                },
+                leading: CircleAvatar(
+                  backgroundImage: NetworkImage(parcel['visitor_image'] ?? ''),
+                  radius: 30,
+                ),
+                trailing: IconButton(
+                  onPressed: () {
+                    if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {
+                      _launchCaller(contactNumber);
+                    } else {
+                      Fluttertoast.showToast(
+                        msg: 'No contact number available',
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                    }
+                  },
+                  icon: const Icon(
+                    Ionicons.call_outline,
+                    color: Colors.green,
+                  ),
+                ),
+                title: Text(
+                  parcel['member_name'] ?? 'N/A',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Symbols.apartment,
+                            color: Color(0xffFFB080),
+                          ),
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xffFFEBE6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              parcel['unit_name']?.toString() ??
+                                  'No Description',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall!
+                                  .copyWith(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500,
+                                    // fontSize: 14,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Symbols.delivery_truck_speed,
+                            color: Color(0xffF2D8A5),
+                          ),
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xffF2D8A5),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Text(
+                              parcel['purpose_sub_category_name'] ?? 'N/A',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall!
+                                  .copyWith(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500,
+                                    // fontSize: 14,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      //   TextSpan(
+                      //   children: [
+                      //     const WidgetSpan(
+                      //       child: Icon(
+                      //         Symbols.apartment,
+                      //         color: Color(0xffFFB080),
+                      //       ),
+                      //     ),
+                      //     WidgetSpan(
+                      //       child: Container(
+                      //         margin: const EdgeInsets.only(left: 8),
+                      //         padding: const EdgeInsets.symmetric(
+                      //           horizontal: 7,
+                      //           vertical: 2,
+                      //         ),
+                      //         decoration: BoxDecoration(
+                      //           color: const Color(0xffFFEBE6),
+                      //           borderRadius: BorderRadius.circular(8),
+                      //         ),
+                      //         child: Text(
+                      //           parcel['unit_name']?.toString() ??
+                      //               'No Description',
+                      //           style: const TextStyle(
+                      //             color: Colors.black,
+                      //             fontWeight: FontWeight.w500,
+                      //             fontSize: 14,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ),
+                      //     const WidgetSpan(
+                      //       child: Icon(
+                      //         Symbols.delivery_truck_speed,
+                      //         color: Color(0xffFFB080),
+                      //       ),
+                      //     ),
+                      //     const WidgetSpan(
+                      //       child: SizedBox(
+                      //         height: 10,
+                      //       ),
+                      //     ),
+                      //     WidgetSpan(
+                      //       child: Container(
+                      //         margin: const EdgeInsets.only(left: 8),
+                      //         padding: const EdgeInsets.symmetric(
+                      //           horizontal: 7,
+                      //           vertical: 2,
+                      //         ),
+                      //         decoration: BoxDecoration(
+                      //           color: const Color(0xffFFEBE6),
+                      //           borderRadius: BorderRadius.circular(15),
+                      //         ),
+                      //         child: Text(
+                      //           parcel['purpose_sub_category_name'] ?? 'N/A',
+                      //           style: const TextStyle(
+                      //             color: Colors.black,
+                      //             fontWeight: FontWeight.w500,
+                      //             fontSize: 14,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     )
+                      //   ],
+                      // ),
+                    ],
+                  ),
+                ),
+              ),
+              Divider(
+                indent: 16,
+                endIndent: 16,
+                color: Colors.grey[200],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Tooltip(
+                    message: checkIn != null
+                        ? DateFormat('dd MMM HH:mm').format(
+                            DateTime.tryParse(checkIn) ?? DateTime.now(),
+                          )
+                        : 'N/A',
+                    child: RichText(
+                      textAlign: TextAlign.start,
+                      text: TextSpan(
+                        children: [
+                          const WidgetSpan(
+                            child: Icon(
+                              Symbols.directions_walk_rounded,
+                              color: Colors.green,
+                            ),
+                          ),
+                          TextSpan(
+                            text: parcel['log_created_at'] != null
+                                ? DateFormat('dd MMM HH:mm').format(
+                                    DateTime.tryParse(
+                                            parcel['log_created_at']) ??
+                                        DateTime.now(),
+                                  )
+                                : 'N/A',
+                            style:
+                                Theme.of(context).textTheme.labelMedium!.merge(
+                                      const TextStyle(
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  parcel['parcel_status'] == 'pending'
+                      ? ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            TextEditingController otpController =
+                                TextEditingController();
+                            remoteDataSource.getParcelOtp(
+                              parcel['parcel_id'].toString(),
+                              parcel['memb_mobile_number'].toString(),
+                            );
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (BuildContext context) {
+                                return OtpBottomSheet(
+                                  remoteDataSource: remoteDataSource,
+                                  parcel: parcel,
+                                  otpController: otpController,
+                                );
+                              },
+                            );
+                          },
+                          child: const Text(
+                            'Pick',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      // : ElevatedButton(
+                      //     style: ElevatedButton.styleFrom(
+                      //       backgroundColor: Colors.white,
+                      //       shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(8),
+                      //       ),
+                      //     ),
+                      //     onPressed: () {},
+                      //     child: Text(
+                      //       parcel['parcel_status'] ?? 'N/A',
+                      //       style: const TextStyle(
+                      //         fontSize: 18,
+                      //         color: Colors.black,
+                      //         fontWeight: FontWeight.bold,
+                      //       ),
+                      //     ),
+                      //   )
+                      : Container(
+                          decoration: BoxDecoration(
+                              border: Border.all(color: Colors.green),
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.verified,
+                                  color: Colors.green,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(parcel['parcel_status'] ?? 'N/A',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(color: Colors.green)),
+                              ],
+                            ),
+                          ),
+                        ),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget parsallist(List<dynamic> parcels, final String searchQuery) {
+    final query = searchQuery.toLowerCase();
+    final filteredParcels = parcels.where((parcel) {
+      final memberName = parcel['member_name']?.toString().toLowerCase() ?? '';
+      final unitName = parcel['unit_name']?.toString().toLowerCase() ?? '';
+      final purposeSubCategory =
+          parcel['purpose_sub_category_name']?.toString().toLowerCase() ?? '';
+
+      return memberName.contains(query) ||
+          unitName.contains(query) ||
+          purposeSubCategory.contains(query);
+    }).toList();
+
+    return filteredParcels.isNotEmpty
+        ? ListView.builder(
+            padding: const EdgeInsets.only(top: 10, bottom: 100),
+            shrinkWrap: false,
+            itemCount: filteredParcels.length,
+            itemBuilder: (context, index) {
+              final parcel = filteredParcels[index] as Map<String, dynamic>;
+
+              return parsalView(parcel);
+            },
+          )
+        : Column(
+            // mainAxisAlignment: MainAxisAlignment.center,
+            // mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.2,
+              ),
+              const Center(
+                child: Icon(
+                  Symbols.package_2,
+                  size: 90,
+                ),
+              ),
+              const Center(child: Text('No parcels found.')),
+            ],
+          );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -116,25 +510,31 @@ class _ParcelListState extends State<ParcelList> {
           onRefresh: _refreshPage,
           child: Column(
             children: [
-              CustomForm.textField(
-                "Search Members",
-                titleColor: Colors.black,
-                hintColor: Colors.grey,
-                hintText: "Search Member/Units",
-                textController: searchController,
-                onChanged: (value) {
-                  if (value.isEmpty) {
-                    setState(() {
-                      filteredParcels.clear();
-                    });
-                  } else {
-                    final state = context.read<ParcelBloc>().state;
-                    if (state is ParcelLoaded) {
-                      _filterParcels(value, state.parcels);
-                    }
-                  }
-                },
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _buildSearchField(),
               ),
+
+              // CustomForm.textField(
+              //   "Search Members",
+              //   titleColor: Colors.black,
+              //   hintColor: Colors.grey,
+              //   hintText: "Search Member/Units",
+              //   textController: searchController,
+              //   onChanged: (value) {
+              //     if (value.isEmpty) {
+              //       setState(() {
+              //         filteredParcels.clear();
+              //       });
+              //     } else {
+              //       final state = context.read<ParcelBloc>().state;
+              //       if (state is ParcelLoaded) {
+              //         _filterParcels(value, state.parcels);
+              //       }
+              //     }
+              //   },
+              // ),
+
               Container(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(context).size.height,
@@ -158,273 +558,16 @@ class _ParcelListState extends State<ParcelList> {
                         );
                       }
 
-                      return ListView.builder(
-                        padding: const EdgeInsets.only(top: 10, bottom: 100),
-                        shrinkWrap: false,
-                        itemCount: parcels.length,
-                        itemBuilder: (context, index) {
-                          final parcel = parcels[index] as Map<String, dynamic>;
-                          final contactNumber =
-                              parcel['visitor_mobile'] ?? 'N/A';
-                          final checkIn = parcel['visitor_check_in'];
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Card(
-                              elevation: 2,
-                              margin: const EdgeInsets.all(8.0),
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 2,
-                                    ),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              ParcelDetails(parcel: parcel),
-                                        ),
-                                      );
-                                    },
-                                    leading: CircleAvatar(
-                                      backgroundImage: NetworkImage(
-                                          parcel['visitor_image'] ?? ''),
-                                      radius: 30,
-                                    ),
-                                    trailing: IconButton(
-                                      onPressed: () {
-                                        if (contactNumber != 'N/A' &&
-                                            contactNumber.isNotEmpty) {
-                                          _launchCaller(contactNumber);
-                                        } else {
-                                          Fluttertoast.showToast(
-                                            msg: 'No contact number available',
-                                            toastLength: Toast.LENGTH_SHORT,
-                                            gravity: ToastGravity.BOTTOM,
-                                            backgroundColor: Colors.red,
-                                            textColor: Colors.white,
-                                            fontSize: 16.0,
-                                          );
-                                        }
-                                      },
-                                      icon: const Icon(
-                                        Ionicons.call_outline,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                    title: Text(
-                                      parcel['member_name'] ?? 'N/A',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
-                                    ),
-                                    subtitle: Padding(
-                                      padding: const EdgeInsets.only(top: 5),
-                                      child: RichText(
-                                        text: TextSpan(
-                                          children: [
-                                            const WidgetSpan(
-                                              child: Icon(
-                                                Symbols.apartment,
-                                                color: Color(0xffFFB080),
-                                              ),
-                                            ),
-                                            WidgetSpan(
-                                              child: Container(
-                                                margin: const EdgeInsets.only(
-                                                    left: 8),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 7,
-                                                  vertical: 2,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xffFFEBE6),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  parcel['unit_name']
-                                                          ?.toString() ??
-                                                      'No Description',
-                                                  style: const TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            const WidgetSpan(
-                                              child: Icon(
-                                                Symbols.delivery_truck_speed,
-                                                color: Color(0xffFFB080),
-                                              ),
-                                            ),
-                                            const WidgetSpan(
-                                              child: SizedBox(
-                                                height: 10,
-                                              ),
-                                            ),
-                                            WidgetSpan(
-                                              child: Container(
-                                                margin: const EdgeInsets.only(
-                                                    left: 8),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 7,
-                                                  vertical: 2,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xffFFEBE6),
-                                                  borderRadius:
-                                                      BorderRadius.circular(15),
-                                                ),
-                                                child: Text(
-                                                  parcel['purpose_sub_category_name'] ??
-                                                      'N/A',
-                                                  style: const TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Divider(
-                                    indent: 16,
-                                    endIndent: 16,
-                                    color: Colors.grey[200],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Tooltip(
-                                        message: checkIn != null
-                                            ? DateFormat('dd MMM HH:mm').format(
-                                                DateTime.tryParse(checkIn) ??
-                                                    DateTime.now(),
-                                              )
-                                            : 'N/A',
-                                        child: RichText(
-                                          textAlign: TextAlign.start,
-                                          text: TextSpan(
-                                            children: [
-                                              const WidgetSpan(
-                                                child: Icon(
-                                                  Symbols
-                                                      .directions_walk_rounded,
-                                                  color: Colors.green,
-                                                ),
-                                              ),
-                                              TextSpan(
-                                                text: parcel[
-                                                            'log_created_at'] !=
-                                                        null
-                                                    ? DateFormat('dd MMM HH:mm')
-                                                        .format(
-                                                        DateTime.tryParse(parcel[
-                                                                'log_created_at']) ??
-                                                            DateTime.now(),
-                                                      )
-                                                    : 'N/A',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .labelMedium!
-                                                    .merge(
-                                                      const TextStyle(
-                                                        color: Colors.green,
-                                                      ),
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      parcel['parcel_status'] == 'pending'
-                                          ? ElevatedButton(
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                              onPressed: () {
-                                                TextEditingController
-                                                    otpController =
-                                                    TextEditingController();
-                                                remoteDataSource.getParcelOtp(
-                                                  parcel['parcel_id']
-                                                      .toString(),
-                                                  parcel['memb_mobile_number']
-                                                      .toString(),
-                                                );
-                                                showModalBottomSheet(
-                                                  context: context,
-                                                  isScrollControlled: true,
-                                                  builder:
-                                                      (BuildContext context) {
-                                                    return OtpBottomSheet(
-                                                      remoteDataSource:
-                                                          remoteDataSource,
-                                                      parcel: parcel,
-                                                      otpController:
-                                                          otpController,
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              child: const Text(
-                                                'Pick',
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            )
-                                          : Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.verified,
-                                                  color: Colors.green,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                    parcel['parcel_status'] ??
-                                                        'N/A',
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyLarge),
-                                              ],
-                                            ),
-                                    ],
-                                  )
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
+                      return parsallist(parcels, _searchQuery);
                     } else if (state is ParcelError) {
                       return Center(child: Text('Error: ${state.message}'));
                     } else {
-                      return const Center(child: Text('No parcels found.'));
+                      return const Column(
+                        children: [
+                          Icon(Symbols.package_2),
+                          Center(child: Text('No parcels found.')),
+                        ],
+                      );
                     }
                   },
                 ),

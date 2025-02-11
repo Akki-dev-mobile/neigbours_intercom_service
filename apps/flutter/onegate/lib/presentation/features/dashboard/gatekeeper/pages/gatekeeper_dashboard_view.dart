@@ -52,23 +52,17 @@ class _GateDashboardViewState extends State<GateDashboardView>
   bool? _visitorCardNumber = false;
   String? selectedGateName;
   bool isLoading = false;
-   final RemoteDataSource _remoteDataSource = RemoteDataSource(
-     );
+  final RemoteDataSource _remoteDataSource = RemoteDataSource();
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
         VisitorRepoImpl(
-          RemoteDataSource(
-
-          )
-          ,
+          RemoteDataSource(),
         ),
       ),
       VisitorLogUsecase(
         VisitorLogRepositoryImpl(
-          RemoteDataSource(
-
-          ),
+          RemoteDataSource(),
         ),
       ));
 
@@ -124,11 +118,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
     setState(() {
       _visitorCardNumber = prefs.getBool('visitorCardNumber');
     });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -231,15 +220,20 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
-                        IconButton(
-                          onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=> MissedApprovalsScreen(remoteDataSource: _remoteDataSource,)));
-                          },
-                          icon: Icon(
-                            Symbols.phone_missed_rounded,
-                            color: Theme.of(context).colorScheme.onBackground,
-                          ),
-                        ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => MissedApprovalsScreen(
+                                    remoteDataSource: _remoteDataSource,
+                                  )));
+                    },
+                    icon: Icon(
+                      Symbols.phone_missed_rounded,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
                   IconButton(
                     onPressed: () {
                       Navigator.push(
@@ -254,7 +248,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     },
                     icon: Icon(
                       Symbols.settings_rounded,
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   // TextButton.icon(
@@ -475,15 +469,14 @@ class _GateDashboardViewState extends State<GateDashboardView>
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             Container(
                               margin: EdgeInsets.only(top: 5, bottom: 8),
                               height: 60,
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.background,
+                                color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color:
@@ -801,7 +794,7 @@ class DashboardShortcut extends StatelessWidget {
                           ),
                           child: Icon(
                             icon,
-                            color: Theme.of(context).colorScheme.onBackground,
+                            color: Theme.of(context).colorScheme.onSurface,
                             size: 24,
                           ),
                         )
@@ -814,13 +807,13 @@ class DashboardShortcut extends StatelessWidget {
                           ),
                           child: Icon(
                             icon,
-                            color: Theme.of(context).colorScheme.onBackground,
+                            color: Theme.of(context).colorScheme.onSurface,
                             size: 24,
                           ),
                         )
                   : Icon(
                       icon,
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                       size: 24,
                     ),
             ),
