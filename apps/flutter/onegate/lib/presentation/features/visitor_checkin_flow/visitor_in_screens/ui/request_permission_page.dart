@@ -72,7 +72,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     RequestType.request:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/request_permission_b6ef131475.json',
     RequestType.allowByGatekeeper:
-        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json',
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json',
     RequestType.waiting:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json',
     RequestType.uploading:
@@ -85,7 +85,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     RequestType.leaveAtGate: "Leave at gate",
     RequestType.notRecheable: "Member not reachable !!",
     RequestType.request: "Request permission from member",
-    RequestType.allowByGatekeeper: "Allowed by gatekeeper",
+    RequestType.allowByGatekeeper: "Visitor approved",
     RequestType.waiting: "Initializing request...",
     RequestType.uploading: "Uploading image...",
   };
@@ -709,14 +709,23 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   Future<void> _handleTryAgain() async {
     log("🔄 Retrying approval process...");
+
+    setState(() {
+      trybuttontext = "Trying...";
+      _requestType = RequestType.waiting; // Reset to waiting status
+    });
+
     _showLoadingIndicator("Sending request...");
 
-    await _sendFcmNotification(); // Send request
+    await _sendFcmNotification(); // Send request again
 
-    await Future.delayed(
-        const Duration(seconds: 3)); // Give server time to process
+    await Future.delayed(const Duration(seconds: 3));
 
-    _fetchApprovals();
+    _fetchApprovals(); // Start polling for approval again
+
+    setState(() {
+      trybuttontext = "Try Again";
+    });
   }
 
   String formattedInTime =

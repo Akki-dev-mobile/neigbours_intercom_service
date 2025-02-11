@@ -66,7 +66,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   final Dio _dio = Dio();
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage gateStorage = GateStorage();
-  final SocketService socketService = SocketService(); // ✅ Add this line
+  final SocketService socketService = SocketService();
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
       ValueNotifier([]);
@@ -1157,6 +1157,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
 
       if (mounted) {
+        // Show dialog before navigating
+        await _showVisitorAllowedDialog();
+
+        // Navigate to dashboard after dialog is closed
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const GateDashboardView()),
@@ -1180,6 +1184,40 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         );
       }
     }
+  }
+
+  Future<void> _showVisitorAllowedDialog() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 8),
+              Text(
+                'Visitor Allowed',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Visitor is always allowed by the member.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(), // Close dialog
+              child: const Text('OK', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _handleMultipleMemberSelection(VisitorLog visitorLogData) async {
