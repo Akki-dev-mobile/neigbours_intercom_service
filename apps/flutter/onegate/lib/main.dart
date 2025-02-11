@@ -18,6 +18,7 @@ import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
+import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
@@ -100,6 +101,7 @@ void main() async {
         ],
         child: MultiBlocProvider(
           providers: [
+            BlocProvider(create: (context) => ParcelBloc(RemoteDataSource())),
             BlocProvider<GatekeeperDashboardBloc>(
               create: (context) => GatekeeperDashboardBloc(
                 VisitorUsecase(

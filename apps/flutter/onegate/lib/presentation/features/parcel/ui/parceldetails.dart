@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:math' as math;
-
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -21,222 +18,138 @@ class ParcelDetails extends StatelessWidget {
   RemoteDataSource remoteDataSource = RemoteDataSource();
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     await launchUrl(launchUri);
   }
 
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-        pageTitle: 'Parcel Details',
-        pageBody: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image.network(parcel['parcel_image']),
-            Center(
-              child: Container(
-                height: 200,
-                width: 200,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(20),
-                  ),
-                  image: parcel['parcel_image'].isNotEmpty
-                      ? DecorationImage(
-                          fit: BoxFit.cover,
-                          image: NetworkImage(
-                            parcel['parcel_image'],
-                          ),
-                        )
-                      : null,
-                ),
-                // parcel['parcel_image'].isNotEmpty
-                //     ? NetworkImage(
-                //         parcel['parcel_image'],
-                //         height: MediaQuery.of(context).size.height * 0.4,
-                //         width: double.maxFinite,
-                //         fit: BoxFit.contain,
-                //       )
-                //     : Center(
-                //         child: CircleAvatar(
-                //           radius: 80,
-                //           backgroundColor: Theme.of(context).colorScheme.primary,
-                //           child: Text(
-                //             parcel['visitor_image'],
-                //             style: const TextStyle(
-                //               fontSize: 60,
-                //               color: Colors.white,
-                //               fontWeight: FontWeight.bold,
-                //             ),
-                //           ),
-                //         ),
-                //       ),
+      pageTitle: 'Parcel Details',
+      pageBody: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildParcelImage(context),
+          _buildTitleSection(context),
+          _buildSection(
+            title: "Contact Information",
+            children: [
+              _buildInfoTile(
+                icon: Ionicons.call_outline,
+                title: "Phone Number",
+                subtitle: parcel['visitor_mobile'] ?? 'No Number',
+                iconColor: Colors.green,
+                trailing: _buildCallButton(),
               ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                parcel['member_name'] ?? 'No Name',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+            ],
+          ),
+          _buildSection(
+            title: "Unit Information",
+            children: [
+              _buildInfoTile(
+                icon: Icons.apartment,
+                title: "Unit Name",
+                subtitle: parcel['unit_name'] ?? 'N/A',
+                iconColor: const Color(0xffFFB080),
               ),
-              subtitle: Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xffFFEBE6),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Text(
-                      parcel['purpose_sub_category_name'].toString() ?? 'NA',
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
-                  ),
-                ],
+            ],
+          ),
+          _buildSection(
+            title: "Parcel Details",
+            children: [
+              _buildInfoTile(
+                icon: Icons.login,
+                title: "Parcel Check In",
+                subtitle: parcel['log_created_at'] ?? 'No Time',
+                iconColor: Colors.green,
               ),
-            ),
-            _buildSection(
-              title: "Contact Information",
-              children: [
-                _buildInfoTile(
-                  icon: Ionicons.call_outline,
-                  title: "Phone Number",
-                  subtitle: parcel['visitor_mobile'] ?? 'No Number',
-                  iconColor: Colors.green,
-                  trailing: _buildCallButton(),
-                ),
-              ],
-            ),
-            _buildSection(
-              title: "Unit Information",
-              children: [
-                _buildInfoTile(
-                  icon: Icons.apartment,
-                  title: "Unit Name",
-                  subtitle: parcel['unit_name'] ?? 'N/A',
-                  iconColor: const Color(0xffFFB080),
-                ),
-                _buildInfoTile(
-                  icon: Icons.location_on,
-                  title: "Coming From",
-                  subtitle:
-                      parcel['purpose_sub_category_name'].toString() ?? 'NA',
-                  iconColor: const Color(0xffFFB080),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildSection(
-              title: "Parcel Details",
-              children: [
-                _buildInfoTile(
-                    icon: Icons.login,
-                    title: "Parcel Check In",
-                    subtitle: parcel['log_created_at'] ?? 'No Time',
-                    iconColor: Colors.green),
-                _buildInfoTile(
-                    icon: Icons.logout,
-                    title: "Parcel Picked AT",
-                    subtitle: parcel['log_veified_at'] ??
-                        "${math.Random().nextInt(24)}:${math.Random().nextInt(60)}",
-                    iconColor: Colors.green),
-                _buildInfoTile(
-                    icon: Symbols.delivery_truck_speed,
-                    title: "Parcel Status",
-                    subtitle: parcel['parcel_status'] ?? 'N/A',
-                    iconColor: Colors.green),
-              ],
-            ),
-            const SizedBox(height: 150),
-            // InfoListTileWidget(
-            //   icon: Ionicons.call_outline,
-            //   iconColor: Colors.green,
-            //   title: 'Phone Number',
-            //   subtitle: parcel['visitor_mobile'] ?? 'No Number',
-            //   trailing: ElevatedButton.icon(
-            //     icon: const Icon(Icons.call, size: 18),
-            //     label: const Text('Call'),
-            //     onPressed: () => _makePhoneCall(parcel['visitor_mobile'] ?? ''),
-            //     style: ElevatedButton.styleFrom(
-            //       backgroundColor: Colors.green,
-            //       foregroundColor: Colors.white,
-            //       padding:
-            //           const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            //       shape: RoundedRectangleBorder(
-            //         borderRadius: BorderRadius.circular(8),
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            // InfoListTileWidget(
-            //   icon: Ionicons.calendar_outline,
-            //   iconColor: Colors.green,
-            //   title: 'Unit Name',
-            //   subtitle: parcel['unit_name'] ?? 'N/A',
-            // ),
-            // InfoListTileWidget(
-            //   icon: Ionicons.time_outline,
-            //   iconColor: Colors.green,
-            //   title: 'Check In',
-            //   subtitle: parcel['log_created_at'] ?? 'No Time',
-            //   subTitleStyle: const TextStyle(color: Colors.green),
-            // ),
-            // InfoListTileWidget(
-            //   icon: Ionicons.time_outline,
-            //   iconColor: Colors.red,
-            //   title: 'Parcel Picked AT',
-            //   subtitle: parcel['log_veified_at'] ??
-            //       "${math.Random().nextInt(24)}:${math.Random().nextInt(60)}",
-            //   subTitleStyle: const TextStyle(color: Colors.red),
-            // ),
-            // InfoListTileWidget(
-            //   icon: Symbols.delivery_truck_speed,
-            //   iconColor: parcel['parcel_status'] == 'picked'
-            //       ? Colors.green
-            //       : Colors.red,
-            //   title: 'Parcel Status',
-            //   subtitle: parcel['parcel_status'] ?? 'N/A',
-            //   subTitleStyle: TextStyle(
-            //       color: parcel['parcel_status'] == 'picked'
-            //           ? Colors.green
-            //           : Colors.red),
-            // ),
-            // const SizedBox(height: 150),
-          ],
+              _buildInfoTile(
+                icon: Symbols.delivery_truck_speed,
+                title: "Parcel Status",
+                subtitle: parcel['parcel_status'] ?? 'N/A',
+                iconColor: Colors.green,
+              ),
+            ],
+          ),
+          const SizedBox(height: 150),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: parcel['parcel_status'] != "picked"
+          ? CustomLargeBtn(
+              onPressed: () => _showOtpBottomSheet(context),
+              text: 'Mark as Picked',
+            )
+          : const SizedBox(),
+    );
+  }
+
+  void _showOtpBottomSheet(BuildContext context) {
+    TextEditingController otpController = TextEditingController();
+
+    remoteDataSource.getParcelOtp(
+      parcel['parcel_id'].toString(),
+      parcel['memb_mobile_number'].toString(),
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return OtpBottomSheet(
+          remoteDataSource: remoteDataSource,
+          parcel: parcel,
+          otpController: otpController,
+        );
+      },
+    );
+  }
+
+  Widget _buildParcelImage(BuildContext context) {
+    return Center(
+      child: Container(
+        height: 200,
+        width: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          image: parcel['parcel_image']?.isNotEmpty == true
+              ? DecorationImage(
+                  fit: BoxFit.cover,
+                  image: NetworkImage(parcel['parcel_image']),
+                )
+              : null,
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: parcel['parcel_status'] != "picked"
-            ? CustomLargeBtn(
-                onPressed: () {
-                  TextEditingController otpController = TextEditingController();
-                  remoteDataSource.getParcelOtp(
-                    parcel['parcel_id'].toString(),
-                    parcel['memb_mobile_number'].toString(),
-                  );
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (BuildContext context) {
-                      return OtpBottomSheet(
-                        remoteDataSource: remoteDataSource,
-                        parcel: parcel,
-                        otpController: otpController,
-                      );
-                    },
-                  );
-                },
-                text: 'Mark as Picked',
-              )
-            : const SizedBox());
+      ),
+    );
+  }
+
+  Widget _buildTitleSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            parcel['member_name'] ?? 'No Name',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xffFFEBE6),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Text(
+              parcel['purpose_sub_category_name'].toString() ?? 'NA',
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCallButton() {
@@ -248,9 +161,7 @@ class ParcelDetails extends StatelessWidget {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -268,13 +179,9 @@ class ParcelDetails extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ...children,
           ],
@@ -307,20 +214,11 @@ class ParcelDetails extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                Text(title,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                Text(subtitle,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16)),
               ],
             ),
           ),
@@ -390,7 +288,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
   void onSubmit() {
     if (widget.otpController.text.length == 6) {
       print("OTP Submitted: ${widget.otpController.text}");
-      // Proceed with OTP verification (API call, etc.)
+// Proceed with OTP verification (API call, etc.)
     } else {
       setState(() {
         errorText = "Please enter a valid 6-digit OTP.";
@@ -536,10 +434,10 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.surface),
                     ),
-                    // icon: Icon(
-                    //   Icons.check,
-                    //   color: Theme.of(context).colorScheme.surface,
-                    // ),
+// icon: Icon(
+//   Icons.check,
+//   color: Theme.of(context).colorScheme.surface,
+// ),
                   ),
                 ),
               ],

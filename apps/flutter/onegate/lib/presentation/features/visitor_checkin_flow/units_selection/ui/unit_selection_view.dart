@@ -1157,10 +1157,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
 
       if (mounted) {
-        // Show dialog before navigating
-        await _showVisitorAllowedDialog();
+        await _showVisitorAlwaysAllowedDialog();
 
-        // Navigate to dashboard after dialog is closed
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const GateDashboardView()),
@@ -1186,35 +1184,59 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  Future<void> _showVisitorAllowedDialog() async {
+  Future<void> _showVisitorAlwaysAllowedDialog() async {
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
+        return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: Row(
-            children: const [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
-              Text(
-                'Visitor Allowed',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Visitor is always allowed by the member.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(), // Close dialog
-              child: const Text('OK', style: TextStyle(color: Colors.black)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/json/approved.json', // Use the same animation
+                  width: 150,
+                  height: 150,
+                  repeat: false,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Visitor Always Allowed",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "This visitor has been always allowed by the member.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                CustomLargeBtn(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const GateDashboardView()),
+                    );
+                  },
+                  text: "Continue",
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );

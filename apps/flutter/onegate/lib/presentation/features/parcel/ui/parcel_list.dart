@@ -43,7 +43,7 @@ class _ParcelListState extends State<ParcelList> {
   }
 
   void _startAutoRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted && !_isRefreshing) {
         _refreshPage();
       }
@@ -58,15 +58,19 @@ class _ParcelListState extends State<ParcelList> {
   }
 
   Future<void> _refreshPage() async {
-    if (_isRefreshing) return;
+    if (!mounted || _isRefreshing)
+      return; // Prevent calling refresh if unmounted
 
     setState(() {
       _isRefreshing = true;
     });
 
     try {
-      context.read<ParcelBloc>().add(FetchParcels());
-      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        context.read<ParcelBloc>().add(FetchParcels());
+      }
+    } catch (e) {
+      debugPrint("Error refreshing ParcelBloc: $e");
     } finally {
       if (mounted) {
         setState(() {
@@ -241,70 +245,6 @@ class _ParcelListState extends State<ParcelList> {
                           ),
                         ],
                       ),
-                      //   TextSpan(
-                      //   children: [
-                      //     const WidgetSpan(
-                      //       child: Icon(
-                      //         Symbols.apartment,
-                      //         color: Color(0xffFFB080),
-                      //       ),
-                      //     ),
-                      //     WidgetSpan(
-                      //       child: Container(
-                      //         margin: const EdgeInsets.only(left: 8),
-                      //         padding: const EdgeInsets.symmetric(
-                      //           horizontal: 7,
-                      //           vertical: 2,
-                      //         ),
-                      //         decoration: BoxDecoration(
-                      //           color: const Color(0xffFFEBE6),
-                      //           borderRadius: BorderRadius.circular(8),
-                      //         ),
-                      //         child: Text(
-                      //           parcel['unit_name']?.toString() ??
-                      //               'No Description',
-                      //           style: const TextStyle(
-                      //             color: Colors.black,
-                      //             fontWeight: FontWeight.w500,
-                      //             fontSize: 14,
-                      //           ),
-                      //         ),
-                      //       ),
-                      //     ),
-                      //     const WidgetSpan(
-                      //       child: Icon(
-                      //         Symbols.delivery_truck_speed,
-                      //         color: Color(0xffFFB080),
-                      //       ),
-                      //     ),
-                      //     const WidgetSpan(
-                      //       child: SizedBox(
-                      //         height: 10,
-                      //       ),
-                      //     ),
-                      //     WidgetSpan(
-                      //       child: Container(
-                      //         margin: const EdgeInsets.only(left: 8),
-                      //         padding: const EdgeInsets.symmetric(
-                      //           horizontal: 7,
-                      //           vertical: 2,
-                      //         ),
-                      //         decoration: BoxDecoration(
-                      //           color: const Color(0xffFFEBE6),
-                      //           borderRadius: BorderRadius.circular(15),
-                      //         ),
-                      //         child: Text(
-                      //           parcel['purpose_sub_category_name'] ?? 'N/A',
-                      //           style: const TextStyle(
-                      //             color: Colors.black,
-                      //             fontWeight: FontWeight.w500,
-                      //             fontSize: 14,
-                      //           ),
-                      //         ),
-                      //       ),
-                      //     )
-                      //   ],
-                      // ),
                     ],
                   ),
                 ),

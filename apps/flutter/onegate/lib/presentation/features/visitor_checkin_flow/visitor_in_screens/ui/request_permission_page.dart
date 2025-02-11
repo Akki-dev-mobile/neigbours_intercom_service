@@ -633,20 +633,19 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Allow by Gatekeeper Button
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: Expanded(
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.all(10),
             child: ElevatedButton(
               style: _getAllowButtonStyle(),
               onPressed: () async {
                 await _allowByGatekeeper();
               },
               child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.3,
                 height: 60,
                 child: const Center(
                   child: Text(
-                    "Allow by Gatekeeper",
+                    "Allow ",
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 15,
