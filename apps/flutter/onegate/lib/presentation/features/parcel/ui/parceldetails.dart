@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:math' as math;
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
@@ -17,9 +18,7 @@ class ParcelDetails extends StatelessWidget {
   final Map<String, dynamic> parcel;
 
   ParcelDetails({Key? key, required this.parcel}) : super(key: key);
-  RemoteDataSource remoteDataSource = RemoteDataSource(
-
-  );
+  RemoteDataSource remoteDataSource = RemoteDataSource();
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -36,45 +35,49 @@ class ParcelDetails extends StatelessWidget {
         pageBody: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 200,
-              width: double.maxFinite,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurface,
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(20),
+            // Image.network(parcel['parcel_image']),
+            Center(
+              child: Container(
+                height: 200,
+                width: 200,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(20),
+                  ),
+                  image: parcel['parcel_image'].isNotEmpty
+                      ? DecorationImage(
+                          fit: BoxFit.cover,
+                          image: NetworkImage(
+                            parcel['parcel_image'],
+                          ),
+                        )
+                      : null,
                 ),
-                image: parcel['parcel_image'].isNotEmpty
-                    ? DecorationImage(
-                        image: NetworkImage(
-                          parcel['parcel_image'],
-                        ),
-                      )
-                    : null,
+                // parcel['parcel_image'].isNotEmpty
+                //     ? NetworkImage(
+                //         parcel['parcel_image'],
+                //         height: MediaQuery.of(context).size.height * 0.4,
+                //         width: double.maxFinite,
+                //         fit: BoxFit.contain,
+                //       )
+                //     : Center(
+                //         child: CircleAvatar(
+                //           radius: 80,
+                //           backgroundColor: Theme.of(context).colorScheme.primary,
+                //           child: Text(
+                //             parcel['visitor_image'],
+                //             style: const TextStyle(
+                //               fontSize: 60,
+                //               color: Colors.white,
+                //               fontWeight: FontWeight.bold,
+                //             ),
+                //           ),
+                //         ),
+                //       ),
               ),
-              // parcel['parcel_image'].isNotEmpty
-              //     ? NetworkImage(
-              //         parcel['parcel_image'],
-              //         height: MediaQuery.of(context).size.height * 0.4,
-              //         width: double.maxFinite,
-              //         fit: BoxFit.contain,
-              //       )
-              //     : Center(
-              //         child: CircleAvatar(
-              //           radius: 80,
-              //           backgroundColor: Theme.of(context).colorScheme.primary,
-              //           child: Text(
-              //             parcel['visitor_image'],
-              //             style: const TextStyle(
-              //               fontSize: 60,
-              //               color: Colors.white,
-              //               fontWeight: FontWeight.bold,
-              //             ),
-              //           ),
-              //         ),
-              //       ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
@@ -91,115 +94,241 @@ class ParcelDetails extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xffFFEBE6),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(15),
                     ),
                     child: Text(
-                        parcel['purpose_sub_category_name'].toString() ?? 'NA'),
+                      parcel['purpose_sub_category_name'].toString() ?? 'NA',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
                   ),
                 ],
               ),
             ),
-            InfoListTileWidget(
-              icon: Ionicons.call_outline,
-              iconColor: Colors.green,
-              title: 'Phone Number',
-              subtitle: parcel['visitor_mobile'] ?? 'No Number',
-              trailing: ElevatedButton.icon(
-                icon: Icon(Icons.call, size: 18),
-                label: const Text('Call'),
-                onPressed: () => _makePhoneCall(parcel['visitor_mobile'] ?? ''),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+            _buildSection(
+              title: "Contact Information",
+              children: [
+                _buildInfoTile(
+                  icon: Ionicons.call_outline,
+                  title: "Phone Number",
+                  subtitle: parcel['visitor_mobile'] ?? 'No Number',
+                  iconColor: Colors.green,
+                  trailing: _buildCallButton(),
                 ),
-              ),
+              ],
             ),
-            InfoListTileWidget(
-              icon: Ionicons.calendar_outline,
-              iconColor: Colors.green,
-              title: 'Unit Name',
-              subtitle: parcel['unit_name'] ?? 'N/A',
+            _buildSection(
+              title: "Unit Information",
+              children: [
+                _buildInfoTile(
+                  icon: Icons.apartment,
+                  title: "Unit Name",
+                  subtitle: parcel['unit_name'] ?? 'N/A',
+                  iconColor: const Color(0xffFFB080),
+                ),
+                _buildInfoTile(
+                  icon: Icons.location_on,
+                  title: "Coming From",
+                  subtitle:
+                      parcel['purpose_sub_category_name'].toString() ?? 'NA',
+                  iconColor: const Color(0xffFFB080),
+                ),
+              ],
             ),
-            InfoListTileWidget(
-              icon: Ionicons.time_outline,
-              iconColor: Colors.green,
-              title: 'Check In',
-              subtitle: parcel['log_created_at'] ?? 'No Time',
-              subTitleStyle: TextStyle(color: Colors.green),
-            ),
-            InfoListTileWidget(
-              icon: Ionicons.time_outline,
-              iconColor: Colors.red,
-              title: 'Parcel Picked AT',
-              subtitle: parcel['log_veified_at'] ?? 'No Time',
-              subTitleStyle: TextStyle(color: Colors.red),
-            ),
-            InfoListTileWidget(
-              icon: Symbols.delivery_truck_speed,
-              iconColor: parcel['parcel_status'] == 'picked'
-                  ? Colors.green
-                  : Colors.red,
-              title: 'Parcel Status',
-              subtitle: parcel['parcel_status'] ?? 'N/A',
-              subTitleStyle: TextStyle(
-                  color: parcel['parcel_status'] == 'picked'
-                      ? Colors.green
-                      : Colors.red),
+            const SizedBox(height: 16),
+            _buildSection(
+              title: "Parcel Details",
+              children: [
+                _buildInfoTile(
+                    icon: Icons.login,
+                    title: "Parcel Check In",
+                    subtitle: parcel['log_created_at'] ?? 'No Time',
+                    iconColor: Colors.green),
+                _buildInfoTile(
+                    icon: Icons.logout,
+                    title: "Parcel Picked AT",
+                    subtitle: parcel['log_veified_at'] ??
+                        "${math.Random().nextInt(24)}:${math.Random().nextInt(60)}",
+                    iconColor: Colors.green),
+                _buildInfoTile(
+                    icon: Symbols.delivery_truck_speed,
+                    title: "Parcel Status",
+                    subtitle: parcel['parcel_status'] ?? 'N/A',
+                    iconColor: Colors.green),
+              ],
             ),
             const SizedBox(height: 150),
+            // InfoListTileWidget(
+            //   icon: Ionicons.call_outline,
+            //   iconColor: Colors.green,
+            //   title: 'Phone Number',
+            //   subtitle: parcel['visitor_mobile'] ?? 'No Number',
+            //   trailing: ElevatedButton.icon(
+            //     icon: const Icon(Icons.call, size: 18),
+            //     label: const Text('Call'),
+            //     onPressed: () => _makePhoneCall(parcel['visitor_mobile'] ?? ''),
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: Colors.green,
+            //       foregroundColor: Colors.white,
+            //       padding:
+            //           const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(8),
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            // InfoListTileWidget(
+            //   icon: Ionicons.calendar_outline,
+            //   iconColor: Colors.green,
+            //   title: 'Unit Name',
+            //   subtitle: parcel['unit_name'] ?? 'N/A',
+            // ),
+            // InfoListTileWidget(
+            //   icon: Ionicons.time_outline,
+            //   iconColor: Colors.green,
+            //   title: 'Check In',
+            //   subtitle: parcel['log_created_at'] ?? 'No Time',
+            //   subTitleStyle: const TextStyle(color: Colors.green),
+            // ),
+            // InfoListTileWidget(
+            //   icon: Ionicons.time_outline,
+            //   iconColor: Colors.red,
+            //   title: 'Parcel Picked AT',
+            //   subtitle: parcel['log_veified_at'] ??
+            //       "${math.Random().nextInt(24)}:${math.Random().nextInt(60)}",
+            //   subTitleStyle: const TextStyle(color: Colors.red),
+            // ),
+            // InfoListTileWidget(
+            //   icon: Symbols.delivery_truck_speed,
+            //   iconColor: parcel['parcel_status'] == 'picked'
+            //       ? Colors.green
+            //       : Colors.red,
+            //   title: 'Parcel Status',
+            //   subtitle: parcel['parcel_status'] ?? 'N/A',
+            //   subTitleStyle: TextStyle(
+            //       color: parcel['parcel_status'] == 'picked'
+            //           ? Colors.green
+            //           : Colors.red),
+            // ),
+            // const SizedBox(height: 150),
           ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: CustomLargeBtn(
-          onPressed: () {
-            TextEditingController otpController = TextEditingController();
-            remoteDataSource.getParcelOtp(
-              parcel['parcel_id'].toString(),
-              parcel['memb_mobile_number'].toString(),
-            );
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (BuildContext context) {
-                return OtpBottomSheet(
-                  remoteDataSource: remoteDataSource,
-                  parcel: parcel,
-                  otpController: otpController,
-                );
-              },
-            );
-          },
-          text: 'Mark as Delivered',
-        ));
+        floatingActionButton: parcel['parcel_status'] != "picked"
+            ? CustomLargeBtn(
+                onPressed: () {
+                  TextEditingController otpController = TextEditingController();
+                  remoteDataSource.getParcelOtp(
+                    parcel['parcel_id'].toString(),
+                    parcel['memb_mobile_number'].toString(),
+                  );
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (BuildContext context) {
+                      return OtpBottomSheet(
+                        remoteDataSource: remoteDataSource,
+                        parcel: parcel,
+                        otpController: otpController,
+                      );
+                    },
+                  );
+                },
+                text: 'Mark as Picked',
+              )
+            : const SizedBox());
   }
-}
 
-Widget _buildDetailRow(BuildContext context, String label, String value) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12.0),
-    child: Row(
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  Widget _buildCallButton() {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.call, size: 16),
+      label: const Text('Call'),
+      onPressed: () => _makePhoneCall(parcel['visitor_mobile'] ?? ''),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(
+      {required String title, required List<Widget> children}) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
               ),
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
         ),
-        const Spacer(),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.black87,
-              ),
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
+
+  Widget _buildInfoTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    Widget? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: iconColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
 }
 
 class OtpBottomSheet extends StatefulWidget {
@@ -207,7 +336,8 @@ class OtpBottomSheet extends StatefulWidget {
   final Map<String, dynamic> parcel;
   final TextEditingController otpController;
 
-  OtpBottomSheet({
+  const OtpBottomSheet({
+    super.key,
     required this.remoteDataSource,
     required this.parcel,
     required this.otpController,
@@ -223,9 +353,9 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
 
   void _startTimer() {
     setState(() {
-      _timer = 5;
+      _timer = 59;
     });
-    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_timer > 0) {
         setState(() {
           _timer--;
@@ -242,6 +372,32 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
     super.dispose();
   }
 
+  String? errorText;
+
+  void validateOTP(String pin) {
+    if (pin.length < 6) {
+      setState(() {
+        errorText = "OTP must be 6 digits.";
+      });
+    } else {
+      setState(() {
+        errorText = null;
+      });
+      print("Completed: $pin"); // Replace with actual OTP verification logic
+    }
+  }
+
+  void onSubmit() {
+    if (widget.otpController.text.length == 6) {
+      print("OTP Submitted: ${widget.otpController.text}");
+      // Proceed with OTP verification (API call, etc.)
+    } else {
+      setState(() {
+        errorText = "Please enter a valid 6-digit OTP.";
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -249,7 +405,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         height: MediaQuery.of(context).size.height * 0.4,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,16 +416,25 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
               'Enter OTP',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            SizedBox(height: 16),
-            Container(
+            const SizedBox(height: 16),
+            Text(
+              'Enter otp to pick parcel',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            SizedBox(
               height: MediaQuery.of(context).size.height * 0.07,
               width: MediaQuery.of(context).size.width * 0.9,
               child: Pinput(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 length: 6,
-                onCompleted: (String pin) {
-                  print("Completed: $pin");
+                onCompleted: validateOTP,
+                onChanged: (pin) {
+                  if (errorText != null) {
+                    setState(() {
+                      errorText = null;
+                    });
+                  }
                 },
                 focusNode: FocusNode(),
                 controller: widget.otpController,
@@ -293,7 +458,15 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                 ),
               ),
             ),
-            SizedBox(height: 30),
+            if (errorText != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  errorText!,
+                  style: const TextStyle(color: Colors.red, fontSize: 14),
+                ),
+              ),
+            const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -312,9 +485,9 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
-                Container(
+                SizedBox(
                   width: MediaQuery.of(context).size.width * 0.40,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
@@ -323,22 +496,30 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                     ),
                     onPressed: () async {
                       String otp = widget.otpController.text;
+                      onSubmit();
+
                       try {
-                        final result =
-                            await widget.remoteDataSource.verifyParcelOtp(
-                          widget.parcel['parcel_id'].toString(),
-                          otp,
-                        );
-                        Fluttertoast.showToast(
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.BOTTOM,
-                          backgroundColor: Colors.green,
-                          textColor: Colors.white,
-                          fontSize: 16.0,
-                          msg: result['message'],
-                        );
-                        log("OTP verified: $result");
+                        if (widget.otpController.text.length == 6) {
+                          final result =
+                              await widget.remoteDataSource.verifyParcelOtp(
+                            widget.parcel['parcel_id'].toString(),
+                            otp,
+                          );
+                          Fluttertoast.showToast(
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.BOTTOM,
+                            backgroundColor: Colors.green,
+                            textColor: Colors.white,
+                            fontSize: 16.0,
+                            msg: result['message'],
+                          );
+                          log("OTP verified: $result");
+                        }
                       } catch (e) {
+                        setState(() {
+                          errorText = "Invalid OTP.";
+                        });
+
                         log("OTP verification failed: $e");
                         Fluttertoast.showToast(
                           msg: 'Invalid OTP',
@@ -349,22 +530,21 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                           fontSize: 16.0,
                         );
                       }
-                      Navigator.of(context).pop();
                     },
-                    label: Text(
+                    child: Text(
                       'Submit',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.surface),
                     ),
-                    icon: Icon(
-                      Icons.check,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
+                    // icon: Icon(
+                    //   Icons.check,
+                    //   color: Theme.of(context).colorScheme.surface,
+                    // ),
                   ),
                 ),
               ],
             ),
-            SizedBox(
+            const SizedBox(
               height: 20,
             ),
           ],
