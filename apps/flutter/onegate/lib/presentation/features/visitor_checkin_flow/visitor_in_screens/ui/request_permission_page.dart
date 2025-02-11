@@ -51,7 +51,7 @@ class RequestPermissionPage extends StatefulWidget {
 class _RequestPermissionPageState extends State<RequestPermissionPage> {
   static const double _lottieAnimationSize = 250;
   static const Duration _pollingInterval = Duration(seconds: 5);
-
+  String trybuttontext = "Try Again";
   final RemoteDataSource _remoteDataSource = RemoteDataSource();
 
   RequestType _requestType = RequestType.waiting;
@@ -168,13 +168,13 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       SnackBar(
         content: Row(
           children: [
-            CircularProgressIndicator(color: Colors.white),
+            const CircularProgressIndicator(color: Colors.white),
             const SizedBox(width: 12),
             Text(message),
           ],
         ),
         backgroundColor: Colors.blue,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -257,6 +257,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         _buildVisitorCard(context),
         _buildLottieAnimation(),
         _buildStatusText(),
+        const SizedBox(
+          height: 120,
+        )
       ],
     );
   }
@@ -279,10 +282,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                 widget.visitor.visitor_image!),
           ),
         ),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         Text(
           widget.visitor.name ?? "",
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
         ),
         Container(
           decoration: BoxDecoration(
@@ -303,21 +306,21 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
                 blurRadius: 10,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Column(
             children: [
               ListTile(
-                contentPadding: EdgeInsets.all(16),
+                contentPadding: const EdgeInsets.all(16),
                 leading: Container(
-                  padding: EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Ionicons.call_outline, color: Colors.green),
+                  child: const Icon(Ionicons.call_outline, color: Colors.green),
                 ),
                 title: Text(
                   'Phone Number',
@@ -362,7 +365,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                 child: Row(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: colortoshow.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
@@ -372,7 +375,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                         color: colortoshow,
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -452,7 +455,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               "Retry in: ${remaining.inMinutes.toString().padLeft(2, '0')}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}",
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),
@@ -630,22 +633,25 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Allow by Gatekeeper Button
-        Expanded(
-          child: ElevatedButton(
-            style: _getAllowButtonStyle(),
-            onPressed: () async {
-              await _allowByGatekeeper();
-            },
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.3,
-              height: 60,
-              child: const Center(
-                child: Text(
-                  "Allow by Gatekeeper",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 15,
-                    wordSpacing: 1.2,
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Expanded(
+            child: ElevatedButton(
+              style: _getAllowButtonStyle(),
+              onPressed: () async {
+                await _allowByGatekeeper();
+              },
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.3,
+                height: 60,
+                child: const Center(
+                  child: Text(
+                    "Allow by Gatekeeper",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 15,
+                      wordSpacing: 1.2,
+                    ),
                   ),
                 ),
               ),
@@ -659,9 +665,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           child: CustomLargeBtn(
             width: MediaQuery.of(context).size.width * 0.45,
             onPressed: () async {
+              setState(() {
+                trybuttontext = "Trying...";
+              });
               await _handleTryAgain();
             },
-            text: "Try Again",
+            text: trybuttontext,
           ),
         ),
       ],
@@ -704,7 +713,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     await _sendFcmNotification(); // Send request
 
-    await Future.delayed(Duration(seconds: 3)); // Give server time to process
+    await Future.delayed(
+        const Duration(seconds: 3)); // Give server time to process
 
     _fetchApprovals();
   }
@@ -716,7 +726,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('visitorId');
       final String? visitorLogId = prefs.getString("visitor_log");
-      final String? visitorId = widget.visitor.id.toString();
+      final String visitorId = widget.visitor.id.toString();
 
       final requestData = {
         'company_id': widget.visitorLog?.company_id.toString() ?? "",
@@ -777,19 +787,19 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 // Helper methods for button styling and navigation
   ButtonStyle _getAllowButtonStyle() {
     return ButtonStyle(
-      foregroundColor: MaterialStateProperty.all<Color>(
+      foregroundColor: WidgetStateProperty.all<Color>(
         const Color(0xFF7D7C7C),
       ),
       backgroundColor: WidgetStateProperty.all<Color>(Colors.white),
       elevation: WidgetStateProperty.resolveWith<double>(
-        (Set<MaterialState> states) {
-          if (states.contains(MaterialState.pressed)) {
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.pressed)) {
             return 8;
           }
           return 0;
         },
       ),
-      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+      shape: WidgetStateProperty.all<RoundedRectangleBorder>(
         RoundedRectangleBorder(
           side: const BorderSide(color: Colors.black, width: 1),
           borderRadius: BorderRadius.circular(15),
