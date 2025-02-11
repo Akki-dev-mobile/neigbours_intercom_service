@@ -1450,13 +1450,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id':
-
-          // "77525",
-
-          (int.tryParse(userId) == null || int.tryParse(userId) == 0)
-              ? "234567"
-              : int.parse(userId).toString(),
+      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+          ? "234567"
+          : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
       'member_mobile_number': "918452060059",
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
@@ -1464,7 +1460,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? "delivery"
           : widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
-      'coming_from': widget.comingFrom.toString() ?? "Bandra",
+      'coming_from': widget.comingFrom?.toString() ?? "delivery", // Nullable
       'member_id': selectedMemberIds.isNotEmpty
           ? selectedMemberIds.first.toString()
           : "232",

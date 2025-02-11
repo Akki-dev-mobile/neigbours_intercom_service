@@ -554,15 +554,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
           ),
         ),
-        CustomForm.textField(
-          "Coming From",
-          hintText: 'Enter company/organization name',
-          textController: _guestComingFromController,
-          textCapitalization: TextCapitalization.words,
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('guestComingFrom')),
-        ),
+
         // Company Selection Header
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -741,15 +733,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             hintColor: Theme.of(context).colorScheme.onPrimary,
             suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
           ),
-        ),
-        CustomForm.textField(
-          "Coming From",
-          hintText: 'Enter company/organization name',
-          textController: _guestComingFromController,
-          textCapitalization: TextCapitalization.words,
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('guestComingFrom')),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
