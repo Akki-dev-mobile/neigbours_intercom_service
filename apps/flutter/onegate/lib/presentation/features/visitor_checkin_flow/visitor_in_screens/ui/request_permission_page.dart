@@ -12,6 +12,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
@@ -632,11 +633,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         Expanded(
           child: ElevatedButton(
             style: _getAllowButtonStyle(),
-            onPressed: () {
-              _navigateToRequestPermission(
-                PurposeCategory1(
-                    categoryId: 999, categoryName: "Allowed by Gatekeeper"),
-              );
+            onPressed: () async {
+              await _allowByGatekeeper();
             },
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.3,
@@ -670,6 +668,36 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     );
   }
 
+  Future<void> _allowByGatekeeper() async {
+    try {
+      if (widget.logID == null) {
+        _showErrorSnackBar("Invalid visitor log ID.");
+        return;
+      }
+
+      final response = await Dio().patch(
+        '${ApiUrls.gateBaseUrl}/visitor/visitorLog/${widget.visitor.id}',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: jsonEncode({"allow_status": "allowed_by_gatekeeper"}),
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ Visitor allowed by Gatekeeper successfully");
+        _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
+
+        // Navigate back to Dashboard
+
+        _navigateToDashboard();
+      } else {
+        log("❌ Failed to allow visitor by Gatekeeper: ${response.statusMessage}");
+        _showErrorSnackBar("Error allowing visitor. Try again.");
+      }
+    } catch (e) {
+      log("❌ Error in _allowByGatekeeper: $e");
+      _showErrorSnackBar("Failed to allow visitor.");
+    }
+  }
+
   Future<void> _handleTryAgain() async {
     log("🔄 Retrying approval process...");
     _showLoadingIndicator("Sending request...");
@@ -678,7 +706,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     await Future.delayed(Duration(seconds: 3)); // Give server time to process
 
-    _fetchApprovals(); // Re-check approval status
+    _fetchApprovals();
   }
 
   String formattedInTime =
