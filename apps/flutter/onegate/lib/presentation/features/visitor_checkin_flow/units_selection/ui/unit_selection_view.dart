@@ -78,7 +78,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<int> selectedUnits = {};
   String? selectedgate;
   List<dynamic> _allMembers = [];
-  List<dynamic> _approvals = [];
+  final List<dynamic> _approvals = [];
   String? companyId;
   String? companyName;
   bool isLoading = true;
@@ -101,7 +101,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _loadVisitorSettings();
     _initializeSocketConnection();
     _initializeFuture = _initializeMembers();
-    log("${selectedUnits} here is this");
+    log("$selectedUnits here is this");
     log("${widget.comingFrom} here is this");
   }
 
@@ -121,7 +121,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<void> _loadVisitorSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _membersApproval = await prefs.getBool('membersApproval');
+    _membersApproval = prefs.getBool('membersApproval');
   }
 
   @override
@@ -632,7 +632,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         } else {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => GateDashboardView()),
+            MaterialPageRoute(builder: (context) => const GateDashboardView()),
             (Route<dynamic> route) => false,
           );
           return false; // Prevent default back navigation.
@@ -806,31 +806,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                         ElevatedButton.icon(
                                                           style: ButtonStyle(
                                                             foregroundColor:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<Color>(
                                                               const Color(
                                                                   0xFF7D7C7C),
                                                             ),
                                                             backgroundColor:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<Color>(
                                                               Theme.of(context)
                                                                   .colorScheme
                                                                   .surface,
                                                             ),
                                                             elevation:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .resolveWith<
                                                                         double>(
-                                                              (Set<MaterialState>
+                                                              (Set<WidgetState>
                                                                       states) =>
                                                                   states.contains(
-                                                                          MaterialState
+                                                                          WidgetState
                                                                               .pressed)
                                                                       ? 8
                                                                       : 0,
                                                             ),
-                                                            shape: MaterialStateProperty
+                                                            shape: WidgetStateProperty
                                                                 .all<
                                                                     RoundedRectangleBorder>(
                                                               RoundedRectangleBorder(
@@ -841,7 +841,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                               ),
                                                             ),
                                                             padding:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<
                                                                         EdgeInsetsGeometry>(
                                                               const EdgeInsets
@@ -1195,8 +1195,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Row(
-            children: const [
+          title: const Row(
+            children: [
               Icon(Icons.check_circle, color: Colors.green),
               SizedBox(width: 8),
               Text(
@@ -1345,13 +1345,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final selectedGateName = prefs.getString('selected_gate');
 
     List<int> unitIds = [];
-    if (formattedMemberDetails != null && formattedMemberDetails is List) {
-      unitIds = formattedMemberDetails
-          .map((member) => member['unit_id'])
-          .where((id) => id != null)
-          .map((id) => int.parse(id.toString()))
-          .toList();
-    }
+    unitIds = formattedMemberDetails
+        .map((member) => member['unit_id'])
+        .where((id) => id != null)
+        .map((id) => int.parse(id.toString()))
+        .toList();
 
     // Map unit IDs to BuildingAssignment objects
     List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
@@ -1419,13 +1417,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final companyDetails = await gateStorage.getSocietyDetails();
 
     List<int> unitIds = [];
-    if (formattedMemberDetails != null && formattedMemberDetails is List) {
-      unitIds = formattedMemberDetails
-          .map((member) => member['unit_id'])
-          .where((id) => id != null)
-          .map((id) => int.parse(id.toString()))
-          .toList();
-    }
+    unitIds = formattedMemberDetails
+        .map((member) => member['unit_id'])
+        .where((id) => id != null)
+        .map((id) => int.parse(id.toString()))
+        .toList();
     print("subbb${widget.selectedSubCategoryId.toString()}");
     // Map unit IDs to BuildingAssignment objects
     List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
@@ -1492,7 +1488,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "918452060059",
+      'member_mobile_number': "917378880544",
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
           ? "delivery"
