@@ -1107,12 +1107,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     try {
       final userId = selectedUserIds.first;
       final selectedMobileNumbers = await _getSelectedMobileNumbers();
+
+      // Validate request data before proceeding
       final requestData =
           await _prepareRequestData(userId, selectedMobileNumbers);
+      if (requestData == null) return; // Stop execution if validation fails
 
       log("✅ Sending FCM notification via WebSocket & API...");
 
-      // Send WebSocket eventFF
+      // Send WebSocket event
       if (socketService.socket != null && socketService.socket!.connected) {
         log("📡 Sending WebSocket event: sendFcmNotification...");
         socketService.socket!.emit("sendFcmNotification", requestData);
@@ -1128,6 +1131,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       );
 
       print("response $apiResponse");
+
       // Listen for WebSocket response
       socketService.socket!.on("fcmResponse", (responseData) async {
         log("📩 WebSocket Response Received: $responseData");
@@ -1467,7 +1471,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
   }
 
-  Future<Map<String, String>> _prepareRequestData(
+  Future<Map<String, String>?> _prepareRequestData(
     String userId,
     List<String> savedMobileNumbers,
   ) async {
@@ -1475,8 +1479,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final visitorLogId = prefs.getString("visitor_log") ?? "";
     final String? visitorId = prefs.getString('visitorId');
 
-    // Log for debugging
     log("Visitor Log ID: $visitorLogId");
+
+    // Validate `member_mobile_number`
+    if (savedMobileNumbers.isEmpty || savedMobileNumbers.first.isEmpty) {
+      Fluttertoast.showToast(msg: "Member mobile number not found!",backgroundColor: Colors.red);
+      return null;
+    }
+
+    // Validate `user_id`
+    if (userId.isEmpty ||
+        int.tryParse(userId) == null ||
+        int.parse(userId) == 0) {
+      Fluttertoast.showToast(msg: "User ID not found",backgroundColor: Colors.red);
+      return null;
+    }
 
     return {
       'company_id': companyId.toString(),
@@ -1484,17 +1501,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
-          ? "234567"
-          : int.parse(userId).toString(),
+      'user_id': int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "918452060059",
+      'member_mobile_number': savedMobileNumbers.first,
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
           ? "delivery"
           : widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
-      'coming_from': widget.comingFrom?.toString() ?? "delivery", // Nullable
+      'coming_from': widget.comingFrom?.toString() ?? "delivery",
       'member_id': selectedMemberIds.isNotEmpty
           ? selectedMemberIds.first.toString()
           : "232",

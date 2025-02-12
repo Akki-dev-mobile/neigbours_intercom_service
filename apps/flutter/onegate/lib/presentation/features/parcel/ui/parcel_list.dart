@@ -391,8 +391,8 @@ class _ParcelListState extends State<ParcelList> {
 
     return filteredParcels.isNotEmpty
         ? ListView.builder(
-            padding: const EdgeInsets.only(top: 10, bottom: 100),
-            shrinkWrap: false,
+            padding: const EdgeInsets.only(top: 10, bottom: 300),
+            shrinkWrap: true,
             itemCount: filteredParcels.length,
             itemBuilder: (context, index) {
               final parcel = filteredParcels[index] as Map<String, dynamic>;

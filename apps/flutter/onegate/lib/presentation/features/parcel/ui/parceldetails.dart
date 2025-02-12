@@ -48,11 +48,11 @@ class ParcelDetails extends StatelessWidget {
                   ),
                   image: parcel['parcel_image'].isNotEmpty
                       ? DecorationImage(
-                    fit: BoxFit.cover,
-                    image: NetworkImage(
-                      parcel['parcel_image'],
-                    ),
-                  )
+                          fit: BoxFit.cover,
+                          image: NetworkImage(
+                            parcel['parcel_image'],
+                          ),
+                        )
                       : null,
                 ),
                 // parcel['parcel_image'].isNotEmpty
@@ -84,15 +84,15 @@ class ParcelDetails extends StatelessWidget {
               title: Text(
                 parcel['member_name'] ?? 'No Name',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
               ),
               subtitle: Row(
                 children: [
                   Container(
                     padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xffFFEBE6),
                       borderRadius: BorderRadius.circular(15),
@@ -130,7 +130,7 @@ class ParcelDetails extends StatelessWidget {
                   icon: Icons.location_on,
                   title: "Coming From",
                   subtitle:
-                  parcel['purpose_sub_category_name'].toString() ?? 'NA',
+                      parcel['purpose_sub_category_name'].toString() ?? 'NA',
                   iconColor: const Color(0xffFFB080),
                 ),
               ],
@@ -139,135 +139,68 @@ class ParcelDetails extends StatelessWidget {
             _buildSection(
               title: "Parcel Details",
               children: [
-                // _buildInfoTile(
-                //   icon: Symbols.delivery_truck_speed,
-                //   title: "Parcel Status",
-                //   subtitle: parcel['parcel_status'] ?? 'N/A',
-                //   iconColor: const Color(0xffF2D8A5),
-                // ),
                 _buildTimelineTile(
-                    "Parcel Check in",
-                    DateTime.parse(parcel['log_created_at']),
-                    Symbols.delivery_truck_speed,
-                    const Color(0xffF2D8A5),
-                    isFirst: true,
-                    isLast: true),
-                const SizedBox(
-                  height: 20,
-                ),
-
-                _buildTimelineTile(
-                  "Parcel Check in",
-                  DateTime.parse(parcel['log_created_at']),
-                  Icons.login,
-                  Colors.green,
+                  "Parcel Check-in",
+                  DateTime.tryParse(parcel['log_created_at'] ?? '') ??
+                      DateTime.now(),
+                  Symbols.delivery_truck_speed,
+                  const Color(0xffF2D8A5),
                   isFirst: true,
                   isLast: parcel['parcel_status'] == "pending",
                 ),
-                parcel['parcel_status'] != "pending"
-                    ? _buildTimelineTile(
-                  "Parcel Picked at",
-                  DateTime.parse(parcel['log_veified_at'] ??
-                      parcel['log_created_at']),
-                  Icons.logout,
-                  Colors.red,
-                  isFirst: false,
-                  isLast: true,
-                )
-                    : const SizedBox.shrink(),
+                if (parcel['parcel_status'] != "pending") ...[
+                  const SizedBox(height: 20),
+                  _buildTimelineTile(
+                    "Parcel Picked at",
+                    DateTime.tryParse(parcel['log_verified_at'] ??
+                            parcel['log_created_at'] ??
+                            '') ??
+                        DateTime.now(),
+                    Icons.logout,
+                    Colors.red,
+                    isFirst: false,
+                    isLast: true,
+                  ),
+                ]
               ],
             ),
             const SizedBox(height: 150),
-            // InfoListTileWidget(
-            //   icon: Ionicons.call_outline,
-            //   iconColor: Colors.green,
-            //   title: 'Phone Number',
-            //   subtitle: parcel['visitor_mobile'] ?? 'No Number',
-            //   trailing: ElevatedButton.icon(
-            //     icon: const Icon(Icons.call, size: 18),
-            //     label: const Text('Call'),
-            //     onPressed: () => _makePhoneCall(parcel['visitor_mobile'] ?? ''),
-            //     style: ElevatedButton.styleFrom(
-            //       backgroundColor: Colors.green,
-            //       foregroundColor: Colors.white,
-            //       padding:
-            //           const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            //       shape: RoundedRectangleBorder(
-            //         borderRadius: BorderRadius.circular(8),
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            // InfoListTileWidget(
-            //   icon: Ionicons.calendar_outline,
-            //   iconColor: Colors.green,
-            //   title: 'Unit Name',
-            //   subtitle: parcel['unit_name'] ?? 'N/A',
-            // ),
-            // InfoListTileWidget(
-            //   icon: Ionicons.time_outline,
-            //   iconColor: Colors.green,
-            //   title: 'Check In',
-            //   subtitle: parcel['log_created_at'] ?? 'No Time',
-            //   subTitleStyle: const TextStyle(color: Colors.green),
-            // ),
-            // InfoListTileWidget(
-            //   icon: Ionicons.time_outline,
-            //   iconColor: Colors.red,
-            //   title: 'Parcel Picked AT',
-            //   subtitle: parcel['log_veified_at'] ??
-            //       "${math.Random().nextInt(24)}:${math.Random().nextInt(60)}",
-            //   subTitleStyle: const TextStyle(color: Colors.red),
-            // ),
-            // InfoListTileWidget(
-            //   icon: Symbols.delivery_truck_speed,
-            //   iconColor: parcel['parcel_status'] == 'picked'
-            //       ? Colors.green
-            //       : Colors.red,
-            //   title: 'Parcel Status',
-            //   subtitle: parcel['parcel_status'] ?? 'N/A',
-            //   subTitleStyle: TextStyle(
-            //       color: parcel['parcel_status'] == 'picked'
-            //           ? Colors.green
-            //           : Colors.red),
-            // ),
-            // const SizedBox(height: 150),
           ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         floatingActionButton: parcel['parcel_status'] != "picked"
             ? CustomLargeBtn(
-          onPressed: () {
-            TextEditingController otpController = TextEditingController();
-            remoteDataSource.getParcelOtp(
-              parcel['parcel_id'].toString(),
-              parcel['memb_mobile_number'].toString(),
-            );
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (BuildContext context) {
-                return OtpBottomSheet(
-                  remoteDataSource: remoteDataSource,
-                  parcel: parcel,
-                  otpController: otpController,
-                );
-              },
-            );
-          },
-          text: 'Mark as Picked',
-        )
+                onPressed: () {
+                  TextEditingController otpController = TextEditingController();
+                  remoteDataSource.getParcelOtp(
+                    parcel['parcel_id'].toString(),
+                    parcel['memb_mobile_number'].toString(),
+                  );
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (BuildContext context) {
+                      return OtpBottomSheet(
+                        remoteDataSource: remoteDataSource,
+                        parcel: parcel,
+                        otpController: otpController,
+                      );
+                    },
+                  );
+                },
+                text: 'Mark as Picked',
+              )
             : const SizedBox());
   }
 
   Widget _buildTimelineTile(
-      String label,
-      DateTime time,
-      IconData icon,
-      Color color, {
-        required bool isFirst,
-        required bool isLast,
-      }) {
+    String label,
+    DateTime time,
+    IconData icon,
+    Color color, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -284,9 +217,8 @@ class ParcelDetails extends StatelessWidget {
                   border: Border.all(color: color, width: 2),
                 ),
                 child: Icon(
-                  color: color,
                   icon,
-                  // isFirst ? Icons.login : Icons.logout,
+                  color: color,
                   size: 12,
                 ),
               ),
@@ -309,7 +241,6 @@ class ParcelDetails extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 14,
-                  // fontWeight: FontWeight.w600,
                   color: Colors.grey[600],
                 ),
               ),
@@ -474,14 +405,13 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
       setState(() {
         errorText = null;
       });
-      print("Completed: $pin"); // Replace with actual OTP verification logic
+      log("Completed: $pin");
     }
   }
 
   void onSubmit() {
     if (widget.otpController.text.length == 6) {
-      print("OTP Submitted: ${widget.otpController.text}");
-      // Proceed with OTP verification (API call, etc.)
+      log("OTP Submitted: ${widget.otpController.text}");
     } else {
       setState(() {
         errorText = "Please enter a valid 6-digit OTP.";
@@ -567,12 +497,12 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
               child: TextButton(
                 onPressed: _timer == 0
                     ? () {
-                  widget.remoteDataSource.getParcelOtp(
-                    widget.parcel['parcel_id'].toString(),
-                    widget.parcel['memb_mobile_number'].toString(),
-                  );
-                  _startTimer();
-                }
+                        widget.remoteDataSource.getParcelOtp(
+                          widget.parcel['parcel_id'].toString(),
+                          widget.parcel['memb_mobile_number'].toString(),
+                        );
+                        _startTimer();
+                      }
                     : null,
                 child: Text(
                   _timer == 0 ? 'Resend' : 'Resend in $_timer sec',
@@ -599,7 +529,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                       try {
                         if (widget.otpController.text.length == 6) {
                           final result =
-                          await widget.remoteDataSource.verifyParcelOtp(
+                              await widget.remoteDataSource.verifyParcelOtp(
                             widget.parcel['parcel_id'].toString(),
                             otp,
                           );

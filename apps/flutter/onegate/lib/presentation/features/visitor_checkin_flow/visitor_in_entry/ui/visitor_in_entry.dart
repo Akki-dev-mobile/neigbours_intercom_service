@@ -48,7 +48,7 @@ class VisitorsInEntry extends StatefulWidget {
 
 class _VisitorsInEntryState extends State<VisitorsInEntry> {
   late final VisitorInEntryBloc _bloc;
-  late final TextEditingController? _guestNameController;
+  TextEditingController? _guestNameController;
   late final TextEditingController? _guestComingFromController;
   late final TextEditingController? _guestCountController;
   late final TextEditingController? _visitorNumberController;
