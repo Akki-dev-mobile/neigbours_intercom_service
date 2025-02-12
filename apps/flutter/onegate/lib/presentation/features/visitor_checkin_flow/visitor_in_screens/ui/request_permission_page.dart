@@ -12,6 +12,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
+import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
@@ -54,7 +55,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   static const Duration _pollingInterval = Duration(seconds: 5);
   String trybuttontext = "Try Again";
   final RemoteDataSource _remoteDataSource = RemoteDataSource();
-
+  late SocketService _socketService; // Declare SocketService instance
   RequestType _requestType = RequestType.waiting;
   bool _isLoading = true;
   bool _isFetching = false;
@@ -105,7 +106,16 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void initState() {
     super.initState();
 
-    _startPolling();
+    _socketService = SocketService(); // Initialize WebSocket service
+    _socketService.initSocket("8191", "onegate"); // Pass companyId & appId
+
+    _socketService.messageStream.listen((message) {
+      if (message['event'] == 'approvalUpdate') {
+        _handleApprovalUpdate(message['data']);
+      }
+    });
+
+    _startPolling(); // Start API polling as a fallback
 
     if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
@@ -204,6 +214,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   @override
   void dispose() {
     _stopPolling();
+    _socketService.disconnect(); // Disconnect WebSocket when page is closed
     super.dispose();
   }
 
@@ -458,7 +469,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     final remaining = timerState?.endTime.difference(now) ?? Duration.zero;
     final isTimeElapsed = remaining.isNegative;
 
-    // If the timer has expired, update the request type to "not reachable"
+    // If timer expires, update the request type to "not reachable"
     if (isTimeElapsed && _requestType == RequestType.waiting) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
@@ -474,15 +485,17 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           highlightColor: _requestType == RequestType.rejected
               ? Colors.red.shade100
               : Colors.black45,
-          child: Text(_requestMessages[_requestType] ?? "",
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(color: _requestMessagesColor[_requestType])),
+          child: Text(
+            _requestMessages[_requestType] ?? "",
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge
+                ?.copyWith(color: _requestMessagesColor[_requestType]),
+          ),
         ),
 
-        // Only show "Retry in" timer if the request is "waiting"
+        // Display countdown timer if request is still waiting
         if (_requestType == RequestType.waiting && !isTimeElapsed)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -523,6 +536,25 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       onPressed: () => _handleImageCapture(),
       text: "Capture photo",
     );
+  }
+
+  void _handleApprovalUpdate(Map<String, dynamic> data) {
+    if (widget.logID == null || widget.logID!.isEmpty) return;
+
+    final visitorLogId = data['visitorLogId']?.toString();
+    if (visitorLogId == widget.logID) {
+      final newRequestType =
+          _mapAllowStatusToRequestType(data['allowStatus'].toLowerCase());
+
+      setState(() {
+        _requestType = newRequestType;
+        _isLoading = false;
+      });
+
+      if (_shouldStopPolling(newRequestType)) {
+        _stopPolling();
+      }
+    }
   }
 
 // Modify the _handleImageCapture method
@@ -741,21 +773,35 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   Future<void> _handleTryAgain() async {
     log("🔄 Retrying approval process...");
 
+    // Show snackbar for notification resend
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Notification resent again"),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    }
+
     setState(() {
       trybuttontext = "Trying...";
-      _requestType = RequestType.waiting; // Reset to waiting status
+      _requestType = RequestType.waiting; // Reset status to waiting
     });
 
-    _showLoadingIndicator("Sending request...");
+    // Restart timer
+    int visitorLogId = int.tryParse(widget.logID ?? '0') ?? 0;
+    await _timerService.startTimer(visitorLogId, context);
 
-    await _sendFcmNotification(); // Send request again
+    // Send FCM notification again
+    await _sendFcmNotification();
 
+    // Wait 3 seconds before fetching approvals
     await Future.delayed(const Duration(seconds: 3));
 
     _fetchApprovals(); // Start polling for approval again
 
     setState(() {
-      trybuttontext = "Try Again";
+      trybuttontext = "Try Again"; // Restore button text
     });
   }
 

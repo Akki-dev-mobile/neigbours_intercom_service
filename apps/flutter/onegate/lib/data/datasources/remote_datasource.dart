@@ -55,7 +55,7 @@ class RemoteDataSource {
 
       log('Keycloak login successful. Access Token: ${keycloakWrapper.accessToken}');
 
-      final response = await Dio()?.post(
+      final response = await Dio().post(
         ApiUrls.gateLogin,
         options: Options(
           headers: {
@@ -141,7 +141,7 @@ class RemoteDataSource {
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
       // API call to fetch visitor details
-      final response = await Dio()?.get(
+      final response = await Dio().get(
         ApiUrls.visitorEntry,
         queryParameters: {'mobile_number': mobileNumber},
       );
@@ -618,7 +618,7 @@ class RemoteDataSource {
         ),
       );
 
-      return response?.data?['data'] ?? [];
+      return response.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching members: $e');
       rethrow;
@@ -638,7 +638,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
 
-      final response = await Dio()?.get(
+      final response = await Dio().get(
         ApiUrls.visitorGetLog,
         queryParameters: {
           'company_id': userId,
@@ -712,7 +712,7 @@ class RemoteDataSource {
         throw Exception('Access token not found. Please log in again.');
       }
 
-      final response = await Dio()?.get(
+      final response = await Dio().get(
         ApiUrls.buildingList,
         queryParameters: {'company_id': userId},
         options: Options(
@@ -737,7 +737,7 @@ class RemoteDataSource {
         throw Exception('Company ID not found. Please select a company.');
       }
 
-      final response = await Dio()?.get(
+      final response = await Dio().get(
         ApiUrls.buildingList,
         queryParameters: {'company_id': companyId},
       );
@@ -783,12 +783,12 @@ class RemoteDataSource {
         data: {'phoneNumber': '91$mobileNumber', 'otp': otp},
       );
 
-      if (response?.statusCode == 200) {
-        final message = response?.data?['message'];
+      if (response.statusCode == 200) {
+        final message = response.data?['message'];
         log('OTP verified successfully. Message: $message');
         return message;
       } else {
-        log('Failed to verify OTP: ${response?.statusCode}');
+        log('Failed to verify OTP: ${response.statusCode}');
         return null;
       }
     } catch (e) {
@@ -807,7 +807,7 @@ class RemoteDataSource {
         'out_gate': selectedGateName ?? 'Unknown Gate',
       };
 
-      final response = await Dio()?.patch(ApiUrls.visitorCheckout, data: data);
+      final response = await Dio().patch(ApiUrls.visitorCheckout, data: data);
 
       if (response?.statusCode == 200) {
         return true;
@@ -1088,7 +1088,7 @@ class RemoteDataSource {
   /// Send visitor logs
   Future<void> sendLogs(Map<String, dynamic> visitorData) async {
     try {
-      final response = await Dio()?.post(
+      final response = await Dio().post(
         ApiUrls.visitorSendLogs,
         data: visitorData,
         options: Options(
@@ -1096,14 +1096,14 @@ class RemoteDataSource {
         ),
       );
 
-      if (response?.statusCode == 200) {
+      if (response.statusCode == 200) {
         Fluttertoast.showToast(
           msg: "Visitor logs sent successfully",
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
       } else {
-        log('Failed to send logs: ${response?.statusMessage}');
+        log('Failed to send logs: ${response.statusMessage}');
       }
     } catch (e) {
       log('Error sending logs: $e');
@@ -1122,7 +1122,7 @@ class RemoteDataSource {
 
       final String? visitorId1 = prefs.getString('visitorId');
 
-      final response = await Dio()?.post(
+      final response = await Dio().post(
         ApiUrls.readStatus,
         data: {
           "member_id": memberID,
@@ -1133,11 +1133,11 @@ class RemoteDataSource {
         ),
       );
 
-      if (response?.statusCode == 200) {
-        log("Success: ${response?.data}");
+      if (response.statusCode == 200) {
+        log("Success: ${response.data}");
         return response;
       } else {
-        log('Failed to readStatus: ${response?.statusMessage}');
+        log('Failed to readStatus: ${response.statusMessage}');
         return null;
       }
     } catch (e) {
@@ -1288,7 +1288,7 @@ class RemoteDataSource {
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
 
-      final response = await Dio()?.get(
+      final response = await Dio().get(
         ApiUrls.unitList,
         queryParameters: {
           'company_id': companyId,
@@ -1296,7 +1296,7 @@ class RemoteDataSource {
         },
       );
 
-      return response?.data?['data'] ?? [];
+      return response.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching unit list: $e');
       rethrow;
@@ -1306,16 +1306,16 @@ class RemoteDataSource {
   /// Fetch staff list for a company
   Future<List<StaffModel>> fetchStaffList(String companyId) async {
     try {
-      final response = await Dio()?.get(
+      final response = await Dio().get(
         ApiUrls.staffList,
         queryParameters: {'company_id': companyId},
       );
 
-      if (response?.statusCode == 200) {
-        final List<dynamic> data = response?.data?['data'];
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data?['data'];
         return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
       } else {
-        throw Exception('Failed to fetch staff list: ${response?.statusCode}');
+        throw Exception('Failed to fetch staff list: ${response.statusCode}');
       }
     } catch (e) {
       log('Error fetching staff list: $e');
@@ -1412,12 +1412,12 @@ class RemoteDataSource {
     try {
       final response = await Dio().get(url);
 
-      if (response?.statusCode == 200) {
-        log("Categories${response!.data.toString()}");
+      if (response.statusCode == 200) {
+        log("Categories${response.data.toString()}");
         return response.data;
       } else {
         throw Exception(
-            'Failed to fetch staff category: ${response?.statusCode}');
+            'Failed to fetch staff category: ${response.statusCode}');
       }
     } catch (e) {
       log('Error fetching staff category: $e');
@@ -1476,16 +1476,16 @@ class RemoteDataSource {
         ),
       );
 
-      log('Response status: ${response?.statusCode}');
-      log('Response data: ${response?.data}');
+      log('Response status: ${response.statusCode}');
+      log('Response data: ${response.data}');
 
-      if (response?.statusCode == 200) {
-        log("Staff added successfully: ${response?.data}");
-        return response?.data;
+      if (response.statusCode == 200) {
+        log("Staff added successfully: ${response.data}");
+        return response.data;
       } else {
-        log('Error response: ${response?.data}');
+        log('Error response: ${response.data}');
         throw Exception(
-            'Server returned ${response?.statusCode}: ${response?.data}');
+            'Server returned ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       log('Error adding staff: $e');
@@ -1544,21 +1544,21 @@ class RemoteDataSource {
         ),
       );
 
-      log('Response status: ${response?.statusCode}');
-      log('Response data: ${response?.data}');
+      log('Response status: ${response.statusCode}');
+      log('Response data: ${response.data}');
 
-      if (response?.statusCode == 200) {
-        log("Staff edited successfully: ${response?.data}");
+      if (response.statusCode == 200) {
+        log("Staff edited successfully: ${response.data}");
         Fluttertoast.showToast(
             backgroundColor: Colors.green,
             msg: "Staff edited successfully",
             toastLength: Toast.LENGTH_SHORT);
 
-        return response?.data;
+        return response.data;
       } else {
-        log('Error response: ${response?.data}');
+        log('Error response: ${response.data}');
         throw Exception(
-            'Server returned ${response?.statusCode}: ${response?.data}');
+            'Server returned ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       log('Error editing staff: $e');
