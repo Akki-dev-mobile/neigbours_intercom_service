@@ -54,15 +54,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
-  final remoteDataSource = RemoteDataSource(
-    );
+  final remoteDataSource = RemoteDataSource();
   var societyId;
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
       VisitorLogRepositoryImpl(
-        RemoteDataSource(
-
-        ),
+        RemoteDataSource(),
       ),
     ),
   );
@@ -1056,6 +1053,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => VisitorDetailsScreen(
+                      image: widget.visitorLog.visitor!.visitor_image,
                       unitList: unitList,
                       visitorLog: widget.visitorLog,
                     ),
@@ -1117,20 +1115,15 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 5),
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      const WidgetSpan(
-                        child: Icon(
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
                           Symbols.apartment,
                           color: Color(0xffFFB080),
                         ),
-                      ),
-                      // TextSpan(
-                      //     text: unitList,
-                      //     style: Theme.of(context).textTheme.labelSmall),
-                      WidgetSpan(
-                        child: Container(
+                        Container(
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 7,
@@ -1141,19 +1134,54 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            widget.visitorLog.purpose_sub_category_name != null
-                                ? "${widget.visitorLog.purpose_sub_category_name}"
-                                : "${widget.visitorLog.visitor_purpose_Category_name}",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
+                            widget.visitorLog.visitor_building_assignment!
+                                    .isNotEmpty
+                                ? widget.visitorLog.visitor_building_assignment
+                                    .toString()
+                                : "N/A",
+                            style:
+                                Theme.of(context).textTheme.bodySmall!.copyWith(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w500,
+                                      // fontSize: 14,
+                                    ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Symbols.diversity_3,
+                          color: Color(0xffF2D8A5),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF2D8A5),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Text(
+                            widget.visitorLog.visitor_purpose_Category_name ??
+                                "N/A",
+                            style:
+                                Theme.of(context).textTheme.bodySmall!.copyWith(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w500,
+                                      // fontSize: 14,
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               trailing: IconButton(

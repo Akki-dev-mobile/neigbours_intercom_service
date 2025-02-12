@@ -143,13 +143,12 @@ class ParcelDetails extends StatelessWidget {
                   "Parcel Check-in",
                   DateTime.tryParse(parcel['log_created_at'] ?? '') ??
                       DateTime.now(),
-                  Symbols.delivery_truck_speed,
-                  const Color(0xffF2D8A5),
+                  Icons.login,
+                  Colors.green,
                   isFirst: true,
                   isLast: parcel['parcel_status'] == "pending",
                 ),
                 if (parcel['parcel_status'] != "pending") ...[
-                  const SizedBox(height: 20),
                   _buildTimelineTile(
                     "Parcel Picked at",
                     DateTime.tryParse(parcel['log_verified_at'] ??
@@ -389,6 +388,13 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
   }
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _startTimer();
+  }
+
+  @override
   void dispose() {
     _countdownTimer?.cancel();
     super.dispose();
@@ -433,13 +439,30 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Enter OTP',
-              style: Theme.of(context).textTheme.headlineSmall,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Text(
+                  'Enter OTP',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                IconButton(
+                    padding: const EdgeInsets.only(bottom: 15),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(
+                      Icons.cancel,
+                      color: Colors.red,
+                      size: 20,
+                    ))
+              ],
             ),
             const SizedBox(height: 1),
             Text(
-              'Enter otp to pick parcel',
+              'Enter OTP to pick parcel',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             SizedBox(

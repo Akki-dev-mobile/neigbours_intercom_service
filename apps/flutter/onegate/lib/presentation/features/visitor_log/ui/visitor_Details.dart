@@ -64,48 +64,73 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
+    return MyScrollView(
+      pageBody: CustomScrollView(
+        shrinkWrap: true,
         controller: _scrollController,
         slivers: [
-          SliverAppBar(
-            expandedHeight: 280,
-            pinned: true,
-            stretch: true,
-            backgroundColor: Theme.of(context).primaryColor,
-            flexibleSpace: FlexibleSpaceBar(
-              stretchModes: const [StretchMode.zoomBackground],
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  widget.image != null && widget.image!.isNotEmpty
-                      ? Image.network(
-                          widget.image!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              _buildFallbackImage(context),
-                        )
-                      : _buildFallbackImage(context),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.6),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // SliverAppBar(
+          //   expandedHeight: 280,
+          //   pinned: true,
+          //   stretch: true,
+          //   backgroundColor: Theme.of(context).primaryColor,
+          //   flexibleSpace: FlexibleSpaceBar(
+          //     stretchModes: const [StretchMode.zoomBackground],
+          //     background: Stack(
+          //       fit: StackFit.expand,
+          //       children: [
+          //         widget.image != null && widget.image!.isNotEmpty
+          //             ? Image.network(
+          //                 widget.image!,
+          //                 fit: BoxFit.cover,
+          //                 errorBuilder: (context, error, stackTrace) =>
+          //                     _buildFallbackImage(context),
+          //               )
+          //             : _buildFallbackImage(context),
+          //         DecoratedBox(
+          //           decoration: BoxDecoration(
+          //             gradient: LinearGradient(
+          //               begin: Alignment.topCenter,
+          //               end: Alignment.bottomCenter,
+          //               colors: [
+          //                 Colors.transparent,
+          //                 Colors.black.withOpacity(0.6),
+          //               ],
+          //             ),
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
+
           SliverList(
             delegate: SliverChildListDelegate([
+              Center(
+                child: Container(
+                  height: 200,
+                  width: 200,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(20),
+                    ),
+                    image: widget.image != null && widget.image!.isNotEmpty
+                        ? DecorationImage(
+                            fit: BoxFit.cover,
+                            image: NetworkImage(
+                              widget.image!,
+                            ),
+                          )
+                        : const DecorationImage(
+                            fit: BoxFit.cover,
+                            image: NetworkImage(
+                                "https://cdn.pixabay.com/photo/2022/06/05/07/04/person-7243410_1280.png")),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               Container(
-                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -117,9 +142,10 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                             widget.visitorLog.visitor?.name ?? "Guest",
                             style: Theme.of(context)
                                 .textTheme
-                                .headlineSmall
+                                .headlineMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
                                 ),
                           ),
                         ),
@@ -127,19 +153,33 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           _buildChip(
                             "${widget.visitorLog.visitor_count} visitors",
                             Icons.people,
-                            Color(0xffFFB080),
+                            const Color(0xffFFB080),
                           ),
                       ],
                     ),
-                    SizedBox(height: 8),
-                    _buildChip(
-                      widget.visitorLog.purpose_sub_category_name ??
-                          widget.visitorLog.visitor_purpose_Category_name ??
-                          "",
-                      Icons.category_rounded,
-                      Color(0xffFFEBE6),
+                    const SizedBox(height: 8),
+                    // _buildChip(
+                    //   widget.visitorLog.purpose_sub_category_name ??
+                    //       widget.visitorLog.visitor_purpose_Category_name ??
+                    //       "",
+                    //   Icons.category_rounded,
+                    //   const Color(0xffFFEBE6),
+                    // ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffFFEBE6),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Text(
+                        widget.visitorLog.purpose_sub_category_name ??
+                            widget.visitorLog.visitor_purpose_Category_name ??
+                            "",
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     _buildSection(
                       title: "Contact Information",
                       children: [
@@ -152,7 +192,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     _buildSection(
                       title: "Visit Details",
                       children: [
@@ -161,34 +201,40 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           title: "Visiting Unit",
                           subtitle: widget.unitList == "0001"
                               ? "Society Office"
-                              : widget.unitList ?? "N/A",
-                          iconColor: Color(0xffFFB080),
+                              : (widget.unitList != null &&
+                                      widget.unitList != "")
+                                  ? widget.unitList.toString()
+                                  : "N/A",
+                          iconColor: const Color(0xffFFB080),
                         ),
-                        if (widget.visitorLog.visitor_coming_from != null)
-                          _buildInfoTile(
-                            icon: Icons.location_on,
-                            title: "Coming From",
-                            subtitle: widget.visitorLog.visitor_coming_from
-                                .toString(),
-                            iconColor: Color(0xffFFB080),
-                          ),
+                        // if (widget.visitorLog.visitor_coming_from != null)
+                        _buildInfoTile(
+                          icon: Icons.location_on,
+                          title: "Coming From",
+                          subtitle: widget.visitorLog.visitor_coming_from !=
+                                  null
+                              ? widget.visitorLog.visitor_coming_from.toString()
+                              : "N/A",
+                          iconColor: const Color(0xffFFB080),
+                        ),
                         if (widget.visitorLog.visitor_card_number != null)
                           _buildInfoTile(
                             icon: Icons.badge,
                             title: "Card Number",
                             subtitle: widget.visitorLog.visitor_card_number
                                 .toString(),
-                            iconColor: Color(0xffFFB080),
+                            iconColor: const Color(0xffFFB080),
                           ),
                       ],
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     _buildSection(
                       title: "Timeline",
                       children: [
                         _buildTimelineTile(
                           "Check In",
                           widget.visitorLog.visitor_check_in!,
+                          Icons.login,
                           Colors.green,
                           isFirst: true,
                           isLast: widget.visitorLog.visitor_check_out == null,
@@ -197,6 +243,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           _buildTimelineTile(
                             "Check Out",
                             widget.visitorLog.visitor_check_out!,
+                            Icons.logout,
                             Colors.red,
                             isFirst: false,
                             isLast: true,
@@ -216,6 +263,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
   Widget _buildTimelineTile(
     String label,
     DateTime time,
+    IconData icon,
     Color color, {
     required bool isFirst,
     required bool isLast,
@@ -236,22 +284,22 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   border: Border.all(color: color, width: 2),
                 ),
                 child: Icon(
-                  isFirst ? Icons.login : Icons.logout,
-                  size: 12,
+                  icon,
                   color: color,
+                  size: 12,
                 ),
               ),
               if (!isLast)
                 Container(
                   width: 2,
                   height: 40,
-                  margin: EdgeInsets.symmetric(vertical: 4),
+                  margin: const EdgeInsets.symmetric(vertical: 4),
                   color: Colors.grey.withOpacity(0.3),
                 ),
             ],
           ),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,20 +307,20 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                DateFormat('dd MMM yyyy, hh:mm a').format(time),
-                style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
                 ),
               ),
-              if (!isLast) SizedBox(height: 24),
+              const SizedBox(height: 4),
+              Text(
+                DateFormat('dd MMM yyyy, hh:mm a').format(time),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              if (!isLast) const SizedBox(height: 24),
             ],
           ),
         ),
@@ -289,18 +337,18 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ...children,
           ],
         ),
@@ -316,18 +364,18 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     Widget? trailing,
   }) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: iconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: iconColor),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,7 +389,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -357,7 +405,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
   Widget _buildChip(String label, IconData icon, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(20),
@@ -366,10 +414,10 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16),
-          SizedBox(width: 4),
+          const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -378,13 +426,13 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
   Widget _buildCallButton() {
     return ElevatedButton.icon(
-      icon: Icon(Icons.call, size: 16),
-      label: Text('Call'),
+      icon: const Icon(Icons.call, size: 16),
+      label: const Text('Call'),
       onPressed: () => _makePhoneCall(widget.visitorLog.visitor?.mobile ?? ""),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),

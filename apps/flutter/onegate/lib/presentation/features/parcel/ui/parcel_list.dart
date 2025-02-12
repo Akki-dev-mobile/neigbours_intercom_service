@@ -128,13 +128,13 @@ class _ParcelListState extends State<ParcelList> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
         elevation: 2,
-        margin: const EdgeInsets.all(8.0),
+        // margin: const EdgeInsets.all(8.0),
         child: Padding(
           padding: const EdgeInsets.only(
             bottom: 8.0,
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(
@@ -254,120 +254,126 @@ class _ParcelListState extends State<ParcelList> {
                 endIndent: 16,
                 color: Colors.grey[200],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Tooltip(
-                    message: checkIn != null
-                        ? DateFormat('dd MMM HH:mm').format(
-                            DateTime.tryParse(checkIn) ?? DateTime.now(),
-                          )
-                        : 'N/A',
-                    child: RichText(
-                      textAlign: TextAlign.start,
-                      text: TextSpan(
-                        children: [
-                          const WidgetSpan(
-                            child: Icon(
-                              Symbols.directions_walk_rounded,
-                              color: Colors.green,
+              Padding(
+                padding: const EdgeInsets.only(left: 12.0, right: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Tooltip(
+                      message: checkIn != null
+                          ? DateFormat('dd MMM HH:mm').format(
+                              DateTime.tryParse(checkIn) ?? DateTime.now(),
+                            )
+                          : 'N/A',
+                      child: RichText(
+                        textAlign: TextAlign.start,
+                        text: TextSpan(
+                          children: [
+                            const WidgetSpan(
+                              child: Icon(
+                                Symbols.directions_walk_rounded,
+                                color: Colors.green,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: parcel['log_created_at'] != null
-                                ? DateFormat('dd MMM HH:mm').format(
-                                    DateTime.tryParse(
-                                            parcel['log_created_at']) ??
-                                        DateTime.now(),
-                                  )
-                                : 'N/A',
-                            style:
-                                Theme.of(context).textTheme.labelMedium!.merge(
-                                      const TextStyle(
-                                        color: Colors.green,
-                                      ),
+                            TextSpan(
+                              text: parcel['log_created_at'] != null
+                                  ? DateFormat('dd MMM HH:mm').format(
+                                      DateTime.tryParse(
+                                              parcel['log_created_at']) ??
+                                          DateTime.now(),
+                                    )
+                                  : 'N/A',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium!
+                                  .merge(
+                                    const TextStyle(
+                                      color: Colors.green,
                                     ),
-                          ),
-                        ],
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  parcel['parcel_status'] == 'pending'
-                      ? ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                    parcel['parcel_status'] == 'pending'
+                        ? ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: () {
+                              TextEditingController otpController =
+                                  TextEditingController();
+                              remoteDataSource.getParcelOtp(
+                                parcel['parcel_id'].toString(),
+                                parcel['memb_mobile_number'].toString(),
+                              );
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (BuildContext context) {
+                                  return OtpBottomSheet(
+                                    remoteDataSource: remoteDataSource,
+                                    parcel: parcel,
+                                    otpController: otpController,
+                                  );
+                                },
+                              );
+                            },
+                            child: const Text(
+                              'Pick',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        // : ElevatedButton(
+                        //     style: ElevatedButton.styleFrom(
+                        //       backgroundColor: Colors.white,
+                        //       shape: RoundedRectangleBorder(
+                        //         borderRadius: BorderRadius.circular(8),
+                        //       ),
+                        //     ),
+                        //     onPressed: () {},
+                        //     child: Text(
+                        //       parcel['parcel_status'] ?? 'N/A',
+                        //       style: const TextStyle(
+                        //         fontSize: 18,
+                        //         color: Colors.black,
+                        //         fontWeight: FontWeight.bold,
+                        //       ),
+                        //     ),
+                        //   )
+                        : Container(
+                            decoration: BoxDecoration(
+                                border: Border.all(color: Colors.green),
+                                borderRadius: BorderRadius.circular(10)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.verified,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(parcel['parcel_status'] ?? 'N/A',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(color: Colors.green)),
+                                ],
+                              ),
                             ),
                           ),
-                          onPressed: () {
-                            TextEditingController otpController =
-                                TextEditingController();
-                            remoteDataSource.getParcelOtp(
-                              parcel['parcel_id'].toString(),
-                              parcel['memb_mobile_number'].toString(),
-                            );
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              builder: (BuildContext context) {
-                                return OtpBottomSheet(
-                                  remoteDataSource: remoteDataSource,
-                                  parcel: parcel,
-                                  otpController: otpController,
-                                );
-                              },
-                            );
-                          },
-                          child: const Text(
-                            'Pick',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        )
-                      // : ElevatedButton(
-                      //     style: ElevatedButton.styleFrom(
-                      //       backgroundColor: Colors.white,
-                      //       shape: RoundedRectangleBorder(
-                      //         borderRadius: BorderRadius.circular(8),
-                      //       ),
-                      //     ),
-                      //     onPressed: () {},
-                      //     child: Text(
-                      //       parcel['parcel_status'] ?? 'N/A',
-                      //       style: const TextStyle(
-                      //         fontSize: 18,
-                      //         color: Colors.black,
-                      //         fontWeight: FontWeight.bold,
-                      //       ),
-                      //     ),
-                      //   )
-                      : Container(
-                          decoration: BoxDecoration(
-                              border: Border.all(color: Colors.green),
-                              borderRadius: BorderRadius.circular(10)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.verified,
-                                  color: Colors.green,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(parcel['parcel_status'] ?? 'N/A',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(color: Colors.green)),
-                              ],
-                            ),
-                          ),
-                        ),
-                ],
+                  ],
+                ),
               )
             ],
           ),
