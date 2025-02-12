@@ -1510,7 +1510,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+      'user_id':
+
+
+
+      (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
