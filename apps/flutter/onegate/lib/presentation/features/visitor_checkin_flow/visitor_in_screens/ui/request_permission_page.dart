@@ -19,6 +19,7 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 enum RequestType {
   approved,
@@ -90,6 +91,16 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     RequestType.uploading: "Uploading image...",
   };
 
+  static const Map<RequestType, Color> _requestMessagesColor = {
+    RequestType.approved: Colors.green,
+    RequestType.rejected: Colors.red,
+    RequestType.leaveAtGate: Colors.black,
+    RequestType.notRecheable: Color.fromARGB(255, 165, 165, 1),
+    RequestType.request: Colors.black,
+    RequestType.allowByGatekeeper: Colors.black,
+    RequestType.waiting: Colors.black,
+    RequestType.uploading: Colors.black,
+  };
   @override
   void initState() {
     super.initState();
@@ -244,8 +255,13 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       children: [
         InkWell(
           onTap: () => _navigateToDashboard(),
-          child: const Icon(Icons.home_outlined,
-              color: Color(0xffFFB080), size: 30),
+          child: Container(
+            decoration: BoxDecoration(
+                border: Border.all(color: const Color.fromARGB(93, 0, 0, 0)),
+                borderRadius: BorderRadius.circular(10)),
+            child:
+                const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
+          ),
         ),
       ],
     );
@@ -276,29 +292,43 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(25),
             child: Image.network(
-                width: screensize.width * 0.5,
-                height: screensize.height * 0.2,
+                width: screensize.width * 0.37,
+                height: screensize.height * 0.15,
                 fit: BoxFit.fill,
                 widget.visitor.visitor_image!),
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          widget.visitor.name ?? "",
-          style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: colortoshow.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(20),
+        Padding(
+          padding: const EdgeInsets.only(
+            left: 25.0,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(widget.visitorLog?.visitor_purpose_Category_name ?? ""),
+          child: Text(
+            widget.visitor.name ?? "",
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium!
+                .copyWith(fontWeight: FontWeight.bold),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.only(left: 25.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: colortoshow.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Text(
+                widget.visitorLog?.visitor_purpose_Category_name ?? "",
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
+        ),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -313,7 +343,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           child: Column(
             children: [
               ListTile(
-                contentPadding: const EdgeInsets.all(16),
+                contentPadding: const EdgeInsets.only(left: 16, right: 16),
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -414,6 +444,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   Widget _buildLottieAnimation() {
     return Lottie.network(
+      width: double.infinity,
       _lottieAnimations[_requestType] ?? "",
       height: _lottieAnimationSize,
       fit: BoxFit.contain,
@@ -438,15 +469,17 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     return Column(
       children: [
-        Text(
-          _requestMessages[_requestType] ?? "",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 25,
-            color: _requestType == RequestType.rejected
-                ? Colors.red
-                : Colors.black,
-          ),
+        Shimmer.fromColors(
+          baseColor: _requestMessagesColor[_requestType]!,
+          highlightColor: _requestType == RequestType.rejected
+              ? Colors.red.shade100
+              : Colors.black45,
+          child: Text(_requestMessages[_requestType] ?? "",
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: _requestMessagesColor[_requestType])),
         ),
 
         // Only show "Retry in" timer if the request is "waiting"
@@ -633,24 +666,23 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Allow by Gatekeeper Button
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.all(10),
-            child: ElevatedButton(
-              style: _getAllowButtonStyle(),
-              onPressed: () async {
-                await _allowByGatekeeper();
-              },
-              child: SizedBox(
-                height: 60,
-                child: const Center(
-                  child: Text(
-                    "Allow ",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
-                      wordSpacing: 1.2,
-                    ),
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: ElevatedButton(
+            style: _getAllowButtonStyle(),
+            onPressed: () async {
+              await _allowByGatekeeper();
+            },
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.3,
+              height: 60,
+              child: const Center(
+                child: Text(
+                  "Allow by Gatekeeper",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 15,
+                    wordSpacing: 1.2,
                   ),
                 ),
               ),

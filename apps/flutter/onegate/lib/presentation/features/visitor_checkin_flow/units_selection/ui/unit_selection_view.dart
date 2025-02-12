@@ -78,7 +78,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<int> selectedUnits = {};
   String? selectedgate;
   List<dynamic> _allMembers = [];
-  List<dynamic> _approvals = [];
+  final List<dynamic> _approvals = [];
   String? companyId;
   String? companyName;
   bool isLoading = true;
@@ -101,7 +101,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _loadVisitorSettings();
     _initializeSocketConnection();
     _initializeFuture = _initializeMembers();
-    log("${selectedUnits} here is this");
+    log("$selectedUnits here is this");
     log("${widget.comingFrom} here is this");
   }
 
@@ -632,7 +632,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         } else {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => GateDashboardView()),
+            MaterialPageRoute(builder: (context) => const GateDashboardView()),
             (Route<dynamic> route) => false,
           );
           return false; // Prevent default back navigation.
@@ -806,31 +806,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                         ElevatedButton.icon(
                                                           style: ButtonStyle(
                                                             foregroundColor:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<Color>(
                                                               const Color(
                                                                   0xFF7D7C7C),
                                                             ),
                                                             backgroundColor:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<Color>(
                                                               Theme.of(context)
                                                                   .colorScheme
                                                                   .surface,
                                                             ),
                                                             elevation:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .resolveWith<
                                                                         double>(
-                                                              (Set<MaterialState>
+                                                              (Set<WidgetState>
                                                                       states) =>
                                                                   states.contains(
-                                                                          MaterialState
+                                                                          WidgetState
                                                                               .pressed)
                                                                       ? 8
                                                                       : 0,
                                                             ),
-                                                            shape: MaterialStateProperty
+                                                            shape: WidgetStateProperty
                                                                 .all<
                                                                     RoundedRectangleBorder>(
                                                               RoundedRectangleBorder(
@@ -841,7 +841,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                               ),
                                                             ),
                                                             padding:
-                                                                MaterialStateProperty
+                                                                WidgetStateProperty
                                                                     .all<
                                                                         EdgeInsetsGeometry>(
                                                               const EdgeInsets
@@ -1157,8 +1157,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
 
       if (mounted) {
-        await _showVisitorAlwaysAllowedDialog();
+        // Show dialog before navigating
+        await _showVisitorAllowedDialog();
 
+        // Navigate to dashboard after dialog is closed
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const GateDashboardView()),
@@ -1184,59 +1186,35 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  Future<void> _showVisitorAlwaysAllowedDialog() async {
+  Future<void> _showVisitorAllowedDialog() async {
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return Dialog(
+        return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Lottie.asset(
-                  'assets/json/approved.json', // Use the same animation
-                  width: 150,
-                  height: 150,
-                  repeat: false,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Visitor Always Allowed",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "This visitor has been always allowed by the member.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                CustomLargeBtn(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close dialog
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const GateDashboardView()),
-                    );
-                  },
-                  text: "Continue",
-                ),
-              ],
+          title: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 8),
+              Text(
+                'Visitor Allowed',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Visitor is always allowed by the member.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(), // Close dialog
+              child: const Text('OK', style: TextStyle(color: Colors.black)),
             ),
-          ),
+          ],
         );
       },
     );
@@ -1367,13 +1345,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final selectedGateName = prefs.getString('selected_gate');
 
     List<int> unitIds = [];
-    if (formattedMemberDetails != null && formattedMemberDetails is List) {
-      unitIds = formattedMemberDetails
-          .map((member) => member['unit_id'])
-          .where((id) => id != null)
-          .map((id) => int.parse(id.toString()))
-          .toList();
-    }
+    unitIds = formattedMemberDetails
+        .map((member) => member['unit_id'])
+        .where((id) => id != null)
+        .map((id) => int.parse(id.toString()))
+        .toList();
 
     // Map unit IDs to BuildingAssignment objects
     List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
@@ -1441,13 +1417,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final companyDetails = await gateStorage.getSocietyDetails();
 
     List<int> unitIds = [];
-    if (formattedMemberDetails != null && formattedMemberDetails is List) {
-      unitIds = formattedMemberDetails
-          .map((member) => member['unit_id'])
-          .where((id) => id != null)
-          .map((id) => int.parse(id.toString()))
-          .toList();
-    }
+    unitIds = formattedMemberDetails
+        .map((member) => member['unit_id'])
+        .where((id) => id != null)
+        .map((id) => int.parse(id.toString()))
+        .toList();
     print("subbb${widget.selectedSubCategoryId.toString()}");
     // Map unit IDs to BuildingAssignment objects
     List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
@@ -1510,11 +1484,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id':
-
-
-
-      (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
