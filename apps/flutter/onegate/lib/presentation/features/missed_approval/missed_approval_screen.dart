@@ -166,8 +166,8 @@ class RetryButton extends StatelessWidget {
           children: [
             isLoading
                 ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: 15,
+                    height: 15,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
@@ -175,7 +175,7 @@ class RetryButton extends StatelessWidget {
                   )
                 : const Icon(
                     Icons.refresh,
-                    size: 15,
+                    size: 12,
                     color: Colors.black,
                   ),
             const SizedBox(
@@ -183,7 +183,7 @@ class RetryButton extends StatelessWidget {
             ),
             Text(
               isLoading ? 'Sending...' : 'Retry',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.bodySmall!,
             ),
           ],
         ),
@@ -208,7 +208,7 @@ class TimerDisplay extends StatelessWidget {
     if (isEnabled) {
       return Text(
         'Time ELapsed',
-        style: Theme.of(context).textTheme.titleSmall!.copyWith(
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
               color: Colors.green,
               fontWeight: FontWeight.bold,
             ),
@@ -694,13 +694,22 @@ class ApprovalsList extends StatelessWidget {
 
     // Display message if no results match search
     if (filteredApprovals.isEmpty) {
-      return Center(
-        child: Text(
-          searchQuery.isNotEmpty
-              ? "No results found for '$searchQuery'"
-              : "No approvals found",
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.person_off_outlined,
+            size: 48,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+          Text(
+            searchQuery.isNotEmpty
+                ? "No results found for '$searchQuery'"
+                : "No approvals found",
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ],
       );
     }
 
@@ -951,76 +960,80 @@ class VisitorInfoSection extends StatelessWidget {
                 visitorInfo.visitorName,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xffFFEBE6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            visitorInfo.purposeSubCategoryName ??
-                                visitorInfo.purposeCategoryName ??
-                                "",
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall!
-                                .copyWith(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 5),
-                    child: RichText(
-                      text: TextSpan(
-                        children: [
-                          const WidgetSpan(
-                            child: Icon(
-                              Symbols.apartment,
-                              color: Color(0xffFFB080),
-                            ),
-                          ),
-                          // TextSpan(
-                          //     text: unitList,
-                          //     style: Theme.of(context).textTheme.labelSmall),
-                          WidgetSpan(
-                            child: Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xffFFEBE6),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                visitorInfo.unitDetails.building_unit ?? "",
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              subtitle: Text(
+                "${visitorInfo.unitDetails.building_unit} - ${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""}",
+                style: Theme.of(context).textTheme.bodySmall,
               ),
+              // subtitle: Column(
+              //   crossAxisAlignment: CrossAxisAlignment.start,
+              //   children: [
+              //     Container(
+              //       decoration: BoxDecoration(
+              //         color: const Color(0xffFFEBE6),
+              //         borderRadius: BorderRadius.circular(8),
+              //       ),
+              //       child: Padding(
+              //         padding: const EdgeInsets.all(8.0),
+              //         child: Row(
+              //           mainAxisSize: MainAxisSize.min,
+              //           children: [
+              //             Text(
+              //               visitorInfo.purposeSubCategoryName ??
+              //                   visitorInfo.purposeCategoryName ??
+              //                   "",
+              //               style: Theme.of(context)
+              //                   .textTheme
+              //                   .bodySmall!
+              //                   .copyWith(
+              //                     color: Colors.black,
+              //                     fontWeight: FontWeight.w500,
+              //                   ),
+              //             ),
+              //           ],
+              //         ),
+              //       ),
+              //     ),
+              //     Padding(
+              //       padding: const EdgeInsets.only(top: 5),
+              //       child: RichText(
+              //         text: TextSpan(
+              //           children: [
+              //             const WidgetSpan(
+              //               child: Icon(
+              //                 Symbols.apartment,
+              //                 color: Color(0xffFFB080),
+              //               ),
+              //             ),
+              //             // TextSpan(
+              //             //     text: unitList,
+              //             //     style: Theme.of(context).textTheme.labelSmall),
+              //             WidgetSpan(
+              //               child: Container(
+              //                 margin: const EdgeInsets.only(left: 8),
+              //                 padding: const EdgeInsets.symmetric(
+              //                   horizontal: 7,
+              //                   vertical: 2,
+              //                 ),
+              //                 decoration: BoxDecoration(
+              //                   color: const Color(0xffFFEBE6),
+              //                   borderRadius: BorderRadius.circular(8),
+              //                 ),
+              //                 child: Text(
+              //                   visitorInfo.unitDetails.building_unit ?? "",
+              //                   style: const TextStyle(
+              //                     color: Colors.black,
+              //                     fontWeight: FontWeight.w500,
+              //                     fontSize: 14,
+              //                   ),
+              //                 ),
+              //               ),
+              //             ),
+              //           ],
+              //         ),
+              //       ),
+              //     ),
+              //   ],
+              // ),
             ),
             Divider(
               indent: 16,
@@ -1079,7 +1092,7 @@ class VisitorAvatar extends StatelessWidget {
         visitorInfo.visitorName.isNotEmpty
             ? visitorInfo.visitorName[0].toUpperCase()
             : 'G',
-        style: const TextStyle(fontSize: 24),
+        style: const TextStyle(fontSize: 15),
       ),
     );
   }
@@ -1135,155 +1148,188 @@ class TimerActionSection extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // ✅ Case: Visitor Allowed
-              if (isVisitorAllowed)
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle,
-                        color: Colors.green, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Visitor has been allowed.",
-                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
-                          ),
-                    ),
-                  ],
-                )
-
-              // ✅ Case: Visitor Declined
-              else if (isVisitorDeclined)
-                Row(
-                  children: [
-                    const Icon(Icons.cancel, color: Colors.red, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Visitor has been declined.",
-                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red.shade700,
-                          ),
-                    ),
-                  ],
-                )
-
-              // ✅ Case: Visitor is Pending Approval
-              else if (isVisitorPending)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              Column(
+                children: [
+                  // ✅ Case: Visitor Allowed
+                  if (isVisitorAllowed)
                     Row(
                       children: [
-                        const Icon(Icons.hourglass_empty,
-                            color: Colors.orange, size: 24),
+                        const Icon(Icons.check_circle,
+                            color: Colors.green, size: 15),
                         const SizedBox(width: 8),
                         Text(
-                          "Approval is pending...",
+                          "Visitor has been allowed.",
                           style:
-                              Theme.of(context).textTheme.titleSmall!.copyWith(
+                              Theme.of(context).textTheme.bodySmall!.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.orange.shade700,
+                                    color: Colors.green.shade700,
                                   ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 8), // Adds spacing
+                    )
+
+                  // ✅ Case: Visitor Declined
+                  else if (isVisitorDeclined)
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        isEnabled
-                            ? SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.3,
-                                child: RetryButton(
-                                  onRetry: onRetry,
-                                  isEnabled: isEnabled && !isLoading,
-                                  isLoading: isLoading,
-                                ),
-                              )
-                            : TimerDisplay(
-                                remaining: remaining,
-                                isEnabled: isEnabled,
-                              ),
-                      ],
-                    ),
-                  ],
-                )
-
-              // ✅ Case: Visitor is Waiting
-              else if (isVisitorWaiting)
-                Row(
-                  children: [
-                    const Icon(Icons.access_time, color: Colors.blue, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Visitor is waiting at the gate.",
-                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
-                          ),
-                    ),
-                  ],
-                )
-
-              // ✅ Case: Visitor has Left
-              else if (isVisitorLeave)
-                Row(
-                  children: [
-                    const Icon(Icons.directions_walk,
-                        color: Colors.brown, size: 24),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          "Delivery person has left the parcel",
+                        const Icon(Icons.cancel, color: Colors.red, size: 15),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Visitor has been declined.",
                           style:
-                              Theme.of(context).textTheme.titleSmall!.copyWith(
+                              Theme.of(context).textTheme.bodySmall!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red.shade700,
+                                  ),
+                        ),
+                      ],
+                    )
+
+                  // ✅ Case: Visitor is Pending Approval
+                  else if (isVisitorPending)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.hourglass_empty,
+                                    color: Colors.orange, size: 15),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Approval is pending...",
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall!
+                                      .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            isEnabled
+                                ? SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.2,
+                                    child: RetryButton(
+                                      onRetry: onRetry,
+                                      isEnabled: isEnabled && !isLoading,
+                                      isLoading: isLoading,
+                                    ),
+                                  )
+                                : TimerDisplay(
+                                    remaining: remaining,
+                                    isEnabled: isEnabled,
+                                  ),
+                          ],
+                        ),
+                        const SizedBox(height: 8), // Adds spacing
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.end,
+                        //   children: [
+                        //     isEnabled
+                        //         ? SizedBox(
+                        //             width:
+                        //                 MediaQuery.of(context).size.width * 0.3,
+                        //             child: RetryButton(
+                        //               onRetry: onRetry,
+                        //               isEnabled: isEnabled && !isLoading,
+                        //               isLoading: isLoading,
+                        //             ),
+                        //           )
+                        //         : TimerDisplay(
+                        //             remaining: remaining,
+                        //             isEnabled: isEnabled,
+                        //           ),
+                        //   ],
+                        // ),
+                      ],
+                    )
+
+                  // ✅ Case: Visitor is Waiting
+                  else if (isVisitorWaiting)
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time,
+                            color: Colors.blue, size: 15),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Visitor is waiting at the gate.",
+                          style:
+                              Theme.of(context).textTheme.bodySmall!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                  ),
+                        ),
+                      ],
+                    )
+
+                  // ✅ Case: Visitor has Left
+                  else if (isVisitorLeave)
+                    Row(
+                      children: [
+                        const Icon(Icons.directions_walk,
+                            color: Colors.brown, size: 15),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              "Delivery person has left the parcel",
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall!
+                                  .copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.brown.shade700,
                                   ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-
-              // ✅ Case: Visitor is Not Reachable
-              else if (isVisitorNotReachable)
-                Row(
-                  children: [
-                    const Icon(Icons.signal_wifi_off,
-                        color: Colors.grey, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Visitor is not reachable.",
-                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade700,
+                            ),
                           ),
-                    ),
-                  ],
-                )
+                        ),
+                      ],
+                    )
 
-              // ✅ Default Case: Retry Action
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      child: RetryButton(
-                        onRetry: onRetry,
-                        isEnabled: isEnabled && !isLoading,
-                        isLoading: isLoading,
-                      ),
+                  // ✅ Case: Visitor is Not Reachable
+                  else if (isVisitorNotReachable)
+                    Row(
+                      children: [
+                        const Icon(Icons.signal_wifi_off,
+                            color: Colors.grey, size: 15),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Visitor is not reachable.",
+                          style:
+                              Theme.of(context).textTheme.bodySmall!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade700,
+                                  ),
+                        ),
+                      ],
+                    )
+
+                  // ✅ Default Case: Retry Action
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RetryButton(
+                            onRetry: onRetry,
+                            isEnabled: isEnabled && !isLoading,
+                            isLoading: isLoading,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        TimerDisplay(
+                          remaining: remaining,
+                          isEnabled: isEnabled,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    TimerDisplay(
-                      remaining: remaining,
-                      isEnabled: isEnabled,
-                    ),
-                  ],
-                ),
+                ],
+              ),
             ],
           ),
         );

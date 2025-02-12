@@ -225,6 +225,23 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               }
             }
 
+            Map<String, List<VisitorLog>> groupedLogs = {};
+            for (var log in filteredVisitors) {
+              String dateKey =
+                  DateFormat('yyyy-MM-dd').format(log.visitor_check_in!);
+              if (!groupedLogs.containsKey(dateKey)) {
+                groupedLogs[dateKey] = [];
+              }
+              groupedLogs[dateKey]!.add(log);
+            }
+
+// Convert the map to a list of entries
+            List<MapEntry<String, List<VisitorLog>>> groupedLogsList =
+                groupedLogs.entries.toList();
+
+// Sort the list by date (most recent first)
+            groupedLogsList.sort((a, b) => b.key.compareTo(a.key));
+
             return WillPopScope(
               onWillPop: () async {
                 Navigator.pushAndRemoveUntil(
@@ -232,7 +249,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   MaterialPageRoute(builder: (context) => GateDashboardView()),
                   (Route<dynamic> route) => false,
                 );
-
                 return false;
               },
               child: MyScrollView(
@@ -251,201 +267,225 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       padding: const EdgeInsets.only(right: 10.0),
                       child: Container(
                         decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Theme.of(context).dividerColor,
+                          ),
                           color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () async {
-                                await _showExportBottomSheet(
-                                    context, visitorLogs);
-                              },
-                              icon: const Icon(
-                                Icons.download_rounded,
-                                color: Colors.black,
-                              ),
-                              tooltip: 'Download Logs',
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.only(right: 8.0),
-                              child: Text(
-                                'Export',
-                                style: TextStyle(
+                        child: GestureDetector(
+                          onTap: () async {
+                            await _showExportBottomSheet(context, visitorLogs);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.download_rounded,
                                   color: Colors.black,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
                                 ),
-                              ),
+                                Padding(
+                                  padding: EdgeInsets.only(right: 8.0),
+                                  child: Text("Export",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     )
                 ],
-                pageBody: Column(
-                  children: [
-                    CustomForm.textField(
-                      widget.selectedBuilding ?? 'Search',
-                      focusNode: _searchFocusNode,
-                      titleColor: Theme.of(context).colorScheme.onSurface,
-                      hintColor: Theme.of(context).colorScheme.onSurface,
-                      hintText: 'Search Visitor',
-                      textCapitalization: TextCapitalization.words,
-                      textInputAction: TextInputAction.search,
-                      onFieldSubmitted: (value) {
-                        if (kDebugMode) {
-                          print(value);
-                        }
-                      },
-                      onChanged: (value) {
-                        setState(() {
-                          _searchText = value;
-                        });
-                      },
-                      prefixIcon: IconButton(
-                        onPressed: () {},
-                        icon: Icon(
-                          Ionicons.search_outline,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          _showLogBookConfigBottomSheet(context);
+                pageBody: SizedBox(
+                  height: MediaQuery.of(context).size.height,
+                  child: Column(
+                    children: [
+                      CustomForm.textField(
+                        widget.selectedBuilding ?? 'Search',
+                        focusNode: _searchFocusNode,
+                        titleColor: Theme.of(context).colorScheme.onSurface,
+                        hintColor: Theme.of(context).colorScheme.onSurface,
+                        hintText: 'Search Visitor',
+                        textCapitalization: TextCapitalization.words,
+                        textInputAction: TextInputAction.search,
+                        onFieldSubmitted: (value) {
+                          log(value);
                         },
-                        icon: Icon(
-                          Ionicons.funnel_outline,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          size: 24,
+                        onChanged: (value) {
+                          setState(() {
+                            _searchText = value;
+                          });
+                        },
+                        prefixIcon: IconButton(
+                          onPressed: () {},
+                          icon: Icon(
+                            Ionicons.search_outline,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            _showLogBookConfigBottomSheet(context);
+                          },
+                          icon: Icon(
+                            Ionicons.funnel_outline,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            size: 24,
+                          ),
                         ),
                       ),
-                    ),
-                    if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Icon(
-                            //   Icons.person_off_outlined,
-                            //   size: 48,
-                            //   color: Theme.of(context)
-                            //       .colorScheme
-                            //       .onSurface
-                            //       .withOpacity(0.6),
-                            // ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No such visitors found in log',
-                              style: TextStyle(
+                      if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.person_off_outlined,
+                                size: 48,
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withOpacity(0.7),
-                                fontSize: 14,
+                                    .withOpacity(0.6),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 16),
+                              Text(
+                                'No such visitors found in log',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.7),
+                                      fontSize: 14,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    if (todayLogs.isEmpty && _searchText!.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.person_off_outlined,
-                              size: 48,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No visitors today',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'When visitors check in, they will appear here',
-                              style: TextStyle(
+                      if (filteredVisitors.isEmpty && _searchText!.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.person_off_outlined,
+                                size: 48,
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withOpacity(0.7),
-                                fontSize: 14,
+                                    .withOpacity(0.6),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 16),
+                              Text(
+                                'No visitors today',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'When visitors check in, they will appear here',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.7),
+                                      fontSize: 14,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ListView.builder(
-                      physics: BouncingScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: todayLogs.length +
-                          yesterdayLogs.length +
-                          olderLogs.length +
-                          (todayLogs.isNotEmpty ? 1 : 0) +
-                          (yesterdayLogs.isNotEmpty ? 1 : 0) +
-                          (olderLogs.isNotEmpty ? 1 : 0), // Add headers count
-                      itemBuilder: (context, index) {
-                        int currentIndex = 0;
+                      Expanded(
+                        child: ListView.builder(
+                          padding: EdgeInsets.only(bottom: 100),
+                          physics: BouncingScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: groupedLogsList.length,
+                          itemBuilder: (context, index) {
+                            final dateKey = groupedLogsList[index].key;
+                            final logsForDate = groupedLogsList[index].value;
 
-                        // Today Section
-                        if (todayLogs.isNotEmpty) {
-                          if (index == currentIndex) {
                             return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [],
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0, vertical: 8.0),
+                                  child: Chip(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          25), // Adjust the radius as needed
+                                      side: BorderSide.none, // No border
+                                    ),
+                                    side: BorderSide.none,
+                                    label: Text(
+                                      DateFormat('MMM dd, yyyy')
+                                          .format(DateTime.parse(dateKey)),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall,
+                                    ),
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                                ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  itemCount: logsForDate.length,
+                                  itemBuilder: (context, logIndex) {
+                                    return VisitorLogItem(
+                                      visitorLog: logsForDate[logIndex],
+                                      onCheckOut: () {
+                                        setState(() {
+                                          logsForDate[logIndex]
+                                                  .visitor_check_out =
+                                              Utils.getCurrentTime();
+                                          logsForDate[logIndex].is_checked_out =
+                                              true;
+                                        });
+                                        _visitorLogBloc.emit(
+                                            VisitorLogSuccessState(
+                                                logsForDate));
+                                        _visitorLogBloc.add(
+                                          CheckOutEvent(
+                                            logsForDate[logIndex],
+                                            widget.id,
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
                             );
-                          }
-                          if (index > currentIndex &&
-                              index <= currentIndex + todayLogs.length) {
-                            return VisitorLogItem(
-                              visitorLog: todayLogs[index - currentIndex - 1],
-                              onCheckOut: () {
-                                setState(() {
-                                  todayLogs[index - currentIndex - 1]
-                                          .visitor_check_out =
-                                      Utils.getCurrentTime();
-                                  todayLogs[index - currentIndex - 1]
-                                      .is_checked_out = true;
-                                });
-
-                                // Emit a success state with updated logs directly
-                                _visitorLogBloc
-                                    .emit(VisitorLogSuccessState(todayLogs));
-
-                                // Trigger the Bloc event to process the checkout for backend synchronization
-                                _visitorLogBloc.add(CheckOutEvent(
-                                  todayLogs[index - currentIndex - 1],
-                                  widget.id,
-                                ));
-                              },
-                            );
-                          }
-                          currentIndex +=
-                              todayLogs.length + 1; // Add 1 for header
-                        }
-
-                        return const SizedBox
-                            .shrink(); // Fallback in case of unexpected index
-                      },
-                    ),
-                    const SizedBox(
-                      height: 100,
-                    ),
-                  ],
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -713,7 +753,11 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(title, style: const TextStyle(color: Colors.red)),
+          title: Text(title,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium!
+                  .copyWith(color: Colors.red)),
           content: Text(message),
           actions: [
             TextButton(
@@ -937,23 +981,22 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                           ),
                     ),
                   ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: widget.logList.length,
-                      itemBuilder: (context, index) {
-                        return GateSettingListTile(
-                          switchValue: selectedId == widget.logList[index],
-                          onChanged: (value) {
-                            setState(() {
-                              selectedId = widget.logList[index];
-                            });
-                          },
-                          title: widget.logList[index],
-                          subtitle: 'Enable/Disable ${widget.logList[index]}',
-                          leadingIcon: Symbols.gate,
-                        );
-                      },
-                    ),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: widget.logList.length,
+                    itemBuilder: (context, index) {
+                      return GateSettingListTile(
+                        switchValue: selectedId == widget.logList[index],
+                        onChanged: (value) {
+                          setState(() {
+                            selectedId = widget.logList[index];
+                          });
+                        },
+                        title: widget.logList[index],
+                        subtitle: 'Enable/Disable ${widget.logList[index]}',
+                        leadingIcon: Symbols.gate,
+                      );
+                    },
                   ),
                   const SizedBox(
                     height: 30,
@@ -1080,138 +1123,146 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       )
                     : null,
               ),
-              title: RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: widget.visitorLog.visitor!.name,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    WidgetSpan(
-                      child: widget.visitorLog.visitor_count.toString() != '1'
-                          ? Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xffFFB080),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                "+ ${widget.visitorLog.visitor_count.toString()}",
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            )
-                          : SizedBox(),
-                    ),
-                  ],
-                ),
+              title: Text(
+                widget.visitorLog.visitor!.name ?? 'Visitor Name',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 5),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Symbols.apartment,
-                          color: Color(0xffFFB080),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xffFFEBE6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            widget.visitorLog.visitor_building_assignment!
-                                    .isNotEmpty
-                                ? widget.visitorLog.visitor_building_assignment
-                                    .toString()
-                                : "N/A",
-                            style:
-                                Theme.of(context).textTheme.bodySmall!.copyWith(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w500,
-                                      // fontSize: 14,
-                                    ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Symbols.diversity_3,
-                          color: Color(0xffF2D8A5),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xffF2D8A5),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Text(
-                            widget.visitorLog.visitor_purpose_Category_name ??
-                                "N/A",
-                            style:
-                                Theme.of(context).textTheme.bodySmall!.copyWith(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w500,
-                                      // fontSize: 14,
-                                    ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              subtitle: Text(
+                "${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"} - ${widget.visitorLog.visitor_purpose_Category_name ?? "N/A"}",
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-              trailing: IconButton(
-                onPressed: _hasCallSupport
-                    ? () => _launched =
-                        _makePhoneCall(widget.visitorLog.visitor!.mobile ?? "")
-                    : null,
 
-                // onPressed: () {
-                //               log(
-                //                 'Calling ${visitorLog.visitor!.mobile}',
-                //               );
-                //
-                //               SnackBar(
-                //                 content: Text(
-                //                   'Calling ${visitorLog.visitor!.mobile}',
-                //                   style: Theme.of(context).textTheme.labelMedium,
-                //                 ),
-                //                 action: SnackBarAction(
-                //                   label: 'Close',
-                //                   onPressed: () {
-                //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                //                   },
-                //                 ),
-                //               );
-                icon: Icon(
-                  Ionicons.call_outline,
-                  color: Colors.green,
-                ),
-              ),
+              //   RichText(
+              //   text: TextSpan(
+              //     children: [
+              //       TextSpan(
+              //         text: widget.visitorLog.visitor!.name,
+              //         style: Theme.of(context).textTheme.bodyMedium,
+              //       ),
+              //       WidgetSpan(
+              //         child: widget.visitorLog.visitor_count.toString() != '1'
+              //             ? Container(
+              //                 margin: const EdgeInsets.only(left: 8),
+              //                 padding: const EdgeInsets.symmetric(
+              //                   horizontal: 7,
+              //                   vertical: 2,
+              //                 ),
+              //                 decoration: BoxDecoration(
+              //                   color: const Color(0xffFFB080),
+              //                   borderRadius: BorderRadius.circular(8),
+              //                 ),
+              //                 child: Text(
+              //                   "+ ${widget.visitorLog.visitor_count.toString()}",
+              //                   style: Theme.of(context)
+              // .textTheme
+              // .bodyMedium!
+              // .copyWith(
+              //                     color: Colors.black,
+              //                     fontWeight: FontWeight.w500,
+              //                   ),
+              //                 ),
+              //               )
+              //             : SizedBox(),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              // subtitle: Padding(
+              //   padding: const EdgeInsets.only(top: 5),
+              //   child: Column(
+              //     children: [
+              //       Row(
+              //         children: [
+              //           const Icon(
+              //             Symbols.apartment,
+              //             color: Color(0xffFFB080),
+              //           ),
+              //           Container(
+              //             margin: const EdgeInsets.only(left: 8),
+              //             padding: const EdgeInsets.symmetric(
+              //               horizontal: 7,
+              //               vertical: 2,
+              //             ),
+              //             decoration: BoxDecoration(
+              //               color: const Color(0xffFFEBE6),
+              //               borderRadius: BorderRadius.circular(8),
+              //             ),
+              //             child: Text(
+              //               widget.visitorLog.visitor_building_assignment!
+              //                       .isNotEmpty
+              //                   ? widget.visitorLog.visitor_building_assignment
+              //                       .toString()
+              //                   : "N/A",
+              //               style:
+              //                   Theme.of(context).textTheme.bodySmall!.copyWith(
+              //                         color: Colors.black,
+              //                         fontWeight: FontWeight.w500,
+              //                         // fontSize: 14,
+              //                       ),
+              //             ),
+              //           ),
+              //         ],
+              //       ),
+              //       const SizedBox(
+              //         height: 10,
+              //       ),
+              //       Row(
+              //         children: [
+              //           const Icon(
+              //             Symbols.diversity_3,
+              //             color: Color(0xffF2D8A5),
+              //           ),
+              //           Container(
+              //             margin: const EdgeInsets.only(left: 8),
+              //             padding: const EdgeInsets.symmetric(
+              //               horizontal: 7,
+              //               vertical: 2,
+              //             ),
+              //             decoration: BoxDecoration(
+              //               color: const Color(0xffF2D8A5),
+              //               borderRadius: BorderRadius.circular(15),
+              //             ),
+              //             child: Text(
+              //               widget.visitorLog.visitor_purpose_Category_name ??
+              //                   "N/A",
+              //               style:
+              //                   Theme.of(context).textTheme.bodySmall!.copyWith(
+              //                         color: Colors.black,
+              //                         fontWeight: FontWeight.w500,
+              //                         // fontSize: 14,
+              //                       ),
+              //             ),
+              //           ),
+              //         ],
+              //       ),
+              //     ],
+              //   ),
+              // ),=
+              // onPressed: () {
+              //               log(
+              //                 'Calling ${visitorLog.visitor!.mobile}',
+              //               );
+              //
+              //               SnackBar(
+              //                 content: Text(
+              //                   'Calling ${visitorLog.visitor!.mobile}',
+              //                   style: Theme.of(context).textTheme.labelMedium,
+              //                 ),
+              //                 action: SnackBarAction(
+              //                   label: 'Close',
+              //                   onPressed: () {
+              //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              //                   },
+              //                 ),
+              //               );
+              // trailing: IconButton(
+              //   onPressed: _hasCallSupport
+              //       ? () => _launched =
+              //           _makePhoneCall(widget.visitorLog.visitor!.mobile ?? "")
+              //       : null,
+              // icon: Icon(
+              //   Ionicons.call_outline,
+              //   color: Colors.green,
             ),
             Divider(
               indent: 16,
@@ -1241,9 +1292,12 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                 widget.visitorLog.visitor_check_in!),
                             style:
                                 Theme.of(context).textTheme.labelMedium!.merge(
-                                      const TextStyle(
-                                        color: Colors.green,
-                                      ),
+                                      Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            color: Colors.green,
+                                          ),
                                     ),
                           ),
                         ],
@@ -1291,11 +1345,14 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                 widget.visitorLog.visitor_card_number != null
                                     ? widget.visitorLog.visitor_card_number!
                                     : widget.visitorLog.carNumber ?? 'N/A',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                    ),
                               ),
                             ],
                           ),
@@ -1320,16 +1377,18 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   title: Row(
-                                    children: const [
+                                    children: [
                                       Icon(Icons.warning_amber_rounded,
                                           color: Colors.red),
                                       SizedBox(width: 8),
                                       Text(
                                         'Confirm Checkout',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -1340,15 +1399,20 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                     children: [
                                       Text(
                                         'Are you sure you want to checkout?',
-                                        style: TextStyle(fontSize: 16),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(),
                                       ),
                                       SizedBox(height: 8),
                                       Text(
                                         'This action cannot be undone.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: Colors.grey[600],
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -1369,10 +1433,13 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                       },
                                       child: Text(
                                         'Cancel',
-                                        style: TextStyle(
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                       ),
                                     ),
                                     ElevatedButton(
@@ -1394,10 +1461,13 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                       },
                                       child: Text(
                                         'Checkout',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -1411,8 +1481,12 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             'Checkout',
                             style:
                                 Theme.of(context).textTheme.labelSmall!.merge(
-                                      const TextStyle(
-                                          color: Colors.white, fontSize: 14),
+                                      Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            color: Colors.white,
+                                          ),
                                     ),
                           ),
                         )
@@ -1435,9 +1509,12 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                       .textTheme
                                       .labelMedium!
                                       .merge(
-                                        const TextStyle(
-                                          color: Colors.red,
-                                        ),
+                                        Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: Colors.red,
+                                            ),
                                       ),
                                 ),
                               ],

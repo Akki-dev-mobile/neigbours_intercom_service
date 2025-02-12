@@ -205,7 +205,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                       widget.unitList != "")
                                   ? widget.unitList.toString()
                                   : "N/A",
-                          iconColor: const Color(0xffFFB080),
+                          iconColor: const Color.fromARGB(255, 225, 181, 154),
                         ),
                         // if (widget.visitorLog.visitor_coming_from != null)
                         _buildInfoTile(
@@ -229,13 +229,21 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildSection(
-                      title: "Timeline",
+                      title: "Visitor Timeline",
                       children: [
                         _buildTimelineTile(
                           "Check In",
                           widget.visitorLog.visitor_check_in!,
                           Icons.login,
                           Colors.green,
+                          isFirst: true,
+                          isLast: widget.visitorLog.visitor_check_out == null,
+                        ),
+                        _buildTimelineTile(
+                          "Approved By ",
+                          widget.visitorLog.visitor_check_in!,
+                          Icons.person,
+                          const Color(0xffFFB080),
                           isFirst: true,
                           isLast: widget.visitorLog.visitor_check_out == null,
                         ),
