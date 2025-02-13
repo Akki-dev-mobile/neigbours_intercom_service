@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -9,11 +12,8 @@ import 'package:flutter_onegate/timeprovider.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Timer Service
 class TimerState {
@@ -175,7 +175,7 @@ class RetryButton extends StatelessWidget {
                   )
                 : const Icon(
                     Icons.refresh,
-                    size: 12,
+                    size: 16,
                     color: Colors.black,
                   ),
             const SizedBox(
@@ -183,7 +183,7 @@ class RetryButton extends StatelessWidget {
             ),
             Text(
               isLoading ? 'Sending...' : 'Retry',
-              style: Theme.of(context).textTheme.bodySmall!,
+              style: Theme.of(context).textTheme.labelLarge,
             ),
           ],
         ),
@@ -959,8 +959,8 @@ class VisitorInfoSection extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               subtitle: Text(
-                "${visitorInfo.unitDetails.building_unit} - ${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""}",
-                style: Theme.of(context).textTheme.bodySmall,
+                "${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""} - ${visitorInfo.unitDetails.building_unit}",
+                style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
             Divider(
@@ -1088,7 +1088,7 @@ class TimerActionSection extends StatelessWidget {
                         Text(
                           "Visitor has been allowed.",
                           style:
-                              Theme.of(context).textTheme.bodySmall!.copyWith(
+                              Theme.of(context).textTheme.labelMedium!.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.green.shade700,
                                   ),
@@ -1105,7 +1105,7 @@ class TimerActionSection extends StatelessWidget {
                         Text(
                           "Visitor has been declined.",
                           style:
-                              Theme.of(context).textTheme.bodySmall!.copyWith(
+                              Theme.of(context).textTheme.labelMedium!.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.red.shade700,
                                   ),
@@ -1130,7 +1130,7 @@ class TimerActionSection extends StatelessWidget {
                                   "Approval is pending...",
                                   style: Theme.of(context)
                                       .textTheme
-                                      .bodySmall!
+                                      .labelMedium!
                                       .copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.orange.shade700,

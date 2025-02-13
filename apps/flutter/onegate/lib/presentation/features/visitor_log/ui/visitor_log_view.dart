@@ -4,16 +4,13 @@ import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
-import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
@@ -26,9 +23,9 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:provider/provider.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -1127,9 +1124,17 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 widget.visitorLog.visitor!.name ?? 'Visitor Name',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              subtitle: Text(
-                "${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"} - ${widget.visitorLog.visitor_purpose_Category_name ?? "N/A"}",
-                style: Theme.of(context).textTheme.bodySmall,
+              subtitle: Row(
+                children: [
+                  Icon(
+                    Symbols.person,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  Text(
+                    "${widget.visitorLog.visitor_purpose_Category_name ?? "N/A"} - ${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"}",
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ],
               ),
 
               //   RichText(
