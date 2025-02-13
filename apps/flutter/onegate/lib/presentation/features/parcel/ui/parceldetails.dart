@@ -137,7 +137,7 @@ class ParcelDetails extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildSection(
-              title: "Parcel Details",
+              title: "Parcel Timeline",
               children: [
                 _buildTimelineTile(
                   "Parcel Check-in",
@@ -148,6 +148,16 @@ class ParcelDetails extends StatelessWidget {
                   isFirst: true,
                   isLast: parcel['parcel_status'] == "pending",
                 ),
+                if (parcel['parcel_status'] != "pending")
+                  _buildTimelineTile(
+                    "Parcel Picked By",
+                    DateTime.tryParse(parcel['log_created_at'] ?? '') ??
+                        DateTime.now(),
+                    Symbols.box,
+                    const Color(0xffFFB080),
+                    isFirst: true,
+                    isLast: parcel['parcel_status'] == "pending",
+                  ),
                 if (parcel['parcel_status'] != "pending") ...[
                   _buildTimelineTile(
                     "Parcel Picked at",
@@ -371,7 +381,7 @@ class OtpBottomSheet extends StatefulWidget {
 class _OtpBottomSheetState extends State<OtpBottomSheet> {
   int _timer = 0;
   Timer? _countdownTimer;
-
+  FocusNode focusNode = FocusNode();
   void _startTimer() {
     setState(() {
       _timer = 59;
@@ -480,7 +490,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                     });
                   }
                 },
-                focusNode: FocusNode(),
+                focusNode: focusNode,
                 controller: widget.otpController,
                 submittedPinTheme: PinTheme(
                   decoration: BoxDecoration(

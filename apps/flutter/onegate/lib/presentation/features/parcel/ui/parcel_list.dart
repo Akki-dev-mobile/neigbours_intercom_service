@@ -137,118 +137,126 @@ class _ParcelListState extends State<ParcelList> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 2,
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ParcelDetails(parcel: parcel),
-                    ),
-                  );
-                },
-                leading: CircleAvatar(
-                  backgroundImage: NetworkImage(parcel['visitor_image'] ?? ''),
-                  radius: 30,
-                ),
-                trailing: IconButton(
-                  onPressed: () {
-                    if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {
-                      _launchCaller(contactNumber);
-                    } else {
-                      Fluttertoast.showToast(
-                        msg: 'No contact number available',
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.BOTTOM,
-                        backgroundColor: Colors.red,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
-                      );
-                    }
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 2,
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ParcelDetails(parcel: parcel),
+                      ),
+                    );
                   },
-                  icon: const Icon(
-                    Ionicons.call_outline,
-                    color: Colors.green,
+                  leading: CircleAvatar(
+                    backgroundImage:
+                        NetworkImage(parcel['visitor_image'] ?? ''),
+                    radius: 30,
                   ),
-                ),
-                title: Text(
-                  parcel['member_name'] ?? 'N/A',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Symbols.apartment,
-                            color: Color(0xffFFB080),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xffFFEBE6),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              parcel['unit_name']?.toString() ??
-                                  'No Description',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall!
-                                  .copyWith(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w500,
-                                    // fontSize: 14,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Symbols.delivery_truck_speed,
-                            color: Color(0xffF2D8A5),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xffF2D8A5),
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: Text(
-                              parcel['purpose_sub_category_name'] ?? 'N/A',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall!
-                                  .copyWith(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w500,
-                                    // fontSize: 14,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  // trailing: IconButton(
+                  //   onPressed: () {
+                  //     if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {
+                  //       _launchCaller(contactNumber);
+                  //     } else {
+                  //       Fluttertoast.showToast(
+                  //         msg: 'No contact number available',
+                  //         toastLength: Toast.LENGTH_SHORT,
+                  //         gravity: ToastGravity.BOTTOM,
+                  //         backgroundColor: Colors.red,
+                  //         textColor: Colors.white,
+                  //         fontSize: 16.0,
+                  //       );
+                  //     }
+                  //   },
+                  //   // icon: const Icon(
+                  //   //   Ionicons.call_outline,
+                  //   //   color: Colors.green,
+                  //   // ),
+                  // ),
+
+                  title: Text(
+                    parcel['member_name'] ?? 'N/A',
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                ),
-              ),
+                  subtitle: Text(
+                    "${parcel['unit_name']?.toString() ?? 'No Description'} - ${parcel['purpose_sub_category_name'] ?? 'N/A'}",
+                    style: Theme.of(context).textTheme.bodySmall,
+                  )
+                  // subtitle: Padding(
+                  //   padding: const EdgeInsets.only(top: 5),
+                  //   child: Column(
+                  //     children: [
+
+                  //       Row(
+                  //         children: [
+                  //           const Icon(
+                  //             Symbols.apartment,
+                  //             color: Color(0xffFFB080),
+                  //           ),
+                  //           Container(
+                  //             margin: const EdgeInsets.only(left: 8),
+                  //             padding: const EdgeInsets.symmetric(
+                  //               horizontal: 7,
+                  //               vertical: 2,
+                  //             ),
+                  //             decoration: BoxDecoration(
+                  //               color: const Color(0xffFFEBE6),
+                  //               borderRadius: BorderRadius.circular(8),
+                  //             ),
+                  //             child: Text(
+                  //               parcel['unit_name']?.toString() ??
+                  //                   'No Description',
+                  //               style: Theme.of(context)
+                  //                   .textTheme
+                  //                   .bodySmall!
+                  //                   .copyWith(
+                  //                     color: Colors.black,
+                  //                     fontWeight: FontWeight.w500,
+                  //                     // fontSize: 14,
+                  //                   ),
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //       const SizedBox(
+                  //         height: 10,
+                  //       ),
+                  //       Row(
+                  //         children: [
+                  //           const Icon(
+                  //             Symbols.delivery_truck_speed,
+                  //             color: Color(0xffF2D8A5),
+                  //           ),
+                  //           Container(
+                  //             margin: const EdgeInsets.only(left: 8),
+                  //             padding: const EdgeInsets.symmetric(
+                  //               horizontal: 7,
+                  //               vertical: 2,
+                  //             ),
+                  //             decoration: BoxDecoration(
+                  //               color: const Color(0xffF2D8A5),
+                  //               borderRadius: BorderRadius.circular(15),
+                  //             ),
+                  //             child: Text(
+                  //               parcel['purpose_sub_category_name'] ?? 'N/A',
+                  //               style: Theme.of(context)
+                  //                   .textTheme
+                  //                   .bodySmall!
+                  //                   .copyWith(
+                  //                     color: Colors.black,
+                  //                     fontWeight: FontWeight.w500,
+                  //                     // fontSize: 14,
+                  //                   ),
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+
+                  ),
               Divider(
                 indent: 16,
                 endIndent: 16,
@@ -263,7 +271,7 @@ class _ParcelListState extends State<ParcelList> {
                   children: [
                     Tooltip(
                       message: checkIn != null
-                          ? DateFormat('dd MMM HH:mm').format(
+                          ? DateFormat('HH:mm').format(
                               DateTime.tryParse(checkIn) ?? DateTime.now(),
                             )
                           : 'N/A',
@@ -279,7 +287,7 @@ class _ParcelListState extends State<ParcelList> {
                             ),
                             TextSpan(
                               text: parcel['log_created_at'] != null
-                                  ? DateFormat('dd MMM HH:mm').format(
+                                  ? DateFormat(' HH:mm').format(
                                       DateTime.tryParse(
                                               parcel['log_created_at']) ??
                                           DateTime.now(),
@@ -325,12 +333,14 @@ class _ParcelListState extends State<ParcelList> {
                                 },
                               );
                             },
-                            child: const Text(
+                            child: Text(
                               'Pick',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: Colors.white,
+                                  ),
                             ),
                           )
                         // : ElevatedButton(
@@ -395,33 +405,62 @@ class _ParcelListState extends State<ParcelList> {
           purposeSubCategory.contains(query);
     }).toList();
 
-    return filteredParcels.isNotEmpty
-        ? ListView.builder(
-            padding: const EdgeInsets.only(top: 10, bottom: 300),
-            shrinkWrap: true,
-            itemCount: filteredParcels.length,
-            itemBuilder: (context, index) {
-              final parcel = filteredParcels[index] as Map<String, dynamic>;
+    if (filteredParcels.isEmpty) {
+      return Column(
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.2,
+          ),
+          const Center(
+            child: Icon(
+              Symbols.package_2,
+              size: 90,
+            ),
+          ),
+          const Center(child: Text('No parcels found.')),
+        ],
+      );
+    }
 
-              return parsalView(parcel);
-            },
-          )
-        : Column(
-            // mainAxisAlignment: MainAxisAlignment.center,
-            // mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.2,
-              ),
-              const Center(
-                child: Icon(
-                  Symbols.package_2,
-                  size: 90,
-                ),
-              ),
-              const Center(child: Text('No parcels found.')),
-            ],
-          );
+    // Group parcels by date
+    Map<String, List<dynamic>> groupedParcels = {};
+    for (var parcel in filteredParcels) {
+      String dateKey = parcel['log_created_at'] != null
+          ? DateFormat('yyyy-MM-dd').format(
+              DateTime.tryParse(parcel['log_created_at']) ?? DateTime.now())
+          : 'Unknown Date';
+
+      if (!groupedParcels.containsKey(dateKey)) {
+        groupedParcels[dateKey] = [];
+      }
+      groupedParcels[dateKey]!.add(parcel);
+    }
+
+    // Sort dates in ascending order
+    List<String> sortedDates = groupedParcels.keys.toList()..sort();
+
+    return ListView(
+      padding: const EdgeInsets.only(top: 0, bottom: 300),
+      shrinkWrap: true,
+      children: sortedDates.expand((date) {
+        return [
+          Chip(
+            side: BorderSide.none,
+            shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(25), // Adjust the radius as needed
+              side: BorderSide.none, // No border
+            ),
+            label: Text(
+              DateFormat('MMM dd, yyyy').format(DateTime.parse(date)),
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          ),
+          ...groupedParcels[date]!.map((parcel) => parsalView(parcel)).toList(),
+        ];
+      }).toList(),
+    );
   }
 
   @override
@@ -479,6 +518,22 @@ class _ParcelListState extends State<ParcelList> {
               //       }
               //     }
               //   },
+              // ),
+              // Padding(
+              //   padding: const EdgeInsets.symmetric(
+              //       horizontal: 16.0, vertical: 8.0),
+              //   child: Chip(
+              //     side: BorderSide.none,
+              //     label: Text(
+              //       DateFormat('MMM dd, yyyy')
+              //           .format(DateTime.parse(dateKey!)),
+              //       style: Theme.of(context)
+              //           .textTheme
+              //           .bodyMedium,
+              //     ),
+              //     backgroundColor:
+              //         Theme.of(context).colorScheme.primary,
+              //   ),
               // ),
 
               Container(
