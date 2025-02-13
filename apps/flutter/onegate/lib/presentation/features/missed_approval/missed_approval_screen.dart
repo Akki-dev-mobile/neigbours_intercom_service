@@ -19,14 +19,43 @@ import 'package:shared_preferences/shared_preferences.dart';
 class TimerState {
   final DateTime endTime;
   final bool isRetryEnabled;
+  final bool hasRetried; // ✅ Track retry status
 
-  TimerState({required this.endTime, required this.isRetryEnabled});
+  TimerState({
+    required this.endTime,
+    required this.isRetryEnabled,
+    this.hasRetried = false, // Default: false
+  });
+
+  TimerState copyWith({
+    DateTime? endTime,
+    bool? isRetryEnabled,
+    bool? hasRetried,
+  }) {
+    return TimerState(
+      endTime: endTime ?? this.endTime,
+      isRetryEnabled: isRetryEnabled ?? this.isRetryEnabled,
+      hasRetried: hasRetried ?? this.hasRetried,
+    );
+  }
 }
 
 class TimerService extends ChangeNotifier {
   static final TimerService _instance = TimerService._internal();
   factory TimerService() => _instance;
   TimerService._internal();
+
+  void markRetryAttempt(int visitorLogId) {
+    final state = _timers[visitorLogId];
+    if (state != null) {
+      _timers[visitorLogId] = state.copyWith(hasRetried: true);
+      notifyListeners();
+    }
+  }
+
+  bool hasRetried(int visitorLogId) {
+    return _timers[visitorLogId]?.hasRetried ?? false;
+  }
 
   final Map<int, TimerState> _timers = {};
   int _approvalTime = 120; // Default approval time
@@ -827,6 +856,14 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
   Future<void> _handleRetry(BuildContext context) async {
     if (_isLoading) return;
 
+    final timerService = context.read<TimerService>();
+    final visitorLogId = widget.visitorInfo.visitorLogId ?? 0;
+
+    if (timerService.hasRetried(visitorLogId)) {
+      _showSnackBar('Retry already attempted for this visitor', isError: true);
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     RequestType requestType =
@@ -836,11 +873,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         requestType == RequestType.allowByGatekeeper) {
       _showSnackBar('Visitor is already allowed', isError: false);
 
-      await context
-          .read<TimerService>()
-          .startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
-
-      setState(() {}); // Ensure UI updates
+      await timerService.startTimer(visitorLogId, context);
+      setState(() {});
       return;
     } else if (requestType == RequestType.rejected) {
       _showSnackBar('Visitor has been denied entry', isError: true);
@@ -854,35 +888,70 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     }
 
     try {
-      final dio = Dio();
-      final response = await dio.post(
-        '${ApiUrls.gateBaseUrl}/visitor/exotel/call',
-        options: Options(headers: {"Content-Type": "application/json"}),
-        data: {
-          'member_mobile_number': 9967089101,
-          'visitor_id': widget.visitorInfo.visitorId,
-          'member_id': widget.visitorInfo.memberInfo.memberId,
-          'visitor_log_id': widget.visitorInfo.visitorLogId,
-          'purpose_category':
-              widget.visitorInfo.visitorPurposeCategoryId.toString(),
-        },
-      );
+      await _sendFcmNotification();
 
-      if (response.statusCode == 200) {
-        await context
-            .read<TimerService>()
-            .startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
+      await timerService.startTimer(visitorLogId, context);
+      timerService.markRetryAttempt(visitorLogId); // ✅ Mark Retry as Attempted
 
-        setState(() {});
-        _showSnackBar('Notification resent successfully', isError: false);
-      }
+      setState(() {});
     } catch (e) {
-      await context
-          .read<TimerService>()
-          .startTimer(widget.visitorInfo.visitorLogId ?? 0, context);
       _showSnackBar('Failed to resend notification', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _sendFcmNotification() async {
+    String formattedInTime =
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? userId = prefs.getString('visitorId');
+      final String? visitorLogId = prefs.getString("visitor_log");
+
+      final requestData = {
+        'company_id': widget.visitorInfo.companyId.toString(),
+        'name': widget.visitorInfo.visitorName,
+        'mobile': widget.visitorInfo.visitorMobile,
+        'purpose': "Guest",
+        'in_time': formattedInTime,
+        'user_id': "77525",
+
+        // (int.tryParse(userId ?? "0") == null ||
+        //         int.tryParse(userId ?? "0") == 0)
+        //     ? "234567"
+        //     : int.parse(userId!).toString(),
+        'visitor_count':
+            "1", // Assuming visitor_count is not visitorInfo.toString()
+        'member_mobile_number': "919967089101",
+        'visitor_id': widget.visitorInfo.visitorId.toString(),
+        'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
+            ? "delivery"
+            : widget.visitorInfo.visitorPurposeCategoryId.toString(),
+        'visitor_log_id': visitorLogId ?? "",
+        'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
+        'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
+      };
+
+      log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
+
+      final response = await Dio().post(
+        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ FCM Notification Sent Successfully: ${response.data}");
+        _showSnackBar("Notification sent successfully!");
+      } else {
+        log("❌ FCM Notification Failed: ${response.statusMessage}");
+        _showSnackBar("Error sending notification.", isError: true);
+      }
+    } catch (e) {
+      log("❌ Error in _sendFcmNotification: $e");
+      _showSnackBar("Failed to send notification.", isError: true);
     }
   }
 
@@ -1048,10 +1117,12 @@ class TimerActionSection extends StatelessWidget {
       builder: (context) {
         final timerState = TimerService().getTimerState(visitorLogId);
         if (timerState == null) return const SizedBox.shrink();
-
+        final timerService = context.watch<TimerService>();
+        final hasRetried = timerService.hasRetried(visitorLogId);
         final now = DateTime.now();
         final remaining = timerState.endTime.difference(now);
-        final isEnabled = remaining.isNegative || timerState.isRetryEnabled;
+        final isEnabled =
+            remaining.isNegative || timerState.isRetryEnabled && !hasRetried;
 
         final allowStatus = visitorInfo.allowStatus.toLowerCase();
 
