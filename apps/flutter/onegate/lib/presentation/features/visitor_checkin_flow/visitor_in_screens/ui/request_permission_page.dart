@@ -106,16 +106,17 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void initState() {
     super.initState();
 
-    _socketService = SocketService(); // Initialize WebSocket service
-    _socketService.initSocket("8191", "onegate"); // Pass companyId & appId
+    _socketService = SocketService();
+    _socketService.initSocket("8191", "onegate");
 
+    // Listen for newMessage event with allow_status
     _socketService.messageStream.listen((message) {
-      if (message['event'] == 'approvalUpdate') {
+      if (message['event'] == 'newMessage') {
         _handleApprovalUpdate(message['data']);
       }
     });
 
-    _startPolling(); // Start API polling as a fallback
+    _startPolling(); // Optional: Start API polling as a fallback
 
     if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
@@ -541,19 +542,24 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void _handleApprovalUpdate(Map<String, dynamic> data) {
     if (widget.logID == null || widget.logID!.isEmpty) return;
 
-    final visitorLogId = data['visitorLogId']?.toString();
-    if (visitorLogId == widget.logID) {
-      final newRequestType =
-          _mapAllowStatusToRequestType(data['allowStatus'].toLowerCase());
+    final visitorLogId = data['visitor_log_id']?.toString();
+    final allowStatus = data['allow_status']?.toString()?.toLowerCase();
+
+    // Only update if this message is for the current visitor log ID
+    if (visitorLogId == widget.logID && allowStatus != null) {
+      final newRequestType = _mapAllowStatusToRequestType(allowStatus);
 
       setState(() {
         _requestType = newRequestType;
         _isLoading = false;
       });
 
+      // Stop polling if we get a final status via socket
       if (_shouldStopPolling(newRequestType)) {
         _stopPolling();
       }
+
+      log("🟢 RequestType Updated via WebSocket to: $_requestType");
     }
   }
 

@@ -1,13 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
-
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
@@ -15,7 +13,6 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
-
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -23,8 +20,6 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-
 import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
@@ -78,7 +73,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<int> selectedUnits = {};
   String? selectedgate;
   List<dynamic> _allMembers = [];
-  final List<dynamic> _approvals = [];
   String? companyId;
   String? companyName;
   bool isLoading = true;
@@ -619,9 +613,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _selectedUnitsNotifier.value = updateUnits;
   }
 
-  bool _isCheckedIn = false; // ✅ Ensures check-in happens only once
+  bool _isCheckedIn = false;
 
-  // Main Build Method
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -1058,25 +1051,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  ButtonStyle _buildElevatedButtonStyle() {
-    return ButtonStyle(
-      foregroundColor: WidgetStateProperty.all<Color>(const Color(0xFF7D7C7C)),
-      backgroundColor: WidgetStateProperty.all<Color>(
-        Theme.of(context).colorScheme.surface,
-      ),
-      elevation: WidgetStateProperty.resolveWith<double>(
-        (Set<WidgetState> states) =>
-            states.contains(WidgetState.pressed) ? 8 : 0,
-      ),
-      shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-      padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
-        const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
-      ),
-    );
-  }
-
   // Selection Submission Methods
   Future<void> _handleSelectionSubmit(Set<String> selectedMember) async {
     log("Handling selection submit...");
@@ -1157,10 +1131,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
 
       if (mounted) {
-        // Show dialog before navigating
         await _showVisitorAllowedDialog();
 
-        // Navigate to dashboard after dialog is closed
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const GateDashboardView()),
@@ -1484,11 +1456,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+      'user_id':
+
+      // "77525",
+
+
+      (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "917378880544",
+      'member_mobile_number': "8452060059",
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
           ? "delivery"
@@ -1502,137 +1479,131 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     };
   }
 
-  Future<void> setupAMQPReceiver() async {
-    try {
-      log("Initializing AMQP Receiver...");
+  // Future<void> setupAMQPReceiver() async {
+  //   try {
+  //     log("Initializing AMQP Receiver...");
+  //
+  //     // Initialize AMQP client with connection settings
+  //     amqpClient = Client(
+  //       settings: ConnectionSettings(
+  //         host: "65.1.230.119",
+  //         authProvider:
+  //             const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
+  //       ),
+  //     );
+  //
+  //     log("Connecting to RabbitMQ server...");
+  //     await amqpClient.connect();
+  //     log("Connection to RabbitMQ server established successfully.");
+  //
+  //     // Define the queue name dynamically based on the mobile number
+  //     final queueName = "visitor_approval_77525_${widget.mobileNumber}";
+  //     log("Queue Name: $queueName");
+  //
+  //     Channel channel = await amqpClient.channel();
+  //     log("Channel opened.");
+  //
+  //     Queue queue = await channel.queue(queueName, durable: false);
+  //     log("Queue declared: $queueName");
+  //
+  //     const String exchangeName = "logs"; // Example exchange name
+  //     final Exchange exchange = await channel.exchange(
+  //       exchangeName,
+  //       ExchangeType.FANOUT,
+  //       durable: false,
+  //     );
+  //     log("Exchange bound: $exchangeName");
+  //
+  //     await queue.bind(exchange, "routing_key_placeholder");
+  //     log("Queue bound to exchange with routing key.");
+  //
+  //     // Start consuming messages from the queue
+  //     Consumer consumer = await queue.consume();
+  //
+  //     log("Consumer registered for queue. Waiting for messages...");
+  //
+  //     // Listen for messages on the queue
+  //     consumer.listen((AmqpMessage message) {
+  //       log("Message received from queue.");
+  //
+  //       try {
+  //         // Decode the message payload
+  //         final payload = utf8.decode(message.payload as List<int>);
+  //         log("Raw Message Payload: $payload");
+  //
+  //         // Parse the message as JSON
+  //         final response = jsonDecode(payload);
+  //         log("Decoded Message: $response");
+  //
+  //         // Extract the approval status from the message
+  //         final status = response['status'];
+  //         log("Approval Status: $status");
+  //
+  //         showApprovalDialog(status);
+  //
+  //         message.ack();
+  //       } catch (e) {
+  //         log("Error processing message: $e");
+  //       }
+  //     });
+  //   } catch (e) {
+  //     log("Error setting up AMQP Receiver: $e");
+  //   }
+  // }
 
-      // Initialize AMQP client with connection settings
-      amqpClient = Client(
-        settings: ConnectionSettings(
-          host: "65.1.230.119",
-          authProvider:
-              const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
-        ),
-      );
-
-      log("Connecting to RabbitMQ server...");
-      await amqpClient.connect();
-      log("Connection to RabbitMQ server established successfully.");
-
-      // Define the queue name dynamically based on the mobile number
-      final queueName = "visitor_approval_77525_${widget.mobileNumber}";
-      log("Queue Name: $queueName");
-
-      Channel channel = await amqpClient.channel();
-      log("Channel opened.");
-
-      Queue queue = await channel.queue(queueName, durable: false);
-      log("Queue declared: $queueName");
-
-      const String exchangeName = "logs"; // Example exchange name
-      final Exchange exchange = await channel.exchange(
-        exchangeName,
-        ExchangeType.FANOUT,
-        durable: false,
-      );
-      log("Exchange bound: $exchangeName");
-
-      await queue.bind(exchange, "routing_key_placeholder");
-      log("Queue bound to exchange with routing key.");
-
-      // Start consuming messages from the queue
-      Consumer consumer = await queue.consume();
-
-      log("Consumer registered for queue. Waiting for messages...");
-
-      // Listen for messages on the queue
-      consumer.listen((AmqpMessage message) {
-        log("Message received from queue.");
-
-        try {
-          // Decode the message payload
-          final payload = utf8.decode(message.payload as List<int>);
-          log("Raw Message Payload: $payload");
-
-          // Parse the message as JSON
-          final response = jsonDecode(payload);
-          log("Decoded Message: $response");
-
-          // Extract the approval status from the message
-          final status = response['status'];
-          log("Approval Status: $status");
-
-          showApprovalDialog(status);
-
-          message.ack();
-        } catch (e) {
-          log("Error processing message: $e");
-        }
-      });
-    } catch (e) {
-      log("Error setting up AMQP Receiver: $e");
-    }
-  }
-
-  Future<void> showApprovalDialog(approvalStatusNew) async {
-    setState(() {
-      approvalStatus = "Waiting for approval...";
-    });
-
-    await setupAMQPReceiver();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return AlertDialog(
-          title: const Text("Approval Status"),
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (approvalStatus == "Waiting for approval...")
-                    const CircularProgressIndicator(),
-                  const SizedBox(height: 20),
-                  Text(
-                    approvalStatusNew,
-                    style: const TextStyle(fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              );
-            },
-          ),
-          actions: [
-            if (approvalStatus == "Approved" || approvalStatus == "Rejected")
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    approvalStatus = null;
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text("Close"),
-              ),
-          ],
-        );
-      },
-    ).then((_) {
-      setState(() {
-        Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const GateDashboardView()));
-      });
-    });
-  }
+  // Future<void> showApprovalDialog(approvalStatusNew) async {
+  //   setState(() {
+  //     approvalStatus = "Waiting for approval...";
+  //   });
+  //
+  //   await setupAMQPReceiver();
+  //
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (_) {
+  //       return AlertDialog(
+  //         title: const Text("Approval Status"),
+  //         content: StatefulBuilder(
+  //           builder: (context, setState) {
+  //             return Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               children: [
+  //                 if (approvalStatus == "Waiting for approval...")
+  //                   const CircularProgressIndicator(),
+  //                 const SizedBox(height: 20),
+  //                 Text(
+  //                   approvalStatusNew,
+  //                   style: const TextStyle(fontSize: 16),
+  //                   textAlign: TextAlign.center,
+  //                 ),
+  //               ],
+  //             );
+  //           },
+  //         ),
+  //         actions: [
+  //           if (approvalStatus == "Approved" || approvalStatus == "Rejected")
+  //             TextButton(
+  //               onPressed: () {
+  //                 setState(() {
+  //                   approvalStatus = null;
+  //                 });
+  //                 Navigator.pop(context);
+  //               },
+  //               child: const Text("Close"),
+  //             ),
+  //         ],
+  //       );
+  //     },
+  //   ).then((_) {
+  //     setState(() {
+  //       Navigator.push(context,
+  //           MaterialPageRoute(builder: (context) => const GateDashboardView()));
+  //     });
+  //   });
+  // }
 
   bool _isButtonDisabled = false;
-
-  void _setLoading(bool isLoading) {
-    setState(() {
-      _isLoading = isLoading;
-    });
-  }
 
   bool statusallowed = false;
 }

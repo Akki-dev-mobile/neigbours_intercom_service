@@ -18,48 +18,50 @@ class SocketService {
     socket = IO.io('https://stgsocket.cubeone.in/', {
       'transports': ['websocket'],
       'autoConnect': true,
-      'reconnection': true, // ✅ Enable auto-reconnection
-      'reconnectionAttempts': 10, // ✅ Try reconnecting 10 times
-      'reconnectionDelay': 5000, // ✅ Wait 5 seconds before retrying
+      'reconnection': true,
+      'reconnectionAttempts': 10,
+      'reconnectionDelay': 3000,
     });
 
     socket!.onConnect((_) {
       print('✅ Connected to WebSocket server');
-      socket!.emit('joinRoom', {'companyId': companyId, 'clientName': appId});
+      socket!.emit('joinRoom', {'companyId': "8191", 'clientName': appId});
     });
 
     socket!.onDisconnect((_) {
       print('❌ Disconnected from WebSocket');
-      reconnectSocket(); // 🔄 Attempt to reconnect
+      Future.delayed(const Duration(seconds: 2), () {
+        if (socket != null && !(socket!.connected)) {
+          print('🔄 Attempting reconnection...');
+          socket!.connect();
+        }
+      });
     });
 
-    socket!.onConnectError((error) => print('⚠️ Connection Error: $error'));
-    socket!.onError((error) => print('🚨 WebSocket Error: $error'));
+    socket!.onReconnect((_) => print('✅ Successfully reconnected'));
+    socket!.onReconnectAttempt((_) => print('🔄 Reconnection attempt...'));
+    socket!.onError((data) => print('⚠️ WebSocket Error: $data'));
+
+    // ✅ Listen for newMessage event specifically
+    socket!.on('newMessage', (data) {
+      print('📩 Received newMessage: $data');
+      _messageStreamController.add({'event': 'newMessage', 'data': data});
+    });
+
+    // Optional - Debugging listener for all events
+    socket!.onAny((event, data) {
+      print('🌐 [DEBUG] Received ANY Event: $event, Data: $data');
+    });
 
     socket!.connect();
   }
 
-// 🔄 Auto-reconnect on disconnect
-  void reconnectSocket() {
-    print('🔄 Attempting to reconnect...');
-    Future.delayed(Duration(seconds: 5), () {
-      if (socket == null || !socket!.connected) {
-        initSocket('8191', 'oneapp'); // Reinitialize connection
-      }
-    });
-  }
-
-  void _listenToEvent(String eventName) {
-    socket?.on(eventName, (data) {
-      print('📩 Received Event: $eventName, Data: $data');
-      _messageStreamController.add({'event': eventName, 'data': data});
-    });
-  }
-
   void disconnect() {
-    socket?.disconnect();
-    socket?.dispose();
-    socket = null;
-    print('🚪 WebSocket disconnected');
+    if (socket != null) {
+      socket!.disconnect();
+      socket!.dispose();
+      socket = null;
+      print('🚪 WebSocket disconnected');
+    }
   }
 }
