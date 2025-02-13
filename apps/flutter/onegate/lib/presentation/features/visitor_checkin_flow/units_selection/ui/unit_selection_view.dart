@@ -86,7 +86,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   bool? _membersApproval;
   late Future<void> _initializeFuture;
   bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
@@ -95,8 +94,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _loadVisitorSettings();
     _initializeSocketConnection();
     _initializeFuture = _initializeMembers();
-    log("$selectedUnits here is this");
-    log("${widget.comingFrom} here is this");
+
+    // Listen to WebSocket status updates
+    socketService.messageStream.listen((message) {
+      if (message['event'] == 'newMessage') {
+        final data = message['data'];
+        _handleWebSocketApprovalUpdate(data);
+      }
+    });
+  }
+
+  void _handleWebSocketApprovalUpdate(Map<String, dynamic> data) async {
+    final visitorLogId = data['visitor_log_id']?.toString();
+    final allowStatus = data['allow_status']?.toString()?.toLowerCase();
+
+    // Ensure we are listening only for the current visitor log ID
+    final prefs = await SharedPreferences.getInstance();
+    final currentLogID = prefs.getString("visitor_log");
+
+    if (visitorLogId == currentLogID) {
+      log("🟢 WebSocket Approval Update for Log ID: $visitorLogId, Status: $allowStatus");
+
+      if (allowStatus == 'always_allowed') {
+        _handleVisitorAlwaysAllowed();
+      }
+    }
   }
 
   // API Methods
@@ -1126,18 +1148,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> _handleFcmResponse(
       dynamic responseData, VisitorLog visitorLogData) async {
     final message = responseData['message'] as String?;
+    final allowStatus =
+        responseData['data']?['allow_status']?.toString()?.toLowerCase();
 
-    if (message?.toLowerCase() == "visitor is always allowed") {
+    if (message?.toLowerCase() == "visitor is always allowed" ||
+        allowStatus == 'always_allowed') {
       await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-
-      if (mounted) {
-        await _showVisitorAllowedDialog();
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const GateDashboardView()),
-        );
-      }
+      _handleVisitorAlwaysAllowed();
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
@@ -1155,6 +1172,19 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ),
         );
       }
+    }
+  }
+
+  void _handleVisitorAlwaysAllowed() async {
+    if (mounted) {
+      await _showVisitorAllowedDialog();
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const GateDashboardView(),
+        ),
+        (route) => false,
+      );
     }
   }
 
@@ -1456,16 +1486,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id':
+      'user_id': "77525",
 
-      // "77525",
-
-
-      (int.tryParse(userId) == null || int.tryParse(userId) == 0)
-          ? "234567"
-          : int.parse(userId).toString(),
+      // (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+      //     ? "234567"
+      //     : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "8452060059",
+      'member_mobile_number': "9967089101",
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
           ? "delivery"

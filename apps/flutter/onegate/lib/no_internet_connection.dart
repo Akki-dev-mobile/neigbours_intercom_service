@@ -33,7 +33,7 @@ class NoInternetScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 ),
-                child: Text("Retry"),
+                child: Text("Retry",style: TextStyle(fontSize: 16, color: Colors.black)),
               ),
             ],
           ),
