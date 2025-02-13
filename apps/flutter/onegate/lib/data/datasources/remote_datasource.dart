@@ -1311,6 +1311,7 @@ class RemoteDataSource {
         queryParameters: {'company_id': companyId},
       );
 
+      log("response--$response");
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data?['data'];
         return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
@@ -1320,6 +1321,35 @@ class RemoteDataSource {
     } catch (e) {
       log('Error fetching staff list: $e');
       rethrow;
+    }
+  }
+
+  Future<void> makeExotelCall({
+    required String memberMobileNumber,
+    required int visitorId,
+    required int memberId,
+    required int visitorLogId,
+    required String purposeCategory,
+  }) async {
+    try {
+      final response = await Dio().post(
+        '${ApiUrls.gateBaseUrl}/visitor/exotel/call',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: {
+          'member_mobile_number': memberMobileNumber,
+          'visitor_id': visitorId,
+          'member_id': memberId,
+          'visitor_log_id': visitorLogId,
+          'purpose_category': purposeCategory,
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Failed to make Exotel call. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error making Exotel call: $e');
     }
   }
 

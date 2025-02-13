@@ -18,9 +18,7 @@ class VisitorSettingsView extends StatefulWidget {
 
 class _VisitorSettingsViewState extends State<VisitorSettingsView> {
   String? selectedGateName;
-  final RemoteDataSource remoteDataSource = RemoteDataSource(
-
-  );
+  final RemoteDataSource remoteDataSource = RemoteDataSource();
 
   void initState() {
     super.initState();
@@ -157,7 +155,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                                 .indexOf(purpose),
                                             !purpose.isSelected,
                                           );
-                                      await    purposeProvider.saveSelectedPurposes(
+                                          await purposeProvider
+                                              .saveSelectedPurposes(
                                             purposeProvider.purposes!,
                                           );
                                         },

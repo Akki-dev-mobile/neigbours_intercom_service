@@ -685,15 +685,24 @@ class ApprovalsList extends StatelessWidget {
           visitor.inGate.toLowerCase().contains(query);
     }).toList();
 
-    // Sort by logCreatedAt (newest first)
-    filteredApprovals.sort((a, b) => DateTime.parse(b.logCreatedAt)
-        .compareTo(DateTime.parse(a.logCreatedAt)));
+    // Group approvals by date
+    final Map<String, List<VisitorInfo>> groupedByDate = {};
 
-    // Log to verify the final list
-    log("🔍 Filtered Approvals List (Query: '$searchQuery'): ${filteredApprovals.map((e) => e.toString()).toList()}");
+    for (var approval in filteredApprovals) {
+      final logDate = DateFormat('yyyy-MM-dd')
+          .format(DateTime.parse(approval.logCreatedAt));
 
-    // Display message if no results match search
-    if (filteredApprovals.isEmpty) {
+      if (!groupedByDate.containsKey(logDate)) {
+        groupedByDate[logDate] = [];
+      }
+      groupedByDate[logDate]!.add(approval);
+    }
+
+    // Convert map to sorted list of entries by date (descending order)
+    final groupedList = groupedByDate.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+
+    if (groupedList.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -715,11 +724,49 @@ class ApprovalsList extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: filteredApprovals.length,
+      itemCount: groupedList.length,
       itemBuilder: (context, index) {
-        return MissedApprovalCard(
-          visitorInfo: filteredApprovals[index],
-          key: ValueKey(filteredApprovals[index].visitorLogId),
+        final dateKey = groupedList[index].key;
+        final approvalsForDate = groupedList[index].value;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Date Chip as Header
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 0.0),
+              child: Center(
+                child: Chip(
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                        25), // Adjust the radius as needed
+                    side: BorderSide.none, // No border
+                  ),
+                  label: Text(
+                    DateFormat('dd MMM, yyyy').format(
+                      DateTime.parse(dateKey),
+                    ),
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+
+            // Approvals List for this Date
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: approvalsForDate.length,
+              itemBuilder: (context, innerIndex) {
+                return MissedApprovalCard(
+                  visitorInfo: approvalsForDate[innerIndex],
+                  key: ValueKey(approvalsForDate[innerIndex].visitorLogId),
+                );
+              },
+            ),
+          ],
         );
       },
     );
@@ -865,55 +912,6 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
   }
 }
 
-// Info Section Widget
-// class VisitorInfoSection extends StatelessWidget {
-//   final VisitorInfo visitorInfo;
-//   const VisitorInfoSection({
-//     Key? key,
-//     required this.visitorInfo,
-//   }) : super(key: key);
-//   @override
-//   Widget build(BuildContext context) {
-//     return Padding(
-//       padding: const EdgeInsets.all(16),
-//       child: Row(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           VisitorAvatar(visitorInfo: visitorInfo),
-//           const SizedBox(width: 16),
-//           Expanded(
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 Text(
-//                   visitorInfo.visitorName,
-//                   style: const TextStyle(
-//                     fontSize: 18,
-//                     fontWeight: FontWeight.bold,
-//                   ),
-//                 ),
-//                 const SizedBox(height: 8),
-//                 Text(
-//                   'Member: ${visitorInfo.memberInfo.name}',
-//                   style: const TextStyle(fontSize: 14),
-//                 ),
-//                 Text(
-//                   'Gate: ${visitorInfo.inGate}',
-//                   style: const TextStyle(fontSize: 14),
-//                 ),
-//                 Text(
-//                   'Time: ${DateFormat('hh:mm a').format(DateTime.parse(visitorInfo.logCreatedAt))}',
-//                   style: const TextStyle(fontSize: 14),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
 class VisitorInfoSection extends StatelessWidget {
   final VoidCallback onRetry;
   final bool isLoading;
@@ -964,76 +962,6 @@ class VisitorInfoSection extends StatelessWidget {
                 "${visitorInfo.unitDetails.building_unit} - ${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""}",
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-              // subtitle: Column(
-              //   crossAxisAlignment: CrossAxisAlignment.start,
-              //   children: [
-              //     Container(
-              //       decoration: BoxDecoration(
-              //         color: const Color(0xffFFEBE6),
-              //         borderRadius: BorderRadius.circular(8),
-              //       ),
-              //       child: Padding(
-              //         padding: const EdgeInsets.all(8.0),
-              //         child: Row(
-              //           mainAxisSize: MainAxisSize.min,
-              //           children: [
-              //             Text(
-              //               visitorInfo.purposeSubCategoryName ??
-              //                   visitorInfo.purposeCategoryName ??
-              //                   "",
-              //               style: Theme.of(context)
-              //                   .textTheme
-              //                   .bodySmall!
-              //                   .copyWith(
-              //                     color: Colors.black,
-              //                     fontWeight: FontWeight.w500,
-              //                   ),
-              //             ),
-              //           ],
-              //         ),
-              //       ),
-              //     ),
-              //     Padding(
-              //       padding: const EdgeInsets.only(top: 5),
-              //       child: RichText(
-              //         text: TextSpan(
-              //           children: [
-              //             const WidgetSpan(
-              //               child: Icon(
-              //                 Symbols.apartment,
-              //                 color: Color(0xffFFB080),
-              //               ),
-              //             ),
-              //             // TextSpan(
-              //             //     text: unitList,
-              //             //     style: Theme.of(context).textTheme.labelSmall),
-              //             WidgetSpan(
-              //               child: Container(
-              //                 margin: const EdgeInsets.only(left: 8),
-              //                 padding: const EdgeInsets.symmetric(
-              //                   horizontal: 7,
-              //                   vertical: 2,
-              //                 ),
-              //                 decoration: BoxDecoration(
-              //                   color: const Color(0xffFFEBE6),
-              //                   borderRadius: BorderRadius.circular(8),
-              //                 ),
-              //                 child: Text(
-              //                   visitorInfo.unitDetails.building_unit ?? "",
-              //                   style: const TextStyle(
-              //                     color: Colors.black,
-              //                     fontWeight: FontWeight.w500,
-              //                     fontSize: 14,
-              //                   ),
-              //                 ),
-              //               ),
-              //             ),
-              //           ],
-              //         ),
-              //       ),
-              //     ),
-              //   ],
-              // ),
             ),
             Divider(
               indent: 16,

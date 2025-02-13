@@ -4,11 +4,11 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/addstaff.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
 
-import '../../../../dio_setup.dart';
-import '../api/staff_api.dart';
+import '../model/staff_model.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({Key? key}) : super(key: key);
@@ -18,18 +18,13 @@ class StaffScreen extends StatefulWidget {
 }
 
 class _StaffScreenState extends State<StaffScreen> {
-  final StaffApi _staffApi = StaffApi();
-  late Future<List<dynamic>> _staffFuture = Future.value([]);
-  final RemoteDataSource remoteDataSource = RemoteDataSource(
-
-  );
+  late Future<List<StaffModel>> _staffFuture = Future.value([]);
+  final RemoteDataSource remoteDataSource = RemoteDataSource();
   final GateStorage _gateStorage = GateStorage();
 
-  List<dynamic> _staffListFull = [];
+  List<StaffModel> _staffListFull = [];
+  List<StaffModel> _filteredStaffList = [];
 
-  List<dynamic> _filteredStaffList = [];
-
-  bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -41,7 +36,8 @@ class _StaffScreenState extends State<StaffScreen> {
   Future<void> _initializeSocietyId() async {
     var societyID = await _gateStorage.getSocietyId();
     log('Society ID: $societyID');
-    _staffFuture = _staffApi.fetchStaffList(societyID.toString());
+
+    _staffFuture = remoteDataSource.fetchStaffList(societyID.toString());
     setState(() {});
   }
 
@@ -49,8 +45,8 @@ class _StaffScreenState extends State<StaffScreen> {
     if (query.isEmpty) {
       _filteredStaffList = List.from(_staffListFull);
     } else {
-      _filteredStaffList = _staffListFull.where((staffMap) {
-        final staffName = (staffMap['name'] ?? '').toString().toLowerCase();
+      _filteredStaffList = _staffListFull.where((staff) {
+        final staffName = staff.name.toLowerCase();
         return staffName.contains(query.toLowerCase());
       }).toList();
     }
@@ -60,9 +56,7 @@ class _StaffScreenState extends State<StaffScreen> {
   void _clearSearch() {
     _searchController.clear();
     _filteredStaffList = List.from(_staffListFull);
-    setState(() {
-      _isSearching = false;
-    });
+    setState(() {});
   }
 
   @override
@@ -87,7 +81,7 @@ class _StaffScreenState extends State<StaffScreen> {
             hintText: 'Enter Staff Name',
           ),
           const SizedBox(height: 10),
-          FutureBuilder<List<dynamic>>(
+          FutureBuilder<List<StaffModel>>(
             future: _staffFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -151,8 +145,18 @@ class _StaffScreenState extends State<StaffScreen> {
             _initializeSocietyId();
           });
         },
-        label: const Text('Add Staff'),
-        icon: const Icon(Icons.add),
+        label: Text(
+          'Add Staff',
+          style: Theme.of(context)
+              .textTheme
+              .bodyLarge
+              ?.copyWith(color: Colors.white),
+        ),
+        icon: Icon(
+          Icons.add,
+          size: Theme.of(context).iconTheme.size,
+          color: Colors.white,
+        ),
       ),
     );
   }

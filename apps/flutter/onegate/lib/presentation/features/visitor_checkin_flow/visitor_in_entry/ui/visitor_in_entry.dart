@@ -49,10 +49,10 @@ class VisitorsInEntry extends StatefulWidget {
 class _VisitorsInEntryState extends State<VisitorsInEntry> {
   late final VisitorInEntryBloc _bloc;
   TextEditingController? _guestNameController;
-  late final TextEditingController? _guestComingFromController;
-  late final TextEditingController? _guestCountController;
-  late final TextEditingController? _visitorNumberController;
-  late final TextEditingController? _carNumberController;
+  TextEditingController? _guestComingFromController;
+  TextEditingController? _guestCountController;
+  TextEditingController? _visitorNumberController;
+  TextEditingController? _carNumberController;
   int selectedCompanyIndex = -1;
   List<CameraDescription>? cachedCameras;
   bool _speechEnabled = false;

@@ -6,13 +6,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/parcel/ui/parceldetails.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../../../dio_setup.dart';
 import '../bloc/parcel_state.dart';
 
 class ParcelList extends StatefulWidget {
@@ -80,20 +77,6 @@ class _ParcelListState extends State<ParcelList> {
     }
   }
 
-  void _filterParcels(String query, List<dynamic> parcels) {
-    setState(() {
-      filteredParcels = parcels
-          .where((parcel) =>
-              (parcel['member_name']?.toString() ?? '')
-                  .toLowerCase()
-                  .contains(query.toLowerCase()) ||
-              (parcel['unit_name']?.toString() ?? '')
-                  .toLowerCase()
-                  .contains(query.toLowerCase()))
-          .toList();
-    });
-  }
-
   Widget _buildSearchField() {
     return CustomForm.textField(
       "Search",
@@ -121,14 +104,12 @@ class _ParcelListState extends State<ParcelList> {
   }
 
   Widget parsalView(Map<String, dynamic> parcel) {
-    final contactNumber = parcel['visitor_mobile'] ?? 'N/A';
     final checkIn = parcel['visitor_check_in'];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
         elevation: 2,
-        // margin: const EdgeInsets.all(8.0),
         child: Padding(
           padding: const EdgeInsets.only(
             bottom: 8.0,
@@ -154,27 +135,6 @@ class _ParcelListState extends State<ParcelList> {
                         NetworkImage(parcel['visitor_image'] ?? ''),
                     radius: 30,
                   ),
-                  // trailing: IconButton(
-                  //   onPressed: () {
-                  //     if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {
-                  //       _launchCaller(contactNumber);
-                  //     } else {
-                  //       Fluttertoast.showToast(
-                  //         msg: 'No contact number available',
-                  //         toastLength: Toast.LENGTH_SHORT,
-                  //         gravity: ToastGravity.BOTTOM,
-                  //         backgroundColor: Colors.red,
-                  //         textColor: Colors.white,
-                  //         fontSize: 16.0,
-                  //       );
-                  //     }
-                  //   },
-                  //   // icon: const Icon(
-                  //   //   Ionicons.call_outline,
-                  //   //   color: Colors.green,
-                  //   // ),
-                  // ),
-
                   title: Text(
                     parcel['member_name'] ?? 'N/A',
                     style: Theme.of(context).textTheme.bodyMedium,
@@ -182,81 +142,7 @@ class _ParcelListState extends State<ParcelList> {
                   subtitle: Text(
                     "${parcel['unit_name']?.toString() ?? 'No Description'} - ${parcel['purpose_sub_category_name'] ?? 'N/A'}",
                     style: Theme.of(context).textTheme.bodySmall,
-                  )
-                  // subtitle: Padding(
-                  //   padding: const EdgeInsets.only(top: 5),
-                  //   child: Column(
-                  //     children: [
-
-                  //       Row(
-                  //         children: [
-                  //           const Icon(
-                  //             Symbols.apartment,
-                  //             color: Color(0xffFFB080),
-                  //           ),
-                  //           Container(
-                  //             margin: const EdgeInsets.only(left: 8),
-                  //             padding: const EdgeInsets.symmetric(
-                  //               horizontal: 7,
-                  //               vertical: 2,
-                  //             ),
-                  //             decoration: BoxDecoration(
-                  //               color: const Color(0xffFFEBE6),
-                  //               borderRadius: BorderRadius.circular(8),
-                  //             ),
-                  //             child: Text(
-                  //               parcel['unit_name']?.toString() ??
-                  //                   'No Description',
-                  //               style: Theme.of(context)
-                  //                   .textTheme
-                  //                   .bodySmall!
-                  //                   .copyWith(
-                  //                     color: Colors.black,
-                  //                     fontWeight: FontWeight.w500,
-                  //                     // fontSize: 14,
-                  //                   ),
-                  //             ),
-                  //           ),
-                  //         ],
-                  //       ),
-                  //       const SizedBox(
-                  //         height: 10,
-                  //       ),
-                  //       Row(
-                  //         children: [
-                  //           const Icon(
-                  //             Symbols.delivery_truck_speed,
-                  //             color: Color(0xffF2D8A5),
-                  //           ),
-                  //           Container(
-                  //             margin: const EdgeInsets.only(left: 8),
-                  //             padding: const EdgeInsets.symmetric(
-                  //               horizontal: 7,
-                  //               vertical: 2,
-                  //             ),
-                  //             decoration: BoxDecoration(
-                  //               color: const Color(0xffF2D8A5),
-                  //               borderRadius: BorderRadius.circular(15),
-                  //             ),
-                  //             child: Text(
-                  //               parcel['purpose_sub_category_name'] ?? 'N/A',
-                  //               style: Theme.of(context)
-                  //                   .textTheme
-                  //                   .bodySmall!
-                  //                   .copyWith(
-                  //                     color: Colors.black,
-                  //                     fontWeight: FontWeight.w500,
-                  //                     // fontSize: 14,
-                  //                   ),
-                  //             ),
-                  //           ),
-                  //         ],
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
-
-                  ),
+                  )),
               Divider(
                 indent: 16,
                 endIndent: 16,

@@ -2,15 +2,15 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../model/staff_model.dart';
 import 'edit_staff.dart';
-
 class StaffListWidget extends StatelessWidget {
-  final List<dynamic> staffList;
+  final List<StaffModel> staffList;
 
   const StaffListWidget({Key? key, required this.staffList}) : super(key: key);
 
@@ -22,23 +22,12 @@ class StaffListWidget extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: staffList.length,
       itemBuilder: (context, index) {
-        final staffMap = staffList[index];
-        final contactNumber = staffMap['staff_contact_number'] ?? 'N/A';
+        final staff = staffList[index];
 
         return GestureDetector(
           onTap: () {
-            final staffObj = Staff.fromJson(staffMap);
-            log("staffObj: $staffObj");
-            log("staffMap: $staffMap");
-
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => EditStaff(
-                  staff: staffObj,
-                  // staffId: staffMap['id'],
-                ),
-              ),
-            );
+            // Navigate to EditStaff or any other action with the selected staff
+            log("Selected staff: ${staff.name}");
           },
           child: Container(
             margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 5),
@@ -53,69 +42,16 @@ class StaffListWidget extends StatelessWidget {
               leadingIcon: CircleAvatar(
                 radius: 30,
                 backgroundColor: Colors.grey[200],
-                foregroundImage: staffMap['staff_image'] != null
-                    ? (staffMap['staff_image'].startsWith('http')
-                        ? NetworkImage(staffMap['staff_image'])
-                        : FileImage(File(staffMap['staff_image'])))
-                    : null,
-                child: staffMap['staff_image'] == null
-                    ? const Icon(
-                        Icons.person,
-                        color: Colors.grey,
-                      )
-                    : null,
+                child: const Icon(Icons.person, color: Colors.grey),
               ),
-              title: staffMap['name'].toString() ?? 'No Name',
-              titleStyle: Theme.of(context).textTheme.bodyLarge,
-              subtitleStyle: Theme.of(context).textTheme.bodyMedium,
-              subtitleWidget: Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.only(
-                      right: MediaQuery.of(context).size.width * 0.1),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffFFEBE6),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Symbols.work,
-                        size: 15,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: Text(
-                          '${staffMap['category'] ?? 'N/A'}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  )),
+              title: staff.name,
+              subtitleWidget: Text(staff.category),
               trailing: IconButton(
                 onPressed: () {
-                  if (contactNumber != 'N/A' && contactNumber.isNotEmpty) {
-                    _launchCaller(contactNumber);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('No contact number available'),
-                      ),
-                    );
-                  }
+                  _launchCaller(staff.staffContactNumber);
                 },
                 icon: const Icon(
-                  Symbols.call,
+                  Icons.call,
                   color: Colors.green,
                 ),
               ),
@@ -128,10 +64,11 @@ class StaffListWidget extends StatelessWidget {
 
   void _launchCaller(String number) async {
     final url = 'tel:$number';
-    if (await canLaunch(url)) {
-      await launch(url);
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
     } else {
       throw 'Could not launch $url';
     }
   }
 }
+
