@@ -937,7 +937,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
 
       final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        '{https://stggateapi.cubeone.in/api}/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );

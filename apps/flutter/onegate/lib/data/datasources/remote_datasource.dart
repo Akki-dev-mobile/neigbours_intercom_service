@@ -985,7 +985,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        log("📡 Full API Response: ${jsonEncode(responseData)}");
+        // log("📡 Full API Response: ${jsonEncode(responseData)}");
 
         if (!responseData.containsKey('data')) {
           log("🚨 API Response does not contain 'data' key.");
@@ -1004,7 +1004,7 @@ class RemoteDataSource {
 
           try {
             // 🔍 Log the raw `unit_details` value before decoding
-            log("🔍 Raw unit_details: ${json['unit_details']}");
+            // log("🔍 Raw unit_details: ${json['unit_details']}");
 
             final dynamic unitDetailsValue = json['unit_details'];
 
@@ -1031,7 +1031,7 @@ class RemoteDataSource {
           }
 
           // 🔍 Log parsed `unitDetails`
-          log("✅ Parsed unitDetails: ${parsedUnitDetails.map((u) => u.building_unit).toList()}");
+          // log("✅ Parsed unitDetails: ${parsedUnitDetails.map((u) => u.building_unit).toList()}");
 
           return VisitorInfo(
             visitorId: _parseToInt(json['visitor_id']),
@@ -1063,7 +1063,7 @@ class RemoteDataSource {
           );
         }).toList();
 
-        log("✅ Formatted Visitor List: ${jsonEncode(visitorList.map((e) => e.toString()).toList())}");
+        // log("✅ Formatted Visitor List: ${jsonEncode(visitorList.map((e) => e.toString()).toList())}");
         return visitorList;
       } else {
         throw Exception(
