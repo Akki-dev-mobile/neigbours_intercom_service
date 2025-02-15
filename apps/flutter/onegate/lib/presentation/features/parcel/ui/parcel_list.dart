@@ -49,23 +49,21 @@ class _ParcelListState extends State<ParcelList> {
 
   @override
   void dispose() {
-    searchController.dispose();
     _refreshTimer?.cancel();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _refreshPage() async {
-    if (!mounted || _isRefreshing)
-      return; // Prevent calling refresh if unmounted
+    if (!mounted || _isRefreshing) return;
 
     setState(() {
       _isRefreshing = true;
     });
 
     try {
-      if (mounted) {
-        context.read<ParcelBloc>().add(FetchParcels());
-      }
+      context.read<ParcelBloc>().add(FetchParcels());
     } catch (e) {
       debugPrint("Error refreshing ParcelBloc: $e");
     } finally {
@@ -205,7 +203,7 @@ class _ParcelListState extends State<ParcelList> {
                                   TextEditingController();
                               remoteDataSource.getParcelOtp(
                                 parcel['parcel_id'].toString(),
-                                parcel['memb_mobile_number'].toString(),
+                                "9768474149".toString(),
                               );
                               showModalBottomSheet(
                                 context: context,
@@ -435,17 +433,16 @@ class _ParcelListState extends State<ParcelList> {
                         ),
                       );
                     } else if (state is ParcelLoaded) {
-                      final parcels = searchController.text.isEmpty
-                          ? state.parcels
-                          : filteredParcels;
+                      final parcels = state.parcels;
 
                       if (parcels.isEmpty) {
                         return const Center(
-                          child: Text('No such member parcel found.'),
+                          child: Text('No parcels found.'),
                         );
                       }
 
-                      return parsallist(parcels, _searchQuery);
+                      return parsallist(
+                          parcels, _searchQuery); // Use parcels directly
                     } else if (state is ParcelError) {
                       return Center(child: Text('Error: ${state.message}'));
                     } else {

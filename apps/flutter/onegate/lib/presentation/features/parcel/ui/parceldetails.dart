@@ -528,15 +528,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
               ),
             Center(
               child: TextButton(
-                onPressed: _timer == 0
-                    ? () {
-                        widget.remoteDataSource.getParcelOtp(
-                          widget.parcel['parcel_id'].toString(),
-                          widget.parcel['memb_mobile_number'].toString(),
-                        );
-                        _startTimer();
-                      }
-                    : null,
+                onPressed: _timer == 0 ? resendOtp : null,
                 child: Text(
                   _timer == 0 ? 'Resend' : 'Resend in $_timer sec',
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -555,43 +547,8 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: () async {
-                      String otp = widget.otpController.text;
-                      onSubmit();
+                    onPressed: submitOtp,
 
-                      try {
-                        if (widget.otpController.text.length == 6) {
-                          final result =
-                              await widget.remoteDataSource.verifyParcelOtp(
-                            widget.parcel['parcel_id'].toString(),
-                            otp,
-                          );
-                          Fluttertoast.showToast(
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.BOTTOM,
-                            backgroundColor: Colors.green,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
-                            msg: result['message'],
-                          );
-                          log("OTP verified: $result");
-                        }
-                      } catch (e) {
-                        setState(() {
-                          errorText = "Invalid OTP.";
-                        });
-
-                        log("OTP verification failed: $e");
-                        Fluttertoast.showToast(
-                          msg: 'Invalid OTP',
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.BOTTOM,
-                          backgroundColor: Colors.red,
-                          textColor: Colors.white,
-                          fontSize: 16.0,
-                        );
-                      }
-                    },
                     child: Text(
                       'Submit',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -612,5 +569,76 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
         ),
       ),
     );
+  }
+
+  void resendOtp() async {
+    try {
+      await widget.remoteDataSource.getParcelOtp(
+        widget.parcel['parcel_id'].toString(),
+        "9768474149",
+      );
+      _startTimer();
+      Fluttertoast.showToast(
+        msg: 'OTP Resent Successfully',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Failed to Resend OTP',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      log("Failed to resend OTP: $e");
+    }
+  }
+
+  void submitOtp() async {
+    String otp = widget.otpController.text;
+    if (otp.length != 6) {
+      setState(() {
+        errorText = "Please enter a valid 6-digit OTP.";
+      });
+      return;
+    }
+
+    try {
+      final result = await widget.remoteDataSource.verifyParcelOtp(
+        widget.parcel['parcel_id'].toString(),
+        otp,
+      );
+      Fluttertoast.showToast(
+        msg: result['message'],
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+
+      log("OTP verified: $result");
+      Navigator.pop(context); // Close bottom sheet upon success
+    } catch (e) {
+      setState(() {
+        errorText = "Invalid OTP.";
+      });
+
+      Fluttertoast.showToast(
+        msg: 'Invalid OTP',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+
+      log("OTP verification failed: $e");
+    }
   }
 }

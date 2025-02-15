@@ -141,7 +141,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   @override
   void initState() {
     super.initState();
-    log("Bearer ${keycloakWrapper.accessToken}");
     _loginService = LoginService(
       keycloakWrapper:
           KeycloakWrapper(config: KeycloakConfigManager.getConfig()),

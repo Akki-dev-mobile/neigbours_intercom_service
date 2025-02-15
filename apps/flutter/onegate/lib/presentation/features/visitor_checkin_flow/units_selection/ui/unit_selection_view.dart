@@ -1296,14 +1296,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  bool _validateSelection(Set<String> selectedMember) {
-    if (selectedMember.length != 1 || selectedUnits.length != 1) {
-      _handleInvalidSelection();
-      return false;
-    }
-    return true;
-  }
-
 // Update the _prepareVisitorLogData method
   Future<VisitorLog> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1377,8 +1369,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   // Update the _handleInvalidSelection method
   void _handleInvalidSelection() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? visitorId = prefs.getString('visitorId');
-    final companyDetails = await gateStorage.getSocietyDetails();
 
     List<int> unitIds = [];
     unitIds = formattedMemberDetails

@@ -1380,26 +1380,34 @@ class RemoteDataSource {
   Future<Map<String, dynamic>> verifyParcelOtp(
       String parcelId, String otp) async {
     try {
+      log("Starting verifyParcelOtp API call...");
+      log("Request Data -> parcel_id: $parcelId, otp: $otp");
+
       final response = await http.post(
         Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtpVerify"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
-        body: jsonEncode(<String, String>{
-          'parcel_id': parcelId,
-          'otp': otp,
+        body: jsonEncode(<String, dynamic>{
+          'parcel_id': int.parse(parcelId), // Convert parcel_id to int
+          'otp': int.parse(otp), // Convert otp to int
         }),
       );
 
+      log("Response Status Code -> ${response.statusCode}");
+      log("Response Body -> ${response.body}");
+
       if (response.statusCode == 200) {
-        log("Parcel OTP verified successfully: ${response.body}");
-        return jsonDecode(response.body);
+        final responseData = jsonDecode(response.body);
+        log("Parcel OTP verified successfully: $responseData");
+        return responseData;
       } else {
-        log("Failed to verify parcel OTP: ${response.statusCode} - ${response.body}");
+        log("Failed to verify parcel OTP. Status Code: ${response.statusCode}, Response Body: ${response.body}");
         throw Exception('Failed to verify parcel OTP');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       log("Error in verifyParcelOtp: $e");
+      log("StackTrace: $stackTrace");
       throw Exception('Failed to verify parcel OTP');
     }
   }
