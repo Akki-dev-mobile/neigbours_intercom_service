@@ -1307,10 +1307,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 // Update the _prepareVisitorLogData method
   Future<VisitorLog> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? visitorId = prefs.getString('visitorId');
-    final companyDetails = await gateStorage.getSocietyDetails();
-    final companyName = companyDetails['societyName'];
-    final selectedGateName = prefs.getString('selected_gate');
 
     List<int> unitIds = [];
     unitIds = formattedMemberDetails
@@ -1453,14 +1449,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'purpose': "Guest",
       'in_time': formattedInTime,
       'user_id':
-      // "1234",
-      "77525",
-      //
-      // (int.tryParse(userId) == null || int.tryParse(userId) == 0)
-      //     ? "234567"
-      //     : int.parse(userId).toString(),
+          // "1234",
+          //
+          (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+              ? "234567"
+              : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "8452060059",
+      'member_mobile_number': "9768474149",
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
           ? "delivery"

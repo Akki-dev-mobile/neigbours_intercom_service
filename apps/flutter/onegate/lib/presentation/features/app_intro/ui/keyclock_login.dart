@@ -1,20 +1,16 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
-// Import local packages
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
@@ -145,13 +141,12 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   @override
   void initState() {
     super.initState();
+    log("Bearer ${keycloakWrapper.accessToken}");
     _loginService = LoginService(
       keycloakWrapper:
           KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
       gateStorage: GateStorage(),
-      remoteDataSource: RemoteDataSource(
-
-      ),
+      remoteDataSource: RemoteDataSource(),
     );
     _loginState = ValueNotifier(const LoginState1());
     _initialize();
@@ -404,7 +399,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         await prefs.setString('selected_gate', singleGate["gate_name"]);
         log("Automatically selected single gate: ${singleGate['gate_name']}");
 
-        // Show a SnackBar indicating navigation
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -413,7 +407,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           );
         }
 
-        // Navigate directly to the destination
         await _navigateBasedOnRole(selectedRole);
         return;
       }

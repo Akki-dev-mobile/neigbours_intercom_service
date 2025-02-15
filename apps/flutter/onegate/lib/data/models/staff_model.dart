@@ -13,17 +13,17 @@ class StaffModel extends StaffEntity {
     required String languageSpoken,
     required String status,
   }) : super(
-    id: id,
-    name: name,
-    category: category,
-    staffBadgeNumber: staffBadgeNumber,
-    staffContactNumber: staffContactNumber,
-    staffDob: staffDob,
-    staffQualification: staffQualification,
-    staffSkill: staffSkill,
-    languageSpoken: languageSpoken,
-    status: status,
-  );
+          id: id,
+          name: name,
+          category: category,
+          staffBadgeNumber: staffBadgeNumber,
+          staffContactNumber: staffContactNumber,
+          staffDob: staffDob,
+          staffQualification: staffQualification,
+          staffSkill: staffSkill,
+          languageSpoken: languageSpoken,
+          status: status,
+        );
 
   factory StaffModel.fromJson(Map<String, dynamic> json) {
     return StaffModel(

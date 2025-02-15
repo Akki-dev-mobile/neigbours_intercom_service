@@ -65,11 +65,12 @@ class RemoteDataSource {
         ),
       );
 
-      if (response?.statusCode == 200) {
-        log('Login response: ${response?.data}');
-        return response?.data?['data'] ?? {};
+      if (response.statusCode == 200) {
+        log("Bearer ${keycloakWrapper.accessToken}");
+        log('Login response: ${response.data}');
+        return response.data?['data'] ?? {};
       } else {
-        throw Exception('Failed to log in: ${response?.statusCode}');
+        throw Exception('Failed to log in: ${response.statusCode}');
       }
     } catch (e) {
       log('Error during login: $e');
@@ -147,7 +148,7 @@ class RemoteDataSource {
       );
 
       // Extract the data from the response
-      final List<dynamic> data = response?.data['data'] ?? [];
+      final List<dynamic> data = response.data['data'] ?? [];
       if (data.isNotEmpty) {
         final visitorData = data.first;
         log("Visitor data fetched: $visitorData");
@@ -651,7 +652,7 @@ class RemoteDataSource {
         ),
       );
 
-      return response?.data?['data'] ?? [];
+      return response.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching members: $e');
       rethrow;
@@ -722,7 +723,7 @@ class RemoteDataSource {
         ),
       );
 
-      return List<Map<String, dynamic>>.from(response?.data['data'] ?? []);
+      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
     } catch (e) {
       log('Error fetching buildings: $e');
       rethrow;
@@ -742,7 +743,7 @@ class RemoteDataSource {
         queryParameters: {'company_id': companyId},
       );
 
-      return response?.data?['data'] ?? [];
+      return response.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching buildings list: $e');
       rethrow;
@@ -809,10 +810,10 @@ class RemoteDataSource {
 
       final response = await Dio().patch(ApiUrls.visitorCheckout, data: data);
 
-      if (response?.statusCode == 200) {
+      if (response.statusCode == 200) {
         return true;
       } else {
-        log('Check-out failed: ${response?.statusCode} - ${response?.data}');
+        log('Check-out failed: ${response.statusCode} - ${response.data}');
         return false;
       }
     } catch (e) {
@@ -912,10 +913,8 @@ class RemoteDataSource {
                     item["purpose_category_name"] as String,
                 carNumber: item["vehicle_number"] as String?);
 
-            // print("Mapped VisitorLog: ${visitorLog.toJson()}");
             return visitorLog;
           } catch (mappingError) {
-            // print("Error mapping VisitorLog: $mappingError");
             throw Exception("Failed to map visitor log");
           }
         }).toList();

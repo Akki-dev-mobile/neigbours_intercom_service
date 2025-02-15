@@ -26,7 +26,6 @@ class StaffListWidget extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            // Navigate to EditStaff or any other action with the selected staff
             log("Selected staff: ${staff.name}");
           },
           child: Container(
