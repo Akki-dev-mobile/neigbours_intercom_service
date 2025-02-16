@@ -303,10 +303,10 @@ class VisitorInfo {
         parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
           final unit = UnitDetails(
             unitId: _parseToInt(unitJson['unit_id']),
-            buildingUnit: unitJson["buildingUnit"]?.toString() ?? '',
+            building_unit: unitJson["building_unit"]?.toString() ?? '',
           );
 
-          log("🔍 Parsed buildingUnit: ${unit.buildingUnit}");
+          log("🔍 Parsed building_unit: ${unit.building_unit}");
 
           return unit;
         }).toList();
@@ -314,10 +314,10 @@ class VisitorInfo {
         parsedUnitDetails = unitDetailsString.map<UnitDetails>((unitJson) {
           final unit = UnitDetails(
             unitId: _parseToInt(unitJson['unit_id']),
-            buildingUnit: unitJson["buildingUnit"]?.toString() ?? '',
+            building_unit: unitJson["building_unit"]?.toString() ?? '',
           );
 
-          log("🔍 Parsed buildingUnit: ${unit.buildingUnit}");
+          log("🔍 Parsed building_unit: ${unit.building_unit}");
 
           return unit;
         }).toList();
@@ -326,8 +326,8 @@ class VisitorInfo {
       log("❌ Error decoding unit details: $e");
     }
 
-    // 🔍 Print final assigned buildingUnit
-    log("✅ Final assigned buildingUnit: ${parsedUnitDetails.isNotEmpty ? parsedUnitDetails.first.buildingUnit : 'N/A'}");
+    // 🔍 Print final assigned building_unit
+    log("✅ Final assigned building_unit: ${parsedUnitDetails.isNotEmpty ? parsedUnitDetails.first.building_unit : 'N/A'}");
 
     return VisitorInfo(
       visitorId: _parseToInt(json['visitor_id']),
@@ -341,14 +341,14 @@ class VisitorInfo {
       logCreatedAt: json['log_created_at']?.toString() ?? '',
       unitDetails: parsedUnitDetails.isNotEmpty
           ? parsedUnitDetails.first
-          : UnitDetails(unitId: 0, buildingUnit: ''),
+          : UnitDetails(unitId: 0, building_unit: ''),
       memberInfo: MemberInfo(
         name: json['member_name']?.toString() ?? '',
         mobileNumber: json['memb_mobile_number']?.toString(),
         email: json['memb_email']?.toString(),
         memberId: _parseToInt(json['member_id']),
         unitId: _parseToInt(json['unit_id']),
-        buildingUnit: json["buildingUnit"]?.toString(),
+        building_unit: json["building_unit"]?.toString(),
       ),
       visitorComingFrom: json['visitor_coming_from']?.toString(),
       visitorPurposeCategoryId:
@@ -396,7 +396,7 @@ class MemberInfo {
   final String? email;
   final int? unitId;
   final int? memberId;
-  final String? buildingUnit;
+  final String? building_unit;
 
   MemberInfo(
       {required this.name,
@@ -404,15 +404,15 @@ class MemberInfo {
       this.email,
       this.unitId,
       this.memberId,
-      this.buildingUnit});
+      this.building_unit});
 }
 
 class UnitDetails {
   final int? unitId;
 
-  final String? buildingUnit;
+  final String? building_unit;
 
-  UnitDetails({this.unitId, this.buildingUnit});
+  UnitDetails({this.unitId, this.building_unit});
 }
 
 // Main Screen with Search
@@ -1030,7 +1030,7 @@ class VisitorInfoSection extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               subtitle: Text(
-                "${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""} - ${visitorInfo.unitDetails.buildingUnit}",
+                "${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""} - ${visitorInfo.unitDetails.building_unit}",
                 style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
