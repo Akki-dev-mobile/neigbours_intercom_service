@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:math' as math;
+import 'package:flutter_onegate/presentation/features/parcel/ui/parcel_list.dart';
 import 'package:intl/intl.dart';
 
 import 'package:common_widgets/common_widgets.dart';
@@ -141,29 +142,30 @@ class ParcelDetails extends StatelessWidget {
               children: [
                 _buildTimelineTile(
                   "Parcel Check-in",
-                  DateTime.tryParse(parcel['log_created_at'] ?? '') ??
+                  _parseTime(parcel['log_created_at'] ??
+                          parcel['log_created_at']) ??
                       DateTime.now(),
                   Icons.login,
                   Colors.green,
                   isFirst: true,
                   isLast: parcel['parcel_status'] == "pending",
                 ),
-                if (parcel['parcel_status'] != "pending")
-                  _buildTimelineTile(
-                    "Parcel Picked By",
-                    DateTime.tryParse(parcel['log_created_at'] ?? '') ??
-                        DateTime.now(),
-                    Symbols.box,
-                    const Color(0xffFFB080),
-                    isFirst: true,
-                    isLast: parcel['parcel_status'] == "pending",
-                  ),
+                // if (parcel['parcel_status'] != "pending")
+                //   _buildTimelineTile(
+                //     "Parcel Picked By",
+                //     _parseTime(parcel['log_verified_at'] ??
+                //             parcel['log_verified_at']) ??
+                //         DateTime.now(),
+                //     Symbols.box,
+                //     const Color(0xffFFB080),
+                //     isFirst: true,
+                //     isLast: parcel['parcel_status'] == "pending",
+                //   ),
                 if (parcel['parcel_status'] != "pending") ...[
                   _buildTimelineTile(
                     "Parcel Picked at",
-                    DateTime.tryParse(parcel['log_verified_at'] ??
-                            parcel['log_created_at'] ??
-                            '') ??
+                    _parseTime(parcel['log_verified_at'] ??
+                            parcel['log_verified_at']) ??
                         DateTime.now(),
                     Icons.logout,
                     Colors.red,
@@ -200,6 +202,18 @@ class ParcelDetails extends StatelessWidget {
                 text: 'Mark as Picked',
               )
             : const SizedBox());
+  }
+
+  DateTime? _parseTime(String? timeString) {
+    if (timeString == null || timeString.isEmpty) {
+      return null;
+    }
+    try {
+      return DateFormat('yyyy-MM-dd hh:mm:ss a').parse(timeString);
+    } catch (e) {
+      print('Date parsing failed: $e');
+      return null;
+    }
   }
 
   Widget _buildTimelineTile(
@@ -382,6 +396,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
   int _timer = 0;
   Timer? _countdownTimer;
   FocusNode focusNode = FocusNode();
+
   void _startTimer() {
     setState(() {
       _timer = 59;
@@ -575,7 +590,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
     try {
       await widget.remoteDataSource.getParcelOtp(
         widget.parcel['parcel_id'].toString(),
-        "9768474149",
+        "7666755466",
       );
       _startTimer();
       Fluttertoast.showToast(
@@ -613,6 +628,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
         widget.parcel['parcel_id'].toString(),
         otp,
       );
+
       Fluttertoast.showToast(
         msg: result['message'],
         toastLength: Toast.LENGTH_SHORT,
@@ -623,7 +639,12 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
       );
 
       log("OTP verified: $result");
-      Navigator.pop(context); // Close bottom sheet upon success
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const ParcelList()),
+        (route) => false, // This removes all previous routes
+      );
     } catch (e) {
       setState(() {
         errorText = "Invalid OTP.";

@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors, use_build_context_synchronously
-
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -14,7 +12,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
-import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
@@ -264,11 +261,15 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     if (!_validateForm()) return;
 
+    if (!mounted) return;
     setState(() => _isSubmitting = true);
+
     if (widget.selectedValue?.categoryName == 'DELIVERY' &&
         selectedCompanyIndex == -1) {
       _showErrorSnackBar("Please select a delivery company.");
-      setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
       return;
     }
 
@@ -291,8 +292,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     } catch (e) {
       _showErrorSnackBar('An error occurred: ${e.toString()}');
     } finally {
-      // Reset submission state
-      setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -362,32 +364,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
-  }
-
-  void _navigateToUnitSelection(VIENavigateToUnitSelectionState state) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UnitSelectionView(
-          widget.searchedVisitor,
-          visitor: state.visitor,
-          visitorId: widget.searchedVisitor?.id,
-          guestname: _guestNameController?.text ?? "",
-          carNumber: _carNumberController?.text,
-          mobileNumber: widget.mobile,
-          purposeCategory: state.purposeCategory,
-          purposeCategoryId: widget.selectedValue?.categoryId.toString(),
-          selectedSubCategoryId: selectedSubCategoryId,
-          comingFrom: _guestComingFromController?.text,
-          guestCount: _guestCount,
-          visitorNumber: _visitorNumberController?.text.isNotEmpty == true
-              ? "V${_visitorNumberController!.text}"
-              : (_visitorNumberController?.text.isEmpty == true
-                  ? null
-                  : _visitorNumberController?.text),
-        ),
-      ),
     );
   }
 

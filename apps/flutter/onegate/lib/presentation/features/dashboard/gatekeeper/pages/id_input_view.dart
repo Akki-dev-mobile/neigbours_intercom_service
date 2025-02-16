@@ -35,10 +35,7 @@ class IdInputView extends StatefulWidget {
 }
 
 late FocusNode _focusNode;
-final mobileControllerFormKey = GlobalKey<FormState>();
-final passcodeControllerFormKey = GlobalKey<FormState>();
-TextEditingController mobileController = TextEditingController();
-TextEditingController passcodeController = TextEditingController();
+
 int _currentIndex = 0;
 List<String> _labels = ['Mobile', 'Pass Code'];
 String? selectedPassAlpha = 'A';
@@ -53,6 +50,10 @@ List<String> listPassAlpha = [
 ];
 
 class _IdInputViewState extends State<IdInputView> {
+  final mobileControllerFormKey = GlobalKey<FormState>();
+  final passcodeControllerFormKey = GlobalKey<FormState>();
+  TextEditingController mobileController = TextEditingController();
+  TextEditingController passcodeController = TextEditingController();
   bool isLoading = false;
 
   void startLoading() {
@@ -85,23 +86,16 @@ class _IdInputViewState extends State<IdInputView> {
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
         VisitorRepoImpl(
-          RemoteDataSource(
-
-          ),
+          RemoteDataSource(),
         ),
       ),
       VisitorLogUsecase(
         VisitorLogRepositoryImpl(
-          RemoteDataSource(
-
-
-          ),
+          RemoteDataSource(),
         ),
       ));
   final provider = PurposeProvider();
-  RemoteDataSource remoteDataSource = new RemoteDataSource(
-
-  );
+  RemoteDataSource remoteDataSource = new RemoteDataSource();
 
   @override
   void dispose() {
@@ -168,6 +162,8 @@ class _IdInputViewState extends State<IdInputView> {
                 builder: (context) => ImageGridBottomSheet(
                   purposeCategories: state.purposeCategories!.toList(),
                   gatekeeperDashboardBloc: gateDashboardBloc,
+                  mobileNumber:
+                      mobileController.text, // Pass mobile number here
                 ),
               );
             }
@@ -344,13 +340,16 @@ class _IdInputViewState extends State<IdInputView> {
 class ImageGridBottomSheet extends StatefulWidget {
   final List<PurposeCategory1> purposeCategories;
   final GatekeeperDashboardBloc gatekeeperDashboardBloc;
+  final String mobileNumber; // <-- Add this
   VisitorMapper? searchedVisitor;
 
-  ImageGridBottomSheet(
-      {super.key,
-      required this.purposeCategories,
-      this.searchedVisitor,
-      required this.gatekeeperDashboardBloc});
+  ImageGridBottomSheet({
+    super.key,
+    required this.purposeCategories,
+    this.searchedVisitor,
+    required this.gatekeeperDashboardBloc,
+    required this.mobileNumber, // <-- Add this
+  });
 
   @override
   _ImageGridBottomSheetState createState() => _ImageGridBottomSheetState();
@@ -655,7 +654,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                     PurposeNextButtonClickedEvent(
                       selectedValue,
                       searchedVisitor,
-                      mobileController.text,
+                      widget.mobileNumber,
                     ),
                   );
                 }

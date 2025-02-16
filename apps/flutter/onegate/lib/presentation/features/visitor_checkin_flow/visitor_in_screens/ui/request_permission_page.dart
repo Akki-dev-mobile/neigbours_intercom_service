@@ -11,7 +11,6 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:image_picker/image_picker.dart';
@@ -38,6 +37,7 @@ class RequestPermissionPage extends StatefulWidget {
   final String? logID;
   final VisitorLog? visitorLog;
   List<String>? unitList;
+
   RequestPermissionPage(
       {Key? key,
       required this.visitor,
@@ -78,7 +78,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     RequestType.waiting:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json',
     RequestType.uploading:
-        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/uploading_animation.json', // Add this line
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/uploading_animation.json',
+    // Add this line
   };
 
   static const Map<RequestType, String> _requestMessages = {
@@ -102,21 +103,21 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     RequestType.waiting: Colors.black,
     RequestType.uploading: Colors.black,
   };
+
   @override
   void initState() {
     super.initState();
 
-    _socketService = SocketService();
-    _socketService.initSocket("8191", "onegate");
+    _socketService = SocketService(); // Initialize WebSocket service
+    _socketService.initSocket("8191", "onegate"); // Pass companyId & appId
 
-    // Listen for newMessage event with allow_status
     _socketService.messageStream.listen((message) {
-      if (message['event'] == 'newMessage') {
+      if (message['event'] == 'approvalUpdate') {
         _handleApprovalUpdate(message['data']);
       }
     });
 
-    _startPolling(); // Optional: Start API polling as a fallback
+    _startPolling(); // Start API polling as a fallback
 
     if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
@@ -142,6 +143,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   VisitorInfo? matchingApproval;
+
   Future<void> _fetchApprovals() async {
     if (widget.logID == null || widget.logID!.isEmpty) {
       log("❌ Invalid logID provided");
@@ -542,24 +544,19 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void _handleApprovalUpdate(Map<String, dynamic> data) {
     if (widget.logID == null || widget.logID!.isEmpty) return;
 
-    final visitorLogId = data['visitor_log_id']?.toString();
-    final allowStatus = data['allow_status']?.toString()?.toLowerCase();
-
-    // Only update if this message is for the current visitor log ID
-    if (visitorLogId == widget.logID && allowStatus != null) {
-      final newRequestType = _mapAllowStatusToRequestType(allowStatus);
+    final visitorLogId = data['visitorLogId']?.toString();
+    if (visitorLogId == widget.logID) {
+      final newRequestType =
+          _mapAllowStatusToRequestType(data['allowStatus'].toLowerCase());
 
       setState(() {
         _requestType = newRequestType;
         _isLoading = false;
       });
 
-      // Stop polling if we get a final status via socket
       if (_shouldStopPolling(newRequestType)) {
         _stopPolling();
       }
-
-      log("🟢 RequestType Updated via WebSocket to: $_requestType");
     }
   }
 
@@ -791,7 +788,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     setState(() {
       trybuttontext = "Trying...";
-      _requestType = RequestType.waiting; // Reset status to waiting
+      _requestType = RequestType.waiting;
     });
 
     // Restart timer
@@ -813,6 +810,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   String formattedInTime =
       DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
   Future<void> _sendFcmNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -831,7 +829,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             ? "234567"
             : int.parse(userId!).toString(),
         'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
-        'member_mobile_number': "9768474149",
+        'member_mobile_number': "917666755466",
         'visitor_id': visitorId ?? "",
         'purpose_category':
             widget.visitorLog?.visitor_purpose_category_id.toString() == "3"
@@ -846,7 +844,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
 
       final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
@@ -903,7 +901,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void _navigateToRequestPermission(PurposeCategory1 purposeCategory) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const GateDashboardView()),
+      MaterialPageRoute(builder: (context) => GateDashboardView()),
     );
   }
 
@@ -914,166 +912,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void _navigateToDashboard() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const GateDashboardView()),
+      MaterialPageRoute(builder: (context) => GateDashboardView()),
     );
-  }
-
-  Widget _getbutton(RequestType requestType) {
-    switch (requestType) {
-      case RequestType.notRecheable:
-        return Container(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                  style: ButtonStyle(
-                    foregroundColor: WidgetStateProperty.all<Color>(
-                      const Color(0xFF7D7C7C),
-                    ),
-                    backgroundColor:
-                        WidgetStateProperty.all<Color>(Colors.white),
-                    elevation: WidgetStateProperty.resolveWith<double>(
-                      (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.pressed)) {
-                          return 8;
-                        }
-                        return 0;
-                      },
-                    ),
-                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                        side: const BorderSide(color: Colors.black, width: 1),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                  ),
-                  onPressed: () {},
-                  child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.3,
-                      height: 60,
-                      child: const Center(
-                          child: Text(
-                        "Allow",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 15,
-                          wordSpacing: 1.2,
-                          // fontWeight: FontWeight.w500,
-                        ),
-                      )))),
-              // CustomLargeBtn(
-              //     width: MediaQuery.of(context).size.width * 0.45,
-              //     onPressed: () {
-              //       Navigator.push(
-              //           context,
-              //           MaterialPageRoute(
-              //               builder: (context) => RequestPermissionView(
-              //                     visitor: Visitor(),
-              //                     purposeCategory: PurposeCategory1(
-              //                         categoryId: 123,
-              //                         categoryName: "categoryName"),
-              //                   )));
-              //     },
-              //     text: "Allow"),
-
-              CustomLargeBtn(
-                  width: MediaQuery.of(context).size.width * 0.45,
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => RequestPermissionView(
-                                  visitor: Visitor(),
-                                  purposeCategory: PurposeCategory1(
-                                      categoryId: 123,
-                                      categoryName: "categoryName"),
-                                )));
-                  },
-                  text: "Try Again"),
-            ],
-          ),
-        );
-      case RequestType.approved:
-        return CustomLargeBtn(
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const GateDashboardView()));
-            },
-            text: "Finish");
-      case RequestType.leaveAtGate:
-        return CustomLargeBtn(
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => RequestPermissionView(
-                            visitor: Visitor(),
-                            purposeCategory: PurposeCategory1(
-                                categoryId: 123, categoryName: "categoryName"),
-                          )));
-            },
-            text: "Capture photo");
-      case RequestType.request:
-        return CustomLargeBtn(
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => RequestPermissionView(
-                            visitor: Visitor(),
-                            purposeCategory: PurposeCategory1(
-                                categoryId: widget.visitorLog
-                                        ?.visitor_purpose_category_id ??
-                                    0,
-                                categoryName: widget.visitorLog
-                                        ?.visitor_purpose_Category_name ??
-                                    ""),
-                          )));
-            },
-            text: "Request permission");
-      case RequestType.rejected:
-        return CustomLargeBtn(
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => RequestPermissionView(
-                            visitor: Visitor(),
-                            purposeCategory: PurposeCategory1(
-                                categoryId: widget.visitorLog
-                                        ?.visitor_purpose_category_id ??
-                                    0,
-                                categoryName: widget.visitorLog
-                                        ?.visitor_purpose_Category_name ??
-                                    ""),
-                          )));
-            },
-            text: "Finish");
-      case RequestType.waiting:
-        return Container();
-      default:
-        {
-          return CustomLargeBtn(
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => RequestPermissionView(
-                              visitor: Visitor(),
-                              purposeCategory: PurposeCategory1(
-                                  categoryId: widget.visitorLog
-                                          ?.visitor_purpose_category_id ??
-                                      0,
-                                  categoryName: widget.visitorLog
-                                          ?.visitor_purpose_Category_name ??
-                                      ""),
-                            )));
-              },
-              text: "Finish");
-        }
-    }
   }
 }
 

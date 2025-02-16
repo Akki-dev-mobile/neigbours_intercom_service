@@ -96,6 +96,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _initializeSocketConnection();
     _initializeFuture = _initializeMembers();
     log("$selectedUnits here is this");
+    _isLoading = true; // Set loading state before fetching members
+    _initializeMembers().then((_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // Turn off loading state after members are loaded
+        });
+      }
+    });
     log("${widget.comingFrom} here is this");
   }
 
@@ -376,6 +384,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         return ValueListenableBuilder<List<dynamic>>(
           valueListenable: _filteredMembersNotifier,
           builder: (context, filteredMembers, child) {
+            if (_isLoading) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(
+                      color: Colors.black,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Loading members...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             if (filteredMembers.isEmpty) {
               return _buildEmptyState();
             }
@@ -514,6 +543,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   List<Map<String, dynamic>> formattedMemberDetails = [];
   Set<String> selectedMobileNumbers = {};
+
   Future<void> _handleMemberSelection(
     String firstName,
     String userId,
@@ -625,7 +655,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         } else {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const GateDashboardView()),
+            MaterialPageRoute(builder: (context) => GateDashboardView()),
             (Route<dynamic> route) => false,
           );
           return false; // Prevent default back navigation.
@@ -995,7 +1025,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) =>
-                                            const GateDashboardView(),
+                                            GateDashboardView(),
                                       ),
                                       (route) => false,
                                     );
@@ -1052,44 +1082,46 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   // Selection Submission Methods
-  Future<void> _handleSelectionSubmit(Set<String> selectedMember) async {
+  Future<void> _handleSelectionSubmit(Set<String> selectedMembers) async {
     log("Handling selection submit...");
-    await saveMemberAndUnitToPrefs(selectedMember, selectedUnits);
+    await saveMemberAndUnitToPrefs(selectedMembers, selectedUnits);
 
     try {
       final visitorLogData = await _prepareVisitorLogData();
 
-      if (selectedMember.length == 1) {
-        // Single member selection flow
-        await _handleSingleMemberSelection(visitorLogData);
+      if (selectedMembers.length == 1) {
+        // Single Member → Check-in → FCM → Handle Response
+        await _handleSingleMemberFlow(visitorLogData);
       } else {
-        // Multiple members selection flow
-        await _handleMultipleMemberSelection(visitorLogData);
+        // Multi Member → Direct Check-in → Show Dialog
+        await _handleMultiMemberFlow(visitorLogData);
       }
     } catch (e) {
-      log("Error in selection submit: $e");
+      log("❌ Error in _handleSelectionSubmit: $e");
       _showErrorSnackbar("Error processing selection");
     }
   }
 
-  Future<void> _handleSingleMemberSelection(VisitorLog visitorLogData) async {
+  Future<void> _handleSingleMemberFlow(VisitorLog visitorLogData) async {
     try {
+      if (!_isCheckedIn) {
+        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+        _isCheckedIn = true;
+      }
+
       final userId = selectedUserIds.first;
       final selectedMobileNumbers = await _getSelectedMobileNumbers();
       final requestData =
           await _prepareRequestData(userId, selectedMobileNumbers);
 
-      log("✅ Sending FCM notification via WebSocket & API...");
+      log("✅ Sending FCM notification after Check-in...");
 
       // Send WebSocket event
       if (socketService.socket != null && socketService.socket!.connected) {
-        log("📡 Sending WebSocket event: sendFcmNotification...");
         socketService.socket!.emit("sendFcmNotification", requestData);
-      } else {
-        log("⚠️ WebSocket not connected, but proceeding with API request.");
       }
 
-      // Send API request concurrently
+      // Send FCM API request
       final apiResponse = Dio().post(
         'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
@@ -1102,18 +1134,35 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         await _handleFcmResponse(responseData, visitorLogData);
       });
 
-      // Wait for API response
+      // Handle API FCM response (fallback if WebSocket fails)
       final response = await apiResponse;
       if (response.statusCode == 200) {
         log("✅ API Response Received: ${response.data}");
         await _handleFcmResponse(response.data, visitorLogData);
       } else {
-        log("❌ API Request Failed: ${response.statusCode}");
-        _showErrorSnackbar("Error sending notification via API.");
+        _showErrorSnackbar("Failed to send notification. Try again.");
       }
     } catch (e) {
-      log("❌ Error sending FCM notification: $e");
-      _showErrorSnackbar("Error sending notification. Try again.");
+      log("❌ Error in _handleSingleMemberFlow: $e");
+      _showErrorSnackbar("Error sending FCM notification.");
+    }
+  }
+
+  Future<void> _handleMultiMemberFlow(VisitorLog visitorLogData) async {
+    try {
+      if (!_isCheckedIn) {
+        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+        _isCheckedIn = true;
+      }
+      await _showApprovedDialog(context, visitorLogData, onSuccess: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => GateDashboardView()),
+        );
+      });
+    } catch (e) {
+      log("❌ Error in _handleMultiMemberFlow: $e");
+      _showErrorSnackbar("Error processing multi-member check-in.");
     }
   }
 
@@ -1122,35 +1171,22 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final message = responseData["message"];
 
     if (message == "Visitor is always_allowed") {
-      if (!_isCheckedIn) {
-        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-        _isCheckedIn = true;
-      }
-
-      if (mounted) {
-        await _showVisitorAllowedDialog();
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const GateDashboardView()),
-        );
-      }
+      await _showVisitorAllowedDialog();
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => RequestPermissionPage(
-              visitor: widget.visitor,
-              unitList: selectedBuildingUnits,
-              visitorLog: visitorLogData,
-              logID: logID,
-            ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            logID: logID,
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -1179,7 +1215,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(), // Close dialog
+              onPressed: () => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => GateDashboardView()),
+              ), // Close dialog
               child: const Text('OK', style: TextStyle(color: Colors.black)),
             ),
           ],
@@ -1192,7 +1231,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     await _showApprovedDialog(context, visitorLogData, onSuccess: () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const GateDashboardView()),
+        MaterialPageRoute(builder: (context) => GateDashboardView()),
       );
     });
   }
@@ -1366,51 +1405,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return [];
   }
 
-  // Update the _handleInvalidSelection method
-  void _handleInvalidSelection() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    List<int> unitIds = [];
-    unitIds = formattedMemberDetails
-        .map((member) => member['unit_id'])
-        .where((id) => id != null)
-        .map((id) => int.parse(id.toString()))
-        .toList();
-    print("subbb${widget.selectedSubCategoryId.toString()}");
-    // Map unit IDs to BuildingAssignment objects
-    List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
-      return BuildingAssignment(
-        id: null,
-        visitor_id: widget.visitor.id,
-        visitor_log_id: null,
-        company_id: int.parse(companyId.toString()),
-        building_id: 0,
-        unit_id: [unitId.toString()],
-      );
-    }).toList();
-
-    final visitorLogData = VisitorLog(
-        visitor_id: widget.visitor.id ?? 0,
-        visitor_purpose_category_id: widget.purposeCategoryId == null
-            ? 1
-            : int.parse(widget.purposeCategoryId.toString()),
-        visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
-            ? int.parse(widget.selectedSubCategoryId.toString())
-            : null,
-        visitor_count: widget.guestCount ?? 0,
-        visitor_check_in: DateTime.parse(formattedInTime),
-        visitor_card_number: widget.visitorNumber,
-        visitor_coming_from: widget.comingFrom,
-        visitor_building_assignment: buildingAssignments,
-        visitor_card_id: null,
-        carNumber: widget.carNumber,
-        company_id: int.parse(companyId.toString()),
-        is_checked_out: false);
-    final String memberDetailsJson = json.encode(formattedMemberDetails);
-    await prefs.setString('member_details', memberDetailsJson);
-    await _showApprovedDialog(context, visitorLogData);
-  }
-
   Future<List<String>> _getSelectedMobileNumbers() async {
     final prefs = await SharedPreferences.getInstance();
     final savedMobileNumbersJson =
@@ -1445,7 +1439,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ? "234567"
               : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "9768474149",
+      'member_mobile_number': "7666755466",
       'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
           ? "delivery"
@@ -1578,7 +1572,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   //   ).then((_) {
   //     setState(() {
   //       Navigator.push(context,
-  //           MaterialPageRoute(builder: (context) => const GateDashboardView()));
+  //           MaterialPageRoute(builder: (context) => GateDashboardView()));
   //     });
   //   });
   // }

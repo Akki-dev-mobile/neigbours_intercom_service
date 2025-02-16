@@ -239,12 +239,18 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           isFirst: true,
                           isLast: widget.visitorLog.visitor_check_out == null,
                         ),
-                        _buildTimelineTile(
-                          "Approved By ",
-                          widget.visitorLog.visitor_check_in!,
-                          Icons.person,
-                          const Color(0xffFFB080),
-                          isFirst: true,
+                        _buildCustomTimelineTile(
+                          "Approved By",
+                          widget.visitorLog.initiated_from == 'ivr_call'
+                              ? 'IVR Call'
+                              : 'App to App',
+                          widget.visitorLog.initiated_from == 'ivr_call'
+                              ? Icons.call
+                              : Icons.phone_android,
+                          widget.visitorLog.initiated_from == 'ivr_call'
+                              ? Colors.blue
+                              : const Color(0xffFFB080),
+                          isFirst: false,
                           isLast: widget.visitorLog.visitor_check_out == null,
                         ),
                         if (widget.visitorLog.visitor_check_out != null)
@@ -265,6 +271,74 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCustomTimelineTile(
+    String label,
+    String description,
+    IconData icon,
+    Color color, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 24,
+          child: Column(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color, width: 2),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 12,
+                ),
+              ),
+              if (!isLast)
+                Container(
+                  width: 2,
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  color: Colors.grey.withOpacity(0.3),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              if (!isLast) const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

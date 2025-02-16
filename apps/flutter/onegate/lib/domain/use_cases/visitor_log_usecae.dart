@@ -5,10 +5,10 @@ import 'package:flutter_onegate/domain/repositories/visitor_log_repo.dart';
 
 class VisitorLogUsecase {
   final VisitorLogRepository _repository;
+
   VisitorLogUsecase(this._repository);
 
-  Future<VisitorLog?> createVisitorLog(
-      VisitorLog visitorLog) async {
+  Future<VisitorLog?> createVisitorLog(VisitorLog visitorLog) async {
     return await _repository.createVisitorLog(visitorLog);
   }
 
@@ -27,6 +27,6 @@ class VisitorLogUsecase {
 
   Future<List<VisitorLog>?> fetchCheckOutLogs(
       int companyId, String dateTime) async {
-    return await _repository.fetchCheckOutVisitorLog(companyId, dateTime);
+    return await _repository.fetchCheckOutVisitorLog();
   }
 }

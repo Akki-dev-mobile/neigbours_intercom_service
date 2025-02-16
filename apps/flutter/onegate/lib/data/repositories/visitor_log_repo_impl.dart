@@ -8,6 +8,7 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
   final RemoteDataSource _remoteDataSource;
 
   VisitorLogRepositoryImpl(this._remoteDataSource);
+
   @override
   Future<VisitorLog?> createVisitorLog(VisitorLog visitorLog) async {
     try {
@@ -33,8 +34,7 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
   Future<List<VisitorLog>?> fetchAllVisitorLog(
       int companyId, String dateTime) async {
     try {
-      final response =
-          await _remoteDataSource.fetchAllLogs(companyId, dateTime);
+      final response = await _remoteDataSource.fetchAllLogs();
       return response;
     } catch (error) {
       return null;
@@ -67,11 +67,9 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
   }
 
   @override
-  Future<List<VisitorLog>?> fetchCheckOutVisitorLog(
-      int companyId, String dateTime) async {
+  Future<List<VisitorLog>?> fetchCheckOutVisitorLog() async {
     try {
-      final response =
-          await _remoteDataSource.fetchCheckOutLogs(companyId, dateTime);
+      final response = await _remoteDataSource.fetchCheckOutLogs();
       return response;
     } catch (error) {
       return null;

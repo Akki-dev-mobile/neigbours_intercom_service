@@ -20,6 +20,7 @@ class RequestPermissionView extends StatefulWidget {
   final PurposeCategory1 purposeCategory;
   final String? comingFrom;
   final int? guestCount;
+
   const RequestPermissionView(
       {super.key,
       this.gridData,
@@ -47,8 +48,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
   RequestType requestType = RequestType.notRecheable;
   final List<MemberUnits>? gridData;
   final RequestPermissionBloc requestPermissionBloc = RequestPermissionBloc(
-      VisitorLogUsecase(VisitorLogRepositoryImpl( RemoteDataSource(
-     ))));
+      VisitorLogUsecase(VisitorLogRepositoryImpl(RemoteDataSource())));
 
   _RequestPermissionViewState({this.gridData});
 
@@ -67,7 +67,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (BuildContext context) {
-                  return const GateDashboardView();
+                  return GateDashboardView();
                 },
               ),
             );

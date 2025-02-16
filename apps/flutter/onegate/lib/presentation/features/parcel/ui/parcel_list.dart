@@ -4,6 +4,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/parcel/ui/parceldetails.dart';
 import 'package:intl/intl.dart';
@@ -35,14 +36,22 @@ class _ParcelListState extends State<ParcelList> {
     super.initState();
     _startAutoRefresh();
     _searchController = TextEditingController();
-
     _searchFocusNode = FocusNode();
+
+    context.read<ParcelBloc>().add(FetchParcels());
+    context.read<ParcelBloc>().add(FetchParcels());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    context.read<ParcelBloc>().add(FetchParcels());
   }
 
   void _startAutoRefresh() {
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted && !_isRefreshing) {
-        _refreshPage();
+      if (mounted) {
+        context.read<ParcelBloc>().add(FetchParcels());
       }
     });
   }
@@ -120,13 +129,20 @@ class _ParcelListState extends State<ParcelList> {
                     horizontal: 16,
                     vertical: 2,
                   ),
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ParcelDetails(parcel: parcel),
                       ),
                     );
+
+                    // Refresh if any update happened in ParcelDetails
+                    if (result == true) {
+                      if (context.mounted) {
+                        context.read<ParcelBloc>().add(FetchParcels());
+                      }
+                    }
                   },
                   leading: CircleAvatar(
                     backgroundImage:
@@ -170,13 +186,10 @@ class _ParcelListState extends State<ParcelList> {
                               ),
                             ),
                             TextSpan(
-                              text: parcel['log_created_at'] != null
-                                  ? DateFormat(' HH:mm').format(
-                                      DateTime.tryParse(
-                                              parcel['log_created_at']) ??
-                                          DateTime.now(),
-                                    )
-                                  : 'N/A',
+                              text: DateFormat('hh:mm a').format(
+                                DateFormat('yyyy-MM-dd hh:mm:ss a')
+                                    .parse(parcel['log_created_at']),
+                              ),
                               style: Theme.of(context)
                                   .textTheme
                                   .labelMedium!
@@ -198,14 +211,15 @@ class _ParcelListState extends State<ParcelList> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               TextEditingController otpController =
                                   TextEditingController();
                               remoteDataSource.getParcelOtp(
                                 parcel['parcel_id'].toString(),
-                                "9768474149".toString(),
+                                "7666755466".toString(),
                               );
-                              showModalBottomSheet(
+
+                              final result = await showModalBottomSheet<bool>(
                                 context: context,
                                 isScrollControlled: true,
                                 builder: (BuildContext context) {
@@ -216,6 +230,15 @@ class _ParcelListState extends State<ParcelList> {
                                   );
                                 },
                               );
+
+                              // If result is true, refresh the parcel list
+                              if (result == true) {
+                                if (context.mounted) {
+                                  context
+                                      .read<ParcelBloc>()
+                                      .add(FetchParcels());
+                                }
+                              }
                             },
                             child: Text(
                               'Pick',
@@ -352,112 +375,51 @@ class _ParcelListState extends State<ParcelList> {
     return BlocProvider(
       create: (context) => ParcelBloc(remoteDataSource)..add(FetchParcels()),
       child: MyScrollView(
-        actions: [
-          if (_isRefreshing)
-            const Padding(
-              padding: EdgeInsets.all(50.0),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _refreshPage,
-              tooltip: 'Refresh',
-            ),
-        ],
         isScrollable: false,
         hasBackButton: true,
+        backButtonPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => GateDashboardView()));
+        },
         pageTitle: 'Parcels',
-        pageBody: RefreshIndicator(
-          onRefresh: _refreshPage,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: _buildSearchField(),
+        pageBody: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _buildSearchField(),
+            ),
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height,
               ),
-
-              // CustomForm.textField(
-              //   "Search Members",
-              //   titleColor: Colors.black,
-              //   hintColor: Colors.grey,
-              //   hintText: "Search Member/Units",
-              //   textController: searchController,
-              //   onChanged: (value) {
-              //     if (value.isEmpty) {
-              //       setState(() {
-              //         filteredParcels.clear();
-              //       });
-              //     } else {
-              //       final state = context.read<ParcelBloc>().state;
-              //       if (state is ParcelLoaded) {
-              //         _filterParcels(value, state.parcels);
-              //       }
-              //     }
-              //   },
-              // ),
-              // Padding(
-              //   padding: const EdgeInsets.symmetric(
-              //       horizontal: 16.0, vertical: 8.0),
-              //   child: Chip(
-              //     side: BorderSide.none,
-              //     label: Text(
-              //       DateFormat('MMM dd, yyyy')
-              //           .format(DateTime.parse(dateKey!)),
-              //       style: Theme.of(context)
-              //           .textTheme
-              //           .bodyMedium,
-              //     ),
-              //     backgroundColor:
-              //         Theme.of(context).colorScheme.primary,
-              //   ),
-              // ),
-
-              Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height,
-                ),
-                child: BlocBuilder<ParcelBloc, ParcelState>(
-                  builder: (context, state) {
-                    if (state is ParcelLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.red,
-                        ),
-                      );
-                    } else if (state is ParcelLoaded) {
-                      final parcels = state.parcels;
-
-                      if (parcels.isEmpty) {
-                        return const Center(
-                          child: Text('No parcels found.'),
-                        );
-                      }
-
-                      return parsallist(
-                          parcels, _searchQuery); // Use parcels directly
-                    } else if (state is ParcelError) {
-                      return Center(child: Text('Error: ${state.message}'));
-                    } else {
-                      return const Column(
-                        children: [
-                          Icon(Symbols.package_2),
-                          Center(child: Text('No parcels found.')),
-                        ],
-                      );
-                    }
-                  },
-                ),
+              child: BlocBuilder<ParcelBloc, ParcelState>(
+                builder: (context, state) {
+                  if (state is ParcelLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.black,
+                      ),
+                    );
+                  } else if (state is ParcelLoaded) {
+                    return Stack(
+                      children: [
+                        parsallist(state.parcels, _searchQuery),
+                      ],
+                    );
+                  } else if (state is ParcelError) {
+                    return Center(child: Text('Error: ${state.message}'));
+                  } else {
+                    return Column(
+                      children: [
+                        Icon(Symbols.package_2),
+                        Center(child: Text('No parcels found.')),
+                      ],
+                    );
+                  }
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

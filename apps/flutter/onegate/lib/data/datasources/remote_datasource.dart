@@ -349,96 +349,26 @@ class RemoteDataSource {
     return null;
   }
 
-  Future<List<VisitorLog>> fetchAllLogs(int companyId, String dateTime) async {
-    try {
-      String apiUrl = ApiUrls.visitorGetLog;
+  DateTime? tryParseDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return null;
 
-      final prefs = await SharedPreferences.getInstance();
-      final selectedGateName =
-          prefs.getString('selected_gate') ?? "Default Gate";
-      final companyDetails = await gateStorage.getSocietyId();
-      final resolvedCompanyId = companyDetails;
-      final DateTime now = DateTime.now();
-      final String formattedDate =
-          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-      final Map<String, String> queryParams = {
-        "from_date": formattedDate,
-        "to_date": formattedDate,
-        "company_id": resolvedCompanyId.toString(),
-        "in_gate": selectedGateName,
-      };
+    final List<DateFormat> formats = [
+      DateFormat('yyyy-MM-ddTHH:mm:ss'), // ISO 8601 (default from APIs)
+      DateFormat('yyyy-MM-dd HH:mm:ss'), // Common format with spaces
+      DateFormat('dd-MM-yyyy'), // Custom format
+      DateFormat('dd-MM-yyyy HH:mm:ss'), // Custom format with time
+    ];
 
-      final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
-
-      final response = await http.post(
-        uri,
-        headers: {"Content-Type": "application/json"},
-      );
-
-      // print("Response: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData["data"] ?? [];
-        log("data--$data");
-        return data.map((item) {
-          try {
-            final visitor = Visitor(
-              id: item['visitor_id'] as int?,
-              name: item['name'] as String? ?? "",
-              mobile: item['mobile'] as String? ?? "",
-              visitor_image: item['visitor_image'] as String? ?? "",
-            );
-
-            final List<BuildingAssignment>? buildingAssignments =
-                (item['unit_details'] as List<dynamic>?)
-                    ?.map((unit) => BuildingAssignment(
-                          id: null,
-                          visitor_id: item['visitor_id'] as int?,
-                          visitor_log_id: item['visitor_log_id'] as int?,
-                          company_id: item['company_id'] as int? ?? 0,
-                          building_id: 0,
-                          unit_id: [unit['building_unit'] as String? ?? ""],
-                        ))
-                    .toList();
-
-            return VisitorLog(
-                id: item['visitor_log_id'] as int?,
-                visitor_id: item['visitor_id'] as int? ?? 0,
-                visitor: visitor,
-                visitor_purpose_category_id:
-                    item['visitor_purpose_category_id'] as int? ?? 0,
-                visitor_purpose_sub_category_id:
-                    item["visitor_purpose_category_id"],
-                visitor_building_assignment: buildingAssignments,
-                visitor_count: item['visitor_count'] as int? ?? 0,
-                visitor_check_in: item['visitor_check_in'] != null
-                    ? DateTime.parse(item['visitor_check_in'] as String)
-                    : null,
-                visitor_check_out: item['visitor_check_out'] != null
-                    ? DateTime.parse(item['visitor_check_out'] as String)
-                    : null,
-                visitor_card_number: item['visitor_card_number'] as String?,
-                visitor_coming_from: item['visitor_coming_from'] as String?,
-                visitor_card_id: null,
-                purpose_sub_category_name:
-                    item["purpose_sub_category_name"] as String?,
-                company_id: item['company_id'] as int? ?? 0,
-                is_checked_out: item['is_checked_out'] as bool? ?? false,
-                carNumber: item["vehicle_number"] as String?,
-                visitor_purpose_Category_name:
-                    item["purpose_category_name"] as String);
-          } catch (mappingError) {
-            throw Exception("Failed to map visitor log: $mappingError");
-          }
-        }).toList();
-      } else {
-        throw Exception(
-            'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
+    for (var format in formats) {
+      try {
+        return format.parse(dateString, true);
+      } catch (_) {
+        // Continue to the next format
       }
-    } catch (e) {
-      rethrow;
     }
+
+    log('Date format not supported: $dateString');
+    return null;
   }
 
   /// Export visitor logs
@@ -490,106 +420,113 @@ class RemoteDataSource {
     }
   }
 
-  /// Fetch check-in logs
   Future<List<VisitorLog>> fetchCheckInLogs() async {
+    return _fetchVisitorLogs(onlyCheckout: false);
+  }
+
+  Future<List<VisitorLog>> fetchAllLogs() async {
+    return _fetchVisitorLogs();
+  }
+
+  Future<List<VisitorLog>> fetchCheckOutLogs() async {
+    return _fetchVisitorLogs(onlyCheckout: true);
+  }
+
+  Future<List<VisitorLog>> _fetchVisitorLogs({bool? onlyCheckout}) async {
     try {
-      // Define the API endpoint
-      String apiUrl = ApiUrls.visitorGetLog;
-
-      bool isCheckedOut = false;
-
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
-          prefs.getString('selected_gate') ?? "Default Gate";
-      final companyDetails = await gateStorage.getSocietyId();
-      final resolvedCompanyId = companyDetails;
-      final DateTime now = DateTime.now();
-      final String formattedDate =
-          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+          prefs.getString('selected_gate') ?? 'Default Gate';
+      final resolvedCompanyId = await gateStorage.getSocietyId();
 
-      // Prepare the request payload
-      final Map<String, dynamic> requestBody = {
-        "from_date": formattedDate,
-        "to_date": formattedDate,
-        "company_id": resolvedCompanyId,
-        "in_gate": selectedGateName,
-        "only_checkout": isCheckedOut,
+      final String formattedDate =
+          DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      final requestBody = <String, dynamic>{
+        'from_date': formattedDate,
+        'to_date': formattedDate,
+        'company_id': int.parse(resolvedCompanyId.toString()),
+        'in_gate': selectedGateName,
       };
 
-      // Make the POST request
+      if (onlyCheckout != null) {
+        requestBody['only_checkout'] = onlyCheckout;
+      }
+
       final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {"Content-Type": "application/json"},
+        Uri.parse(ApiUrls.visitorGetLog),
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {
-        // Parse the visitor logs from the response
         final responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data'] ?? [];
-
-        return data.map((item) {
-          try {
-            final visitor = Visitor(
-              id: null,
-              name: item['name'] as String? ?? "",
-              mobile: item['mobile'] as String? ?? "",
-              visitor_image: item['visitor_image'] as String? ?? "",
-            );
-            final List<BuildingAssignment>? buildingAssignments =
-                (item['unit_details'] as List<dynamic>?)
-                    ?.map((unit) => BuildingAssignment(
-                          id: null,
-                          visitor_id: item['visitor_id'] as int?,
-                          visitor_log_id: item['visitor_log_id'] as int?,
-                          company_id: item['company_id'] as int? ?? 0,
-                          building_id: 0,
-                          unit_id: [unit['building_unit'] as String? ?? ""],
-                        ))
-                    .toList();
-            final visitorLog = VisitorLog(
-                id: item['visitor_log_id'] as int?,
-                visitor_id: item['visitor_id'] as int? ?? 0,
-                visitor: visitor,
-                visitor_purpose_category_id:
-                    item['visitor_purpose_category_id'] as int? ?? 0,
-                visitor_purpose_sub_category_id:
-                    item["visitor_purpose_category_id"],
-                visitor_building_assignment: buildingAssignments,
-                visitor_count: item['visitor_count'] as int? ?? 0,
-                visitor_check_in: item['visitor_check_in'] != null
-                    ? DateTime.parse(item['visitor_check_in'] as String)
-                    : null,
-                visitor_check_out: item['visitor_check_out'] != null
-                    ? DateTime.parse(item['visitor_check_out'] as String)
-                    : null,
-                carNumber: item["vehicle_number"] as String?,
-                visitor_card_number: item['visitor_card_number'] as String?,
-                visitor_coming_from: item['visitor_coming_from'] as String?,
-                visitor_card_id: null,
-                company_id: item['company_id'] as int? ?? 0,
-                is_checked_out: item['is_checked_out'] as bool? ?? false,
-                purpose_sub_category_name:
-                    item["purpose_sub_category_name"] as String?,
-                visitor_purpose_Category_name:
-                    item["purpose_category_name"] as String);
-
-            // print("Mapped VisitorLog: ${visitorLog.toJson()}");
-            return visitorLog;
-          } catch (mappingError) {
-            // print("Error mapping VisitorLog: $mappingError");
-            throw Exception("Failed to map visitor log");
-          }
-        }).toList();
+        log("data--$data");
+        return data.map((item) => _mapToVisitorLog(item)).toList();
       } else {
         throw Exception(
             'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      // Handle errors and log them
-      // print('Error in fetchCheckInLogs: $e');
       rethrow;
     }
+  }
+
+  VisitorLog _mapToVisitorLog(Map<String, dynamic> item) {
+    final visitor = Visitor(
+      id: item['visitor_id'] as int?,
+      name: item['name'] as String? ?? '',
+      mobile: item['mobile'] as String? ?? '',
+      visitor_image: item['visitor_image'] as String? ?? '',
+    );
+
+    final List<BuildingAssignment>? buildingAssignments =
+        (item['unit_details'] as List<dynamic>?)?.map((unit) {
+      return BuildingAssignment(
+        id: null,
+        visitor_id: item['visitor_id'] as int?,
+        visitor_log_id: item['visitor_log_id'] as int?,
+        company_id: item['company_id'] as int? ?? 0,
+        building_id: 0,
+        unit_id: [unit['building_unit'] as String? ?? ''],
+      );
+    }).toList();
+
+    // Handling additional_details safely
+    String? initiatedFrom;
+    final additionalDetails = item['additional_details'];
+
+    if (additionalDetails is Map<String, dynamic>) {
+      initiatedFrom = additionalDetails['initiated_from'] as String?;
+    }
+
+    return VisitorLog(
+      id: item['visitor_log_id'] as int?,
+      visitor_id: item['visitor_id'] as int? ?? 0,
+      visitor: visitor,
+      visitor_purpose_category_id:
+          item['visitor_purpose_category_id'] as int? ?? 0,
+      visitor_purpose_sub_category_id:
+          item['visitor_purpose_sub_category_id'] as int?,
+      visitor_building_assignment: buildingAssignments,
+      visitor_count: item['visitor_count'] as int? ?? 0,
+      visitor_check_in: item['visitor_check_in'] != null
+          ? tryParseDate(item['visitor_check_in'] as String)
+          : null,
+      visitor_check_out: item['visitor_check_out'] != null
+          ? tryParseDate(item['visitor_check_out'] as String)
+          : null,
+      visitor_card_number: item['visitor_card_number'] as String?,
+      visitor_coming_from: item['visitor_coming_from'] as String?,
+      visitor_card_id: null,
+      company_id: item['company_id'] as int? ?? 0,
+      is_checked_out: item['is_checked_out'] as bool? ?? false,
+      purpose_sub_category_name: item['purpose_sub_category_name'] as String?,
+      visitor_purpose_Category_name: item['purpose_category_name'] as String,
+      carNumber: item['vehicle_number'] as String?,
+      initiated_from: initiatedFrom,
+    );
   }
 
   /// Fetch members for a company
@@ -823,111 +760,6 @@ class RemoteDataSource {
   }
 
   /// Fetch check-out logs
-  Future<List<VisitorLog>> fetchCheckOutLogs(
-      int companyId, String dateTime) async {
-    try {
-      String apiUrl = ApiUrls.visitorGetLog;
-
-      bool isCheckedOut = true;
-      final DateTime now = DateTime.now();
-      final String formattedDate =
-          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-      final prefs = await SharedPreferences.getInstance();
-      final selectedGateName =
-          prefs.getString('selected_gate') ?? "Default Gate";
-      final companyDetails = await gateStorage.getSocietyId();
-      final resolvedCompanyId = companyDetails;
-      // Prepare the request payload
-      final Map<String, dynamic> requestBody = {
-        "company_id": resolvedCompanyId,
-        "from_date": formattedDate,
-        "to_date": formattedDate,
-        "in_gate": selectedGateName,
-        "only_checkout": isCheckedOut,
-      };
-
-      // Make the POST request
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(requestBody), // Encode the request payload
-      );
-
-      // Print the response for debugging
-      // print("Response: ${response.body}");
-
-      // Check response status
-      if (response.statusCode == 200) {
-        // Parse the visitor logs from the response
-        final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData["data"] ?? [];
-
-        // Map the JSON data to `VisitorLog` objects
-        return data.map((item) {
-          try {
-            // print("Processing Item: $item");
-
-            // Create a `Visitor` object directly from root-level fields
-            final visitor = Visitor(
-              id: null, // No `id` in your shared structure
-              name: item['name'] as String? ?? "",
-              mobile: item['mobile'] as String? ?? "",
-              visitor_image: item['visitor_image'] as String? ?? "",
-            );
-
-            final List<BuildingAssignment>? buildingAssignments =
-                (item['unit_details'] as List<dynamic>?)
-                    ?.map((unit) => BuildingAssignment(
-                          id: null,
-                          visitor_id: item['visitor_id'] as int?,
-                          visitor_log_id: item['visitor_log_id'] as int?,
-                          company_id: item['company_id'] as int? ?? 0,
-                          building_id: 0,
-                          unit_id: [unit['building_unit'] as String? ?? ""],
-                        ))
-                    .toList();
-            final visitorLog = VisitorLog(
-                id: item['visitor_log_id'] as int?,
-                visitor_id: item['visitor_id'] as int? ?? 0,
-                visitor: visitor,
-                visitor_purpose_category_id:
-                    item['visitor_purpose_category_id'] as int? ?? 0,
-                visitor_purpose_sub_category_id:
-                    item["visitor_purpose_category_id"],
-                visitor_building_assignment: buildingAssignments,
-                visitor_count: item['visitor_count'] as int? ?? 0,
-                visitor_check_in: item['visitor_check_in'] != null
-                    ? DateTime.parse(item['visitor_check_in'] as String)
-                    : null,
-                visitor_check_out: item['visitor_check_out'] != null
-                    ? DateTime.parse(item['visitor_check_out'] as String)
-                    : null,
-                visitor_card_number: item['visitor_card_number'] as String?,
-                visitor_coming_from: item['visitor_coming_from'] as String?,
-                visitor_card_id: null,
-                company_id: item['company_id'] as int? ?? 0,
-                is_checked_out: item['is_checked_out'] as bool? ?? false,
-                purpose_sub_category_name:
-                    item["purpose_sub_category_name"] as String?,
-                visitor_purpose_Category_name:
-                    item["purpose_category_name"] as String,
-                carNumber: item["vehicle_number"] as String?);
-
-            return visitorLog;
-          } catch (mappingError) {
-            throw Exception("Failed to map visitor log");
-          }
-        }).toList();
-      } else {
-        throw Exception(
-            'Failed to fetch checkout logs: ${response.statusCode}, ${response.body}');
-      }
-    } catch (e) {
-      // Handle errors and log themE
-      // print('Error in fetchCheckOutLogs: $e');
-      rethrow;
-    }
-  }
 
   Future<bool> uploadParcelImage({
     required int visitorLogId,
@@ -1044,7 +876,8 @@ class RemoteDataSource {
             logCreatedAt: json['log_created_at']?.toString() ?? '',
             unitDetails: parsedUnitDetails.isNotEmpty
                 ? parsedUnitDetails.first
-                : UnitDetails(unitId: 0, building_unit: ''), // Assign default
+                : UnitDetails(unitId: 0, building_unit: ''),
+            // Assign default
             memberInfo: MemberInfo(
               name: json['member_name']?.toString() ?? '',
               mobileNumber: json['memb_mobile_number']?.toString(),
@@ -1353,8 +1186,7 @@ class RemoteDataSource {
   }
 
   Future<List<dynamic>> fetchParcels() async {
-    const String url =
-        'https://stggateapi.cubeone.in/api/visitor/parcelData/8191';
+    String url = '${ApiUrls.gateBaseUrl}/visitor/parcelData/8191';
 
     try {
       final response = await Dio().get(url);

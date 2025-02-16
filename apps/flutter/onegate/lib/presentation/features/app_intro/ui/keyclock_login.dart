@@ -228,7 +228,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       if (role == 'admin') {
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
-        destination = const GateDashboardView();
+        destination = GateDashboardView();
       }
 
       if (destination != null) {

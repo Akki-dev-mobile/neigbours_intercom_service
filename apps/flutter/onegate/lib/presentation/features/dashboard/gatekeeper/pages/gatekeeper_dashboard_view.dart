@@ -30,21 +30,11 @@ import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
 
 class GateDashboardView extends StatefulWidget {
-  const GateDashboardView({super.key});
+  GateDashboardView();
 
   @override
   State<GateDashboardView> createState() => _GateDashboardViewState();
 }
-
-int _currentIndex = 0;
-List<String> _labels = ['Mobile', 'Pass Code'];
-String? selectedPassAlpha;
-
-List<String> listPassAlpha = [
-  'A',
-  'B',
-  'C',
-];
 
 class _GateDashboardViewState extends State<GateDashboardView>
     with TickerProviderStateMixin {
@@ -71,7 +61,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
     super.initState();
 
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
-    _fetchCardNumbers();
     _loadInitialData();
     getSelectedGate();
   }
@@ -80,17 +69,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
     await Future.wait([
       _loadVisitorSettings(),
     ]);
-  }
-
-  Future<void> _fetchCardNumbers() async {
-    setState(() {
-      isLoading = true;
-    });
-    final visitorLogs = await _remoteDataSource.fetchCardNumbers();
-    setState(() {
-      cardVisitors = visitorLogs ?? [];
-      isLoading = false;
-    });
   }
 
   Future<void> getSelectedGate() async {

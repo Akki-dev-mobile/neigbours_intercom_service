@@ -302,7 +302,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const GateDashboardView(),
+                            builder: (context) => GateDashboardView(),
                           ),
                         );
                       }

@@ -40,7 +40,9 @@ class TimerState {
 
 class TimerService extends ChangeNotifier {
   static final TimerService _instance = TimerService._internal();
+
   factory TimerService() => _instance;
+
   TimerService._internal();
 
   void markRetryAttempt(int visitorLogId) {
@@ -270,6 +272,7 @@ class VisitorInfo {
   final String? purposeCategoryName; // Added field
   final String? purposeSubCategoryName;
   final UnitDetails unitDetails;
+
   VisitorInfo({
     required this.visitorId,
     required this.visitorName,
@@ -300,10 +303,10 @@ class VisitorInfo {
         parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
           final unit = UnitDetails(
             unitId: _parseToInt(unitJson['unit_id']),
-            building_unit: unitJson["building_unit"]?.toString() ?? '',
+            buildingUnit: unitJson["buildingUnit"]?.toString() ?? '',
           );
 
-          log("🔍 Parsed building_unit: ${unit.building_unit}");
+          log("🔍 Parsed buildingUnit: ${unit.buildingUnit}");
 
           return unit;
         }).toList();
@@ -311,10 +314,10 @@ class VisitorInfo {
         parsedUnitDetails = unitDetailsString.map<UnitDetails>((unitJson) {
           final unit = UnitDetails(
             unitId: _parseToInt(unitJson['unit_id']),
-            building_unit: unitJson["building_unit"]?.toString() ?? '',
+            buildingUnit: unitJson["buildingUnit"]?.toString() ?? '',
           );
 
-          log("🔍 Parsed building_unit: ${unit.building_unit}");
+          log("🔍 Parsed buildingUnit: ${unit.buildingUnit}");
 
           return unit;
         }).toList();
@@ -323,8 +326,8 @@ class VisitorInfo {
       log("❌ Error decoding unit details: $e");
     }
 
-    // 🔍 Print final assigned building_unit
-    log("✅ Final assigned building_unit: ${parsedUnitDetails.isNotEmpty ? parsedUnitDetails.first.building_unit : 'N/A'}");
+    // 🔍 Print final assigned buildingUnit
+    log("✅ Final assigned buildingUnit: ${parsedUnitDetails.isNotEmpty ? parsedUnitDetails.first.buildingUnit : 'N/A'}");
 
     return VisitorInfo(
       visitorId: _parseToInt(json['visitor_id']),
@@ -338,14 +341,14 @@ class VisitorInfo {
       logCreatedAt: json['log_created_at']?.toString() ?? '',
       unitDetails: parsedUnitDetails.isNotEmpty
           ? parsedUnitDetails.first
-          : UnitDetails(unitId: 0, building_unit: ''),
+          : UnitDetails(unitId: 0, buildingUnit: ''),
       memberInfo: MemberInfo(
         name: json['member_name']?.toString() ?? '',
         mobileNumber: json['memb_mobile_number']?.toString(),
         email: json['memb_email']?.toString(),
         memberId: _parseToInt(json['member_id']),
         unitId: _parseToInt(json['unit_id']),
-        building_unit: json["building_unit"]?.toString(),
+        buildingUnit: json["buildingUnit"]?.toString(),
       ),
       visitorComingFrom: json['visitor_coming_from']?.toString(),
       visitorPurposeCategoryId:
@@ -393,7 +396,7 @@ class MemberInfo {
   final String? email;
   final int? unitId;
   final int? memberId;
-  final String? building_unit;
+  final String? buildingUnit;
 
   MemberInfo(
       {required this.name,
@@ -401,15 +404,15 @@ class MemberInfo {
       this.email,
       this.unitId,
       this.memberId,
-      this.building_unit});
+      this.buildingUnit});
 }
 
 class UnitDetails {
   final int? unitId;
 
-  final String? building_unit;
+  final String? buildingUnit;
 
-  UnitDetails({this.unitId, this.building_unit});
+  UnitDetails({this.unitId, this.buildingUnit});
 }
 
 // Main Screen with Search
@@ -551,9 +554,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.onPrimary,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                 ),
               ),
           ],
@@ -604,6 +605,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                     height: 12,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
+                      color: Colors.black,
                     ),
                   ),
               ],
@@ -622,7 +624,9 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                   if (snapshot.connectionState == ConnectionState.waiting &&
                       !_isRefreshing) {
                     return const Center(
-                      child: CircularProgressIndicator.adaptive(),
+                      child: CircularProgressIndicator(
+                        color: Colors.black,
+                      ),
                     );
                   }
 
@@ -1026,7 +1030,7 @@ class VisitorInfoSection extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               subtitle: Text(
-                "${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""} - ${visitorInfo.unitDetails.building_unit}",
+                "${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""} - ${visitorInfo.unitDetails.buildingUnit}",
                 style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
@@ -1071,8 +1075,9 @@ class VisitorAvatar extends StatelessWidget {
                   radius: 28,
                   backgroundImage: imageProvider,
                 ),
-                placeholder: (context, url) =>
-                    const CircularProgressIndicator(),
+                placeholder: (context, url) => const CircularProgressIndicator(
+                  color: Colors.black,
+                ),
                 errorWidget: (context, url, error) => _buildInitial(),
               )
             : _buildInitial(),
@@ -1223,7 +1228,8 @@ class TimerActionSection extends StatelessWidget {
                                   ),
                           ],
                         ),
-                        const SizedBox(height: 8), // Adds spacing
+                        const SizedBox(height: 8),
+                        // Adds spacing
                         // Row(
                         //   mainAxisAlignment: MainAxisAlignment.end,
                         //   children: [

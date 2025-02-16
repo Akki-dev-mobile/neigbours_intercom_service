@@ -32,6 +32,7 @@ class VisitorLogView extends StatefulWidget {
   final List<String> logList;
   final String? selectedBuilding;
   int? societyID;
+
   VisitorLogView({
     required this.id,
     required this.logList,
@@ -494,6 +495,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   }
 
   bool isLoading = false;
+
   Future<void> _showExportBottomSheet(
       BuildContext context, List<VisitorLog> visitorLogs) async {
     TextEditingController emailController = TextEditingController();
@@ -666,7 +668,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       ),
                       const SizedBox(height: 24),
                       if (isLoading)
-                        const CircularProgressIndicator()
+                        const CircularProgressIndicator(
+                          color: Colors.black,
+                        )
                       else
                         CustomLargeBtn(
                           onPressed: () async {
@@ -1124,150 +1128,67 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 widget.visitorLog.visitor!.name ?? 'Visitor Name',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              subtitle: Row(
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Symbols.person,
-                    color: Theme.of(context).colorScheme.onSurface,
+                  Row(
+                    children: [
+                      Icon(
+                        Symbols.person,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      Text(
+                        "${widget.visitorLog.visitor_purpose_Category_name ?? "N/A"} - ${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"}",
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                    ],
                   ),
-                  Text(
-                    "${widget.visitorLog.visitor_purpose_Category_name ?? "N/A"} - ${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"}",
-                    style: Theme.of(context).textTheme.labelLarge,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: widget.visitorLog.initiated_from == 'ivr_call'
+                            ? Colors.blue.withOpacity(0.2)
+                            : Colors.orangeAccent.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.visitorLog.initiated_from == 'ivr_call'
+                                ? Icons.call
+                                : Icons.phone_android,
+                            size: 16,
+                            color:
+                                widget.visitorLog.initiated_from == 'ivr_call'
+                                    ? Colors.blue
+                                    : Colors.orange,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            widget.visitorLog.initiated_from == 'ivr_call'
+                                ? 'Approved By: IVR Call'
+                                : 'Approved By: App to App',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: widget.visitorLog.initiated_from ==
+                                          'ivr_call'
+                                      ? Colors.blue[900]
+                                      : Colors.orange[900],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-
-              //   RichText(
-              //   text: TextSpan(
-              //     children: [
-              //       TextSpan(
-              //         text: widget.visitorLog.visitor!.name,
-              //         style: Theme.of(context).textTheme.bodyMedium,
-              //       ),
-              //       WidgetSpan(
-              //         child: widget.visitorLog.visitor_count.toString() != '1'
-              //             ? Container(
-              //                 margin: const EdgeInsets.only(left: 8),
-              //                 padding: const EdgeInsets.symmetric(
-              //                   horizontal: 7,
-              //                   vertical: 2,
-              //                 ),
-              //                 decoration: BoxDecoration(
-              //                   color: const Color(0xffFFB080),
-              //                   borderRadius: BorderRadius.circular(8),
-              //                 ),
-              //                 child: Text(
-              //                   "+ ${widget.visitorLog.visitor_count.toString()}",
-              //                   style: Theme.of(context)
-              // .textTheme
-              // .bodyMedium!
-              // .copyWith(
-              //                     color: Colors.black,
-              //                     fontWeight: FontWeight.w500,
-              //                   ),
-              //                 ),
-              //               )
-              //             : SizedBox(),
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              // subtitle: Padding(
-              //   padding: const EdgeInsets.only(top: 5),
-              //   child: Column(
-              //     children: [
-              //       Row(
-              //         children: [
-              //           const Icon(
-              //             Symbols.apartment,
-              //             color: Color(0xffFFB080),
-              //           ),
-              //           Container(
-              //             margin: const EdgeInsets.only(left: 8),
-              //             padding: const EdgeInsets.symmetric(
-              //               horizontal: 7,
-              //               vertical: 2,
-              //             ),
-              //             decoration: BoxDecoration(
-              //               color: const Color(0xffFFEBE6),
-              //               borderRadius: BorderRadius.circular(8),
-              //             ),
-              //             child: Text(
-              //               widget.visitorLog.visitor_building_assignment!
-              //                       .isNotEmpty
-              //                   ? widget.visitorLog.visitor_building_assignment
-              //                       .toString()
-              //                   : "N/A",
-              //               style:
-              //                   Theme.of(context).textTheme.bodySmall!.copyWith(
-              //                         color: Colors.black,
-              //                         fontWeight: FontWeight.w500,
-              //                         // fontSize: 14,
-              //                       ),
-              //             ),
-              //           ),
-              //         ],
-              //       ),
-              //       const SizedBox(
-              //         height: 10,
-              //       ),
-              //       Row(
-              //         children: [
-              //           const Icon(
-              //             Symbols.diversity_3,
-              //             color: Color(0xffF2D8A5),
-              //           ),
-              //           Container(
-              //             margin: const EdgeInsets.only(left: 8),
-              //             padding: const EdgeInsets.symmetric(
-              //               horizontal: 7,
-              //               vertical: 2,
-              //             ),
-              //             decoration: BoxDecoration(
-              //               color: const Color(0xffF2D8A5),
-              //               borderRadius: BorderRadius.circular(15),
-              //             ),
-              //             child: Text(
-              //               widget.visitorLog.visitor_purpose_Category_name ??
-              //                   "N/A",
-              //               style:
-              //                   Theme.of(context).textTheme.bodySmall!.copyWith(
-              //                         color: Colors.black,
-              //                         fontWeight: FontWeight.w500,
-              //                         // fontSize: 14,
-              //                       ),
-              //             ),
-              //           ),
-              //         ],
-              //       ),
-              //     ],
-              //   ),
-              // ),=
-              // onPressed: () {
-              //               log(
-              //                 'Calling ${visitorLog.visitor!.mobile}',
-              //               );
-              //
-              //               SnackBar(
-              //                 content: Text(
-              //                   'Calling ${visitorLog.visitor!.mobile}',
-              //                   style: Theme.of(context).textTheme.labelMedium,
-              //                 ),
-              //                 action: SnackBarAction(
-              //                   label: 'Close',
-              //                   onPressed: () {
-              //                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              //                   },
-              //                 ),
-              //               );
-              // trailing: IconButton(
-              //   onPressed: _hasCallSupport
-              //       ? () => _launched =
-              //           _makePhoneCall(widget.visitorLog.visitor!.mobile ?? "")
-              //       : null,
-              // icon: Icon(
-              //   Ionicons.call_outline,
-              //   color: Colors.green,
             ),
             Divider(
               indent: 16,
