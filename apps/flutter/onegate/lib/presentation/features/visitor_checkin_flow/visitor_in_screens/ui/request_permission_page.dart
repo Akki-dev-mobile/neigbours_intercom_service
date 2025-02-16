@@ -824,12 +824,14 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'mobile': widget.visitor.mobile,
         'purpose': "Guest",
         'in_time': formattedInTime,
-        'user_id': (int.tryParse(userId ?? "0") == null ||
-                int.tryParse(userId ?? "0") == 0)
-            ? "234567"
-            : int.parse(userId!).toString(),
+        'user_id': "77525",
+
+        // (int.tryParse(userId ?? "0") == null ||
+        //         int.tryParse(userId ?? "0") == 0)
+        //     ? "234567"
+        //     : int.parse(userId!).toString(),
         'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
-        'member_mobile_number': "917666755466",
+        'member_mobile_number': "918452060059",
         'visitor_id': visitorId ?? "",
         'purpose_category':
             widget.visitorLog?.visitor_purpose_category_id.toString() == "3"
