@@ -903,6 +903,15 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     }
   }
 
+  Future<List<String>> _getSelectedMobileNumbers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedMobileNumbersJson =
+        prefs.getString('selected_member_mobile_numbers') ?? '[]';
+    final cleanedJson =
+        savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
+    return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
+  }
+
   Future<void> _sendFcmNotification() async {
     String formattedInTime =
         DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
@@ -911,22 +920,25 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('visitorId');
       final String? visitorLogId = prefs.getString("visitor_log");
-
+      final selectedMobileNumbers = await _getSelectedMobileNumbers();
+      List<String> mobileList = selectedMobileNumbers;
       final requestData = {
         'company_id': widget.visitorInfo.companyId.toString(),
         'name': widget.visitorInfo.visitorName,
         'mobile': widget.visitorInfo.visitorMobile,
         'purpose': "Guest",
         'in_time': formattedInTime,
-        'user_id': "77525",
+        'user_id':
 
-        // (int.tryParse(userId ?? "0") == null ||
-        //         int.tryParse(userId ?? "0") == 0)
-        //     ? "234567"
-        //     : int.parse(userId!).toString(),
+            // "77525",
+
+            (int.tryParse(userId ?? "0") == null ||
+                    int.tryParse(userId ?? "0") == 0)
+                ? "234567"
+                : int.parse(userId!).toString(),
         'visitor_count':
             "1", // Assuming visitor_count is not visitorInfo.toString()
-        'member_mobile_number': "918452060059",
+        'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber,
         'visitor_id': widget.visitorInfo.visitorId.toString(),
         'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
             ? "delivery"
@@ -939,7 +951,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
 
       final response = await Dio().post(
-        '{https://stggateapi.cubeone.in/api}/visitor/sendFcmNotification',
+        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );

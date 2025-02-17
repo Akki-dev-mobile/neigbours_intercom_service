@@ -452,11 +452,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Widget _buildMemberTile(dynamic member, Set<String> selectedMembers) {
     final memberDetails = member['member_details'] as List<dynamic>? ?? [];
-    final firstMemberName = memberDetails.isNotEmpty
-        ? memberDetails.first['member_first_name'] ?? 'N/A'
-        : 'N/A';
-    final additionalMembersCount =
-        memberDetails.length > 1 ? '+${memberDetails.length - 1}' : '';
+    final unitFlatNumber = member['unit_flat_number']?.toString() ?? 'N/A';
+    final buildingUnit = member['building_unit']?.toString() ?? 'N/A';
+    final socBuildingName = member['soc_building_name']?.toString() ?? '';
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -472,19 +470,19 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           size: 32,
         ),
         title: Text(
-          member['unit_flat_number'] ?? 'N/A',
+          '$socBuildingName - $unitFlatNumber',
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
         subtitle: Text(
-          '$firstMemberName $additionalMembersCount',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              fontWeight: FontWeight.w300,
-              color: Theme.of(context).colorScheme.onSurface),
+          "${memberDetails.length} Member(s)",
+          style: Theme.of(context).textTheme.bodySmall,
         ),
         collapsedIconColor: Theme.of(context).colorScheme.onSurface,
-        children: _buildMemberDetailsList(memberDetails, member),
+        children: memberDetails.isEmpty
+            ? [const Text('No members available')]
+            : _buildMemberDetailsList(memberDetails, member),
       ),
     );
   }
@@ -508,36 +506,44 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Widget _buildMemberDetailsItem(dynamic detail, dynamic member) {
-    final firstName = detail['member_first_name'] ?? 'N/A';
-    final lastName = detail['member_last_name']?.toString() ?? 'N/A';
-    final userId = detail['user_id']?.toString() ?? 'N/A';
-    final unitId = member['fk_unit_id'] ?? 'N/A';
-    final memberId = member["member_id"];
-    final buildingUnit = member["building_unit"] ?? 'N/A';
-    final memberMobileNo = member["member_mobile_number"];
+    final firstName = detail['member_first_name']?.toString() ?? 'N/A';
+    final lastName = detail['member_last_name']?.toString() ?? '';
+    final memberName = "$firstName $lastName";
+    final userId = detail['user_id']?.toString() ?? '';
+    final unitId = member['fk_unit_id'] ?? 0;
+    final memberId = detail['member_id'] ?? 0;
+    final buildingUnit = member['building_unit']?.toString() ?? 'N/A';
+    final memberMobileNo =
+        detail['member_mobile_number']?.toString().trim() ?? '';
 
     return ListTile(
-      contentPadding: const EdgeInsets.only(top: 3, bottom: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       title: Text(
-        '$firstName $lastName',
+        memberName,
         style: Theme.of(context).textTheme.bodyMedium,
       ),
-      onTap: () => _handleMemberSelection(
-        firstName,
-        userId,
-        memberId,
-        buildingUnit,
-        unitId,
-        memberMobileNo,
-      ),
+      // subtitle: Text(
+      //   "Mobile: ${memberMobileNo.isNotEmpty ? memberMobileNo : 'N/A'}",
+      //   style: Theme.of(context).textTheme.bodySmall,
+      // ),
       trailing: Icon(
-        _selectedMembersNotifier.value.contains(firstName)
+        _selectedMembersNotifier.value.contains(memberName)
             ? Ionicons.checkmark_circle
             : Icons.add_circle_outline,
-        color: _selectedMembersNotifier.value.contains(firstName)
+        color: _selectedMembersNotifier.value.contains(memberName)
             ? Colors.green
             : null,
       ),
+      onTap: () {
+        _handleMemberSelection(
+          memberName,
+          userId,
+          memberId,
+          buildingUnit,
+          unitId,
+          memberMobileNo,
+        );
+      },
     );
   }
 
@@ -1127,7 +1133,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
-
+      log("requestData$requestData");
       // Listen for WebSocket response
       socketService.socket!.on("fcmResponse", (responseData) async {
         log("📩 WebSocket Response Received: $responseData");
@@ -1415,6 +1421,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
   }
 
+  List<String> getAllSelectedMobileNumbers() {
+    return formattedMemberDetails
+        .map((e) => e['mobile_number'].toString())
+        .where((mobile) => mobile.isNotEmpty)
+        .toSet() // Remove duplicates
+        .toList();
+  }
+
   Future<Map<String, String>> _prepareRequestData(
     String userId,
     List<String> savedMobileNumbers,
@@ -1423,8 +1437,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final visitorLogId = prefs.getString("visitor_log") ?? "";
     final String? visitorId = prefs.getString('visitorId');
 
-    // Log for debugging
+    final mobileNumbers = getAllSelectedMobileNumbers();
+
     log("Visitor Log ID: $visitorLogId");
+    log("Member mobile numbers from selection $mobileNumbers");
 
     return {
       'company_id': companyId.toString(),
@@ -1432,20 +1448,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'mobile': widget.mobileNumber,
       'purpose': "Guest",
       'in_time': formattedInTime,
-      'user_id': "77525",
-      // "1234",
-      //
-      // (int.tryParse(userId) == null || int.tryParse(userId) == 0)
-      //     ? "234567"
-      //     : int.parse(userId).toString(),
+      'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
+          ? "234567"
+          : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': "8452060059",
-      'visitor_id': visitorId ?? searchedVisitor!.id.toString(),
+      'member_mobile_number': mobileNumbers.isNotEmpty
+          ? mobileNumbers.first
+          : "", // This will fail if empty. Handle this better if mobile is mandatory
+      'visitor_id': widget.visitor.id?.toString() ??
+          widget.searchedVisitor?.id?.toString() ??
+          '',
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
           ? "delivery"
           : widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
-      'coming_from': widget.comingFrom?.toString() ?? "delivery", // Nullable
+      'coming_from': widget.comingFrom?.toString() ?? "delivery",
       'member_id': selectedMemberIds.isNotEmpty
           ? selectedMemberIds.first.toString()
           : "232",

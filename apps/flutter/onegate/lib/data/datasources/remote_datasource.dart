@@ -99,9 +99,9 @@ class RemoteDataSource {
       if (responseData is List) {
         return responseData;
       } else if (responseData is Map && responseData.containsKey('data')) {
-        // If the response is a map containing 'data'
         final data = responseData['data'];
         if (data is List) {
+          print("gates$data");
           return data;
         } else {
           throw Exception('Unexpected data format in "data" key');
@@ -128,6 +128,8 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final data = response.data['data'];
+        print("data--$data");
+
         return data is List ? data : [];
       } else {
         throw Exception('Failed to fetch societies.');
@@ -267,6 +269,32 @@ class RemoteDataSource {
     }
   }
 
+  Future<List<String>> _getMobileNumbersFromMemberDetails(
+      int visitorLogId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? memberDetailsJson = prefs.getString('member_details');
+
+    if (memberDetailsJson != null) {
+      try {
+        final List<dynamic> decoded = json.decode(memberDetailsJson);
+        final mobileNumbers = decoded
+            .map((member) => member['mobile_number'].toString())
+            .where((mobile) => mobile.isNotEmpty)
+            .toSet()
+            .toList();
+
+        if (mobileNumbers.isNotEmpty) {
+          return mobileNumbers;
+        }
+      } catch (e) {
+        log('❌ Error parsing member_details: $e');
+      }
+    }
+
+    // Fallback: Empty List
+    return [];
+  }
+
   /// Check-in a visitor
   Future<VisitorLog?> checkIn(VisitorLog visitorLog,
       [bool? statusallowed]) async {
@@ -299,7 +327,7 @@ class RemoteDataSource {
       data.addAll({
         'in_gate': selectedGateName,
         'company_name': companyName,
-        'member_details': memberDetails,
+        'member_details': memberDetailsJson,
         "is_always_allowed": statusallowed
       });
 
@@ -555,7 +583,7 @@ class RemoteDataSource {
           },
         ),
       );
-
+      log("memberlist${response.data?['data']}");
       return response.data?['data'] ?? [];
     } catch (e) {
       log('Error fetching members: $e');
@@ -1186,7 +1214,11 @@ class RemoteDataSource {
   }
 
   Future<List<dynamic>> fetchParcels() async {
-    String url = '${ApiUrls.gateBaseUrl}/visitor/parcelData/8191';
+    final prefs = await SharedPreferences.getInstance();
+
+    final String? companyId = await gateStorage.getSocietyId();
+
+    String url = '${ApiUrls.gateBaseUrl}/visitor/parcelData/$companyId';
 
     try {
       final response = await Dio().get(url);

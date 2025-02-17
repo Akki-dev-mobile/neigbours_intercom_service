@@ -107,7 +107,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   @override
   void initState() {
     super.initState();
-
     _socketService = SocketService(); // Initialize WebSocket service
     _socketService.initSocket("8191", "onegate"); // Pass companyId & appId
 
@@ -811,27 +810,70 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   String formattedInTime =
       DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
+
+  Future<List<String>> _getMobileNumbersFromMemberDetails(
+      int visitorLogId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? memberDetailsJson = prefs.getString('member_details');
+
+    if (memberDetailsJson != null) {
+      try {
+        final List<dynamic> decoded = json.decode(memberDetailsJson);
+        final mobileNumbers = decoded
+            .map((member) => member['mobile_number'].toString())
+            .where((mobile) => mobile.isNotEmpty)
+            .toSet()
+            .toList();
+
+        if (mobileNumbers.isNotEmpty) {
+          return mobileNumbers;
+        }
+      } catch (e) {
+        log('❌ Error parsing member_details: $e');
+      }
+    }
+
+    // Fallback: Empty List
+    return [];
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
   Future<void> _sendFcmNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('visitorId');
       final String? visitorLogId = prefs.getString("visitor_log");
       final String visitorId = widget.visitor.id.toString();
+      // ✅ Fetch from `member_details`
+      final selectedMobileNumbers = await _getMobileNumbersFromMemberDetails(
+          int.parse(visitorLogId.toString()));
 
+      if (selectedMobileNumbers.isEmpty) {
+        _showSnackBar("No mobile number found for the selected member.",
+            isError: true);
+        return;
+      }
       final requestData = {
         'company_id': widget.visitorLog?.company_id.toString() ?? "",
         'name': widget.visitor.name,
         'mobile': widget.visitor.mobile,
         'purpose': "Guest",
         'in_time': formattedInTime,
-        'user_id': "77525",
-
-        // (int.tryParse(userId ?? "0") == null ||
-        //         int.tryParse(userId ?? "0") == 0)
-        //     ? "234567"
-        //     : int.parse(userId!).toString(),
+        'user_id': (int.tryParse(userId ?? "0") == null ||
+                int.tryParse(userId ?? "0") == 0)
+            ? "234567"
+            : int.parse(userId!).toString(),
         'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
-        'member_mobile_number': "918452060059",
+        'member_mobile_number': selectedMobileNumbers.first,
         'visitor_id': visitorId ?? "",
         'purpose_category':
             widget.visitorLog?.visitor_purpose_category_id.toString() == "3"

@@ -7,14 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/presentation/features/parcel/ui/widgets/info_list_tile_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:pinput/pinput.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../../../dio_setup.dart';
 
 class ParcelDetails extends StatelessWidget {
   final Map<String, dynamic> parcel;
@@ -590,7 +586,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
     try {
       await widget.remoteDataSource.getParcelOtp(
         widget.parcel['parcel_id'].toString(),
-        "8452060059",
+        widget.parcel['memb_mobile_number'].toString(),
       );
       _startTimer();
       Fluttertoast.showToast(

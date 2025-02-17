@@ -1143,50 +1143,50 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       ),
                     ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: widget.visitorLog.initiated_from == 'ivr_call'
-                            ? Colors.blue.withOpacity(0.2)
-                            : Colors.orangeAccent.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            widget.visitorLog.initiated_from == 'ivr_call'
-                                ? Icons.call
-                                : Icons.phone_android,
-                            size: 16,
-                            color:
-                                widget.visitorLog.initiated_from == 'ivr_call'
-                                    ? Colors.blue
-                                    : Colors.orange,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            widget.visitorLog.initiated_from == 'ivr_call'
-                                ? 'Approved By: IVR Call'
-                                : 'Approved By: App to App',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: widget.visitorLog.initiated_from ==
-                                          'ivr_call'
-                                      ? Colors.blue[900]
-                                      : Colors.orange[900],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Padding(
+                  //   padding: const EdgeInsets.only(top: 4.0),
+                  //   child: Container(
+                  //     padding: const EdgeInsets.symmetric(
+                  //         horizontal: 8, vertical: 4),
+                  //     decoration: BoxDecoration(
+                  //       color: widget.visitorLog.initiated_from == 'ivr_call'
+                  //           ? Colors.blue.withOpacity(0.2)
+                  //           : Colors.orangeAccent.withOpacity(0.2),
+                  //       borderRadius: BorderRadius.circular(8),
+                  //     ),
+                  //     child: Row(
+                  //       mainAxisSize: MainAxisSize.min,
+                  //       children: [
+                  //         Icon(
+                  //           widget.visitorLog.initiated_from == 'ivr_call'
+                  //               ? Icons.call
+                  //               : Icons.phone_android,
+                  //           size: 16,
+                  //           color:
+                  //               widget.visitorLog.initiated_from == 'ivr_call'
+                  //                   ? Colors.blue
+                  //                   : Colors.orange,
+                  //         ),
+                  //         SizedBox(width: 4),
+                  //         Text(
+                  //           widget.visitorLog.initiated_from == 'ivr_call'
+                  //               ? 'Approved By: IVR Call'
+                  //               : 'Approved By: App to App',
+                  //           style: Theme.of(context)
+                  //               .textTheme
+                  //               .labelSmall
+                  //               ?.copyWith(
+                  //                 color: widget.visitorLog.initiated_from ==
+                  //                         'ivr_call'
+                  //                     ? Colors.blue[900]
+                  //                     : Colors.orange[900],
+                  //                 fontWeight: FontWeight.bold,
+                  //               ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),

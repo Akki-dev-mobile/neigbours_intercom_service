@@ -105,8 +105,10 @@ class LoginService {
         return 'admin';
       case 'gatekeeper':
         return 'gatekeeper';
+      case 'admin':
+        return 'admin';
       default:
-        return 'unknown';
+        return apiRole; // fallback to the original role if not mapped
     }
   }
 
@@ -299,18 +301,23 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     try {
       final societyId = society['company_id']?.toString();
       final societyName = society['company_name'];
-      final roles = _loginService.getUserRoles(society);
 
-      if (societyId == null || societyId.isEmpty) {
-        throw Exception('Invalid society data: societyId is null or empty');
+      // Extract roles or fallback to 'member'
+      final roles = extractRoles(society['user_roles']);
+      log('Raw roles from society: $roles');
+
+      final mappedRoles =
+          roles.map((role) => _loginService._mapRole(role)).toSet().toList();
+
+      if (mappedRoles.isEmpty) {
+        log('No roles found, assigning default "member" role');
+        mappedRoles.add('member');
       }
 
-      if (roles.isEmpty) {
-        throw Exception('No valid roles found for user');
-      }
+      log('Mapped roles after processing: $mappedRoles');
 
       await _loginService.gateStorage
-          .saveSocietyDetails(societyId, societyName);
+          .saveSocietyDetails(societyId!, societyName);
       await _loginService.gateStorage.saveSocietyId(societyId);
 
       _loginState.value = _loginState.value.copyWith(
@@ -318,11 +325,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         isLoading: false,
       );
 
-      if (roles.length == 1) {
-        await _handleRoleSelected(roles.first);
-      } else {
-        _showRoleSelection(roles);
-      }
+      _showRoleSelection(mappedRoles);
     } catch (e) {
       _showError('Failed to process society: $e');
       _loginState.value = _loginState.value.copyWith(isLoading: false);
@@ -331,24 +334,23 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   void _showSocietySelection(List<dynamic> societies) {
     showModalBottomSheet(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SocietySelectionSheet(
-        societies: societies,
-        onSelected: (society) async {
-          try {
-            await _handleSingleSociety(society);
-            Navigator.pop(context);
-          } catch (e) {
-            _showError('Failed to save society: $e');
-          }
-        },
-      ),
-    );
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => SocietySelectionSheet(
+              societies: societies,
+              onSelected: (society) async {
+                try {
+                  Navigator.pop(context); // Close society selection first
+                  await _handleSingleSociety(society);
+                } catch (e) {
+                  _showError('Failed to save society: $e');
+                }
+              },
+            ));
   }
 
   void _showRoleSelection(List<String> availableRoles) {
@@ -367,9 +369,11 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   Future<void> _handleRoleSelected(String role) async {
     try {
-      log("$role");
+      log('Role selected by user: $role');
       await _loginService.gateStorage.saveRole(role);
+
       final gates = await _loginService.fetchGates();
+      log('Fetched gates: $gates');
 
       if (gates.isEmpty) {
         _showError('No gates found for the selected society');
@@ -382,6 +386,16 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     }
   }
 
+  List<String> extractRoles(dynamic userRoles) {
+    if (userRoles is List) {
+      return userRoles.map((e) => e.toString()).toList();
+    } else if (userRoles is Map) {
+      return userRoles.values.map((e) => e.toString()).toList();
+    } else {
+      return [];
+    }
+  }
+
   Future<void> _showGateSelection(
       List<dynamic> gates, String selectedRole) async {
     try {
@@ -391,12 +405,15 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         return;
       }
 
+      final prefs = await SharedPreferences.getInstance();
+
       // If only one gate, directly select it and navigate
       if (gates.length == 1) {
         final singleGate = gates.first;
-        SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('selected_gate', singleGate["gate_name"]);
-        log("Automatically selected single gate: ${singleGate['gate_name']}");
+        await prefs.setString(
+            'selected_gate_id', singleGate["gate_id"].toString());
+        log("Automatically selected single gate: ${singleGate['gate_name']} with ID: ${singleGate['gate_id']}");
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -422,9 +439,11 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           gates: gates,
           onGateSelected: (gate) async {
             try {
-              SharedPreferences prefs = await SharedPreferences.getInstance();
               await prefs.setString('selected_gate', gate["gate_name"]);
-              log("Gate selected: ${gate['gate_name']}");
+              await prefs.setString(
+                  'selected_gate_id', gate["gate_id"].toString());
+              log("Gate selected: ${gate['gate_name']} with ID: ${gate['gate_id']}");
+
               Navigator.pop(context); // Close the bottom sheet
               await _navigateBasedOnRole(selectedRole);
             } catch (e) {
@@ -549,7 +568,7 @@ class LoginContent extends StatelessWidget {
 }
 
 // Society Selection Sheet
-class SocietySelectionSheet extends StatelessWidget {
+class SocietySelectionSheet extends StatefulWidget {
   final List<dynamic> societies;
   final Function(Map<String, dynamic>) onSelected;
 
@@ -560,50 +579,88 @@ class SocietySelectionSheet extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<SocietySelectionSheet> createState() => _SocietySelectionSheetState();
+}
+
+class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
+  int? selectedIndex;
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           ListTile(
             title: Text(
               'Select Society',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
+            subtitle: const Text('Choose the society you want to access'),
           ),
           const Divider(
             indent: 20,
             endIndent: 20,
             height: 1,
           ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: societies.length,
-            itemBuilder: (context, index) {
-              final society = societies[index];
-              final societyId = society['company_id']?.toString();
-              final societyName = society['company_name'];
+          Expanded(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: widget.societies.length,
+              itemBuilder: (context, index) {
+                final society = widget.societies[index];
+                final societyName =
+                    society['company_name'] ?? 'Unknown Society';
+                final isSelected = selectedIndex == index;
 
-              if (societyId == null) {
-                return const ListTile(
-                  title: Text('Invalid Society'),
-                  subtitle: Text('This entry has no valid ID'),
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      societyName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
+                    ),
+                    trailing: isSelected
+                        ? Icon(
+                            Icons.check_circle,
+                            color: Theme.of(context).colorScheme.primary,
+                          )
+                        : const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      setState(() {
+                        selectedIndex = index;
+                      });
+
+                      widget.onSelected(society);
+                    },
+                  ),
                 );
-              }
-
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  title: Text(societyName ?? 'Unknown Society'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => onSelected(Map<String, dynamic>.from(society)),
-                ),
-              );
-            },
+              },
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -622,14 +679,11 @@ class RoleSelectionSheet extends StatelessWidget {
   }) : super(key: key);
 
   String _getRoleDisplayName(String role) {
-    switch (role) {
-      case 'admin':
-        return 'Admin / Master';
-      case 'gatekeeper':
-        return 'Gatekeeper';
-      default:
-        return 'Unknown Role';
-    }
+    // Capitalize the first letter of each role for better readability
+    return role
+        .split('_')
+        .map((e) => e[0].toUpperCase() + e.substring(1))
+        .join(' ');
   }
 
   String _getRoleDescription(String role) {
@@ -690,7 +744,7 @@ class RoleSelectionSheet extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     subtitle: Text(
-                      _getRoleDescription(role),
+                      'Access with role: ${_getRoleDisplayName(role)}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),

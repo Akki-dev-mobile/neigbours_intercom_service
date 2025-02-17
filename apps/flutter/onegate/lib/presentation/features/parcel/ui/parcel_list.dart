@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
-import 'package:flutter_onegate/presentation/features/parcel/ui/parceldetails.dart';
+import 'package:flutter_onegate/presentation/features/parcel/ui/parcel_details.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -216,7 +216,7 @@ class _ParcelListState extends State<ParcelList> {
                                   TextEditingController();
                               remoteDataSource.getParcelOtp(
                                 parcel['parcel_id'].toString(),
-                                "8452060059".toString(),
+                                parcel['memb_mobile_number'].toString(),
                               );
 
                               final result = await showModalBottomSheet<bool>(
