@@ -317,17 +317,16 @@ class RemoteDataSource {
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName = prefs.getString('selected_gate') ?? "";
       final memberDetailsJson = prefs.getString('member_details');
-      List<Map<String, dynamic>> memberDetails = memberDetailsJson != null
-          ? List<Map<String, dynamic>>.from(json.decode(memberDetailsJson))
+      List<dynamic> memberDetails = memberDetailsJson != null
+          ? json.decode(memberDetailsJson) as List<dynamic>
           : [];
-
       final companyDetails = await gateStorage.getSocietyDetails();
       final companyName = companyDetails['societyName'] ?? "";
 
       data.addAll({
         'in_gate': selectedGateName,
         'company_name': companyName,
-        'member_details': memberDetailsJson,
+        'member_details': memberDetails,
         "is_always_allowed": statusallowed
       });
 
@@ -554,6 +553,9 @@ class RemoteDataSource {
       visitor_purpose_Category_name: item['purpose_category_name'] as String,
       carNumber: item['vehicle_number'] as String?,
       initiated_from: initiatedFrom,
+      approved_by: additionalDetails is Map<String, dynamic>
+          ? additionalDetails['approved_by'] as String?
+          : null,
     );
   }
 
@@ -1279,14 +1281,20 @@ class RemoteDataSource {
   Future<Map<String, dynamic>> getParcelOtp(
       String parcelId, String mobileNumber) async {
     try {
+      String formattedMobileNumber =
+          mobileNumber.replaceAll(RegExp(r'[^0-9]'), '');
+      if (formattedMobileNumber.length == 12 &&
+          formattedMobileNumber.startsWith('91')) {
+        formattedMobileNumber = formattedMobileNumber.substring(2);
+      }
       final response = await http.post(
         Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtp"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, String>{
-          'parcel_id': parcelId, // Corrected key
-          'mobile_number': mobileNumber,
+          'parcel_id': parcelId,
+          'mobile_number': formattedMobileNumber,
         }),
       );
 

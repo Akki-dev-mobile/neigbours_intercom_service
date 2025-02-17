@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/settings_gate.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:lottie/lottie.dart';
@@ -225,22 +227,31 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   Future<void> _navigateBasedOnRole(String? role) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      bool hasNavigatedToGateSettings =
+          prefs.getBool('hasNavigatedToGateSettings') ?? false;
+
       Widget? destination;
 
       if (role == 'admin') {
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
-        destination = GateDashboardView();
+        if (!hasNavigatedToGateSettings) {
+          destination = SettingsHome();
+          await prefs.setBool('hasNavigatedToGateSettings', true); // Set flag
+        } else {
+          destination = GateDashboardView();
+        }
       }
 
       if (destination != null) {
-        log('Navigating to $role');
+        log('Navigating to $role -> ${destination.runtimeType}');
         if (context.mounted) {
           await Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => destination!),
           );
-          log('Navigation to $role complete');
+          log('Navigation to ${destination.runtimeType} complete');
         } else {
           log('Context is not mounted. Unable to navigate.');
         }

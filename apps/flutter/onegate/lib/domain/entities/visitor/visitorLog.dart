@@ -20,7 +20,8 @@ class VisitorLog {
     this.visitor_purpose_Category_name,
     this.purpose_sub_category_name,
     this.carNumber,
-    this.initiated_from, // Added field
+    this.initiated_from,
+    this.approved_by, // Added field
   });
 
   final int? id;
@@ -41,6 +42,7 @@ class VisitorLog {
   final String? visitor_purpose_Category_name;
   final String? purpose_sub_category_name;
   final String? initiated_from; // Added field
+  final String? approved_by; // Added field
 
   /// Creates a copy of this VisitorLog with the given fields replaced with new values
   VisitorLog copyWith({
@@ -62,6 +64,7 @@ class VisitorLog {
     String? visitor_purpose_Category_name,
     String? purpose_sub_category_name,
     String? initiated_from,
+    String? approved_by,
   }) {
     return VisitorLog(
       id: id ?? this.id,
@@ -87,6 +90,7 @@ class VisitorLog {
       purpose_sub_category_name:
           purpose_sub_category_name ?? this.purpose_sub_category_name,
       initiated_from: initiated_from ?? this.initiated_from,
+      approved_by: approved_by ?? this.approved_by,
     );
   }
 
@@ -113,6 +117,7 @@ class VisitorLog {
       'purpose_category_name': visitor_purpose_Category_name,
       'purpose_sub_category_name': purpose_sub_category_name,
       'initiated_from': initiated_from, // Added field to JSON output
+      'approved_by': approved_by, // Added field to JSON output
     };
   }
 
@@ -157,6 +162,9 @@ class VisitorLog {
       purpose_sub_category_name: json['purpose_sub_category_name'] as String?,
       initiated_from: json['additional_details'] is Map<String, dynamic>
           ? json['additional_details']['initiated_from'] as String?
+          : null,
+      approved_by: json['additional_details'] is Map<String, dynamic>
+          ? json['additional_details']['approved_by'] as String?
           : null,
     );
   }

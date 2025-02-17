@@ -233,8 +233,10 @@ class _SettingsHomeState extends State<SettingsHome> {
       },
     );
   }
+
   void _showVisitorApprovalTime(BuildContext context) {
-    int selectedValue = context.read<VisitorApprovalTimeProvider>().approvalTime;
+    int selectedValue =
+        context.read<VisitorApprovalTimeProvider>().approvalTime;
 
     showModalBottomSheet(
       isScrollControlled: true,
@@ -280,7 +282,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                           item.label,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        value: int.parse(item.value), // Convert value
+                        value: int.parse(item.value),
+                        // Convert value
                         groupValue: selectedValue,
                         onChanged: (int? value) {
                           setState(() {
@@ -293,7 +296,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                   CustomLargeBtn(
                     text: 'Confirm',
                     onPressed: () {
-                      context.read<VisitorApprovalTimeProvider>().setApprovalTime(selectedValue);
+                      context
+                          .read<VisitorApprovalTimeProvider>()
+                          .setApprovalTime(selectedValue);
                       Navigator.pop(context);
                     },
                   ),
@@ -306,9 +311,6 @@ class _SettingsHomeState extends State<SettingsHome> {
       },
     );
   }
-
-
-
 
   void _showDataStorage(BuildContext context) async {
     showModalBottomSheet(
@@ -395,6 +397,14 @@ class _SettingsHomeState extends State<SettingsHome> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
+      backButtonPressed: () {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => GateDashboardView(),
+          ),
+          (route) => false,
+        );
+      },
       pageTitle: "Settings",
       pageBody: SingleChildScrollView(
         child: Column(
@@ -466,17 +476,17 @@ class _SettingsHomeState extends State<SettingsHome> {
             ),
             // if (role == "admin" || role == "master")
 
-    PrimarySettingsTile(
-    icon: Ionicons.time_outline,
-    title: 'Visitor Approval Time',
-    subtitle: 'Current Preference: ${context.watch<VisitorApprovalTimeProvider>().approvalTime} seconds',
-    onTap: () {
-    _showVisitorApprovalTime(context);
-    },
-    ),
+            PrimarySettingsTile(
+              icon: Ionicons.time_outline,
+              title: 'Visitor Approval Time',
+              subtitle:
+                  'Current Preference: ${context.watch<VisitorApprovalTimeProvider>().approvalTime} seconds',
+              onTap: () {
+                _showVisitorApprovalTime(context);
+              },
+            ),
 
-
-    if (role == "admin" || role == "master")
+            if (role == "admin" || role == "master")
               PrimarySettingsTile(
                 icon: Ionicons.alarm_outline,
                 title: 'Configure Duty Alarms',
@@ -659,9 +669,6 @@ class _SettingsHomeState extends State<SettingsHome> {
   }
 
   Future<void> logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clear all stored preferences
-
     log("User logged out. Navigating to login screen.");
 
     Navigator.pushReplacement(

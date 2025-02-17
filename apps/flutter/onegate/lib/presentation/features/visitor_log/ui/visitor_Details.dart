@@ -69,41 +69,6 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         shrinkWrap: true,
         controller: _scrollController,
         slivers: [
-          // SliverAppBar(
-          //   expandedHeight: 280,
-          //   pinned: true,
-          //   stretch: true,
-          //   backgroundColor: Theme.of(context).primaryColor,
-          //   flexibleSpace: FlexibleSpaceBar(
-          //     stretchModes: const [StretchMode.zoomBackground],
-          //     background: Stack(
-          //       fit: StackFit.expand,
-          //       children: [
-          //         widget.image != null && widget.image!.isNotEmpty
-          //             ? Image.network(
-          //                 widget.image!,
-          //                 fit: BoxFit.cover,
-          //                 errorBuilder: (context, error, stackTrace) =>
-          //                     _buildFallbackImage(context),
-          //               )
-          //             : _buildFallbackImage(context),
-          //         DecoratedBox(
-          //           decoration: BoxDecoration(
-          //             gradient: LinearGradient(
-          //               begin: Alignment.topCenter,
-          //               end: Alignment.bottomCenter,
-          //               colors: [
-          //                 Colors.transparent,
-          //                 Colors.black.withOpacity(0.6),
-          //               ],
-          //             ),
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //   ),
-          // ),
-
           SliverList(
             delegate: SliverChildListDelegate([
               Center(
@@ -241,15 +206,9 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         ),
                         _buildCustomTimelineTile(
                           "Approved By",
-                          widget.visitorLog.initiated_from == 'ivr_call'
-                              ? 'IVR Call'
-                              : 'App to App',
-                          widget.visitorLog.initiated_from == 'ivr_call'
-                              ? Icons.call
-                              : Icons.phone_android,
-                          widget.visitorLog.initiated_from == 'ivr_call'
-                              ? Colors.blue
-                              : const Color(0xffFFB080),
+                          widget.visitorLog.approved_by ?? "N/A",
+                          Icons.person,
+                          Colors.blue,
                           isFirst: false,
                           isLast: widget.visitorLog.visitor_check_out == null,
                         ),
@@ -303,13 +262,12 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   size: 12,
                 ),
               ),
-              if (!isLast)
-                Container(
-                  width: 2,
-                  height: 40,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  color: Colors.grey.withOpacity(0.3),
-                ),
+              Container(
+                width: 2,
+                height: isLast ? 8 : 40, // Shorter line for the last item
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                color: Colors.grey.withOpacity(0.3),
+              ),
             ],
           ),
         ),
@@ -334,7 +292,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   color: color,
                 ),
               ),
-              if (!isLast) const SizedBox(height: 24),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -371,13 +329,12 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   size: 12,
                 ),
               ),
-              if (!isLast)
-                Container(
-                  width: 2,
-                  height: 40,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  color: Colors.grey.withOpacity(0.3),
-                ),
+              Container(
+                width: 2,
+                height: isLast ? 8 : 40, // Shorter line for the last item
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                color: Colors.grey.withOpacity(0.3),
+              ),
             ],
           ),
         ),
@@ -402,7 +359,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   color: color,
                 ),
               ),
-              if (!isLast) const SizedBox(height: 24),
+              const SizedBox(height: 16),
             ],
           ),
         ),

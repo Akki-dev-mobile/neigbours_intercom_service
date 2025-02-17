@@ -2,6 +2,7 @@
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:ionicons/ionicons.dart';
 
@@ -22,7 +23,12 @@ class _GateSettingViewState extends State<GateSettingView> {
   Widget build(BuildContext context) {
     return MyScrollView(
       backButtonPressed: () {
-        Navigator.pop(context);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => GateDashboardView(),
+          ),
+          (route) => false,
+        );
       },
       pageTitle: 'Gate Settings',
       pageBody: Column(
