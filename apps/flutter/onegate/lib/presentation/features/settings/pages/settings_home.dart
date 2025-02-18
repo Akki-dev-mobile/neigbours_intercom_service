@@ -670,8 +670,10 @@ class _SettingsHomeState extends State<SettingsHome> {
 
   Future<void> logout(BuildContext context) async {
     log("User logged out. Navigating to login screen.");
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Clear all stored preferences
 
-    Navigator.pushReplacement(
+    await Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const MyAppLogin()),
     );

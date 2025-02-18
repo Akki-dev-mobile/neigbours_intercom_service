@@ -206,7 +206,9 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         ),
                         _buildCustomTimelineTile(
                           "Approved By",
-                          widget.visitorLog.approved_by ?? "N/A",
+                          toBeginningOfSentenceCase(
+                                  widget.visitorLog.approved_by ?? "N/A") ??
+                              "N/A",
                           Icons.person,
                           Colors.blue,
                           isFirst: false,

@@ -111,7 +111,7 @@ class LoginService {
       case 'admin':
         return 'admin';
       default:
-        return apiRole; // fallback to the original role if not mapped
+        return apiRole;
     }
   }
 
@@ -356,7 +356,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
               societies: societies,
               onSelected: (society) async {
                 try {
-                  Navigator.pop(context); // Close society selection first
+                  Navigator.pop(context);
                   await _handleSingleSociety(society);
                 } catch (e) {
                   _showError('Failed to save society: $e');
@@ -411,7 +411,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   Future<void> _showGateSelection(
       List<dynamic> gates, String selectedRole) async {
     try {
-      // Ensure gates list is populated
       if (gates.isEmpty) {
         _showError('No gates available for selection.');
         return;
@@ -419,7 +418,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
       final prefs = await SharedPreferences.getInstance();
 
-      // If only one gate, directly select it and navigate
       if (gates.length == 1) {
         final singleGate = gates.first;
         await prefs.setString('selected_gate', singleGate["gate_name"]);
@@ -435,7 +433,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         return;
       }
 
-      // For multiple gates, show the bottom sheet
       log("Opening gate selection sheet...");
       await showModalBottomSheet(
         context: context,

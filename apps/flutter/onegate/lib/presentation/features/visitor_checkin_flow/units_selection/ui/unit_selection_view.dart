@@ -13,6 +13,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -1084,8 +1085,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final visitorLogData = await _prepareVisitorLogData();
 
       if (selectedMembers.length == 1) {
-        // Single Member → Check-in → FCM → Handle Response
-        await _handleSingleMemberFlow(visitorLogData);
+        if (_membersApproval == true) {
+          await _handleSingleMemberFlow(visitorLogData);
+        } else {
+          await _handleDirectApproval(visitorLogData);
+        }
       } else {
         // Multi Member → Direct Check-in → Show Dialog
         await _handleMultiMemberFlow(visitorLogData);
@@ -1094,6 +1098,81 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       log("❌ Error in _handleSelectionSubmit: $e");
       _showErrorSnackbar("Error processing selection");
     }
+  }
+
+  Future<void> _handleDirectApproval(VisitorLog visitorLogData) async {
+    try {
+      if (!_isCheckedIn) {
+        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+        _isCheckedIn = true;
+      }
+      await _showApprovedDialog(context, visitorLogData, onSuccess: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => GateDashboardView()),
+        );
+      });
+    } catch (e) {
+      log("❌ Error in _handleDirectApproval: $e");
+      _showErrorSnackbar("Error during gatekeeper approval.");
+    }
+  }
+
+  Future<void> _allowByGatekeeper(VisitorLog visitorLogData) async {
+    try {
+      final response = await Dio().patch(
+        '${ApiUrls.gateBaseUrl}/visitor/visitorLog/${widget.visitor.id}',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: jsonEncode({"allow_status": "allowed_by_gatekeeper"}),
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ Visitor allowed by Gatekeeper successfully");
+        _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
+        await _showApprovedDialog(context, visitorLogData, onSuccess: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => GateDashboardView()),
+          );
+        });
+      } else {
+        log("❌ Failed to allow visitor by Gatekeeper: ${response.statusMessage}");
+        _showErrorSnackBar("Error allowing visitor. Try again.");
+      }
+    } catch (e) {
+      log("❌ Error in _allowByGatekeeper: $e");
+      void _showErrorSnackBar(String message) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
+      _showErrorSnackBar("Failed to allow visitor.");
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   Future<void> _handleSingleMemberFlow(VisitorLog visitorLogData) async {

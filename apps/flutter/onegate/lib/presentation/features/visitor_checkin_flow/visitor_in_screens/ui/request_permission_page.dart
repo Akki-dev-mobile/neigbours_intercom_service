@@ -796,7 +796,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   String formattedInTime =
       DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
-
   Future<List<String>> _getMobileNumbersFromMemberDetails(
       int visitorLogId) async {
     final prefs = await SharedPreferences.getInstance();
