@@ -8,6 +8,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -284,12 +285,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                           .where((p) => p.isSelected)
                           .toList();
                       purposeProvider.saveSelectedPurposes(selectedPurposes);
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Changes saved successfully!"),
-                        ),
-                      );
+myFluttertoast(msg: "Changes saved successfully!");
                       final role = await GateStorage().getRole();
                       if (role == 'admin' || role == 'master') {
                         Navigator.pushReplacement(

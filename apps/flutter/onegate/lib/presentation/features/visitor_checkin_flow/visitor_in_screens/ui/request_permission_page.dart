@@ -13,6 +13,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
@@ -186,7 +187,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   void _showLoadingIndicator(String message) {
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -677,22 +677,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    myFluttertoast(msg: message,        backgroundColor: Colors.red);
   }
 
   void _showSuccessSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
+    myFluttertoast(msg: message);
   }
 
   Widget _buildNotReacheableButtons() {
@@ -777,12 +767,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     // Show snackbar for notification resend
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Notification resent again"),
-          backgroundColor: Colors.blue,
-        ),
-      );
+      myFluttertoast(msg: "Notification resent again",          backgroundColor: Colors.blue,
+);
     }
 
     setState(() {
@@ -839,12 +825,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
-    );
+    myFluttertoast(msg: message,        backgroundColor: isError ? Colors.red : Colors.green,
+);
   }
 
   Future<void> _sendFcmNotification() async {

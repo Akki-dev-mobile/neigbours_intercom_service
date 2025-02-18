@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 // import 'package:alarm/alarm.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -91,11 +92,7 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                 if (startTime != null && endTime != null && interval != null) {
                   setupAlarms();
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Values of all fields are required'),
-                    ),
-                  );
+                  myFluttertoast(msg: "Values of all fields are required");
                 }
               },
               child: const Text('Set Up Alarms'),
@@ -185,11 +182,7 @@ List<DateTime> allalarmTime=[];
     await checkAndroidScheduleExactAlarmPermission();
     print("checkAndroidScheduleExactAlarmPermission Done");
     if (startTime == null || endTime == null || interval == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Values of all fields are required'),
-        ),
-      );
+      myFluttertoast(msg: "Values of all fields are required");
       return;
     }
 
@@ -210,11 +203,7 @@ List<DateTime> allalarmTime=[];
     );
 
     if (endDateTime.isBefore(startDateTime)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('End time must be after start time'),
-        ),
-      );
+      myFluttertoast(msg: "End time must be after start time");
       return;
     }
     DateTime alarmTime = startDateTime.add(interval!);
@@ -246,12 +235,7 @@ List<DateTime> allalarmTime=[];
 
     alarmTime = alarmTime.add(interval!);
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('All alarms have been set up'),
-      ),
-    );
+myFluttertoast(msg: "All alarms have been set up");
   }
 
   void deleteAllAlarms() async{
@@ -282,11 +266,7 @@ int len=log.length;
     setState(() {
       log.clear();
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('All alarms have been deleted'),
-      ),
-    );
+    myFluttertoast(msg: "All alarms have been deleted");
   }
 }
 

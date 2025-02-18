@@ -12,6 +12,7 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -422,7 +423,8 @@ class RemoteDataSource {
 
       // Handle successful response
       if (response.statusCode == 200) {
-        Fluttertoast.showToast(
+        
+        myFluttertoast(
           msg: "Visitor logs exported successfully!",
           backgroundColor: Colors.green,
           textColor: Colors.white,
@@ -430,7 +432,7 @@ class RemoteDataSource {
         log("Export Logs Response: ${response.data}");
       } else {
         log("Failed to export logs: ${response.statusMessage}");
-        Fluttertoast.showToast(
+        myFluttertoast(
           msg: "Failed to export logs: ${response.data}",
           backgroundColor: Colors.red,
           textColor: Colors.white,
@@ -439,7 +441,7 @@ class RemoteDataSource {
     } catch (e) {
       // Handle errors during log export
       log("Error exporting logs: $e");
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Error exporting logs: $e",
         backgroundColor: Colors.red,
         textColor: Colors.white,
@@ -959,7 +961,7 @@ class RemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        Fluttertoast.showToast(
+        myFluttertoast(
           msg: "Visitor logs sent successfully",
           backgroundColor: Colors.green,
           textColor: Colors.white,
@@ -969,7 +971,7 @@ class RemoteDataSource {
       }
     } catch (e) {
       log('Error sending logs: $e');
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Error sending logs: $e",
         backgroundColor: Colors.red,
         textColor: Colors.white,
@@ -1458,7 +1460,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         log("Staff edited successfully: ${response.data}");
-        Fluttertoast.showToast(
+        myFluttertoast(
             backgroundColor: Colors.green,
             msg: "Staff edited successfully",
             toastLength: Toast.LENGTH_SHORT);
@@ -1476,18 +1478,18 @@ class RemoteDataSource {
         final responseData = e.response?.data.toString().toLowerCase();
         if (responseData != null &&
             responseData.contains('mobile number already exist')) {
-          Fluttertoast.showToast(
+          myFluttertoast(
               backgroundColor: Colors.red,
               msg: "User already exists",
               toastLength: Toast.LENGTH_SHORT);
         } else {
-          Fluttertoast.showToast(
+          myFluttertoast(
               msg: "Please check all required fields and try again.",
               toastLength: Toast.LENGTH_SHORT);
         }
       } else {
         log('Error editing staff: $e');
-        // Fluttertoast.showToast(
+        // myFluttertoast(
         //     msg: "Error editing staff: $e", toastLength: Toast.LENGTH_SHORT);
       }
 

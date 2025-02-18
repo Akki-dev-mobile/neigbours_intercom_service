@@ -14,6 +14,7 @@ import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/bloc/self_entry_bloc.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:numpad_layout/numpad.dart';
@@ -124,11 +125,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
       listener: (context, state) async {
         switch (state.runtimeType) {
           case SelfEntryErrorState:
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text((state as SelfEntryErrorState).message),
-              ),
-            );
+          myFluttertoast(msg: (state as SelfEntryErrorState).message);
             break;
           case SENavigateToOTPState:
             final otpState = state as SENavigateToOTPState;

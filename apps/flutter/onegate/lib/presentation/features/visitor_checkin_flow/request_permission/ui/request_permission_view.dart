@@ -12,6 +12,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:lottie/lottie.dart';
 
 class RequestPermissionView extends StatefulWidget {
@@ -73,11 +74,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
             );
             break;
           case RPErrorState:
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text((state as RPErrorState).message!),
-              ),
-            );
+          myFluttertoast(msg: (state as RPErrorState).message!);
             break;
         }
       },

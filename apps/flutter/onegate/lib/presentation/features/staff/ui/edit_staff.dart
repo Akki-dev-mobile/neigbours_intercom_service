@@ -6,6 +6,7 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -206,7 +207,7 @@ class _EditStaffState extends State<EditStaff> {
       log('Categories fetched successfully');
     } catch (e) {
       debugPrint('Error fetching categories: $e');
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Failed to load categories",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -237,7 +238,7 @@ class _EditStaffState extends State<EditStaff> {
     } catch (e) {
       debugPrint('Error capturing image: $e');
       if (mounted) {
-        Fluttertoast.showToast(
+        myFluttertoast(
           msg: "Failed to capture image",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
@@ -327,7 +328,7 @@ class _EditStaffState extends State<EditStaff> {
         final profileImageUrl = profileImageResponse['url'];
         final idProofImageUrl = idProofImageResponse['url'];
 
-        Fluttertoast.showToast(
+        myFluttertoast(
           msg: "Images uploaded successfully",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
@@ -485,7 +486,7 @@ class _EditStaffState extends State<EditStaff> {
         }
       } else {
         log('Error response: ${response?.data}');
-        Fluttertoast.showToast(
+        myFluttertoast(
           msg: "Failed to update staff: ${response?.data}",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
@@ -506,7 +507,7 @@ class _EditStaffState extends State<EditStaff> {
 
         debugPrint('Error : $errorMessage');
 
-        // Fluttertoast.showToast(
+        // myFluttertoast(
         //   msg: "Error: $errorMessage",
         //   toastLength: Toast.LENGTH_SHORT,
         //   gravity: ToastGravity.BOTTOM,
@@ -522,7 +523,7 @@ class _EditStaffState extends State<EditStaff> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedGender.isEmpty) {
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Please select a gender",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -535,7 +536,7 @@ class _EditStaffState extends State<EditStaff> {
     }
 
     if (_selectedDate == null) {
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Please select date of birth",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -548,7 +549,7 @@ class _EditStaffState extends State<EditStaff> {
     }
 
     if (_selectedCategory.isEmpty) {
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Please select a category",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,

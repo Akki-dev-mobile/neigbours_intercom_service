@@ -18,6 +18,7 @@ import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -362,9 +363,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
+    myFluttertoast(msg: message,backgroundColor: Colors.red);
   }
 
   @override

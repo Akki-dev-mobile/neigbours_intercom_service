@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/timeprovider.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
@@ -971,12 +972,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
-    );
+    myFluttertoast(msg: message,backgroundColor:isError ? Colors.red : Colors.green,);
   }
 
   @override

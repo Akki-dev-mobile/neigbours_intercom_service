@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:math' as math;
 import 'package:flutter_onegate/presentation/features/parcel/ui/parcel_list.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:intl/intl.dart';
 
 import 'package:common_widgets/common_widgets.dart';
@@ -589,7 +590,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
         widget.parcel['memb_mobile_number'].toString(),
       );
       _startTimer();
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: 'OTP Resent Successfully',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -598,7 +599,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
         fontSize: 16.0,
       );
     } catch (e) {
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: 'Failed to Resend OTP',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -625,7 +626,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
         otp,
       );
 
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: result['message'],
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -646,7 +647,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
         errorText = "Invalid OTP.";
       });
 
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: 'Invalid OTP',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,

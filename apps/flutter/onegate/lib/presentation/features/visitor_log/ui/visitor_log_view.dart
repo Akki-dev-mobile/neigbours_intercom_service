@@ -17,6 +17,7 @@ import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_sel
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
@@ -122,7 +123,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
           case VisitorLogCheckOutSuccessState:
             final successState = state as VisitorLogCheckOutSuccessState;
             if (successState.isCheckOut!) {
-              Fluttertoast.showToast(
+              myFluttertoast(
                 msg: "User Checked Out Successfully",
                 toastLength: Toast.LENGTH_SHORT,
                 gravity: ToastGravity.CENTER,
@@ -136,7 +137,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             break;
           case VisitorCheckInLogSuccessState:
             _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
-            Fluttertoast.showToast(
+            myFluttertoast(
               msg: "Visitor Checked Out Successfully",
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.CENTER,
@@ -675,7 +676,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         CustomLargeBtn(
                           onPressed: () async {
                             if (startDate == null) {
-                              Fluttertoast.showToast(
+                              myFluttertoast(
                                 msg: "Please select a start date",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.BOTTOM,
@@ -687,7 +688,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               return;
                             }
                             if (endDate == null) {
-                              Fluttertoast.showToast(
+                              myFluttertoast(
                                 msg: "Please select an end date",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.BOTTOM,

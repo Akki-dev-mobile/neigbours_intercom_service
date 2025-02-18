@@ -4,6 +4,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,19 +55,10 @@ class GateSelectionView extends StatelessWidget {
                     final prefs = await SharedPreferences.getInstance();
 
                     final selectedGate = await prefs.getString('selected_gate');
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text("Gate Changed to $selectedGate"),
-                      ),
-                    );
+myFluttertoast(msg: "Gate Changed to $selectedGate");
                   } else {
                     print("No gate selected");
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("No gate selected"),
-                      ),
-                    );
+                    myFluttertoast(msg: "No gate selected",backgroundColor: Colors.red);
                   }
 
                   // Check the role and navigate accordingly

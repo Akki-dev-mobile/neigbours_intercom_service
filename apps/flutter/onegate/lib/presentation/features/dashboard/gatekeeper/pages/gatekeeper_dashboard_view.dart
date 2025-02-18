@@ -19,6 +19,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/commons/ui/dashb
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log_view.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
@@ -340,7 +341,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             icon: Symbols.deskphone_rounded,
                             title: 'Intercom',
                             onTap: () {
-                              Fluttertoast.showToast(
+                              myFluttertoast(
                                 msg: "Intercom, coming soon",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.CENTER,
@@ -364,7 +365,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                   builder: (context) => ParcelList(),
                                 ),
                               );
-                              // Fluttertoast.showToast(
+                              // myFluttertoast(
                               //   msg: "Parcel, coming soon",
                               //   toastLength: Toast.LENGTH_SHORT,
                               //   gravity: ToastGravity.CENTER,
@@ -381,7 +382,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             icon: Symbols.qr_code_scanner_rounded,
                             title: 'Scan',
                             onTap: () {
-                              Fluttertoast.showToast(
+                              myFluttertoast(
                                 msg: "Scan qr, coming soon",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.CENTER,
@@ -627,39 +628,24 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                     .checkOut(visitor);
 
                                 if (response) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Visitor checked out successfully!',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
+                                  myFluttertoast(
+                                      msg: "Visitor checked out successfully!");
                                   context
                                       .read<GatekeeperDashboardBloc>()
                                       .add(GatekeeperDashboardInitialEvent());
                                 } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Failed to check out visitor.',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
+                                  myFluttertoast(
+                                    msg: 'Failed to check out visitor.',
+                                    backgroundColor: Colors.red,
                                   );
                                 }
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Error: $e',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
+                                                                  myFluttertoast(
+                                    msg:                                       'Error: $e',
+
                                     backgroundColor: Colors.red,
-                                  ),
-                                );
+                                  );
+
                               }
                             },
                             child: Text(

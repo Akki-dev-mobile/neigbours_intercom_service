@@ -21,6 +21,7 @@ import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/purposeProvider.dart';
 import 'package:flutter_onegate/purpose_mapper.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -171,7 +172,7 @@ class _IdInputViewState extends State<IdInputView> {
             switch (state.runtimeType) {
               case GatekeeperDashboardErrorState:
                 final errorState = state as GatekeeperDashboardErrorState;
-                Fluttertoast.showToast(
+                myFluttertoast(
                   msg: errorState.message!,
                   toastLength: Toast.LENGTH_SHORT,
                   gravity: ToastGravity.BOTTOM,
@@ -628,7 +629,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
               onPressed: () async {
                 FocusScope.of(context).unfocus();
                 if (selectedImageIndex == null) {
-                  Fluttertoast.showToast(
+                  myFluttertoast(
                       msg: "please select purpose",
                       backgroundColor: Colors.red);
                   return;

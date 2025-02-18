@@ -13,6 +13,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -1017,14 +1018,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                       visitorLogData, true);
 
                                   // Show success message
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          'Visitor checked in successfully'),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-
+                                  myFluttertoast(msg: "Visitor checked in successfully");
                                   // Navigate to dashboard
                                   if (mounted) {
                                     Navigator.pushAndRemoveUntil(
@@ -1039,13 +1033,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 } catch (e) {
                                   log('Error during check-in: $e');
                                   if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Error during check-in. Please try again.'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
+                                    myFluttertoast(msg: "Error during check-in. Please try again.",backgroundColor: Colors.red,);
                                   }
                                 } finally {
                                   if (mounted) {
@@ -1333,12 +1321,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    myFluttertoast(msg: message,backgroundColor: Colors.red,);
   }
 
 // Update the _prepareVisitorLogData method

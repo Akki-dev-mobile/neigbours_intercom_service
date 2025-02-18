@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../dio_setup.dart';
+import '../../../../utils/myfluttertoast.dart';
 
 class AddStaff extends StatefulWidget {
   const AddStaff({super.key});
@@ -172,7 +173,7 @@ class _AddStaffState extends State<AddStaff> {
     } catch (e) {
       debugPrint('Error capturing image: $e');
       if (mounted) {
-        Fluttertoast.showToast(
+        myFluttertoast(
           msg: "Failed to capture images",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
@@ -266,7 +267,7 @@ class _AddStaffState extends State<AddStaff> {
             _idProofImageUrl = idProofImageUrl;
           });
 
-          Fluttertoast.showToast(
+          myFluttertoast(
             msg: "Images uploaded successfully",
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
@@ -283,7 +284,7 @@ class _AddStaffState extends State<AddStaff> {
       }
     } catch (e) {
       debugPrint('Error uploading images: $e');
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Failed to upload images",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -410,7 +411,7 @@ class _AddStaffState extends State<AddStaff> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedGender.isEmpty) {
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Please select a gender",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -423,7 +424,7 @@ class _AddStaffState extends State<AddStaff> {
     }
 
     if (_selectedDate == null) {
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Please select date of birth",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -436,7 +437,7 @@ class _AddStaffState extends State<AddStaff> {
     }
 
     if (_selectedCategory.isEmpty) {
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Please select a category",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -473,7 +474,7 @@ class _AddStaffState extends State<AddStaff> {
       }
     } catch (e) {
       debugPrint('Error: $e');
-      Fluttertoast.showToast(
+      myFluttertoast(
         msg: "Error: $e",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -1044,7 +1045,7 @@ class _AddStaffState extends State<AddStaff> {
             // _submitStaffData(_image!.path, _idProofImage!.path);
             await _submitForm();
           } else {
-            Fluttertoast.showToast(
+            myFluttertoast(
               msg: "Please select both images",
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.BOTTOM,
