@@ -56,7 +56,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   static const Duration _pollingInterval = Duration(seconds: 5);
   String trybuttontext = "Try Again";
   final RemoteDataSource _remoteDataSource = RemoteDataSource();
-  late SocketService _socketService; // Declare SocketService instance
+  late SocketService _socketService;
   RequestType _requestType = RequestType.waiting;
   bool _isLoading = true;
   bool _isFetching = false;
@@ -185,23 +185,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     }
   }
 
-  void _showLoadingIndicator(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const CircularProgressIndicator(color: Colors.white),
-            const SizedBox(width: 12),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Colors.blue,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
   bool _shouldStopPolling(RequestType type) {
     return type == RequestType.approved ||
         type == RequestType.rejected ||
@@ -216,7 +199,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   @override
   void dispose() {
     _stopPolling();
-    _socketService.disconnect(); // Disconnect WebSocket when page is closed
+    _socketService.disconnect();
     super.dispose();
   }
 
@@ -371,11 +354,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                     color: Colors.grey[600],
                     fontSize: 14,
                   ),
-
-                  //  TextStyle(
-                  //   color: Colors.grey[600],
-                  //   fontSize: 14,
-                  // ),
                 ),
                 subtitle: Text(
                   widget.visitor.mobile ?? "",
@@ -386,22 +364,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                   softWrap: true,
                   overflow: TextOverflow.visible,
                 ),
-
-                // trailing: ElevatedButton.icon(
-                //   icon: Icon(Icons.call, size: 18, color:Colors.black),
-                //   label: Text('Call',style: Theme.of(context).textTheme.bodySmall),
-                //   onPressed: () => {},
-                //   // _makePhoneCall(widget.visitorLog.visitor!.mobile ?? ""),
-                //   style: ElevatedButton.styleFrom(
-                //     backgroundColor: colortoshow,
-                //     foregroundColor: Colors.white,
-                //     padding:
-                //         EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                //     shape: RoundedRectangleBorder(
-                //       borderRadius: BorderRadius.circular(8),
-                //     ),
-                //   ),
-                // ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 18.0, bottom: 8),
@@ -851,12 +813,13 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'company_id': widget.visitorLog?.company_id.toString() ?? "",
         'name': widget.visitor.name,
         'mobile': widget.visitor.mobile,
-        'purpose': "Guest",
         'in_time': formattedInTime,
         'user_id': (int.tryParse(userId ?? "0") == null ||
                 int.tryParse(userId ?? "0") == 0)
             ? "234567"
             : int.parse(userId!).toString(),
+        'purpose':
+            widget.visitorLog?.visitor_purpose_Category_name?.toLowerCase(),
         'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
         'member_mobile_number': selectedMobileNumbers.first,
         'visitor_id': visitorId ?? "",

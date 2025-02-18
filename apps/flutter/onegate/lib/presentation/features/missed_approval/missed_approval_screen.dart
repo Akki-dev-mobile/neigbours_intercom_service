@@ -923,6 +923,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
             ? "234567"
             : int.parse(userId!).toString(),
         'visitor_count': "1",
+        'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase(),
         'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber,
         'visitor_id': widget.visitorInfo.visitorId.toString(),
         'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3

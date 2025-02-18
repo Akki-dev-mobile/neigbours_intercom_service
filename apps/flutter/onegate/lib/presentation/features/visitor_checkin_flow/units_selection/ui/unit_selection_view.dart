@@ -11,9 +11,12 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/widgets/member_list.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/widgets/member_selection_manager.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/widgets/selectmember_bottomsheet.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
+import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
@@ -60,7 +63,6 @@ class UnitSelectionView extends StatefulWidget {
 }
 
 class _UnitSelectionViewState extends State<UnitSelectionView> {
-  final Dio _dio = Dio();
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage gateStorage = GateStorage();
   final SocketService socketService = SocketService();
@@ -82,31 +84,34 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<String> selectedUserIds = {};
   List<int> selectedMemberIds = [];
   List<String> selectedBuildingUnits = [];
-  String formattedInTime =
-      DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
   String? approvalStatus = "Waiting for approval...";
   bool? _membersApproval;
   late Future<void> _initializeFuture;
   bool _isLoading = false;
+  late MemberSelectionManager memberSelectionManager;
 
   @override
   void initState() {
     super.initState();
+    memberSelectionManager = MemberSelectionManager(
+      selectedMembersNotifier: _selectedMembersNotifier,
+      selectedUnitsNotifier: _selectedUnitsNotifier,
+    );
     _searchController.addListener(_filterMembers);
     _fetchCompanyId();
     _loadVisitorSettings();
     _initializeSocketConnection();
     _initializeFuture = _initializeMembers();
-    log("$selectedUnits here is this");
-    _isLoading = true; // Set loading state before fetching members
+
+    _isLoading = true;
     _initializeMembers().then((_) {
       if (mounted) {
         setState(() {
-          _isLoading = false; // Turn off loading state after members are loaded
+          _isLoading = false;
         });
       }
     });
-    log("${widget.comingFrom} here is this");
   }
 
   // API Methods
@@ -165,175 +170,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (BuildContext context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 1,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Selected Members',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              // Members List
-              // Members List
-              Expanded(
-                child: ValueListenableBuilder<Set<String>>(
-                  valueListenable: _selectedMembersNotifier,
-                  builder: (context, selectedMembers, _) {
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: selectedMembers.length,
-                      itemBuilder: (context, index) {
-                        final member = selectedMembers.elementAt(index);
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.grey[200],
-                              child: const Icon(
-                                Icons.person,
-                                color: Colors.black,
-                              ),
-                            ),
-                            title: Text(
-                              member,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(
-                                Icons.remove_circle_outline,
-                                color: Colors.red,
-                              ),
-                              onPressed: () {
-                                final updatedMembers = Set<String>.from(
-                                    _selectedMembersNotifier.value);
-                                updatedMembers.remove(member);
-                                _selectedMembersNotifier.value = updatedMembers;
-                                if (updatedMembers.isEmpty) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              // Bottom Buttons
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 1,
-                      offset: const Offset(0, -1),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.black),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _selectedMembersNotifier.value = {};
-                          });
-                          Navigator.pop(context);
-                        },
-                        child: const Text(
-                          'Clear All',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          // // Add your confirm logic here
-                          Navigator.pop(context);
-                          _handleSelectionSubmit(selectedMembers);
-                        },
-                        child: const Text(
-                          'Confirm',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+      builder: (context) {
+        return SelectedMembersBottomSheet(
+          selectedMembers: selectedMembers,
+          selectedMembersNotifier: _selectedMembersNotifier,
+          onClearAll: () {
+            setState(() {
+              _selectedMembersNotifier.value = {};
+            });
+          },
+          onConfirm: () {
+            _handleSelectionSubmit(selectedMembers);
+          },
         );
       },
     );
@@ -380,170 +228,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Widget _buildMemberList(BuildContext context) {
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: _selectedMembersNotifier,
-      builder: (context, selectedMembers, child) {
-        return ValueListenableBuilder<List<dynamic>>(
-          valueListenable: _filteredMembersNotifier,
-          builder: (context, filteredMembers, child) {
-            if (_isLoading) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(
-                      color: Colors.black,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Loading members...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            if (filteredMembers.isEmpty) {
-              return _buildEmptyState();
-            }
-            return _buildMemberListView(filteredMembers, selectedMembers);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.groups_outlined,
-            size: 60,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No Members Found.\nSearch members by their name or flat',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMemberListView(
-      List<dynamic> filteredMembers, Set<String> selectedMembers) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: filteredMembers.length,
-      itemBuilder: (context, index) =>
-          _buildMemberTile(filteredMembers[index], selectedMembers),
-    );
-  }
-
-  Widget _buildMemberTile(dynamic member, Set<String> selectedMembers) {
-    final memberDetails = member['member_details'] as List<dynamic>? ?? [];
-    final unitFlatNumber = member['unit_flat_number']?.toString() ?? 'N/A';
-    final buildingUnit = member['building_unit']?.toString() ?? 'N/A';
-    final socBuildingName = member['soc_building_name']?.toString() ?? '';
-
-    return Theme(
-      data: Theme.of(context).copyWith(
-        dividerColor: Theme.of(context).colorScheme.onSurface.withAlpha(20),
-      ),
-      child: ExpansionTile(
-        iconColor: Colors.redAccent,
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        leading: Icon(
-          Symbols.location_away,
-          color: Theme.of(context).colorScheme.onSurface,
-          size: 32,
-        ),
-        title: Text(
-          '$socBuildingName - $unitFlatNumber',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        subtitle: Text(
-          "${memberDetails.length} Member(s)",
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        collapsedIconColor: Theme.of(context).colorScheme.onSurface,
-        children: memberDetails.isEmpty
-            ? [const Text('No members available')]
-            : _buildMemberDetailsList(memberDetails, member),
-      ),
-    );
-  }
-
-  List<Widget> _buildMemberDetailsList(
-      List<dynamic> memberDetails, dynamic member) {
-    return [
-      ListView.separated(
-        padding: EdgeInsets.zero,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: memberDetails.length,
-        separatorBuilder: (context, index) => Divider(
-          color: Theme.of(context).dividerColor,
-          height: 1,
-        ),
-        itemBuilder: (context, index) =>
-            _buildMemberDetailsItem(memberDetails[index], member),
-      ),
-    ];
-  }
-
-  Widget _buildMemberDetailsItem(dynamic detail, dynamic member) {
-    final firstName = detail['member_first_name']?.toString() ?? 'N/A';
-    final lastName = detail['member_last_name']?.toString() ?? '';
-    final memberName = "$firstName $lastName";
-    final userId = detail['user_id']?.toString() ?? '';
-    final unitId = member['fk_unit_id'] ?? 0;
-    final memberId = detail['member_id'] ?? 0;
-    final buildingUnit = member['building_unit']?.toString() ?? 'N/A';
-    final memberMobileNo =
-        detail['member_mobile_number']?.toString().trim() ?? '';
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      title: Text(
-        memberName,
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-      // subtitle: Text(
-      //   "Mobile: ${memberMobileNo.isNotEmpty ? memberMobileNo : 'N/A'}",
-      //   style: Theme.of(context).textTheme.bodySmall,
-      // ),
-      trailing: Icon(
-        _selectedMembersNotifier.value.contains(memberName)
-            ? Ionicons.checkmark_circle
-            : Icons.add_circle_outline,
-        color: _selectedMembersNotifier.value.contains(memberName)
-            ? Colors.green
-            : null,
-      ),
-      onTap: () {
+    return MemberList(
+      selectedMembersNotifier: _selectedMembersNotifier,
+      filteredMembersNotifier: _filteredMembersNotifier,
+      isLoading: _isLoading,
+      onMemberTap: (detail, selectedMembers) {
         _handleMemberSelection(
-          memberName,
-          userId,
-          memberId,
-          buildingUnit,
-          unitId,
-          memberMobileNo,
+          "${detail['member_first_name']} ${detail['member_last_name']}",
+          detail['user_id']?.toString() ?? '',
+          detail['member_id'],
+          detail['building_unit']?.toString() ?? 'N/A',
+          detail['fk_unit_id'] ?? 0,
+          detail['member_mobile_number']?.toString().trim(),
         );
       },
     );
@@ -983,8 +679,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     visitor: widget.visitor,
                                     visitor_purpose_Category_name:
                                         widget.purposeCategory.categoryName,
-                                    visitor_check_in:
-                                        DateTime.parse(formattedInTime),
+                                    visitor_check_in: DateTime.parse(
+                                        DateTimeUtils
+                                            .getFormattedCurrentTime()),
                                     visitor_card_number: widget.visitorNumber,
                                     visitor_coming_from: widget.comingFrom,
                                     visitor_building_assignment: [
@@ -1078,6 +775,30 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ),
         ),
       ),
+    );
+  }
+
+  VisitorLog _createVisitorLogData(
+      List<BuildingAssignment> buildingAssignments) {
+    return VisitorLog(
+      visitor_id: widget.visitor.id ?? 0,
+      visitor_purpose_category_id: widget.purposeCategoryId == null
+          ? 1
+          : int.parse(widget.purposeCategoryId.toString()),
+      visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
+          ? int.parse(widget.selectedSubCategoryId.toString())
+          : null,
+      visitor_count: widget.guestCount ?? 0,
+      visitor: widget.visitor,
+      visitor_purpose_Category_name: widget.purposeCategory.categoryName,
+      visitor_check_in: DateTime.parse(DateTimeUtils.getFormattedCurrentTime()),
+      visitor_card_number: widget.visitorNumber,
+      visitor_coming_from: widget.comingFrom,
+      visitor_building_assignment: buildingAssignments,
+      visitor_card_id: null,
+      carNumber: widget.carNumber,
+      company_id: int.parse(companyId.toString()),
+      is_checked_out: false,
     );
   }
 
@@ -1191,7 +912,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final selectedMobileNumbers = await _getSelectedMobileNumbers();
       final requestData =
           await _prepareRequestData(userId, selectedMobileNumbers);
-
+      print("request data$requestData");
       log("✅ Sending FCM notification after Check-in...");
 
       // Send WebSocket event
@@ -1305,15 +1026,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  Future<void> _handleMultipleMemberSelection(VisitorLog visitorLogData) async {
-    await _showApprovedDialog(context, visitorLogData, onSuccess: () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => GateDashboardView()),
-      );
-    });
-  }
-
   Future<void> _showApprovedDialog(BuildContext context, VisitorLog data,
       {VoidCallback? onSuccess}) async {
     showDialog(
@@ -1417,14 +1129,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<VisitorLog> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    List<int> unitIds = [];
-    unitIds = formattedMemberDetails
+    List<int> unitIds = formattedMemberDetails
         .map((member) => member['unit_id'])
         .where((id) => id != null)
         .map((id) => int.parse(id.toString()))
         .toList();
 
-    // Map unit IDs to BuildingAssignment objects
     List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
       return BuildingAssignment(
         id: null,
@@ -1435,35 +1145,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         unit_id: [unitId.toString()],
       );
     }).toList();
-    print("subbb${widget.selectedSubCategoryId.toString()}");
-    try {
-      final String memberDetailsJson = json.encode(formattedMemberDetails);
-      await prefs.setString('member_details', memberDetailsJson);
-      print('Successfully saved member details: $memberDetailsJson');
-    } catch (e) {
-      print('Error saving member details: $e');
-    }
 
-    return VisitorLog(
-      visitor_id: int.parse(widget.visitor.id.toString()) ?? 0,
-      visitor_purpose_category_id:
-          int.parse(widget.purposeCategoryId.toString()),
-      visitor_purpose_Category_name: widget.purposeCategory.categoryName,
-      purpose_sub_category_name:
-          widget.purposeCategory.subCategories?.first.subCategoryName,
-      visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
-          ? int.parse(widget.selectedSubCategoryId.toString())
-          : null,
-      visitor_count: widget.guestCount ?? 0,
-      visitor_check_in: DateTime.parse(formattedInTime),
-      visitor_card_number: widget.visitorNumber,
-      visitor_coming_from: widget.comingFrom,
-      visitor_card_id: null,
-      company_id: int.parse(companyId.toString()),
-      carNumber: widget.carNumber,
-      visitor_building_assignment: buildingAssignments,
-      is_checked_out: false,
-    );
+    final String memberDetailsJson = json.encode(formattedMemberDetails);
+    await prefs.setString('member_details', memberDetailsJson);
+
+    return _createVisitorLogData(buildingAssignments);
   }
 
 // Helper method to retrieve the saved member details
@@ -1497,7 +1183,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return formattedMemberDetails
         .map((e) => e['mobile_number'].toString())
         .where((mobile) => mobile.isNotEmpty)
-        .toSet() // Remove duplicates
+        .toSet()
         .toList();
   }
 
@@ -1518,8 +1204,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'company_id': companyId.toString(),
       'name': widget.guestname,
       'mobile': widget.mobileNumber,
-      'purpose': "Guest",
-      'in_time': formattedInTime,
+      'purpose': widget.purposeCategory.categoryName.toLowerCase(),
+      'in_time': DateTimeUtils.getFormattedCurrentTime(),
       'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567"
           : int.parse(userId).toString(),
@@ -1531,7 +1217,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           widget.searchedVisitor?.id?.toString() ??
           '',
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
-          ? "delivery"
+          ? "delivery" "Guest"
           : widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
       'coming_from': widget.comingFrom?.toString() ?? "delivery",
@@ -1541,130 +1227,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'company_name': companyName ?? "",
     };
   }
-
-  // Future<void> setupAMQPReceiver() async {
-  //   try {
-  //     log("Initializing AMQP Receiver...");
-  //
-  //     // Initialize AMQP client with connection settings
-  //     amqpClient = Client(
-  //       settings: ConnectionSettings(
-  //         host: "65.1.230.119",
-  //         authProvider:
-  //             const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
-  //       ),
-  //     );
-  //
-  //     log("Connecting to RabbitMQ server...");
-  //     await amqpClient.connect();
-  //     log("Connection to RabbitMQ server established successfully.");
-  //
-  //     // Define the queue name dynamically based on the mobile number
-  //     final queueName = "visitor_approval_77525_${widget.mobileNumber}";
-  //     log("Queue Name: $queueName");
-  //
-  //     Channel channel = await amqpClient.channel();
-  //     log("Channel opened.");
-  //
-  //     Queue queue = await channel.queue(queueName, durable: false);
-  //     log("Queue declared: $queueName");
-  //
-  //     const String exchangeName = "logs"; // Example exchange name
-  //     final Exchange exchange = await channel.exchange(
-  //       exchangeName,
-  //       ExchangeType.FANOUT,
-  //       durable: false,
-  //     );
-  //     log("Exchange bound: $exchangeName");
-  //
-  //     await queue.bind(exchange, "routing_key_placeholder");
-  //     log("Queue bound to exchange with routing key.");
-  //
-  //     // Start consuming messages from the queue
-  //     Consumer consumer = await queue.consume();
-  //
-  //     log("Consumer registered for queue. Waiting for messages...");
-  //
-  //     // Listen for messages on the queue
-  //     consumer.listen((AmqpMessage message) {
-  //       log("Message received from queue.");
-  //
-  //       try {
-  //         // Decode the message payload
-  //         final payload = utf8.decode(message.payload as List<int>);
-  //         log("Raw Message Payload: $payload");
-  //
-  //         // Parse the message as JSON
-  //         final response = jsonDecode(payload);
-  //         log("Decoded Message: $response");
-  //
-  //         // Extract the approval status from the message
-  //         final status = response['status'];
-  //         log("Approval Status: $status");
-  //
-  //         showApprovalDialog(status);
-  //
-  //         message.ack();
-  //       } catch (e) {
-  //         log("Error processing message: $e");
-  //       }
-  //     });
-  //   } catch (e) {
-  //     log("Error setting up AMQP Receiver: $e");
-  //   }
-  // }
-
-  // Future<void> showApprovalDialog(approvalStatusNew) async {
-  //   setState(() {
-  //     approvalStatus = "Waiting for approval...";
-  //   });
-  //
-  //   await setupAMQPReceiver();
-  //
-  //   showDialog(
-  //     context: context,
-  //     barrierDismissible: false,
-  //     builder: (_) {
-  //       return AlertDialog(
-  //         title: const Text("Approval Status"),
-  //         content: StatefulBuilder(
-  //           builder: (context, setState) {
-  //             return Column(
-  //               mainAxisSize: MainAxisSize.min,
-  //               children: [
-  //                 if (approvalStatus == "Waiting for approval...")
-  //                   const CircularProgressIndicator(),
-  //                 const SizedBox(height: 20),
-  //                 Text(
-  //                   approvalStatusNew,
-  //                   style: const TextStyle(fontSize: 16),
-  //                   textAlign: TextAlign.center,
-  //                 ),
-  //               ],
-  //             );
-  //           },
-  //         ),
-  //         actions: [
-  //           if (approvalStatus == "Approved" || approvalStatus == "Rejected")
-  //             TextButton(
-  //               onPressed: () {
-  //                 setState(() {
-  //                   approvalStatus = null;
-  //                 });
-  //                 Navigator.pop(context);
-  //               },
-  //               child: const Text("Close"),
-  //             ),
-  //         ],
-  //       );
-  //     },
-  //   ).then((_) {
-  //     setState(() {
-  //       Navigator.push(context,
-  //           MaterialPageRoute(builder: (context) => GateDashboardView()));
-  //     });
-  //   });
-  // }
 
   bool _isButtonDisabled = false;
 

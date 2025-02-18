@@ -35,14 +35,13 @@ class RequestPermissionBloc
       for (BuildingAssignment buildingAssignment in buildingAssignments) {
         buildingAssignment.visitor_id = event.visitor.id;
       }
-      print("${Utils.getCurrentTime().toUtc().toString()}");
       VisitorLog visitorLog = VisitorLog(
           company_id: _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
           // visitorBu: buildingAssignments,
           visitor_id: event.visitor.id!,
           visitor_count: event.guestCount == null ? 1 : event.guestCount!,
           visitor_purpose_category_id: event.purposeCategory.categoryId,
-          visitor_check_in: Utils.getCurrentTime().toUtc(),
+          visitor_check_in: DateTimeUtils.getCurrentTime().toUtc(),
           visitor_coming_from: event.comingFrom,
           // vi: event.visitor,
           is_checked_out: false);
@@ -61,25 +60,19 @@ class RequestPermissionBloc
       List<MemberUnits> memberUnits, int companyId) {
     List<BuildingAssignment> buildingAssignments = [];
 
-    // Create a map to store the building IDs and their respective units
     Map<int, List<String>> buildingUnitsMap = {};
 
-    // Iterate over the memberUnits list
     for (MemberUnits memberUnit in memberUnits) {
       int buildingId = memberUnit.socBuildingId ?? 0;
       String unitId = memberUnit.unitFlatNumber;
 
-      // Check if the building ID already exists in the map
       if (buildingUnitsMap.containsKey(buildingId)) {
-        // Add the unit ID to the existing building's unit list
         buildingUnitsMap[buildingId]!.add(unitId);
       } else {
-        // Create a new entry in the map for the building ID and its unit list
         buildingUnitsMap[buildingId] = [unitId];
       }
     }
 
-    // Iterate over the buildingUnitsMap to create BuildingAssignment objects
     buildingUnitsMap.forEach((buildingId, unitIds) {
       BuildingAssignment buildingAssignment = BuildingAssignment(
         building_id: buildingId,
