@@ -677,7 +677,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
-    myFluttertoast(msg: message,        backgroundColor: Colors.red);
+    myFluttertoast(msg: message, backgroundColor: Colors.red);
   }
 
   void _showSuccessSnackBar(String message) {
@@ -767,8 +767,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     // Show snackbar for notification resend
     if (mounted) {
-      myFluttertoast(msg: "Notification resent again",          backgroundColor: Colors.blue,
-);
+      myFluttertoast(
+        msg: "Notification resent again",
+        backgroundColor: Colors.blue,
+      );
     }
 
     setState(() {
@@ -824,8 +826,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
-    myFluttertoast(msg: message,        backgroundColor: isError ? Colors.red : Colors.green,
-);
+    myFluttertoast(
+      msg: message,
+      backgroundColor: isError ? Colors.red : Colors.green,
+    );
   }
 
   Future<void> _sendFcmNotification() async {

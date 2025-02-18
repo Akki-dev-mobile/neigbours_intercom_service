@@ -141,6 +141,26 @@ class RemoteDataSource {
     }
   }
 
+  Future<void> sendFcmNotification(Map<String, dynamic> requestData) async {
+    try {
+      final response = await Dio().post(
+        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ FCM API Response: ${response.data}");
+      } else {
+        log("❌ Failed to send FCM Notification. Status Code: ${response.statusCode}");
+        throw Exception('Failed to send FCM Notification');
+      }
+    } catch (e) {
+      log("❌ Error sending FCM Notification: $e");
+      throw Exception('Error sending FCM Notification: $e');
+    }
+  }
+
   /// Search for a visitor
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
@@ -423,7 +443,6 @@ class RemoteDataSource {
 
       // Handle successful response
       if (response.statusCode == 200) {
-        
         myFluttertoast(
           msg: "Visitor logs exported successfully!",
           backgroundColor: Colors.green,

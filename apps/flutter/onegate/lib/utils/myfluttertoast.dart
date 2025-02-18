@@ -8,7 +8,7 @@ Future<bool?> myFluttertoast({
   toastLength = Toast.LENGTH_SHORT,
   gravity = ToastGravity.BOTTOM,
   timeInSecForIosWeb = 1,
-  fontSize = 12,
+  fontSize = 12.0,
 }) {
   return Fluttertoast.showToast(
       msg: msg, // Using 'msg' as per the function parameter

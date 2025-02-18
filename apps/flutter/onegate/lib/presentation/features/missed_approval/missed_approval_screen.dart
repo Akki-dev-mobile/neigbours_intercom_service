@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
@@ -904,16 +903,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     }
   }
 
-  Future<List<String>> _getSelectedMobileNumbers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedMobileNumbersJson =
-        prefs.getString('selected_member_mobile_numbers') ?? '[]';
-    final cleanedJson =
-        savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
-    return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
-  }
-
   Future<void> _sendFcmNotification() async {
+    final RemoteDataSource remoteDataSource = RemoteDataSource();
     String formattedInTime =
         DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
@@ -921,24 +912,17 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('visitorId');
       final String? visitorLogId = prefs.getString("visitor_log");
-      final selectedMobileNumbers = await _getSelectedMobileNumbers();
-      List<String> mobileList = selectedMobileNumbers;
+
       final requestData = {
         'company_id': widget.visitorInfo.companyId.toString(),
         'name': widget.visitorInfo.visitorName,
         'mobile': widget.visitorInfo.visitorMobile,
-        'purpose': "Guest",
         'in_time': formattedInTime,
-        'user_id':
-
-            // "77525",
-
-            (int.tryParse(userId ?? "0") == null ||
-                    int.tryParse(userId ?? "0") == 0)
-                ? "234567"
-                : int.parse(userId!).toString(),
-        'visitor_count':
-            "1", // Assuming visitor_count is not visitorInfo.toString()
+        'user_id': (int.tryParse(userId ?? "0") == null ||
+                int.tryParse(userId ?? "0") == 0)
+            ? "234567"
+            : int.parse(userId!).toString(),
+        'visitor_count': "1",
         'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber,
         'visitor_id': widget.visitorInfo.visitorId.toString(),
         'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
@@ -949,21 +933,9 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
       };
 
-      log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
+      await remoteDataSource.sendFcmNotification(requestData);
 
-      final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
-        data: requestData,
-      );
-
-      if (response.statusCode == 200) {
-        log("✅ FCM Notification Sent Successfully: ${response.data}");
-        _showSnackBar("Notification sent successfully!");
-      } else {
-        log("❌ FCM Notification Failed: ${response.statusMessage}");
-        _showSnackBar("Error sending notification.", isError: true);
-      }
+      _showSnackBar("Notification sent successfully!");
     } catch (e) {
       log("❌ Error in _sendFcmNotification: $e");
       _showSnackBar("Failed to send notification.", isError: true);
@@ -972,7 +944,10 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
-    myFluttertoast(msg: message,backgroundColor:isError ? Colors.red : Colors.green,);
+    myFluttertoast(
+      msg: message,
+      backgroundColor: isError ? Colors.red : Colors.green,
+    );
   }
 
   @override

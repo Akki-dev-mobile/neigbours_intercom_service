@@ -1019,7 +1019,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                       visitorLogData, true);
 
                                   // Show success message
-                                  myFluttertoast(msg: "Visitor checked in successfully");
+                                  myFluttertoast(
+                                      msg: "Visitor checked in successfully");
                                   // Navigate to dashboard
                                   if (mounted) {
                                     Navigator.pushAndRemoveUntil(
@@ -1034,7 +1035,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 } catch (e) {
                                   log('Error during check-in: $e');
                                   if (mounted) {
-                                    myFluttertoast(msg: "Error during check-in. Please try again.",backgroundColor: Colors.red,);
+                                    myFluttertoast(
+                                      msg:
+                                          "Error during check-in. Please try again.",
+                                      backgroundColor: Colors.red,
+                                    );
                                   }
                                 } finally {
                                   if (mounted) {
@@ -1384,6 +1389,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         _isCheckedIn = true;
       }
 
+      await _allowByGatekeeper(data);
+
       Navigator.pop(context);
 
       if (onSuccess != null) {
@@ -1400,7 +1407,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   void _showErrorSnackbar(String message) {
-    myFluttertoast(msg: message,backgroundColor: Colors.red,);
+    myFluttertoast(
+      msg: message,
+      backgroundColor: Colors.red,
+    );
   }
 
 // Update the _prepareVisitorLogData method

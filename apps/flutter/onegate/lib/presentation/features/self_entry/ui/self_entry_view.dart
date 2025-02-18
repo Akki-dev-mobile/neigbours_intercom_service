@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -10,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
-import 'package:flutter_onegate/dio_setup.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/bloc/self_entry_bloc.dart';
@@ -125,7 +125,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
       listener: (context, state) async {
         switch (state.runtimeType) {
           case SelfEntryErrorState:
-          myFluttertoast(msg: (state as SelfEntryErrorState).message);
+            myFluttertoast(msg: (state as SelfEntryErrorState).message);
             break;
           case SENavigateToOTPState:
             final otpState = state as SENavigateToOTPState;
@@ -510,6 +510,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                       color: Colors.green,
                                     ),
                                     onPressed: () {
+                                      // log("pressed");
                                       // _tabController.animateTo(
                                       //     (_tabController.index + 1) % 3);
                                       selfEntryBloc.add(SEVerifyOtpEvent(

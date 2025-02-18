@@ -640,12 +640,10 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                   );
                                 }
                               } catch (e) {
-                                                                  myFluttertoast(
-                                    msg:                                       'Error: $e',
-
-                                    backgroundColor: Colors.red,
-                                  );
-
+                                myFluttertoast(
+                                  msg: 'Error: $e',
+                                  backgroundColor: Colors.red,
+                                );
                               }
                             },
                             child: Text(
