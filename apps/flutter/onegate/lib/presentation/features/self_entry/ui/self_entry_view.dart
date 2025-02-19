@@ -17,6 +17,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:numpad_layout/numpad.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 
@@ -56,6 +57,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
   PickedFile? _imageFile;
 
   late TabController _tabController;
+
+  // Private variable to store the visitor ID returned from API.
+  int? _visitorId;
 
   @override
   void initState() {
@@ -97,56 +101,83 @@ class _SelfEntryViewState extends State<SelfEntryView>
   }
 
   /// Sends an OTP for self-checkin.
-  /// On success, it navigates to Tab 2 (OTP entry) and starts a default 10-second timer.
+  /// On success, navigates to Tab 2 (OTP entry) and starts a default 10-second timer.
   void selfCheckInOtp(String mobileNumber) async {
     try {
       await _remoteDataSource.sendOtpForSelfCheckIn(mobileNumber);
-      print('OTP sent successfully.');
+      log('OTP sent successfully.');
       _tabController.animateTo(1);
       _start = 10; // Default timer value.
       startTimer();
     } catch (e) {
-      print('Error sending OTP: $e');
+      log('Error sending OTP: $e');
       myFluttertoast(msg: "Error sending OTP. Please try again.");
     }
   }
 
   /// Verifies the self-checkin OTP.
-  /// If verification is successful, a success toast is shown and we navigate to Tab 3 (Personal Details).
+  /// If the response indicates "Visitor is already verified", it navigates directly to Tab 3 (Personal Details)
+  /// and stores the visitor id from the API response.
   Future<void> verifySelfCheckin(String mobileNumber, String otp) async {
     try {
       final result = await _remoteDataSource.verifySelfCheckin(
         mobileNumber: mobileNumber,
         otp: otp,
       );
-      log('OTP verification successful: $result');
+      log('OTP verification response: $result');
 
-      // Check if visitor is already verified:
-      if (result is Map<String, dynamic> &&
-          result['data'] == null &&
-          result['message'] == 'Visitor is already verified') {
+      // Print debug info.
+      log("Result message: ${result['message']}");
+      log("Result data: ${result['data']}");
+
+      // If result contains a visitor id, try to parse it.
+      if (result['data'] != null && result['data'] is Map<String, dynamic>) {
+        final dynamic idValue = result['data']['id'];
+        if (idValue is int) {
+          _visitorId = idValue;
+        } else if (idValue is String) {
+          _visitorId = int.tryParse(idValue);
+        }
+        log("Visitor id set to: $_visitorId");
+      }
+
+      // If the visitor is already verified, navigate directly to UnitSelectionView.
+      if (result['message'] == 'Visitor is already verified') {
+        final prefs = await SharedPreferences.getInstance();
+
+        final visitor_id = await prefs.getString('visitorId');
+
+        myFluttertoast(msg: "Visitor is already verified!");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => UnitSelectionView(
-              null, // searchedVisitor: not applicable in self-checkin.
-              visitor: Visitor(
-                name: _nameController.text,
-                mobile: _mobileController.text,
-              ),
-              guestname: _nameController.text,
-              mobileNumber: _mobileController.text,
-              purposeCategory: getPurposeCategory1(null),
-              comingFrom: _locationController.text,
-              carNumber: null,
-              guestCount: 1,
-            ),
+                null, // searchedVisitor is null for self-checkin.
+                visitor: Visitor(
+                  id: int.parse(visitor_id ?? ""),
+                  name: _nameController.text,
+                  mobile: _mobileController.text,
+                  visitor_image: _imageFile?.path,
+                ),
+                guestname: _nameController.text,
+                mobileNumber: _mobileController.text,
+                purposeCategory: getPurposeCategory1(null),
+                comingFrom: _locationController.text,
+                carNumber: null,
+                guestCount: 1,
+                isVerified: result['message'] == "Visitor is already verified"
+                    ? true
+                    : false
+
+                // Flag set to true.
+                ),
           ),
         );
-        return;
+        return; // Skip further processing.
       }
+
+      // Normal flow if not already verified.
       myFluttertoast(msg: "OTP verified successfully!");
-      // Otherwise, proceed to the Personal Details tab.
       _tabController.animateTo(2);
     } catch (e) {
       log('Error during OTP verification: $e');
@@ -154,23 +185,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
     }
   }
 
-  /// Converts a purpose category string (JSON or ID) into a PurposeCategory1 instance.
-  PurposeCategory1 getPurposeCategory1(String? categoryStr) {
-    if (categoryStr != null && categoryStr.isNotEmpty) {
-      try {
-        final Map<String, dynamic> jsonData = json.decode(categoryStr);
-        return PurposeCategory1.fromJson(jsonData);
-      } catch (e) {
-        int catId = int.tryParse(categoryStr) ?? 1;
-        return PurposeCategory1(
-            categoryId: catId, categoryName: "Category $catId");
-      }
-    }
-    return PurposeCategory1(categoryId: 1, categoryName: "Default Category");
-  }
-
   /// Captures an image from the camera.
-  /// After capturing the image, it immediately navigates to the Unit Selection View.
+  /// After capturing the image, it immediately navigates to the UnitSelectionView,
+  /// passing along the visitor id (if available) in the Visitor object.
   Future<void> _captureImageFromCamera() async {
     final picker = ImagePicker();
     try {
@@ -182,13 +199,24 @@ class _SelfEntryViewState extends State<SelfEntryView>
       setState(() {
         _imageFile = PickedFile(image.path);
       });
-      // After capturing the image, navigate directly to UnitSelectionView.
+
+      _remoteDataSource.createVisitor(Visitor(
+        name: _nameController.text,
+        mobile: _mobileController.text,
+        visitor_image: _imageFile?.path,
+      ));
+
+      final prefs = await SharedPreferences.getInstance();
+
+      final visitor_id = await prefs.getString('visitorId');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => UnitSelectionView(
-            null,
+            null, // searchedVisitor is null for self-checkin.
             visitor: Visitor(
+              id: int.parse(
+                  visitor_id ?? ""), // Pass the visitor id (can be null)
               name: _nameController.text,
               mobile: _mobileController.text,
             ),
@@ -202,8 +230,23 @@ class _SelfEntryViewState extends State<SelfEntryView>
         ),
       );
     } catch (e) {
-      print('Error capturing image from camera: $e');
+      log('Error capturing image from camera: $e');
     }
+  }
+
+  /// Converts a purpose category string (JSON or numeric ID) into a PurposeCategory1 instance.
+  PurposeCategory1 getPurposeCategory1(String? categoryStr) {
+    if (categoryStr != null && categoryStr.isNotEmpty) {
+      try {
+        final Map<String, dynamic> jsonData = json.decode(categoryStr);
+        return PurposeCategory1.fromJson(jsonData);
+      } catch (e) {
+        int catId = int.tryParse(categoryStr) ?? 1;
+        return PurposeCategory1(
+            categoryId: catId, categoryName: "Category $catId");
+      }
+    }
+    return PurposeCategory1(categoryId: 1, categoryName: "Default Category");
   }
 
   @override
@@ -443,51 +486,52 @@ class _SelfEntryViewState extends State<SelfEntryView>
                       ],
                     ),
                     // Tab 2: OTP Entry
+
                     Column(
                       children: [
-                        Form(
-                          child: CustomForm.textField(
-                            titleColor: Theme.of(context).colorScheme.onSurface,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            "Enter OTP sent to your mobile number",
-                            textController: _otpController,
-                            hintText: '123456',
-                            inputFormatters: [
-                              LengthLimitingTextInputFormatter(6),
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            isReadOnly: true,
-                            counterText: _start.toString(),
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                if (_otpController.text.isNotEmpty) {
-                                  _otpController.text = _otpController.text
-                                      .substring(
-                                          0, _otpController.text.length - 1);
-                                  setState(() {});
-                                }
-                              },
-                              icon: CircleAvatar(
-                                backgroundColor: Color(0xffFFEBE6),
-                                radius: 20,
-                                child: Icon(
-                                  size: 22,
-                                  Symbols.backspace,
-                                  color: Colors.black,
-                                ),
+                        CustomForm.textField(
+                          "Enter OTP sent to your mobile number",
+                          titleColor: Theme.of(context).colorScheme.onSurface,
+                          hintColor: Theme.of(context).colorScheme.onPrimary,
+                          textController: _otpController,
+                          length: 6,
+                          hintText: '123456',
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(6),
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          isReadOnly: true,
+                          counterText: _start.toString(),
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              if (_otpController.text.isNotEmpty) {
+                                _otpController.text = _otpController.text
+                                    .substring(
+                                        0, _otpController.text.length - 1);
+                                setState(() {});
+                              }
+                            },
+                            icon: CircleAvatar(
+                              backgroundColor: Color(0xffFFEBE6),
+                              radius: 20,
+                              child: Icon(
+                                size: 22,
+                                Symbols.backspace,
+                                color: Colors.black,
                               ),
                             ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'OTP is required';
-                              } else if (value.length != 6) {
-                                return 'Please enter a 6-digit OTP';
-                              }
-                              return null;
-                            },
                           ),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'OTP is required';
+                            } else if (value.length != 6) {
+                              return 'Please enter a 6-digit OTP';
+                            }
+                            return null;
+                          },
                         ),
+                        SizedBox(height: 16),
                         NumPad(
                           highlightColor: Colors.red,
                           radius: 20,
@@ -510,102 +554,27 @@ class _SelfEntryViewState extends State<SelfEntryView>
                         ),
                       ],
                     ),
+
                     // Tab 3: Personal Details Entry
-                    Column(
-                      children: [
-                        Form(
-                          child: Column(
-                            children: [
-                              CustomForm.textField(
-                                titleColor:
-                                    Theme.of(context).colorScheme.onSurface,
-                                hintColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                "Your Name",
-                                textController: _nameController,
-                                focusNode: _nameFocusNode,
-                                hintText: 'Name Surname',
-                                keyboardType: TextInputType.visiblePassword,
-                                validator: (value) {
-                                  return 'Please enter your name';
-                                },
-                                suffixIcon: IconButton(
-                                  onPressed: () {
-                                    if (_nameController.text.isNotEmpty) {
-                                      FocusScope.of(context)
-                                          .requestFocus(_locationFocusNode);
-                                    }
-                                  },
-                                  icon: CircleAvatar(
-                                    backgroundColor: Color(0xffFFEBE6),
-                                    radius: 20,
-                                    child: Icon(
-                                      size: 22,
-                                      Symbols.done,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              CustomForm.textField(
-                                titleColor:
-                                    Theme.of(context).colorScheme.onSurface,
-                                hintColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                "Coming From",
-                                focusNode: _locationFocusNode,
-                                textController: _locationController,
-                                hintText: 'Mumbai',
-                                keyboardType: TextInputType.name,
-                                validator: (value) {
-                                  return 'Location is required';
-                                },
-                                suffixIcon: IconButton(
-                                  onPressed: () {},
-                                  icon: CircleAvatar(
-                                    backgroundColor: Color(0xffFFEBE6),
-                                    radius: 20,
-                                    child: Icon(
-                                      size: 22,
-                                      Symbols.done,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              CustomLargeBtn(
-                                onPressed: () {
-                                  if (_locationController.text.isNotEmpty) {
-                                    _captureImageFromCamera();
-                                  }
-                                },
-                                text: "Next",
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Tab 4: Visit Details & Unit Selection
-                    Form(
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
                           CustomForm.textField(
+                            "Your Name",
                             titleColor: Theme.of(context).colorScheme.onSurface,
                             hintColor: Theme.of(context).colorScheme.onPrimary,
-                            "Purpose of visit",
-                            textController: _purposeController,
-                            focusNode: _purposeFocusNode,
-                            hintText: 'Meeting',
+                            textController: _nameController,
+                            hintText: 'Name Surname',
                             keyboardType: TextInputType.visiblePassword,
                             validator: (value) {
-                              return 'Purpose of visit is required';
+                              return 'Please enter your name';
                             },
                             suffixIcon: IconButton(
                               onPressed: () {
-                                if (_purposeController.text.isNotEmpty) {
+                                if (_nameController.text.isNotEmpty) {
                                   FocusScope.of(context)
-                                      .requestFocus(_hostFocusNode);
+                                      .requestFocus(_locationFocusNode);
                                 }
                               },
                               icon: CircleAvatar(
@@ -620,41 +589,17 @@ class _SelfEntryViewState extends State<SelfEntryView>
                             ),
                           ),
                           CustomForm.textField(
+                            "Coming From",
                             titleColor: Theme.of(context).colorScheme.onSurface,
                             hintColor: Theme.of(context).colorScheme.onPrimary,
-                            "Select Unit",
-                            textController: _hostController,
-                            focusNode: _hostFocusNode,
-                            hintText: 'Select Host Unit',
-                            isReadOnly: true,
-                            keyboardType: TextInputType.visiblePassword,
+                            textController: _locationController,
+                            hintText: 'Mumbai',
+                            keyboardType: TextInputType.name,
                             validator: (value) {
-                              return 'Host is required';
+                              return 'Location is required';
                             },
                             suffixIcon: IconButton(
-                              onPressed: () {
-                                if (_hostController.text.isNotEmpty) {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => UnitSelectionView(
-                                        null,
-                                        visitor: Visitor(
-                                          name: _nameController.text,
-                                          mobile: _mobileController.text,
-                                        ),
-                                        guestname: _nameController.text,
-                                        mobileNumber: _mobileController.text,
-                                        purposeCategory:
-                                            getPurposeCategory1(null),
-                                        comingFrom: _locationController.text,
-                                        carNumber: null,
-                                        guestCount: 1,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
+                              onPressed: () {},
                               icon: CircleAvatar(
                                 backgroundColor: Color(0xffFFEBE6),
                                 radius: 20,
@@ -666,8 +611,21 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               ),
                             ),
                           ),
+                          SizedBox(height: 32),
+                          CustomLargeBtn(
+                            onPressed: () {
+                              if (_locationController.text.isNotEmpty) {
+                                _captureImageFromCamera();
+                              }
+                            },
+                            text: "Next",
+                          ),
                         ],
                       ),
+                    ),
+                    // Tab 4: Visit Details & Unit Selection (Not displayed; photo capture navigates immediately)
+                    Center(
+                      child: Text("Processing..."),
                     ),
                   ],
                 ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
@@ -20,11 +21,10 @@ import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
-import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
@@ -41,6 +41,7 @@ class UnitSelectionView extends StatefulWidget {
   final String? purposeCategoryId;
   final String? selectedSubCategoryId;
   final String? carNumber;
+  final bool? isVerified;
 
   UnitSelectionView(Visitor? searchedVisitor,
       {Key? key,
@@ -55,7 +56,8 @@ class UnitSelectionView extends StatefulWidget {
       required this.mobileNumber,
       this.visitorNumber,
       this.purposeCategoryId,
-      this.selectedSubCategoryId})
+      this.selectedSubCategoryId,
+      this.isVerified})
       : super(key: key);
 
   @override
@@ -1210,9 +1212,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': mobileNumbers.isNotEmpty
-          ? mobileNumbers.first
-          : "", // This will fail if empty. Handle this better if mobile is mandatory
+      'member_mobile_number':
+          mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
+      // This will fail if empty. Handle this better if mobile is mandatory
       'visitor_id': widget.visitor.id?.toString() ??
           widget.searchedVisitor?.id?.toString() ??
           '',
