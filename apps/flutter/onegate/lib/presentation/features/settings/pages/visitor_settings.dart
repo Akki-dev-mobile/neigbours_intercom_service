@@ -66,12 +66,12 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                 ),
 
                 // Gate ID Setting
-                GateSettingListTile(
-                  switchValue: visitorProvider.gateIdToggleValue,
-                  onChanged: visitorProvider.updateGateIdToggleValue,
-                  title: "Gate Id",
-                  subtitle: "Set gate id as mandatory",
-                ),
+                // GateSettingListTile(
+                //   switchValue: visitorProvider.gateIdToggleValue,
+                //   onChanged: visitorProvider.updateGateIdToggleValue,
+                //   title: "Gate Id",
+                //   subtitle: "Set gate id as mandatory",
+                // ),
 
                 // Visitor Card Number Setting
                 GateSettingListTile(
@@ -186,8 +186,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                                                               child:
                                                                   Image.network(
                                                                 purpose.image!,
-                                                                // width: 50,
-                                                                // height: 50,
+                                                                width: 50,
+                                                                height: 50,
                                                                 fit: BoxFit
                                                                     .contain,
                                                                 errorBuilder: (context,
@@ -285,7 +285,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                           .where((p) => p.isSelected)
                           .toList();
                       purposeProvider.saveSelectedPurposes(selectedPurposes);
-myFluttertoast(msg: "Changes saved successfully!");
+                      myFluttertoast(msg: "Changes saved successfully!");
                       final role = await GateStorage().getRole();
                       if (role == 'admin' || role == 'master') {
                         Navigator.pushReplacement(

@@ -319,7 +319,7 @@ class RemoteDataSource {
   /// Check-in a visitor
   Future<VisitorLog?> checkIn(VisitorLog visitorLog,
       [bool? statusallowed]) async {
-    print("Attempting check-in...");
+    log("Attempting check-in...");
 
     try {
       final Dio dio = Dio();
@@ -351,7 +351,7 @@ class RemoteDataSource {
         "is_always_allowed": statusallowed
       });
 
-      print("Final Payload: $data");
+      log("Final Payload: $data");
 
       // Make the POST request
       final Response response = await dio.post(
@@ -365,7 +365,7 @@ class RemoteDataSource {
         ),
       );
 
-      print("VisitorLog Response: ${response.data}");
+      log("VisitorLog Response: ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
@@ -397,27 +397,27 @@ class RemoteDataSource {
     return null;
   }
 
-  DateTime? tryParseDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return null;
-
-    final List<DateFormat> formats = [
-      DateFormat('yyyy-MM-ddTHH:mm:ss'), // ISO 8601 (default from APIs)
-      DateFormat('yyyy-MM-dd HH:mm:ss'), // Common format with spaces
-      DateFormat('dd-MM-yyyy'), // Custom format
-      DateFormat('dd-MM-yyyy HH:mm:ss'), // Custom format with time
-    ];
-
-    for (var format in formats) {
-      try {
-        return format.parse(dateString, true);
-      } catch (_) {
-        // Continue to the next format
-      }
-    }
-
-    log('Date format not supported: $dateString');
-    return null;
-  }
+  // DateTime? tryParseDate(String? dateString) {
+  //   if (dateString == null || dateString.isEmpty) return null;
+  //
+  //   final List<DateFormat> formats = [
+  //     DateFormat('yyyy-MM-ddTHH:mm:ss'), // ISO 8601 (default from APIs)
+  //     DateFormat('yyyy-MM-dd HH:mm:ss'), // Common format with spaces
+  //     DateFormat('dd-MM-yyyy'), // Custom format
+  //     DateFormat('dd-MM-yyyy HH:mm:ss'), // Custom format with time
+  //   ];
+  //
+  //   for (var format in formats) {
+  //     try {
+  //       return format.parse(dateString, true);
+  //     } catch (_) {
+  //       // Continue to the next format
+  //     }
+  //   }
+  //
+  //   log('Date format not supported: $dateString');
+  //   return null;
+  // }
 
   /// Export visitor logs
   Future<void> exportLogs(Map<String, dynamic> visitorData) async {
@@ -522,6 +522,10 @@ class RemoteDataSource {
   }
 
   VisitorLog _mapToVisitorLog(Map<String, dynamic> item) {
+    // Debug print before mapping
+    print('Mapping VisitorLog from item: $item');
+
+    // Safely parsing the visitor object
     final visitor = Visitor(
       id: item['visitor_id'] as int?,
       name: item['name'] as String? ?? '',
@@ -529,19 +533,20 @@ class RemoteDataSource {
       visitor_image: item['visitor_image'] as String? ?? '',
     );
 
+    // Handling unit details as a list of BuildingAssignments
     final List<BuildingAssignment>? buildingAssignments =
         (item['unit_details'] as List<dynamic>?)?.map((unit) {
       return BuildingAssignment(
-        id: null,
+        id: null, // Assuming id is not provided in the unit details
         visitor_id: item['visitor_id'] as int?,
         visitor_log_id: item['visitor_log_id'] as int?,
         company_id: item['company_id'] as int? ?? 0,
-        building_id: 0,
+        building_id: 0, // Default value as building_id is not provided
         unit_id: [unit['building_unit'] as String? ?? ''],
       );
     }).toList();
 
-    // Handling additional_details safely
+    // Safely handling additional details
     String? initiatedFrom;
     final additionalDetails = item['additional_details'];
 
@@ -549,7 +554,18 @@ class RemoteDataSource {
       initiatedFrom = additionalDetails['initiated_from'] as String?;
     }
 
-    return VisitorLog(
+    // Safely parsing the check-in and check-out times
+    DateTime? checkInTime;
+    DateTime? checkOutTime;
+    if (item['visitor_check_in'] != null) {
+      checkInTime = tryParseDate(item['visitor_check_in'] as String);
+    }
+    if (item['visitor_check_out'] != null) {
+      checkOutTime = tryParseDate(item['visitor_check_out'] as String);
+    }
+
+    // Returning the mapped VisitorLog object
+    final visitorLog = VisitorLog(
       id: item['visitor_log_id'] as int?,
       visitor_id: item['visitor_id'] as int? ?? 0,
       visitor: visitor,
@@ -559,15 +575,11 @@ class RemoteDataSource {
           item['visitor_purpose_sub_category_id'] as int?,
       visitor_building_assignment: buildingAssignments,
       visitor_count: item['visitor_count'] as int? ?? 0,
-      visitor_check_in: item['visitor_check_in'] != null
-          ? tryParseDate(item['visitor_check_in'] as String)
-          : null,
-      visitor_check_out: item['visitor_check_out'] != null
-          ? tryParseDate(item['visitor_check_out'] as String)
-          : null,
+      visitor_check_in: checkInTime,
+      visitor_check_out: checkOutTime,
       visitor_card_number: item['visitor_card_number'] as String?,
       visitor_coming_from: item['visitor_coming_from'] as String?,
-      visitor_card_id: null,
+      visitor_card_id: null, // Assuming null as visitor card id is not provided
       company_id: item['company_id'] as int? ?? 0,
       is_checked_out: item['is_checked_out'] as bool? ?? false,
       purpose_sub_category_name: item['purpose_sub_category_name'] as String?,
@@ -578,6 +590,20 @@ class RemoteDataSource {
           ? additionalDetails['approved_by'] as String?
           : null,
     );
+
+    return visitorLog;
+  }
+
+  /// Safely attempts to parse a string into a DateTime object.
+  DateTime? tryParseDate(String dateStr) {
+    try {
+      final parsedDate = DateFormat("yyyy-MM-dd hh:mm:ss a").parse(dateStr);
+      log('Successfully parsed date: $parsedDate');
+      return parsedDate;
+    } catch (e) {
+      log('Error parsing date: $dateStr, error: $e');
+      return null; // Return null if parsing fails
+    }
   }
 
   /// Fetch members for a company
