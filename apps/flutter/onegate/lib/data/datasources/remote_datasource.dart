@@ -738,6 +738,62 @@ class RemoteDataSource {
     }
   }
 
+  //Otp verifiction for self checkin
+  Future<void> sendOtpForSelfCheckIn(String mobileNumber) async {
+    try {
+      final response = await Dio().post(
+        'https://stggateapi.cubeone.in/api/visitor/selfCheckin',
+        data: {'mobile': mobileNumber}, // Send only the 10-digit mobile number
+      );
+
+      if (response.statusCode == 200) {
+        log('OTP sent successfully. Response: ${response.data}');
+        // You can perform additional processing here if needed.
+      } else {
+        log('Failed to send OTP: ${response.statusCode} - ${response.data}');
+      }
+    } catch (e) {
+      if (e is DioError) {
+        log('Error sending OTP: ${e.response?.statusCode} - ${e.response?.data}');
+      } else {
+        log('Error sending OTP: $e');
+      }
+      rethrow;
+    }
+  }
+
+  //Verify otp for self checkin
+
+  Future<Map<String, dynamic>> verifySelfCheckin({
+    required String mobileNumber,
+    required String otp,
+  }) async {
+    try {
+      final response = await Dio().post(
+        'https://stggateapi.cubeone.in/api/visitor/selfCheckin/verify',
+        data: {
+          'mobile': mobileNumber,
+          'otp': otp,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception(
+            'Failed to verify self-checkin: ${response.statusCode}');
+      }
+    } catch (e) {
+      log('Error during self-checkin verification: $e');
+      throw Exception('Error during self-checkin verification: $e');
+    }
+  }
+
   /// Send OTP to a mobile number
   Future<String?> sendOTP(String mobileNumber) async {
     try {

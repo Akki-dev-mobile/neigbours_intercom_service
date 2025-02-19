@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
 
 class VisitorUsecase {

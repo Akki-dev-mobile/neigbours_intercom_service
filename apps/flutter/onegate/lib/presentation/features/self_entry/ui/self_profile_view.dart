@@ -6,7 +6,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import 'self_entry_view.dart';
+import '../../dashboard/gatekeeper/pages/gate_bu.dart';
 
 class SelfProfileView extends StatefulWidget {
   const SelfProfileView({super.key});
@@ -18,6 +18,7 @@ class SelfProfileView extends StatefulWidget {
 class _SelfProfileViewState extends State<SelfProfileView> {
   late Timer _timer;
   double _progressValue = 1.0;
+
   @override
   void initState() {
     super.initState();

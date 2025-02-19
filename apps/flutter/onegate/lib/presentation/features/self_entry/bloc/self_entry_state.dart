@@ -1,7 +1,13 @@
 part of 'self_entry_bloc.dart';
 
 @immutable
-class SelfEntryState {}
+@immutable
+class SelfEntryState {
+  final Visitor? visitor;
+  final PurposeCategory1? purposeCategory;
+
+  SelfEntryState({this.visitor, this.purposeCategory});
+}
 
 abstract class SelfEntryActionState extends SelfEntryState {}
 
@@ -32,7 +38,4 @@ class SEOtpVerfiedState extends SelfEntryActionState {
   final String? mobileNumber;
 
   SEOtpVerfiedState({required this.mobileNumber});
-
 }
-
-

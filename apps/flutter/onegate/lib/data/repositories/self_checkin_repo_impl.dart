@@ -6,10 +6,10 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class VisitorRepoImpl extends VisitorRepository {
+class SelfCheckInRepoImpl extends VisitorRepository {
   final RemoteDataSource _remoteDataSource;
 
-  VisitorRepoImpl(this._remoteDataSource);
+  SelfCheckInRepoImpl(this._remoteDataSource);
 
   @override
   Future<Visitor?> searchVisitor(String mobileNumber) async {
@@ -76,12 +76,8 @@ class VisitorRepoImpl extends VisitorRepository {
   Future<String?> uploadImage(
       File file, String userMobile, int companyId) async {
     try {
-      final response = await _remoteDataSource.uploadFile(
-        file,
-        userMobile,
-        companyId,
-      );
-
+      final response =
+          await _remoteDataSource.uploadFile(file, userMobile, companyId);
       print("ResponseImage::: $response");
 
       if (response != null) {
@@ -125,6 +121,41 @@ class VisitorRepoImpl extends VisitorRepository {
       return response;
     } catch (error) {
       return error.toString();
+    }
+  }
+
+  // ------------------------------
+  // Self Checkin Implementations
+  // ------------------------------
+
+  /// Sends an OTP for self-checkin.
+  /// Returns true if successful, false otherwise.
+  @override
+  Future<bool> sendSelfCheckinOTP(String mobileNumber) async {
+    try {
+      // Call the self-checkin OTP API endpoint.
+      await _remoteDataSource.sendOtpForSelfCheckIn(mobileNumber);
+      return true;
+    } catch (error) {
+      print("Error sending self-checkin OTP: $error");
+      return false;
+    }
+  }
+
+  /// Verifies the self-checkin OTP.
+  /// Returns a map of the response data if successful, or null if failed.
+  @override
+  Future<Map<String, dynamic>?> verifySelfCheckinOTP(
+      String mobileNumber, String otp) async {
+    try {
+      final response = await _remoteDataSource.verifySelfCheckin(
+        mobileNumber: mobileNumber,
+        otp: otp,
+      );
+      return response;
+    } catch (error) {
+      print("Error verifying self-checkin OTP: $error");
+      return null;
     }
   }
 }

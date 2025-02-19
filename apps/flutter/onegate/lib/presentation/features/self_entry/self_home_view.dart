@@ -1,8 +1,9 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
-import 'package:carousel_slider/carousel_options.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart'
+    as self_entry;
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'ui/self_entry_view.dart';
@@ -115,7 +116,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SelfEntryView(),
+                    builder: (context) => self_entry.SelfEntryView(),
                   ),
                 );
               },
