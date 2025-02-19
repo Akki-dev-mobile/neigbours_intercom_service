@@ -41,7 +41,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   };
 
   static const Map<RequestType, String> _requestMessages = {
-    RequestType.allowByGatekeeper: "Visitor is always allowed by Gatekeeper",
+    RequestType.allowByGatekeeper: "Visitor is always allowed by member",
   };
 
   static const Map<RequestType, Color> _requestMessagesColor = {
@@ -76,7 +76,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
               child: Text(
                 _requestMessages[requestType]!,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   color: _requestMessagesColor[requestType],
                 ),
               ),

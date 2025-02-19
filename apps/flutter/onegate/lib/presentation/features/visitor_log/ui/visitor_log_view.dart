@@ -1412,4 +1412,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
       ),
     );
   }
+
+
 }

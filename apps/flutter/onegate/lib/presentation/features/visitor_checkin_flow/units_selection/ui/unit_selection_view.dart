@@ -12,6 +12,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -1249,9 +1250,20 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> _handleFcmResponse(
       dynamic responseData, VisitorLog visitorLogData) async {
     final message = responseData["message"];
-
+    final prefs = await SharedPreferences.getInstance();
+    final logID = prefs.getString("visitor_log");
     if (message == "Visitor is always_allowed") {
-      await _showVisitorAllowedDialog();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage2(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            logID: logID,
+          ),
+        ),
+      );
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
@@ -1541,6 +1553,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? selectedMemberIds.first.toString()
           : "232",
       'company_name': companyName ?? "",
+      "file": widget.visitor.visitor_image ?? ""
     };
   }
 

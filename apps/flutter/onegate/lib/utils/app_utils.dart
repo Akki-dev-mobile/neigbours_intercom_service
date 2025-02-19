@@ -17,7 +17,7 @@ class Utils {
         inputDateTime.month == yesterday.month &&
         inputDateTime.day == yesterday.day) {
       // Yesterday's date
-      formattedDateTime = DateFormat('hh:mm a').format(inputDateTime) ;
+      formattedDateTime = DateFormat('hh:mm a').format(inputDateTime);
       // ' ' +
       // DateFormat('dd-MM').format(inputDateTime);
     } else {
@@ -28,12 +28,12 @@ class Utils {
     return formattedDateTime;
   }
 
-
-
   static DateTime getCurrentDateTimeInIndianTimeZone() {
     final now = DateTime.now().toUtc(); // Get current UTC time
-    final indianTimeZoneOffset = Duration(hours: 5, minutes: 30); // Indian Standard Time (IST) offset
-    final indianDateTime = now.add(indianTimeZoneOffset); // Add the offset to get IST
+    final indianTimeZoneOffset =
+        Duration(hours: 5, minutes: 30); // Indian Standard Time (IST) offset
+    final indianDateTime =
+        now.add(indianTimeZoneOffset); // Add the offset to get IST
     return indianDateTime;
   }
 

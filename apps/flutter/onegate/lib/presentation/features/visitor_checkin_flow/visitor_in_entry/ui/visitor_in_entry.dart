@@ -242,12 +242,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       // Check if the user captured an image
       if (image != null) {
         final appDocDir = await getApplicationDocumentsDirectory();
-        final localImage = File(
-            '${appDocDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        final String imagePath =
+            await _getNextIncrementalFilename(appDocDir.path);
+
+        final File localImage = File(imagePath);
         await File(image.path).copy(localImage.path);
+
+        print(
+            "Image saved as: ${localImage.path.split('/').last}"); // Only prints filename
         return localImage;
       } else {
-        return null; // No image captured
+        print("No image captured");
+        return null;
       }
     } catch (e) {
       print('Error capturing image: $e');
@@ -255,6 +261,19 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     } finally {
       await cameraController?.dispose();
     }
+  }
+
+  /// Function to generate the next incremental filename like `image1.jpg`, `image2.jpg`
+  Future<String> _getNextIncrementalFilename(String directoryPath) async {
+    int counter = 1;
+    String filePath;
+
+    do {
+      filePath = '$directoryPath/image$counter.jpg';
+      counter++;
+    } while (await File(filePath).exists());
+
+    return filePath;
   }
 
   Future<void> _handleSubmit() async {
@@ -363,7 +382,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   void _showErrorSnackBar(String message) {
-    myFluttertoast(msg: message,backgroundColor: Colors.red);
+    myFluttertoast(msg: message, backgroundColor: Colors.red);
   }
 
   @override
