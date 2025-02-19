@@ -41,7 +41,7 @@ class RequestPermissionBloc
           visitor_id: event.visitor.id!,
           visitor_count: event.guestCount == null ? 1 : event.guestCount!,
           visitor_purpose_category_id: event.purposeCategory.categoryId,
-          visitor_check_in: DateTimeUtils.getCurrentTime().toUtc(),
+          visitor_check_in: Utils.getCurrentTime().toUtc(),
           visitor_coming_from: event.comingFrom,
           // vi: event.visitor,
           is_checked_out: false);

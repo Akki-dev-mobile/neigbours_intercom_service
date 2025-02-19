@@ -70,21 +70,17 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
     switch (widget.id) {
       case "In Out Book":
-        _visitorLogBloc
-            .add(FetchVisitorLogEvent(DateTimeUtils.getCurrentTime()));
+        _visitorLogBloc.add(FetchVisitorLogEvent(Utils.getCurrentTime()));
         break;
       case "Visitor In":
-        _visitorLogBloc
-            .add(FetchCheckInLogEvent(DateTimeUtils.getCurrentTime()));
+        _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
 
       case "Cards":
-        _visitorLogBloc
-            .add(FetchCheckInLogEvent(DateTimeUtils.getCurrentTime()));
+        _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
       case "Visitor Out":
-        _visitorLogBloc
-            .add(FetchCheckOutLogEvent(DateTimeUtils.getCurrentTime()));
+        _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
         break;
     }
     _initializeSocietyId();
@@ -140,8 +136,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             }
             break;
           case VisitorCheckInLogSuccessState:
-            _visitorLogBloc
-                .add(FetchCheckInLogEvent(DateTimeUtils.getCurrentTime()));
+            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
             myFluttertoast(
               msg: "Visitor Checked Out Successfully",
               toastLength: Toast.LENGTH_SHORT,
@@ -466,7 +461,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         setState(() {
                                           logsForDate[logIndex]
                                                   .visitor_check_out =
-                                              DateTimeUtils.getCurrentTime();
+                                              Utils.getCurrentTime();
                                           logsForDate[logIndex].is_checked_out =
                                               true;
                                         });
@@ -1176,7 +1171,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             ),
                           ),
                           TextSpan(
-                            text: DateTimeUtils.convertDateTimeFormat(
+                            text: Utils.convertDateTimeFormat(
                                 widget.visitorLog.visitor_check_in!),
                             style:
                                 Theme.of(context).textTheme.labelMedium!.merge(
@@ -1391,7 +1386,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: DateTimeUtils.convertDateTimeFormat(
+                                  text: Utils.convertDateTimeFormat(
                                       widget.visitorLog.visitor_check_out!),
                                   style: Theme.of(context)
                                       .textTheme
