@@ -26,6 +26,7 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../visitor_in_screens/ui/request_permission_page.dart';
+import '../../visitor_in_screens/widgets/request_2.dart';
 
 class UnitSelectionView extends StatefulWidget {
   Visitor? searchedVisitor;
@@ -968,9 +969,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> _handleFcmResponse(
       dynamic responseData, VisitorLog visitorLogData) async {
     final message = responseData["message"];
+    final prefs = await SharedPreferences.getInstance();
+    final logID = prefs.getString("visitor_log");
 
     if (message == "Visitor is always_allowed") {
-      await _showVisitorAllowedDialog();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+                  visitor: widget.visitor,
+                  unitList: selectedBuildingUnits,
+                  visitorLog: visitorLogData,
+                  logID: logID,
+                  request: "Visitor is always_allowed",
+                )),
+      );
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");

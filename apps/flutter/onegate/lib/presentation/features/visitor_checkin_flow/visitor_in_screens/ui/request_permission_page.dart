@@ -38,10 +38,12 @@ class RequestPermissionPage extends StatefulWidget {
   final String? logID;
   final VisitorLog? visitorLog;
   List<String>? unitList;
+  final String? request;
 
   RequestPermissionPage(
       {Key? key,
       required this.visitor,
+      this.request,
       this.logID,
       this.visitorLog,
       this.unitList})
