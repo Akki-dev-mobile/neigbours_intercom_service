@@ -2,6 +2,7 @@
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart'
     as self_entry;
@@ -10,7 +11,12 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'ui/self_entry_view.dart';
 
 class SelfHomeView extends StatefulWidget {
-  const SelfHomeView({super.key});
+  final bool isKioskModeEnabled;
+
+  const SelfHomeView({
+    this.isKioskModeEnabled = true,
+    super.key,
+  });
 
   @override
   State<SelfHomeView> createState() => _SelfHomeViewState();
@@ -22,7 +28,10 @@ class _SelfHomeViewState extends State<SelfHomeView> {
   @override
   void initState() {
     super.initState();
-    _enableKioskMode();
+    if (widget.isKioskModeEnabled) {
+      _enableKioskMode();
+      enterKioskMode();
+    }
   }
 
   void _enableKioskMode() async {
@@ -31,6 +40,14 @@ class _SelfHomeViewState extends State<SelfHomeView> {
     } catch (e) {
       print("Error starting kiosk mode: $e");
     }
+  }
+
+  void enterKioskMode() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent, // Hide status bar
+      systemNavigationBarColor: Colors.transparent, // Hide navigation bar
+    ));
   }
 
   @override

@@ -44,22 +44,23 @@ class UnitSelectionView extends StatefulWidget {
   final String? carNumber;
   final bool? isVerified;
 
-  UnitSelectionView(Visitor? searchedVisitor,
-      {Key? key,
-      required this.visitor,
-      this.carNumber,
-      required this.purposeCategory,
-      this.comingFrom,
-      this.guestCount,
-      this.companyId,
-      this.visitorId,
-      required this.guestname,
-      required this.mobileNumber,
-      this.visitorNumber,
-      this.purposeCategoryId,
-      this.selectedSubCategoryId,
-      this.isVerified})
-      : super(key: key);
+  UnitSelectionView(
+    Visitor? searchedVisitor, {
+    Key? key,
+    required this.visitor,
+    this.carNumber,
+    required this.purposeCategory,
+    this.comingFrom,
+    this.guestCount,
+    this.companyId,
+    this.visitorId,
+    required this.guestname,
+    required this.mobileNumber,
+    this.visitorNumber,
+    this.purposeCategoryId,
+    this.selectedSubCategoryId,
+    this.isVerified,
+  }) : super(key: key);
 
   @override
   State<UnitSelectionView> createState() => _UnitSelectionViewState();
@@ -362,7 +363,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         } else if (widget.isVerified == true) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => SelfHomeView()),
+            MaterialPageRoute(
+              builder: (context) => SelfHomeView(
+                isKioskModeEnabled: widget.isVerified ?? false,
+              ),
+            ),
             (Route<dynamic> route) => false,
           );
           return false; // Prevent default back navigation.
@@ -864,7 +869,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       if (response.statusCode == 200) {
         log("✅ Visitor allowed by Gatekeeper successfully");
-        _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
+        if (widget.isVerified == true) {
+          _showSuccessSnackBar("Self Check-In successfully done");
+        } else {
+          _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
+        }
         await _showApprovedDialog(context, visitorLogData, onSuccess: () {
           Navigator.pushReplacement(
             context,
@@ -1080,6 +1089,19 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 setState,
                                 onSuccess,
                               );
+
+                              if (widget.isVerified == true) {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SelfHomeView(
+                                      isKioskModeEnabled:
+                                          widget.isVerified ?? false,
+                                    ),
+                                  ),
+                                  (Route<dynamic> route) => false,
+                                );
+                              }
                             },
                             text: "Continue",
                             disabled: _isButtonDisabled,
