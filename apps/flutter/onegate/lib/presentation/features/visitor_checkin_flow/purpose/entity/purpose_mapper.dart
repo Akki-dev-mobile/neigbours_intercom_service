@@ -1,6 +1,6 @@
 import 'package:onegate_client/onegate_client.dart';
 
-import 'domain/entities/visitor/purpose/purpose.dart';
+import '../../../../../domain/entities/visitor/purpose/purpose.dart';
 
 class PurposeCategoryMapper {
   // Convert a single JSON object to a PurposeCategory

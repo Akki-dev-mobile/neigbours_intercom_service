@@ -290,32 +290,6 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<String>> _getMobileNumbersFromMemberDetails(
-      int visitorLogId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? memberDetailsJson = prefs.getString('member_details');
-
-    if (memberDetailsJson != null) {
-      try {
-        final List<dynamic> decoded = json.decode(memberDetailsJson);
-        final mobileNumbers = decoded
-            .map((member) => member['mobile_number'].toString())
-            .where((mobile) => mobile.isNotEmpty)
-            .toSet()
-            .toList();
-
-        if (mobileNumbers.isNotEmpty) {
-          return mobileNumbers;
-        }
-      } catch (e) {
-        log('❌ Error parsing member_details: $e');
-      }
-    }
-
-    // Fallback: Empty List
-    return [];
-  }
-
   /// Check-in a visitor
   Future<VisitorLog?> checkIn(VisitorLog visitorLog,
       [bool? statusallowed]) async {
@@ -396,28 +370,6 @@ class RemoteDataSource {
 
     return null;
   }
-
-  // DateTime? tryParseDate(String? dateString) {
-  //   if (dateString == null || dateString.isEmpty) return null;
-  //
-  //   final List<DateFormat> formats = [
-  //     DateFormat('yyyy-MM-ddTHH:mm:ss'), // ISO 8601 (default from APIs)
-  //     DateFormat('yyyy-MM-dd HH:mm:ss'), // Common format with spaces
-  //     DateFormat('dd-MM-yyyy'), // Custom format
-  //     DateFormat('dd-MM-yyyy HH:mm:ss'), // Custom format with time
-  //   ];
-  //
-  //   for (var format in formats) {
-  //     try {
-  //       return format.parse(dateString, true);
-  //     } catch (_) {
-  //       // Continue to the next format
-  //     }
-  //   }
-  //
-  //   log('Date format not supported: $dateString');
-  //   return null;
-  // }
 
   /// Export visitor logs
   Future<void> exportLogs(Map<String, dynamic> visitorData) async {
@@ -1263,8 +1215,6 @@ class RemoteDataSource {
   }
 
   Future<List<dynamic>> fetchParcels() async {
-    final prefs = await SharedPreferences.getInstance();
-
     final String? companyId = await gateStorage.getSocietyId();
 
     String url = '${ApiUrls.gateBaseUrl}/visitor/parcelData/$companyId';

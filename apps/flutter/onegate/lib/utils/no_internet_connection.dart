@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'common/internet_check_provider.dart';
+import '../common/internet_check_provider.dart';
 
 class NoInternetScreen extends StatelessWidget {
   final VoidCallback? onRetry;

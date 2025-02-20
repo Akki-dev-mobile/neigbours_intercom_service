@@ -16,7 +16,7 @@ import 'package:flutter_onegate/presentation/features/settings/pages/camera_prov
 import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
-import 'package:flutter_onegate/timeprovider.dart';
+import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';

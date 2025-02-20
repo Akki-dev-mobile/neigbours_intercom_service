@@ -1,7 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/dio_setup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GateProvider with ChangeNotifier {

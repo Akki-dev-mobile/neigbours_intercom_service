@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'domain/entities/visitor/purpose/purpose.dart';
+import '../../../../../domain/entities/visitor/purpose/purpose.dart';
 
 class PurposeProvider extends ChangeNotifier {
   List<PurposeCategory1>? _purposes = [];
