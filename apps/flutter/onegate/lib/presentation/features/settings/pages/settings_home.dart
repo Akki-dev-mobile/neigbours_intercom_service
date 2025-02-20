@@ -76,9 +76,10 @@ class _SettingsHomeState extends State<SettingsHome> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            // Access the provider
-            final cameraProvider = Provider.of<CameraSettingsProvider>(context);
-            _cameraValue = cameraProvider.selectedCameraValue;
+            final cameraProvider =
+                Provider.of<CameraSettingsProvider>(context, listen: false);
+            _cameraValue =
+                cameraProvider.selectedCameraValue; // Get the selected value
 
             return Container(
               decoration: BoxDecoration(
@@ -94,7 +95,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Select an option',
+                    'Select Camera',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   ListView.builder(
@@ -105,20 +106,20 @@ class _SettingsHomeState extends State<SettingsHome> {
                       final item = _cameraItems[index];
                       return RadioListTile<String>(
                         contentPadding: EdgeInsets.zero,
-                        fillColor: WidgetStateProperty.all(
-                          Colors.black,
-                        ),
+                        fillColor: WidgetStateProperty.all(Colors.black),
                         title: Text(
                           item.label,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         value: item.value,
-                        groupValue: _cameraValue,
+                        groupValue: _cameraValue, // Reflect selected value
                         onChanged: (value) {
                           if (value != null) {
                             setState(() {
-                              cameraProvider.updateCameraValue(value);
+                              _cameraValue = value;
                             });
+                            cameraProvider
+                                .updateCameraValue(value); // Save selection
                           }
                         },
                       );
@@ -127,11 +128,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                   CustomLargeBtn(
                     text: 'Confirm',
                     onPressed: () async {
-                      // Check the role and navigate accordingly
                       final role = await GateStorage().getRole();
 
-                      print("role$role");
-                      // Fetch the role
+                      Navigator.pop(context); // Close modal
                       if (role == 'admin' || role == 'master') {
                         Navigator.push(
                           context,
@@ -283,7 +282,6 @@ class _SettingsHomeState extends State<SettingsHome> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         value: int.parse(item.value),
-                        // Convert value
                         groupValue: selectedValue,
                         onChanged: (int? value) {
                           setState(() {
@@ -508,7 +506,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               icon: Ionicons.camera_outline,
               title: 'Camera Settings',
               subtitle:
-                  "Current Preference: ${cameraValue ?? "Not Selected Camera"}",
+                  "Current Preference: ${_cameraValue ?? "Not Selected Camera"}",
               onTap: () {
                 _showCameraSettings(context);
               },

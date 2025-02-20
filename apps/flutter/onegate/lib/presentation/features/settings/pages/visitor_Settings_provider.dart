@@ -7,17 +7,27 @@ class VisitorSettingsProvider with ChangeNotifier {
   bool gateIdToggleValue = false;
   bool visitorCardNumber = false;
 
+  // Store original values for change detection
+  bool _originalVisitorsAddress = false;
+  bool _originalMembersApproval = false;
+  bool _originalGateIdToggleValue = false;
+  bool _originalVisitorCardNumber = false;
+
   VisitorSettingsProvider() {
     _loadSettings();
   }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    visitorsAddress = prefs.getBool('visitorsAddress') ?? false;
-    membersApproval = prefs.getBool('membersApproval') ?? false;
-    gateIdToggleValue = prefs.getBool('gateIdToggleValue') ?? false;
-    visitorCardNumber =
-        prefs.getBool('visitorCardNumber') ?? false; // Load visitorCardNumber
+    visitorsAddress =
+        _originalVisitorsAddress = prefs.getBool('visitorsAddress') ?? false;
+    membersApproval =
+        _originalMembersApproval = prefs.getBool('membersApproval') ?? false;
+    gateIdToggleValue = _originalGateIdToggleValue =
+        prefs.getBool('gateIdToggleValue') ?? false;
+    visitorCardNumber = _originalVisitorCardNumber =
+        prefs.getBool('visitorCardNumber') ?? false;
+
     notifyListeners();
   }
 
@@ -41,9 +51,12 @@ class VisitorSettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Check if any setting has changed from the original values
   bool hasChanges() {
-    // Logic to determine if there are unsaved changes
-    return true; // Placeholder for actual comparison logic
+    return visitorsAddress != _originalVisitorsAddress ||
+        membersApproval != _originalMembersApproval ||
+        gateIdToggleValue != _originalGateIdToggleValue ||
+        visitorCardNumber != _originalVisitorCardNumber;
   }
 
   Future<void> saveChanges() async {
@@ -51,7 +64,14 @@ class VisitorSettingsProvider with ChangeNotifier {
     await prefs.setBool('visitorsAddress', visitorsAddress);
     await prefs.setBool('membersApproval', membersApproval);
     await prefs.setBool('gateIdToggleValue', gateIdToggleValue);
-    await prefs.setBool(
-        'visitorCardNumber', visitorCardNumber); // Save visitorCardNumber
+    await prefs.setBool('visitorCardNumber', visitorCardNumber);
+
+    // Update original values after saving
+    _originalVisitorsAddress = visitorsAddress;
+    _originalMembersApproval = membersApproval;
+    _originalGateIdToggleValue = gateIdToggleValue;
+    _originalVisitorCardNumber = visitorCardNumber;
+
+    notifyListeners();
   }
 }

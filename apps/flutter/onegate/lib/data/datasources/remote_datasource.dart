@@ -845,7 +845,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        // log("📡 Full API Response: ${jsonEncode(responseData)}");
+        log("📡 Full API Response: ${jsonEncode(responseData)}");
 
         if (!responseData.containsKey('data')) {
           log("🚨 API Response does not contain 'data' key.");

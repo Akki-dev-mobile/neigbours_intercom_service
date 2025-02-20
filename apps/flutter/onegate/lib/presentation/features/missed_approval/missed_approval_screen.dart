@@ -929,7 +929,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
             ? "delivery"
             : widget.visitorInfo.visitorPurposeCategoryId.toString(),
-        'visitor_log_id': visitorLogId ?? "",
+        'visitor_log_id': widget.visitorInfo.visitorLogId ?? "",
         'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
         'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
       };

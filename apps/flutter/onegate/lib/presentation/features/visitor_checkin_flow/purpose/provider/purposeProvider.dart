@@ -153,4 +153,8 @@ class PurposeProvider extends ChangeNotifier {
       debugPrint("Failed to clear purposes: $e");
     }
   }
+
+  bool hasChanges() {
+    return purposes?.any((p) => p.isSelected) ?? false;
+  }
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_gate.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
@@ -233,12 +234,12 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           prefs.getBool('hasNavigatedToGateSettings') ?? false;
 
       Widget? destination;
-
+      bool? comingfrom;
       if (role == 'admin') {
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
         if (!hasNavigatedToGateSettings) {
-          destination = SettingsHome();
+          destination = VisitorSettingsView(comingfrom: true);
           await prefs.setBool('hasNavigatedToGateSettings', true); // Set flag
         } else {
           destination = GateDashboardView();
@@ -426,7 +427,9 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         log("Automatically selected single gate: ${singleGate['gate_name']} with ID: ${singleGate['gate_id']}");
 
         if (context.mounted) {
-          myFluttertoast(msg: 'Only one gate available. Navigating to ${singleGate['gate_name']}');
+          myFluttertoast(
+              msg:
+                  'Only one gate available. Navigating to ${singleGate['gate_name']}');
         }
 
         await _navigateBasedOnRole(selectedRole);
