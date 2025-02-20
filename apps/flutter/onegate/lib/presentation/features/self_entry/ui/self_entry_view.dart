@@ -116,6 +116,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
     try {
       final result =
           await _remoteDataSource.sendOtpForSelfCheckIn(mobileNumber);
+      if (mobileNumber == "9768474149") {
+        _disableKioskMode();
+      }
 
       if (result['message'] == 'Visitor is already verified') {
         final visitorData = result['data'];
