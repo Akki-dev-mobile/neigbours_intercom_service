@@ -2,6 +2,7 @@
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart'
     as self_entry;
 import 'package:material_symbols_icons/symbols.dart';
@@ -16,6 +17,22 @@ class SelfHomeView extends StatefulWidget {
 }
 
 class _SelfHomeViewState extends State<SelfHomeView> {
+  final _flutterKioskMode = FlutterKioskMode.instance();
+
+  @override
+  void initState() {
+    super.initState();
+    _enableKioskMode();
+  }
+
+  void _enableKioskMode() async {
+    try {
+      await _flutterKioskMode.start();
+    } catch (e) {
+      print("Error starting kiosk mode: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

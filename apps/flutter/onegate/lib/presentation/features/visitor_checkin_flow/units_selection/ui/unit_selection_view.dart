@@ -25,6 +25,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../self_entry/self_home_view.dart';
 import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
@@ -357,6 +358,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       onWillPop: () async {
         if (widget.searchedVisitor != null) {
           Navigator.pop(context);
+          return false; // Prevent default back navigation.
+        } else if (widget.isVerified == true) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => SelfHomeView()),
+            (Route<dynamic> route) => false,
+          );
           return false; // Prevent default back navigation.
         } else {
           Navigator.pushAndRemoveUntil(

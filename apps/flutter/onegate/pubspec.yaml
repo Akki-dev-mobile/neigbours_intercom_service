@@ -76,6 +76,7 @@ dependencies:
   flutter_image_compress: ^2.4.0
   socket_io_client: ^3.0.2
   connectivity_plus: ^5.0.2
+  flutter_kiosk_mode: ^0.0.2
 
 
 

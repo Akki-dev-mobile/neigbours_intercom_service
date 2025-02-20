@@ -9,6 +9,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
@@ -51,8 +52,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
   final FocusNode _locationFocusNode = FocusNode();
   final FocusNode _purposeFocusNode = FocusNode();
   final FocusNode _hostFocusNode = FocusNode();
+  final _flutterKioskMode = FlutterKioskMode.instance();
 
-  late Timer _timer;
+  late Timer _timer = Timer(Duration.zero, () {});
   int _start = 10;
   PickedFile? _imageFile;
 
@@ -65,6 +67,14 @@ class _SelfEntryViewState extends State<SelfEntryView>
   void initState() {
     _tabController = TabController(length: 4, vsync: this);
     super.initState();
+  }
+
+  void _disableKioskMode() async {
+    try {
+      await _flutterKioskMode.stop();
+    } catch (e) {
+      print("Error stopping kiosk mode: $e");
+    }
   }
 
   @override
@@ -81,6 +91,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
     _purposeFocusNode.dispose();
     _hostFocusNode.dispose();
     _tabController.dispose();
+    _disableKioskMode();
     super.dispose();
   }
 
@@ -101,23 +112,55 @@ class _SelfEntryViewState extends State<SelfEntryView>
   }
 
   /// Sends an OTP for self-checkin.
-  /// On success, navigates to Tab 2 (OTP entry) and starts a default 10-second timer.
-  void selfCheckInOtp(String mobileNumber) async {
+  Future<void> selfCheckInOtp(String mobileNumber) async {
     try {
-      await _remoteDataSource.sendOtpForSelfCheckIn(mobileNumber);
-      log('OTP sent successfully.');
+      final result =
+          await _remoteDataSource.sendOtpForSelfCheckIn(mobileNumber);
+
+      if (result['message'] == 'Visitor is already verified') {
+        final visitorData = result['data'];
+        final visitor = Visitor(
+          id: visitorData['id'],
+          name: visitorData['name'] ?? '',
+          mobile: visitorData['mobile'] ?? '',
+          visitor_image: visitorData['visitor_image'],
+        );
+
+        // myFluttertoast(
+        //     msg: "Visitor is already verified!", backgroundColor: Colors.red);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UnitSelectionView(
+              null,
+              visitor: visitor,
+              guestname: visitor.name ?? '',
+              mobileNumber: visitor.mobile ?? '',
+              purposeCategory: getPurposeCategory1(null),
+              comingFrom: visitorData['coming_from'] ?? '',
+              carNumber: null,
+              guestCount: 1,
+              isVerified: true,
+            ),
+          ),
+        );
+        return;
+      }
+
       _tabController.animateTo(1);
-      _start = 10; // Default timer value.
+      _start = 10; // Default timer value
       startTimer();
     } catch (e) {
       log('Error sending OTP: $e');
-      myFluttertoast(msg: "Error sending OTP. Please try again.");
+      myFluttertoast(
+          msg: "Error sending OTP. Please try again.",
+          backgroundColor: Colors.red);
     }
   }
 
   /// Verifies the self-checkin OTP.
-  /// If the response indicates "Visitor is already verified", it navigates directly to Tab 3 (Personal Details)
-  /// and stores the visitor id from the API response.
+
   Future<void> verifySelfCheckin(String mobileNumber, String otp) async {
     try {
       final result = await _remoteDataSource.verifySelfCheckin(
@@ -126,11 +169,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
       );
       log('OTP verification response: $result');
 
-      // Print debug info.
       log("Result message: ${result['message']}");
       log("Result data: ${result['data']}");
 
-      // If result contains a visitor id, try to parse it.
       if (result['data'] != null && result['data'] is Map<String, dynamic>) {
         final dynamic idValue = result['data']['id'];
         if (idValue is int) {
@@ -141,18 +182,15 @@ class _SelfEntryViewState extends State<SelfEntryView>
         log("Visitor id set to: $_visitorId");
       }
 
-      // If the visitor is already verified, navigate directly to UnitSelectionView.
       if (result['message'] == 'Visitor is already verified') {
         final prefs = await SharedPreferences.getInstance();
 
         final visitor_id = await prefs.getString('visitorId');
 
-        myFluttertoast(msg: "Visitor is already verified!");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => UnitSelectionView(
-                null, // searchedVisitor is null for self-checkin.
+            builder: (context) => UnitSelectionView(null,
                 visitor: Visitor(
                   id: int.parse(visitor_id ?? ""),
                   name: _nameController.text,
@@ -167,21 +205,19 @@ class _SelfEntryViewState extends State<SelfEntryView>
                 guestCount: 1,
                 isVerified: result['message'] == "Visitor is already verified"
                     ? true
-                    : false
-
-                // Flag set to true.
-                ),
+                    : false),
           ),
         );
-        return; // Skip further processing.
+        return;
       }
 
-      // Normal flow if not already verified.
       myFluttertoast(msg: "OTP verified successfully!");
       _tabController.animateTo(2);
     } catch (e) {
       log('Error during OTP verification: $e');
-      myFluttertoast(msg: "OTP verification failed. Please try again.");
+      myFluttertoast(
+          msg: "OTP verification failed. Please try again.",
+          backgroundColor: Colors.red);
     }
   }
 
@@ -213,10 +249,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
         context,
         MaterialPageRoute(
           builder: (context) => UnitSelectionView(
-            null, // searchedVisitor is null for self-checkin.
+            null,
             visitor: Visitor(
-              id: int.parse(
-                  visitor_id ?? ""), // Pass the visitor id (can be null)
+              id: int.parse(visitor_id ?? ""),
               name: _nameController.text,
               mobile: _mobileController.text,
             ),
@@ -361,12 +396,15 @@ class _SelfEntryViewState extends State<SelfEntryView>
                             titleColor: Theme.of(context).colorScheme.onSurface,
                             hintColor: Theme.of(context).colorScheme.onPrimary,
                             "Visitor Mobile Number",
+                            length: 10,
                             textController: _mobileController,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Mobile number is required';
                               } else if (value.length != 10) {
                                 return 'Please enter a 10-digit number';
+                              } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                                return 'No spaces or special characters allowed';
                               }
                               return null;
                             },
@@ -461,15 +499,16 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               ),
                             ),
                             keyboardType: TextInputType.number,
-                            length: 10,
                           ),
                         ),
                         NumPad(
                           highlightColor: Colors.red,
                           radius: 20,
                           onType: (value) {
-                            _mobileController.text += value;
-                            setState(() {});
+                            if (_mobileController.text.length < 10) {
+                              _mobileController.text += value;
+                              setState(() {});
+                            }
                           },
                           numberStyle: Theme.of(context).textTheme.displayLarge,
                           rightWidget: IconButton(
@@ -479,10 +518,27 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               color: Colors.green,
                             ),
                             onPressed: () {
-                              selfCheckInOtp(_mobileController.text);
+                              final mobileNumber = _mobileController.text;
+                              if (mobileNumber.isEmpty) {
+                                myFluttertoast(
+                                    msg: 'Mobile number is required',
+                                    backgroundColor: Colors.red);
+                              } else if (mobileNumber.length != 10) {
+                                myFluttertoast(
+                                    msg: 'Please enter a 10-digit number',
+                                    backgroundColor: Colors.red);
+                              } else if (!RegExp(r'^[0-9]+$')
+                                  .hasMatch(mobileNumber)) {
+                                myFluttertoast(
+                                    msg:
+                                        'No spaces or special characters allowed',
+                                    backgroundColor: Colors.red);
+                              } else {
+                                selfCheckInOtp(mobileNumber);
+                              }
                             },
                           ),
-                        ),
+                        )
                       ],
                     ),
                     // Tab 2: OTP Entry
@@ -536,8 +592,10 @@ class _SelfEntryViewState extends State<SelfEntryView>
                           highlightColor: Colors.red,
                           radius: 20,
                           onType: (value) {
-                            _otpController.text += value;
-                            setState(() {});
+                            if (_otpController.text.length < 6) {
+                              _otpController.text += value;
+                              setState(() {});
+                            }
                           },
                           numberStyle: Theme.of(context).textTheme.displayLarge,
                           rightWidget: IconButton(
@@ -551,7 +609,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                   _mobileController.text, _otpController.text);
                             },
                           ),
-                        ),
+                        )
                       ],
                     ),
 
