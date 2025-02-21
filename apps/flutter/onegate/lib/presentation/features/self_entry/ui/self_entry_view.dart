@@ -21,6 +21,7 @@ import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../data/datasources/gate_storage.dart';
+import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import '../../visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 
 class SelfEntryView extends StatefulWidget {
@@ -545,6 +546,12 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                     backgroundColor: Colors.red);
                               } else if (username == fullMobileNumber) {
                                 _disableKioskMode();
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          GateDashboardView()),
+                                );
                               } else {
                                 selfCheckInOtp(mobileNumber);
                               }
