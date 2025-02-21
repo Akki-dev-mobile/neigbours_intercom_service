@@ -28,18 +28,6 @@ class _SelfHomeViewState extends State<SelfHomeView> {
   @override
   void initState() {
     super.initState();
-    if (widget.isKioskModeEnabled) {
-      _enableKioskMode();
-      enterKioskMode();
-    }
-  }
-
-  void _enableKioskMode() async {
-    try {
-      await _flutterKioskMode.start();
-    } catch (e) {
-      print("Error starting kiosk mode: $e");
-    }
   }
 
   void enterKioskMode() {

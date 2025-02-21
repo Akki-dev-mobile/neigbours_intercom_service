@@ -20,6 +20,7 @@ import 'package:numpad_layout/numpad.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../data/datasources/gate_storage.dart';
 import '../../visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 
 class SelfEntryView extends StatefulWidget {
@@ -38,6 +39,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
   // Create an instance of RemoteDataSource.
   final RemoteDataSource _remoteDataSource = RemoteDataSource();
+  GateStorage _gateStorage = GateStorage();
 
   // Text controllers.
   final TextEditingController _mobileController = TextEditingController();
@@ -519,8 +521,14 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               size: 36,
                               color: Colors.green,
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               final mobileNumber = _mobileController.text;
+                              final fullMobileNumber = '${91}$mobileNumber';
+
+                              final username = await _gateStorage.getUsername();
+                              log('Full mobile number: $fullMobileNumber');
+                              log('Full Username: $username');
+
                               if (mobileNumber.isEmpty) {
                                 myFluttertoast(
                                     msg: 'Mobile number is required',
@@ -535,6 +543,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                     msg:
                                         'No spaces or special characters allowed',
                                     backgroundColor: Colors.red);
+                              } else if (username == fullMobileNumber) {
+                                _disableKioskMode();
                               } else {
                                 selfCheckInOtp(mobileNumber);
                               }
