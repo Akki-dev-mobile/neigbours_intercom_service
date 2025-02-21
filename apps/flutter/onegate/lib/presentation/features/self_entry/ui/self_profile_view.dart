@@ -4,12 +4,17 @@ import 'dart:async';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../dashboard/gatekeeper/pages/gate_bu.dart';
+import '../../../../domain/entities/visitor/visitorLog.dart';
 
 class SelfProfileView extends StatefulWidget {
-  const SelfProfileView({super.key});
+  final VisitorLog visitorLog;
+  final bool isKioskModeEnabled;
+
+  const SelfProfileView(
+      {super.key, required this.visitorLog, this.isKioskModeEnabled = true});
 
   @override
   State<SelfProfileView> createState() => _SelfProfileViewState();
@@ -29,7 +34,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
     _timer = Timer(Duration(seconds: totalDurationInSeconds), () {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => SelfEntryView(),
+          builder: (context) => SelfHomeView(),
         ),
       );
     });
@@ -64,7 +69,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
               _timer.cancel();
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (context) => SelfEntryView(),
+                  builder: (context) => SelfHomeView(),
                 ),
               );
             },
@@ -96,7 +101,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
                       radius: 50.0,
                       backgroundColor: Colors.blue,
                       backgroundImage: NetworkImage(
-                        'https://images.unsplash.com/photo-1638957319391-9b81b996afca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80',
+                        widget.visitorLog.visitor?.visitor_image ?? '',
                       ),
                     ),
                     SizedBox(
@@ -138,41 +143,35 @@ class _SelfProfileViewState extends State<SelfProfileView> {
             ),
             child: RichText(
               text: TextSpan(
-                text: 'Shubham\n',
+                text: "${widget.visitorLog.visitor?.name ?? 'N/A'}",
                 style: Theme.of(context).textTheme.displayLarge!.copyWith(
                       fontSize: 42,
                     ),
-                children: <TextSpan>[
-                  TextSpan(
-                    text: 'Bane',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w400,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
-                ],
+                children: <TextSpan>[],
               ),
             ),
           ),
           SelfProfileTile(
             icon: Symbols.phone_in_talk_sharp,
             title: 'Mobile',
-            subtitle: '+91*******101',
+            subtitle: '${widget.visitorLog.visitor?.mobile ?? 'N/A'}',
           ),
           SelfProfileTile(
             icon: Symbols.person_pin_circle_sharp,
             title: 'Coming From',
-            subtitle: 'Mumbai',
+            subtitle: '${widget.visitorLog.visitor_coming_from ?? 'N/A'}',
           ),
           SelfProfileTile(
             icon: Symbols.near_me_sharp,
-            title: 'Host',
-            subtitle: '1905/Futurescape',
+            title: 'Unit',
+            subtitle:
+                '${widget.visitorLog.visitor_building_assignment?.first.unit_id?.first ?? 'N/A'}',
           ),
           SelfProfileTile(
             icon: Symbols.groups_3_sharp,
             title: 'Purpose',
-            subtitle: 'Meeting',
+            subtitle:
+                '${widget.visitorLog.visitor_purpose_Category_name ?? 'N/A'}',
           ),
         ],
       ),

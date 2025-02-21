@@ -26,6 +26,7 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../self_entry/self_home_view.dart';
+import '../../../self_entry/ui/self_profile_view.dart';
 import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
@@ -43,24 +44,25 @@ class UnitSelectionView extends StatefulWidget {
   final String? selectedSubCategoryId;
   final String? carNumber;
   final bool? isVerified;
+  final bool? isKioskModeEnabled;
 
-  UnitSelectionView(
-    Visitor? searchedVisitor, {
-    Key? key,
-    required this.visitor,
-    this.carNumber,
-    required this.purposeCategory,
-    this.comingFrom,
-    this.guestCount,
-    this.companyId,
-    this.visitorId,
-    required this.guestname,
-    required this.mobileNumber,
-    this.visitorNumber,
-    this.purposeCategoryId,
-    this.selectedSubCategoryId,
-    this.isVerified,
-  }) : super(key: key);
+  UnitSelectionView(Visitor? searchedVisitor,
+      {Key? key,
+      required this.visitor,
+      this.carNumber,
+      required this.purposeCategory,
+      this.comingFrom,
+      this.guestCount,
+      this.companyId,
+      this.visitorId,
+      required this.guestname,
+      required this.mobileNumber,
+      this.visitorNumber,
+      this.purposeCategoryId,
+      this.selectedSubCategoryId,
+      this.isVerified,
+      this.isKioskModeEnabled = true})
+      : super(key: key);
 
   @override
   State<UnitSelectionView> createState() => _UnitSelectionViewState();
@@ -359,17 +361,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       onWillPop: () async {
         if (widget.searchedVisitor != null) {
           Navigator.pop(context);
-          return false; // Prevent default back navigation.
-        } else if (widget.isVerified == true) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SelfHomeView(
-                isKioskModeEnabled: widget.isVerified ?? false,
-              ),
-            ),
-            (Route<dynamic> route) => false,
-          );
           return false; // Prevent default back navigation.
         } else {
           Navigator.pushAndRemoveUntil(
@@ -734,16 +725,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   myFluttertoast(
                                       msg: "Visitor checked in successfully");
                                   // Navigate to dashboard
-                                  if (mounted) {
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            GateDashboardView(),
-                                      ),
-                                      (route) => false,
-                                    );
-                                  }
+
+                                  // If isVerified is false, navigate to GateDashboardView
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => GateDashboardView(),
+                                    ),
+                                    (Route<dynamic> route) => false,
+                                  );
                                 } catch (e) {
                                   log('Error during check-in: $e');
                                   if (mounted) {
@@ -848,10 +838,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         _isCheckedIn = true;
       }
       await _showApprovedDialog(context, visitorLogData, onSuccess: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => GateDashboardView()),
-        );
+        if (widget.isVerified == true) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => SelfHomeView()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => GateDashboardView()),
+          );
+        }
       });
     } catch (e) {
       log("❌ Error in _handleDirectApproval: $e");
@@ -869,7 +866,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       if (response.statusCode == 200) {
         log("✅ Visitor allowed by Gatekeeper successfully");
-        if (widget.isVerified == true) {
+        if (widget.isVerified == true || widget.isKioskModeEnabled == true) {
           _showSuccessSnackBar("Self Check-In successfully done");
         } else {
           _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
@@ -1089,15 +1086,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 setState,
                                 onSuccess,
                               );
+                              final visitorLogData =
+                                  await _prepareVisitorLogData();
 
-                              if (widget.isVerified == true) {
+                              if (widget.isKioskModeEnabled == true ||
+                                  widget.isVerified == true) {
                                 Navigator.pushAndRemoveUntil(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => SelfHomeView(
-                                      isKioskModeEnabled:
-                                          widget.isVerified ?? false,
-                                    ),
+                                    builder: (context) => SelfProfileView(
+                                        visitorLog: visitorLogData),
                                   ),
                                   (Route<dynamic> route) => false,
                                 );
