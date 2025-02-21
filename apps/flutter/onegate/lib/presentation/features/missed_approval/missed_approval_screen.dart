@@ -8,8 +8,11 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -269,9 +272,10 @@ class VisitorInfo {
   final MemberInfo memberInfo;
   final String? visitorComingFrom;
   final int? visitorPurposeCategoryId;
-  final String? purposeCategoryName; // Added field
+  final String? purposeCategoryName;
   final String? purposeSubCategoryName;
   final UnitDetails unitDetails;
+  final Map<String, dynamic>? additionalDetails; // Parsed Additional Details
 
   VisitorInfo({
     required this.visitorId,
@@ -289,6 +293,7 @@ class VisitorInfo {
     this.visitorPurposeCategoryId,
     this.purposeCategoryName,
     this.purposeSubCategoryName,
+    this.additionalDetails, // Include Additional Details
   });
 
   factory VisitorInfo.fromJson(Map<String, dynamic> json) {
@@ -326,8 +331,24 @@ class VisitorInfo {
       log("❌ Error decoding unit details: $e");
     }
 
-    // 🔍 Print final assigned building_unit
-    log("✅ Final assigned building_unit: ${parsedUnitDetails.isNotEmpty ? parsedUnitDetails.first.building_unit : 'N/A'}");
+    // ✅ Fix for `additional_details` Parsing
+    Map<String, dynamic>? parsedAdditionalDetails;
+    try {
+      final dynamic additionalDetailsString = json['additional_details'];
+
+      if (additionalDetailsString != null &&
+          additionalDetailsString.toString().isNotEmpty) {
+        if (additionalDetailsString is String) {
+          parsedAdditionalDetails = jsonDecode(additionalDetailsString
+              .replaceAll(r'\"', '"')); // Handle escaped quotes
+        } else if (additionalDetailsString is Map<String, dynamic>) {
+          parsedAdditionalDetails = additionalDetailsString;
+        }
+      }
+    } catch (e) {
+      log("❌ Error parsing additional_details: $e");
+      parsedAdditionalDetails = {};
+    }
 
     return VisitorInfo(
       visitorId: _parseToInt(json['visitor_id']),
@@ -351,10 +372,11 @@ class VisitorInfo {
         building_unit: json["building_unit"]?.toString(),
       ),
       visitorComingFrom: json['visitor_coming_from']?.toString(),
-      visitorPurposeCategoryId:
-          _parseToInt(json['visitor_purpose_category_id']),
+      visitorPurposeCategoryId: _parseToInt(json['purpose_category_id']),
       purposeCategoryName: json['purpose_category_name']?.toString(),
       purposeSubCategoryName: json['purpose_sub_category_name']?.toString(),
+      additionalDetails:
+          parsedAdditionalDetails, // ✅ Correctly parsed `additional_details`
     );
   }
 
@@ -383,8 +405,9 @@ class VisitorInfo {
       visitorPurposeCategoryId: $visitorPurposeCategoryId,
       purposeCategoryName: $purposeCategoryName,
       purposeSubCategoryName: $purposeSubCategoryName,
-      memberInfo: $memberInfo
-      unit_details:$unitDetails
+      memberInfo: $memberInfo,
+      unitDetails: $unitDetails,
+      additionalDetails: $additionalDetails
     )
     ''';
   }
@@ -933,6 +956,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
         'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
       };
+      log("read$requestData");
 
       await remoteDataSource.sendFcmNotification(requestData);
 
@@ -1013,9 +1037,23 @@ class VisitorInfoSection extends StatelessWidget {
                 visitorInfo.visitorName,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              subtitle: Text(
-                "${visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? ""} - ${visitorInfo.unitDetails.building_unit}",
-                style: Theme.of(context).textTheme.labelLarge,
+              subtitle: Row(
+                children: [
+                  Icon(
+                    _getPurposeIcon(visitorInfo.purposeSubCategoryName ??
+                        visitorInfo.purposeCategoryName),
+                    size: 18, // Reduced size for alignment
+                    color: Colors.grey[600], // Greyish color
+                  ),
+                  const SizedBox(width: 6), // Spacing between icon and text
+                  Text(
+                    "${_capitalizeFirstLetter(visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? "")} - ${visitorInfo.unitDetails.building_unit}",
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontSize: 14, // Ensures text size consistency
+                          color: Colors.grey[600], // Greyish color
+                        ),
+                  ),
+                ],
               ),
             ),
             Divider(
@@ -1033,6 +1071,29 @@ class VisitorInfoSection extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _capitalizeFirstLetter(String text) {
+    if (text.isEmpty) return "";
+    return text
+        .split(' ')
+        .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase())
+        .join(' ');
+  }
+
+  IconData _getPurposeIcon(String? category) {
+    switch (category?.toUpperCase()) {
+      case "DELIVERY":
+        return Icons.inventory_2_outlined; // Parcel icon for delivery
+      case "CABS":
+        return Symbols.local_taxi; // Car symbol for cabs
+      case "VENDOR":
+        return Symbols.settings_suggest;
+      case "GUEST":
+        return Symbols.person; // Gear icon for vendor
+      default:
+        return Icons.inventory_2_outlined; // Fallback generic icon
+    }
   }
 }
 
@@ -1083,7 +1144,7 @@ class VisitorAvatar extends StatelessWidget {
 }
 
 // Timer Action Section
-class TimerActionSection extends StatelessWidget {
+class TimerActionSection extends StatefulWidget {
   final int visitorLogId;
   final VoidCallback onRetry;
   final bool isLoading;
@@ -1098,225 +1159,265 @@ class TimerActionSection extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _TimerActionSectionState createState() => _TimerActionSectionState();
+}
+
+class _TimerActionSectionState extends State<TimerActionSection> {
+  bool _isUploading = false;
+  bool _isImageUploaded = false;
+  RemoteDataSource remoteDataSource = RemoteDataSource();
+  @override
+  void initState() {
+    super.initState();
+    _checkIfImageUploaded();
+  }
+
+  Future<void> _checkIfImageUploaded() async {
+    bool? imageUrl =
+        widget.visitorInfo.additionalDetails?["is_parcel_provided"];
+    if (imageUrl == true) {
+      setState(() {
+        _isImageUploaded = true;
+      });
+    }
+  }
+
+  Future<void> _captureAndUploadImage() async {
+    setState(() => _isUploading = true);
+
+    try {
+      final String? capturedImagePath = await _openCameraAndCapture();
+
+      if (capturedImagePath == null) {
+        myFluttertoast(
+          msg: "Photo capture cancelled",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        setState(() => _isUploading = false);
+        return;
+      }
+
+      await remoteDataSource.uploadParcelImage(
+        visitorLogId: int.parse(widget.visitorInfo.visitorLogId.toString()),
+        imageUrl: capturedImagePath,
+      );
+
+      myFluttertoast(
+        msg: "Parcel image uploaded successfully!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+
+      setState(() {
+        _isUploading = false;
+        _isImageUploaded = true;
+      });
+    } catch (e) {
+      myFluttertoast(
+        msg: "Failed to upload parcel image",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+
+      setState(() => _isUploading = false);
+    }
+  }
+
+  Future<String?> _openCameraAndCapture() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.camera);
+    return pickedFile?.path;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return TimerBuilder.periodic(
       const Duration(seconds: 1),
       builder: (context) {
-        final timerState = TimerService().getTimerState(visitorLogId);
+        final timerState = TimerService().getTimerState(widget.visitorLogId);
         if (timerState == null) return const SizedBox.shrink();
         final timerService = context.watch<TimerService>();
-        final hasRetried = timerService.hasRetried(visitorLogId);
+        final hasRetried = timerService.hasRetried(widget.visitorLogId);
         final now = DateTime.now();
         final remaining = timerState.endTime.difference(now);
         final isEnabled =
             remaining.isNegative || timerState.isRetryEnabled && !hasRetried;
 
-        final allowStatus = visitorInfo.allowStatus.toLowerCase();
-
-        // ✅ Define different states
-        final isVisitorAllowed =
-            allowStatus == "allowed" || allowStatus == "always_allowed";
-
-        final isVisitorDeclined =
-            allowStatus == "declined" || allowStatus == "denied";
-
-        final isVisitorPending =
-            allowStatus == "pending" || allowStatus == "request";
-
-        final isVisitorWaiting = allowStatus == "waiting";
-
-        final isVisitorLeave = allowStatus == "leave";
-
-        final isVisitorNotReachable =
-            allowStatus == "invalid" || allowStatus == "not_reachable";
+        final allowStatus = widget.visitorInfo.allowStatus.toLowerCase();
 
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Column(
-                children: [
-                  // ✅ Case: Visitor Allowed
-                  if (isVisitorAllowed)
-                    Row(
-                      children: [
-                        const Icon(Icons.check_circle,
-                            color: Colors.green, size: 15),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Visitor has been allowed.",
-                          style:
-                              Theme.of(context).textTheme.labelMedium!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green.shade700,
-                                  ),
-                        ),
-                      ],
-                    )
-
-                  // ✅ Case: Visitor Declined
-                  else if (isVisitorDeclined)
-                    Row(
-                      children: [
-                        const Icon(Icons.cancel, color: Colors.red, size: 15),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Visitor has been declined.",
-                          style:
-                              Theme.of(context).textTheme.labelMedium!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.red.shade700,
-                                  ),
-                        ),
-                      ],
-                    )
-
-                  // ✅ Case: Visitor is Pending Approval
-                  else if (isVisitorPending)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.hourglass_empty,
-                                    color: Colors.orange, size: 15),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Approval is pending...",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium!
-                                      .copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.orange.shade700,
-                                      ),
-                                ),
-                              ],
+              // ✅ Case: Visitor has Left (LEAVE)
+              if (allowStatus == "leave")
+                _isImageUploaded
+                    ? Row(
+                        children: [
+                          const Icon(Icons.directions_walk,
+                              color: Colors.brown, size: 20),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              "Delivery person has left the parcel.",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.brown.shade700,
+                              ),
                             ),
-                            isEnabled
-                                ? SizedBox(
-                                    width:
-                                        MediaQuery.of(context).size.width * 0.2,
-                                    child: RetryButton(
-                                      onRetry: onRetry,
-                                      isEnabled: isEnabled && !isLoading,
-                                      isLoading: isLoading,
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          const Text(
+                            "Capture & upload parcel image before marking as left.",
+                            style: TextStyle(fontSize: 14, color: Colors.red),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed:
+                                _isUploading ? null : _captureAndUploadImage,
+                            icon: _isUploading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
                                     ),
                                   )
-                                : TimerDisplay(
-                                    remaining: remaining,
-                                    isEnabled: isEnabled,
-                                  ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        // Adds spacing
-                        // Row(
-                        //   mainAxisAlignment: MainAxisAlignment.end,
-                        //   children: [
-                        //     isEnabled
-                        //         ? SizedBox(
-                        //             width:
-                        //                 MediaQuery.of(context).size.width * 0.3,
-                        //             child: RetryButton(
-                        //               onRetry: onRetry,
-                        //               isEnabled: isEnabled && !isLoading,
-                        //               isLoading: isLoading,
-                        //             ),
-                        //           )
-                        //         : TimerDisplay(
-                        //             remaining: remaining,
-                        //             isEnabled: isEnabled,
-                        //           ),
-                        //   ],
-                        // ),
-                      ],
-                    )
+                                : const Icon(Icons.camera_alt),
+                            label: Text(_isUploading
+                                ? "Uploading..."
+                                : "Capture Image"),
+                          ),
+                        ],
+                      )
 
-                  // ✅ Case: Visitor is Waiting
-                  else if (isVisitorWaiting)
+              // ✅ Case: Visitor Allowed
+              else if (allowStatus == "allowed" ||
+                  allowStatus == "always_allowed")
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle,
+                        color: Colors.green, size: 15),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Visitor has been allowed.",
+                      style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                    ),
+                  ],
+                )
+
+              // ✅ Case: Visitor Declined
+              else if (allowStatus == "declined" || allowStatus == "denied")
+                Row(
+                  children: [
+                    const Icon(Icons.cancel, color: Colors.red, size: 15),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Visitor has been declined.",
+                      style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade700,
+                          ),
+                    ),
+                  ],
+                )
+
+              // ✅ Case: Visitor is Pending Approval
+              else if (allowStatus == "pending" || allowStatus == "request")
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
                     Row(
                       children: [
-                        const Icon(Icons.access_time,
-                            color: Colors.blue, size: 15),
+                        const Icon(Icons.hourglass_empty,
+                            color: Colors.orange, size: 15),
                         const SizedBox(width: 8),
                         Text(
-                          "Visitor is waiting at the gate.",
+                          "Approval is pending...",
                           style:
-                              Theme.of(context).textTheme.bodySmall!.copyWith(
+                              Theme.of(context).textTheme.labelMedium!.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
+                                    color: Colors.orange.shade700,
                                   ),
-                        ),
-                      ],
-                    )
-
-                  // ✅ Case: Visitor has Left
-                  else if (isVisitorLeave)
-                    Row(
-                      children: [
-                        const Icon(Icons.directions_walk,
-                            color: Colors.brown, size: 15),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              "Delivery person has left the parcel",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall!
-                                  .copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.brown.shade700,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-
-                  // ✅ Case: Visitor is Not Reachable
-                  else if (isVisitorNotReachable)
-                    Row(
-                      children: [
-                        const Icon(Icons.signal_wifi_off,
-                            color: Colors.grey, size: 15),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Visitor is not reachable.",
-                          style:
-                              Theme.of(context).textTheme.bodySmall!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade700,
-                                  ),
-                        ),
-                      ],
-                    )
-
-                  // ✅ Default Case: Retry Action
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: RetryButton(
-                            onRetry: onRetry,
-                            isEnabled: isEnabled && !isLoading,
-                            isLoading: isLoading,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        TimerDisplay(
-                          remaining: remaining,
-                          isEnabled: isEnabled,
                         ),
                       ],
                     ),
-                ],
-              ),
+                    isEnabled
+                        ? SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.2,
+                            child: RetryButton(
+                              onRetry: widget.onRetry,
+                              isEnabled: isEnabled && !widget.isLoading,
+                              isLoading: widget.isLoading,
+                            ),
+                          )
+                        : TimerDisplay(
+                            remaining: remaining,
+                            isEnabled: isEnabled,
+                          ),
+                  ],
+                )
+
+              // ✅ Case: Visitor is Not Reachable
+              else if (allowStatus == "invalid" ||
+                  allowStatus == "not_reachable")
+                Row(
+                  children: [
+                    const Icon(Icons.signal_wifi_off,
+                        color: Colors.grey, size: 15),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Visitor is not reachable.",
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                    ),
+                  ],
+                )
+
+              // ✅ Default Case: Retry Action
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: RetryButton(
+                        onRetry: widget.onRetry,
+                        isEnabled: isEnabled && !widget.isLoading,
+                        isLoading: widget.isLoading,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    TimerDisplay(
+                      remaining: remaining,
+                      isEnabled: isEnabled,
+                    ),
+                  ],
+                ),
             ],
           ),
         );

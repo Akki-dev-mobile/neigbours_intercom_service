@@ -534,10 +534,28 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'Export Logs',
-                        style: Theme.of(context).textTheme.headlineSmall,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Text(
+                            'Export Logs',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          IconButton(
+                              padding: const EdgeInsets.only(bottom: 15),
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              icon: const Icon(
+                                Icons.cancel,
+                                color: Colors.red,
+                                size: 25,
+                              ))
+                        ],
                       ),
+
                       const SizedBox(height: 16),
                       CustomForm.textField(
                         "Email",
@@ -1135,13 +1153,21 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                   Row(
                     children: [
                       Icon(
-                        Symbols.person,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        _getPurposeIcon(
+                            widget.visitorLog.visitor_purpose_Category_name),
+                        color: Colors.grey[600],
+                        size: 18,
                       ),
+                      const SizedBox(width: 8), // Add spacing
                       Text(
-                        "${widget.visitorLog.visitor_purpose_Category_name ?? "N/A"} - ${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"}",
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
+                        "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name.toString()) ?? "N/A"} - "
+                        "${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"}",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize:
+                                  14, // Ensures text and icon size are the same
+                              color: Colors.grey[600],
+                            ),
+                      )
                     ],
                   ),
                 ],
@@ -1187,8 +1213,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       ),
                     ),
                   ),
-                  widget.visitorLog.visitor_card_number != null ||
-                          widget.visitorLog.carNumber != null
+                  widget.visitorLog.visitor_card_number != null
                       ? Container(
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(
@@ -1227,7 +1252,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                               Text(
                                 widget.visitorLog.visitor_card_number != null
                                     ? widget.visitorLog.visitor_card_number!
-                                    : widget.visitorLog.carNumber ?? 'N/A',
+                                    : 'N/A',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium!
@@ -1411,5 +1436,28 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
         ),
       ),
     );
+  }
+
+  String _capitalizeFirstLetter(String text) {
+    if (text.isEmpty) return "";
+    return text
+        .split(' ') // Split into words
+        .map((word) => word.isNotEmpty
+            ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+            : word)
+        .join(' '); // Join words back
+  }
+
+  IconData _getPurposeIcon(String? category) {
+    switch (category?.toUpperCase()) {
+      case "DELIVERY":
+        return Icons.inventory_2_outlined;
+      case "CABS":
+        return Symbols.local_taxi;
+      case "VENDOR":
+        return Symbols.storefront;
+      default:
+        return Symbols.person;
+    }
   }
 }

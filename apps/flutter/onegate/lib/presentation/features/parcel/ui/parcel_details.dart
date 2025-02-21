@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:math' as math;
 import 'package:flutter_onegate/presentation/features/parcel/ui/parcel_list.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import 'package:common_widgets/common_widgets.dart';
@@ -124,13 +125,13 @@ class ParcelDetails extends StatelessWidget {
                   subtitle: parcel['unit_name'] ?? 'N/A',
                   iconColor: const Color(0xffFFB080),
                 ),
-                _buildInfoTile(
-                  icon: Icons.location_on,
-                  title: "Coming From",
-                  subtitle:
-                      parcel['purpose_sub_category_name'].toString() ?? 'NA',
-                  iconColor: const Color(0xffFFB080),
-                ),
+                // _buildInfoTile(
+                //   icon: Icons.location_on,
+                //   title: "Coming From",
+                //   subtitle:
+                //       parcel['purpose_sub_category_name'].toString() ?? 'NA',
+                //   iconColor: const Color(0xffFFB080),
+                // ),
               ],
             ),
             const SizedBox(height: 16),
@@ -393,6 +394,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
   int _timer = 0;
   Timer? _countdownTimer;
   FocusNode focusNode = FocusNode();
+  String? errorText; // ✅ To show error below the field
 
   void _startTimer() {
     setState(() {
@@ -411,7 +413,6 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _startTimer();
   }
@@ -422,8 +423,6 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
     super.dispose();
   }
 
-  String? errorText;
-
   void validateOTP(String pin) {
     if (pin.length < 6) {
       setState(() {
@@ -433,7 +432,6 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
       setState(() {
         errorText = null;
       });
-      log("Completed: $pin");
     }
   }
 
@@ -478,7 +476,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                     icon: const Icon(
                       Icons.cancel,
                       color: Colors.red,
-                      size: 20,
+                      size: 25,
                     ))
               ],
             ),
@@ -491,6 +489,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
               height: MediaQuery.of(context).size.height * 0.07,
               width: MediaQuery.of(context).size.width * 0.9,
               child: Pinput(
+                key: const Key("otp_field"), // ✅ Key for Testing
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 length: 6,
@@ -504,6 +503,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                 },
                 focusNode: focusNode,
                 controller: widget.otpController,
+                errorText: errorText, // ✅ Error text directly under field
                 submittedPinTheme: PinTheme(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.green),
@@ -530,14 +530,6 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                 ),
               ),
             ),
-            if (errorText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  errorText!,
-                  style: const TextStyle(color: Colors.red, fontSize: 14),
-                ),
-              ),
             Center(
               child: TextButton(
                 onPressed: _timer == 0 ? resendOtp : null,
@@ -560,16 +552,11 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                       ),
                     ),
                     onPressed: submitOtp,
-
                     child: Text(
                       'Submit',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.surface),
                     ),
-                    // icon: Icon(
-                    //   Icons.check,
-                    //   color: Theme.of(context).colorScheme.surface,
-                    // ),
                   ),
                 ),
               ],
@@ -640,7 +627,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const ParcelList()),
-        (route) => false, // This removes all previous routes
+        (route) => false,
       );
     } catch (e) {
       setState(() {

@@ -125,38 +125,61 @@ class _ParcelListState extends State<ParcelList> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 2,
-                  ),
-                  onTap: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ParcelDetails(parcel: parcel),
-                      ),
-                    );
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 2,
+                ),
+                onTap: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ParcelDetails(parcel: parcel),
+                    ),
+                  );
 
-                    // Refresh if any update happened in ParcelDetails
-                    if (result == true) {
-                      if (context.mounted) {
-                        context.read<ParcelBloc>().add(FetchParcels());
-                      }
+                  // Refresh if any update happened in ParcelDetails
+                  if (result == true) {
+                    if (context.mounted) {
+                      context.read<ParcelBloc>().add(FetchParcels());
                     }
-                  },
-                  leading: CircleAvatar(
-                    backgroundImage:
-                        NetworkImage(parcel['visitor_image'] ?? ''),
-                    radius: 30,
+                  }
+                },
+                leading: CircleAvatar(
+                  backgroundImage: NetworkImage(parcel['visitor_image'] ?? ''),
+                  radius: 30,
+                ),
+                title: Text(
+                  parcel['member_name'] ?? 'N/A',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                subtitle: Text.rich(
+                  TextSpan(
+                    children: [
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment
+                            .middle, // Aligns icon with text
+                        child: Icon(
+                          _getPurposeIcon(parcel['purpose_sub_category_name']),
+                          size: 16, // Same size as text
+                          color: Colors.grey[600], // Greyish color
+                        ),
+                      ),
+                      const WidgetSpan(
+                          child: SizedBox(
+                              width: 6)), // Space between icon and text
+                      TextSpan(
+                        text:
+                            "${parcel['unit_name']?.toString() ?? 'No Description'} - ${parcel['purpose_sub_category_name'] ?? 'N/A'}",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize:
+                                  14, // Ensures text and icon size are the same
+                              color: Colors.grey[600], // Greyish color
+                            ),
+                      ),
+                    ],
                   ),
-                  title: Text(
-                    parcel['member_name'] ?? 'N/A',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  subtitle: Text(
-                    "${parcel['unit_name']?.toString() ?? 'No Description'} - ${parcel['purpose_sub_category_name'] ?? 'N/A'}",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  )),
+                ),
+              ),
               Divider(
                 indent: 16,
                 endIndent: 16,
@@ -250,23 +273,6 @@ class _ParcelListState extends State<ParcelList> {
                                   ),
                             ),
                           )
-                        // : ElevatedButton(
-                        //     style: ElevatedButton.styleFrom(
-                        //       backgroundColor: Colors.white,
-                        //       shape: RoundedRectangleBorder(
-                        //         borderRadius: BorderRadius.circular(8),
-                        //       ),
-                        //     ),
-                        //     onPressed: () {},
-                        //     child: Text(
-                        //       parcel['parcel_status'] ?? 'N/A',
-                        //       style: const TextStyle(
-                        //         fontSize: 18,
-                        //         color: Colors.black,
-                        //         fontWeight: FontWeight.bold,
-                        //       ),
-                        //     ),
-                        //   )
                         : Container(
                             decoration: BoxDecoration(
                                 border: Border.all(color: Colors.green),
@@ -297,6 +303,19 @@ class _ParcelListState extends State<ParcelList> {
         ),
       ),
     );
+  }
+
+  IconData _getPurposeIcon(String? category) {
+    switch (category?.toUpperCase()) {
+      case "DELIVERY":
+        return Symbols.inventory_2;
+      case "CAB":
+        return Icons.local_taxi;
+      case "VISITOR":
+        return Icons.person;
+      default:
+        return Icons.inventory_2_outlined; // Default icon if unknown category
+    }
   }
 
   Widget parsallist(List<dynamic> parcels, final String searchQuery) {

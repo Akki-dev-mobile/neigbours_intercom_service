@@ -817,7 +817,6 @@ class RemoteDataSource {
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
       final String baseUrl = '${ApiUrls.gateBaseUrl}/visitor/approvals/';
-
       final DateTime now = DateTime.now();
       final String formattedDate =
           "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
@@ -845,7 +844,6 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        log("📡 Full API Response: ${jsonEncode(responseData)}");
 
         if (!responseData.containsKey('data')) {
           log("🚨 API Response does not contain 'data' key.");
@@ -863,9 +861,6 @@ class RemoteDataSource {
           List<UnitDetails> parsedUnitDetails = [];
 
           try {
-            // 🔍 Log the raw `unit_details` value before decoding
-            // log("🔍 Raw unit_details: ${json['unit_details']}");
-
             final dynamic unitDetailsValue = json['unit_details'];
 
             if (unitDetailsValue is String) {
@@ -874,7 +869,6 @@ class RemoteDataSource {
                   .replaceAll('"[', '[')
                   .replaceAll(']"', ']');
 
-              // ✅ Step 2: Decode the cleaned JSON string
               final List<dynamic> decodedUnitDetails =
                   jsonDecode(cleanedJsonString);
 
@@ -890,8 +884,37 @@ class RemoteDataSource {
             log("❌ Error decoding unit details: $e");
           }
 
-          // 🔍 Log parsed `unitDetails`
-          // log("✅ Parsed unitDetails: ${parsedUnitDetails.map((u) => u.building_unit).toList()}");
+          // ✅ Fix for `additional_details` JSON String Parsing
+
+          Map<String, dynamic>? parsedAdditionalDetails;
+          try {
+            final dynamic additionalDetailsValue = json['additional_details'];
+
+            if (additionalDetailsValue != null &&
+                additionalDetailsValue.toString().isNotEmpty) {
+              if (additionalDetailsValue is String) {
+                String cleanedJson = additionalDetailsValue;
+
+                // ✅ Remove extra surrounding quotes if present
+                if (cleanedJson.startsWith('"') && cleanedJson.endsWith('"')) {
+                  cleanedJson =
+                      cleanedJson.substring(1, cleanedJson.length - 1);
+                }
+
+                // ✅ Fix incorrectly escaped JSON (`\"` → `"`)
+                cleanedJson = cleanedJson.replaceAll(r'\"', '"');
+
+                // ✅ Decode the cleaned JSON string
+                parsedAdditionalDetails = jsonDecode(cleanedJson);
+              } else if (additionalDetailsValue is Map<String, dynamic>) {
+                parsedAdditionalDetails = additionalDetailsValue;
+              }
+            }
+          } catch (e) {
+            log("❌ Error parsing additional_details: $e");
+            parsedAdditionalDetails =
+                {}; // Assign empty map to prevent null errors
+          }
 
           return VisitorInfo(
             visitorId: _parseToInt(json['visitor_id']),
@@ -906,7 +929,6 @@ class RemoteDataSource {
             unitDetails: parsedUnitDetails.isNotEmpty
                 ? parsedUnitDetails.first
                 : UnitDetails(unitId: 0, building_unit: ''),
-            // Assign default
             memberInfo: MemberInfo(
               name: json['member_name']?.toString() ?? '',
               mobileNumber: json['memb_mobile_number']?.toString(),
@@ -916,15 +938,13 @@ class RemoteDataSource {
               building_unit: json["building_unit"]?.toString(),
             ),
             visitorComingFrom: json['visitor_coming_from']?.toString(),
-            visitorPurposeCategoryId:
-                _parseToInt(json['visitor_purpose_category_id']),
+            visitorPurposeCategoryId: _parseToInt(json['purpose_category_id']),
             purposeCategoryName: json['purpose_category_name']?.toString(),
             purposeSubCategoryName:
                 json['purpose_sub_category_name']?.toString(),
+            additionalDetails: parsedAdditionalDetails, // ✅ Assigned here
           );
         }).toList();
-
-        // log("✅ Formatted Visitor List: ${jsonEncode(visitorList.map((e) => e.toString()).toList())}");
         return visitorList;
       } else {
         throw Exception(

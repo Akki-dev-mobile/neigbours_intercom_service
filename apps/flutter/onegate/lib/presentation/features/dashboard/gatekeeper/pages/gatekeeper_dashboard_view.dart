@@ -43,6 +43,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
   String? selectedGateName;
   bool isLoading = false;
   final RemoteDataSource _remoteDataSource = RemoteDataSource();
+  bool hasPendingParcels = false; // ✅ New flag to track new parcels
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
       VisitorUsecase(
@@ -63,6 +64,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
     _loadInitialData();
     getSelectedGate();
+    checkForPendingParcels();
   }
 
   Future<void> _loadInitialData() async {
@@ -96,6 +98,25 @@ class _GateDashboardViewState extends State<GateDashboardView>
     setState(() {
       _visitorCardNumber = prefs.getBool('visitorCardNumber');
     });
+  }
+
+  Future<void> checkForPendingParcels() async {
+    try {
+      final List parcelList = await _remoteDataSource.fetchParcels();
+
+      // ✅ Check if any parcel has status "pending"
+      bool hasPending = parcelList.any((parcel) =>
+          parcel['parcel_status'] != null &&
+          parcel['parcel_status'].toString().toLowerCase() == 'pending');
+
+      setState(() {
+        hasPendingParcels = hasPending; // ✅ Update notification status
+      });
+
+      log("🔔 Pending Parcels Status: ${hasPending ? 'YES' : 'NO'}");
+    } catch (e) {
+      log("❌ Error fetching parcels: $e");
+    }
   }
 
   @override
@@ -229,102 +250,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  // TextButton.icon(
-                  //     onPressed: () {
-                  //       showDialog(
-                  //         context: context,
-                  //         builder: (BuildContext context) {
-                  //           return AlertDialog(
-                  //             shape: RoundedRectangleBorder(
-                  //               borderRadius: BorderRadius.circular(16),
-                  //             ),
-                  //             title: Row(
-                  //               children: const [
-                  //                 Icon(Icons.warning_amber_rounded,
-                  //                     color: Colors.red),
-                  //                 SizedBox(width: 8),
-                  //                 Text(
-                  //                   'Confirm Logout',
-                  //                   style: TextStyle(
-                  //                     fontSize: 18,
-                  //                     fontWeight: FontWeight.bold,
-                  //                   ),
-                  //                 ),
-                  //               ],
-                  //             ),
-                  //             content: Column(
-                  //               mainAxisSize: MainAxisSize.min,
-                  //               crossAxisAlignment: CrossAxisAlignment.start,
-                  //               children: [
-                  //                 Text(
-                  //                   'Are you sure you want to logout?',
-                  //                   style: TextStyle(fontSize: 16),
-                  //                 ),
-                  //                 SizedBox(height: 8),
-                  //                 Text(
-                  //                   'This action cannot be undone.',
-                  //                   style: TextStyle(
-                  //                     fontSize: 14,
-                  //                     color: Colors.grey[600],
-                  //                   ),
-                  //                 ),
-                  //               ],
-                  //             ),
-                  //             actions: [
-                  //               ElevatedButton(
-                  //                 style: ElevatedButton.styleFrom(
-                  //                   backgroundColor: Colors.white,
-                  //                   elevation: 0,
-                  //                   side: BorderSide(color: Colors.grey[300]!),
-                  //                   shape: RoundedRectangleBorder(
-                  //                     borderRadius: BorderRadius.circular(8),
-                  //                   ),
-                  //                 ),
-                  //                 onPressed: () {
-                  //                   Navigator.of(context).pop();
-                  //                 },
-                  //                 child: Text(
-                  //                   'Cancel',
-                  //                   style: TextStyle(
-                  //                     color: Colors.black87,
-                  //                     fontWeight: FontWeight.w500,
-                  //                   ),
-                  //                 ),
-                  //               ),
-                  //               ElevatedButton(
-                  //                 style: ElevatedButton.styleFrom(
-                  //                   backgroundColor: Colors.red,
-                  //                   elevation: 0,
-                  //                   shape: RoundedRectangleBorder(
-                  //                     borderRadius: BorderRadius.circular(8),
-                  //                   ),
-                  //                 ),
-                  //                 onPressed: () {
-                  //                   logout(context);
-                  //                 },
-                  //                 child: Text(
-                  //                   'Logout',
-                  //                   style: TextStyle(
-                  //                     color: Colors.white,
-                  //                     fontWeight: FontWeight.w500,
-                  //                   ),
-                  //                 ),
-                  //               ),
-                  //             ],
-                  //             actionsPadding: EdgeInsets.all(16),
-                  //             actionsAlignment: MainAxisAlignment.end,
-                  //           );
-                  //         },
-                  //       );
-                  //     },
-                  //     icon: Icon(
-                  //       Icons.logout,
-                  //       color: Theme.of(context).colorScheme.onBackground,
-                  //     ),
-                  //     label: Text(
-                  //       'Logout',
-                  //       style: Theme.of(context).textTheme.bodyMedium,
-                  //     )),
                 ],
                 pageBody: Column(
                   children: [
@@ -358,21 +283,16 @@ class _GateDashboardViewState extends State<GateDashboardView>
                             title: 'Parcel',
                             isPremium: false,
                             isVisible: true,
-                            onTap: () {
+                            hasNotification:
+                                hasPendingParcels, // ✅ New parameter
+                            onTap: () async {
+                              setState(() => hasPendingParcels =
+                                  false); // ✅ Remove badge on tap
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => ParcelList(),
                                 ),
                               );
-                              // myFluttertoast(
-                              //   msg: "Parcel, coming soon",
-                              //   toastLength: Toast.LENGTH_SHORT,
-                              //   gravity: ToastGravity.CENTER,
-                              //   timeInSecForIosWeb: 1,
-                              //   backgroundColor: Colors.black,
-                              //   textColor: Colors.white,
-                              //   fontSize: 16.0,
-                              // );
                             },
                           ),
                           DashboardShortcut(
@@ -698,6 +618,7 @@ class DashboardShortcut extends StatelessWidget {
     required this.onTap,
     required this.isPremium,
     required this.isVisible,
+    this.hasNotification = false,
     super.key,
   });
 
@@ -706,6 +627,7 @@ class DashboardShortcut extends StatelessWidget {
   final Function onTap;
   final bool isPremium;
   final bool isVisible;
+  final bool hasNotification;
 
   @override
   Widget build(BuildContext context) {
@@ -728,55 +650,47 @@ class DashboardShortcut extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: isVisible
-                  ? isPremium
-                      ? badges.Badge(
-                          badgeStyle: badges.BadgeStyle(
-                            shape: badges.BadgeShape.square,
-                            borderRadius: BorderRadius.circular(5),
-                            padding: EdgeInsets.all(2),
-                            badgeGradient: badges.BadgeGradient.linear(
-                              colors: [
-                                Colors.purple,
-                                Colors.blue,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+              child: badges.Badge(
+                position: badges.BadgePosition.topEnd(top: -8, end: -8),
+                showBadge: hasNotification, // ✅ Show red dot for notifications
+                badgeStyle: badges.BadgeStyle(
+                  shape: badges.BadgeShape.circle,
+                  badgeColor: Colors.red,
+                  padding: EdgeInsets.all(5),
+                ),
+                child: isPremium
+                    ? badges.Badge(
+                        position:
+                            badges.BadgePosition.topEnd(top: -18, end: -18),
+                        badgeStyle: badges.BadgeStyle(
+                          shape: badges.BadgeShape.square,
+                          borderRadius: BorderRadius.circular(5),
+                          padding: EdgeInsets.all(2),
+                          badgeGradient: badges.BadgeGradient.linear(
+                            colors: [Colors.purple, Colors.blue],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          position:
-                              badges.BadgePosition.topEnd(top: -20, end: -20),
-                          badgeContent: Text(
-                            'PRO',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          child: Icon(
-                            icon,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            size: 24,
-                          ),
-                        )
-                      : badges.Badge(
-                          position:
-                              badges.BadgePosition.topEnd(top: -13, end: -15),
-                          badgeContent: CircleAvatar(
-                            radius: 2,
-                            backgroundColor: Colors.red,
-                          ),
-                          child: Icon(
-                            icon,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            size: 24,
-                          ),
-                        )
-                  : Icon(
-                      icon,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      size: 24,
-                    ),
+                        ),
+                        badgeContent: Text(
+                          'PRO',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          size: 24,
+                        ),
+                      )
+                    : Icon(
+                        icon,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        size: 24,
+                      ),
+              ),
             ),
             Text(
               title,

@@ -138,8 +138,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   void _startPolling() {
     _timer = Timer.periodic(_pollingInterval, (_) {
-      if (!_isFetching) {
-        _fetchApprovals();
+      if (mounted) {
+        _fetchApprovals(); // ✅ Runs without UI shimmering
       }
     });
   }
@@ -151,6 +151,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       log("❌ Invalid logID provided");
       return;
     }
+
+    if (_isFetching) return; // Prevent multiple fetch calls
 
     _isFetching = true;
 
@@ -164,18 +166,22 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         return;
       }
 
-      matchingApproval = approvals.firstWhere(
+      final newApproval = approvals.firstWhere(
         (approval) => approval.visitorLogId?.toString() == widget.logID,
         orElse: () => throw Exception("No matching approval found"),
       );
 
-      final newRequestType = _mapAllowStatusToRequestType(
-          matchingApproval?.allowStatus.toLowerCase());
+      final newRequestType =
+          _mapAllowStatusToRequestType(newApproval.allowStatus.toLowerCase());
 
-      setState(() {
-        _requestType = newRequestType;
-        _isLoading = false;
-      });
+      // ✅ Update only when status changes (avoiding unnecessary UI updates)
+      if (_requestType != newRequestType) {
+        setState(() {
+          _requestType = newRequestType;
+        });
+
+        log("🔄 Request Type Updated: $_requestType");
+      }
 
       if (_shouldStopPolling(newRequestType)) {
         _stopPolling();
@@ -231,18 +237,282 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return LoadingOverlay(
-      isUploading: _isUploading,
-      progress: _uploadProgress,
-      child: MyScrollView(
-        pageTitleWidget: _buildHeader(),
-        hasBackButton: EditableText.debugDeterministicCursor,
-        floatingActionButton: _buildActionButton(),
-        pageBody: Stack(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GateDashboardView()),
+                );
+              },
+              child: const Text(
+                "",
+                style: TextStyle(color: Colors.black),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: LoadingOverlay(
+        isUploading: _isUploading,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Visitor Profile Section
+                _buildVisitorProfile(),
+
+                const SizedBox(height: 60),
+                // Animation and Status
+                _buildLottieSection(),
+                const SizedBox(height: 60),
+                // Action Buttons
+                Center(child: _buildStatusText()),
+                _buildActionButton(),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisitorProfile() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ✅ Visitor Image
+        Column(
           children: [
-            _buildContent(),
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.red.shade400, width: 4),
+              ),
+              child: ClipOval(
+                child: Image.network(
+                  widget.visitor.visitor_image!,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
           ],
         ),
+
+        // ✅ Vertical Divider
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16), // Spacing
+          child: Container(
+            width: 1.5, // Thickness
+            height: 175, // Adjust based on content height
+            color: Colors.grey.shade400,
+          ),
+        ),
+
+        // ✅ Visitor Details (Aligned Right)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "${widget.visitor.name}",
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildDetailRow(
+              icon: Icons.phone_outlined,
+              iconColor: Colors.green,
+              label: "Mobile",
+              value: widget.visitor.mobile ?? "",
+            ),
+            const SizedBox(height: 10),
+            widget.visitorLog?.visitor_coming_from != null
+                ? _buildDetailRow(
+                    icon: Icons.location_on_outlined,
+                    iconColor: Colors.red,
+                    label: "Coming From",
+                    value: widget.visitorLog?.visitor_coming_from ??
+                        "Not specified",
+                  )
+                : SizedBox(),
+            const SizedBox(height: 10),
+            _buildDetailRow(
+              icon: Icons.category_outlined,
+              iconColor: Colors.orange,
+              label: "Purpose",
+              value: widget.visitorLog?.visitor_purpose_Category_name ?? "",
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailsCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: [
+          _buildDetailRow(
+            icon: Icons.phone_outlined,
+            iconColor: Colors.green,
+            label: "Mobile",
+            value: widget.visitor.mobile ?? "",
+          ),
+          const SizedBox(height: 15),
+          _buildDetailRow(
+            icon: Icons.location_on_outlined,
+            iconColor: Colors.red,
+            label: "Coming From",
+            value: widget.visitorLog?.visitor_coming_from ?? "Not specified",
+          ),
+          const SizedBox(height: 15),
+          _buildDetailRow(
+            icon: Icons.home_outlined,
+            iconColor: Colors.blue,
+            label: "Host",
+            value: widget.unitList?.first ?? "Not specified",
+          ),
+          const SizedBox(height: 15),
+          _buildDetailRow(
+            icon: Icons.category_outlined,
+            iconColor: Colors.orange,
+            label: "Purpose",
+            value: widget.visitorLog?.visitor_purpose_Category_name ?? "",
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: iconColor),
+        ),
+        const SizedBox(width: 15),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLottieSection() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Center(
+          // ✅ Ensures the animation is centered
+          child: SizedBox(
+            height: 200,
+            child: Lottie.network(
+              _lottieAnimations[_requestType] ?? "",
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Center(
+          // ✅ Centers the status message
+          child: Shimmer.fromColors(
+            baseColor: _requestMessagesColor[_requestType]!,
+            highlightColor: _requestType == RequestType.rejected
+                ? Colors.red.shade100
+                : Colors.black45,
+            child: Text(
+              _requestMessages[_requestType] ?? "",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: _requestMessagesColor[_requestType],
+              ),
+            ),
+          ),
+        ),
+        if (_requestType == RequestType.waiting) const SizedBox(height: 10),
+        if (_requestType == RequestType.waiting)
+          Center(
+            child: Text(
+              "Awaiting response...",
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton() {
+    return Center(
+      // ✅ Centers the button
+      child: Column(
+        children: [
+          if (_requestType == RequestType.notRecheable)
+            _buildNotReacheableButtons(),
+          if (_requestType == RequestType.approved ||
+              _requestType == RequestType.rejected)
+            _buildFinishButton(),
+          if (_requestType == RequestType.leaveAtGate)
+            _buildCapturePhotoButton(),
+          if (_requestType == RequestType.request)
+            _buildRequestPermissionButton(),
+        ],
       ),
     );
   }
@@ -261,19 +531,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                 const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildContent() {
-    return Column(
-      children: [
-        _buildVisitorCard(context),
-        _buildLottieAnimation(),
-        _buildStatusText(),
-        const SizedBox(
-          height: 120,
-        )
       ],
     );
   }
@@ -446,22 +703,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     return Column(
       children: [
-        Shimmer.fromColors(
-          baseColor: _requestMessagesColor[_requestType]!,
-          highlightColor: _requestType == RequestType.rejected
-              ? Colors.red.shade100
-              : Colors.black45,
-          child: Text(
-            _requestMessages[_requestType] ?? "",
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodyLarge
-                ?.copyWith(color: _requestMessagesColor[_requestType]),
-          ),
-        ),
-
-        // Display countdown timer if request is still waiting
         if (_requestType == RequestType.waiting && !isTimeElapsed)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -477,23 +718,23 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     );
   }
 
-  Widget _buildActionButton() {
-    switch (_requestType) {
-      case RequestType.notRecheable:
-        return _buildNotReacheableButtons();
-      case RequestType.approved:
-      case RequestType.rejected:
-        return _buildFinishButton();
-      case RequestType.leaveAtGate:
-        return _buildCapturePhotoButton();
-      case RequestType.request:
-        return _buildRequestPermissionButton();
-      case RequestType.waiting:
-        return Container();
-      default:
-        return _buildFinishButton();
-    }
-  }
+  // Widget _buildActionButton() {
+  //   switch (_requestType) {
+  //     case RequestType.notRecheable:
+  //       return _buildNotReacheableButtons();
+  //     case RequestType.approved:
+  //     case RequestType.rejected:
+  //       return _buildFinishButton();
+  //     case RequestType.leaveAtGate:
+  //       return _buildCapturePhotoButton();
+  //     case RequestType.request:
+  //       return _buildRequestPermissionButton();
+  //     case RequestType.waiting:
+  //       return Container();
+  //     default:
+  //       return _buildFinishButton();
+  //   }
+  // }
 
 // Inside _RequestPermissionPageState class
 
@@ -762,29 +1003,34 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   String formattedInTime =
       DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
-  Future<List<String>> _getMobileNumbersFromMemberDetails(
-      int visitorLogId) async {
+  Future<List<Map<String, String>>> _getMemberDetails(int visitorLogId) async {
     final prefs = await SharedPreferences.getInstance();
     final String? memberDetailsJson = prefs.getString('member_details');
+
+    print(memberDetailsJson);
 
     if (memberDetailsJson != null) {
       try {
         final List<dynamic> decoded = json.decode(memberDetailsJson);
-        final mobileNumbers = decoded
-            .map((member) => member['mobile_number'].toString())
-            .where((mobile) => mobile.isNotEmpty)
+
+        final memberDetails = decoded
+            .map((member) => {
+                  'member_id': member['member_ids'].toString(),
+                  'mobile_number': member['mobile_number'].toString()
+                })
+            .where((member) => member['mobile_number']!.isNotEmpty)
             .toSet()
             .toList();
 
-        if (mobileNumbers.isNotEmpty) {
-          return mobileNumbers;
+        if (memberDetails.isNotEmpty) {
+          return memberDetails;
         }
       } catch (e) {
         log('❌ Error parsing member_details: $e');
       }
     }
 
-    // Fallback: Empty List
+    // Fallback: Return Empty List
     return [];
   }
 
@@ -801,16 +1047,27 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('visitorId');
       final String? visitorLogId = prefs.getString("visitor_log");
-      final String visitorId = widget.visitor.id.toString();
-      // ✅ Fetch from `member_details`
-      final selectedMobileNumbers = await _getMobileNumbersFromMemberDetails(
-          int.parse(visitorLogId.toString()));
 
-      if (selectedMobileNumbers.isEmpty) {
-        _showSnackBar("No mobile number found for the selected member.",
-            isError: true);
+      final String visitorId = widget.visitor.id.toString();
+
+      if (visitorLogId == null) {
+        _showSnackBar("Visitor Log ID is missing.", isError: true);
         return;
       }
+
+      // ✅ Fetch `member_id` & `mobile_number` from `member_details`
+      final List<Map<String, String>> selectedMembers =
+          await _getMemberDetails(int.parse(visitorLogId));
+
+      if (selectedMembers.isEmpty) {
+        _showSnackBar("No member details found.", isError: true);
+        return;
+      }
+
+      // ✅ Use the first member's details (or handle multiple if needed)
+      final String memberId = selectedMembers.first['member_id'] ?? "";
+      final String memberMobile = selectedMembers.first['mobile_number'] ?? "";
+
       final requestData = {
         'company_id': widget.visitorLog?.company_id.toString() ?? "",
         'name': widget.visitor.name,
@@ -823,15 +1080,16 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'purpose':
             widget.visitorLog?.visitor_purpose_Category_name?.toLowerCase(),
         'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
-        'member_mobile_number': selectedMobileNumbers.first,
-        'visitor_id': visitorId ?? "",
+        'member_mobile_number':
+            memberMobile, // ✅ Assigned from `member_details`
+        'visitor_id': visitorId,
         'purpose_category':
             widget.visitorLog?.visitor_purpose_category_id.toString() == "3"
                 ? "delivery"
                 : widget.visitorLog?.visitor_purpose_category_id.toString(),
-        'visitor_log_id': visitorLogId ?? "",
+        'visitor_log_id': visitorLogId,
         'coming_from': widget.visitorLog?.visitor_coming_from ?? "Bandra",
-        'member_id': "232",
+        'member_id': memberId, // ✅ Assigned from `member_details`
         'company_name': widget.visitorLog?.company_id.toString() ?? "",
       };
 
@@ -985,13 +1243,11 @@ class ImagePreviewDialog extends StatelessWidget {
 class LoadingOverlay extends StatelessWidget {
   final Widget child;
   final bool isUploading;
-  final double progress;
 
   const LoadingOverlay({
     Key? key,
     required this.child,
     this.isUploading = false,
-    this.progress = 0,
   }) : super(key: key);
 
   @override
@@ -1001,28 +1257,12 @@ class LoadingOverlay extends StatelessWidget {
         child,
         if (isUploading)
           Container(
-            color: Colors.black54,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Uploading... ${(progress * 100).toStringAsFixed(0)}%',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+            color: Colors.black54, // ✅ Background overlay
+            child: const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 4, // ✅ Thickness of loader
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.white), // ✅ Pure white loader
               ),
             ),
           ),

@@ -138,9 +138,10 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Text(
-                        widget.visitorLog.purpose_sub_category_name ??
+                        _capitalizeFirstLetter(widget
+                                .visitorLog.purpose_sub_category_name ??
                             widget.visitorLog.visitor_purpose_Category_name ??
-                            "",
+                            ""),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
@@ -173,22 +174,41 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           iconColor: const Color.fromARGB(255, 225, 181, 154),
                         ),
                         // if (widget.visitorLog.visitor_coming_from != null)
-                        _buildInfoTile(
-                          icon: Icons.location_on,
-                          title: "Coming From",
-                          subtitle: widget.visitorLog.visitor_coming_from !=
-                                  null
-                              ? widget.visitorLog.visitor_coming_from.toString()
-                              : "N/A",
-                          iconColor: const Color(0xffFFB080),
-                        ),
-                        if (widget.visitorLog.visitor_card_number != null)
+                        if (widget.visitorLog.visitor_purpose_Category_name
+                                    ?.toLowerCase() ==
+                                "DELIVERY" ||
+                            widget.visitorLog.visitor_purpose_Category_name
+                                        ?.toLowerCase() ==
+                                    "CABS" &&
+                                widget.visitorLog.visitor_coming_from != null)
                           _buildInfoTile(
-                            icon: Icons.badge,
-                            title: "Card Number",
-                            subtitle: widget.visitorLog.visitor_card_number
+                            icon: Icons.location_on,
+                            title: "Coming From",
+                            subtitle: widget.visitorLog.visitor_coming_from
                                 .toString(),
-                            iconColor: const Color(0xffFFB080),
+                            iconColor: const Color.fromARGB(255, 225, 181, 154),
+                          ),
+
+                        if (widget.visitorLog.visitor_card_number != null ||
+                            widget.visitorLog.carNumber != null)
+                          _buildInfoTile(
+                            icon: widget.visitorLog.visitor_card_number != null
+                                ? Icons.badge
+                                : Icons
+                                    .directions_car, // Use car icon if carNumber is present
+                            title: widget.visitorLog.visitor_card_number != null
+                                ? "Card Number"
+                                : "Car Number", // Change title accordingly
+                            subtitle: widget.visitorLog.visitor_card_number
+                                    ?.toString() ??
+                                widget.visitorLog.carNumber?.toString() ??
+                                'N/A', // Show available value
+                            iconColor:
+                                widget.visitorLog.visitor_card_number != null
+                                    ? const Color.fromARGB(
+                                        255, 225, 181, 154) // Color for Card
+                                    : Color.fromARGB(
+                                        255, 225, 181, 154), // Color for Car
                           ),
                       ],
                     ),
@@ -233,6 +253,16 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         ],
       ),
     );
+  }
+
+  String _capitalizeFirstLetter(String text) {
+    if (text.isEmpty) return "";
+    return text
+        .split(' ') // Split by spaces for multi-word strings
+        .map((word) => word.isNotEmpty
+            ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+            : word)
+        .join(' '); // Join words back together
   }
 
   Widget _buildCustomTimelineTile(
