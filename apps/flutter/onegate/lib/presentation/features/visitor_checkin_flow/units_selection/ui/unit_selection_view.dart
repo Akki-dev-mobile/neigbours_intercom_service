@@ -1235,12 +1235,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
         _isCheckedIn = true;
       }
-      await _showApprovedDialog(context, visitorLogData, onSuccess: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => GateDashboardView()),
-        );
-      });
+
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+                  visitor: widget.visitor,
+                  visitorLog: visitorLogData,
+                )),
+      );
     } catch (e) {
       log("❌ Error in _handleMultiMemberFlow: $e");
       _showErrorSnackbar("Error processing multi-member check-in.");

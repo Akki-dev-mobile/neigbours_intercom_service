@@ -64,7 +64,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   bool _isFetching = false;
   Timer? _timer;
   final TimerService _timerService = TimerService();
-
+  final _stateStreamController = StreamController<RequestType>.broadcast();
   static const Map<RequestType, String> _lottieAnimations = {
     RequestType.approved:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json',
@@ -77,7 +77,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     RequestType.request:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/request_permission_b6ef131475.json',
     RequestType.allowByGatekeeper:
-        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json',
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z',
     RequestType.waiting:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json',
     RequestType.uploading:
@@ -126,6 +126,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     }
   }
 
+  Duration _remainingTime = Duration.zero; // Track remaining time
+  bool _isTimeElapsed = false; // To check if the time is over
+
   Future<void> _initializeTimer(int visitorLogId) async {
     await _timerService.loadTimerState(visitorLogId, context);
 
@@ -133,63 +136,113 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       await _timerService.startTimer(visitorLogId, context);
     }
 
-    setState(() {});
+    setState(() {
+      _remainingTime = _timerService
+              .getTimerState(visitorLogId)
+              ?.endTime
+              .difference(DateTime.now()) ??
+          Duration.zero;
+
+      // Check if timer is already at 00:00 during initialization
+      if (_remainingTime.inSeconds <= 0) {
+        _isTimeElapsed = true;
+        _requestType = RequestType.notRecheable;
+        _stateStreamController.add(RequestType.notRecheable);
+      } else {
+        _isTimeElapsed = false;
+      }
+    });
+  }
+
+  void _handleExpiredTimer() {
+    setState(() {
+      _isTimeElapsed = true;
+      _requestType = RequestType.notRecheable;
+      _stateStreamController.add(RequestType.notRecheable);
+    });
+
+    // Stop polling
+    _stopPolling();
+
+    // Show notification
+    myFluttertoast(
+      msg: "Member not reachable",
+      backgroundColor: Colors.orange,
+    );
   }
 
   void _startPolling() {
-    _timer = Timer.periodic(_pollingInterval, (_) {
+    _timer = Timer.periodic(Duration(seconds: 1), (_) {
       if (mounted) {
-        _fetchApprovals(); // ✅ Runs without UI shimmering
+        setState(() {
+          if (!_isTimeElapsed) {
+            _remainingTime = _remainingTime - Duration(seconds: 1);
+
+            // Check if timer has reached 00:00
+            if (_remainingTime.inSeconds <= 0) {
+              _isTimeElapsed = true;
+              _requestType = RequestType.notRecheable;
+              _stateStreamController.add(RequestType.notRecheable);
+
+              // Stop polling since we've reached the time limit
+              _stopPolling();
+
+              // Show notification to user
+              myFluttertoast(
+                msg: "Member not reachable",
+                backgroundColor: Colors.orange,
+              );
+            }
+          }
+        });
+
+        // Only fetch approvals if time hasn't elapsed
+        if (!_isTimeElapsed) {
+          _fetchApprovals();
+        }
       }
+    });
+  }
+
+  void _resetTimerState() {
+    setState(() {
+      _isTimeElapsed = false;
+      _requestType = RequestType.waiting;
+      _stateStreamController.add(RequestType.waiting);
     });
   }
 
   VisitorInfo? matchingApproval;
 
   Future<void> _fetchApprovals() async {
-    if (widget.logID == null || widget.logID!.isEmpty) {
-      log("❌ Invalid logID provided");
-      return;
-    }
+    if (_isFetching) return; // Prevent fetching if already in progress
 
-    if (_isFetching) return; // Prevent multiple fetch calls
-
-    _isFetching = true;
+    setState(() {
+      _isFetching = true;
+    });
 
     try {
       final approvals = await _remoteDataSource.fetchApprovals(widget.logID!);
 
-      if (!mounted) return;
+      if (approvals.isNotEmpty) {
+        final approval = approvals.firstWhere(
+            (approval) => approval.visitorLogId?.toString() == widget.logID);
 
-      if (approvals.isEmpty) {
-        log("⚠️ No approvals found for logID: ${widget.logID}");
-        return;
-      }
+        final newRequestType =
+            _mapAllowStatusToRequestType(approval.allowStatus);
 
-      final newApproval = approvals.firstWhere(
-        (approval) => approval.visitorLogId?.toString() == widget.logID,
-        orElse: () => throw Exception("No matching approval found"),
-      );
-
-      final newRequestType =
-          _mapAllowStatusToRequestType(newApproval.allowStatus.toLowerCase());
-
-      // ✅ Update only when status changes (avoiding unnecessary UI updates)
-      if (_requestType != newRequestType) {
-        setState(() {
+        // Only update the stream if the status changes
+        if (_requestType != newRequestType) {
           _requestType = newRequestType;
-        });
-
-        log("🔄 Request Type Updated: $_requestType");
-      }
-
-      if (_shouldStopPolling(newRequestType)) {
-        _stopPolling();
+          _stateStreamController.add(newRequestType); // Push update to stream
+        }
       }
     } catch (e) {
-      log("❌ Error fetching approvals: $e");
+      log('Error fetching approvals: $e');
     } finally {
-      _isFetching = false;
+      setState(() {
+        _isFetching = false;
+      });
     }
   }
 
@@ -208,6 +261,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void dispose() {
     _stopPolling();
     _socketService.disconnect();
+    _stateStreamController.close();
     super.dispose();
   }
 
@@ -242,10 +296,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: _buildHeader(),
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -264,29 +315,47 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           ),
         ],
       ),
-      body: LoadingOverlay(
-        isUploading: _isUploading,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Visitor Profile Section
-                _buildVisitorProfile(),
+      body: StreamBuilder<RequestType>(
+        stream: _stateStreamController.stream,
+        initialData: _requestType,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          RequestType requestType = snapshot.data!;
 
-                const SizedBox(height: 60),
-                // Animation and Status
-                _buildLottieSection(),
-                const SizedBox(height: 60),
-                // Action Buttons
-                Center(child: _buildStatusText()),
-                _buildActionButton(),
-                const SizedBox(height: 20),
-              ],
+          return LoadingOverlay(
+            isUploading: _isUploading,
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+// Visitor Profile Section
+                      _buildVisitorProfile(),
+
+                      const SizedBox(height: 60),
+// Animation and Status
+                      _buildLottieSection(requestType),
+                      const SizedBox(height: 60),
+// Action Buttons
+                      Center(child: _buildStatusText()),
+                      const SizedBox(height: 60),
+
+                      _buildActionButton(requestType),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -328,44 +397,65 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         ),
 
         // ✅ Visitor Details (Aligned Right)
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "${widget.visitor.name}",
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+        Expanded(
+          // This ensures that the details section can expand and push content down if needed
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // The name will move down if needed
+              Text(
+                "${widget.visitor.name}",
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            _buildDetailRow(
-              icon: Icons.phone_outlined,
-              iconColor: Colors.green,
-              label: "Mobile",
-              value: widget.visitor.mobile ?? "",
-            ),
-            const SizedBox(height: 10),
-            widget.visitorLog?.visitor_coming_from != null
-                ? _buildDetailRow(
-                    icon: Icons.location_on_outlined,
-                    iconColor: Colors.red,
-                    label: "Coming From",
-                    value: widget.visitorLog?.visitor_coming_from ??
-                        "Not specified",
-                  )
-                : SizedBox(),
-            const SizedBox(height: 10),
-            _buildDetailRow(
-              icon: Icons.category_outlined,
-              iconColor: Colors.orange,
-              label: "Purpose",
-              value: widget.visitorLog?.visitor_purpose_Category_name ?? "",
-            ),
-          ],
+              const SizedBox(height: 10),
+              _buildDetailRow(
+                icon: Icons.phone_outlined,
+                iconColor: Colors.green,
+                label: "Mobile",
+                value: widget.visitor.mobile ?? "",
+              ),
+              const SizedBox(height: 10),
+              widget.visitorLog?.visitor_coming_from != null
+                  ? _buildDetailRow(
+                      icon: Icons.location_on_outlined,
+                      iconColor: Colors.orange,
+                      label: "Coming From",
+                      value: widget.visitorLog?.visitor_coming_from ??
+                          "Not specified",
+                    )
+                  : SizedBox(),
+              const SizedBox(height: 10),
+              _buildDetailRow(
+                icon: _getPurposeIcon(
+                    widget.visitorLog?.visitor_purpose_Category_name),
+                iconColor: Colors.orange,
+                label: "Purpose",
+                value: widget.visitorLog?.visitor_purpose_Category_name ??
+                    "Not specified",
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  IconData _getPurposeIcon(String? category) {
+    switch (category?.toUpperCase()) {
+      case "DELIVERY":
+        return Icons.inventory_2_outlined; // Delivery icon
+      case "CABS":
+        return Symbols
+            .local_taxi; // Cabs icon (make sure `Symbols` is imported or replace with `Icons`)
+      case "VENDOR":
+        return Symbols
+            .storefront; // Vendor icon (ensure `Symbols` is properly imported or use `Icons`)
+      default:
+        return Icons.person_2_outlined; // Default icon if no match
+    }
   }
 
   Widget _buildDetailsCard() {
@@ -449,68 +539,106 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     );
   }
 
-  Widget _buildLottieSection() {
+  Widget _buildLottieSection(RequestType requestType) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Show Lottie animation based on request type
         Center(
-          // ✅ Ensures the animation is centered
           child: SizedBox(
-            height: 200,
+            height: 250,
             child: Lottie.network(
-              _lottieAnimations[_requestType] ?? "",
+              _lottieAnimations[requestType] ?? "",
               fit: BoxFit.contain,
             ),
           ),
         ),
         const SizedBox(height: 20),
+        // Show status message
         Center(
-          // ✅ Centers the status message
           child: Shimmer.fromColors(
-            baseColor: _requestMessagesColor[_requestType]!,
-            highlightColor: _requestType == RequestType.rejected
+            baseColor: _requestMessagesColor[requestType]!,
+            highlightColor: requestType == RequestType.rejected
                 ? Colors.red.shade100
                 : Colors.black45,
             child: Text(
-              _requestMessages[_requestType] ?? "",
+              _requestMessages[requestType] ?? "",
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: _requestMessagesColor[_requestType],
+                color: _requestMessagesColor[requestType],
               ),
             ),
           ),
         ),
-        if (_requestType == RequestType.waiting) const SizedBox(height: 10),
-        if (_requestType == RequestType.waiting)
-          Center(
-            child: Text(
-              "Awaiting response...",
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
-              ),
-            ),
-          ),
+        // Display action buttons when time is expired
+        // if (requestType == RequestType.notRecheable)
+        //   _buildNotRecheableButtons(), // Show buttons for retrying or allowing by gatekeeper
       ],
     );
   }
 
-  Widget _buildActionButton() {
+  Widget _buildNotRecheableButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Allow by Gatekeeper Button
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: ElevatedButton(
+            style: _getAllowButtonStyle(),
+            onPressed: () async {
+              await _allowByGatekeeper(); // Action when button is pressed
+            },
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.3,
+              height: 60,
+              child: const Center(
+                child: Text(
+                  "Allow by Gatekeeper",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 15,
+                    wordSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8), // Spacing between buttons
+
+        // Retry Button
+        Expanded(
+          child: CustomLargeBtn(
+            width: MediaQuery.of(context).size.width * 0.45,
+            onPressed: () async {
+              setState(() {
+                trybuttontext = "Trying...";
+              });
+              await _handleTryAgain(); // Retry action
+            },
+            text: trybuttontext,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(RequestType requestType) {
     return Center(
-      // ✅ Centers the button
       child: Column(
         children: [
-          if (_requestType == RequestType.notRecheable)
+          if (requestType == RequestType.notRecheable)
             _buildNotReacheableButtons(),
-          if (_requestType == RequestType.approved ||
-              _requestType == RequestType.rejected)
+          if (requestType == RequestType.approved ||
+              requestType == RequestType.rejected)
             _buildFinishButton(),
-          if (_requestType == RequestType.leaveAtGate)
+          if (requestType == RequestType.leaveAtGate)
             _buildCapturePhotoButton(),
-          if (_requestType == RequestType.request)
+          if (requestType == RequestType.request)
             _buildRequestPermissionButton(),
         ],
       ),
@@ -524,11 +652,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         InkWell(
           onTap: () => _navigateToDashboard(),
           child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
                 border: Border.all(color: const Color.fromARGB(93, 0, 0, 0)),
                 borderRadius: BorderRadius.circular(10)),
             child:
-                const Icon(Icons.home_outlined, color: Colors.grey, size: 30),
+                const Icon(Icons.home_outlined, color: Colors.black, size: 30),
           ),
         ),
       ],
@@ -686,28 +815,16 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   Widget _buildStatusText() {
-    final int visitorLogId = int.tryParse(widget.logID ?? '0') ?? 0;
-    final timerState = _timerService.getTimerState(visitorLogId);
-    final now = DateTime.now();
-    final remaining = timerState?.endTime.difference(now) ?? Duration.zero;
-    final isTimeElapsed = remaining.isNegative;
-
-    // If timer expires, update the request type to "not reachable"
-    if (isTimeElapsed && _requestType == RequestType.waiting) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _requestType = RequestType.notRecheable;
-        });
-      });
-    }
+    final formattedTime =
+        "${_remainingTime.inMinutes.toString().padLeft(2, '0')}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}";
 
     return Column(
       children: [
-        if (_requestType == RequestType.waiting && !isTimeElapsed)
+        if (_requestType == RequestType.waiting && !_isTimeElapsed)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              "Retry in: ${remaining.inMinutes.toString().padLeft(2, '0')}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}",
+              "Retry in: $formattedTime",
               style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
@@ -918,7 +1035,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             ),
           ),
         ),
-        const SizedBox(width: 8), // Add spacing between buttons
+        const SizedBox(width: 8),
 
         // Try Again Button
         Expanded(
@@ -981,22 +1098,34 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     setState(() {
       trybuttontext = "Trying...";
       _requestType = RequestType.waiting;
+      _isTimeElapsed = false; // Reset the time elapsed flag
+      _stateStreamController
+          .add(RequestType.waiting); // Update stream with waiting state
     });
 
     // Restart timer
     int visitorLogId = int.tryParse(widget.logID ?? '0') ?? 0;
     await _timerService.startTimer(visitorLogId, context);
 
+    // Reset remaining time
+    setState(() {
+      _remainingTime = _timerService
+              .getTimerState(visitorLogId)
+              ?.endTime
+              .difference(DateTime.now()) ??
+          Duration.zero;
+    });
+
+    // Restart polling if it was stopped
+    if (_timer == null) {
+      _startPolling();
+    }
+
     // Send FCM notification again
     await _sendFcmNotification();
 
-    // Wait 3 seconds before fetching approvals
-    await Future.delayed(const Duration(seconds: 3));
-
-    _fetchApprovals(); // Start polling for approval again
-
     setState(() {
-      trybuttontext = "Try Again"; // Restore button text
+      trybuttontext = "Try Again";
     });
   }
 

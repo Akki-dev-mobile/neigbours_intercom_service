@@ -205,45 +205,17 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                 'N/A', // Show available value
                             iconColor:
                                 widget.visitorLog.visitor_card_number != null
-                                    ? const Color.fromARGB(
-                                        255, 225, 181, 154) // Color for Card
-                                    : Color.fromARGB(
-                                        255, 225, 181, 154), // Color for Car
+                                    ? const Color.fromARGB(255, 225, 181, 154)
+                                    : Color.fromARGB(255, 225, 181, 154),
                           ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     _buildSection(
                       title: "Visitor Timeline",
-                      children: [
-                        _buildTimelineTile(
-                          "Check In",
-                          widget.visitorLog.visitor_check_in!,
-                          Icons.login,
-                          Colors.green,
-                          isFirst: true,
-                          isLast: widget.visitorLog.visitor_check_out == null,
-                        ),
-                        _buildCustomTimelineTile(
-                          "Approved By",
-                          toBeginningOfSentenceCase(
-                                  widget.visitorLog.approved_by ?? "N/A") ??
-                              "N/A",
-                          Icons.person,
-                          Colors.blue,
-                          isFirst: false,
-                          isLast: widget.visitorLog.visitor_check_out == null,
-                        ),
-                        if (widget.visitorLog.visitor_check_out != null)
-                          _buildTimelineTile(
-                            "Check Out",
-                            widget.visitorLog.visitor_check_out!,
-                            Icons.logout,
-                            Colors.red,
-                            isFirst: false,
-                            isLast: true,
-                          ),
-                      ],
+                      children:
+                          // Call the _buildTimeline method to generate the timeline items
+                          _buildTimeline(),
                     ),
                   ],
                 ),
@@ -253,6 +225,64 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         ],
       ),
     );
+  }
+
+// Define _buildTimeline method outside of the widget
+  List<Widget> _buildTimeline() {
+    List<Widget> timelineItems = [];
+    bool isFirst = true;
+    bool isLast = false;
+    bool isSecondLast = false;
+
+    // Add Check-In
+    timelineItems.add(
+      _buildTimelineTile(
+        "Check In",
+        widget.visitorLog.visitor_check_in!,
+        Icons.login,
+        Colors.green,
+        isFirst: isFirst,
+        isLast: widget.visitorLog.visitor_check_out == null,
+        isSecondLast: false,
+      ),
+    );
+    isFirst = false; // After Check-In, it's no longer the first item
+
+    // Add Approved By
+    isSecondLast =
+        widget.visitorLog.visitor_check_out == null; // Set second last flag
+    timelineItems.add(
+      _buildTimelineTile(
+        "Approved By",
+        toBeginningOfSentenceCase(widget.unitList == "0001"
+                ? "Pre approved Staff"
+                : (widget.visitorLog.approved_by ?? "N/A")) ??
+            "N/A",
+        Icons.person,
+        Colors.blue,
+        isFirst: false,
+        isLast: widget.visitorLog.visitor_check_out == null,
+        isSecondLast: isSecondLast,
+      ),
+    );
+
+    // Add Check-Out (if available)
+    if (widget.visitorLog.visitor_check_out != null) {
+      timelineItems.add(
+        _buildTimelineTile(
+          "Check Out",
+          widget.visitorLog.visitor_check_out!,
+          Icons.logout,
+          Colors.red,
+          isFirst: false,
+          isLast: true,
+          isSecondLast: false,
+        ),
+      );
+    }
+
+    // Return the timeline items to be displayed in the widget
+    return timelineItems;
   }
 
   String _capitalizeFirstLetter(String text) {
@@ -265,80 +295,14 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         .join(' '); // Join words back together
   }
 
-  Widget _buildCustomTimelineTile(
-    String label,
-    String description,
-    IconData icon,
-    Color color, {
-    required bool isFirst,
-    required bool isLast,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 24,
-          child: Column(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: color, width: 2),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 12,
-                ),
-              ),
-              Container(
-                width: 2,
-                height: isLast ? 8 : 40, // Shorter line for the last item
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                color: Colors.grey.withOpacity(0.3),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildTimelineTile(
     String label,
-    DateTime time,
+    dynamic description, // This can be a String or DateTime
     IconData icon,
     Color color, {
     required bool isFirst,
     required bool isLast,
+    bool isSecondLast = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,12 +325,14 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   size: 12,
                 ),
               ),
-              Container(
-                width: 2,
-                height: isLast ? 8 : 40, // Shorter line for the last item
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                color: Colors.grey.withOpacity(0.3),
-              ),
+              // Show line between all items, even if there are only two items
+              if (!isLast) // If it's not the last item, show the line
+                Container(
+                  width: 2,
+                  height: 40, // Line height, adjust as needed
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  color: Colors.grey.withOpacity(0.3),
+                ),
             ],
           ),
         ),
@@ -383,8 +349,11 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 4),
+              // If the description is a DateTime, format it. Otherwise, just display the string.
               Text(
-                DateFormat('dd MMM yyyy, hh:mm a').format(time),
+                description is DateTime
+                    ? DateFormat('dd MMM yyyy, hh:mm a').format(description)
+                    : description.toString(),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,

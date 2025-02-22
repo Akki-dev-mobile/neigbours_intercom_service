@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/ui/request_permission_page.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:shimmer/shimmer.dart';
 
 enum RequestType {
   allowByGatekeeper,
@@ -35,13 +37,13 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   bool _isUploading = false;
   double _uploadProgress = 0;
 
-  static const Map<RequestType, String> _lottieAnimations = {
+  static const Map<RequestType, String> lottieAnimations = {
     RequestType.allowByGatekeeper:
-        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json',
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z',
   };
 
-  static const Map<RequestType, String> _requestMessages = {
-    RequestType.allowByGatekeeper: "Visitor is always allowed by member",
+  static const Map<RequestType, String> requestMessages = {
+    RequestType.allowByGatekeeper: "Visitor is allowed by Gatekeeper",
   };
 
   static const Map<RequestType, Color> _requestMessagesColor = {
@@ -56,45 +58,239 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
       isUploading: _isUploading,
       progress: _uploadProgress,
       child: MyScrollView(
-        pageTitle: 'Request Permission',
-        hasBackButton: true,
+        pageTitleWidget: _buildHeader(),
+
+        // pageTitle: 'Request Permission',
+        hasBackButton: false,
         pageBody: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment
+              .start, // Ensures elements are aligned at the top
           children: [
-            _buildVisitorCard(context),
+            _buildVisitorProfile(),
             const SizedBox(height: 24),
-            Center(
-              child: Lottie.network(
-                _lottieAnimations[requestType]!,
-                width: 200,
-                height: 200,
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                _requestMessages[requestType]!,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _requestMessagesColor[requestType],
+            _buildLottieSection(requestType),
+            const SizedBox(height: 100),
+            Align(
+              alignment: Alignment.center, // Centers the button horizontally
+              child: CustomLargeBtn(
+                text: 'Finish',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GateDashboardView(),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            CustomLargeBtn(
-              text: 'Finish',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GateDashboardView(),
-                ),
-              ),
-            ),
+            SizedBox(
+              height: 30,
+            )
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GateDashboardView(),
+            ),
+          ),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+                border: Border.all(color: const Color.fromARGB(93, 0, 0, 0)),
+                borderRadius: BorderRadius.circular(10)),
+            child:
+                const Icon(Icons.home_outlined, color: Colors.black, size: 30),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLottieSection(RequestType requestType) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Show Lottie animation based on request type
+        Center(
+          child: SizedBox(
+            height: 250,
+            child: Lottie.network(
+              lottieAnimations[requestType] ?? "",
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Show status message
+        Center(
+          child: Shimmer.fromColors(
+            baseColor: _requestMessagesColor[requestType]!,
+            highlightColor: Colors.black45,
+            child: Text(
+              requestMessages[requestType] ?? "",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: _requestMessagesColor[requestType],
+              ),
+            ),
+          ),
+        ),
+        // Display action buttons when time is expired
+        // if (requestType == RequestType.notRecheable)
+        //   _buildNotRecheableButtons(), // Show buttons for retrying or allowing by gatekeeper
+      ],
+    );
+  }
+
+  Widget _buildVisitorProfile() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ✅ Visitor Image
+        Column(
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.red.shade400, width: 4),
+              ),
+              child: ClipOval(
+                child: Image.network(
+                  widget.visitor.visitor_image!,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+          ],
+        ),
+
+        // ✅ Vertical Divider
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16), // Spacing
+          child: Container(
+            width: 1.5, // Thickness
+            height: 175, // Adjust based on content height
+            color: Colors.grey.shade400,
+          ),
+        ),
+
+        // ✅ Visitor Details (Aligned Right)
+        Expanded(
+          // This ensures that the details section can expand and push content down if needed
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // The name will move down if needed
+              Text(
+                "${widget.visitor.name}",
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildDetailRow(
+                icon: Icons.phone_outlined,
+                iconColor: Colors.green,
+                label: "Mobile",
+                value: widget.visitor.mobile ?? "",
+              ),
+              const SizedBox(height: 10),
+              widget.visitorLog?.visitor_coming_from != null
+                  ? _buildDetailRow(
+                      icon: Icons.location_on_outlined,
+                      iconColor: Colors.orange,
+                      label: "Coming From",
+                      value: widget.visitorLog?.visitor_coming_from ??
+                          "Not specified",
+                    )
+                  : SizedBox(),
+              const SizedBox(height: 10),
+              _buildDetailRow(
+                icon: _getPurposeIcon(
+                    widget.visitorLog?.visitor_purpose_Category_name),
+                iconColor: Colors.orange,
+                label: "Purpose",
+                value: widget.visitorLog?.visitor_purpose_Category_name ??
+                    "Not specified",
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: iconColor),
+        ),
+        const SizedBox(width: 15),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  IconData _getPurposeIcon(String? category) {
+    switch (category?.toUpperCase()) {
+      case "DELIVERY":
+        return Icons.inventory_2_outlined; // Delivery icon
+      case "CABS":
+        return Symbols
+            .local_taxi; // Cabs icon (make sure `Symbols` is imported or replace with `Icons`)
+      case "VENDOR":
+        return Symbols
+            .storefront; // Vendor icon (ensure `Symbols` is properly imported or use `Icons`)
+      default:
+        return Icons.person_2_outlined; // Default icon if no match
+    }
   }
 
   Widget _buildVisitorCard(BuildContext context) {

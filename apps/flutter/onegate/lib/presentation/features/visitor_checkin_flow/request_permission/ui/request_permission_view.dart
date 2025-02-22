@@ -73,7 +73,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
             );
             break;
           case RPErrorState:
-          myFluttertoast(msg: (state as RPErrorState).message!);
+            myFluttertoast(msg: (state as RPErrorState).message!);
             break;
         }
       },

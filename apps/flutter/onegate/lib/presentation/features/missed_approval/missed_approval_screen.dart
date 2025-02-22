@@ -1279,35 +1279,37 @@ class _TimerActionSectionState extends State<TimerActionSection> {
                           ),
                         ],
                       )
-                    : Column(
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          const Text(
-                            "Capture & upload parcel image before marking as left.",
-                            style: TextStyle(fontSize: 14, color: Colors.red),
-                          ),
-                          const SizedBox(height: 8),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: _isUploading
+                                    ? null
+                                    : _captureAndUploadImage,
+                                icon: _isUploading
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.camera_alt),
+                                label: Text(_isUploading
+                                    ? "Uploading..."
+                                    : "Capture Image"),
                               ),
-                            ),
-                            onPressed:
-                                _isUploading ? null : _captureAndUploadImage,
-                            icon: _isUploading
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.camera_alt),
-                            label: Text(_isUploading
-                                ? "Uploading..."
-                                : "Capture Image"),
+                            ],
                           ),
                         ],
                       )
