@@ -59,8 +59,6 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
       progress: _uploadProgress,
       child: MyScrollView(
         pageTitleWidget: _buildHeader(),
-
-        // pageTitle: 'Request Permission',
         hasBackButton: false,
         pageBody: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

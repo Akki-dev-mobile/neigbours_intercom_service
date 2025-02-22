@@ -1161,10 +1161,9 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       const SizedBox(width: 8), // Add spacing
                       Text(
                         "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name.toString()) ?? "N/A"} - "
-                        "${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"}",
+                        "${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() == "0001" ? "Society Office" : widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"}",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize:
-                                  14, // Ensures text and icon size are the same
+                              fontSize: 14,
                               color: Colors.grey[600],
                             ),
                       )

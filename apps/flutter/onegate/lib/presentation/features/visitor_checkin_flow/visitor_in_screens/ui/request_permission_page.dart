@@ -165,10 +165,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     _stopPolling();
 
     // Show notification
-    myFluttertoast(
-      msg: "Member not reachable",
-      backgroundColor: Colors.orange,
-    );
+    // myFluttertoast(
+    //   msg: "Member not reachable",
+    //   backgroundColor: Colors.orange,
+    // );
   }
 
   void _startPolling() {
@@ -188,10 +188,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               _stopPolling();
 
               // Show notification to user
-              myFluttertoast(
-                msg: "Member not reachable",
-                backgroundColor: Colors.orange,
-              );
+              // myFluttertoast(
+              //   msg: "Member not reachable",
+              //   backgroundColor: Colors.orange,
+              // );
             }
           }
         });
@@ -386,55 +386,66 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           ],
         ),
 
-        // ✅ Vertical Divider
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16), // Spacing
-          child: Container(
-            width: 1.5, // Thickness
-            height: 175, // Adjust based on content height
-            color: Colors.grey.shade400,
-          ),
-        ),
-
-        // ✅ Visitor Details (Aligned Right)
+        // ✅ Right side content with divider
         Expanded(
-          // This ensures that the details section can expand and push content down if needed
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              // The name will move down if needed
-              Text(
-                "${widget.visitor.name}",
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              // Divider line
+              Positioned(
+                left: 16, // Padding from the image
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 1.5,
+                  color: Colors.grey.shade400,
                 ),
               ),
-              const SizedBox(height: 10),
-              _buildDetailRow(
-                icon: Icons.phone_outlined,
-                iconColor: Colors.green,
-                label: "Mobile",
-                value: widget.visitor.mobile ?? "",
-              ),
-              const SizedBox(height: 10),
-              widget.visitorLog?.visitor_coming_from != null
-                  ? _buildDetailRow(
-                      icon: Icons.location_on_outlined,
+
+              // Visitor Details
+              Padding(
+                padding: const EdgeInsets.only(left: 32), // Space after divider
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${widget.visitor.name}",
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildDetailRow(
+                      icon: Icons.phone_outlined,
+                      iconColor: Colors.green,
+                      label: "Mobile",
+                      value: widget.visitor.mobile ?? "",
+                    ),
+                    const SizedBox(height: 10),
+                    if (widget.visitorLog?.visitor_coming_from != null &&
+                        widget.visitorLog!.visitor_coming_from!.isNotEmpty)
+                      Column(
+                        children: [
+                          _buildDetailRow(
+                            icon: Icons.location_on_outlined,
+                            iconColor: Colors.orange,
+                            label: "Coming From",
+                            value: widget.visitorLog?.visitor_coming_from ??
+                                "Not specified",
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                      ),
+                    _buildDetailRow(
+                      icon: _getPurposeIcon(
+                          widget.visitorLog?.visitor_purpose_Category_name),
                       iconColor: Colors.orange,
-                      label: "Coming From",
-                      value: widget.visitorLog?.visitor_coming_from ??
+                      label: "Purpose",
+                      value: widget.visitorLog?.visitor_purpose_Category_name ??
                           "Not specified",
-                    )
-                  : SizedBox(),
-              const SizedBox(height: 10),
-              _buildDetailRow(
-                icon: _getPurposeIcon(
-                    widget.visitorLog?.visitor_purpose_Category_name),
-                iconColor: Colors.orange,
-                label: "Purpose",
-                value: widget.visitorLog?.visitor_purpose_Category_name ??
-                    "Not specified",
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
