@@ -11,6 +11,8 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -363,7 +365,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   Widget _buildVisitorProfile() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // ✅ Visitor Image
         Column(
@@ -371,10 +373,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             Container(
               width: 120,
               height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.red.shade400, width: 4),
-              ),
+              // decoration: BoxDecoration(
+              //   shape: BoxShape.circle,
+              //   border: Border.all(color: Colors.red.shade400, width: 4),
+              // ),
               child: ClipOval(
                 child: Image.network(
                   widget.visitor.visitor_image!,
@@ -591,53 +593,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     );
   }
 
-  Widget _buildNotRecheableButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Allow by Gatekeeper Button
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: ElevatedButton(
-            style: _getAllowButtonStyle(),
-            onPressed: () async {
-              await _allowByGatekeeper(); // Action when button is pressed
-            },
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.3,
-              height: 60,
-              child: const Center(
-                child: Text(
-                  "Allow by Gatekeeper",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 15,
-                    wordSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8), // Spacing between buttons
-
-        // Retry Button
-        Expanded(
-          child: CustomLargeBtn(
-            width: MediaQuery.of(context).size.width * 0.45,
-            onPressed: () async {
-              setState(() {
-                trybuttontext = "Trying...";
-              });
-              await _handleTryAgain(); // Retry action
-            },
-            text: trybuttontext,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildActionButton(RequestType requestType) {
     return Center(
       child: Column(
@@ -672,156 +627,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildVisitorCard(BuildContext context) {
-    Color colortoshow = const Color(0xffFFB080);
-    Size screensize = MediaQuery.of(context).size;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(25),
-            child: Image.network(
-                width: screensize.width * 0.37,
-                height: screensize.height * 0.15,
-                fit: BoxFit.fill,
-                widget.visitor.visitor_image!),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.only(
-            left: 25.0,
-          ),
-          child: Text(
-            widget.visitor.name ?? "",
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium!
-                .copyWith(fontWeight: FontWeight.bold),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 25.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: colortoshow.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              child: Text(
-                widget.visitorLog?.visitor_purpose_Category_name ?? "",
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.only(left: 16, right: 16),
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Ionicons.call_outline, color: Colors.green),
-                ),
-                title: Text(
-                  'Phone Number',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-                subtitle: Text(
-                  widget.visitor.mobile ?? "",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  softWrap: true,
-                  overflow: TextOverflow.visible,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 18.0, bottom: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colortoshow.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Symbols.apartment,
-                        color: colortoshow,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Visiting Unit',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                        Container(
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.6,
-                          ),
-                          child: Text(
-                            widget.unitList!.first,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                            softWrap: true,
-                            overflow: TextOverflow.visible,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLottieAnimation() {
-    return Lottie.network(
-      width: double.infinity,
-      _lottieAnimations[_requestType] ?? "",
-      height: _lottieAnimationSize,
-      fit: BoxFit.contain,
     );
   }
 
@@ -1028,7 +833,17 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           child: ElevatedButton(
             style: _getAllowButtonStyle(),
             onPressed: () async {
-              await _allowByGatekeeper();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RequestPermissionPage2(
+                    visitor: widget.visitor,
+                    visitorLog: widget.visitorLog,
+                  ),
+                ),
+                (Route<dynamic> route) =>
+                    false, // This removes all previous routes
+              );
             },
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.3,

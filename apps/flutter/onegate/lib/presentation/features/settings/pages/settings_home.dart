@@ -506,7 +506,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               icon: Ionicons.camera_outline,
               title: 'Camera Settings',
               subtitle:
-                  "Current Preference: ${_cameraValue ?? "Not Selected Camera"}",
+                  "Current Preference: ${context.watch<CameraSettingsProvider>().selectedCameraValue ?? "Not Selected Camera"}",
               onTap: () {
                 _showCameraSettings(context);
               },

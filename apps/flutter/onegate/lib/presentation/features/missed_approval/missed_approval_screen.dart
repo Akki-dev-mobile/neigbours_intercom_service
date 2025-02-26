@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -257,185 +258,6 @@ class TimerDisplay extends StatelessWidget {
       ),
     );
   }
-}
-
-class VisitorInfo {
-  final int visitorId;
-  final String visitorName;
-  final String visitorMobile;
-  final String visitorImage;
-  final String allowStatus;
-  final int? visitorLogId;
-  final int companyId;
-  final String inGate;
-  final String logCreatedAt;
-  final MemberInfo memberInfo;
-  final String? visitorComingFrom;
-  final int? visitorPurposeCategoryId;
-  final String? purposeCategoryName;
-  final String? purposeSubCategoryName;
-  final UnitDetails unitDetails;
-  final Map<String, dynamic>? additionalDetails; // Parsed Additional Details
-
-  VisitorInfo({
-    required this.visitorId,
-    required this.visitorName,
-    required this.visitorMobile,
-    required this.visitorImage,
-    required this.allowStatus,
-    this.visitorLogId,
-    required this.unitDetails,
-    required this.companyId,
-    required this.inGate,
-    required this.logCreatedAt,
-    required this.memberInfo,
-    this.visitorComingFrom,
-    this.visitorPurposeCategoryId,
-    this.purposeCategoryName,
-    this.purposeSubCategoryName,
-    this.additionalDetails, // Include Additional Details
-  });
-
-  factory VisitorInfo.fromJson(Map<String, dynamic> json) {
-    List<UnitDetails> parsedUnitDetails = [];
-
-    try {
-      final unitDetailsString = json['unit_details'];
-
-      if (unitDetailsString is String) {
-        final List<dynamic> decodedUnitDetails = jsonDecode(unitDetailsString);
-
-        parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
-          final unit = UnitDetails(
-            unitId: _parseToInt(unitJson['unit_id']),
-            building_unit: unitJson["building_unit"]?.toString() ?? '',
-          );
-
-          log("🔍 Parsed building_unit: ${unit.building_unit}");
-
-          return unit;
-        }).toList();
-      } else if (unitDetailsString is List) {
-        parsedUnitDetails = unitDetailsString.map<UnitDetails>((unitJson) {
-          final unit = UnitDetails(
-            unitId: _parseToInt(unitJson['unit_id']),
-            building_unit: unitJson["building_unit"]?.toString() ?? '',
-          );
-
-          log("🔍 Parsed building_unit: ${unit.building_unit}");
-
-          return unit;
-        }).toList();
-      }
-    } catch (e) {
-      log("❌ Error decoding unit details: $e");
-    }
-
-    // ✅ Fix for `additional_details` Parsing
-    Map<String, dynamic>? parsedAdditionalDetails;
-    try {
-      final dynamic additionalDetailsString = json['additional_details'];
-
-      if (additionalDetailsString != null &&
-          additionalDetailsString.toString().isNotEmpty) {
-        if (additionalDetailsString is String) {
-          parsedAdditionalDetails = jsonDecode(additionalDetailsString
-              .replaceAll(r'\"', '"')); // Handle escaped quotes
-        } else if (additionalDetailsString is Map<String, dynamic>) {
-          parsedAdditionalDetails = additionalDetailsString;
-        }
-      }
-    } catch (e) {
-      log("❌ Error parsing additional_details: $e");
-      parsedAdditionalDetails = {};
-    }
-
-    return VisitorInfo(
-      visitorId: _parseToInt(json['visitor_id']),
-      visitorName: json['visitor_name']?.toString() ?? '',
-      visitorMobile: json['visitor_mobile']?.toString() ?? '',
-      visitorImage: json['visitor_image']?.toString() ?? '',
-      allowStatus: json['allow_status']?.toString() ?? '',
-      visitorLogId: _parseToInt(json['visitor_log_id']),
-      companyId: _parseToInt(json['company_id']),
-      inGate: json['in_gate']?.toString() ?? '',
-      logCreatedAt: json['log_created_at']?.toString() ?? '',
-      unitDetails: parsedUnitDetails.isNotEmpty
-          ? parsedUnitDetails.first
-          : UnitDetails(unitId: 0, building_unit: ''),
-      memberInfo: MemberInfo(
-        name: json['member_name']?.toString() ?? '',
-        mobileNumber: json['memb_mobile_number']?.toString(),
-        email: json['memb_email']?.toString(),
-        memberId: _parseToInt(json['member_id']),
-        unitId: _parseToInt(json['unit_id']),
-        building_unit: json["building_unit"]?.toString(),
-      ),
-      visitorComingFrom: json['visitor_coming_from']?.toString(),
-      visitorPurposeCategoryId: _parseToInt(json['purpose_category_id']),
-      purposeCategoryName: json['purpose_category_name']?.toString(),
-      purposeSubCategoryName: json['purpose_sub_category_name']?.toString(),
-      additionalDetails:
-          parsedAdditionalDetails, // ✅ Correctly parsed `additional_details`
-    );
-  }
-
-  static int _parseToInt(dynamic value) {
-    if (value == null) return 0;
-    if (value is int) return value;
-    if (value is String) {
-      return int.tryParse(value) ?? 0;
-    }
-    return 0;
-  }
-
-  @override
-  String toString() {
-    return '''
-    VisitorInfo(
-      visitorId: $visitorId, 
-      visitorName: $visitorName, 
-      visitorMobile: $visitorMobile, 
-      allowStatus: $allowStatus, 
-      visitorLogId: $visitorLogId, 
-      companyId: $companyId, 
-      inGate: $inGate, 
-      logCreatedAt: $logCreatedAt, 
-      visitorComingFrom: $visitorComingFrom, 
-      visitorPurposeCategoryId: $visitorPurposeCategoryId,
-      purposeCategoryName: $purposeCategoryName,
-      purposeSubCategoryName: $purposeSubCategoryName,
-      memberInfo: $memberInfo,
-      unitDetails: $unitDetails,
-      additionalDetails: $additionalDetails
-    )
-    ''';
-  }
-}
-
-class MemberInfo {
-  final String name;
-  final String? mobileNumber;
-  final String? email;
-  final int? unitId;
-  final int? memberId;
-  final String? building_unit;
-
-  MemberInfo(
-      {required this.name,
-      this.mobileNumber,
-      this.email,
-      this.unitId,
-      this.memberId,
-      this.building_unit});
-}
-
-class UnitDetails {
-  final int? unitId;
-
-  final String? building_unit;
-
-  UnitDetails({this.unitId, this.building_unit});
 }
 
 // Main Screen with Search
@@ -1234,9 +1056,16 @@ class _TimerActionSectionState extends State<TimerActionSection> {
   }
 
   Future<String?> _openCameraAndCapture() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.camera);
-    return pickedFile?.path;
+    final XFile? image = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
+    if (image != null) {
+      return image.path; // Return the image file path
+    } else {
+      return null; // Return null if the user cancels the camera
+    }
   }
 
   @override

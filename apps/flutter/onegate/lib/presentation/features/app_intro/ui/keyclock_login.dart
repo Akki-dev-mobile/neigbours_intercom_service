@@ -1,8 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/settings_gate.dart';
-import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
+
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -95,7 +94,6 @@ class LoginService {
     List<String> roles =
         userRoles.map((role) => _mapRole(role.toString())).toList();
 
-    // If user is admin, add both admin and gatekeeper roles
     if (roles.contains('admin')) {
       roles = ['admin', 'gatekeeper'];
     }

@@ -6,11 +6,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -19,16 +21,8 @@ import 'package:intl/intl.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../presentation/features/missed_approval/missed_approval_screen.dart';
 
-final keycloakConfig = KeycloakConfig(
-  bundleIdentifier: 'com.example.keyclockflutter',
-  clientId: 'onegate-sso',
-  frontendUrl: 'http://stgsso.cubeone.in',
-  realm: 'fstech',
-  clientSecret: 'zXpmFL8WzkDoL379FesFl2pgm8vxPa58',
-);
-final keycloakWrapper = KeycloakWrapper(config: keycloakConfig);
+final keycloakWrapper = KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {

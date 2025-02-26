@@ -75,10 +75,10 @@ class _VisitorLogViewState extends State<VisitorLogView> {
       case "Visitor In":
         _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
-
       case "Cards":
         _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
         break;
+
       case "Visitor Out":
         _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
         break;
@@ -155,7 +155,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
             return LoaderView();
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
-            final visitorLogs = successState.visitorLogs ?? [];
+            final visitorLogs = (successState.visitorLogs ?? []).where((log) {
+              if (widget.id == "Cards") {
+                return log.visitor_card_number != null &&
+                    log.visitor_card_number!.isNotEmpty;
+              }
+              return true; // Show all logs for other cases
+            }).toList();
             List<VisitorLog> uniqueVisitorLogs = [];
             Set<String> checkInTimes = {};
 
@@ -213,16 +219,6 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               return checkInDate.isBefore(startOfYesterday);
             }).toList();
             bool isPopping = false;
-
-            void safePop(BuildContext context) {
-              if (!isPopping) {
-                isPopping = true;
-                Navigator.of(context).pop();
-                Future.delayed(Duration(milliseconds: 300), () {
-                  isPopping = false;
-                });
-              }
-            }
 
             Map<String, List<VisitorLog>> groupedLogs = {};
             for (var log in filteredVisitors) {

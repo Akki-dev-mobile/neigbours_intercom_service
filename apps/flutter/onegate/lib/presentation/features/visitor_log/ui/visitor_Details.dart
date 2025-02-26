@@ -2,11 +2,8 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:intl/intl.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
 
 class VisitorDetailsScreen extends StatefulWidget {
@@ -246,11 +243,10 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         isSecondLast: false,
       ),
     );
-    isFirst = false; // After Check-In, it's no longer the first item
+    isFirst = false;
 
     // Add Approved By
-    isSecondLast =
-        widget.visitorLog.visitor_check_out == null; // Set second last flag
+    isSecondLast = widget.visitorLog.visitor_check_out == null;
     timelineItems.add(
       _buildTimelineTile(
         "Approved By",
@@ -325,11 +321,10 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   size: 12,
                 ),
               ),
-              // Show line between all items, even if there are only two items
-              if (!isLast) // If it's not the last item, show the line
+              if (!isLast)
                 Container(
                   width: 2,
-                  height: 40, // Line height, adjust as needed
+                  height: 40,
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   color: Colors.grey.withOpacity(0.3),
                 ),

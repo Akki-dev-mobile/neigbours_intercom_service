@@ -11,7 +11,7 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/id_input_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/ui/request_permission_page.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
@@ -23,7 +23,6 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
   Visitor? searchedVisitor;
@@ -1114,12 +1113,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
         _isCheckedIn = true;
       }
-      await _showApprovedDialog(context, visitorLogData, onSuccess: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => GateDashboardView()),
-        );
-      });
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+                  visitor: widget.visitor,
+                  visitorLog: visitorLogData,
+                )),
+      );
     } catch (e) {
       log("❌ Error in _handleDirectApproval: $e");
       _showErrorSnackbar("Error during gatekeeper approval.");
@@ -1285,52 +1286,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  Future<void> _showVisitorAllowedDialog() async {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
-              Text(
-                'Visitor Allowed',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Visitor is always allowed by the member.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => GateDashboardView()),
-              ), // Close dialog
-              child: const Text('OK', style: TextStyle(color: Colors.black)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _handleMultipleMemberSelection(VisitorLog visitorLogData) async {
-    await _showApprovedDialog(context, visitorLogData, onSuccess: () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => GateDashboardView()),
-      );
-    });
-  }
-
   Future<void> _showApprovedDialog(BuildContext context, VisitorLog data,
       {VoidCallback? onSuccess}) async {
     showDialog(
@@ -1430,7 +1385,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-// Update the _prepareVisitorLogData method
   Future<VisitorLog> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -1441,7 +1395,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         .map((id) => int.parse(id.toString()))
         .toList();
 
-    // Map unit IDs to BuildingAssignment objects
     List<BuildingAssignment> buildingAssignments = unitIds.map((unitId) {
       return BuildingAssignment(
         id: null,
@@ -1483,7 +1436,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-// Helper method to retrieve the saved member details
   Future<List<Map<String, dynamic>>> getSavedMemberDetails() async {
     final prefs = await SharedPreferences.getInstance();
     final String? memberDetailsJson = prefs.getString('member_details');
@@ -1514,7 +1466,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return formattedMemberDetails
         .map((e) => e['mobile_number'].toString())
         .where((mobile) => mobile.isNotEmpty)
-        .toSet() // Remove duplicates
+        .toSet()
         .toList();
   }
 
@@ -1541,9 +1493,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': mobileNumbers.isNotEmpty
-          ? mobileNumbers.first
-          : "", // This will fail if empty. Handle this better if mobile is mandatory
+      'member_mobile_number':
+          mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
       'visitor_id': widget.visitor.id?.toString() ??
           widget.searchedVisitor?.id?.toString() ??
           '',
@@ -1559,130 +1510,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       "file": widget.visitor.visitor_image ?? ""
     };
   }
-
-  // Future<void> setupAMQPReceiver() async {
-  //   try {
-  //     log("Initializing AMQP Receiver...");
-  //
-  //     // Initialize AMQP client with connection settings
-  //     amqpClient = Client(
-  //       settings: ConnectionSettings(
-  //         host: "65.1.230.119",
-  //         authProvider:
-  //             const PlainAuthenticator("dinesh.koli", "7nqRG&I!FesI&7zCrii0"),
-  //       ),
-  //     );
-  //
-  //     log("Connecting to RabbitMQ server...");
-  //     await amqpClient.connect();
-  //     log("Connection to RabbitMQ server established successfully.");
-  //
-  //     // Define the queue name dynamically based on the mobile number
-  //     final queueName = "visitor_approval_77525_${widget.mobileNumber}";
-  //     log("Queue Name: $queueName");
-  //
-  //     Channel channel = await amqpClient.channel();
-  //     log("Channel opened.");
-  //
-  //     Queue queue = await channel.queue(queueName, durable: false);
-  //     log("Queue declared: $queueName");
-  //
-  //     const String exchangeName = "logs"; // Example exchange name
-  //     final Exchange exchange = await channel.exchange(
-  //       exchangeName,
-  //       ExchangeType.FANOUT,
-  //       durable: false,
-  //     );
-  //     log("Exchange bound: $exchangeName");
-  //
-  //     await queue.bind(exchange, "routing_key_placeholder");
-  //     log("Queue bound to exchange with routing key.");
-  //
-  //     // Start consuming messages from the queue
-  //     Consumer consumer = await queue.consume();
-  //
-  //     log("Consumer registered for queue. Waiting for messages...");
-  //
-  //     // Listen for messages on the queue
-  //     consumer.listen((AmqpMessage message) {
-  //       log("Message received from queue.");
-  //
-  //       try {
-  //         // Decode the message payload
-  //         final payload = utf8.decode(message.payload as List<int>);
-  //         log("Raw Message Payload: $payload");
-  //
-  //         // Parse the message as JSON
-  //         final response = jsonDecode(payload);
-  //         log("Decoded Message: $response");
-  //
-  //         // Extract the approval status from the message
-  //         final status = response['status'];
-  //         log("Approval Status: $status");
-  //
-  //         showApprovalDialog(status);
-  //
-  //         message.ack();
-  //       } catch (e) {
-  //         log("Error processing message: $e");
-  //       }
-  //     });
-  //   } catch (e) {
-  //     log("Error setting up AMQP Receiver: $e");
-  //   }
-  // }
-
-  // Future<void> showApprovalDialog(approvalStatusNew) async {
-  //   setState(() {
-  //     approvalStatus = "Waiting for approval...";
-  //   });
-  //
-  //   await setupAMQPReceiver();
-  //
-  //   showDialog(
-  //     context: context,
-  //     barrierDismissible: false,
-  //     builder: (_) {
-  //       return AlertDialog(
-  //         title: const Text("Approval Status"),
-  //         content: StatefulBuilder(
-  //           builder: (context, setState) {
-  //             return Column(
-  //               mainAxisSize: MainAxisSize.min,
-  //               children: [
-  //                 if (approvalStatus == "Waiting for approval...")
-  //                   const CircularProgressIndicator(),
-  //                 const SizedBox(height: 20),
-  //                 Text(
-  //                   approvalStatusNew,
-  //                   style: const TextStyle(fontSize: 16),
-  //                   textAlign: TextAlign.center,
-  //                 ),
-  //               ],
-  //             );
-  //           },
-  //         ),
-  //         actions: [
-  //           if (approvalStatus == "Approved" || approvalStatus == "Rejected")
-  //             TextButton(
-  //               onPressed: () {
-  //                 setState(() {
-  //                   approvalStatus = null;
-  //                 });
-  //                 Navigator.pop(context);
-  //               },
-  //               child: const Text("Close"),
-  //             ),
-  //         ],
-  //       );
-  //     },
-  //   ).then((_) {
-  //     setState(() {
-  //       Navigator.push(context,
-  //           MaterialPageRoute(builder: (context) => GateDashboardView()));
-  //     });
-  //   });
-  // }
 
   bool _isButtonDisabled = false;
 

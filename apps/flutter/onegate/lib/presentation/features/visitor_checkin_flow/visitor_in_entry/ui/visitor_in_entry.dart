@@ -325,11 +325,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         _showErrorSnackBar('Please enter vendor name');
         return false;
       }
-      if ((_guestComingFromController?.text ?? "").isEmpty &&
-          _visitorAddress == true) {
-        _showErrorSnackBar('Please enter coming from');
-        return false;
-      }
+      // if ((_guestComingFromController?.text ?? "").isEmpty &&
+      //     _visitorAddress == true) {
+      //   _showErrorSnackBar('Please enter coming from');
+      //   return false;
+      // }
       if (selectedCompanyIndex == -1) {
         _showErrorSnackBar('Please select a vendor category');
         return false;
