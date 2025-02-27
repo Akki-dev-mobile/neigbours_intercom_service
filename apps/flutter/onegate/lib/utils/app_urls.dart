@@ -1,4 +1,5 @@
-import 'package:flutter_onegate/common/environment.dart';
+
+import '../common/environment.dart';
 
 /// Centralized API URL manager
 class ApiUrls {

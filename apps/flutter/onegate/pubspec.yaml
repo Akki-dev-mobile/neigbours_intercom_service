@@ -120,6 +120,7 @@ flutter:
     - assets/json/approved.json
     - assets/media/audio/alarm.mp3
     - assets/media/images/person-icon-1670.png
+    - shorebird.yaml
 
 
 flutter_native_splash:

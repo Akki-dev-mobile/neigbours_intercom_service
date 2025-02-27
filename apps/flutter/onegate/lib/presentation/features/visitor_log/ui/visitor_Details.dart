@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
@@ -69,26 +70,51 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
           SliverList(
             delegate: SliverChildListDelegate([
               Center(
-                child: Container(
-                  height: 200,
-                  width: 200,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(20),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // 🔹 Blurred Background
+                    ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(20), // Soft rounded corners
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(
+                            sigmaX: 10, sigmaY: 10), // Blur effect
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            color: Colors.grey
+                                .withOpacity(0.2), // Background overlay
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                      ),
                     ),
-                    image: widget.image != null && widget.image!.isNotEmpty
-                        ? DecorationImage(
-                            fit: BoxFit.cover,
-                            image: NetworkImage(
-                              widget.image!,
-                            ),
-                          )
-                        : const DecorationImage(
-                            fit: BoxFit.cover,
-                            image: NetworkImage(
-                                "https://cdn.pixabay.com/photo/2022/06/05/07/04/person-7243410_1280.png")),
-                  ),
+
+                    // 🔹 Circular Profile Image (Overlaid)
+                    GestureDetector(
+                      onTap: () {
+                        // Open full-screen view when tapped
+                        _showFullImage(context, widget.image);
+                      },
+                      child: CircleAvatar(
+                        radius: 60, // Size of circular profile image
+                        backgroundColor:
+                            Colors.white, // Background color for circular frame
+                        child: CircleAvatar(
+                          radius:
+                              55, // Slightly smaller to create a border effect
+                          backgroundImage: widget.image != null &&
+                                  widget.image!.isNotEmpty
+                              ? NetworkImage(
+                                  widget.image!) // Show visitor's image
+                              : const NetworkImage(
+                                  "https://cdn.pixabay.com/photo/2022/06/05/07/04/person-7243410_1280.png"), // Default image
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
@@ -224,6 +250,31 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     );
   }
 
+  void _showFullImage(BuildContext context, String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                image: DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 // Define _buildTimeline method outside of the widget
   List<Widget> _buildTimeline() {
     List<Widget> timelineItems = [];
@@ -255,7 +306,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                 : (widget.visitorLog.approved_by ?? "N/A")) ??
             "N/A",
         Icons.person,
-        Colors.blue,
+        Colors.brown,
         isFirst: false,
         isLast: widget.visitorLog.visitor_check_out == null,
         isSecondLast: isSecondLast,

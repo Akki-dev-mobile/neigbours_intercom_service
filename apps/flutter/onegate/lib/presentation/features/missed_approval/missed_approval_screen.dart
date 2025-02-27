@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
@@ -988,6 +990,7 @@ class _TimerActionSectionState extends State<TimerActionSection> {
   bool _isUploading = false;
   bool _isImageUploaded = false;
   RemoteDataSource remoteDataSource = RemoteDataSource();
+  double _uploadProgress = 0;
   @override
   void initState() {
     super.initState();
@@ -1023,9 +1026,14 @@ class _TimerActionSectionState extends State<TimerActionSection> {
         return;
       }
 
+      /// **Upload the Image**
+      final String uploadedImageUrl =
+          await _uploadImage(File(capturedImagePath));
+
+      /// **Update the backend after successful upload**
       await remoteDataSource.uploadParcelImage(
         visitorLogId: int.parse(widget.visitorInfo.visitorLogId.toString()),
-        imageUrl: capturedImagePath,
+        imageUrl: uploadedImageUrl,
       );
 
       myFluttertoast(
@@ -1055,17 +1063,62 @@ class _TimerActionSectionState extends State<TimerActionSection> {
     }
   }
 
+  Future<String> _uploadImage(File imageFile) async {
+    try {
+      setState(() {
+        _isUploading = true;
+        _uploadProgress = 0;
+      });
+
+      var data = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: '${widget.visitorInfo.visitorMobile}.jpg',
+        ),
+        'company_id': '${widget.visitorInfo.companyId}',
+        'uuid': widget.visitorInfo.visitorMobile,
+        'path': imageFile.path,
+      });
+
+      var dio = Dio();
+      var response = await dio.post(
+        'http://35.154.173.226:8005/api/visitor/uploadFile',
+        data: data,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+        onSendProgress: (int sent, int total) {
+          setState(() {
+            _uploadProgress = sent / total;
+          });
+        },
+      );
+
+      if (response.statusCode == 200) {
+        log('Successfully uploaded: ${json.encode(response.data)}');
+        var filePath = response.data['data']?['file_path'];
+        if (filePath != null && filePath is String) {
+          return filePath;
+        }
+      }
+      throw Exception('Upload failed: ${response.statusMessage}');
+    } catch (e) {
+      log('Error uploading image: $e');
+      rethrow;
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
+  }
+
   Future<String?> _openCameraAndCapture() async {
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.camera,
       imageQuality: 80,
     );
 
-    if (image != null) {
-      return image.path; // Return the image file path
-    } else {
-      return null; // Return null if the user cancels the camera
-    }
+    return image?.path; // Return the file path or null
   }
 
   @override

@@ -73,9 +73,6 @@ void main() async {
       splitScreenMode: true,
       builder: (_, child) => MultiProvider(
         providers: [
-          ChangeNotifierProvider<ApprovalStatusProvider>(
-            create: (_) => ApprovalStatusProvider(),
-          ),
           ChangeNotifierProvider<PurposeProvider>(
             create: (_) => PurposeProvider(),
           ),

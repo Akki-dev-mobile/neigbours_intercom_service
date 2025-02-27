@@ -21,8 +21,8 @@ import 'package:intl/intl.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-final keycloakWrapper = KeycloakWrapper(config: KeycloakConfigManager.getConfig());
+final keycloakWrapper =
+    KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {

@@ -1,5 +1,4 @@
 import 'package:intl/intl.dart';
-import 'package:timezone/timezone.dart' as tz;
 
 class Utils {
   static String convertDateTimeFormat(DateTime inputDateTime) {
