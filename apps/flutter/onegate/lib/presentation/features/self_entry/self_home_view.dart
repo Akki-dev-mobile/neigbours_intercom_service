@@ -4,6 +4,8 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/ui/face_id_registration_view.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_facerec_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart'
     as self_entry;
 import 'package:material_symbols_icons/symbols.dart';
@@ -179,6 +181,56 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                             image: 'assets/media/images/Sitting.png',
                           ),
                         ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SelfEntryFacerecView(),
+                    ),
+                  );
+                },
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      SelfTapOption(
+                        fTitle: 'Scan',
+                        sTitle: 'Face',
+                        image: 'assets/media/images/standing2.png',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FaceIDRegistrationScreen(),
+                    ),
+                  );
+                },
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      SelfTapOption(
+                        fTitle: 'Scan',
+                        sTitle: 'Face Reg',
+                        image: 'assets/media/images/Standing.png',
                       ),
                     ],
                   ),

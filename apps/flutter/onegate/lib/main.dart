@@ -45,6 +45,7 @@ void main() async {
   await dotenv.load(fileName: "assets/.env");
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
+
   await Alarm.init();
   await setupLocator();
   await GateStorage().init();
