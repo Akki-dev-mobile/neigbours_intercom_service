@@ -137,103 +137,64 @@ class _SelfHomeViewState extends State<SelfHomeView> {
               ),
             ),
             SliverToBoxAdapter(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => self_entry.SelfEntryView(),
-                    ),
-                  );
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          SelfTapOption(
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    self_entry.SelfEntryView(),
+                              ),
+                            );
+                          },
+                          child: SelfTapOption(
                             fTitle: 'Mobile',
                             sTitle: 'Number',
                             image: 'assets/media/images/Standing.png',
                           ),
-                          SelfTapOption(
-                            fTitle: 'Pass',
-                            sTitle: 'Code',
-                            image: 'assets/media/images/Space.png',
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          SelfTapOption(
+                        ),
+                        SelfTapOption(
+                          fTitle: 'Pass',
+                          sTitle: 'Code',
+                          image: 'assets/media/images/Space.png',
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        SelfTapOption(
+                          fTitle: 'Scan',
+                          sTitle: 'QR',
+                          image: 'assets/media/images/standing2.png',
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SelfEntryFacerecView(),
+                              ),
+                            );
+                          },
+                          child: SelfTapOption(
                             fTitle: 'Scan',
-                            sTitle: 'QR',
-                            image: 'assets/media/images/standing2.png',
-                          ),
-                          SelfTapOption(
-                            fTitle: 'NFC',
-                            sTitle: 'Tag',
+                            sTitle: 'Face',
                             image: 'assets/media/images/Sitting.png',
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SelfEntryFacerecView(),
+                        ),
+                      ],
                     ),
-                  );
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      SelfTapOption(
-                        fTitle: 'Scan',
-                        sTitle: 'Face',
-                        image: 'assets/media/images/standing2.png',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FaceIDRegistrationScreen(),
-                    ),
-                  );
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      SelfTapOption(
-                        fTitle: 'Scan',
-                        sTitle: 'Face Reg',
-                        image: 'assets/media/images/Standing.png',
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),

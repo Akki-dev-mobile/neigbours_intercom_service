@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -19,6 +20,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:numpad_layout/numpad.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../../data/datasources/gate_storage.dart';
 import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -40,7 +42,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
   // Create an instance of RemoteDataSource.
   final RemoteDataSource _remoteDataSource = RemoteDataSource();
-  GateStorage _gateStorage = GateStorage();
+  final GateStorage _gateStorage = GateStorage();
 
   // Text controllers.
   final TextEditingController _mobileController = TextEditingController();
@@ -118,9 +120,6 @@ class _SelfEntryViewState extends State<SelfEntryView>
     try {
       final result =
           await _remoteDataSource.sendOtpForSelfCheckIn(mobileNumber);
-      // if (mobileNumber == "7378880544") {
-      //   _disableKioskMode();
-      // }
 
       if (result['message'] == 'Visitor is already verified') {
         final visitorData = result['data'];
@@ -190,14 +189,14 @@ class _SelfEntryViewState extends State<SelfEntryView>
       if (result['message'] == 'Visitor is already verified') {
         final prefs = await SharedPreferences.getInstance();
 
-        final visitor_id = await prefs.getString('visitorId');
+        final visitorId = prefs.getString('visitorId');
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => UnitSelectionView(null,
                 visitor: Visitor(
-                  id: int.parse(visitor_id ?? ""),
+                  id: int.parse(visitorId ?? ""),
                   name: _nameController.text,
                   mobile: _mobileController.text,
                   visitor_image: _imageFile?.path,
@@ -226,6 +225,37 @@ class _SelfEntryViewState extends State<SelfEntryView>
     }
   }
 
+  Future<void> _regImage(String name, File? image) async {
+    if (image == null) return;
+
+    try {
+      final uri = Uri.parse('http://192.168.1.9:8000/api/register-face/');
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['name'] = name
+        ..files.add(await http.MultipartFile.fromPath('files', image.path));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      print(response.body);
+
+      if (response.statusCode == 200) {
+        var jsondata = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(jsondata["message"])),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload image: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
   /// Captures an image from the camera.
   /// After capturing the image, it immediately navigates to the UnitSelectionView,
   /// passing along the visitor id (if available) in the Visitor object.
@@ -240,7 +270,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
       setState(() {
         _imageFile = PickedFile(image.path);
       });
-
+      print(_mobileController.text);
+      _regImage(_mobileController.text, File(image.path));
       _remoteDataSource.createVisitor(Visitor(
         name: _nameController.text,
         mobile: _mobileController.text,
@@ -249,14 +280,14 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
       final prefs = await SharedPreferences.getInstance();
 
-      final visitor_id = await prefs.getString('visitorId');
+      final visitorId = prefs.getString('visitorId');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => UnitSelectionView(
             null,
             visitor: Visitor(
-              id: int.parse(visitor_id ?? ""),
+              id: int.parse(visitorId ?? ""),
               name: _nameController.text,
               mobile: _mobileController.text,
             ),
