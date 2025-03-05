@@ -167,6 +167,9 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
   }
 
   Future<void> _uploadImage() async {
+    setState(() {
+      loading = true;
+    });
     if (_image == null) return;
 
     try {
@@ -213,56 +216,71 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
         SnackBar(content: Text('Error: $e')),
       );
     }
+    setState(() {
+      loading = false;
+    });
   }
 
+  bool loading = false;
   @override
   Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
     return MyScrollView(
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: _uploadImage,
-            child: Row(
+      floatingActionButton: _image != null
+          ? Row(
+              verticalDirection: VerticalDirection.down,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                const Icon(
-                  Icons.check,
-                  color: Colors.black,
+                ElevatedButton(
+                  onPressed: _uploadImage,
+                  child: loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.check,
+                          color: Colors.black,
+                        ),
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  "Upload",
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium!
-                      .copyWith(color: Colors.black),
+                ElevatedButton(
+                  onPressed: _pickImage,
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.black),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.refresh,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed: _pickImage,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Row(
-              children: [
-                Icon(Icons.refresh),
-                SizedBox(width: 5),
-                Text("Retake"),
-              ],
-            ),
-          ),
-        ],
-      ),
+            )
+          : Container(),
       pageBody: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             _image == null
-                ? const Text('No image selected.')
-                : Image.file(_image!),
-            const SizedBox(height: 20),
-
+                ? SizedBox(
+                    width: size.width,
+                    height: size.height * 0.8,
+                    child: const Center(child: Text('No image selected.')))
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.file(
+                      fit: BoxFit.cover,
+                      _image!,
+                      height: size.height * 0.7,
+                    ),
+                  ),
+            // const SizedBox(height: 20),
             // ElevatedButton(
             //   onPressed: _pickImage,
             //   child: const Text('Capture Photo'),
