@@ -10,6 +10,7 @@ class GateStorage {
   static const _roleKey = 'role';
   static const _societyIdKey = 'society_id';
   static const _visitorLogIdKey = 'visitorLogId';
+  static const String _memberApprovalKey = 'member_approval';
 
   static final GateStorage _instance = GateStorage._internal();
 
@@ -206,5 +207,16 @@ class GateStorage {
       }
     }
     return null;
+  }
+
+  Future<void> saveMemberApproval(bool approval) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_memberApprovalKey, approval);
+  }
+
+// Retrieve member approval status
+  Future<bool?> getMemberApproval() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_memberApprovalKey);
   }
 }

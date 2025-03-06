@@ -76,7 +76,8 @@ dependencies:
   flutter_image_compress: ^2.4.0
   socket_io_client: ^3.0.2
   connectivity_plus: ^5.0.2
-
+  qr_code_scanner_plus: ^2.0.10+1
+  mobile_scanner: ^6.0.6
 
 
 

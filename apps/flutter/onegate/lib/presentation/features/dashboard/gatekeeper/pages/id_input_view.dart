@@ -3,9 +3,11 @@
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chips_choice/chips_choice.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,12 +20,15 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/entity/purpose_mapper.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toggle_switch/toggle_switch.dart';
 
 import '../../../visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 
@@ -222,108 +227,280 @@ class _IdInputViewState extends State<IdInputView> {
             return Form(
               key: mobileControllerFormKey,
               child: MyScrollView(
-                pageTitle: 'Enter Mobile Number',
-                // key: ValueKey('MyScrollView'),
-
+                pageTitle: _currentIndex == 0
+                    ? 'Enter Mobile Number'
+                    : 'Enter Passcode',
                 pageBody: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CustomForm.textField(
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Mobile number is required';
-                        } else if (value.length != 10) {
-                          return 'Please enter a 10-digit number';
-                        } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                          return 'No spaces or special characters allowed';
-                        }
-                        return null;
-                      },
-                      titleColor: Theme.of(context).colorScheme.onBackground,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      "Visitor Mobile Number",
-                      hintText: '0123456789',
-                      prefixIcon: CountryCodePicker(
-                        initialSelection: 'IN',
-                        favorite: ['IN'],
-                        showFlagMain: true,
-                        showFlagDialog: true,
-                        boxDecoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.background,
-                        ),
-                        barrierColor: Theme.of(context)
-                            .colorScheme
-                            .background
-                            .withOpacity(0.5),
-                        closeIcon: Icon(
-                          Icons.close,
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                        searchDecoration: InputDecoration(
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Theme.of(context).colorScheme.onBackground,
-                          ),
-                          hintText: 'Search',
-                          hintStyle: TextStyle(
-                            color: Theme.of(context).colorScheme.onBackground,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(
-                              style: BorderStyle.solid,
-                              color: Theme.of(context).colorScheme.onBackground,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(
-                              style: BorderStyle.solid,
-                              color: Theme.of(context).colorScheme.onBackground,
-                            ),
-                          ),
-                        ),
-                        textStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onBackground,
-                          fontSize: 18,
-                        ),
-                        dialogTextStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onBackground,
-                        ),
-                        onChanged: (CountryCode countryCode) {
-                          setState(() {
-                            selectedCountryCode = countryCode.code!;
-                          });
-                        },
-                      ),
-                      textController: mobileController,
-                      keyboardType: TextInputType.number,
-                      length: 10,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        // Allow only digits
+                    ToggleSwitch(
+                      totalSwitches: 2,
+                      labels: _labels,
+                      minWidth: 100.0,
+                      cornerRadius: 20.0,
+                      activeBgColors: [
+                        [Colors.black], // Active background for first option
+                        [Colors.black], // Active background for second option
                       ],
-                      onChanged: (value) {
-                        if (value.length == 10) {
-                          gateDashboardBloc.add(
-                            GDOnMobileNumberEnteredEvent(mobileController.text),
-                          );
+                      activeFgColor: Colors.white,
+                      // White text when active
+                      inactiveBgColor: Colors.white,
+                      // White background when inactive
+                      inactiveFgColor: Colors.black,
+                      // Black text when inactive
+                      borderWidth: 2,
+                      borderColor: [Colors.black],
+                      // Always black border
+                      fontSize: 16.0,
+                      // Ensures uniform text size
+                      animate: true,
+                      // Adds a smooth transition
+                      curve: Curves.easeInOut,
+                      // Smooth transition effect
+                      onToggle: (index) {
+                        if (index != null) {
+                          setState(() {
+                            _currentIndex = index;
+                          });
                         }
                       },
-                    )
+                    ),
+                    SizedBox(height: 20),
+                    _currentIndex == 0
+                        ? CustomForm.textField(
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Mobile number is required';
+                              } else if (value.length != 10) {
+                                return 'Please enter a 10-digit number';
+                              } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                                return 'No spaces or special characters allowed';
+                              }
+                              return null;
+                            },
+                            titleColor:
+                                Theme.of(context).colorScheme.onBackground,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
+                            "Visitor Mobile Number",
+                            hintText: '0123456789',
+                            prefixIcon: CountryCodePicker(
+                              initialSelection: 'IN',
+                              favorite: ['IN'],
+                              showFlagMain: true,
+                              showFlagDialog: true,
+                              boxDecoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.background,
+                              ),
+                              barrierColor: Theme.of(context)
+                                  .colorScheme
+                                  .background
+                                  .withOpacity(0.5),
+                              closeIcon: Icon(
+                                Icons.close,
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                              ),
+                              searchDecoration: InputDecoration(
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
+                                ),
+                                hintText: 'Search',
+                                hintStyle: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: BorderSide(
+                                    style: BorderStyle.solid,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: BorderSide(
+                                    style: BorderStyle.solid,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground,
+                                  ),
+                                ),
+                              ),
+                              textStyle: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                                fontSize: 18,
+                              ),
+                              dialogTextStyle: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                              ),
+                              onChanged: (CountryCode countryCode) {
+                                setState(() {
+                                  selectedCountryCode = countryCode.code!;
+                                });
+                              },
+                            ),
+                            textController: mobileController,
+                            keyboardType: TextInputType.number,
+                            length: 10,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) {
+                              if (value.length == 10) {
+                                gateDashboardBloc.add(
+                                  GDOnMobileNumberEnteredEvent(
+                                      mobileController.text),
+                                );
+                              }
+                            },
+                          )
+                        : Column(
+                            children: [
+                              Form(
+                                key: passcodeControllerFormKey,
+                                child: CustomForm.textField(
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Passcode is required';
+                                    } else if (value.length != 6) {
+                                      return 'Please enter a 6-digit passcode';
+                                    }
+                                    return null;
+                                  },
+                                  titleColor: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
+                                  hintColor:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  "Visitor Passcode",
+                                  hintText: '123456',
+                                  textController: passcodeController,
+                                  textCapitalization:
+                                      TextCapitalization.characters,
+                                  length: 6,
+                                  keyboardType: TextInputType.number,
+                                  prefixIcon: Padding(
+                                    padding:
+                                        EdgeInsets.only(left: 10, right: 20),
+                                    child: CircleAvatar(
+                                      backgroundColor: Color(0xffFFEBE6),
+                                      child: Text(
+                                        selectedPassAlpha ?? 'A',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  suffixIcon: IconButton(
+                                    onPressed: () {
+                                      if (passcodeControllerFormKey
+                                          .currentState!
+                                          .validate()) {
+                                        // Show modal bottom sheet or handle passcode submission
+                                      }
+                                    },
+                                    icon: Icon(
+                                      Symbols.done_rounded,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onBackground,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              ChipsChoice<String>.single(
+                                padding: EdgeInsets.symmetric(horizontal: 20),
+                                spacing: 20,
+                                choiceStyle: C2ChipStyle.outlined(
+                                  borderWidth: 1,
+                                  color: Colors.grey,
+                                  selectedStyle: C2ChipStyle.outlined(
+                                    overlayColor: Color(0x90C08261),
+                                    color: Color(0xff0c08261),
+                                  ),
+                                ),
+                                choiceCheckmark: true,
+                                value: selectedPassAlpha,
+                                scrollPhysics: BouncingScrollPhysics(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedPassAlpha = value;
+                                  });
+                                },
+                                choiceItems: C2Choice.listFrom<String, String>(
+                                  source: listPassAlpha,
+                                  value: (i, v) => v,
+                                  label: (i, v) => v,
+                                ),
+                              ),
+                            ],
+                          ),
                   ],
                 ),
                 floatingActionButton: CustomLargeBtn(
                   text: 'Next',
                   onPressed: () async {
                     _focusNode.unfocus();
-                    // var passcode = passcodeController.text;
-                    //
-                    // await remoteDataSource.passcodeVerify(passcode, context);
 
-                    if (mobileControllerFormKey.currentState?.validate() ??
-                        false) {
-                      gateDashboardBloc.add(InputPutViewNextClickedEvent());
+                    if (_currentIndex == 0) {
+                      // Mobile number validation & processing
+                      if (mobileControllerFormKey.currentState?.validate() ??
+                          false) {
+                        gateDashboardBloc.add(InputPutViewNextClickedEvent());
+                      }
+                    } else {
+                      // Passcode verification process
+                      if (passcodeControllerFormKey.currentState?.validate() ??
+                          false) {
+                        startLoading(); // Show loading indicator
+
+                        try {
+                          final prefs = await SharedPreferences.getInstance();
+                          final companyId = prefs.getString('company_id');
+
+                          final result = await remoteDataSource.verifyPasscode(
+                            companyId: companyId ?? "",
+                            passcode: passcodeController.text,
+                          );
+
+                          stopLoading(); // Hide loading indicator
+
+                          if (result['success'] == true) {
+                            myFluttertoast(
+                              msg: "Passcode verified successfully!",
+                              backgroundColor: Colors.green,
+                            );
+
+                            // Navigate to visitor details if verification is successful
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => GateDashboardView()),
+                            );
+                          } else {
+                            myFluttertoast(
+                              msg: "Invalid passcode. Try again.",
+                              backgroundColor: Colors.red,
+                            );
+                          }
+                        } catch (e) {
+                          stopLoading();
+                          myFluttertoast(
+                            msg: "Error verifying passcode: $e",
+                            backgroundColor: Colors.red,
+                          );
+                        }
+                      }
                     }
                   },
                 ),

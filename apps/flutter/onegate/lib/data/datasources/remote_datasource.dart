@@ -340,14 +340,23 @@ class RemoteDataSource {
         if (responseData['success'] == true && responseData['data'] != null) {
           final visitorLogResult = VisitorLog.fromJson(responseData['data']);
           log("Success - $visitorLogResult");
+
           final prefs = await SharedPreferences.getInstance();
+          prefs.setString(
+            "visitor_log",
+            response.data["data"]["visitor_log_id"].toString(),
+          );
 
-          prefs.setString("visitor_log",
-              response.data["data"]["visitor_log_id"].toString());
+          // Save member_approval status
+          final bool memberApproval = responseData['data']['member_settings']
+                  ['member_approval'] ??
+              false;
+          await GateStorage().saveMemberApproval(memberApproval);
 
+          log("member_approval saved: $memberApproval");
           return visitorLogResult;
         } else {
-          print("API Response Error: ${responseData['message']}");
+          log("API Response Error: ${responseData['message']}");
         }
       }
     } on DioError catch (e) {
@@ -483,11 +492,13 @@ class RemoteDataSource {
     final List<BuildingAssignment>? buildingAssignments =
         (item['unit_details'] as List<dynamic>?)?.map((unit) {
       return BuildingAssignment(
-        id: null, // Assuming id is not provided in the unit details
+        id: null,
+        // Assuming id is not provided in the unit details
         visitor_id: item['visitor_id'] as int?,
         visitor_log_id: item['visitor_log_id'] as int?,
         company_id: item['company_id'] as int? ?? 0,
-        building_id: 0, // Default value as building_id is not provided
+        building_id: 0,
+        // Default value as building_id is not provided
         unit_id: [unit['building_unit'] as String? ?? ''],
       );
     }).toList();
@@ -525,7 +536,8 @@ class RemoteDataSource {
       visitor_check_out: checkOutTime,
       visitor_card_number: item['visitor_card_number'] as String?,
       visitor_coming_from: item['visitor_coming_from'] as String?,
-      visitor_card_id: null, // Assuming null as visitor card id is not provided
+      visitor_card_id: null,
+      // Assuming null as visitor card id is not provided
       company_id: item['company_id'] as int? ?? 0,
       is_checked_out: item['is_checked_out'] as bool? ?? false,
       purpose_sub_category_name: item['purpose_sub_category_name'] as String?,
@@ -549,6 +561,68 @@ class RemoteDataSource {
     } catch (e) {
       log('Error parsing date: $dateStr, error: $e');
       return null; // Return null if parsing fails
+    }
+  }
+
+  /// Verify Guest Passcode
+  /// Verify Guest Passcode
+  Future<Map<String, dynamic>> verifyPasscode({
+    required String companyId,
+    required String passcode,
+  }) async {
+    try {
+      final String url = ApiUrls.verifyGuestPasscode;
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? 'Default Gate';
+      final resolvedCompanyId = await gateStorage.getSocietyId();
+
+      final Map<String, dynamic> requestData = {
+        "company_id": "412",
+        "in_gate": selectedGateName,
+        "passcode": passcode,
+      };
+
+      log("🔍 Sending request to verify passcode: $requestData");
+
+      final response = await Dio().post(
+        url,
+        data: requestData,
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": "insomnia/10.3.0",
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ Passcode verified successfully: ${response.data}");
+        return response.data;
+      } else {
+        // log("❌ Failed to verify passcode. Status Code: ${response.statusCode}, Response: ${response.data}");
+        Fluttertoast.showToast(
+          msg: "Not a valid passcode!",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        throw Exception('Failed to verify passcode');
+      }
+    } catch (e, stackTrace) {
+      log("❌ Error verifying passcode: $e");
+      log("StackTrace: $stackTrace");
+
+      Fluttertoast.showToast(
+        msg: "Not a valid passcode!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+
+      throw Exception('Failed to verify passcode');
     }
   }
 

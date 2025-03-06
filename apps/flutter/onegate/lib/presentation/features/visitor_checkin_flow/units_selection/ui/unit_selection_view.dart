@@ -1191,6 +1191,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         _isCheckedIn = true;
       }
 
+      final bool? memberApproval = await GateStorage().getMemberApproval();
+
+      if (memberApproval == true) {
+        _showErrorSnackbar("Member approval has turned off the toggle.");
+        log("❌ Member approval disabled, skipping FCM notification.");
+        return; // Exit early if member approval is off
+      }
+
       final userId = selectedUserIds.first;
       final selectedMobileNumbers = await _getSelectedMobileNumbers();
       final requestData =
@@ -1209,7 +1217,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
-      log("requestData$requestData");
+      log("requestData: $requestData");
+
       // Listen for WebSocket response
       socketService.socket!.on("fcmResponse", (responseData) async {
         log("📩 WebSocket Response Received: $responseData");
@@ -1227,27 +1236,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     } catch (e) {
       log("❌ Error in _handleSingleMemberFlow: $e");
       _showErrorSnackbar("Error sending FCM notification.");
-    }
-  }
-
-  Future<void> _handleMultiMemberFlow(VisitorLog visitorLogData) async {
-    try {
-      if (!_isCheckedIn) {
-        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-        _isCheckedIn = true;
-      }
-
-      await Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (context) => RequestPermissionPage2(
-                  visitor: widget.visitor,
-                  visitorLog: visitorLogData,
-                )),
-      );
-    } catch (e) {
-      log("❌ Error in _handleMultiMemberFlow: $e");
-      _showErrorSnackbar("Error processing multi-member check-in.");
     }
   }
 
@@ -1283,6 +1271,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _handleMultiMemberFlow(VisitorLog visitorLogData) async {
+    try {
+      if (!_isCheckedIn) {
+        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+        _isCheckedIn = true;
+      }
+
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+                  visitor: widget.visitor,
+                  visitorLog: visitorLogData,
+                )),
+      );
+    } catch (e) {
+      log("❌ Error in _handleMultiMemberFlow: $e");
+      _showErrorSnackbar("Error processing multi-member check-in.");
     }
   }
 
