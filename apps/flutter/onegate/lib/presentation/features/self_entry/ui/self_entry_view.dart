@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -70,7 +72,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
   @override
   void initState() {
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     super.initState();
   }
 
@@ -225,6 +227,133 @@ class _SelfEntryViewState extends State<SelfEntryView>
     }
   }
 
+  List<PurposeCategory1> globalSelectedPurposes = [];
+  int? selectedImageIndex;
+
+  void selectImage(int index) {
+    setState(() {
+      selectedImageIndex = index;
+    });
+  }
+
+  Future<void> loadPurposes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPurposes = prefs.getString('selected_purposes');
+      if (savedPurposes != null) {
+        final decoded = jsonDecode(savedPurposes) as List;
+        globalSelectedPurposes =
+            decoded.map((e) => PurposeCategory1.fromJson(e)).toList();
+      }
+      log(globalSelectedPurposes.first.categoryName);
+    } catch (e) {
+      debugPrint("Failed to load purposes: $e");
+    }
+  }
+
+  Widget _buildPurposeGrid(StateSetter setState, BuildContext context,
+      {String? category}) {
+    final filteredPurposes = category == null
+        ? globalSelectedPurposes
+        : globalSelectedPurposes
+            .where((purpose) => purpose.categoryName == category)
+            .toList();
+
+    return GridView.builder(
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 3,
+        crossAxisSpacing: 3,
+      ),
+      itemCount: filteredPurposes.length,
+      itemBuilder: (context, index) {
+        final purpose = filteredPurposes[index];
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              selectedImageIndex = index; // Update selection
+            });
+          },
+          child: Stack(
+            children: [
+              Container(
+                height: 250,
+                width: 200,
+                margin: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: selectedImageIndex == index
+                      ? const Color(0x10C08261)
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: selectedImageIndex == index
+                        ? const Color(0xffC08261)
+                        : Colors.grey,
+                    width: selectedImageIndex == index ? 2 : 1,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 7),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: CachedNetworkImage(
+                          maxHeightDiskCache: 90,
+                          maxWidthDiskCache: 90,
+                          height: 60,
+                          width: 60,
+                          fit: BoxFit.cover,
+                          imageUrl: purpose.image ?? "",
+                          placeholder: (context, url) =>
+                              const CircularProgressIndicator(),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.error,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          purpose.categoryName,
+                          style: TextStyle(
+                            color: selectedImageIndex == index
+                                ? const Color(0xffC08261)
+                                : Theme.of(context).colorScheme.onSurface,
+                            fontWeight: selectedImageIndex == index
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selectedImageIndex == index)
+                const Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Icon(
+                    size: 20,
+                    Icons.check_circle_outline,
+                    color: Color(0xffC08261),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _regImage(String name, File? image) async {
     if (image == null) return;
 
@@ -260,6 +389,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
   /// After capturing the image, it immediately navigates to the UnitSelectionView,
   /// passing along the visitor id (if available) in the Visitor object.
   Future<void> _captureImageFromCamera() async {
+    loadPurposes();
     final picker = ImagePicker();
     try {
       final image = await picker.pickImage(
@@ -281,25 +411,105 @@ class _SelfEntryViewState extends State<SelfEntryView>
       final prefs = await SharedPreferences.getInstance();
 
       final visitorId = prefs.getString('visitorId');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => UnitSelectionView(
-            null,
-            visitor: Visitor(
-              id: int.parse(visitorId ?? ""),
-              name: _nameController.text,
-              mobile: _mobileController.text,
-            ),
-            guestname: _nameController.text,
-            mobileNumber: _mobileController.text,
-            purposeCategory: getPurposeCategory1(null),
-            comingFrom: _locationController.text,
-            carNumber: null,
-            guestCount: 1,
-          ),
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true, // Allows for height adjustment
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
+        builder: (BuildContext context) {
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return SizedBox(
+                height: MediaQuery.of(context).size.height *
+                    0.6, // 60% of screen height
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        title: Text(
+                          'Select Purpose of visit',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                        trailing: const Icon(
+                          Icons.close,
+                          color: Colors.red,
+                          size: 28,
+                        ),
+                        onTap: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(height: 10),
+
+                      Expanded(
+                        child: globalSelectedPurposes.isEmpty
+                            ? _buildPurposeGrid(setState, context,
+                                category: "GUEST")
+                            : _buildPurposeGrid(setState, context),
+                      ),
+                      // Next Button
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        child: CustomLargeBtn(
+                          text: 'Next',
+                          onPressed: () {
+                            Visitor visitor = Visitor();
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => VisitorsInEntry(
+                                  searchedVisitor: visitor,
+                                  selectedValue: globalSelectedPurposes[
+                                      selectedImageIndex ?? 0],
+                                  mobile: _mobileController.text,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
       );
+
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => UnitSelectionView(
+      //       null,
+      //       visitor: Visitor(
+      //         id: int.parse(visitorId ?? ""),
+      //         name: _nameController.text,
+      //         mobile: _mobileController.text,
+      //       ),
+      //       guestname: _nameController.text,
+      //       mobileNumber: _mobileController.text,
+      //       purposeCategory: getPurposeCategory1(null),
+      //       comingFrom: _locationController.text,
+      //       carNumber: null,
+      //       guestCount: 1,
+      //     ),
+      //   ),
+      // );
     } catch (e) {
       log('Error capturing image from camera: $e');
     }
@@ -409,8 +619,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                     tabs: [
                       Tab(text: '', height: 0),
                       Tab(text: '', height: 0),
-                      Tab(text: '', height: 0),
-                      Tab(text: '', height: 0),
+                      // Tab(text: '', height: 0),
+                      // Tab(text: '', height: 0),
                     ],
                   ),
                 ),
@@ -657,6 +867,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
                             onPressed: () async {
                               await verifySelfCheckin(
                                   _mobileController.text, _otpController.text);
+                              // if (_locationController.text.isNotEmpty) {
+                              _captureImageFromCamera();
+                              // }
                             },
                           ),
                         )
@@ -664,77 +877,77 @@ class _SelfEntryViewState extends State<SelfEntryView>
                     ),
 
                     // Tab 3: Personal Details Entry
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          CustomForm.textField(
-                            "Your Name",
-                            titleColor: Theme.of(context).colorScheme.onSurface,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            textController: _nameController,
-                            hintText: 'Name Surname',
-                            keyboardType: TextInputType.visiblePassword,
-                            validator: (value) {
-                              return 'Please enter your name';
-                            },
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                if (_nameController.text.isNotEmpty) {
-                                  FocusScope.of(context)
-                                      .requestFocus(_locationFocusNode);
-                                }
-                              },
-                              icon: CircleAvatar(
-                                backgroundColor: Color(0xffFFEBE6),
-                                radius: 20,
-                                child: Icon(
-                                  size: 22,
-                                  Symbols.done,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                          CustomForm.textField(
-                            "Coming From",
-                            titleColor: Theme.of(context).colorScheme.onSurface,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            textController: _locationController,
-                            hintText: 'Mumbai',
-                            keyboardType: TextInputType.name,
-                            validator: (value) {
-                              return 'Location is required';
-                            },
-                            suffixIcon: IconButton(
-                              onPressed: () {},
-                              icon: CircleAvatar(
-                                backgroundColor: Color(0xffFFEBE6),
-                                radius: 20,
-                                child: Icon(
-                                  size: 22,
-                                  Symbols.done,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 32),
-                          CustomLargeBtn(
-                            onPressed: () {
-                              if (_locationController.text.isNotEmpty) {
-                                _captureImageFromCamera();
-                              }
-                            },
-                            text: "Next",
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Tab 4: Visit Details & Unit Selection (Not displayed; photo capture navigates immediately)
-                    Center(
-                      child: Text("Processing..."),
-                    ),
+                    // Padding(
+                    //   padding: const EdgeInsets.all(16.0),
+                    //   child: Column(
+                    //     children: [
+                    //       CustomForm.textField(
+                    //         "Your Name",
+                    //         titleColor: Theme.of(context).colorScheme.onSurface,
+                    //         hintColor: Theme.of(context).colorScheme.onPrimary,
+                    //         textController: _nameController,
+                    //         hintText: 'Name Surname',
+                    //         keyboardType: TextInputType.visiblePassword,
+                    //         validator: (value) {
+                    //           return 'Please enter your name';
+                    //         },
+                    //         suffixIcon: IconButton(
+                    //           onPressed: () {
+                    //             if (_nameController.text.isNotEmpty) {
+                    //               FocusScope.of(context)
+                    //                   .requestFocus(_locationFocusNode);
+                    //             }
+                    //           },
+                    //           icon: CircleAvatar(
+                    //             backgroundColor: Color(0xffFFEBE6),
+                    //             radius: 20,
+                    //             child: Icon(
+                    //               size: 22,
+                    //               Symbols.done,
+                    //               color: Colors.black,
+                    //             ),
+                    //           ),
+                    //         ),
+                    //       ),
+                    //       CustomForm.textField(
+                    //         "Coming From",
+                    //         titleColor: Theme.of(context).colorScheme.onSurface,
+                    //         hintColor: Theme.of(context).colorScheme.onPrimary,
+                    //         textController: _locationController,
+                    //         hintText: 'Mumbai',
+                    //         keyboardType: TextInputType.name,
+                    //         validator: (value) {
+                    //           return 'Location is required';
+                    //         },
+                    //         suffixIcon: IconButton(
+                    //           onPressed: () {},
+                    //           icon: CircleAvatar(
+                    //             backgroundColor: Color(0xffFFEBE6),
+                    //             radius: 20,
+                    //             child: Icon(
+                    //               size: 22,
+                    //               Symbols.done,
+                    //               color: Colors.black,
+                    //             ),
+                    //           ),
+                    //         ),
+                    //       ),
+                    //       SizedBox(height: 32),
+                    //       CustomLargeBtn(
+                    //         onPressed: () {
+                    //           if (_locationController.text.isNotEmpty) {
+                    //             _captureImageFromCamera();
+                    //           }
+                    //         },
+                    //         text: "Next",
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    // // Tab 4: Visit Details & Unit Selection (Not displayed; photo capture navigates immediately)
+                    // Center(
+                    //   child: Text("Processing..."),
+                    // ),
                   ],
                 ),
               ),

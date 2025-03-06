@@ -278,7 +278,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       // Clear the stored coming from value after submission
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('visitor_coming_from');
-
+      log(widget.mobile);
+      log("widget.searchedVisitor: ${widget.searchedVisitor?.id}");
       _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
         searchedVisitor: widget.searchedVisitor,
         guestName: _guestNameController?.text,
@@ -363,7 +364,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   void _showErrorSnackBar(String message) {
-    myFluttertoast(msg: message,backgroundColor: Colors.red);
+    myFluttertoast(msg: message, backgroundColor: Colors.red);
   }
 
   @override
@@ -388,12 +389,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         } else if (state is VIENavigateToUnitSelectionState) {
           final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-          final searched_id = await prefs.getString('search_visitor_id');
-          print(" searchid $searched_id");
+          final searchedId = prefs.getString('search_visitor_id');
+          print(" searchid $searchedId");
 
           if (widget.searchedVisitor != null) {
             final Visitor updatedVisitor = Visitor(
-                id: int.parse(searched_id.toString()),
+                id: int.parse(searchedId.toString()),
                 name: _guestNameController?.text,
                 mobile: widget.mobile,
                 visitor_image: "");
@@ -474,7 +475,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         return _buildDeliveryForm(purpose);
       case 'GUEST':
         return _buildGuestForm();
-
       case 'VENDOR':
         return _buildVendorForm(purpose);
       default:
@@ -617,7 +617,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                                     height: 60,
                                     width: 60,
                                     fit: BoxFit.contain,
-                                    imageUrl: subCategory?.image ?? '',
+                                    imageUrl: subCategory.image ?? '',
                                     placeholder: (context, url) => const Center(
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
@@ -638,7 +638,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 4),
                                 child: Text(
-                                  subCategory?.subCategoryName ?? '',
+                                  subCategory.subCategoryName ?? '',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     // fontSize: 12,
@@ -900,8 +900,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   Widget _buildMicButton(Future<void> Function() onPressed) {
     return IconButton(
       onPressed: onPressed,
-      icon: CircleAvatar(
-        backgroundColor: const Color(0xffFFEBE6),
+      icon: const CircleAvatar(
+        backgroundColor: Color(0xffFFEBE6),
         radius: 20,
         child: Icon(
           Ionicons.mic_outline,
@@ -971,6 +971,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     return null;
   }
 
+  @override
   void dispose() {
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove('visitor_coming_from');
@@ -1022,7 +1023,7 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         mainAxisSpacing: 16,
         crossAxisSpacing: 3,
@@ -1032,10 +1033,10 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
         return GestureDetector(
           onTap: () => selectImage(index),
           child: Container(
-            padding: EdgeInsets.all(5),
+            padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
               color: selectedUserInput == index
-                  ? Color(0xffFFEBE6)
+                  ? const Color(0xffFFEBE6)
                   : Colors.transparent,
               border: Border.all(
                 color: selectedUserInput == index
@@ -1052,7 +1053,7 @@ class _SelectTypeWidgetState extends State<SelectTypeWidget> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     imageValues[index],
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1090,7 +1091,7 @@ class ListeningDialogState extends State<ListeningDialog>
 
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
     _animation = Tween<double>(begin: 1.0, end: 1.2).animate(
@@ -1173,10 +1174,10 @@ class ListeningDialogState extends State<ListeningDialog>
           children: [
             Text(
               recognizedText,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             AnimatedBuilder(
               animation: _animation,
               builder: (context, child) => Transform.scale(
@@ -1191,15 +1192,15 @@ class ListeningDialogState extends State<ListeningDialog>
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 if (_hasRecognizedText) // Only show retry when we have recognized text
                   ElevatedButton.icon(
                     onPressed: _retryListening,
-                    icon: Icon(Icons.refresh),
-                    label: Text('Retry'),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
@@ -1233,7 +1234,7 @@ class ListeningDialogState extends State<ListeningDialog>
 class CameraPreviewScreen extends StatefulWidget {
   final CameraController cameraController;
 
-  CameraPreviewScreen({
+  const CameraPreviewScreen({
     Key? key,
     required this.cameraController,
   }) : super(key: key);
@@ -1263,12 +1264,6 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
     WidgetsBinding.instance.removeObserver(this); // Remove observer
     _cameraController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeMetrics() {
-    super.didChangeMetrics();
-    // Prevent updating the camera orientation dynamically
   }
 
   Future<void> _lockCameraToPortrait() async {

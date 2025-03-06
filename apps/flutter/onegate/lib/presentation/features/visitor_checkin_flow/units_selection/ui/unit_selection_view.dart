@@ -519,20 +519,30 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                                     .white),
                                                             const SizedBox(
                                                                 width: 8),
-                                                            Text(
-                                                              selectedMember
-                                                                          .length >
-                                                                      1
-                                                                  ? '${selectedMember.length} Selected'
-                                                                  : selectedMember
-                                                                      .first,
-                                                              style: Theme.of(
-                                                                      context)
-                                                                  .textTheme
-                                                                  .titleLarge
-                                                                  ?.copyWith(
-                                                                      color: Colors
-                                                                          .white),
+                                                            SizedBox(
+                                                              width: MediaQuery.of(
+                                                                          context)
+                                                                      .size
+                                                                      .width *
+                                                                  0.48,
+                                                              child: Text(
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                                selectedMember
+                                                                            .length >
+                                                                        1
+                                                                    ? '${selectedMember.length} Selected'
+                                                                    : selectedMember
+                                                                        .first,
+                                                                style: Theme.of(
+                                                                        context)
+                                                                    .textTheme
+                                                                    .titleLarge
+                                                                    ?.copyWith(
+                                                                        color: Colors
+                                                                            .white),
+                                                              ),
                                                             ),
                                                           ],
                                                         ),
@@ -841,7 +851,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         if (widget.isVerified == true) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => SelfHomeView()),
+            MaterialPageRoute(builder: (context) => const SelfHomeView()),
           );
         } else {
           Navigator.pushReplacement(
@@ -883,7 +893,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       }
     } catch (e) {
       log("❌ Error in _allowByGatekeeper: $e");
-      void _showErrorSnackBar(String message) {
+      void showErrorSnackBar(String message) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -893,7 +903,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         );
       }
 
-      _showErrorSnackBar("Failed to allow visitor.");
+      showErrorSnackBar("Failed to allow visitor.");
     }
   }
 
