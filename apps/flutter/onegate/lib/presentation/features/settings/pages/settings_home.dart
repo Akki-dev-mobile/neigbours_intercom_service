@@ -4,13 +4,13 @@ import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
-import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
@@ -43,6 +43,7 @@ class _SettingsHomeState extends State<SettingsHome> {
   Gate? selectedGateObj;
   String? selectedGateName;
   String? cameraValue;
+  final _flutterKioskMode = FlutterKioskMode.instance();
 
   List<String> options = [
     'Gate 1',
@@ -60,6 +61,14 @@ class _SettingsHomeState extends State<SettingsHome> {
     getSelectedGate();
     getCameraValue();
     _initializeRole();
+  }
+
+  void _enableKioskMode() async {
+    try {
+      await _flutterKioskMode.start();
+    } catch (e) {
+      print("Error starting kiosk mode: $e");
+    }
   }
 
   void _showCameraSettings(BuildContext context) {
@@ -542,6 +551,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               subtitle: 'Enable/Disable Self Entry',
               onTap: () {
                 _preferenceUtils.setIsSelfTapIn(true);
+                _enableKioskMode();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
