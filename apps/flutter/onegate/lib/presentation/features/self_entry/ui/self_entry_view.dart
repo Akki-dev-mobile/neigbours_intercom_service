@@ -155,7 +155,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
         );
         return;
       }
-      comingfrom = result['data']['coming_from'];
+      // comingfrom = result['data']['coming_from'];
       _tabController.animateTo(1);
       _start = 10; // Default timer value
       startTimer();
@@ -414,13 +414,13 @@ class _SelfEntryViewState extends State<SelfEntryView>
     XFile? image;
     try {
       if (fileimage == null) {
-        final image = await picker.pickImage(
+        image = await picker.pickImage(
           source: ImageSource.camera,
           preferredCameraDevice: CameraDevice.front,
         );
         if (image == null) return;
         setState(() {
-          _imageFile = PickedFile(image.path);
+          _imageFile = PickedFile(image!.path);
         });
       }
       print(_mobileController.text);
@@ -495,7 +495,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               mobile: _mobileController.text,
                               visitor_image: _imageFile?.path,
                             );
-                            log(comingfrom);
+                            // log(comingfrom);
                             Navigator.push(
                               context,
                               MaterialPageRoute(

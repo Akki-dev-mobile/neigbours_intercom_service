@@ -1171,7 +1171,7 @@ class RemoteDataSource {
 
       var dio = Dio();
       var response = await dio.post(
-        'http://35.154.173.226:8005/api/visitor/uploadFile',
+        '${ApiUrls.gateBaseUrl}/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',

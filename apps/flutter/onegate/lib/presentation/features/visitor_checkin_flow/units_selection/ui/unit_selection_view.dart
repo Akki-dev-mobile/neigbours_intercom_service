@@ -154,6 +154,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _filteredMembersNotifier.value = members;
   }
 
+  Future<void> deleteImage() async {
+    GateStorage storage = GateStorage();
+    await storage.init();
+    await storage.removeVisitorImage();
+    print("Image successfully removed.");
+  }
+
   // Search and Filter Methods
   void _filterMembers() {
     final query = _searchController.text.trim().toLowerCase();
@@ -325,8 +332,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
                           // // Add your confirm logic here
+                          await deleteImage();
                           Navigator.pop(context);
                           _handleSelectionSubmit(selectedMembers);
                         },

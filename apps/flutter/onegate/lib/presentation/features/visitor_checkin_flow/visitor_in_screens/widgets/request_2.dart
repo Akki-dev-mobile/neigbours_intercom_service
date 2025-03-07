@@ -53,12 +53,6 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   static const Map<RequestType, Color> _requestMessagesColor = {
     RequestType.allowByGatekeeper: Colors.green,
   };
-  Future<void> deleteImage() async {
-    GateStorage storage = GateStorage();
-    await storage.init();
-    await storage.removeVisitorImage();
-    print("Image successfully removed.");
-  }
 
   @override
   Widget build(BuildContext context) {
