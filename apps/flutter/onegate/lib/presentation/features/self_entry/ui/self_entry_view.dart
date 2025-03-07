@@ -134,6 +134,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
           context,
           MaterialPageRoute(
             builder: (context) => UnitSelectionView(
+              from: 0,
               null,
               visitor: visitor,
               guestname: visitor.name ?? '',

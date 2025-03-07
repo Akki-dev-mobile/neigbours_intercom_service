@@ -29,6 +29,7 @@ import '../../../self_entry/ui/self_profile_view.dart';
 import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
+  final int? from;
   Visitor? searchedVisitor;
   final Visitor visitor;
   final PurposeCategory1 purposeCategory;
@@ -60,7 +61,8 @@ class UnitSelectionView extends StatefulWidget {
       this.purposeCategoryId,
       this.selectedSubCategoryId,
       this.isVerified,
-      this.isKioskModeEnabled = true})
+      this.isKioskModeEnabled = true,
+      this.from})
       : super(key: key);
 
   @override
@@ -1269,18 +1271,30 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RequestPermissionPage(
-            visitor: widget.visitor,
-            unitList: selectedBuildingUnits,
-            visitorLog: visitorLogData,
-            logID: logID,
-          ),
-        ),
-      );
+      widget.from == 0
+          ? Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RequestPermissionPage2(
+                  status: 0,
+                  visitor: widget.visitor,
+                  unitList: selectedBuildingUnits,
+                  visitorLog: visitorLogData,
+                  logID: logID,
+                ),
+              ),
+            )
+          : Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RequestPermissionPage(
+                  visitor: widget.visitor,
+                  unitList: selectedBuildingUnits,
+                  visitorLog: visitorLogData,
+                  logID: logID,
+                ),
+              ),
+            );
     }
   }
 

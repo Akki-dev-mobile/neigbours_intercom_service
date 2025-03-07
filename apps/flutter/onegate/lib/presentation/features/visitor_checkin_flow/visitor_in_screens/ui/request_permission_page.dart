@@ -56,8 +56,6 @@ class RequestPermissionPage extends StatefulWidget {
 }
 
 class _RequestPermissionPageState extends State<RequestPermissionPage> {
-  static const double _lottieAnimationSize = 250;
-  static const Duration _pollingInterval = Duration(seconds: 5);
   String trybuttontext = "Try Again";
   final RemoteDataSource _remoteDataSource = RemoteDataSource();
   late SocketService _socketService;
