@@ -90,6 +90,8 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     }
   }
 
+  var comingfrom;
+
   Future<void> selfCheckInOtp(String mobileNumber) async {
     log(mobileNumber);
     try {
@@ -98,6 +100,9 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
           await _remoteDataSource.sendOtpForSelfCheckIn(mobileNumber);
       print(result.length);
       if (result['message'] == 'Visitor is already verified') {
+        log(result['data'].toString());
+        comingfrom = result['data']['coming_from'];
+
         final visitorData = result['data'];
 
         final visitor = Visitor(
@@ -163,10 +168,12 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                           child: CustomLargeBtn(
                             text: 'Next',
                             onPressed: () {
+                              log(comingfrom.toString());
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => VisitorsInEntry(
+                                    comingfrom: comingfrom,
                                     searchedVisitor: visitor,
                                     selectedValue: globalSelectedPurposes[
                                         selectedImageIndex ?? 0],

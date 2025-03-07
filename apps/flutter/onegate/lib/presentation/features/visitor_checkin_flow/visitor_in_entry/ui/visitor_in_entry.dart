@@ -29,14 +29,16 @@ import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
 
 class VisitorsInEntry extends StatefulWidget {
+  var comingfrom;
   final PurposeCategory1? selectedValue;
   final Visitor? searchedVisitor;
   final String mobile;
 
-  const VisitorsInEntry({
+  VisitorsInEntry({
     Key? key,
     this.selectedValue,
     this.searchedVisitor,
+    this.comingfrom,
     required this.mobile,
   }) : super(key: key);
 
@@ -92,7 +94,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     final prefs = await SharedPreferences.getInstance();
 
     // Fetch the stored "coming from" value
-    final comingFrom = prefs.getString('visitor_coming_from') ?? "";
+    final comingFrom = prefs.getString('visitor_coming_from');
 
     log("Fetched Coming From: $comingFrom"); // Log fetched value
 
@@ -106,7 +108,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       text: widget.searchedVisitor?.name ?? "",
     );
     _guestComingFromController = TextEditingController(
-      text: comingFrom,
+      text: comingFrom ?? widget.comingfrom,
     );
     _guestCountController = TextEditingController(
       text: '1',
