@@ -138,7 +138,7 @@ class RemoteDataSource {
   Future<void> sendFcmNotification(Map<String, dynamic> requestData) async {
     try {
       final response = await Dio().post(
-        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
+        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
@@ -557,7 +557,6 @@ class RemoteDataSource {
     }
   }
 
-  /// Verify Guest Passcode
   /// Verify Guest Passcode
   Future<Map<String, dynamic>> verifyPasscode({
     required String companyId,

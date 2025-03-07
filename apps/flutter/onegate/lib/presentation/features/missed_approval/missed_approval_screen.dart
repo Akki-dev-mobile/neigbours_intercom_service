@@ -752,42 +752,53 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
   Future<void> _sendFcmNotification() async {
     final RemoteDataSource remoteDataSource = RemoteDataSource();
-    String formattedInTime =
+    final formattedInTime =
         DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String? userId = prefs.getString('visitorId');
-      final String? visitorLogId = prefs.getString("visitor_log");
+      final userId = prefs.getString('visitorId') ?? "0";
+      final visitorLogId = prefs.getString("visitor_log") ?? "";
 
       final requestData = {
         'company_id': widget.visitorInfo.companyId.toString(),
         'name': widget.visitorInfo.visitorName,
         'mobile': widget.visitorInfo.visitorMobile,
         'in_time': formattedInTime,
-        'user_id': (int.tryParse(userId ?? "0") == null ||
-                int.tryParse(userId ?? "0") == 0)
-            ? "234567"
-            : int.parse(userId!).toString(),
+        'user_id': (int.tryParse(userId) ?? 0) == 0 ? "234567" : userId,
         'visitor_count': "1",
-        'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase(),
+        'purpose':
+            widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
         'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber,
         'visitor_id': widget.visitorInfo.visitorId.toString(),
         'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
             ? "delivery"
             : widget.visitorInfo.visitorPurposeCategoryId.toString(),
-        'visitor_log_id': widget.visitorInfo.visitorLogId ?? "",
+        'visitor_log_id': widget.visitorInfo.visitorLogId ?? visitorLogId,
         'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
         'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
       };
-      log("read$requestData");
 
-      await remoteDataSource.sendFcmNotification(requestData);
+      log("📨 Sending FCM Notification with Data: $requestData");
 
-      _showSnackBar("Notification sent successfully!");
-    } catch (e) {
-      log("❌ Error in _sendFcmNotification: $e");
-      _showSnackBar("Failed to send notification.", isError: true);
+      final response = await Dio().post(
+        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        log("✅ FCM Notification sent successfully: ${response.data}");
+        _showSnackBar("Notification sent successfully.");
+      } else {
+        log("❌ Failed to send notification. Response: ${response.statusCode} - ${response.data}");
+        _showSnackBar("Failed to send notification.", isError: true);
+      }
+    } catch (e, stackTrace) {
+      log("❌ Exception in sending notification: $e");
+      log("$stackTrace");
+      _showSnackBar("Error occurred while sending notification.",
+          isError: true);
     }
   }
 
@@ -991,6 +1002,7 @@ class _TimerActionSectionState extends State<TimerActionSection> {
   bool _isImageUploaded = false;
   RemoteDataSource remoteDataSource = RemoteDataSource();
   double _uploadProgress = 0;
+
   @override
   void initState() {
     super.initState();

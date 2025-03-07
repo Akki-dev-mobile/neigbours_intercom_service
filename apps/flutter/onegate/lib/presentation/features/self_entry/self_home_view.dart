@@ -4,7 +4,10 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/face_id_registration_view.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/ui/passcode_entry_view.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/ui/qr_scanner_self.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_facerec_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart'
     as self_entry;
@@ -161,10 +164,18 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                             image: 'assets/media/images/Standing.png',
                           ),
                         ),
-                        SelfTapOption(
-                          fTitle: 'Pass',
-                          sTitle: 'Code',
-                          image: 'assets/media/images/Space.png',
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => PasscodeEntryView()));
+                          },
+                          child: SelfTapOption(
+                            fTitle: 'Pass',
+                            sTitle: 'Code',
+                            image: 'assets/media/images/Space.png',
+                          ),
                         ),
                       ],
                     ),
@@ -172,10 +183,18 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        SelfTapOption(
-                          fTitle: 'Scan',
-                          sTitle: 'QR',
-                          image: 'assets/media/images/standing2.png',
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                (MaterialPageRoute(
+                                    builder: (context) => QRScannerScreen())));
+                          },
+                          child: SelfTapOption(
+                            fTitle: 'Scan',
+                            sTitle: 'QR',
+                            image: 'assets/media/images/standing2.png',
+                          ),
                         ),
                         GestureDetector(
                           onTap: () {

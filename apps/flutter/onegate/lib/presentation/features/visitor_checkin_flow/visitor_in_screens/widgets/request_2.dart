@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gate_bu.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:common_widgets/common_widgets.dart';
@@ -18,6 +20,7 @@ class RequestPermissionPage2 extends StatefulWidget {
   final VisitorLog? visitorLog;
   List<String>? unitList;
   final String? request;
+  int? status;
 
   RequestPermissionPage2(
       {Key? key,
@@ -25,7 +28,8 @@ class RequestPermissionPage2 extends StatefulWidget {
       this.request,
       this.logID,
       this.visitorLog,
-      this.unitList})
+      this.unitList,
+      this.status})
       : super(key: key);
 
   @override
@@ -71,12 +75,19 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
               alignment: Alignment.center,
               child: CustomLargeBtn(
                 text: 'Finish',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GateDashboardView(),
-                  ),
-                ),
+                onPressed: () => widget.status == 0
+                    ? Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SelfHomeView(),
+                        ),
+                      )
+                    : Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GateDashboardView(),
+                        ),
+                      ),
               ),
             ),
             SizedBox(
@@ -159,15 +170,22 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
             Container(
               width: 120,
               height: 120,
-              // decoration: BoxDecoration(
-              //   shape: BoxShape.circle,
-              //   border: Border.all(color: Colors.red.shade400, width: 4),
-              // ),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.shade200,
+              ),
               child: ClipOval(
-                child: Image.network(
-                  widget.visitor.visitor_image!,
-                  fit: BoxFit.cover,
-                ),
+                child: widget.visitor.visitor_image != null &&
+                        widget.visitor.visitor_image!.isNotEmpty
+                    ? Image.network(
+                        widget.visitor.visitor_image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(Symbols.person,
+                              size: 60, color: Colors.grey);
+                        },
+                      )
+                    : Icon(Symbols.person, size: 60, color: Colors.grey),
               ),
             ),
             const SizedBox(height: 15),
