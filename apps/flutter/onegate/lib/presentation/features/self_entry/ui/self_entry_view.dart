@@ -115,6 +115,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
     });
   }
 
+  var comingfrom;
+
   /// Sends an OTP for self-checkin.
   Future<void> selfCheckInOtp(String mobileNumber) async {
     try {
@@ -152,7 +154,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
         );
         return;
       }
-
+      comingfrom = result['data']['coming_from'];
       _tabController.animateTo(1);
       _start = 10; // Default timer value
       startTimer();
@@ -492,11 +494,12 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               mobile: _mobileController.text,
                               visitor_image: _imageFile?.path,
                             );
-
+                            log(comingfrom);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => VisitorsInEntry(
+                                  comingfrom: comingfrom,
                                   searchedVisitor: visitor,
                                   selectedValue: globalSelectedPurposes[
                                       selectedImageIndex ?? 0],
