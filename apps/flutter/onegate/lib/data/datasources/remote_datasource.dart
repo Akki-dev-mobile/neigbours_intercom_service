@@ -237,7 +237,7 @@ class RemoteDataSource {
       // Prepare the data payload
       final data = {
         "name": visitor.name,
-        "mobile_number": visitor.mobile,
+        "mobile_number": visitor.mobile.toString(),
         "visitor_image": uploadImageUrl.toString(),
       };
 
@@ -1213,7 +1213,8 @@ class RemoteDataSource {
 
   final String cacheKey = 'members_list_cache';
   final String cacheTimestampKey = 'members_list_cache_timestamp';
-  final Duration cacheDuration = Duration(minutes: 30); // Cache expiry time
+  final Duration cacheDuration =
+      const Duration(minutes: 30); // Cache expiry time
 
   Future<List<dynamic>> getMembersList() async {
     try {

@@ -1168,7 +1168,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       }
     } catch (e) {
       log("❌ Error in _allowByGatekeeper: $e");
-      void _showErrorSnackBar(String message) {
+      void showErrorSnackBar(String message) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1178,7 +1178,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         );
       }
 
-      _showErrorSnackBar("Failed to allow visitor.");
+      showErrorSnackBar("Failed to allow visitor.");
     }
   }
 

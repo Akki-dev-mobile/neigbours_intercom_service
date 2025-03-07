@@ -200,6 +200,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
   }
 
+  final RemoteDataSource _remoteDataSource = RemoteDataSource();
+
   Future<File?> _captureImageFromCamera(BuildContext context) async {
     CameraController? cameraController;
 
@@ -277,6 +279,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   Future<void> _handleSubmit() async {
+    widget.searchedVisitor?.name = _guestNameController?.text;
+    Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
+      name: _guestNameController?.text,
+      mobile: widget.searchedVisitor?.mobile,
+      visitor_image: widget.searchedVisitor?.visitor_image,
+    ));
+
     if (_isSubmitting) return;
 
     if (!_validateForm()) return;
@@ -653,25 +662,26 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               ),
 
                               // Company Name
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                child: Text(
-                                  subCategory.subCategoryName ?? '',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    // fontSize: 12,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? const Color(0xffC08261)
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                  ),
-                                ),
-                              ),
+                              // Padding(
+                              //   padding:
+                              //       const EdgeInsets.symmetric(horizontal: 4),
+                              //   child: Text(
+                              //     subCategory.subCategoryName ?? '',
+                              //     textAlign: TextAlign.center,
+                              //     style: TextStyle(
+                              //       // fontSize: 12,
+                              //       fontSize: 6,
+                              //       fontWeight: isSelected
+                              //           ? FontWeight.bold
+                              //           : FontWeight.normal,
+                              //       color: isSelected
+                              //           ? const Color(0xffC08261)
+                              //           : Theme.of(context)
+                              //               .colorScheme
+                              //               .onSurface,
+                              //     ),
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),
@@ -702,6 +712,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             },
           ),
         ),
+        const SizedBox(
+          height: 150,
+        )
       ],
     );
   }
