@@ -200,6 +200,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     }
   }
 
+  final RemoteDataSource _remoteDataSource = RemoteDataSource();
+
   Future<File?> _captureImageFromCamera(BuildContext context) async {
     CameraController? cameraController;
 
@@ -277,6 +279,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   Future<void> _handleSubmit() async {
+    widget.searchedVisitor?.name = _guestNameController?.text;
+    Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
+      name: _guestNameController?.text,
+      mobile: widget.searchedVisitor?.mobile,
+      visitor_image: widget.searchedVisitor?.visitor_image,
+    ));
+
     if (_isSubmitting) return;
 
     if (!_validateForm()) return;

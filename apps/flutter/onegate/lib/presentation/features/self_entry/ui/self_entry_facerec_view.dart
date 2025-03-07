@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
@@ -37,6 +38,10 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
       setState(() {
         _image = File(pickedFile.path);
       });
+      GateStorage storage = GateStorage();
+      await storage.init();
+      await storage.saveVisitorImageBase64(_image!);
+      print("Image saved successfully!");
     }
   }
 

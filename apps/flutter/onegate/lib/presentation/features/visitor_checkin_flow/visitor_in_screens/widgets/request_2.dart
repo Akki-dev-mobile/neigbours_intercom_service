@@ -33,8 +33,8 @@ class RequestPermissionPage2 extends StatefulWidget {
 }
 
 class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
-  bool _isUploading = false;
-  double _uploadProgress = 0;
+  final bool _isUploading = false;
+  final double _uploadProgress = 0;
 
   static const Map<RequestType, String> lottieAnimations = {
     RequestType.allowByGatekeeper:
@@ -79,7 +79,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                 ),
               ),
             ),
-            SizedBox(
+            const SizedBox(
               height: 30,
             )
           ],
@@ -156,7 +156,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
         // ✅ Visitor Image
         Column(
           children: [
-            Container(
+            SizedBox(
               width: 120,
               height: 120,
               // decoration: BoxDecoration(
@@ -165,7 +165,8 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
               // ),
               child: ClipOval(
                 child: Image.network(
-                  widget.visitor.visitor_image!,
+                  widget.visitor.visitor_image ??
+                      "https://img.freepik.com/premium-vector/user-profile-icon-flat-style-member-avatar-vector-illustration-isolated-background-human-permission-sign-business-concept_157943-15752.jpg?semt=ais_hybrid",
                   fit: BoxFit.cover,
                 ),
               ),
@@ -214,7 +215,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                       value: widget.visitorLog?.visitor_coming_from ??
                           "Not specified",
                     )
-                  : SizedBox(),
+                  : const SizedBox(),
               const SizedBox(height: 10),
               _buildDetailRow(
                 icon: _getPurposeIcon(

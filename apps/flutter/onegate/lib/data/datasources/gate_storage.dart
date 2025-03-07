@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GateStorage {
@@ -11,6 +14,7 @@ class GateStorage {
   static const _societyIdKey = 'society_id';
   static const _visitorLogIdKey = 'visitorLogId';
   static const String _memberApprovalKey = 'member_approval';
+  static const _visitorImageKey = 'visitor_image';
 
   static final GateStorage _instance = GateStorage._internal();
 
@@ -33,6 +37,27 @@ class GateStorage {
 
   // static const String _societyIdKey = 'society_id';
   static const String _societyNameKey = 'society_name';
+  Future<void> saveVisitorImageBase64(File imageFile) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<int> imageBytes = await imageFile.readAsBytes();
+    String base64Image = base64Encode(imageBytes);
+    await prefs.setString(_visitorImageKey, base64Image);
+  }
+
+  Future<File?> getVisitorImageBase64() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? base64Image = prefs.getString(_visitorImageKey);
+
+    if (base64Image != null) {
+      List<int> imageBytes = base64Decode(base64Image);
+      Directory tempDir = await getTemporaryDirectory();
+      String tempPath = '${tempDir.path}/visitor_image.png';
+      File imageFile = File(tempPath);
+      await imageFile.writeAsBytes(imageBytes);
+      return imageFile;
+    }
+    return null;
+  }
 
   Future<void> saveSocietyDetails(String societyId, String? societyName) async {
     final prefs = await SharedPreferences.getInstance();

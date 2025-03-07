@@ -191,33 +191,36 @@ class _SelfEntryViewState extends State<SelfEntryView>
         final prefs = await SharedPreferences.getInstance();
 
         final visitorId = prefs.getString('visitorId');
+        log(visitorId.toString());
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => UnitSelectionView(null,
-                visitor: Visitor(
-                  id: int.parse(visitorId ?? ""),
-                  name: _nameController.text,
-                  mobile: _mobileController.text,
-                  visitor_image: _imageFile?.path,
-                ),
-                guestname: _nameController.text,
-                mobileNumber: _mobileController.text,
-                purposeCategory: getPurposeCategory1(null),
-                comingFrom: _locationController.text,
-                carNumber: null,
-                guestCount: 1,
-                isVerified: result['message'] == "Visitor is already verified"
-                    ? true
-                    : false),
-          ),
-        );
+        // Navigator.pushReplacement(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => UnitSelectionView(null,
+        //         visitor: Visitor(
+        //           id: int.parse(visitorId ?? ""),
+        //           name: _nameController.text,
+        //           mobile: _mobileController.text,
+        //           visitor_image: _imageFile?.path,
+        //         ),
+        //         guestname: _nameController.text,
+        //         mobileNumber: _mobileController.text,
+        //         purposeCategory: getPurposeCategory1(null),
+        //         comingFrom: _locationController.text,
+        //         carNumber: null,
+        //         guestCount: 1,
+        //         isVerified: result['message'] == "Visitor is already verified"
+        //             ? true
+        //             : false),
+        //   ),
+        // );
+
         return;
       }
+      _captureImageFromCamera();
 
       myFluttertoast(msg: "OTP verified successfully!");
-      _tabController.animateTo(2);
+      // _tabController.animateTo(2);
     } catch (e) {
       log('Error during OTP verification: $e');
       myFluttertoast(
@@ -384,32 +387,46 @@ class _SelfEntryViewState extends State<SelfEntryView>
     }
   }
 
+  Future<File?> getImage() async {
+    GateStorage storage = GateStorage();
+    await storage.init();
+    File? imageFile = await storage.getVisitorImageBase64();
+
+    if (imageFile != null && await imageFile.exists()) {
+      print("Image retrieved: ${imageFile.path}");
+      return imageFile;
+    } else {
+      print("No image found.");
+    }
+    return null;
+  }
+
   /// Captures an image from the camera.
   /// After capturing the image, it immediately navigates to the UnitSelectionView,
   /// passing along the visitor id (if available) in the Visitor object.
   Future<void> _captureImageFromCamera() async {
     loadPurposes();
     final picker = ImagePicker();
+    File? fileimage = await getImage();
+    XFile? image;
     try {
-      final image = await picker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front,
-      );
-      if (image == null) return;
-      setState(() {
-        _imageFile = PickedFile(image.path);
-      });
+      if (fileimage == null) {
+        final image = await picker.pickImage(
+          source: ImageSource.camera,
+          preferredCameraDevice: CameraDevice.front,
+        );
+        if (image == null) return;
+        setState(() {
+          _imageFile = PickedFile(image.path);
+        });
+      }
       print(_mobileController.text);
-      _regImage(_mobileController.text, File(image.path));
-      _remoteDataSource.createVisitor(Visitor(
-        name: _nameController.text,
-        mobile: _mobileController.text,
-        visitor_image: _imageFile?.path,
-      ));
+      _regImage(_mobileController.text, fileimage ?? File(image!.path));
 
       final prefs = await SharedPreferences.getInstance();
 
       final visitorId = prefs.getString('visitorId');
+      log(visitorId.toString());
       showModalBottomSheet(
         context: context,
         isScrollControlled: true, // Allows for height adjustment
@@ -451,6 +468,11 @@ class _SelfEntryViewState extends State<SelfEntryView>
                         onTap: () => Navigator.pop(context),
                       ),
                       const SizedBox(height: 10),
+                      // Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
+                      //   name: _nameController.text,
+                      //   mobile: _mobileController.text,
+                      //   visitor_image: _imageFile?.path,
+                      // ));
 
                       Expanded(
                         child: globalSelectedPurposes.isEmpty
@@ -464,7 +486,12 @@ class _SelfEntryViewState extends State<SelfEntryView>
                         child: CustomLargeBtn(
                           text: 'Next',
                           onPressed: () {
-                            Visitor visitor = Visitor();
+                            Visitor visitor = Visitor(
+                              id: int.parse(visitorId ?? "0"),
+                              name: "",
+                              mobile: _mobileController.text,
+                              visitor_image: _imageFile?.path,
+                            );
 
                             Navigator.push(
                               context,
@@ -867,7 +894,6 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               await verifySelfCheckin(
                                   _mobileController.text, _otpController.text);
                               // if (_locationController.text.isNotEmpty) {
-                              _captureImageFromCamera();
                               // }
                             },
                           ),
