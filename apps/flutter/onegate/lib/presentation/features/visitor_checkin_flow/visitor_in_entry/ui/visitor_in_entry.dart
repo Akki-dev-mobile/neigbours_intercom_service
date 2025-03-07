@@ -282,11 +282,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   Future<void> _handleSubmit() async {
     widget.searchedVisitor?.name = _guestNameController?.text;
-    Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
-      name: _guestNameController?.text,
-      mobile: widget.searchedVisitor?.mobile,
-      visitor_image: widget.searchedVisitor?.visitor_image,
-    ));
+    if (widget.searchedVisitor == null) {
+      // RemoteDataSource().uploadFile(file, userMobile, companyId)
+      Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
+        name: _guestNameController?.text,
+        mobile: widget.searchedVisitor?.mobile,
+        visitor_image: widget.searchedVisitor?.visitor_image,
+      ));
+    }
 
     if (_isSubmitting) return;
 

@@ -168,7 +168,6 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                           child: CustomLargeBtn(
                             text: 'Next',
                             onPressed: () {
-                              log(comingfrom.toString());
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(

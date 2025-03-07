@@ -116,14 +116,16 @@ class _SelfEntryViewState extends State<SelfEntryView>
   }
 
   var comingfrom;
+  final GateStorage gateStorage = GateStorage();
 
   /// Sends an OTP for self-checkin.
   Future<void> selfCheckInOtp(String mobileNumber) async {
+    loadPurposes();
     try {
       final result =
           await _remoteDataSource.sendOtpForSelfCheckIn(mobileNumber);
-
       if (result['message'] == 'Visitor is already verified') {
+        comingfrom = result['data']['coming_from'];
         final visitorData = result['data'];
         final visitor = Visitor(
           id: visitorData['id'],
@@ -131,28 +133,102 @@ class _SelfEntryViewState extends State<SelfEntryView>
           mobile: visitorData['mobile'] ?? '',
           visitor_image: visitorData['visitor_image'],
         );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => UnitSelectionView(
-              from: 0,
-              null,
-              visitor: visitor,
-              guestname: visitor.name ?? '',
-              mobileNumber: visitor.mobile ?? '',
-              purposeCategory: globalSelectedPurposes.isNotEmpty &&
-                      selectedImageIndex != null
-                  ? globalSelectedPurposes[selectedImageIndex!]
-                  : PurposeCategory1(
-                      categoryId: 1, categoryName: "Default Category"),
-              comingFrom: visitorData['coming_from'] ?? '',
-              carNumber: null,
-              guestCount: 1,
-              isVerified: true,
-            ),
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true, // Allows for height adjustment
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                return SizedBox(
+                  height: MediaQuery.of(context).size.height *
+                      0.6, // 60% of screen height
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: Text(
+                            'Select Purpose of visit',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          trailing: const Icon(
+                            Icons.close,
+                            color: Colors.red,
+                            size: 28,
+                          ),
+                          onTap: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(height: 10),
+                        // Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
+                        //   name: _nameController.text,
+                        //   mobile: _mobileController.text,
+                        //   visitor_image: _imageFile?.path,
+                        // ));
+
+                        Expanded(
+                          child: globalSelectedPurposes.isEmpty
+                              ? _buildPurposeGrid(setState, context,
+                                  category: "GUEST")
+                              : _buildPurposeGrid(setState, context),
+                        ),
+                        // Next Button
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          child: CustomLargeBtn(
+                            text: 'Next',
+                            onPressed: () async {
+                              final societyId =
+                                  await gateStorage.getSocietyId();
+                              final int? companyId =
+                                  int.tryParse(societyId.toString());
+
+                              // String? visiImage = await RemoteDataSource()
+                              //     .uploadFile(File(image!.path),
+                              //         _mobileController.text, companyId ?? 0);
+
+                              // log(comingfrom);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => VisitorsInEntry(
+                                    comingfrom: comingfrom,
+                                    searchedVisitor: visitor,
+                                    selectedValue: globalSelectedPurposes[
+                                        selectedImageIndex ?? 0],
+                                    mobile: _mobileController.text,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
         );
+
         return;
       }
       // comingfrom = result['data']['coming_from'];
@@ -404,6 +480,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
     return null;
   }
 
+  XFile? image;
+
   /// Captures an image from the camera.
   /// After capturing the image, it immediately navigates to the UnitSelectionView,
   /// passing along the visitor id (if available) in the Visitor object.
@@ -411,7 +489,6 @@ class _SelfEntryViewState extends State<SelfEntryView>
     loadPurposes();
     final picker = ImagePicker();
     File? fileimage = await getImage();
-    XFile? image;
     try {
       if (fileimage == null) {
         image = await picker.pickImage(
@@ -488,12 +565,20 @@ class _SelfEntryViewState extends State<SelfEntryView>
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         child: CustomLargeBtn(
                           text: 'Next',
-                          onPressed: () {
+                          onPressed: () async {
+                            final societyId = await gateStorage.getSocietyId();
+                            final int? companyId =
+                                int.tryParse(societyId.toString());
+
+                            String? visiImage = await RemoteDataSource()
+                                .uploadFile(File(image!.path),
+                                    _mobileController.text, companyId ?? 0);
+
                             Visitor visitor = Visitor(
                               id: int.parse(visitorId ?? "0"),
                               name: "",
                               mobile: _mobileController.text,
-                              visitor_image: _imageFile?.path,
+                              visitor_image: visiImage,
                             );
                             // log(comingfrom);
                             Navigator.push(
