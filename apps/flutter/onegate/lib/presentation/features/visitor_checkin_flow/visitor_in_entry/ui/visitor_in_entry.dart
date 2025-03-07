@@ -662,25 +662,26 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               ),
 
                               // Company Name
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                child: Text(
-                                  subCategory.subCategoryName ?? '',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    // fontSize: 12,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? const Color(0xffC08261)
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                  ),
-                                ),
-                              ),
+                              // Padding(
+                              //   padding:
+                              //       const EdgeInsets.symmetric(horizontal: 4),
+                              //   child: Text(
+                              //     subCategory.subCategoryName ?? '',
+                              //     textAlign: TextAlign.center,
+                              //     style: TextStyle(
+                              //       // fontSize: 12,
+                              //       fontSize: 6,
+                              //       fontWeight: isSelected
+                              //           ? FontWeight.bold
+                              //           : FontWeight.normal,
+                              //       color: isSelected
+                              //           ? const Color(0xffC08261)
+                              //           : Theme.of(context)
+                              //               .colorScheme
+                              //               .onSurface,
+                              //     ),
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),
@@ -711,6 +712,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             },
           ),
         ),
+        const SizedBox(
+          height: 150,
+        )
       ],
     );
   }

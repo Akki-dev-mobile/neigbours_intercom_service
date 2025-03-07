@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -48,6 +49,12 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   static const Map<RequestType, Color> _requestMessagesColor = {
     RequestType.allowByGatekeeper: Colors.green,
   };
+  Future<void> deleteImage() async {
+    GateStorage storage = GateStorage();
+    await storage.init();
+    await storage.removeVisitorImage();
+    print("Image successfully removed.");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,14 +77,16 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
             Align(
               alignment: Alignment.center,
               child: CustomLargeBtn(
-                text: 'Finish',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GateDashboardView(),
-                  ),
-                ),
-              ),
+                  text: 'Finish',
+                  onPressed: () {
+                    deleteImage();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GateDashboardView(),
+                      ),
+                    );
+                  }),
             ),
             const SizedBox(
               height: 30,

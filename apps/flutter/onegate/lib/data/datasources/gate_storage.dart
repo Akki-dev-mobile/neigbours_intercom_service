@@ -44,6 +44,21 @@ class GateStorage {
     await prefs.setString(_visitorImageKey, base64Image);
   }
 
+  Future<void> removeVisitorImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    Directory tempDir = await getTemporaryDirectory();
+    String tempPath = '${tempDir.path}/visitor_image.png';
+    File imageFile = File(tempPath);
+
+    if (await imageFile.exists()) {
+      await imageFile.delete();
+      print("Visitor image deleted from temporary directory.");
+    }
+
+    await prefs.remove(_visitorImageKey);
+    print("Visitor image data removed from SharedPreferences.");
+  }
+
   Future<File?> getVisitorImageBase64() async {
     final prefs = await SharedPreferences.getInstance();
     String? base64Image = prefs.getString(_visitorImageKey);
