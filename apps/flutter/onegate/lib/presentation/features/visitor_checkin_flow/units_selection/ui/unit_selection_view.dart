@@ -21,8 +21,9 @@ import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import "package:intl/intl.dart";
 import '../../../self_entry/self_home_view.dart';
 import '../../../self_entry/ui/self_profile_view.dart';
 import '../../visitor_in_screens/ui/request_permission_page.dart';
@@ -113,6 +114,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         });
       }
     });
+    log("${widget.comingFrom} here is this");
   }
 
   // API Methods
@@ -171,18 +173,175 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
-        return SelectedMembersBottomSheet(
-          selectedMembers: selectedMembers,
-          selectedMembersNotifier: _selectedMembersNotifier,
-          onClearAll: () {
-            setState(() {
-              _selectedMembersNotifier.value = {};
-            });
-          },
-          onConfirm: () {
-            _handleSelectionSubmit(selectedMembers);
-          },
+      builder: (BuildContext context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Selected Members',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // Members List
+              // Members List
+              Expanded(
+                child: ValueListenableBuilder<Set<String>>(
+                  valueListenable: _selectedMembersNotifier,
+                  builder: (context, selectedMembers, _) {
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: selectedMembers.length,
+                      itemBuilder: (context, index) {
+                        final member = selectedMembers.elementAt(index);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.grey[200],
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.black,
+                              ),
+                            ),
+                            title: Text(
+                              member,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(
+                                Icons.remove_circle_outline,
+                                color: Colors.red,
+                              ),
+                              onPressed: () {
+                                final updatedMembers = Set<String>.from(
+                                    _selectedMembersNotifier.value);
+                                updatedMembers.remove(member);
+                                _selectedMembersNotifier.value = updatedMembers;
+                                if (updatedMembers.isEmpty) {
+                                  Navigator.pop(context);
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              // Bottom Buttons
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 1,
+                      offset: const Offset(0, -1),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.black),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _selectedMembersNotifier.value = {};
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          'Clear All',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          // // Add your confirm logic here
+                          Navigator.pop(context);
+                          _handleSelectionSubmit(selectedMembers);
+                        },
+                        child: const Text(
+                          'Confirm',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -196,6 +355,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'unit_ids': unitIDs.whereType<int>().toList(),
       'member_ids': selectedMemberIds.toList(),
       'building_unit': selectedBuildingUnits.toList(),
+      'member_old_sso_id': selectedUserIds.first
     };
     log('Saved member and unit details: ${jsonEncode(savedMemberUnitDetails)}');
   }
@@ -971,18 +1131,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
         _isCheckedIn = true;
       }
-
-      if (widget.isVerified == true) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const SelfHomeView()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => GateDashboardView()),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+                  visitor: widget.visitor,
+                  visitorLog: visitorLogData,
+                )),
+      );
     } catch (e) {
       log("❌ Error in _handleDirectApproval: $e");
       _showErrorSnackbar("Error during gatekeeper approval.");
@@ -1057,7 +1213,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final selectedMobileNumbers = await _getSelectedMobileNumbers();
       final requestData =
           await _prepareRequestData(userId, selectedMobileNumbers);
-      print("request data$requestData");
+
       log("✅ Sending FCM notification after Check-in...");
 
       // Send WebSocket event
@@ -1071,7 +1227,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
-      log("requestData$requestData");
+      log("requestData: $requestData");
+
       // Listen for WebSocket response
       socketService.socket!.on("fcmResponse", (responseData) async {
         log("📩 WebSocket Response Received: $responseData");
@@ -1092,30 +1249,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  Future<void> _handleMultiMemberFlow(VisitorLog visitorLogData) async {
-    try {
-      if (!_isCheckedIn) {
-        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-        _isCheckedIn = true;
-      }
-      await _showApprovedDialog(context, visitorLogData, onSuccess: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => GateDashboardView()),
-        );
-      });
-    } catch (e) {
-      log("❌ Error in _handleMultiMemberFlow: $e");
-      _showErrorSnackbar("Error processing multi-member check-in.");
-    }
-  }
-
   Future<void> _handleFcmResponse(
       dynamic responseData, VisitorLog visitorLogData) async {
     final message = responseData["message"];
-
+    final prefs = await SharedPreferences.getInstance();
+    final logID = prefs.getString("visitor_log");
     if (message == "Visitor is always_allowed") {
-      await _showVisitorAllowedDialog();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage2(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            logID: logID,
+          ),
+        ),
+      );
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
@@ -1134,41 +1284,25 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  Future<void> _showVisitorAllowedDialog() async {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
-              Text(
-                'Visitor Allowed',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Visitor is always allowed by the member.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => GateDashboardView()),
-              ), // Close dialog
-              child: const Text('OK', style: TextStyle(color: Colors.black)),
-            ),
-          ],
-        );
-      },
-    );
+  Future<void> _handleMultiMemberFlow(VisitorLog visitorLogData) async {
+    try {
+      if (!_isCheckedIn) {
+        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+        _isCheckedIn = true;
+      }
+
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+                  visitor: widget.visitor,
+                  visitorLog: visitorLogData,
+                )),
+      );
+    } catch (e) {
+      log("❌ Error in _handleMultiMemberFlow: $e");
+      _showErrorSnackbar("Error processing multi-member check-in.");
+    }
   }
 
   Future<void> _showApprovedDialog(BuildContext context, VisitorLog data,
@@ -1270,11 +1404,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-// Update the _prepareVisitorLogData method
   Future<VisitorLog> _prepareVisitorLogData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    List<int> unitIds = formattedMemberDetails
+    List<int> unitIds = [];
+    unitIds = formattedMemberDetails
         .map((member) => member['unit_id'])
         .where((id) => id != null)
         .map((id) => int.parse(id.toString()))
@@ -1290,11 +1424,35 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         unit_id: [unitId.toString()],
       );
     }).toList();
+    print("subbb${widget.selectedSubCategoryId.toString()}");
+    try {
+      final String memberDetailsJson = json.encode(formattedMemberDetails);
+      await prefs.setString('member_details', memberDetailsJson);
+      print('Successfully saved member details: $memberDetailsJson');
+    } catch (e) {
+      print('Error saving member details: $e');
+    }
 
-    final String memberDetailsJson = json.encode(formattedMemberDetails);
-    await prefs.setString('member_details', memberDetailsJson);
-
-    return _createVisitorLogData(buildingAssignments);
+    return VisitorLog(
+      visitor_id: int.parse(widget.visitor.id.toString()),
+      visitor_purpose_category_id: widget.purposeCategory.categoryId ??
+          int.parse(widget.purposeCategoryId.toString()),
+      visitor_purpose_Category_name: widget.purposeCategory.categoryName,
+      purpose_sub_category_name:
+          widget.purposeCategory.subCategories?.first.subCategoryName,
+      visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
+          ? int.parse(widget.selectedSubCategoryId.toString())
+          : null,
+      visitor_count: widget.guestCount ?? 0,
+      visitor_check_in: DateTime.parse(formattedInTime),
+      visitor_card_number: widget.visitorNumber,
+      visitor_coming_from: widget.comingFrom,
+      visitor_card_id: null,
+      company_id: int.parse(companyId.toString()),
+      carNumber: widget.carNumber,
+      visitor_building_assignment: buildingAssignments,
+      is_checked_out: false,
+    );
   }
 
 // Helper method to retrieve the saved member details
@@ -1350,19 +1508,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'name': widget.guestname,
       'mobile': widget.mobileNumber,
       'purpose': widget.purposeCategory.categoryName.toLowerCase(),
-      'in_time': DateTimeUtils.getFormattedCurrentTime(),
+      'in_time': formattedInTime,
       'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number': mobileNumbers.isNotEmpty
-          ? mobileNumbers.first
-          : "", // This will fail if empty. Handle this better if mobile is mandatory
+      'member_mobile_number':
+          mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
       'visitor_id': widget.visitor.id?.toString() ??
           widget.searchedVisitor?.id?.toString() ??
           '',
       'purpose_category': widget.purposeCategory.categoryId.toString() == "3"
-          ? "delivery" "Guest"
+          ? "delivery"
           : widget.purposeCategory.categoryId.toString(),
       'visitor_log_id': visitorLogId,
       'coming_from': widget.comingFrom?.toString() ?? "delivery",
@@ -1370,6 +1527,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? selectedMemberIds.first.toString()
           : "232",
       'company_name': companyName ?? "",
+      "file": widget.visitor.visitor_image ?? ""
     };
   }
 

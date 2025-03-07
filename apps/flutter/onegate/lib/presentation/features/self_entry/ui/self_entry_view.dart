@@ -54,7 +54,6 @@ class _SelfEntryViewState extends State<SelfEntryView>
   final TextEditingController _purposeController = TextEditingController();
   final TextEditingController _hostController = TextEditingController();
 
-  // Focus nodes.
   final FocusNode _nameFocusNode = FocusNode();
   final FocusNode _locationFocusNode = FocusNode();
   final FocusNode _purposeFocusNode = FocusNode();
@@ -67,7 +66,6 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
   late TabController _tabController;
 
-  // Private variable to store the visitor ID returned from API.
   int? _visitorId;
 
   @override
@@ -132,9 +130,6 @@ class _SelfEntryViewState extends State<SelfEntryView>
           visitor_image: visitorData['visitor_image'],
         );
 
-        // myFluttertoast(
-        //     msg: "Visitor is already verified!", backgroundColor: Colors.red);
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -143,7 +138,11 @@ class _SelfEntryViewState extends State<SelfEntryView>
               visitor: visitor,
               guestname: visitor.name ?? '',
               mobileNumber: visitor.mobile ?? '',
-              purposeCategory: getPurposeCategory1(null),
+              purposeCategory: globalSelectedPurposes.isNotEmpty &&
+                      selectedImageIndex != null
+                  ? globalSelectedPurposes[selectedImageIndex!]
+                  : PurposeCategory1(
+                      categoryId: 1, categoryName: "Default Category"),
               comingFrom: visitorData['coming_from'] ?? '',
               carNumber: null,
               guestCount: 1,

@@ -347,13 +347,6 @@ class RemoteDataSource {
             response.data["data"]["visitor_log_id"].toString(),
           );
 
-          // Save member_approval status
-          final bool memberApproval = responseData['data']['member_settings']
-                  ['member_approval'] ??
-              false;
-          await GateStorage().saveMemberApproval(memberApproval);
-
-          log("member_approval saved: $memberApproval");
           return visitorLogResult;
         } else {
           log("API Response Error: ${responseData['message']}");
@@ -578,7 +571,7 @@ class RemoteDataSource {
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
       final Map<String, dynamic> requestData = {
-        "company_id": "412",
+        "company_id": resolvedCompanyId,
         "in_gate": selectedGateName,
         "passcode": passcode,
       };
