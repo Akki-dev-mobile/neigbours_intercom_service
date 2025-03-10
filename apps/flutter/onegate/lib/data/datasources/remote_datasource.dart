@@ -232,6 +232,7 @@ class RemoteDataSource {
 
   /// Create a visitor
   Future<Visitor?> createVisitor(Visitor visitor) async {
+    log("createVisitor called");
     try {
       // Fetch the uploaded image URL from GateStorage
       final uploadImageUrl = await GateStorage().getImage();

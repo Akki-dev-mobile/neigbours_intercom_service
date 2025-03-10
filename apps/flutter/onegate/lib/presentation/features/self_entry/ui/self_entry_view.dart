@@ -569,6 +569,11 @@ class _SelfEntryViewState extends State<SelfEntryView>
                         child: CustomLargeBtn(
                           text: 'Next',
                           onPressed: () async {
+                            await _remoteDataSource.createVisitor(Visitor(
+                              name: _nameController.text,
+                              mobile: _mobileController.text,
+                              visitor_image: _imageFile?.path,
+                            ));
                             final societyId = await gateStorage.getSocietyId();
                             final int? companyId =
                                 int.tryParse(societyId.toString());
