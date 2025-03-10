@@ -4,6 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/face_id_registration_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/passcode_entry_view.dart';
@@ -32,7 +33,15 @@ class _SelfHomeViewState extends State<SelfHomeView> {
 
   @override
   void initState() {
+    deleteImage();
     super.initState();
+  }
+
+  Future<void> deleteImage() async {
+    GateStorage storage = GateStorage();
+    await storage.init();
+    await storage.removeVisitorImage();
+    print("Image successfully removed.");
   }
 
   void enterKioskMode() {
