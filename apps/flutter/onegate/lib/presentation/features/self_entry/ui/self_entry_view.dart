@@ -16,6 +16,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -439,7 +440,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
     if (image == null) return;
 
     try {
-      final uri = Uri.parse('http://192.168.1.9:8000/api/register-face/');
+      final uri = Uri.parse('${ApiUrls.FacerecUrl}/register-face/');
       final request = http.MultipartRequest('POST', uri)
         ..fields['name'] = name
         ..files.add(await http.MultipartFile.fromPath('files', image.path));
@@ -485,10 +486,11 @@ class _SelfEntryViewState extends State<SelfEntryView>
   /// Captures an image from the camera.
   /// After capturing the image, it immediately navigates to the UnitSelectionView,
   /// passing along the visitor id (if available) in the Visitor object.
+  File? fileimage;
   Future<void> _captureImageFromCamera() async {
     loadPurposes();
     final picker = ImagePicker();
-    File? fileimage = await getImage();
+    fileimage = await getImage();
     try {
       if (fileimage == null) {
         image = await picker.pickImage(
@@ -571,7 +573,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                 int.tryParse(societyId.toString());
 
                             String? visiImage = await RemoteDataSource()
-                                .uploadFile(File(image!.path),
+                                .uploadFile(fileimage ?? File(image!.path),
                                     _mobileController.text, companyId ?? 0);
 
                             Visitor visitor = Visitor(

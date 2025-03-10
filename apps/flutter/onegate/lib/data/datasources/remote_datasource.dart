@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
@@ -19,6 +20,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final keycloakWrapper =
@@ -1153,11 +1155,30 @@ class RemoteDataSource {
     }
   }
 
+  Future<File> compressImage(File file) async {
+    final dir = await getTemporaryDirectory();
+    final targetPath =
+        '${dir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    var result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      quality: 70, // Adjust quality (0 - 100)
+      minWidth: 800, // Adjust width if needed
+      minHeight: 800,
+    );
+
+    return result != null
+        ? File(result.path)
+        : file; // Return original file if compression fails
+  }
+
   /// Upload a file
   Future<String?> uploadFile(
-      File file, String userMobile, int companyId) async {
+      File thisfile, String userMobile, int companyId) async {
     try {
-      log('File path: ${file.path}');
+      log('File path: ${thisfile.path}');
+      File file = await compressImage(thisfile);
 
       var data = FormData.fromMap({
         'file': await MultipartFile.fromFile(

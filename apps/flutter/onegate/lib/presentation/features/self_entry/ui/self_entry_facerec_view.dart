@@ -12,6 +12,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -262,7 +263,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     if (_image == null) return;
 
     try {
-      final uri = Uri.parse('http://192.168.1.9:8000/api/register-face/');
+      final uri = Uri.parse('${ApiUrls.FacerecUrl}/register-face/');
       final request = http.MultipartRequest('POST', uri)
         ..fields['name'] = name
         ..files.add(await http.MultipartFile.fromPath('files', _image!.path));
@@ -296,7 +297,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     if (_image == null) return;
 
     try {
-      final uri = Uri.parse('http://192.168.1.9:8000/api/search-face/');
+      final uri = Uri.parse('${ApiUrls.FacerecUrl}/search-face/');
       final request = http.MultipartRequest('POST', uri)
         ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
 
