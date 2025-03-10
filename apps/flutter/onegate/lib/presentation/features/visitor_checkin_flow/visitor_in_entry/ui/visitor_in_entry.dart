@@ -32,6 +32,8 @@ class VisitorsInEntry extends StatefulWidget {
   var comingfrom;
   final PurposeCategory1? selectedValue;
   final Visitor? searchedVisitor;
+  final bool selfcheckinFlow;
+
   final String mobile;
 
   VisitorsInEntry({
@@ -39,6 +41,7 @@ class VisitorsInEntry extends StatefulWidget {
     this.selectedValue,
     this.searchedVisitor,
     this.comingfrom,
+    this.selfcheckinFlow = false,
     required this.mobile,
   }) : super(key: key);
 
@@ -281,6 +284,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   Future<void> _handleSubmit() async {
+    log("_remoteDataSource.createVisitor");
     widget.searchedVisitor?.name = _guestNameController?.text;
     if (widget.searchedVisitor == null) {
       // RemoteDataSource().uploadFile(file, userMobile, companyId)
@@ -440,6 +444,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               builder: (context) => UnitSelectionView(
                 widget.searchedVisitor,
                 visitor: state.visitor,
+                selfcheckinFlow: widget.selfcheckinFlow,
                 visitorId: widget.searchedVisitor?.id,
                 guestname: _guestNameController?.text ?? "",
                 mobileNumber: widget.mobile,

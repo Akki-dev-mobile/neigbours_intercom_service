@@ -174,6 +174,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => VisitorsInEntry(
+                                    selfcheckinFlow: true,
                                     comingfrom: comingfrom,
                                     searchedVisitor: visitor,
                                     selectedValue: globalSelectedPurposes[

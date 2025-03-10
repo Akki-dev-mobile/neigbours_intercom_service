@@ -209,6 +209,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => VisitorsInEntry(
+                                    selfcheckinFlow: true,
                                     comingfrom: comingfrom,
                                     searchedVisitor: visitor,
                                     selectedValue: globalSelectedPurposes[

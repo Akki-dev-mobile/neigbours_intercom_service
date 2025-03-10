@@ -1,9 +1,11 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, sort_child_properties_last
 
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -11,10 +13,17 @@ import '../../../../domain/entities/visitor/visitorLog.dart';
 
 class SelfProfileView extends StatefulWidget {
   final VisitorLog visitorLog;
+  final Visitor visitor;
+  List<String>? unitList;
+
   final bool isKioskModeEnabled;
 
-  const SelfProfileView(
-      {super.key, required this.visitorLog, this.isKioskModeEnabled = true});
+  SelfProfileView(
+      {super.key,
+      required this.visitorLog,
+      this.unitList,
+      required this.visitor,
+      this.isKioskModeEnabled = true});
 
   @override
   State<SelfProfileView> createState() => _SelfProfileViewState();
@@ -27,7 +36,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
   @override
   void initState() {
     super.initState();
-
+    log("widget.visitorLog ${widget.visitorLog.toJson()}");
     const totalDurationInSeconds = 15;
     const updateDurationInMilliseconds = 100;
 
@@ -75,7 +84,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
             },
             icon: Icon(
               Symbols.home_sharp,
-              color: Theme.of(context).colorScheme.onBackground,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             label: Text(
               'New Entry',
@@ -101,7 +110,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
                       radius: 50.0,
                       backgroundColor: Colors.blue,
                       backgroundImage: NetworkImage(
-                        widget.visitorLog.visitor?.visitor_image ?? '',
+                        widget.visitor.visitor_image ?? '',
                       ),
                     ),
                     SizedBox(
@@ -143,7 +152,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
             ),
             child: RichText(
               text: TextSpan(
-                text: "${widget.visitorLog.visitor?.name ?? 'N/A'}",
+                text: widget.visitor.name ?? 'N/A',
                 style: Theme.of(context).textTheme.displayLarge!.copyWith(
                       fontSize: 42,
                     ),
@@ -154,24 +163,22 @@ class _SelfProfileViewState extends State<SelfProfileView> {
           SelfProfileTile(
             icon: Symbols.phone_in_talk_sharp,
             title: 'Mobile',
-            subtitle: '${widget.visitorLog.visitor?.mobile ?? 'N/A'}',
+            subtitle: widget.visitor.mobile ?? 'N/A',
           ),
           SelfProfileTile(
             icon: Symbols.person_pin_circle_sharp,
             title: 'Coming From',
-            subtitle: '${widget.visitorLog.visitor_coming_from ?? 'N/A'}',
+            subtitle: widget.visitorLog.visitor_coming_from ?? 'N/A',
           ),
           SelfProfileTile(
             icon: Symbols.near_me_sharp,
             title: 'Unit',
-            subtitle:
-                '${widget.visitorLog.visitor_building_assignment?.first.unit_id?.first ?? 'N/A'}',
+            subtitle: widget.unitList?.first ?? 'N/A',
           ),
           SelfProfileTile(
             icon: Symbols.groups_3_sharp,
             title: 'Purpose',
-            subtitle:
-                '${widget.visitorLog.visitor_purpose_Category_name ?? 'N/A'}',
+            subtitle: widget.visitorLog.visitor_purpose_Category_name ?? 'N/A',
           ),
         ],
       ),
@@ -180,7 +187,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
 }
 
 class SelfProfileTile extends StatelessWidget {
-  SelfProfileTile({
+  const SelfProfileTile({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -200,7 +207,7 @@ class SelfProfileTile extends StatelessWidget {
         radius: 22,
         child: Icon(
           icon,
-          color: Theme.of(context).colorScheme.onBackground,
+          color: Theme.of(context).colorScheme.onSurface,
           size: 22,
         ),
         backgroundColor: Color(0xffFFEBE6),

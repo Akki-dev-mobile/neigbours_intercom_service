@@ -43,6 +43,8 @@ class UnitSelectionView extends StatefulWidget {
   final String? purposeCategoryId;
   final String? selectedSubCategoryId;
   final String? carNumber;
+  final bool selfcheckinFlow;
+
   final bool? isVerified;
   final bool? isKioskModeEnabled;
 
@@ -62,7 +64,8 @@ class UnitSelectionView extends StatefulWidget {
       this.selectedSubCategoryId,
       this.isVerified,
       this.isKioskModeEnabled = true,
-      this.from})
+      this.from,
+      this.selfcheckinFlow = false})
       : super(key: key);
 
   @override
@@ -675,17 +678,24 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   @override
   Widget build(BuildContext context) {
+    log("widget.selfcheckinFlow${widget.selfcheckinFlow}");
     return WillPopScope(
       onWillPop: () async {
         if (widget.searchedVisitor != null) {
           Navigator.pop(context);
           return false; // Prevent default back navigation.
         } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => GateDashboardView()),
-            (Route<dynamic> route) => false,
-          );
+          widget.selfcheckinFlow
+              ? Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SelfHomeView()),
+                  (Route<dynamic> route) => false,
+                )
+              : Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => GateDashboardView()),
+                  (Route<dynamic> route) => false,
+                );
           return false; // Prevent default back navigation.
         }
       },
@@ -1141,15 +1151,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
       _isCheckedIn = true;
       // }
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (context) => RequestPermissionPage2(
-                  status: 0,
+      widget.selfcheckinFlow
+          ? Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SelfProfileView(
                   visitor: widget.visitor,
+                  unitList: selectedBuildingUnits,
+
+                  // status: 0,
+                  // visitor: widget.visitor,
+                  // unitList: selectedBuildingUnits,
                   visitorLog: visitorLogData,
-                )),
-      );
+                  // logID: logID,
+                ),
+              ),
+            )
+          : Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => RequestPermissionPage2(
+                        status: 0,
+                        visitor: widget.visitor,
+                        visitorLog: visitorLogData,
+                      )),
+            );
     } catch (e) {
       log("❌ Error in _handleDirectApproval: $e");
       _showErrorSnackbar("Error during gatekeeper approval.");
@@ -1168,7 +1194,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         log("✅ Visitor allowed by Gatekeeper successfully");
         _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
         await _showApprovedDialog(context, visitorLogData, onSuccess: () {
-          Navigator.pushReplacement(
+          Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => GateDashboardView()),
           );
@@ -1266,34 +1292,55 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final prefs = await SharedPreferences.getInstance();
     final logID = prefs.getString("visitor_log");
     if (message == "Visitor is always_allowed") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RequestPermissionPage2(
-            visitor: widget.visitor,
-            unitList: selectedBuildingUnits,
-            visitorLog: visitorLogData,
-            logID: logID,
-          ),
-        ),
-      );
-    } else {
-      final prefs = await SharedPreferences.getInstance();
-      final logID = prefs.getString("visitor_log");
-      widget.from == 0
-          ? Navigator.pushReplacement(
+      widget.selfcheckinFlow
+          ? Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SelfProfileView(
+                  visitor: widget.visitor,
+                  unitList: selectedBuildingUnits,
+
+                  // status: 0,
+                  // visitor: widget.visitor,
+                  // unitList: selectedBuildingUnits,
+                  visitorLog: visitorLogData,
+                  // logID: logID,
+                ),
+              ),
+            )
+          : Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => RequestPermissionPage2(
-                  status: 0,
                   visitor: widget.visitor,
                   unitList: selectedBuildingUnits,
                   visitorLog: visitorLogData,
                   logID: logID,
                 ),
               ),
+            );
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      final logID = prefs.getString("visitor_log");
+      log("selfcheckinFlow: ${widget.selfcheckinFlow}");
+      visitorLogData.visitor?.mobile = widget.visitor.mobile;
+      widget.selfcheckinFlow
+          ? Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SelfProfileView(
+                  visitor: widget.visitor,
+                  unitList: selectedBuildingUnits,
+
+                  // status: 0,
+                  // visitor: widget.visitor,
+                  // unitList: selectedBuildingUnits,
+                  visitorLog: visitorLogData,
+                  // logID: logID,
+                ),
+              ),
             )
-          : Navigator.pushReplacement(
+          : Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => RequestPermissionPage(
@@ -1314,14 +1361,30 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         _isCheckedIn = true;
       }
 
-      await Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (context) => RequestPermissionPage2(
+      widget.selfcheckinFlow
+          ? Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SelfProfileView(
                   visitor: widget.visitor,
+                  unitList: selectedBuildingUnits,
+
+                  // status: 0,
+                  // visitor: widget.visitor,
+                  // unitList: selectedBuildingUnits,
                   visitorLog: visitorLogData,
-                )),
-      );
+                  // logID: logID,
+                ),
+              ),
+            )
+          : await Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => RequestPermissionPage2(
+                        visitor: widget.visitor,
+                        visitorLog: visitorLogData,
+                      )),
+            );
     } catch (e) {
       log("❌ Error in _handleMultiMemberFlow: $e");
       _showErrorSnackbar("Error processing multi-member check-in.");
@@ -1527,6 +1590,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     log("Member mobile numbers from selection $mobileNumbers");
 
     return {
+      "self_check_in": widget.selfcheckinFlow.toString(),
       'company_id': companyId.toString(),
       'name': widget.guestname,
       'mobile': widget.mobileNumber,
