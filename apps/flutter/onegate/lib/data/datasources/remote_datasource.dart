@@ -239,7 +239,7 @@ class RemoteDataSource {
 
       // Prepare the data payload
       final data = {
-        "name": visitor.name,
+        "name": visitor.name == "" ? "Test" : visitor.name,
         "mobile_number": visitor.mobile.toString(),
         "visitor_image": uploadImageUrl.toString(),
       };
@@ -1205,6 +1205,8 @@ class RemoteDataSource {
 
         var filePath = response.data['data']?['file_path'];
         if (filePath != null && filePath is String) {
+          await GateStorage().saveImage(filePath);
+
           return filePath;
         } else {
           log('Unexpected response format: ${response.data}');
