@@ -678,7 +678,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   @override
   Widget build(BuildContext context) {
-    log("widget.selfcheckinFlow${widget.selfcheckinFlow}");
+    log("widget.selfcheckinFlow ${widget.selfcheckinFlow}");
     return WillPopScope(
       onWillPop: () async {
         if (widget.searchedVisitor != null) {
