@@ -188,7 +188,8 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                             Navigator.push(
                                 context,
                                 (MaterialPageRoute(
-                                    builder: (context) => QRScannerScreen())));
+                                    builder: (context) =>
+                                        QRScannerScreen(status: 0))));
                           },
                           child: SelfTapOption(
                             fTitle: 'Scan',

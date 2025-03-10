@@ -15,7 +15,7 @@ class SocketService {
       return;
     }
 
-    socket = IO.io('https://stgsocket.cubeone.in/', {
+    socket = IO.io('https://stgsocket.cubeone.in', {
       'transports': ['websocket'],
       'autoConnect': true,
       'reconnection': true,
@@ -25,43 +25,35 @@ class SocketService {
 
     socket!.onConnect((_) {
       print('✅ Connected to WebSocket server');
-      socket!.emit('joinRoom', {'companyId': "8191", 'clientName': appId});
+      socket!.emit('joinRoom', {'companyId': "412", 'clientName': appId});
     });
 
     socket!.onDisconnect((_) {
       print('❌ Disconnected from WebSocket');
-      Future.delayed(const Duration(seconds: 2), () {
-        if (socket != null && !(socket!.connected)) {
-          print('🔄 Attempting reconnection...');
-          socket!.connect();
-        }
-      });
     });
 
-    socket!.onReconnect((_) => print('✅ Successfully reconnected'));
-    socket!.onReconnectAttempt((_) => print('🔄 Reconnection attempt...'));
-    socket!.onError((data) => print('⚠️ WebSocket Error: $data'));
+    socket!.onReconnectAttempt((_) => print('🔄 Attempting reconnection...'));
+    socket!.onReconnect((_) => print('✅ Reconnected successfully'));
 
-    // ✅ Listen for newMessage event specifically
-    socket!.on('newMessage', (data) {
-      print('📩 Received newMessage: $data');
-      _messageStreamController.add({'event': 'newMessage', 'data': data});
-    });
+    socket!.onError((error) => print('⚠️ WebSocket Error: $error'));
 
-    // Optional - Debugging listener for all events
+    // ✅ Generic listener for all events
     socket!.onAny((event, data) {
-      print('🌐 [DEBUG] Received ANY Event: $event, Data: $data');
+      print('📩 Received event: $event, data: $data');
+      _messageStreamController.add({
+        'event': event,
+        'data': data,
+      });
     });
 
     socket!.connect();
   }
 
   void disconnect() {
-    if (socket != null) {
-      socket!.disconnect();
-      socket!.dispose();
-      socket = null;
-      print('🚪 WebSocket disconnected');
-    }
+    socket?.disconnect();
+    socket?.dispose();
+    socket = null;
+    _messageStreamController.close();
+    print('🚪 WebSocket disconnected and disposed');
   }
 }

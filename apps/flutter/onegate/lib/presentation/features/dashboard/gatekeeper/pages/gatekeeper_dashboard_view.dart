@@ -311,7 +311,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                               final scannedResult = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => QRScannerScreen()),
+                                    builder: (context) => QRScannerScreen(
+                                          status: 1,
+                                        )),
                               );
 
                               if (scannedResult != null) {

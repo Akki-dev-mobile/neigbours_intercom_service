@@ -24,9 +24,6 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import "package:intl/intl.dart";
-import '../../../self_entry/self_home_view.dart';
-import '../../../self_entry/ui/self_profile_view.dart';
-import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final int? from;
@@ -1145,6 +1142,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         context,
         MaterialPageRoute(
             builder: (context) => RequestPermissionPage2(
+                  status: 1,
                   visitor: widget.visitor,
                   visitorLog: visitorLogData,
                 )),
@@ -1269,6 +1267,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         context,
         MaterialPageRoute(
           builder: (context) => RequestPermissionPage2(
+            status: 1,
             visitor: widget.visitor,
             unitList: selectedBuildingUnits,
             visitorLog: visitorLogData,
@@ -1279,30 +1278,32 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
-      widget.from == 0
-          ? Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionPage2(
-                  status: 0,
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  logID: logID,
-                ),
-              ),
-            )
-          : Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionPage(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  logID: logID,
-                ),
-              ),
-            );
+      // widget.from == 0
+      //     ? Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(
+      //           builder: (context) => RequestPermissionPage2(
+      //             status: 0,
+      //             visitor: widget.visitor,
+      //             unitList: selectedBuildingUnits,
+      //             visitorLog: visitorLogData,
+      //             logID: logID,
+      //           ),
+      //         ),
+      //       )
+      //     :
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage(
+            userId: selectedUserIds.first,
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            logID: logID,
+          ),
+        ),
+      );
     }
   }
 
@@ -1317,6 +1318,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         context,
         MaterialPageRoute(
             builder: (context) => RequestPermissionPage2(
+                  status: 1,
                   visitor: widget.visitor,
                   visitorLog: visitorLogData,
                 )),
@@ -1457,8 +1459,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     return VisitorLog(
       visitor_id: int.parse(widget.visitor.id.toString()),
-      visitor_purpose_category_id: widget.purposeCategory.categoryId ??
-          int.parse(widget.purposeCategoryId.toString()),
+      visitor_purpose_category_id:
+          widget.from == 0 ? 1 : widget.purposeCategory.categoryId,
       visitor_purpose_Category_name: widget.purposeCategory.categoryName,
       purpose_sub_category_name:
           widget.purposeCategory.subCategories?.first.subCategoryName,
@@ -1534,7 +1536,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567"
           : int.parse(userId).toString(),
-      'visitor_count': widget.guestCount.toString(),
+      'visitor_count': widget.from == 0 ? "1" : "${widget.guestCount}",
       'member_mobile_number':
           mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
       'visitor_id': widget.visitor.id?.toString() ??

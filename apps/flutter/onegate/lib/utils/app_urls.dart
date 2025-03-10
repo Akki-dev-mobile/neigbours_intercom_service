@@ -25,7 +25,7 @@ class ApiUrls {
 
   static String get visitorApprovals => '$gateBaseUrl/visitor/approvals';
 
-  static String get verifyGuestPasscode => '$gateBaseUrl/member/verifyGuest';
+  static String get verifyGuestPasscode => '$gateBaseUrl/member/pass/verify';
 
   // Society API Endpoints
   static String get buildingList => '$societyBaseUrl/admin/building/list';

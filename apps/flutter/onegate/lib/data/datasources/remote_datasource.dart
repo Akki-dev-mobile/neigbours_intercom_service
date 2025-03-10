@@ -560,7 +560,9 @@ class RemoteDataSource {
   /// Verify Guest Passcode
   Future<Map<String, dynamic>> verifyPasscode({
     required String companyId,
-    required String passcode,
+    String? passcode,
+    int? id,
+    String? mobile,
   }) async {
     try {
       final String url = ApiUrls.verifyGuestPasscode;
@@ -573,6 +575,8 @@ class RemoteDataSource {
         "company_id": resolvedCompanyId,
         "in_gate": selectedGateName,
         "passcode": passcode,
+        "mobile": mobile,
+        "pass_id": id
       };
 
       log("🔍 Sending request to verify passcode: $requestData");
