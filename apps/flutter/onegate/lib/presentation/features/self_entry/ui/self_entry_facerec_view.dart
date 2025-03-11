@@ -9,9 +9,11 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/self_entry_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -168,11 +170,11 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                           child: CustomLargeBtn(
                             text: 'Next',
                             onPressed: () {
-                              log(comingfrom.toString());
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => VisitorsInEntry(
+                                    selfcheckinFlow: true,
                                     comingfrom: comingfrom,
                                     searchedVisitor: visitor,
                                     selectedValue: globalSelectedPurposes[
@@ -263,7 +265,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     if (_image == null) return;
 
     try {
-      final uri = Uri.parse('http://192.168.1.9:8000/api/register-face/');
+      final uri = Uri.parse('${ApiUrls.FacerecUrl}/register-face/');
       final request = http.MultipartRequest('POST', uri)
         ..fields['name'] = name
         ..files.add(await http.MultipartFile.fromPath('files', _image!.path));
@@ -297,7 +299,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     if (_image == null) return;
 
     try {
-      final uri = Uri.parse('http://192.168.1.9:8000/api/search-face/');
+      final uri = Uri.parse('${ApiUrls.FacerecUrl}/search-face/');
       final request = http.MultipartRequest('POST', uri)
         ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
 
@@ -452,76 +454,88 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    return MyScrollView(
-      floatingActionButton: _image != null
-          ? Row(
-              verticalDirection: VerticalDirection.down,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _pickImage,
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.refresh,
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: _uploadImage,
-                  child: loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.check,
-                          color: Colors.black,
+    return WillPopScope(
+      // canPop: true,
+      onWillPop: () {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const SelfHomeView()),
+          (Route<dynamic> route) => false,
+        );
+        return Future.value(false);
+      },
+      child: MyScrollView(
+        pageTitleWidget: Container(),
+        floatingActionButton: _image != null
+            ? Row(
+                verticalDirection: VerticalDirection.down,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: _pickImage,
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.black),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.refresh,
+                          color: Colors.white,
                         ),
-                ),
-              ],
-            )
-          : Container(),
-      pageBody: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            _image == null
-                ? SizedBox(
-                    width: size.width,
-                    height: size.height * 0.8,
-                    child: const Center(child: Text('No image selected.')))
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.file(
-                      fit: BoxFit.cover,
-                      _image!,
-                      height: size.height * 0.7,
+                      ],
                     ),
                   ),
-            // const SizedBox(height: 20),
-            // ElevatedButton(
-            //   onPressed: _pickImage,
-            //   child: const Text('Capture Photo'),
-            // ),
-            // const SizedBox(height: 20),
-            // ElevatedButton(
-            //   onPressed: _uploadImage,
-            //   child: const Text('Upload Photo'),
-            // ),
-            // ElevatedButton(
-            //   onPressed: _showNameInputDialog,
-            //   child: const Text('Register Photo'),
-            // ),
-          ],
+                  ElevatedButton(
+                    onPressed: _uploadImage,
+                    child: loading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.check,
+                            color: Colors.black,
+                          ),
+                  ),
+                ],
+              )
+            : Container(),
+        pageBody: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              _image == null
+                  ? SizedBox(
+                      width: size.width,
+                      height: size.height * 0.8,
+                      child: const Center(child: Text('No image selected.')))
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.file(
+                        fit: BoxFit.cover,
+                        _image!,
+                        height: size.height * 0.7,
+                      ),
+                    ),
+              // const SizedBox(height: 20),
+              // ElevatedButton(
+              //   onPressed: _pickImage,
+              //   child: const Text('Capture Photo'),
+              // ),
+              // const SizedBox(height: 20),
+              // ElevatedButton(
+              //   onPressed: _uploadImage,
+              //   child: const Text('Upload Photo'),
+              // ),
+              // ElevatedButton(
+              //   onPressed: _showNameInputDialog,
+              //   child: const Text('Register Photo'),
+              // ),
+            ],
+          ),
         ),
       ),
     );

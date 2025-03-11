@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart';
@@ -16,8 +17,8 @@ class FaceIDRegistrationScreen extends StatefulWidget {
 
 /// Upload multiple face images for face registration
 Future<void> _uploadImages(String userName, List<File> images) async {
-  const String apiUrl =
-      'http://192.168.1.9:8000/api/register-face/'; // Change to actual API URL
+  String apiUrl =
+      '${ApiUrls.FacerecUrl}/register-face/'; // Change to actual API URL
   Dio dio = Dio();
 
   try {

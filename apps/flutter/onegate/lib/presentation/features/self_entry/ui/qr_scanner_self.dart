@@ -15,8 +15,10 @@ import 'package:common_widgets/common_widgets.dart';
 class QRScannerScreen extends StatefulWidget {
   final String? companyId;
   final int? status;
+  final bool? self_checkin;
 
-  const QRScannerScreen({Key? key, this.companyId, this.status})
+  const QRScannerScreen(
+      {Key? key, this.companyId, this.status, this.self_checkin})
       : super(key: key);
 
   @override
@@ -196,13 +198,13 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               context,
               MaterialPageRoute(
                 builder: (context) => UnitSelectionView(
-                  from: 0,
                   null,
                   purposeCategory:
                       PurposeCategory1(categoryId: 0, categoryName: "Guest"),
                   guestname: name!,
                   mobileNumber: mobile ?? visitor.mobile!,
                   visitor: visitor,
+                  selfcheckinFlow: widget.self_checkin ?? false,
                 ),
               ),
             );

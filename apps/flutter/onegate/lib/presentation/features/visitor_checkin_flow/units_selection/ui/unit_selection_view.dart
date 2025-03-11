@@ -24,9 +24,11 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import "package:intl/intl.dart";
+import '../../../self_entry/self_home_view.dart';
+import '../../../self_entry/ui/self_profile_view.dart';
+import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
-  final int? from;
   Visitor? searchedVisitor;
   final Visitor visitor;
   final PurposeCategory1 purposeCategory;
@@ -42,6 +44,7 @@ class UnitSelectionView extends StatefulWidget {
   final String? carNumber;
   final bool? isVerified;
   final bool? isKioskModeEnabled;
+  final bool? selfcheckinFlow;
 
   UnitSelectionView(Visitor? searchedVisitor,
       {Key? key,
@@ -59,7 +62,7 @@ class UnitSelectionView extends StatefulWidget {
       this.selectedSubCategoryId,
       this.isVerified,
       this.isKioskModeEnabled = true,
-      this.from})
+      this.selfcheckinFlow})
       : super(key: key);
 
   @override
@@ -149,13 +152,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final members = await remoteDataSource.getMembersList();
     _allMembers = members;
     _filteredMembersNotifier.value = members;
-  }
-
-  Future<void> deleteImage() async {
-    GateStorage storage = GateStorage();
-    await storage.init();
-    await storage.removeVisitorImage();
-    print("Image successfully removed.");
   }
 
   // Search and Filter Methods
@@ -329,9 +325,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () async {
+                        onPressed: () {
                           // // Add your confirm logic here
-                          await deleteImage();
                           Navigator.pop(context);
                           _handleSelectionSubmit(selectedMembers);
                         },
@@ -1134,15 +1129,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<void> _handleDirectApproval(VisitorLog visitorLogData) async {
     try {
-      // if (!_isCheckedIn) {
-      await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-      _isCheckedIn = true;
-      // }
+      if (!_isCheckedIn) {
+        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+        _isCheckedIn = true;
+      }
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
             builder: (context) => RequestPermissionPage2(
-                  status: 1,
                   visitor: widget.visitor,
                   visitorLog: visitorLogData,
                 )),
@@ -1267,7 +1261,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         context,
         MaterialPageRoute(
           builder: (context) => RequestPermissionPage2(
-            status: 1,
             visitor: widget.visitor,
             unitList: selectedBuildingUnits,
             visitorLog: visitorLogData,
@@ -1278,25 +1271,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
-      // widget.from == 0
-      //     ? Navigator.pushReplacement(
-      //         context,
-      //         MaterialPageRoute(
-      //           builder: (context) => RequestPermissionPage2(
-      //             status: 0,
-      //             visitor: widget.visitor,
-      //             unitList: selectedBuildingUnits,
-      //             visitorLog: visitorLogData,
-      //             logID: logID,
-      //           ),
-      //         ),
-      //       )
-      //     :
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => RequestPermissionPage(
-            userId: selectedUserIds.first,
             visitor: widget.visitor,
             unitList: selectedBuildingUnits,
             visitorLog: visitorLogData,
@@ -1318,7 +1297,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         context,
         MaterialPageRoute(
             builder: (context) => RequestPermissionPage2(
-                  status: 1,
                   visitor: widget.visitor,
                   visitorLog: visitorLogData,
                 )),
@@ -1459,8 +1437,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     return VisitorLog(
       visitor_id: int.parse(widget.visitor.id.toString()),
-      visitor_purpose_category_id:
-          widget.from == 0 ? 1 : widget.purposeCategory.categoryId,
+      visitor_purpose_category_id: widget.purposeCategory.categoryId ??
+          int.parse(widget.purposeCategoryId.toString()),
       visitor_purpose_Category_name: widget.purposeCategory.categoryName,
       purpose_sub_category_name:
           widget.purposeCategory.subCategories?.first.subCategoryName,
@@ -1536,7 +1514,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567"
           : int.parse(userId).toString(),
-      'visitor_count': widget.from == 0 ? "1" : "${widget.guestCount}",
+      'visitor_count': widget.guestCount.toString(),
       'member_mobile_number':
           mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
       'visitor_id': widget.visitor.id?.toString() ??

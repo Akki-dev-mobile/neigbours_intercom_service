@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
@@ -38,8 +40,8 @@ class RequestPermissionPage2 extends StatefulWidget {
 }
 
 class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
-  bool _isUploading = false;
-  double _uploadProgress = 0;
+  final bool _isUploading = false;
+  final double _uploadProgress = 0;
 
   static const Map<RequestType, String> lottieAnimations = {
     RequestType.allowByGatekeeper:
@@ -47,7 +49,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   };
 
   static const Map<RequestType, String> requestMessages = {
-    RequestType.allowByGatekeeper: "Visitor is allowed by Gatekeeper",
+    RequestType.allowByGatekeeper: "Visitor is Self Check In",
   };
 
   static const Map<RequestType, Color> _requestMessagesColor = {
@@ -57,7 +59,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   @override
   Widget build(BuildContext context) {
     const requestType = RequestType.allowByGatekeeper;
-
+    log(widget.status.toString());
     return LoadingOverlay(
       isUploading: _isUploading,
       progress: _uploadProgress,
@@ -105,12 +107,19 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         InkWell(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => GateDashboardView(),
-            ),
-          ),
+          onTap: () => widget.status == 0
+              ? Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SelfHomeView(),
+                  ),
+                )
+              : Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GateDashboardView(),
+                  ),
+                ),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
@@ -182,11 +191,11 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                         widget.visitor.visitor_image!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          return Icon(Symbols.person,
+                          return const Icon(Symbols.person,
                               size: 60, color: Colors.grey);
                         },
                       )
-                    : Icon(Symbols.person, size: 60, color: Colors.grey),
+                    : const Icon(Symbols.person, size: 60, color: Colors.grey),
               ),
             ),
             const SizedBox(height: 15),
