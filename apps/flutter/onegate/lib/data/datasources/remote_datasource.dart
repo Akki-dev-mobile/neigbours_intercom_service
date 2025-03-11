@@ -140,7 +140,7 @@ class RemoteDataSource {
   Future<void> sendFcmNotification(Map<String, dynamic> requestData) async {
     try {
       final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
