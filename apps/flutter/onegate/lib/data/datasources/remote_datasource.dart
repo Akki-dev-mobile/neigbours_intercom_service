@@ -523,7 +523,7 @@ class RemoteDataSource {
       visitor_id: item['visitor_id'] as int? ?? 0,
       visitor: visitor,
       visitor_purpose_category_id:
-          item['visitor_purpose_category_id'] as int? ?? 0,
+          item['visitor_purpose_category_id'] as int? ?? 1,
       visitor_purpose_sub_category_id:
           item['visitor_purpose_sub_category_id'] as int?,
       visitor_building_assignment: buildingAssignments,
