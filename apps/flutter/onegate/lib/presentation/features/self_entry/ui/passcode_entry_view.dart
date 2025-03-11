@@ -10,7 +10,9 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PasscodeEntryView extends StatefulWidget {
-  const PasscodeEntryView({super.key});
+  final bool selfcheckinFlow;
+
+  const PasscodeEntryView({super.key, this.selfcheckinFlow = false});
 
   @override
   State<PasscodeEntryView> createState() => _PasscodeEntryViewState();
@@ -49,7 +51,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                   }
                   return null;
                 },
-                titleColor: Theme.of(context).colorScheme.onBackground,
+                titleColor: Theme.of(context).colorScheme.onSurface,
                 hintColor: Theme.of(context).colorScheme.onPrimary,
                 "Visitor Passcode",
                 hintText: '123456',
@@ -78,7 +80,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                   },
                   icon: Icon(
                     Symbols.done_rounded,
-                    color: Theme.of(context).colorScheme.onBackground,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -136,7 +138,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
 
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => SelfHomeView()),
+                        MaterialPageRoute(builder: (_) => const SelfHomeView()),
                       );
                     } else {
                       myFluttertoast(

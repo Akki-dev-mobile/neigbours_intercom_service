@@ -15,10 +15,10 @@ import 'package:common_widgets/common_widgets.dart';
 class QRScannerScreen extends StatefulWidget {
   final String? companyId;
   final int? status;
-  final bool? self_checkin;
+  final bool self_checkin;
 
   const QRScannerScreen(
-      {Key? key, this.companyId, this.status, this.self_checkin})
+      {Key? key, this.companyId, this.status, this.self_checkin = false})
       : super(key: key);
 
   @override
@@ -202,7 +202,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                   guestname: name!,
                   mobileNumber: mobile ?? visitor.mobile!,
                   visitor: visitor,
-                  selfcheckinFlow: widget.self_checkin ?? false,
+                  selfcheckinFlow: widget.self_checkin,
                 ),
               ),
             );
