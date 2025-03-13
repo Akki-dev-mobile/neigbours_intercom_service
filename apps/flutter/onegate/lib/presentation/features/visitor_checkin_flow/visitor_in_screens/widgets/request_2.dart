@@ -24,6 +24,7 @@ class RequestPermissionPage2 extends StatefulWidget {
   List<String>? unitList;
   final String? request;
   int? status;
+  final bool? selfcheckinFlow;
 
   RequestPermissionPage2(
       {Key? key,
@@ -32,7 +33,8 @@ class RequestPermissionPage2 extends StatefulWidget {
       this.logID,
       this.visitorLog,
       this.unitList,
-      this.status})
+      this.status,
+      this.selfcheckinFlow})
       : super(key: key);
 
   @override
@@ -42,19 +44,28 @@ class RequestPermissionPage2 extends StatefulWidget {
 class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   final bool _isUploading = false;
   final double _uploadProgress = 0;
-
+  bool? self;
   static const Map<RequestType, String> lottieAnimations = {
     RequestType.allowByGatekeeper:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z',
   };
 
-  static const Map<RequestType, String> requestMessages = {
-    RequestType.allowByGatekeeper: "Visitor is Self Check In",
-  };
+  String requestMessages(RequestType type) {
+    return {
+          RequestType.allowByGatekeeper:
+              self == true ? "Visitor is Self Check In" : "Visitor is allowed",
+        }[type] ??
+        "Unknown request type";
+  }
 
   static const Map<RequestType, Color> _requestMessagesColor = {
     RequestType.allowByGatekeeper: Colors.green,
   };
+
+  void initState() {
+    super.initState();
+    self = widget.selfcheckinFlow;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +89,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
               alignment: Alignment.center,
               child: CustomLargeBtn(
                 text: 'Finish',
-                onPressed: () => widget.status == 0
+                onPressed: () => widget.selfcheckinFlow == true
                     ? Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -107,7 +118,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         InkWell(
-          onTap: () => widget.status == 0
+          onTap: () => widget.selfcheckinFlow == true
               ? Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -155,7 +166,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
             baseColor: _requestMessagesColor[requestType]!,
             highlightColor: Colors.black45,
             child: Text(
-              requestMessages[requestType] ?? "",
+              requestMessages(requestType) ?? "",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,

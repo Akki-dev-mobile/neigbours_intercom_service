@@ -5,20 +5,19 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
-import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,7 +41,7 @@ class RequestPermissionPage extends StatefulWidget {
   final VisitorLog? visitorLog;
   List<String>? unitList;
   final String? request;
-  final String? userId;
+  final bool? selfcheckinFlow;
 
   RequestPermissionPage(
       {Key? key,
@@ -51,7 +50,7 @@ class RequestPermissionPage extends StatefulWidget {
       this.logID,
       this.visitorLog,
       this.unitList,
-      this.userId})
+      this.selfcheckinFlow})
       : super(key: key);
 
   @override
@@ -109,22 +108,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     RequestType.waiting: Colors.black,
     RequestType.uploading: Colors.black,
   };
-  GateStorage gateStorage = GateStorage();
 
   @override
   void initState() {
     super.initState();
-    _initializeSocket();
-  }
-
-  Future<void> _initializeSocket() async {
-    _socketService = SocketService();
-    final String? companyId = await gateStorage.getSocietyId();
-    if (companyId == null) {
-      throw Exception("Company ID not found. Please select a company.");
-    }
-
-    _socketService.initSocket(companyId, "onegate");
+    _socketService = SocketService(); // Initialize WebSocket service
+    _socketService.initSocket("8191", "onegate"); // Pass companyId & appId
 
     _socketService.messageStream.listen((message) {
       if (message['event'] == 'approvalUpdate') {
@@ -132,7 +121,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       }
     });
 
-    _startPolling();
+    _startPolling(); // Start API polling as a fallback
 
     if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
@@ -165,6 +154,23 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         _isTimeElapsed = false;
       }
     });
+  }
+
+  void _handleExpiredTimer() {
+    setState(() {
+      _isTimeElapsed = true;
+      _requestType = RequestType.notRecheable;
+      _stateStreamController.add(RequestType.notRecheable);
+    });
+
+    // Stop polling
+    _stopPolling();
+
+    // Show notification
+    // myFluttertoast(
+    //   msg: "Member not reachable",
+    //   backgroundColor: Colors.orange,
+    // );
   }
 
   void _startPolling() {
@@ -827,7 +833,17 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           child: ElevatedButton(
             style: _getAllowButtonStyle(),
             onPressed: () async {
-              await _allowByGatekeeper();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RequestPermissionPage2(
+                    visitor: widget.visitor,
+                    visitorLog: widget.visitorLog,
+                  ),
+                ),
+                (Route<dynamic> route) =>
+                    false, // This removes all previous routes
+              );
             },
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.3,
@@ -881,16 +897,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         log("✅ Visitor allowed by Gatekeeper successfully");
         _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => RequestPermissionPage2(
-              visitor: widget.visitor,
-              visitorLog: widget.visitorLog,
-            ),
-          ),
-          (Route<dynamic> route) => false, // This removes all previous routes
-        );
+        // Navigate back to Dashboard
+
+        _navigateToDashboard();
       } else {
         log("❌ Failed to allow visitor by Gatekeeper: ${response.statusMessage}");
         _showErrorSnackBar("Error allowing visitor. Try again.");
@@ -989,19 +998,19 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   Future<void> _sendFcmNotification() async {
-    final formattedInTime =
-        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('visitorId');
       final String? visitorLogId = prefs.getString("visitor_log");
+
+      final String visitorId = widget.visitor.id.toString();
 
       if (visitorLogId == null) {
         _showSnackBar("Visitor Log ID is missing.", isError: true);
         return;
       }
 
+      // ✅ Fetch `member_id` & `mobile_number` from `member_details`
       final List<Map<String, String>> selectedMembers =
           await _getMemberDetails(int.parse(visitorLogId));
 
@@ -1010,6 +1019,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         return;
       }
 
+      // ✅ Use the first member's details (or handle multiple if needed)
       final String memberId = selectedMembers.first['member_id'] ?? "";
       final String memberMobile = selectedMembers.first['mobile_number'] ?? "";
 
@@ -1018,48 +1028,40 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'name': widget.visitor.name,
         'mobile': widget.visitor.mobile,
         'in_time': formattedInTime,
-        'user_id': (int.tryParse(widget.userId ?? "0") == null ||
-                int.tryParse(widget.userId ?? "0") == 0)
+        'user_id': (int.tryParse(userId ?? "0") == null ||
+                int.tryParse(userId ?? "0") == 0)
             ? "234567"
-            : int.parse(widget.userId!).toString(),
+            : int.parse(userId!).toString(),
         'purpose':
             widget.visitorLog?.visitor_purpose_Category_name?.toLowerCase(),
         'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
-        'member_mobile_number': memberMobile,
-        'visitor_id': widget.visitor.id.toString(),
+        'member_mobile_number':
+            memberMobile, // ✅ Assigned from `member_details`
+        'visitor_id': visitorId,
         'purpose_category':
             widget.visitorLog?.visitor_purpose_category_id.toString() == "3"
                 ? "delivery"
                 : widget.visitorLog?.visitor_purpose_category_id.toString(),
         'visitor_log_id': visitorLogId,
         'coming_from': widget.visitorLog?.visitor_coming_from ?? "Bandra",
-        'member_id': memberId,
+        'member_id': memberId, // ✅ Assigned from `member_details`
         'company_name': widget.visitorLog?.company_id.toString() ?? "",
-        "file": widget.visitor.visitor_image ?? ""
       };
 
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
 
-      // Send WebSocket event
-      if (_socketService.socket != null && _socketService.socket!.connected) {
-        _socketService.socket!.emit("sendFcmNotification", requestData);
-      }
-
-      // Send API request
       final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
+      if (response.statusCode == 200) {
         log("✅ FCM Notification Sent Successfully: ${response.data}");
-        _showSuccessSnackBar(
-            response.data['message'] ?? "Notification sent successfully!");
+        _showSuccessSnackBar("Notification sent successfully!");
       } else {
-        log("❌ FCM Notification Failed: ${response.data}");
-        _showErrorSnackBar(
-            response.data['message'] ?? "Error sending notification.");
+        log("❌ FCM Notification Failed: ${response.statusMessage}");
+        _showErrorSnackBar("Error sending notification.");
       }
     } catch (e) {
       log("❌ Error in _sendFcmNotification: $e");
@@ -1106,7 +1108,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void _navigateToRequestPermission(PurposeCategory1 purposeCategory) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => GateDashboardView()),
+      MaterialPageRoute(
+          builder: (context) => widget.selfcheckinFlow == true
+              ? const SelfHomeView()
+              : GateDashboardView()),
     );
   }
 
@@ -1117,7 +1122,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void _navigateToDashboard() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => GateDashboardView()),
+      MaterialPageRoute(
+          builder: (context) => widget.selfcheckinFlow == true
+              ? const SelfHomeView()
+              : GateDashboardView()),
     );
   }
 }

@@ -1276,6 +1276,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         context,
         MaterialPageRoute(
           builder: (context) => RequestPermissionPage(
+            selfcheckinFlow: widget.selfcheckinFlow,
             visitor: widget.visitor,
             unitList: selectedBuildingUnits,
             visitorLog: visitorLogData,
@@ -1515,8 +1516,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count': widget.guestCount.toString(),
-      'member_mobile_number':
-          mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
+      'member_mobile_number': "${8452060059}",
+      // mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
       'visitor_id': widget.visitor.id?.toString() ??
           widget.searchedVisitor?.id?.toString() ??
           '',

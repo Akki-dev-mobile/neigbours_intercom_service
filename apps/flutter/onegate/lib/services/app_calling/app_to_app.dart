@@ -26,13 +26,19 @@ class SocketService {
 
     socket!.onConnect((_) {
       print('✅ Connected to WebSocket server');
-      socket!.emit('joinRoom', {'companyId': "8191", 'clientName': appId});
+      socket!.emit('joinRoom', {'companyId': companyId, 'clientName': appId});
     });
 
-    // ✅ Listen for incoming messages
+    // ✅ Listen for specific events
     _listenToEvent('message');
     _listenToEvent('notification');
     _listenToEvent('userJoined');
+
+    // ✅ Listen to all events dynamically
+    socket!.onAny((event, data) {
+      print('🌐 [ALL EVENTS] Event: $event, Data: $data');
+      _messageStreamController.add({'event': event, 'data': data});
+    });
 
     socket!.onError((data) => print('⚠️ WebSocket Error: $data'));
     socket!.onDisconnect((_) => print('❌ Disconnected from WebSocket'));
@@ -43,7 +49,7 @@ class SocketService {
   /// ✅ Generic event listener
   void _listenToEvent(String eventName) {
     socket!.on(eventName, (data) {
-      print('📩 Received Event: $eventName, Data: $data');
+      print('📩 [SPECIFIC EVENT] Event: $eventName, Data: $data');
       _messageStreamController.add({'event': eventName, 'data': data});
     });
   }
