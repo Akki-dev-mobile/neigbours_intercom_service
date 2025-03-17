@@ -15,10 +15,10 @@ import 'package:common_widgets/common_widgets.dart';
 class QRScannerScreen extends StatefulWidget {
   final String? companyId;
   final int? status;
-  final bool? self_checkin;
+  final bool self_checkin;
 
   const QRScannerScreen(
-      {Key? key, this.companyId, this.status, this.self_checkin})
+      {Key? key, this.companyId, this.status, this.self_checkin = false})
       : super(key: key);
 
   @override
@@ -175,9 +175,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             visitor: visitor,
             visitor_coming_from: visitorData['coming_from'],
             visitor_purpose_Category_name: visitorData['category'],
-            visitor_purpose_category_id: visitorData['unit_id'] != null
-                ? int.tryParse(visitorData['unit_id'].toString())
-                : null,
+            visitor_purpose_category_id: 1,
             visitor_count: 1,
             company_id: visitorData['company_id'],
           );
@@ -200,11 +198,11 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 builder: (context) => UnitSelectionView(
                   null,
                   purposeCategory:
-                      PurposeCategory1(categoryId: 0, categoryName: "Guest"),
+                      PurposeCategory1(categoryId: 1, categoryName: "Guest"),
                   guestname: name!,
                   mobileNumber: mobile ?? visitor.mobile!,
                   visitor: visitor,
-                  selfcheckinFlow: widget.self_checkin ?? false,
+                  selfcheckinFlow: widget.self_checkin,
                 ),
               ),
             );
