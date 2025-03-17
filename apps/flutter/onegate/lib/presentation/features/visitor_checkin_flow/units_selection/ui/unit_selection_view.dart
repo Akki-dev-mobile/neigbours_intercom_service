@@ -1129,14 +1129,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<void> _handleDirectApproval(VisitorLog visitorLogData) async {
     try {
-      if (!_isCheckedIn) {
-        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-        _isCheckedIn = true;
-      }
+      // if (!_isCheckedIn) {
+      await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+      _isCheckedIn = true;
+      // }
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
             builder: (context) => RequestPermissionPage2(
+                  selfcheckinFlow: widget.selfcheckinFlow,
                   visitor: widget.visitor,
                   visitorLog: visitorLogData,
                 )),
