@@ -79,8 +79,6 @@ dependencies:
   connectivity_plus: ^5.0.2
   qr_code_scanner_plus: ^2.0.10+1
   vibration: ^3.1.3
-
-
   flutter_kiosk_mode: ^0.0.2
 
 dev_dependencies:

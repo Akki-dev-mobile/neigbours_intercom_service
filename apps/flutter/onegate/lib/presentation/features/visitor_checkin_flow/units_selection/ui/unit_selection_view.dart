@@ -1149,7 +1149,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     try {
       // if (!_isCheckedIn) {
       await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-      _isCheckedIn = true;
+      //   _isCheckedIn = true;
       // }
       widget.selfcheckinFlow
           ? Navigator.push(
@@ -1170,7 +1170,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           : Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => RequestPermissionPage(
+                  builder: (context) => RequestPermissionPage2(
                         // status: 0,
                         visitor: widget.visitor,
                         visitorLog: visitorLogData,
@@ -1311,7 +1311,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           : Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => RequestPermissionPage(
+                builder: (context) => RequestPermissionPage2(
                   visitor: widget.visitor,
                   unitList: selectedBuildingUnits,
                   visitorLog: visitorLogData,
@@ -1599,7 +1599,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'user_id': (int.tryParse(userId) == null || int.tryParse(userId) == 0)
           ? "234567"
           : int.parse(userId).toString(),
-      'visitor_count': widget.guestCount.toString(),
+      'visitor_count':
+          widget.guestCount != null ? widget.guestCount.toString() : "1",
       'member_mobile_number':
           mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
       'visitor_id': widget.visitor.id?.toString() ??

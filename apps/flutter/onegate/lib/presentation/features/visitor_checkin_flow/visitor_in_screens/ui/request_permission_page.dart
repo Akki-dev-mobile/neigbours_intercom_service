@@ -379,7 +379,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               // ),
               child: ClipOval(
                 child: Image.network(
-                  widget.visitor.visitor_image!,
+                  widget.visitor.visitor_image ?? "",
                   fit: BoxFit.cover,
                 ),
               ),

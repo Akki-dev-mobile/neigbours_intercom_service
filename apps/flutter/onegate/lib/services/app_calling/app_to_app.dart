@@ -26,7 +26,7 @@ class SocketService {
 
     socket!.onConnect((_) {
       print('✅ Connected to WebSocket server');
-      socket!.emit('joinRoom', {'companyId': companyId, 'clientName': appId});
+      socket!.emit('joinRoom', {'companyId': 412, 'clientName': appId});
     });
 
     // ✅ Listen for specific events

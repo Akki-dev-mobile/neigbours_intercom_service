@@ -32,6 +32,7 @@ class SelfProfileView extends StatefulWidget {
 class _SelfProfileViewState extends State<SelfProfileView> {
   late Timer _timer;
   double _progressValue = 1.0;
+  bool _showApprovalMessage = true;
 
   @override
   void initState() {
@@ -57,6 +58,15 @@ class _SelfProfileViewState extends State<SelfProfileView> {
 
       if (_progressValue <= 0) {
         timer.cancel();
+      }
+    });
+
+    // Hide approval message after a few seconds
+    Timer(Duration(seconds: 8), () {
+      if (mounted) {
+        setState(() {
+          _showApprovalMessage = false;
+        });
       }
     });
   }
@@ -91,95 +101,142 @@ class _SelfProfileViewState extends State<SelfProfileView> {
               style: Theme.of(context).textTheme.labelMedium,
             ))
       ],
-      pageBody: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      pageBody: Stack(
         children: [
-          SizedBox(
-            width: double.infinity,
-            height: MediaQuery.of(context).size.height * 0.2,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Stack(
-                  alignment: Alignment.center,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: MediaQuery.of(context).size.height * 0.2,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    CircleAvatar(
-                      radius: 50.0,
-                      backgroundColor: Colors.blue,
-                      backgroundImage: NetworkImage(
-                        widget.visitor.visitor_image ?? '',
-                      ),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 50.0,
+                          backgroundColor: Colors.blue,
+                          backgroundImage: NetworkImage(
+                            widget.visitor.visitor_image ?? '',
+                          ),
+                        ),
+                        SizedBox(
+                          width: 120,
+                          height: 120,
+                          child: CircularProgressIndicator(
+                            value: _progressValue,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.red),
+                            strokeWidth: 4.0,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(
-                      width: 120,
-                      height: 120,
-                      child: CircularProgressIndicator(
-                        value: _progressValue,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                        strokeWidth: 4.0,
+                    Container(
+                      color: Colors.black38,
+                      width: 1,
+                      height: 80,
+                    ),
+                    RichText(
+                      text: TextSpan(
+                        text: 'Pass ID\n',
+                        style: Theme.of(context).textTheme.labelMedium,
+                        children: <TextSpan>[
+                          TextSpan(
+                            text: '#45605890',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                Container(
-                  color: Colors.black38,
-                  width: 1,
-                  height: 80,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 8.0,
+                  bottom: 20,
                 ),
-                RichText(
+                child: RichText(
                   text: TextSpan(
-                    text: 'Pass ID\n',
-                    style: Theme.of(context).textTheme.labelMedium,
-                    children: <TextSpan>[
-                      TextSpan(
-                        text: '#45605890',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ],
+                    text: widget.visitor.name ?? 'N/A',
+                    style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                          fontSize: 42,
+                        ),
+                    children: <TextSpan>[],
                   ),
                 ),
-              ],
-            ),
+              ),
+              SelfProfileTile(
+                icon: Symbols.phone_in_talk_sharp,
+                title: 'Mobile',
+                subtitle: widget.visitor.mobile ?? 'N/A',
+              ),
+              SelfProfileTile(
+                icon: Symbols.person_pin_circle_sharp,
+                title: 'Coming From',
+                subtitle: widget.visitorLog.visitor_coming_from ?? 'N/A',
+              ),
+              SelfProfileTile(
+                icon: Symbols.near_me_sharp,
+                title: 'Unit',
+                subtitle: widget.unitList?.first ?? 'N/A',
+              ),
+              SelfProfileTile(
+                icon: Symbols.groups_3_sharp,
+                title: 'Purpose',
+                subtitle:
+                    widget.visitorLog.visitor_purpose_Category_name ?? 'N/A',
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(
-              top: 8.0,
+
+          // Approval message overlay
+          if (_showApprovalMessage)
+            Positioned(
               bottom: 20,
-            ),
-            child: RichText(
-              text: TextSpan(
-                text: widget.visitor.name ?? 'N/A',
-                style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                      fontSize: 42,
+              left: 0,
+              right: 0,
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 2,
                     ),
-                children: <TextSpan>[],
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Symbols.info,
+                      color: Colors.black,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Please wait for some time. You will receive member's approval on your mobile.",
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          SelfProfileTile(
-            icon: Symbols.phone_in_talk_sharp,
-            title: 'Mobile',
-            subtitle: widget.visitor.mobile ?? 'N/A',
-          ),
-          SelfProfileTile(
-            icon: Symbols.person_pin_circle_sharp,
-            title: 'Coming From',
-            subtitle: widget.visitorLog.visitor_coming_from ?? 'N/A',
-          ),
-          SelfProfileTile(
-            icon: Symbols.near_me_sharp,
-            title: 'Unit',
-            subtitle: widget.unitList?.first ?? 'N/A',
-          ),
-          SelfProfileTile(
-            icon: Symbols.groups_3_sharp,
-            title: 'Purpose',
-            subtitle: widget.visitorLog.visitor_purpose_Category_name ?? 'N/A',
-          ),
         ],
       ),
     );
