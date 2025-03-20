@@ -43,7 +43,6 @@ android {
     ndkVersion flutter.ndkVersion
 
 
-
     defaultConfig {
         applicationId "com.cubeonebiz.gate.flutter_onegate"
         minSdkVersion 23
@@ -53,13 +52,13 @@ android {
 
         manifestPlaceholders = [
                 appAuthRedirectScheme: 'com.cubeonebiz.gate',
-                applicationName: 'io.flutter.app.FlutterApplication' // Default Flutter Application class
+                applicationName      : 'io.flutter.app.FlutterApplication' // Default Flutter Application class
         ]
     }
 
     signingConfigs {
         release {
-            storeFile file("$rootProject.projectDir/app/my-release-key.keystore")  // ✅ Updated path
+            storeFile file("$rootProject.projectDir/app/my-release-key.jks")  // ✅ Updated path
             keyAlias keystoreProperties['keyAlias']
             keyPassword keystoreProperties['keyPassword']
 //            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null

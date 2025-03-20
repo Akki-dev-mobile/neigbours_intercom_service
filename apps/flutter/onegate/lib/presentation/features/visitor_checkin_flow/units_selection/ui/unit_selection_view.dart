@@ -1167,15 +1167,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 ),
               ),
             )
-          : Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => RequestPermissionPage2(
-                        // status: 0,
-                        visitor: widget.visitor,
-                        visitorLog: visitorLogData,
-                      )),
-            );
+          : await _allowByGatekeeper(visitorLogData);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+                  // status: 0,
+                  visitor: widget.visitor,
+                  visitorLog: visitorLogData,
+                )),
+      );
     } catch (e) {
       log("❌ Error in _handleDirectApproval: $e");
       _showErrorSnackbar("Error during gatekeeper approval.");
@@ -1201,7 +1202,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         });
       } else {
         log("❌ Failed to allow visitor by Gatekeeper: ${response.statusMessage}");
-        _showErrorSnackBar("Error allowing visitor. Try again.");
+        // _showErrorSnackBar("Error allowing visitor. Try again.");
       }
     } catch (e) {
       log("❌ Error in _allowByGatekeeper: $e");
@@ -1215,7 +1216,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         );
       }
 
-      showErrorSnackBar("Failed to allow visitor.");
+      // showErrorSnackBar("Failed to allow visitor.");
     }
   }
 
@@ -1368,12 +1369,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 builder: (context) => SelfProfileView(
                   visitor: widget.visitor,
                   unitList: selectedBuildingUnits,
-
-                  // status: 0,
-                  // visitor: widget.visitor,
-                  // unitList: selectedBuildingUnits,
                   visitorLog: visitorLogData,
-                  // logID: logID,
                 ),
               ),
             )

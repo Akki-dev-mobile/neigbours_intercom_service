@@ -74,40 +74,45 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
     return LoadingOverlay(
       isUploading: _isUploading,
       progress: _uploadProgress,
-      child: MyScrollView(
-        pageTitleWidget: _buildHeader(),
-        hasBackButton: false,
-        pageBody: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            _buildVisitorProfile(),
-            const SizedBox(height: 24),
-            _buildLottieSection(requestType),
-            const SizedBox(height: 100),
-            Align(
-              alignment: Alignment.center,
-              child: CustomLargeBtn(
-                text: 'Finish',
-                onPressed: () => widget.selfcheckinFlow == true
-                    ? Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SelfHomeView(),
+      child: WillPopScope(
+        onWillPop: () async {
+          return false;
+        },
+        child: MyScrollView(
+          pageTitleWidget: _buildHeader(),
+          hasBackButton: false,
+          pageBody: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              _buildVisitorProfile(),
+              const SizedBox(height: 24),
+              _buildLottieSection(requestType),
+              const SizedBox(height: 100),
+              Align(
+                alignment: Alignment.center,
+                child: CustomLargeBtn(
+                  text: 'Finish',
+                  onPressed: () => widget.selfcheckinFlow == true
+                      ? Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SelfHomeView(),
+                          ),
+                        )
+                      : Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GateDashboardView(),
+                          ),
                         ),
-                      )
-                    : Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GateDashboardView(),
-                        ),
-                      ),
+                ),
               ),
-            ),
-            const SizedBox(
-              height: 30,
-            )
-          ],
+              const SizedBox(
+                height: 30,
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -245,15 +250,20 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                 value: widget.visitor.mobile ?? "",
               ),
               const SizedBox(height: 10),
-              widget.visitorLog?.visitor_coming_from != null
-                  ? _buildDetailRow(
+              if (widget.visitorLog?.visitor_coming_from != null &&
+                  widget.visitorLog!.visitor_coming_from!.isNotEmpty)
+                Column(
+                  children: [
+                    _buildDetailRow(
                       icon: Icons.location_on_outlined,
                       iconColor: Colors.orange,
                       label: "Coming From",
                       value: widget.visitorLog?.visitor_coming_from ??
                           "Not specified",
-                    )
-                  : const SizedBox(),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
               const SizedBox(height: 10),
               _buildDetailRow(
                 icon: _getPurposeIcon(

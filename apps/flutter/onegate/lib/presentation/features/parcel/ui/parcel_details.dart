@@ -483,50 +483,97 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
               'Enter OTP to pick parcel',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.07,
-              width: MediaQuery.of(context).size.width * 0.9,
-              child: Pinput(
-                key: const Key("otp_field"), // ✅ Key for Testing
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                length: 6,
-                onCompleted: validateOTP,
-                onChanged: (pin) {
-                  if (errorText != null) {
-                    setState(() {
-                      errorText = null;
-                    });
-                  }
-                },
-                focusNode: focusNode,
-                controller: widget.otpController,
-                errorText: errorText, // ✅ Error text directly under field
-                submittedPinTheme: PinTheme(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.green),
-                    borderRadius: BorderRadius.circular(5),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  height: 60, // ✅ Ensures a fixed height for the input field
+                  child: Pinput(
+                    key: const Key("otp_field"),
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    length: 6,
+                    onCompleted: validateOTP,
+                    onChanged: (pin) {
+                      if (errorText != null) {
+                        setState(() {
+                          errorText = null;
+                        });
+                      }
+                    },
+                    focusNode: focusNode,
+                    controller: widget.otpController,
+                    errorText: errorText,
+                    // ✅ Ensures consistent border size
+                    defaultPinTheme: PinTheme(
+                      width: 50, // ✅ Increase box size
+                      height: 55, // ✅ Increase height
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    submittedPinTheme: PinTheme(
+                      width: 50,
+                      height: 55,
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.green),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    errorPinTheme: PinTheme(
+                      width: 50,
+                      height: 55,
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.red),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    focusedPinTheme: PinTheme(
+                      width: 50,
+                      height: 55,
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    followingPinTheme: PinTheme(
+                      width: 50,
+                      height: 55,
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                   ),
                 ),
-                errorPinTheme: PinTheme(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.red),
-                    borderRadius: BorderRadius.circular(5),
+                const SizedBox(height: 8), // Ensure space for error message
+                if (errorText != null)
+                  Text(
+                    errorText!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
                   ),
-                ),
-                focusedPinTheme: PinTheme(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-                followingPinTheme: PinTheme(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-              ),
+              ],
             ),
             Center(
               child: TextButton(

@@ -293,71 +293,78 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async {
+        // _navigateToDashboard();
+        return false;
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: _buildHeader(),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => GateDashboardView()),
-                );
-              },
-              child: const Text(
-                "",
-                style: TextStyle(color: Colors.black),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: _buildHeader(),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => GateDashboardView()),
+                  );
+                },
+                child: const Text(
+                  "",
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: StreamBuilder<RequestType>(
-        stream: _stateStreamController.stream,
-        initialData: _requestType,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          RequestType requestType = snapshot.data!;
+          ],
+        ),
+        body: StreamBuilder<RequestType>(
+          stream: _stateStreamController.stream,
+          initialData: _requestType,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            RequestType requestType = snapshot.data!;
 
-          return LoadingOverlay(
-            isUploading: _isUploading,
-            child: SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-// Visitor Profile Section
-                      _buildVisitorProfile(),
+            return LoadingOverlay(
+              isUploading: _isUploading,
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.of(context).size.height,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Visitor Profile Section
+                        _buildVisitorProfile(),
 
-                      const SizedBox(height: 60),
-// Animation and Status
-                      _buildLottieSection(requestType),
-                      const SizedBox(height: 60),
-// Action Buttons
-                      Center(child: _buildStatusText()),
-                      const SizedBox(height: 60),
+                        const SizedBox(height: 60),
+                        // Animation and Status
+                        _buildLottieSection(requestType),
+                        const SizedBox(height: 60),
+                        // Action Buttons
+                        Center(child: _buildStatusText()),
+                        const SizedBox(height: 60),
 
-                      _buildActionButton(requestType),
-                      const SizedBox(height: 20),
-                    ],
+                        _buildActionButton(requestType),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -596,6 +603,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   Widget _buildActionButton(RequestType requestType) {
     return Center(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if (requestType == RequestType.notRecheable)
             _buildNotReacheableButtons(),
@@ -833,17 +841,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           child: ElevatedButton(
             style: _getAllowButtonStyle(),
             onPressed: () async {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RequestPermissionPage2(
-                    visitor: widget.visitor,
-                    visitorLog: widget.visitorLog,
-                  ),
-                ),
-                (Route<dynamic> route) =>
-                    false, // This removes all previous routes
-              );
+              _allowByGatekeeper();
             },
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.3,
@@ -899,7 +897,16 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
         // Navigate back to Dashboard
 
-        _navigateToDashboard();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+              visitor: widget.visitor,
+              visitorLog: widget.visitorLog,
+            ),
+          ),
+          (Route<dynamic> route) => false, // This removes all previous routes
+        );
       } else {
         log("❌ Failed to allow visitor by Gatekeeper: ${response.statusMessage}");
         _showErrorSnackBar("Error allowing visitor. Try again.");

@@ -73,38 +73,16 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // 🔹 Blurred Background
-                    ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(20), // Soft rounded corners
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(
-                            sigmaX: 10, sigmaY: 10), // Blur effect
-                        child: Container(
-                          width: 180,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            color: Colors.grey
-                                .withOpacity(0.2), // Background overlay
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // 🔹 Circular Profile Image (Overlaid)
                     GestureDetector(
                       onTap: () {
                         // Open full-screen view when tapped
                         _showFullImage(context, widget.image);
                       },
                       child: CircleAvatar(
-                        radius: 60, // Size of circular profile image
-                        backgroundColor:
-                            Colors.white, // Background color for circular frame
+                        radius: 60,
+                        backgroundColor: Colors.white,
                         child: CircleAvatar(
-                          radius:
-                              55, // Slightly smaller to create a border effect
+                          radius: 100,
                           backgroundImage: widget.image != null &&
                                   widget.image!.isNotEmpty
                               ? NetworkImage(
@@ -217,15 +195,17 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           _buildInfoTile(
                             icon: widget.visitorLog.visitor_card_number != null
                                 ? Icons.badge
-                                : Icons
-                                    .directions_car, // Use car icon if carNumber is present
+                                : Icons.directions_car,
+                            // Use car icon if carNumber is present
                             title: widget.visitorLog.visitor_card_number != null
                                 ? "Card Number"
-                                : "Car Number", // Change title accordingly
+                                : "Car Number",
+                            // Change title accordingly
                             subtitle: widget.visitorLog.visitor_card_number
                                     ?.toString() ??
                                 widget.visitorLog.carNumber?.toString() ??
-                                'N/A', // Show available value
+                                'N/A',
+                            // Show available value
                             iconColor:
                                 widget.visitorLog.visitor_card_number != null
                                     ? const Color.fromARGB(255, 225, 181, 154)
@@ -303,7 +283,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         "Approved By",
         toBeginningOfSentenceCase(widget.unitList == "0001"
                 ? "Pre approved Staff"
-                : (widget.visitorLog.approved_by ?? "N/A")) ??
+                : (widget.visitorLog.approved_by ?? "Gatekeeper")) ??
             "N/A",
         Icons.person,
         Colors.brown,
