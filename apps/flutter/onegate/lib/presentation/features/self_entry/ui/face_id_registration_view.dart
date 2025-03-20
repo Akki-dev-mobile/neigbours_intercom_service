@@ -18,7 +18,7 @@ class FaceIDRegistrationScreen extends StatefulWidget {
 /// Upload multiple face images for face registration
 Future<void> _uploadImages(String userName, List<File> images) async {
   String apiUrl =
-      '${ApiUrls.FacerecUrl}/register-face/'; // Change to actual API URL
+      '${ApiUrls.facerecUrl}/register-face/'; // Change to actual API URL
   Dio dio = Dio();
 
   try {

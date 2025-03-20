@@ -265,7 +265,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     if (_image == null) return;
 
     try {
-      final uri = Uri.parse('${ApiUrls.FacerecUrl}/register-face/');
+      final uri = Uri.parse('${ApiUrls.facerecUrl}/register-face/');
       final request = http.MultipartRequest('POST', uri)
         ..fields['name'] = name
         ..files.add(await http.MultipartFile.fromPath('files', _image!.path));
@@ -299,7 +299,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     if (_image == null) return;
 
     try {
-      final uri = Uri.parse('${ApiUrls.FacerecUrl}/search-face/');
+      final uri = Uri.parse('${ApiUrls.facerecUrl}/search-face/');
       final request = http.MultipartRequest('POST', uri)
         ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
 
