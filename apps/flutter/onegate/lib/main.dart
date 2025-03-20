@@ -162,7 +162,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         if (!hasInternet) {
           Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (_) => const NoInternetScreen(),
+              builder: (_) => ErrorNoInternetPage(),
             ),
             (route) => false,
           );
@@ -195,7 +195,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           return shouldExit ?? false;
         },
         // Initially show the correct screen based on connectivity.
-        child: hasInternet ? const MyAppLogin() : const NoInternetScreen(),
+        child: hasInternet ? const MyAppLogin() : ErrorNoInternetPage(),
       ),
     );
   }

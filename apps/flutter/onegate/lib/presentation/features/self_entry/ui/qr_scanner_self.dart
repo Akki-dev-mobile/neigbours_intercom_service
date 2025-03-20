@@ -317,6 +317,10 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         ),
 
         // Animated Scanner Line
+        // Inside the _buildScannerUI() method, replace the "Animated Scanner Line" section with this:
+
+// Animated Scanner Effect (replace the simple line)
+// Animated Scanner Line - Single Line
         if (!_isScanComplete && !_isVerifying)
           Positioned(
             width: scannerSize,
@@ -324,34 +328,18 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             child: AnimatedBuilder(
               animation: _scanLineAnimation,
               builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(0,
-                      _scanLineAnimation.value * scannerSize - scannerSize / 2),
-                  child: Container(
-                    height: 2,
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.white.withOpacity(0),
-                          Colors.white,
-                          Colors.white.withOpacity(0),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              Theme.of(context).primaryColor.withOpacity(0.5),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
+                return CustomPaint(
+                  painter: SingleLineScannerPainter(
+                    _scanLineAnimation.value,
+                    Theme.of(context).primaryColor,
                   ),
+                  size: Size(scannerSize, scannerSize),
                 );
               },
             ),
           ),
+
+// Add this new CustomPainter class at the bottom of the file, after ScannerFramePainter:
 
         // Scan Success/Error Animation
         if (_isScanComplete)
@@ -925,6 +913,112 @@ class ScannerFramePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(ScannerFramePainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue ||
+        oldDelegate.color != color;
+  }
+}
+
+// Add this new CustomPainter class at the bottom of the file, after ScannerFramePainter:
+
+class ScannerEffectPainter extends CustomPainter {
+  final double animationValue;
+  final Color color;
+
+  ScannerEffectPainter(this.animationValue, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final gradient = RadialGradient(
+      center: Alignment(0, 2 * animationValue - 1),
+      radius: 0.8,
+      colors: [
+        color.withOpacity(0.0),
+        color.withOpacity(0.2),
+        color.withOpacity(0.0),
+      ],
+      stops: const [0.0, 0.5, 1.0],
+    );
+
+    final paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..style = PaintingStyle.fill;
+
+// Draw a subtle scanning effect
+    canvas.drawRect(rect, paint);
+
+// Draw scan lines
+    final linePaint = Paint()
+      ..color = color.withOpacity(0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+// Calculate position based on animation
+    final y = animationValue * size.height;
+
+// Draw multiple lines with spacing
+    const lineSpacing = 12.0;
+    final numberOfLines = 5;
+
+    for (int i = 0; i < numberOfLines; i++) {
+      final lineY = (y + (i * lineSpacing)) % size.height;
+      canvas.drawLine(
+        Offset(20, lineY),
+        Offset(size.width - 20, lineY),
+        linePaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(ScannerEffectPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue ||
+        oldDelegate.color != color;
+  }
+}
+// Inside the _buildScannerUI() method, replace the "Animated Scanner Line" section with this:
+
+// Add this new CustomPainter class at the bottom of the file, after ScannerFramePainter:
+
+class SingleLineScannerPainter extends CustomPainter {
+  final double animationValue;
+  final Color color;
+
+  SingleLineScannerPainter(this.animationValue, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+// Calculate position based on animation
+    final y = animationValue * size.height;
+
+// Draw a single line with glow effect
+    final linePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+
+// Create glow effect with shadow
+    canvas.drawLine(
+      Offset(10, y),
+      Offset(size.width - 10, y),
+      Paint()
+        ..color = color.withOpacity(0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6.0
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5.0),
+    );
+
+// Draw main line
+    canvas.drawLine(
+      Offset(10, y),
+      Offset(size.width - 10, y),
+      linePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(SingleLineScannerPainter oldDelegate) {
     return oldDelegate.animationValue != animationValue ||
         oldDelegate.color != color;
   }

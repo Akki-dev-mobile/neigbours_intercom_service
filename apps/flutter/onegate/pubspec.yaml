@@ -118,6 +118,7 @@ flutter:
     - assets/json/idcard.json
     - assets/json/approved.json
     - assets/media/audio/alarm.mp3
+    - assets/json/no_internet.json
     - assets/media/images/person-icon-1670.png
     - shorebird.yaml
 
