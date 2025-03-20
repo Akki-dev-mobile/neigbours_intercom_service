@@ -26,7 +26,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final keycloakWrapper =
-    KeycloakWrapper(config: KeycloakConfigManager.getConfig());
+KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {
@@ -304,7 +304,7 @@ class RemoteDataSource {
       final response = await fetchCheckInLogs();
 
       final filteredLogs =
-          response.where((log) => log.visitor_card_number != null).toList();
+      response.where((log) => log.visitor_card_number != null).toList();
 
       return filteredLogs;
     } catch (error) {
@@ -477,14 +477,12 @@ class RemoteDataSource {
           prefs.getString('selected_gate') ?? 'Default Gate';
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
-      // final String formattedDate =
-      //     DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final String formattedDate =
+      DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       final requestBody = <String, dynamic>{
-        'current_page': 1,
-        'per_page': 20,
-        // 'from_date': formattedDate,
-        // 'to_date': formattedDate,
+        'from_date': formattedDate,
+        'to_date': formattedDate,
         'company_id': int.parse(resolvedCompanyId.toString()),
         'in_gate': selectedGateName,
       };
@@ -501,7 +499,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data']["data"] ?? [];
+        final List<dynamic> data = responseData['data'] ?? [];
         log("data--$data");
         return data.map((item) => _mapToVisitorLog(item)).toList();
       } else {
@@ -528,7 +526,7 @@ class RemoteDataSource {
 
     // Handling unit details as a list of BuildingAssignments
     final List<BuildingAssignment>? buildingAssignments =
-        (item['unit_details'] as List<dynamic>?)?.map((unit) {
+    (item['unit_details'] as List<dynamic>?)?.map((unit) {
       return BuildingAssignment(
         id: null,
         // Assuming id is not provided in the unit details
@@ -565,9 +563,9 @@ class RemoteDataSource {
       visitor_id: item['visitor_id'] as int? ?? 0,
       visitor: visitor,
       visitor_purpose_category_id:
-          item['visitor_purpose_category_id'] as int? ?? 1,
+      item['visitor_purpose_category_id'] as int? ?? 1,
       visitor_purpose_sub_category_id:
-          item['visitor_purpose_sub_category_id'] as int?,
+      item['visitor_purpose_sub_category_id'] as int?,
       visitor_building_assignment: buildingAssignments,
       visitor_count: item['visitor_count'] as int? ?? 0,
       visitor_check_in: checkInTime,
@@ -593,7 +591,7 @@ class RemoteDataSource {
   /// Safely attempts to parse a string into a DateTime object.
   DateTime? tryParseDate(String dateStr) {
     try {
-      final parsedDate = DateFormat("yyyy-MM-dd hh:mm:ss").parse(dateStr);
+      final parsedDate = DateFormat("yyyy-MM-dd hh:mm:ss a").parse(dateStr);
       log('Successfully parsed date: $parsedDate');
       return parsedDate;
     } catch (e) {
@@ -1077,15 +1075,15 @@ class RemoteDataSource {
                   .replaceAll(']"', ']');
 
               final List<dynamic> decodedUnitDetails =
-                  jsonDecode(cleanedJsonString);
+              jsonDecode(cleanedJsonString);
 
               parsedUnitDetails =
                   decodedUnitDetails.map<UnitDetails>((unitJson) {
-                return UnitDetails(
-                  unitId: _parseToInt(unitJson['unit_id']),
-                  building_unit: unitJson["building_unit"]?.toString() ?? '',
-                );
-              }).toList();
+                    return UnitDetails(
+                      unitId: _parseToInt(unitJson['unit_id']),
+                      building_unit: unitJson["building_unit"]?.toString() ?? '',
+                    );
+                  }).toList();
             }
           } catch (e) {
             _handleErrorResponse();
@@ -1124,7 +1122,7 @@ class RemoteDataSource {
 
             log("❌ Error parsing additional_details: $e");
             parsedAdditionalDetails =
-                {}; // Assign empty map to prevent null errors
+            {}; // Assign empty map to prevent null errors
           }
 
           return VisitorInfo(
@@ -1152,7 +1150,7 @@ class RemoteDataSource {
             visitorPurposeCategoryId: _parseToInt(json['purpose_category_id']),
             purposeCategoryName: json['purpose_category_name']?.toString(),
             purposeSubCategoryName:
-                json['purpose_sub_category_name']?.toString(),
+            json['purpose_sub_category_name']?.toString(),
             additionalDetails: parsedAdditionalDetails, // ✅ Assigned here
           );
         }).toList();
@@ -1338,7 +1336,7 @@ class RemoteDataSource {
   final String cacheKey = 'members_list_cache';
   final String cacheTimestampKey = 'members_list_cache_timestamp';
   final Duration cacheDuration =
-      const Duration(minutes: 30); // Cache expiry time
+  const Duration(minutes: 30); // Cache expiry time
 
   Future<List<dynamic>> getMembersList() async {
     try {
@@ -1574,7 +1572,7 @@ class RemoteDataSource {
       String parcelId, String mobileNumber) async {
     try {
       String formattedMobileNumber =
-          mobileNumber.replaceAll(RegExp(r'[^0-9]'), '');
+      mobileNumber.replaceAll(RegExp(r'[^0-9]'), '');
       if (formattedMobileNumber.length == 12 &&
           formattedMobileNumber.startsWith('91')) {
         formattedMobileNumber = formattedMobileNumber.substring(2);
@@ -1656,8 +1654,8 @@ class RemoteDataSource {
         'staff_address_1': staffData['address'] ?? '',
         'staff_dob': staffData['dateOfBirth'] != null
             ? DateTime.parse(staffData['dateOfBirth'])
-                .toIso8601String()
-                .split('T')[0]
+            .toIso8601String()
+            .split('T')[0]
             : '',
         'staff_qualification': staffData['qualification'],
         'staff_skill': staffData['categoryValue'] ?? '',
@@ -1730,8 +1728,8 @@ class RemoteDataSource {
         'staff_address_1': staffData['address'] ?? '',
         'staff_dob': staffData['dateOfBirth'] != null
             ? DateTime.parse(staffData['dateOfBirth'])
-                .toIso8601String()
-                .split('T')[0]
+            .toIso8601String()
+            .split('T')[0]
             : '',
         'staff_qualification': staffData['qualification'],
         'staff_skill': staffData['categoryValue'] ?? '',
@@ -1739,7 +1737,7 @@ class RemoteDataSource {
         'staff_rfid': staffData['idProofNumber'] ?? '',
         'staff_note': '',
         'staff_proof':
-            "https://storage-as-service.s3.amazonaws.com/1//1737540834_scaled_aa85f48c-f79e-4e65-8334-a4c168dd67867233042262877539451.jpg"
+        "https://storage-as-service.s3.amazonaws.com/1//1737540834_scaled_aa85f48c-f79e-4e65-8334-a4c168dd67867233042262877539451.jpg"
         // 'staff_proof': staffData['idProofImageUrl'] ?? '',
       };
 
