@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:alarm/alarm.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -131,22 +132,51 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
 
+  // Track previous connectivity status to detect changes.
+  bool _prevHasInternet = true;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-  }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
+    // Perform an initial internet check after first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider =
+          Provider.of<InternetCheckProvider>(context, listen: false);
+      provider.checkInternetAccess();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasInternet = context.watch<InternetCheckProvider>().hasInternet;
-    Widget initialScreen = const MyAppLogin();
+    // Listen to internet status changes.
+    final internetProvider = context.watch<InternetCheckProvider>();
+    final hasInternet = internetProvider.hasInternet;
+
+    // If connectivity has changed, schedule a navigation update.
+    if (_prevHasInternet != hasInternet) {
+      _prevHasInternet = hasInternet;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // When internet is lost, replace the current route with NoInternetScreen.
+        if (!hasInternet) {
+          Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => const NoInternetScreen(),
+            ),
+            (route) => false,
+          );
+        } else {
+          // When internet is restored, return to the main login screen.
+          Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => const MyAppLogin(),
+            ),
+            (route) => false,
+          );
+        }
+      });
+    }
 
     return MaterialApp(
       navigatorKey: navigatorKey,
@@ -164,6 +194,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           final shouldExit = await showExitConfirmationDialog(context);
           return shouldExit ?? false;
         },
+        // Initially show the correct screen based on connectivity.
         child: hasInternet ? const MyAppLogin() : const NoInternetScreen(),
       ),
     );
@@ -205,5 +236,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 }
