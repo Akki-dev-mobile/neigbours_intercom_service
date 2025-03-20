@@ -438,12 +438,14 @@ class RemoteDataSource {
           prefs.getString('selected_gate') ?? 'Default Gate';
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
-      final String formattedDate =
-          DateFormat('yyyy-MM-dd').format(DateTime.now());
+      // final String formattedDate =
+      //     DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       final requestBody = <String, dynamic>{
-        'from_date': formattedDate,
-        'to_date': formattedDate,
+        'current_page': 1,
+        'per_page': 20,
+        // 'from_date': formattedDate,
+        // 'to_date': formattedDate,
         'company_id': int.parse(resolvedCompanyId.toString()),
         'in_gate': selectedGateName,
       };
@@ -460,7 +462,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
+        final List<dynamic> data = responseData['data']["data"] ?? [];
         log("data--$data");
         return data.map((item) => _mapToVisitorLog(item)).toList();
       } else {
@@ -551,7 +553,7 @@ class RemoteDataSource {
   /// Safely attempts to parse a string into a DateTime object.
   DateTime? tryParseDate(String dateStr) {
     try {
-      final parsedDate = DateFormat("yyyy-MM-dd hh:mm:ss a").parse(dateStr);
+      final parsedDate = DateFormat("yyyy-MM-dd hh:mm:ss").parse(dateStr);
       log('Successfully parsed date: $parsedDate');
       return parsedDate;
     } catch (e) {

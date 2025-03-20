@@ -430,12 +430,16 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         } else if (state is VIENavigateToUnitSelectionState) {
           final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-          final searchedId = prefs.getString('search_visitor_id');
+          String? searchedId = prefs.getString('search_visitor_id');
+          final visitorId = prefs.getString('visitorId');
           print(" searchid $searchedId");
 
-          if (widget.searchedVisitor != null) {
+          if (widget.searchedVisitor != null &&
+              widget.searchedVisitor!.id != null) {
             final Visitor updatedVisitor = Visitor(
-                id: int.parse(searchedId.toString()),
+                id: searchedId == null
+                    ? int.parse(visitorId.toString())
+                    : int.parse(searchedId.toString()),
                 name: _guestNameController?.text,
                 mobile: widget.mobile,
                 visitor_image: "");

@@ -441,7 +441,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
     if (image == null) return;
 
     try {
-      final uri = Uri.parse('${ApiUrls.FacerecUrl}/register-face/');
+      final uri = Uri.parse('${ApiUrls.facerecUrl}/register-face/');
       final request = http.MultipartRequest('POST', uri)
         ..fields['name'] = name
         ..files.add(await http.MultipartFile.fromPath('files', image.path));
