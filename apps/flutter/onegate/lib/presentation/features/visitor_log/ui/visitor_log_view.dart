@@ -55,6 +55,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   final gateStorage = GateStorage();
   final remoteDataSource = RemoteDataSource();
   var societyId;
+  final ScrollController _scrollController = ScrollController();
+
   final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
     VisitorLogUsecase(
       VisitorLogRepositoryImpl(
@@ -70,13 +72,25 @@ class _VisitorLogViewState extends State<VisitorLogView> {
 
     switch (widget.id) {
       case "In Out Book":
-        _visitorLogBloc.add(FetchVisitorLogEvent(Utils.getCurrentTime()));
+        _visitorLogBloc.add(FetchVisitorLogEvent(
+          Utils.getCurrentTime(),
+          currentPage: 1,
+          perPage: 20,
+        ));
         break;
       case "Visitor In":
-        _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
+        _visitorLogBloc.add(FetchCheckInLogEvent(
+          Utils.getCurrentTime(),
+          currentPage: 1,
+          perPage: 20,
+        ));
         break;
       case "Cards":
-        _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
+        _visitorLogBloc.add(FetchCheckOutLogEvent(
+          Utils.getCurrentTime(),
+          currentPage: 1,
+          perPage: 20,
+        ));
         break;
 
       case "Visitor Out":
@@ -86,9 +100,24 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     _initializeSocietyId();
     getSelectedGate();
     _searchFocusNode = FocusNode();
-
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent - 200 &&
+          _visitorLogBloc.state is! VisitorLogLoadingMoreState) {
+        final currentState = _visitorLogBloc.state;
+        if (currentState is VisitorLogSuccessState) {
+          _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
+            currentState.currentPage! + 1, // Pass next page
+            40, // Number of items per page
+          ));
+        }
+      }
+    });
     // _storeTodayLogsCount(context);
   }
+
+  int current_page = 5;
+  final int per_page = 20;
 
   @override
   void dispose() {
@@ -132,11 +161,13 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 textColor: Colors.white,
                 fontSize: 16.0,
               );
-              _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
+              _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now(),
+                  currentPage: current_page, perPage: per_page));
             }
             break;
           case VisitorCheckInLogSuccessState:
-            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
+            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime(),
+                currentPage: current_page, perPage: per_page));
             myFluttertoast(
               msg: "Visitor Checked Out Successfully",
               toastLength: Toast.LENGTH_SHORT,
@@ -463,7 +494,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         });
                                         _visitorLogBloc.emit(
                                             VisitorLogSuccessState(
-                                                logsForDate));
+                                                visitorLogs: logsForDate));
                                         _visitorLogBloc.add(
                                           CheckOutEvent(
                                             logsForDate[logIndex],
