@@ -57,7 +57,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
         faceRecConfig['url'] != "" &&
         faceRecConfig['allowed'] != null &&
         societyid != null &&
-        faceRecConfig['is_true'] == true &&
+        faceRecConfig['is_enabled'] == true &&
         allowed.contains(societyid.toString())) {
       setState(() {
         facerectoshow = true;
