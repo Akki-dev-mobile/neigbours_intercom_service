@@ -31,23 +31,14 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       FetchVisitorLogEvent event, Emitter<VisitorLogState> emit) async {
     try {
       emit(VisitorLogLoadingState());
+      DateTime today = DateTime.now();
 
-      int currentPage = 1;
-      int perPage = 40;
-
+      // Get today's date in the desired format (yyyy-MM-dd)
+      String formattedDate = getFormattedDate(today);
       final visitorLogs = await visitorLogUseCase.fetchAllLogs(
-        _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-        DateFormat('yyyy-MM-dd').format(event.date),
-        currentPage: currentPage,
-        perPage: perPage,
-      );
+          _preferenceUtils.getSelectedCompany()?.companyId ?? 0, formattedDate);
 
-      bool hasMoreData = visitorLogs?.length == perPage;
-
-      emit(VisitorLogSuccessState(
-          visitorLogs: visitorLogs,
-          hasMoreData: hasMoreData,
-          currentPage: currentPage));
+      emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));
     }
@@ -76,9 +67,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
               formattedDate);
 
           // Emit success state with updated logs
-          emit(VisitorLogSuccessState(
-            visitorLogs: visitorLogs,
-          ));
+          emit(VisitorLogSuccessState(visitorLogs));
         } else {
           emit(VisitorCheckOutLogSuccessState());
         }
@@ -96,17 +85,13 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       FetchCheckInLogEvent event, Emitter<VisitorLogState> emit) async {
     try {
       emit(VisitorLogLoadingState());
+      DateTime today = DateTime.now();
 
+      // Get today's date in the desired format (yyyy-MM-dd)
+      String formattedDate = getFormattedDate(today);
       final visitorLogs = await visitorLogUseCase.fetchCheckInVisitorLog(
-        _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-        DateFormat('yyyy-MM-dd').format(event.date),
-        currentPage: event.currentPage,
-        perPage: event.perPage,
-      );
-
-      final hasMoreData = visitorLogs?.length == event.perPage;
-      emit(VisitorLogSuccessState(
-          visitorLogs: visitorLogs, hasMoreData: hasMoreData));
+          _preferenceUtils.getSelectedCompany()?.companyId ?? 0, formattedDate);
+      emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));
     }
@@ -116,57 +101,15 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
       FetchCheckOutLogEvent event, Emitter<VisitorLogState> emit) async {
     try {
       emit(VisitorLogLoadingState());
+      DateTime today = DateTime.now();
 
+      // Get today's date in the desired format (yyyy-MM-dd)
+      String formattedDate = getFormattedDate(today);
       final visitorLogs = await visitorLogUseCase.fetchCheckOutLogs(
-        _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-        DateFormat('yyyy-MM-dd').format(event.date),
-        currentPage: event.currentPage,
-        perPage: event.perPage,
-      );
-
-      final hasMoreData = visitorLogs?.length == event.perPage;
-      emit(VisitorLogSuccessState(
-          visitorLogs: visitorLogs, hasMoreData: hasMoreData));
+          _preferenceUtils.getSelectedCompany()?.companyId ?? 0, formattedDate);
+      emit(VisitorLogSuccessState(visitorLogs));
     } catch (error) {
       emit(VisitorLogErrorState(error.toString()));
-    }
-  }
-
-  FutureOr<void> loadMoreVisitorLogsEvent(
-      LoadMoreVisitorLogsEvent event, Emitter<VisitorLogState> emit) async {
-    final currentState = state;
-    if (currentState is VisitorLogSuccessState && currentState.hasMoreData!) {
-      emit(VisitorLogLoadingMoreState());
-
-      try {
-        int nextPage = currentState.currentPage! + 1;
-        int perPage = 20;
-
-        final moreLogs = await visitorLogUseCase.fetchAllLogs(
-          _preferenceUtils.getSelectedCompany()?.companyId ?? 0,
-          DateFormat('yyyy-MM-dd').format(DateTime.now()),
-          currentPage: nextPage,
-          perPage: perPage,
-        );
-
-        if (moreLogs!.isEmpty) {
-          emit(VisitorLogSuccessState(
-            visitorLogs: currentState.visitorLogs!,
-            hasMoreData: false, // No more data
-            currentPage: nextPage,
-          ));
-        } else {
-          List<VisitorLog> updatedLogs = List.from(currentState.visitorLogs!)
-            ..addAll(moreLogs!);
-
-          emit(VisitorLogSuccessState(
-              visitorLogs: updatedLogs,
-              hasMoreData: moreLogs.length == perPage,
-              currentPage: nextPage));
-        }
-      } catch (error) {
-        emit(VisitorLogErrorState(error.toString()));
-      }
     }
   }
 }

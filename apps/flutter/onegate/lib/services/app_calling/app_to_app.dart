@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class SocketService {
@@ -24,9 +25,14 @@ class SocketService {
       'reconnectionDelay': 2000,
     });
 
-    socket!.onConnect((_) {
+    socket!.onConnect((_) async {
+      final GateStorage gateStorage = GateStorage();
+
+      final String? companyId = await gateStorage.getSocietyId();
+
       print('✅ Connected to WebSocket server');
-      socket!.emit('joinRoom', {'companyId': 412, 'clientName': appId});
+      socket!.emit('joinRoom',
+          {'companyId': int.parse(companyId.toString()), 'clientName': appId});
     });
 
     // ✅ Listen for specific events

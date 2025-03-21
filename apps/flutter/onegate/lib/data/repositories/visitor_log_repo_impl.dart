@@ -21,20 +21,24 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
 
   @override
   Future<List<VisitorLog>?> fetchCheckInVisitorLog(
-      int companyId, String dateTime,
-      {int currentPage = 1, int perPage = 20}) async {
-    return await _remoteDataSource.fetchCheckInLogs(
-        // current_page: currentPage,
-        // per_page: perPage,
-        );
+      int companyId, String dateTime) async {
+    try {
+      final response = await _remoteDataSource.fetchCheckInLogs();
+      return response;
+    } catch (error) {
+      return null;
+    }
   }
 
-  Future<List<VisitorLog>?> fetchAllVisitorLog(int companyId, String dateTime,
-      {int currentPage = 1, int perPage = 20}) async {
-    return await _remoteDataSource.fetchAllLogs(
-        // current_page: currentPage,
-        // per_page: perPage,
-        );
+  @override
+  Future<List<VisitorLog>?> fetchAllVisitorLog(
+      int companyId, String dateTime) async {
+    try {
+      final response = await _remoteDataSource.fetchAllLogs();
+      return response;
+    } catch (error) {
+      return null;
+    }
   }
 
   Future<List<VisitorLog>?> fetchCardNumbers(
@@ -63,12 +67,12 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
   }
 
   @override
-  Future<List<VisitorLog>?> fetchCheckOutVisitorLog(
-      int companyId, String dateTime,
-      {int currentPage = 1, int perPage = 20}) async {
-    return await _remoteDataSource.fetchCheckOutLogs(
-        // current_page: currentPage,
-        // per_page: perPage,
-        );
+  Future<List<VisitorLog>?> fetchCheckOutVisitorLog() async {
+    try {
+      final response = await _remoteDataSource.fetchCheckOutLogs();
+      return response;
+    } catch (error) {
+      return null;
+    }
   }
 }

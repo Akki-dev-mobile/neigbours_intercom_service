@@ -1053,6 +1053,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'coming_from': widget.visitorLog?.visitor_coming_from ?? "Bandra",
         'member_id': memberId, // ✅ Assigned from `member_details`
         'company_name': widget.visitorLog?.company_id.toString() ?? "",
+        "self_check_in": widget.selfcheckinFlow.toString() ?? "false"
       };
 
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");

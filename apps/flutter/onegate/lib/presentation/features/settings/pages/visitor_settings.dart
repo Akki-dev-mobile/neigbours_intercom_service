@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class VisitorSettingsView extends StatefulWidget {
   bool? comingfrom;
+
   VisitorSettingsView({super.key, this.comingfrom});
 
   @override
@@ -305,25 +306,33 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                             .saveSelectedPurposes(selectedPurposes);
 
                         myFluttertoast(msg: "Changes saved successfully!");
-
-                        final role = await GateStorage().getRole();
-                        if (role == 'admin' || role == 'master') {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AdminDashboardView(),
-                            ),
-                          );
-                        } else {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => GateDashboardView(),
-                            ),
-                          );
-                        }
-                      },
-                    )
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GateDashboardView(),
+                          ),
+                        );
+                      }
+                      //   final role = await GateStorage().getRole();
+                      //   if (role == 'admin' || role == 'master') {
+                      //     Navigator.pushReplacement(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => const AdminDashboardView(),
+                      //       ),
+                      //     );
+                      //   }
+                      //
+                      //   else {
+                      //     Navigator.pushReplacement(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => GateDashboardView(),
+                      //       ),
+                      //     );
+                      //   }
+                      // },
+                      )
                   : null,
             ),
           );

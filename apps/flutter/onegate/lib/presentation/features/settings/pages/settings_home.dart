@@ -121,7 +121,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         value: item.value,
-                        groupValue: _cameraValue, // Reflect selected value
+                        groupValue: _cameraValue,
+                        // Reflect selected value
                         onChanged: (value) {
                           if (value != null) {
                             setState(() {
@@ -139,22 +140,28 @@ class _SettingsHomeState extends State<SettingsHome> {
                     onPressed: () async {
                       final role = await GateStorage().getRole();
 
-                      Navigator.pop(context); // Close modal
-                      if (role == 'admin' || role == 'master') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdminDashboardView(),
-                          ),
-                        );
-                      } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => GateDashboardView(),
-                          ),
-                        );
-                      }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GateDashboardView(),
+                        ),
+                      );
+                      // Navigator.pop(context); // Close modal
+                      // if (role == 'admin' || role == 'master') {
+                      //   Navigator.push(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //       builder: (context) => AdminDashboardView(),
+                      //     ),
+                      //   );
+                      // } else {
+                      //   Navigator.push(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //       builder: (context) => GateDashboardView(),
+                      //     ),
+                      //   );
+                      // }
                     },
                   ),
                   const SizedBox(height: 50.0),

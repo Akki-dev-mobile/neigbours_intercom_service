@@ -13,37 +13,20 @@ class VisitorLogUsecase {
   }
 
   Future<List<VisitorLog>?> fetchCheckInVisitorLog(
-      int companyId, String dateTime,
-      {int currentPage = 1, int perPage = 20}) async {
-    return await _repository.fetchCheckInVisitorLog(
-      companyId,
-      dateTime,
-      currentPage: currentPage,
-      perPage: perPage,
-    );
+      int companyId, String dateTime) async {
+    return await _repository.fetchCheckInVisitorLog(companyId, dateTime);
   }
 
   Future<bool> checkOut(VisitorLog visitorLog) async {
     return await _repository.checkOut(visitorLog);
   }
 
-  Future<List<VisitorLog>?> fetchAllLogs(int companyId, String dateTime,
-      {int currentPage = 1, int perPage = 20}) async {
-    return await _repository.fetchAllVisitorLog(
-      companyId,
-      dateTime,
-      currentPage: currentPage,
-      perPage: perPage,
-    );
+  Future<List<VisitorLog>?> fetchAllLogs(int companyId, String dateTime) async {
+    return await _repository.fetchAllVisitorLog(companyId, dateTime);
   }
 
-  Future<List<VisitorLog>?> fetchCheckOutLogs(int companyId, String dateTime,
-      {int currentPage = 1, int perPage = 20}) async {
-    return await _repository.fetchCheckOutVisitorLog(
-      companyId,
-      dateTime,
-      currentPage: currentPage,
-      perPage: perPage,
-    );
+  Future<List<VisitorLog>?> fetchCheckOutLogs(
+      int companyId, String dateTime) async {
+    return await _repository.fetchCheckOutVisitorLog();
   }
 }

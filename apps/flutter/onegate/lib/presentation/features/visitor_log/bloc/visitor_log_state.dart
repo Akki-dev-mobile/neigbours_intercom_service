@@ -1,7 +1,7 @@
 part of 'visitor_log_bloc.dart';
 
 @immutable
-abstract class VisitorLogState {}
+class VisitorLogState {}
 
 class VisitorLogInitial extends VisitorLogState {}
 
@@ -11,16 +11,11 @@ class VisitorLogLoadingState extends VisitorLogState {}
 
 class VisitorLogSuccessState extends VisitorLogState {
   final List<VisitorLog>? visitorLogs;
-  final bool? hasMoreData;
-  final int? currentPage;
 
-  VisitorLogSuccessState(
-      {this.visitorLogs, this.hasMoreData, this.currentPage});
+  VisitorLogSuccessState(this.visitorLogs);
 }
 
 class VisitorCheckInLogSuccessState extends VisitorLogActionState {}
-
-class VisitorLogLoadingMoreState extends VisitorLogState {}
 
 class VisitorCheckOutLogSuccessState extends VisitorLogActionState {}
 

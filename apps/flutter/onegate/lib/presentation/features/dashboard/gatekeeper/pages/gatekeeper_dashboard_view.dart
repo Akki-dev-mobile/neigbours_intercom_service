@@ -37,7 +37,7 @@ import '../../../settings/pages/settings_home.dart';
 import 'id_input_view.dart';
 
 class GateDashboardView extends StatefulWidget {
-  GateDashboardView();
+  const GateDashboardView({Key? key}) : super(key: key);
 
   @override
   State<GateDashboardView> createState() => _GateDashboardViewState();

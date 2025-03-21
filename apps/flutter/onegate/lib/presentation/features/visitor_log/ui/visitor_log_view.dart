@@ -100,19 +100,19 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     _initializeSocietyId();
     getSelectedGate();
     _searchFocusNode = FocusNode();
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-              _scrollController.position.maxScrollExtent - 200 &&
-          _visitorLogBloc.state is! VisitorLogLoadingMoreState) {
-        final currentState = _visitorLogBloc.state;
-        if (currentState is VisitorLogSuccessState) {
-          _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
-            currentState.currentPage! + 1, // Pass next page
-            40, // Number of items per page
-          ));
-        }
-      }
-    });
+    // _scrollController.addListener(() {
+    //   if (_scrollController.position.pixels >=
+    //           _scrollController.position.maxScrollExtent - 200 &&
+    //       _visitorLogBloc.state is! VisitorLogLoadingMoreState) {
+    //     final currentState = _visitorLogBloc.state;
+    //     if (currentState is VisitorLogSuccessState) {
+    //       _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
+    //         currentState.currentPage! + 1, // Pass next page
+    //         40, // Number of items per page
+    //       ));
+    //     }
+    //   }
+    // });
     // _storeTodayLogsCount(context);
   }
 
@@ -161,14 +161,12 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                 textColor: Colors.white,
                 fontSize: 16.0,
               );
-              _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now(),
-                  currentPage: current_page, perPage: per_page));
+              _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
             }
             break;
           case VisitorCheckInLogSuccessState:
-            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime(),
-                currentPage: current_page, perPage: per_page));
-            myFluttertoast(
+            _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
+            Fluttertoast.showToast(
               msg: "Visitor Checked Out Successfully",
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.CENTER,
@@ -494,7 +492,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         });
                                         _visitorLogBloc.emit(
                                             VisitorLogSuccessState(
-                                                visitorLogs: logsForDate));
+                                                logsForDate));
                                         _visitorLogBloc.add(
                                           CheckOutEvent(
                                             logsForDate[logIndex],
