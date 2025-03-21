@@ -24,17 +24,17 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
       int companyId, String dateTime,
       {int currentPage = 1, int perPage = 20}) async {
     return await _remoteDataSource.fetchCheckInLogs(
-      current_page: currentPage,
-      per_page: perPage,
-    );
+        // current_page: currentPage,
+        // per_page: perPage,
+        );
   }
 
   Future<List<VisitorLog>?> fetchAllVisitorLog(int companyId, String dateTime,
       {int currentPage = 1, int perPage = 20}) async {
     return await _remoteDataSource.fetchAllLogs(
-      current_page: currentPage,
-      per_page: perPage,
-    );
+        // current_page: currentPage,
+        // per_page: perPage,
+        );
   }
 
   Future<List<VisitorLog>?> fetchCardNumbers(
@@ -67,8 +67,8 @@ class VisitorLogRepositoryImpl extends VisitorLogRepository {
       int companyId, String dateTime,
       {int currentPage = 1, int perPage = 20}) async {
     return await _remoteDataSource.fetchCheckOutLogs(
-      current_page: currentPage,
-      per_page: perPage,
-    );
+        // current_page: currentPage,
+        // per_page: perPage,
+        );
   }
 }
