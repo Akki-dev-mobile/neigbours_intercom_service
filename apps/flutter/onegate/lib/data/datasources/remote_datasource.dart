@@ -13,8 +13,10 @@ import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
+import 'package:flutter_onegate/utils/error_screen.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -24,13 +26,27 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final keycloakWrapper =
-    KeycloakWrapper(config: KeycloakConfigManager.getConfig());
+KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {
   RemoteDataSource();
 
   final GateStorage gateStorage = GateStorage();
+
+  void _handleErrorResponse() {
+    // final message =
+    //     response.data?['message'] ?? 'An error occurred during $operation';
+    // final errorCode = response.statusCode?.toString() ?? 'Unknown';
+    navigatorKey.currentState?.pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const ErrorScreen(
+          // message: message,
+          // errorCode: errorCode,
+        ),
+      ),
+    );
+  }
 
   /// Login user via Keycloak
   Future<Map<String, dynamic>> loginUser() async {
@@ -67,9 +83,12 @@ class RemoteDataSource {
         log('Login response: ${response.data}');
         return response.data?['data'] ?? {};
       } else {
-        throw Exception('Failed to log in: ${response.statusCode}');
+        _handleErrorResponse();
+        return {};
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error during login: $e');
       return {};
     }
@@ -129,9 +148,12 @@ class RemoteDataSource {
 
         return data is List ? data : [];
       } else {
-        throw Exception('Failed to fetch societies.');
+        _handleErrorResponse();
+        return [];
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching societies: $e');
       rethrow;
     }
@@ -225,6 +247,8 @@ class RemoteDataSource {
         }
       }
     } catch (e) {
+      _handleErrorResponse();
+
       debugPrint('Error fetching purposes: $e');
     }
     return null;
@@ -267,6 +291,8 @@ class RemoteDataSource {
         visitor_image: uploadImageUrl.toString(),
       );
     } catch (error) {
+      _handleErrorResponse();
+
       // Handle any errors
       log('Error creating visitor: $error');
       return null;
@@ -278,10 +304,12 @@ class RemoteDataSource {
       final response = await fetchCheckInLogs();
 
       final filteredLogs =
-          response.where((log) => log.visitor_card_number != null).toList();
+      response.where((log) => log.visitor_card_number != null).toList();
 
       return filteredLogs;
     } catch (error) {
+      _handleErrorResponse();
+
       log("Error fetching card numbers: $error");
       return null;
     }
@@ -352,10 +380,15 @@ class RemoteDataSource {
 
           return visitorLogResult;
         } else {
+          _handleErrorResponse();
+
           log("API Response Error: ${responseData['message']}");
+          _handleErrorResponse();
         }
       }
     } on DioError catch (e) {
+      _handleErrorResponse();
+
       if (e.response != null) {
         print("Dio Error: ${e.response?.data}");
         print("Status Code: ${e.response?.statusCode}");
@@ -363,6 +396,8 @@ class RemoteDataSource {
         print("Dio Error: ${e.message}");
       }
     } catch (e, stackTrace) {
+      _handleErrorResponse();
+
       print("Unexpected error during check-in: $e");
       print("Stack trace: $stackTrace");
     }
@@ -401,6 +436,8 @@ class RemoteDataSource {
         );
         log("Export Logs Response: ${response.data}");
       } else {
+        _handleErrorResponse();
+
         log("Failed to export logs: ${response.statusMessage}");
         myFluttertoast(
           msg: "Failed to export logs: ${response.data}",
@@ -409,6 +446,8 @@ class RemoteDataSource {
         );
       }
     } catch (e) {
+      _handleErrorResponse();
+
       // Handle errors during log export
       log("Error exporting logs: $e");
       myFluttertoast(
@@ -419,25 +458,19 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckInLogs(
-      {int? current_page, int? per_page}) async {
-    return _fetchVisitorLogs(
-        onlyCheckout: false, current_page: current_page, per_page: per_page);
+  Future<List<VisitorLog>> fetchCheckInLogs() async {
+    return _fetchVisitorLogs(onlyCheckout: false);
   }
 
-  Future<List<VisitorLog>> fetchAllLogs(
-      {int? current_page, int? per_page}) async {
-    return _fetchVisitorLogs(current_page: current_page, per_page: per_page);
+  Future<List<VisitorLog>> fetchAllLogs() async {
+    return _fetchVisitorLogs();
   }
 
-  Future<List<VisitorLog>> fetchCheckOutLogs(
-      {int? current_page, int? per_page}) async {
-    return _fetchVisitorLogs(
-        onlyCheckout: true, current_page: current_page, per_page: per_page);
+  Future<List<VisitorLog>> fetchCheckOutLogs() async {
+    return _fetchVisitorLogs(onlyCheckout: true);
   }
 
-  Future<List<VisitorLog>> _fetchVisitorLogs(
-      {bool? onlyCheckout, int? current_page, int? per_page}) async {
+  Future<List<VisitorLog>> _fetchVisitorLogs({bool? onlyCheckout}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
@@ -445,11 +478,9 @@ class RemoteDataSource {
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
       final String formattedDate =
-          DateFormat('yyyy-MM-dd').format(DateTime.now());
+      DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       final requestBody = <String, dynamic>{
-        // 'current_page': current_page,
-        // 'per_page': 40,
         'from_date': formattedDate,
         'to_date': formattedDate,
         'company_id': int.parse(resolvedCompanyId.toString()),
@@ -468,10 +499,11 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data']["data"] ?? [];
+        final List<dynamic> data = responseData['data'] ?? [];
         log("data--$data");
         return data.map((item) => _mapToVisitorLog(item)).toList();
       } else {
+        _handleErrorResponse();
         throw Exception(
             'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
       }
@@ -494,7 +526,7 @@ class RemoteDataSource {
 
     // Handling unit details as a list of BuildingAssignments
     final List<BuildingAssignment>? buildingAssignments =
-        (item['unit_details'] as List<dynamic>?)?.map((unit) {
+    (item['unit_details'] as List<dynamic>?)?.map((unit) {
       return BuildingAssignment(
         id: null,
         // Assuming id is not provided in the unit details
@@ -531,9 +563,9 @@ class RemoteDataSource {
       visitor_id: item['visitor_id'] as int? ?? 0,
       visitor: visitor,
       visitor_purpose_category_id:
-          item['visitor_purpose_category_id'] as int? ?? 1,
+      item['visitor_purpose_category_id'] as int? ?? 1,
       visitor_purpose_sub_category_id:
-          item['visitor_purpose_sub_category_id'] as int?,
+      item['visitor_purpose_sub_category_id'] as int?,
       visitor_building_assignment: buildingAssignments,
       visitor_count: item['visitor_count'] as int? ?? 0,
       visitor_check_in: checkInTime,
@@ -559,11 +591,11 @@ class RemoteDataSource {
   /// Safely attempts to parse a string into a DateTime object.
   DateTime? tryParseDate(String dateStr) {
     try {
-      final parsedDate = DateFormat("yyyy-MM-dd hh:mm:ss").parse(dateStr);
-      // log('Successfully parsed date: $parsedDate');
+      final parsedDate = DateFormat("yyyy-MM-dd hh:mm:ss a").parse(dateStr);
+      log('Successfully parsed date: $parsedDate');
       return parsedDate;
     } catch (e) {
-      // log('Error parsing date: $dateStr, error: $e');
+      log('Error parsing date: $dateStr, error: $e');
       return null; // Return null if parsing fails
     }
   }
@@ -607,6 +639,8 @@ class RemoteDataSource {
         log("✅ Passcode verified successfully: ${response.data}");
         return response.data;
       } else {
+        _handleErrorResponse();
+
         // log("❌ Failed to verify passcode. Status Code: ${response.statusCode}, Response: ${response.data}");
         Fluttertoast.showToast(
           msg: "Not a valid passcode!",
@@ -618,6 +652,8 @@ class RemoteDataSource {
         throw Exception('Failed to verify passcode');
       }
     } catch (e, stackTrace) {
+      _handleErrorResponse();
+
       log("❌ Error verifying passcode: $e");
       log("StackTrace: $stackTrace");
 
@@ -662,6 +698,8 @@ class RemoteDataSource {
       log("memberlist${response.data?['data']}");
       return response.data?['data'] ?? [];
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching members: $e');
       rethrow;
     }
@@ -695,6 +733,8 @@ class RemoteDataSource {
 
       return response.data?['data'] ?? [];
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching members: $e');
       rethrow;
     }
@@ -735,6 +775,8 @@ class RemoteDataSource {
 
       return response.data?['data'] ?? [];
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching member units: $e');
       rethrow;
     }
@@ -812,10 +854,14 @@ class RemoteDataSource {
         log('OTP sent successfully. Response: ${response.data}');
         return response.data; // Return the response data (message and data)
       } else {
+        _handleErrorResponse();
+
         log('Failed to send OTP: ${response.statusCode} - ${response.data}');
         throw Exception('Failed to send OTP');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       if (e is DioError) {
         log('Error sending OTP: ${e.response?.statusCode} - ${e.response?.data}');
       } else {
@@ -848,10 +894,14 @@ class RemoteDataSource {
       if (response.statusCode == 200) {
         return response.data;
       } else {
+        _handleErrorResponse();
+
         throw Exception(
             'Failed to verify self-checkin: ${response.statusCode}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error during self-checkin verification: $e');
       throw Exception('Error during self-checkin verification: $e');
     }
@@ -870,10 +920,14 @@ class RemoteDataSource {
         log('OTP sent successfully. Expires in: $expiresIn');
         return expiresIn;
       } else {
+        _handleErrorResponse();
+
         log('Failed to send OTP: ${response.statusCode}');
         return null;
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error sending OTP: $e');
       rethrow;
     }
@@ -896,10 +950,14 @@ class RemoteDataSource {
         log('OTP verified successfully. Message: $message');
         return message;
       } else {
+        _handleErrorResponse();
+
         log('Failed to verify OTP: ${response.statusCode}');
         return null;
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error verifying OTP: $e');
       rethrow;
     }
@@ -920,10 +978,14 @@ class RemoteDataSource {
       if (response.statusCode == 200) {
         return true;
       } else {
+        _handleErrorResponse();
+
         log('Check-out failed: ${response.statusCode} - ${response.data}');
         return false;
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error during check-out: $e');
       return false;
     }
@@ -945,6 +1007,8 @@ class RemoteDataSource {
       );
       return response.statusCode == 200;
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error uploading parcel image: $e');
       return false;
     }
@@ -1011,17 +1075,19 @@ class RemoteDataSource {
                   .replaceAll(']"', ']');
 
               final List<dynamic> decodedUnitDetails =
-                  jsonDecode(cleanedJsonString);
+              jsonDecode(cleanedJsonString);
 
               parsedUnitDetails =
                   decodedUnitDetails.map<UnitDetails>((unitJson) {
-                return UnitDetails(
-                  unitId: _parseToInt(unitJson['unit_id']),
-                  building_unit: unitJson["building_unit"]?.toString() ?? '',
-                );
-              }).toList();
+                    return UnitDetails(
+                      unitId: _parseToInt(unitJson['unit_id']),
+                      building_unit: unitJson["building_unit"]?.toString() ?? '',
+                    );
+                  }).toList();
             }
           } catch (e) {
+            _handleErrorResponse();
+
             log("❌ Error decoding unit details: $e");
           }
 
@@ -1052,9 +1118,11 @@ class RemoteDataSource {
               }
             }
           } catch (e) {
+            _handleErrorResponse();
+
             log("❌ Error parsing additional_details: $e");
             parsedAdditionalDetails =
-                {}; // Assign empty map to prevent null errors
+            {}; // Assign empty map to prevent null errors
           }
 
           return VisitorInfo(
@@ -1082,16 +1150,20 @@ class RemoteDataSource {
             visitorPurposeCategoryId: _parseToInt(json['purpose_category_id']),
             purposeCategoryName: json['purpose_category_name']?.toString(),
             purposeSubCategoryName:
-                json['purpose_sub_category_name']?.toString(),
+            json['purpose_sub_category_name']?.toString(),
             additionalDetails: parsedAdditionalDetails, // ✅ Assigned here
           );
         }).toList();
         return visitorList;
       } else {
+        _handleErrorResponse();
+
         throw Exception(
             '❌ Failed to fetch approvals: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('❌ Error fetching approvals: $e');
       rethrow;
     }
@@ -1125,9 +1197,13 @@ class RemoteDataSource {
           textColor: Colors.white,
         );
       } else {
+        _handleErrorResponse();
+
         log('Failed to send logs: ${response.statusMessage}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error sending logs: $e');
       myFluttertoast(
         msg: "Error sending logs: $e",
@@ -1159,10 +1235,14 @@ class RemoteDataSource {
         log("Success: ${response.data}");
         return response;
       } else {
+        _handleErrorResponse();
+
         log('Failed to readStatus: ${response.statusMessage}');
         return null;
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error readStatus: $e');
       return null;
     }
@@ -1221,14 +1301,20 @@ class RemoteDataSource {
 
           return filePath;
         } else {
+          _handleErrorResponse();
+
           log('Unexpected response format: ${response.data}');
           return '';
         }
       } else {
+        _handleErrorResponse();
+
         log('Upload failed: ${response.statusMessage}');
         return '';
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error uploading image: $e');
       rethrow;
     }
@@ -1250,7 +1336,7 @@ class RemoteDataSource {
   final String cacheKey = 'members_list_cache';
   final String cacheTimestampKey = 'members_list_cache_timestamp';
   final Duration cacheDuration =
-      const Duration(minutes: 30); // Cache expiry time
+  const Duration(minutes: 30); // Cache expiry time
 
   Future<List<dynamic>> getMembersList() async {
     try {
@@ -1283,10 +1369,14 @@ class RemoteDataSource {
 
         return membersList;
       } else {
+        _handleErrorResponse();
+
         log('Failed to fetch member list: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to fetch member list: ${response.statusCode}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching member list: $e');
       rethrow;
     }
@@ -1311,6 +1401,8 @@ class RemoteDataSource {
       // Cache is still valid
       return jsonDecode(cachedJson) as List<dynamic>;
     } else {
+      _handleErrorResponse();
+
       // Cache is expired
       return null;
     }
@@ -1342,6 +1434,8 @@ class RemoteDataSource {
 
       return response.data?['data'] ?? [];
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching unit list: $e');
       rethrow;
     }
@@ -1360,9 +1454,13 @@ class RemoteDataSource {
         final List<dynamic> data = response.data?['data'];
         return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
       } else {
+        _handleErrorResponse();
+
         throw Exception('Failed to fetch staff list: ${response.statusCode}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching staff list: $e');
       rethrow;
     }
@@ -1389,10 +1487,14 @@ class RemoteDataSource {
       );
 
       if (response.statusCode != 200) {
+        _handleErrorResponse();
+
         throw Exception(
             'Failed to make Exotel call. Status code: ${response.statusCode}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       throw Exception('Error making Exotel call: $e');
     }
   }
@@ -1414,10 +1516,14 @@ class RemoteDataSource {
         }
         return [];
       } else {
+        _handleErrorResponse();
+
         log('Failed to fetch parcels: ${response.statusCode}');
         return [];
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching parcels: $e');
       return [];
     }
@@ -1448,10 +1554,14 @@ class RemoteDataSource {
         log("Parcel OTP verified successfully: $responseData");
         return responseData;
       } else {
+        _handleErrorResponse();
+
         log("Failed to verify parcel OTP. Status Code: ${response.statusCode}, Response Body: ${response.body}");
         throw Exception('Failed to verify parcel OTP');
       }
     } catch (e, stackTrace) {
+      _handleErrorResponse();
+
       log("Error in verifyParcelOtp: $e");
       log("StackTrace: $stackTrace");
       throw Exception('Failed to verify parcel OTP');
@@ -1462,7 +1572,7 @@ class RemoteDataSource {
       String parcelId, String mobileNumber) async {
     try {
       String formattedMobileNumber =
-          mobileNumber.replaceAll(RegExp(r'[^0-9]'), '');
+      mobileNumber.replaceAll(RegExp(r'[^0-9]'), '');
       if (formattedMobileNumber.length == 12 &&
           formattedMobileNumber.startsWith('91')) {
         formattedMobileNumber = formattedMobileNumber.substring(2);
@@ -1482,10 +1592,14 @@ class RemoteDataSource {
         log("Parcel OTP fetched successfully: ${response.body}");
         return jsonDecode(response.body);
       } else {
+        _handleErrorResponse();
+
         log("Failed to load parcel OTP: ${response.statusCode} - ${response.body}");
         throw Exception('Failed to load parcel OTP');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log("Error in getParcelOtp: $e");
       throw Exception('Failed to load parcel OTP');
     }
@@ -1505,10 +1619,14 @@ class RemoteDataSource {
         log("Categories${response.data.toString()}");
         return response.data;
       } else {
+        _handleErrorResponse();
+
         throw Exception(
             'Failed to fetch staff category: ${response.statusCode}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error fetching staff category: $e');
       throw Exception('Failed to fetch staff category: $e');
     }
@@ -1536,8 +1654,8 @@ class RemoteDataSource {
         'staff_address_1': staffData['address'] ?? '',
         'staff_dob': staffData['dateOfBirth'] != null
             ? DateTime.parse(staffData['dateOfBirth'])
-                .toIso8601String()
-                .split('T')[0]
+            .toIso8601String()
+            .split('T')[0]
             : '',
         'staff_qualification': staffData['qualification'],
         'staff_skill': staffData['categoryValue'] ?? '',
@@ -1572,11 +1690,15 @@ class RemoteDataSource {
         log("Staff added successfully: ${response.data}");
         return response.data;
       } else {
+        _handleErrorResponse();
+
         log('Error response: ${response.data}');
         throw Exception(
             'Server returned ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error adding staff: $e');
       rethrow;
     }
@@ -1606,8 +1728,8 @@ class RemoteDataSource {
         'staff_address_1': staffData['address'] ?? '',
         'staff_dob': staffData['dateOfBirth'] != null
             ? DateTime.parse(staffData['dateOfBirth'])
-                .toIso8601String()
-                .split('T')[0]
+            .toIso8601String()
+            .split('T')[0]
             : '',
         'staff_qualification': staffData['qualification'],
         'staff_skill': staffData['categoryValue'] ?? '',
@@ -1615,7 +1737,7 @@ class RemoteDataSource {
         'staff_rfid': staffData['idProofNumber'] ?? '',
         'staff_note': '',
         'staff_proof':
-            "https://storage-as-service.s3.amazonaws.com/1//1737540834_scaled_aa85f48c-f79e-4e65-8334-a4c168dd67867233042262877539451.jpg"
+        "https://storage-as-service.s3.amazonaws.com/1//1737540834_scaled_aa85f48c-f79e-4e65-8334-a4c168dd67867233042262877539451.jpg"
         // 'staff_proof': staffData['idProofImageUrl'] ?? '',
       };
 
@@ -1645,11 +1767,15 @@ class RemoteDataSource {
 
         return response.data;
       } else {
+        _handleErrorResponse();
+
         log('Error response: ${response.data}');
         throw Exception(
             'Server returned ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log('Error editing staff: $e');
 
       if (e is DioError && e.response?.statusCode == 400) {
@@ -1666,6 +1792,8 @@ class RemoteDataSource {
               toastLength: Toast.LENGTH_SHORT);
         }
       } else {
+        _handleErrorResponse();
+
         log('Error editing staff: $e');
         // myFluttertoast(
         //     msg: "Error editing staff: $e", toastLength: Toast.LENGTH_SHORT);
@@ -1703,9 +1831,13 @@ class RemoteDataSource {
         print("images${response.data}");
         return response.data as Map<String, dynamic>;
       } else {
+        _handleErrorResponse();
+
         throw Exception('Failed to upload image: ${response.statusCode}');
       }
     } catch (e) {
+      _handleErrorResponse();
+
       print('Error uploading image: $e');
       return null;
     }
@@ -1747,10 +1879,14 @@ class RemoteDataSource {
         log("Visitor updated successfully!");
         return true;
       } else {
+        _handleErrorResponse();
+
         log("Failed to update visitor: ${response.statusCode} - ${response.data}");
         return false;
       }
     } catch (e) {
+      _handleErrorResponse();
+
       log("Error updating visitor: $e");
       return false;
     }
@@ -1765,6 +1901,7 @@ class GlobalStorage {
   static String? get visitorLogId => _visitorLogId;
 
   // Setter for visitorLogId
+// Complete implementation with **ALL METHODS** and utilities included.
   static set visitorLogId(String? value) {
     _visitorLogId = value;
     print("VisitorLogId has been set to: $value");
