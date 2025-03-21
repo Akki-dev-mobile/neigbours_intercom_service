@@ -41,9 +41,9 @@ class RemoteDataSource {
     navigatorKey.currentState?.pushReplacement(
       MaterialPageRoute(
         builder: (context) => const ErrorScreen(
-          // message: message,
-          // errorCode: errorCode,
-        ),
+            // message: message,
+            // errorCode: errorCode,
+            ),
       ),
     );
   }
@@ -256,7 +256,7 @@ class RemoteDataSource {
 
   Future<void> fetchAndStoreFaceRecConfig() async {
     log("fetchAndStoreFaceRecConfig called");
-    final url = Uri.parse("http://192.168.1.11:8001/api/get-facerec-url/");
+    final url = Uri.parse(ApiUrls.facerecinfoUrl);
 
     try {
       final response = await http.get(url);

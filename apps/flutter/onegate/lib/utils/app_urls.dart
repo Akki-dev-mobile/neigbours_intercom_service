@@ -5,6 +5,8 @@ class ApiUrls {
   static String get gateBaseUrl => Environment.gateBaseUrl;
 
   static String get societyBaseUrl => Environment.societyUrl;
+  static String get facerecinfoUrl =>
+      'http://192.168.1.11:8001/api/get-facerec-url/';
 
   // Gate API Endpoints
   static String get gateLogin => '$gateBaseUrl/gatelogin';
