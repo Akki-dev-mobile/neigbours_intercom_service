@@ -419,33 +419,39 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckInLogs() async {
-    return _fetchVisitorLogs(onlyCheckout: false);
+  Future<List<VisitorLog>> fetchCheckInLogs(
+      {int? current_page, int? per_page}) async {
+    return _fetchVisitorLogs(
+        onlyCheckout: false, current_page: current_page, per_page: per_page);
   }
 
-  Future<List<VisitorLog>> fetchAllLogs() async {
-    return _fetchVisitorLogs();
+  Future<List<VisitorLog>> fetchAllLogs(
+      {int? current_page, int? per_page}) async {
+    return _fetchVisitorLogs(current_page: current_page, per_page: per_page);
   }
 
-  Future<List<VisitorLog>> fetchCheckOutLogs() async {
-    return _fetchVisitorLogs(onlyCheckout: true);
+  Future<List<VisitorLog>> fetchCheckOutLogs(
+      {int? current_page, int? per_page}) async {
+    return _fetchVisitorLogs(
+        onlyCheckout: true, current_page: current_page, per_page: per_page);
   }
 
-  Future<List<VisitorLog>> _fetchVisitorLogs({bool? onlyCheckout}) async {
+  Future<List<VisitorLog>> _fetchVisitorLogs(
+      {bool? onlyCheckout, int? current_page, int? per_page}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
           prefs.getString('selected_gate') ?? 'Default Gate';
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
-      // final String formattedDate =
-      //     DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final String formattedDate =
+          DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       final requestBody = <String, dynamic>{
-        'current_page': 1,
-        'per_page': 20,
-        // 'from_date': formattedDate,
-        // 'to_date': formattedDate,
+        // 'current_page': current_page,
+        // 'per_page': 40,
+        'from_date': formattedDate,
+        'to_date': formattedDate,
         'company_id': int.parse(resolvedCompanyId.toString()),
         'in_gate': selectedGateName,
       };
@@ -554,10 +560,10 @@ class RemoteDataSource {
   DateTime? tryParseDate(String dateStr) {
     try {
       final parsedDate = DateFormat("yyyy-MM-dd hh:mm:ss").parse(dateStr);
-      log('Successfully parsed date: $parsedDate');
+      // log('Successfully parsed date: $parsedDate');
       return parsedDate;
     } catch (e) {
-      log('Error parsing date: $dateStr, error: $e');
+      // log('Error parsing date: $dateStr, error: $e');
       return null; // Return null if parsing fails
     }
   }

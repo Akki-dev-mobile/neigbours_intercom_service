@@ -4,21 +4,34 @@ part of 'visitor_log_bloc.dart';
 abstract class VisitorLogEvent {}
 
 class FetchCheckInLogEvent extends VisitorLogEvent {
-  final DateTime dateTime;
+  final DateTime date;
+  final int currentPage;
+  final int perPage;
 
-  FetchCheckInLogEvent(this.dateTime);
+  FetchCheckInLogEvent(this.date, {this.currentPage = 1, this.perPage = 20});
 }
 
 class FetchCheckOutLogEvent extends VisitorLogEvent {
-  final DateTime dateTime;
+  final DateTime date;
+  final int currentPage;
+  final int perPage;
 
-  FetchCheckOutLogEvent(this.dateTime);
+  FetchCheckOutLogEvent(this.date, {this.currentPage = 1, this.perPage = 20});
 }
 
 class FetchVisitorLogEvent extends VisitorLogEvent {
-  final DateTime dateTime;
+  final DateTime date;
+  final int currentPage;
+  final int perPage;
 
-  FetchVisitorLogEvent(this.dateTime);
+  FetchVisitorLogEvent(this.date, {this.currentPage = 1, this.perPage = 20});
+}
+
+class LoadMoreVisitorLogsEvent extends VisitorLogEvent {
+  final int currentPage;
+  final int perPage;
+
+  LoadMoreVisitorLogsEvent(this.currentPage, this.perPage);
 }
 
 class CheckOutEvent extends VisitorLogEvent {
