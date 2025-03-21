@@ -265,24 +265,40 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     if (_image == null) return;
 
     try {
-      final uri = Uri.parse('${ApiUrls.facerecUrl}/register-face/');
-      final request = http.MultipartRequest('POST', uri)
-        ..fields['name'] = name
-        ..files.add(await http.MultipartFile.fromPath('files', _image!.path));
+      final societyid = await GateStorage().getSocietyId();
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      print(response.body);
+      final faceRecConfig = await GateStorage().getFaceRecConfig();
 
-      if (response.statusCode == 200) {
-        var jsondata = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(jsondata["message"])),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload image: ${response.body}')),
-        );
+      List<String> allowed = faceRecConfig != null
+          ? List<String>.from(faceRecConfig['allowed'] ?? [])
+          : [];
+      if (faceRecConfig != null &&
+          faceRecConfig['url'] != null &&
+          faceRecConfig['url'] != "" &&
+          faceRecConfig['allowed'] != null &&
+          societyid != null &&
+          allowed.contains(societyid.toString())) {
+        String url = faceRecConfig['url'] ?? '';
+
+        final uri = Uri.parse('$url/register-face/');
+        final request = http.MultipartRequest('POST', uri)
+          ..fields['name'] = name
+          ..files.add(await http.MultipartFile.fromPath('files', _image!.path));
+
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+        print(response.body);
+
+        if (response.statusCode == 200) {
+          var jsondata = json.decode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(jsondata["message"])),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to upload image: ${response.body}')),
+          );
+        }
       }
     } catch (e) {
       print(e);
@@ -299,42 +315,59 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
     if (_image == null) return;
 
     try {
-      final uri = Uri.parse('${ApiUrls.facerecUrl}/search-face/');
-      final request = http.MultipartRequest('POST', uri)
-        ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
+      final societyid = await GateStorage().getSocietyId();
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      print(response.body);
-      if (response.statusCode == 200) {
-        var jsondata = json.decode(response.body);
+      final faceRecConfig = await GateStorage().getFaceRecConfig();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(jsondata['liveness_passed']
-                  ? (jsondata['match_percentage'] > 70)
-                      ? jsondata['matched_user']
-                      : "No User Found"
-                  : "Liveness failed recapture the image")),
-        );
-        final numericRegex = RegExp(r'^[0-9]+$');
+      List<String> allowed = faceRecConfig != null
+          ? List<String>.from(faceRecConfig['allowed'] ?? [])
+          : [];
 
-        if (jsondata['liveness_passed'] &&
-            numericRegex.hasMatch(jsondata['matched_user'].toString()) &&
-            jsondata['matched_user'].toString().length == 10 &&
-            jsondata['match_percentage'] > 70) {
-          selfCheckInOtp(jsondata['matched_user']);
-        } else if (jsondata['liveness_passed'] &&
-            jsondata['match_percentage'] < 70) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const SelfEntryView()),
+      if (faceRecConfig != null &&
+          faceRecConfig['url'] != null &&
+          faceRecConfig['url'] != "" &&
+          faceRecConfig['allowed'] != null &&
+          societyid != null &&
+          allowed.contains(societyid.toString())) {
+        String facerecUrl = faceRecConfig['url'] ?? '';
+
+        final uri = Uri.parse('$facerecUrl/search-face/');
+        final request = http.MultipartRequest('POST', uri)
+          ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
+
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+        print(response.body);
+        if (response.statusCode == 200) {
+          var jsondata = json.decode(response.body);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(jsondata['liveness_passed']
+                    ? (jsondata['match_percentage'] > 70)
+                        ? jsondata['matched_user']
+                        : "No User Found"
+                    : "Liveness failed recapture the image")),
+          );
+          final numericRegex = RegExp(r'^[0-9]+$');
+
+          if (jsondata['liveness_passed'] &&
+              numericRegex.hasMatch(jsondata['matched_user'].toString()) &&
+              jsondata['matched_user'].toString().length == 10 &&
+              jsondata['match_percentage'] > 70) {
+            selfCheckInOtp(jsondata['matched_user']);
+          } else if (jsondata['liveness_passed'] &&
+              jsondata['match_percentage'] < 70) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const SelfEntryView()),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed: ${response.body}')),
           );
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: ${response.body}')),
-        );
       }
     } catch (e) {
       print(e);

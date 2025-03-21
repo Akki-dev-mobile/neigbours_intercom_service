@@ -1,10 +1,13 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'dart:developer';
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/face_id_registration_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/passcode_entry_view.dart';
@@ -34,7 +37,32 @@ class _SelfHomeViewState extends State<SelfHomeView> {
   @override
   void initState() {
     deleteImage();
+    getfacerecinfo();
     super.initState();
+  }
+
+  bool facerectoshow = false;
+  getfacerecinfo() async {
+    final societyid = await GateStorage().getSocietyId();
+    final faceRecConfig = await GateStorage().getFaceRecConfig();
+    log("fetchAndStoreFaceRecConfig societyid$societyid");
+
+    List<String> allowed = faceRecConfig != null
+        ? List<String>.from(faceRecConfig['allowed'] ?? [])
+        : [];
+    log("fetchAndStoreFaceRecConfig societyid${allowed.contains(societyid.toString())}");
+
+    if (faceRecConfig != null &&
+        faceRecConfig['url'] != null &&
+        faceRecConfig['url'] != "" &&
+        faceRecConfig['allowed'] != null &&
+        societyid != null &&
+        faceRecConfig['is_true'] == true &&
+        allowed.contains(societyid.toString())) {
+      setState(() {
+        facerectoshow = true;
+      });
+    }
   }
 
   Future<void> deleteImage() async {
@@ -206,21 +234,26 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                             image: 'assets/media/images/standing2.png',
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SelfEntryFacerecView(),
+                        facerectoshow
+                            ? GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          SelfEntryFacerecView(),
+                                    ),
+                                  );
+                                },
+                                child: SelfTapOption(
+                                  fTitle: 'Scan',
+                                  sTitle: 'Face',
+                                  image: 'assets/media/images/Sitting.png',
+                                ),
+                              )
+                            : Container(
+                                width: MediaQuery.of(context).size.width / 2.5,
                               ),
-                            );
-                          },
-                          child: SelfTapOption(
-                            fTitle: 'Scan',
-                            sTitle: 'Face',
-                            image: 'assets/media/images/Sitting.png',
-                          ),
-                        ),
                       ],
                     ),
                   ],

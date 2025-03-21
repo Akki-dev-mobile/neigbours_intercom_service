@@ -64,6 +64,7 @@ class LoginService {
   });
 
   Future<void> initialize() async {
+    RemoteDataSource().fetchAndStoreFaceRecConfig();
     try {
       await keycloakWrapper.initialize();
       log("Keycloak initialized successfully");
