@@ -5,7 +5,8 @@ class ApiUrls {
   static String get gateBaseUrl => Environment.gateBaseUrl;
 
   static String get societyBaseUrl => Environment.societyUrl;
-  static String get facerecUrl => 'http://192.168.1.11:8001/api';
+  static String get facerecinfoUrl =>
+      'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/gate_facial_e7e469b505.json';
 
   // Gate API Endpoints
   static String get gateLogin => '$gateBaseUrl/gatelogin';

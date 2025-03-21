@@ -254,6 +254,24 @@ class RemoteDataSource {
     return null;
   }
 
+  Future<void> fetchAndStoreFaceRecConfig() async {
+    log("fetchAndStoreFaceRecConfig called");
+    final url = Uri.parse(ApiUrls.facerecinfoUrl);
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final config = jsonDecode(response.body);
+        await GateStorage().saveFaceRecConfig(config);
+      } else {
+        log("❌ Failed to fetch config: ${response.statusCode}");
+      }
+    } catch (e) {
+      log("❗ Error fetching face recognition config: $e");
+    }
+  }
+
   /// Create a visitor
   Future<Visitor?> createVisitor(Visitor visitor) async {
     log("createVisitor called");

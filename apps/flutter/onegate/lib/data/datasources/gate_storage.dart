@@ -15,6 +15,7 @@ class GateStorage {
   static const _visitorLogIdKey = 'visitorLogId';
   static const String _memberApprovalKey = 'member_approval';
   static const _visitorImageKey = 'visitor_image';
+  static const _faceRecConfigKey = 'face_rec_config';
 
   static final GateStorage _instance = GateStorage._internal();
 
@@ -28,6 +29,28 @@ class GateStorage {
 
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
+  }
+
+  /// Save face recognition config from API response as JSON
+  Future<void> saveFaceRecConfig(Map<String, dynamic> config) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(config);
+    await prefs.setString(_faceRecConfigKey, jsonString);
+    log("✅ Face recognition config saved: $jsonString");
+  }
+
+  /// Retrieve face recognition config from SharedPreferences
+  Future<Map<String, dynamic>?> getFaceRecConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_faceRecConfigKey);
+    if (jsonString != null) {
+      try {
+        return jsonDecode(jsonString);
+      } catch (e) {
+        log("❌ Failed to parse face rec config: $e");
+      }
+    }
+    return null;
   }
 
   Future<void> saveAccessToken(String token) async {
