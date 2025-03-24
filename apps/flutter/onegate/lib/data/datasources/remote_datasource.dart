@@ -91,6 +91,39 @@ class RemoteDataSource {
     }
   }
 
+  Future<void> callMember(String toNumber, BuildContext context) async {
+    const fromNumber = "+918452060059";
+
+    try {
+      final response = await Dio().post(
+        '${ApiUrls.gateBaseUrl}/visitor/exotel/initiatecall',
+        data: {
+          'from_number': fromNumber,
+          'to_number': toNumber,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            // Add auth headers here if needed
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('📞 Call initiated to $toNumber')),
+        );
+      } else {
+        throw Exception('Failed to initiate call');
+      }
+    } catch (e) {
+      debugPrint('❌ Error initiating call: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Failed to call $toNumber')),
+      );
+    }
+  }
+
   Future<List<dynamic>> fetchGates() async {
     final String? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');

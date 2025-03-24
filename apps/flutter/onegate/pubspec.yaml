@@ -40,7 +40,7 @@ dependencies:
   toggle_switch: ^2.1.0
   country_code_picker: ^3.0.0
   email_validator: ^2.1.17
-  flutter_native_splash: ^2.4.1
+  #  flutter_native_splash: ^2.4.1
   cached_network_image: ^3.4.1
   image_picker: ^1.0.4
   path_provider: ^2.1.4
@@ -89,19 +89,11 @@ dev_dependencies:
   common_widgets:
     path: ../../../libs/flutter/common/common-widgets
   flutter_lints: ^2.0.0
-  flutter_launcher_icons: ^0.13.1
   speech_to_text: ^6.3.0
 
 dependency_overrides:
   speech_to_text: ^7.0.0
 
-flutter_icons:
-  android: true
-  ios: true
-  image_path: "assets/media/images/oneapp_logo.png"
-  adaptive_icon_foreground: "assets/media/images/oneapp_logo.png"
-
-  adaptive_icon_background: "#FFACAC"
 
 flutter:
   # The following line ensures that the Material Icons font is
