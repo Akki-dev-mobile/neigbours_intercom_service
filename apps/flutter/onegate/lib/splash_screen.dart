@@ -1,65 +1,93 @@
-// import 'dart:developer';
-//
-// import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
-//
-//
-// class SplashView extends StatefulWidget {
-//   const SplashView({super.key});
-//
-//   @override
-//   State<SplashView> createState() => _SplashViewState();
-// }
-//
-// class _SplashViewState extends State<SplashView> {
-//   @override
-//   void initState() {
-//     super.initState();
-//     _checkLoginStatus();
-//   }
-//
-//   Future<void> _checkLoginStatus() async {
-//     await Future.delayed(const Duration(seconds: 2));
-//
-// bool intro=    _preferenceUtils.setIsAppIntroShown(true);
-//
-//     // Check if the user is authenticated
-//     final isAuthenticated = await authProvider.checkLoginStatus();
-//
-//     // Navigate based on authentication status
-//     if (intro) {
-//       log('User is authenticated');
-//       context.go('/home');
-//     } else {
-//       log('User is not authenticated');
-//
-//       context.go('/login');
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: Column(
-//         mainAxisSize: MainAxisSize.max,
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         crossAxisAlignment: CrossAxisAlignment.center,
-//         children: [
-//           Padding(
-//             padding: const EdgeInsets.only(
-//               bottom: 50,
-//             ),
-//             child: Hero(
-//               tag: 'splash-logo',
-//               child: Image.asset('assets/images/oneapp-logo.png'),
-//             ),
-//           ),
-//           const LinearProgressIndicator(
-//             minHeight: 2,
-//             color: Colors.red,
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+import 'dart:developer';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:provider/provider.dart';
+import 'package:common_widgets/common_widgets.dart';
+
+class SplashView extends StatefulWidget {
+  const SplashView({super.key});
+
+  @override
+  State<SplashView> createState() => _SplashViewState();
+}
+
+class _SplashViewState extends State<SplashView>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..forward();
+
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+
+    // Navigate to the next screen after a delay
+    Future.delayed(const Duration(seconds: 2), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MyAppLogin()),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MyScrollView(
+      isScrollable: false,
+      hasBackButton: false,
+      pageBody: SizedBox(
+        height: MediaQuery.of(context).size.height,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // SizedBox(height: MediaQuery.of(context).size.height / 10),
+
+            FadeTransition(
+              opacity: _animation,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 50),
+                child: SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: Image.asset(
+                    'assets/media/images/oneapp_logo.png',
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: MediaQuery.of(context).size.height / 20),
+            const Text(
+              'Welcome to OneGate',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // const CircularProgressIndicator(
+            //   valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+            // ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -10,6 +10,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/common/internet_check_provider.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/splash_screen.dart';
 import 'package:flutter_onegate/utils/no_internet_connection.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/app_intro_view.dart';
@@ -195,7 +196,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           return shouldExit ?? false;
         },
         // Initially show the correct screen based on connectivity.
-        child: hasInternet ? const MyAppLogin() : ErrorNoInternetPage(),
+        child: hasInternet ? const SplashView() : ErrorNoInternetPage(),
       ),
     );
   }
