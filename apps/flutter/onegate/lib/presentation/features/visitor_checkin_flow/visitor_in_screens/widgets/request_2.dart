@@ -62,6 +62,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
     RequestType.allowByGatekeeper: Colors.green,
   };
 
+  @override
   void initState() {
     super.initState();
     self = widget.selfcheckinFlow;
@@ -78,40 +79,73 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
         onWillPop: () async {
           return false;
         },
-        child: MyScrollView(
-          pageTitleWidget: _buildHeader(),
-          hasBackButton: false,
-          pageBody: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              _buildVisitorProfile(),
-              const SizedBox(height: 24),
-              _buildLottieSection(requestType),
-              const SizedBox(height: 100),
-              Align(
-                alignment: Alignment.center,
-                child: CustomLargeBtn(
-                  text: 'Finish',
-                  onPressed: () => widget.selfcheckinFlow == true
-                      ? Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SelfHomeView(),
-                          ),
-                        )
-                      : Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => GateDashboardView(),
-                          ),
+        child: Scaffold(
+          appBar: AppBar(
+            leading: _buildHeader(),
+          ),
+          // pageTitleWidget: _buildHeader(),
+          // hasBackButton: false,
+          body: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            _buildVisitorProfile(),
+                            const SizedBox(height: 24),
+                            _buildLottieSection(requestType),
+                            const SizedBox(height: 100),
+                          ],
                         ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(
-                height: 30,
-              )
-            ],
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0, vertical: 16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.001),
+                        offset: const Offset(0, -3),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: CustomLargeBtn(
+                        text: 'Finish',
+                        onPressed: () => widget.selfcheckinFlow == true
+                            ? Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SelfHomeView(),
+                                ),
+                              )
+                            : Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const GateDashboardView(),
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -133,7 +167,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
               : Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => GateDashboardView(),
+                    builder: (context) => const GateDashboardView(),
                   ),
                 ),
           child: Container(

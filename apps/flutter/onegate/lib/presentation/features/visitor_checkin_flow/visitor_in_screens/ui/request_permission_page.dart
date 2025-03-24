@@ -174,11 +174,11 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   void _startPolling() {
-    _timer = Timer.periodic(Duration(seconds: 1), (_) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() {
           if (!_isTimeElapsed) {
-            _remainingTime = _remainingTime - Duration(seconds: 1);
+            _remainingTime = _remainingTime - const Duration(seconds: 1);
 
             // Check if timer has reached 00:00
             if (_remainingTime.inSeconds <= 0) {
@@ -312,7 +312,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => GateDashboardView()),
+                        builder: (context) => const GateDashboardView()),
                   );
                 },
                 child: const Text(
@@ -334,33 +334,52 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
             return LoadingOverlay(
               isUploading: _isUploading,
-              child: SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: MediaQuery.of(context).size.height,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Visitor Profile Section
-                        _buildVisitorProfile(),
+              child: Column(
+                children: [
+                  // Main scrollable content area
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Visitor Profile Section
+                            _buildVisitorProfile(),
 
-                        const SizedBox(height: 60),
-                        // Animation and Status
-                        _buildLottieSection(requestType),
-                        const SizedBox(height: 60),
-                        // Action Buttons
-                        Center(child: _buildStatusText()),
-                        const SizedBox(height: 60),
-
-                        _buildActionButton(requestType),
-                        const SizedBox(height: 20),
-                      ],
+                            const SizedBox(height: 60),
+                            // Animation and Status
+                            _buildLottieSection(requestType),
+                            const SizedBox(height: 60),
+                            // Action Buttons
+                            Center(child: _buildStatusText()),
+                            const SizedBox(height: 60),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+
+                  // Fixed bottom navigation bar with padding
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0, vertical: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.001),
+                          offset: const Offset(0, -3),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: SafeArea(
+                      child: _buildActionButton(requestType),
+                    ),
+                  ),
+                ],
               ),
             );
           },
@@ -377,7 +396,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         // ✅ Visitor Image
         Column(
           children: [
-            Container(
+            SizedBox(
               width: 120,
               height: 120,
               // decoration: BoxDecoration(
@@ -1119,7 +1138,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       MaterialPageRoute(
           builder: (context) => widget.selfcheckinFlow == true
               ? const SelfHomeView()
-              : GateDashboardView()),
+              : const GateDashboardView()),
     );
   }
 
@@ -1133,7 +1152,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       MaterialPageRoute(
           builder: (context) => widget.selfcheckinFlow == true
               ? const SelfHomeView()
-              : GateDashboardView()),
+              : const GateDashboardView()),
     );
   }
 }
