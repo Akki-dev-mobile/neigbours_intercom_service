@@ -1,8 +1,14 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:common_widgets/common_widgets.dart';
 
 class SplashView extends StatefulWidget {
@@ -16,6 +22,7 @@ class _SplashViewState extends State<SplashView>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  late final LoginService _loginService;
 
   @override
   void initState() {
@@ -30,13 +37,84 @@ class _SplashViewState extends State<SplashView>
       curve: Curves.easeInOut,
     );
 
-    // Navigate to the next screen after a delay
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MyAppLogin()),
-      );
-    });
+    _loginService = LoginService(
+      keycloakWrapper:
+          KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
+      gateStorage: GateStorage(),
+      remoteDataSource: RemoteDataSource(),
+    );
+
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      await _loginService.initialize();
+      await _checkLoginState();
+    } catch (e) {
+      log('Initialization error: $e');
+      _navigateToLogin();
+    }
+  }
+
+  Future<void> _checkLoginState() async {
+    try {
+      final accessToken = await _loginService.gateStorage.getAccessToken();
+      if (accessToken == null) {
+        log("User is not logged in");
+        await Future.delayed(const Duration(seconds: 2));
+        _navigateToLogin();
+        return;
+      }
+
+      final role = await _loginService.gateStorage.getRole();
+      await Future.delayed(const Duration(seconds: 2));
+      _navigateBasedOnRole(role);
+    } catch (e) {
+      log('Error checking login state: $e');
+      await Future.delayed(const Duration(seconds: 2));
+      _navigateToLogin();
+    }
+  }
+
+  void _navigateToLogin() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MyAppLogin()),
+    );
+  }
+
+  Future<void> _navigateBasedOnRole(String? role) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      bool hasNavigatedToGateSettings =
+          prefs.getBool('hasNavigatedToGateSettings') ?? false;
+
+      Widget? destination;
+      if (role == 'admin') {
+        destination = const AdminDashboardView();
+      } else if (role == 'gatekeeper') {
+        if (!hasNavigatedToGateSettings) {
+          destination = VisitorSettingsView(comingfrom: true);
+          await prefs.setBool('hasNavigatedToGateSettings', true);
+        } else {
+          destination = const GateDashboardView();
+        }
+      }
+
+      if (destination != null) {
+        log('Navigating to $role -> ${destination.runtimeType}');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => destination!),
+        );
+      } else {
+        _navigateToLogin();
+      }
+    } catch (e) {
+      log('Error during navigation: $e');
+      _navigateToLogin();
+    }
   }
 
   @override
