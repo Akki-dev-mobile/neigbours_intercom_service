@@ -126,6 +126,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
     }
+    log("here i am${widget.visitorLog?.toJson().toString()}");
   }
 
   Duration _remainingTime = Duration.zero; // Track remaining time
@@ -403,12 +404,14 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               //   shape: BoxShape.circle,
               //   border: Border.all(color: Colors.red.shade400, width: 4),
               // ),
-              child: ClipOval(
-                child: Image.network(
-                  widget.visitor.visitor_image ?? "",
-                  fit: BoxFit.cover,
-                ),
-              ),
+              child: widget.visitor.visitor_image?.isNotEmpty == true
+                  ? Image.network(
+                      widget.visitor.visitor_image!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.person, size: 50),
+                    )
+                  : const Icon(Icons.person, size: 50),
             ),
             const SizedBox(height: 15),
           ],

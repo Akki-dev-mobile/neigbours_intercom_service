@@ -2,15 +2,23 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as path;
 
 class QRScannerScreen extends StatefulWidget {
   final String? companyId;
@@ -168,7 +176,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             id: visitorData['visitor_id'],
             name: visitorData['name'],
             mobile: visitorData['mobile'],
-            visitor_image: visitorData['qr_code'],
+            // visitor_image: visitorData['qr_code'],
           );
 
           VisitorLog visitorLog = VisitorLog(
@@ -207,7 +215,35 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               ),
             );
           } else {
-            Navigator.pushReplacement(
+            await _requestCameraPermissionAndCapture(
+                mobile ?? "", visitorData['visitor_id'].toString());
+
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) {
+                return Dialog(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  child: const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(width: 16),
+                        Text("Preparing visitor access..."),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+
+// Dismiss the dialog
+            Navigator.of(context).pop();
+
+            await Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (context) => RequestPermissionPage2(
@@ -234,6 +270,158 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         });
       }
     });
+  }
+
+  File? _imageFile;
+
+  Future<void> _requestCameraPermissionAndCapture(
+      String mobileNumber, String id) async {
+    PermissionStatus status = await Permission.camera.status;
+
+    if (status.isDenied || status.isRestricted) {
+      // Request permission
+      status = await Permission.camera.request();
+
+      if (!status.isGranted) {
+        print("❌ Camera permission denied!");
+        myFluttertoast(
+          msg: "Camera permission required to capture an image.",
+          backgroundColor: Colors.orange,
+        );
+        return;
+      }
+    }
+
+    // ✅ Capture Image if Permission is Granted
+    await _captureImageFromCamera(mobileNumber, id);
+  }
+
+  /// ✅ Captures Image from Camera & Uploads it
+  Future<void> _captureImageFromCamera(String mobileNumber, String id) async {
+    final picker = ImagePicker();
+    XFile? image;
+
+    try {
+      // 📷 Capture image from camera
+      image = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.rear,
+      );
+
+      if (image == null) {
+        print("❌ No image captured");
+        return;
+      }
+
+      setState(() {
+        _imageFile = File(image!.path); // ✅ Assign image to _imageFile
+      });
+
+      print("📷 Image captured: ${_imageFile!.path}");
+
+      // ✅ Upload the captured image
+      await _uploadCapturedImage(mobileNumber, id);
+    } catch (e) {
+      log('❌ Error capturing image from camera: $e');
+    }
+  }
+
+  Future<void> _uploadCapturedImage(String mobileNumber, String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final companyId = prefs.getString('company_id');
+
+      if (_imageFile == null) {
+        print("❌ No image to upload.");
+        return;
+      }
+
+      // ✅ Compress Image
+      File? compressedImage = await _compressImage(_imageFile!);
+      if (compressedImage == null) {
+        print("❌ Compression failed, using original file.");
+        compressedImage = _imageFile!;
+      }
+
+      print("📷 Final Image Size: ${compressedImage.lengthSync()} bytes");
+
+      // ✅ Upload Image to Server
+      final response = await remoteDataSource.uploadFile(
+        compressedImage,
+        mobileNumber,
+        int.parse(companyId ?? "0"),
+      );
+
+      print("✅ Image uploaded successfully: $response");
+
+      if (response != null) {
+        await prefs.setString('uploaded_image_url', response);
+        print("🔄 Image URL saved: $response");
+
+        // ✅ Update Visitor Entry with Uploaded Image URL
+        await _updateVisitorEntry(mobileNumber, response, id);
+      }
+    } catch (e) {
+      print("❌ Error uploading image: $e");
+    }
+  }
+
+  /// ✅ Compress Image Before Uploading
+  Future<File?> _compressImage(File file) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final targetPath = path.join(
+          dir.path, "compressed_${DateTime.now().millisecondsSinceEpoch}.jpg");
+
+      final result = await FlutterImageCompress.compressAndGetFile(
+        file.absolute.path,
+        targetPath,
+        quality: 70, // Adjust quality (higher = better, but larger file)
+        format: CompressFormat.jpeg,
+      );
+
+      return result != null ? File(result.path) : null;
+    } catch (e) {
+      print("❌ Error compressing image: $e");
+      return null;
+    }
+  }
+
+  /// ✅ PATCH Request to Update Visitor Entry
+  Future<void> _updateVisitorEntry(
+      String mobileNumber, String imageUrl, String id) async {
+    try {
+      int id1 = int.parse(id);
+      final dio = Dio();
+      final String apiUrl =
+          "https://stggateapi.cubeone.in/api/visitor/entry/$id1";
+
+      final data = {
+        "visitor_image": imageUrl,
+      };
+
+      final response = await dio.patch(
+        apiUrl,
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: data,
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ Visitor entry updated successfully: ${response.data}");
+      } else {
+        print("❌ Failed to update visitor entry: ${response.statusMessage}");
+      }
+    } catch (e) {
+      print("❌ Error updating visitor entry: $e");
+    }
+
+    // // ✅ Navigate to Dashboard after successful update
+    // Navigator.pushReplacement(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => GateDashboardView(),
+    //   ),
+    // );
   }
 
   Widget _buildPermissionDeniedUI() {

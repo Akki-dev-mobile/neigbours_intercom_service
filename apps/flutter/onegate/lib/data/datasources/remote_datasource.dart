@@ -34,18 +34,15 @@ class RemoteDataSource {
 
   final GateStorage gateStorage = GateStorage();
 
-  void _handleErrorResponse() {
-    // final message =
-    //     response.data?['message'] ?? 'An error occurred during $operation';
-    // final errorCode = response.statusCode?.toString() ?? 'Unknown';
-    navigatorKey.currentState?.pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const ErrorScreen(
-            // message: message,
-            // errorCode: errorCode,
-            ),
-      ),
-    );
+  void _handleErrorResponse([int? statusCode]) {
+    // Only navigate to error screen for 5xx errors
+    if (statusCode != null && statusCode >= 500 && statusCode < 600) {
+      navigatorKey.currentState?.pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const ErrorScreen(),
+        ),
+      );
+    }
   }
 
   /// Login user via Keycloak
