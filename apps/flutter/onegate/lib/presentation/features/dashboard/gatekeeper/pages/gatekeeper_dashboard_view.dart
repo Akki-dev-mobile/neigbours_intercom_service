@@ -3,7 +3,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/intercom.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/intercom.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/qr_scanner_self.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:vibration/vibration.dart';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'call_history.dart';
 
 class MemberList extends StatefulWidget {
   const MemberList({Key? key}) : super(key: key);
@@ -77,7 +78,7 @@ class _MemberListState extends State<MemberList> {
         decoration: InputDecoration(
           hintText: 'Search by name or flat',
           hintStyle: TextStyle(color: Colors.grey[500]),
-          prefixIcon: Icon(Icons.search, color: Theme.of(context).primaryColor),
+          prefixIcon: const Icon(Icons.search, color: Colors.black),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, color: Colors.grey),
@@ -151,7 +152,7 @@ class _MemberListState extends State<MemberList> {
               backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '-',
-                style: TextStyle(color: Theme.of(context).primaryColor),
+                style: const TextStyle(color: Colors.black87),
               ),
             ),
             const SizedBox(width: 12),
@@ -186,7 +187,7 @@ class _MemberListState extends State<MemberList> {
                 child: IconButton(
                   icon: const Icon(Icons.call, color: Colors.green),
                   onPressed: () {
-                    remoteDataSource.callMember(mobile, context);
+                    remoteDataSource.callMember(mobile, context, name: name);
                   },
                 ),
               ),
@@ -202,7 +203,10 @@ class _MemberListState extends State<MemberList> {
         valueListenable: _filteredUnits,
         builder: (context, units, _) {
           if (_isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(
+              color: Colors.black,
+            ));
           }
           if (units.isEmpty) {
             return Center(
@@ -219,7 +223,6 @@ class _MemberListState extends State<MemberList> {
               ),
             );
           }
-
           return ListView.builder(
             itemCount: units.length,
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -244,10 +247,17 @@ class _MemberListState extends State<MemberList> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            color: Theme.of(context).primaryColor,
-            onPressed: _initializeMembers,
-            tooltip: 'Refresh',
+            icon: const Icon(Icons.history),
+            color: Colors.black,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const CallHistoryScreen(fromNumber: "918452060059"),
+                ),
+              );
+            },
+            tooltip: 'Call History',
           ),
         ],
       ),

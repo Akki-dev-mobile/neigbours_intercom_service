@@ -15,9 +15,7 @@ import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
-import 'package:flutter_onegate/domain/repositories/society_repo.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
-import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -28,7 +26,6 @@ import 'package:http/http.dart' as http;
 
 import '../../../../data/datasources/gate_storage.dart';
 import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import '../../visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 
 class SelfEntryView extends StatefulWidget {
   const SelfEntryView({super.key});
@@ -506,6 +503,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
   /// After capturing the image, it immediately navigates to the UnitSelectionView,
   /// passing along the visitor id (if available) in the Visitor object.
   File? fileimage;
+
   Future<void> _captureImageFromCamera() async {
     loadPurposes();
     final picker = ImagePicker();

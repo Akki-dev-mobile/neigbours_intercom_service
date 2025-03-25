@@ -25,6 +25,8 @@ import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../presentation/features/dashboard/gatekeeper/pages/calling_screen.dart';
+
 final keycloakWrapper =
     KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
@@ -91,36 +93,67 @@ class RemoteDataSource {
     }
   }
 
-  Future<void> callMember(String toNumber, BuildContext context) async {
-    const fromNumber = "+918452060059";
-
+  Future<void> callMember(String mobile, BuildContext context,
+      {String? name}) async {
+    final url = Uri.parse("${ApiUrls.gateBaseUrl}/visitor/exotel/initiatecall");
+    final body = jsonEncode({
+      "from_number": "918452060059",
+      "member_name": name ?? "",
+      "to_number": mobile,
+    });
     try {
-      final response = await Dio().post(
-        '${ApiUrls.gateBaseUrl}/visitor/exotel/initiatecall',
-        data: {
-          'from_number': fromNumber,
-          'to_number': toNumber,
-        },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            // Add auth headers here if needed
-          },
-        ),
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: body,
       );
-
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('📞 Call initiated to $toNumber')),
+        Fluttertoast.showToast(
+          msg: "Will get a call soon",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.black87,
+          textColor: Colors.white,
         );
       } else {
-        throw Exception('Failed to initiate call');
+        Fluttertoast.showToast(
+          msg: "Call failed: ${response.statusCode} ${response.reasonPhrase}",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.black87,
+          textColor: Colors.white,
+        );
       }
     } catch (e) {
-      debugPrint('❌ Error initiating call: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Failed to call $toNumber')),
+      Fluttertoast.showToast(
+        msg: "Error initiating call: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.black87,
+        textColor: Colors.white,
       );
+    }
+  }
+
+  Future<List<dynamic>> getCallHistory(String fromNumber) async {
+    final url = Uri.parse(
+        "${ApiUrls.gateBaseUrl}/visitor/exotel/callLogs?from_number=$fromNumber");
+    try {
+      final response =
+          await http.get(url, headers: {"Content-Type": "application/json"});
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+          return decoded['data'] as List<dynamic>;
+        } else {
+          throw Exception("Unexpected JSON format");
+        }
+      } else {
+        throw Exception(
+            "Error: ${response.statusCode} ${response.reasonPhrase}");
+      }
+    } catch (e) {
+      throw Exception("Error fetching call logs: $e");
     }
   }
 
