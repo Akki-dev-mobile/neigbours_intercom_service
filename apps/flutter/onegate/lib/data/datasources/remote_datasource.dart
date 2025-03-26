@@ -26,6 +26,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../presentation/features/dashboard/gatekeeper/pages/calling_screen.dart';
+import '../../presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 
 final keycloakWrapper =
     KeycloakWrapper(config: KeycloakConfigManager.getConfig());
@@ -245,36 +246,60 @@ class RemoteDataSource {
   /// Search for a visitor
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
+      // Define API URL with query parameters
+      final apiUrl =
+          '${ApiUrls.visitorEntry}?mobile_number=$mobileNumber&company_id=26';
+
+      log("API Request: $apiUrl");
+
       // API call to fetch visitor details
-      final response = await Dio().get(
-        ApiUrls.visitorEntry,
-        queryParameters: {'mobile_number': mobileNumber},
-      );
+      final response = await Dio().get(apiUrl);
 
       // Extract the data from the response
       final List<dynamic> data = response.data['data'] ?? [];
       if (data.isNotEmpty) {
-        final visitorData = data.first;
-        log("Visitor data fetched: $visitorData");
-
         final prefs = await SharedPreferences.getInstance();
 
+        // ✅ Extract visitor/staff details
+        final visitorData = data.first;
+        final visitor = Visitor.fromJson(visitorData);
+
         // Store the `coming_from` field in SharedPreferences if available
-        final comingFrom = visitorData['coming_from'] as String? ?? "";
-        await prefs.setString('visitor_coming_from', comingFrom);
-        log("Coming from stored: $comingFrom");
+        await prefs.setString(
+            'visitor_coming_from', visitorData['coming_from'] ?? "");
 
         // Store visitor ID in SharedPreferences
-        final visitorId = visitorData['id']?.toString() ?? "";
-        await prefs.setString('search_visitor_id', visitorId);
+        await prefs.setString(
+            'search_visitor_id', visitorData['id'].toString());
 
-        // Use the factory constructor to create and return the Visitor object
-        return Visitor.fromJson(visitorData);
+        // ✅ Check if visitor is a staff member (Exists in second object)
+        bool isStaff = data.length > 1 && data[1].containsKey("category");
+
+        if (isStaff) {
+          final staffData = data[1]; // Second object is Staff info
+
+          await prefs.setBool('isStaff', true);
+          await prefs.setString('staffCategory', staffData['category']);
+          await prefs.setString(
+              'staffBadgeNumber', staffData['staff_badge_number']);
+          await prefs.setString('staffSkill', staffData['staff_skill']);
+          await prefs.setString('visitorName', visitorData['name']);
+          await prefs.setString('visitorMobile', visitorData['mobile']);
+          await prefs.setString(
+              'visitorImage', visitorData['visitor_image'] ?? "");
+
+          log("✅ Visitor is a STAFF: ${staffData['category']}");
+        } else {
+          await prefs.setBool('isStaff', false);
+          log("🚫 Visitor is NOT a staff member.");
+        }
+
+        return visitor;
       } else {
-        log("No visitor found in the response data.");
+        log("❌ No visitor found.");
       }
     } catch (e) {
-      log("Error searching visitor: $e");
+      log("❌ Error searching visitor: $e");
     }
 
     return null;
@@ -296,9 +321,6 @@ class RemoteDataSource {
               .toList();
 
           for (var purpose in purposes) {
-            // debugPrint('Fetched Purpose: ${purpose.categoryName}');
-            // debugPrint(
-            //     'Subcategories count: ${purpose.subCategories?.length ?? 0}');
             if (purpose.subCategories != null) {
               for (var sub in purpose.subCategories!) {
                 debugPrint('  - ${sub.subCategoryName}: ${sub.image}');
@@ -339,43 +361,60 @@ class RemoteDataSource {
   Future<Visitor?> createVisitor(Visitor visitor) async {
     log("createVisitor called");
     try {
-      // Fetch the uploaded image URL from GateStorage
       final uploadImageUrl = await GateStorage().getImage();
-
-      // Prepare the data payload
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('visitorName');
       final data = {
-        "name": visitor.name == "" ? "Test" : visitor.name,
+        "name": visitor.name!.isEmpty ? name : visitor.name,
         "mobile_number": visitor.mobile.toString(),
         "visitor_image": uploadImageUrl.toString(),
+        "company_id": 26
       };
 
-      // Make the POST request to the API
-      final response = await Dio().post(
-        ApiUrls.visitorEntry,
-        data: data,
-      );
+      final response = await Dio().post(ApiUrls.visitorEntry, data: data);
+      final responseData = response.data;
 
-      final visitorData = response.data['data'];
-      print(visitorData);
-      final visitorId = visitorData['visitor_id'] as int;
-      log("createvisitorresponse $response");
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('visitorId', visitorId.toString());
-      GlobalStorage.visitorId = visitorId.toString();
+      log("createVisitor Response: $responseData");
 
-      print("$visitorId visitorId");
-      log("createdVisitor:$response");
-      return Visitor(
-        id: visitorId,
-        name: visitor.name,
-        mobile: visitor.mobile,
-        visitor_image: uploadImageUrl.toString(),
-      );
+      if (responseData['success'] == true && responseData['data'] != null) {
+        final visitorList = responseData['data'] as List<dynamic>;
+
+        // Extract visitor details
+        final visitorData = visitorList.first;
+        final visitorId = visitorData['id'] as int;
+        final visitorName = visitorData['name'] ?? "Unknown";
+        final visitorMobile = visitorData['mobile'] ?? "";
+        final visitorImage = visitorData['visitor_image'] ?? "";
+
+        log("Visitor ID: $visitorId");
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('visitorId', visitorId.toString());
+        GlobalStorage.visitorId = visitorId.toString();
+
+        // ✅ Check if staff data exists in response
+        bool isStaff = visitorList.any((item) => item.containsKey("category"));
+
+        String? staffCategory;
+        if (isStaff) {
+          final staffData =
+              visitorList.firstWhere((item) => item.containsKey("category"));
+          staffCategory = staffData["category"];
+        }
+
+        return Visitor(
+          id: visitorId,
+          name: visitorName,
+          mobile: visitorMobile,
+          visitor_image: visitorImage,
+          isStaff: isStaff,
+        );
+      } else {
+        log("❌ Visitor creation failed");
+        return null;
+      }
     } catch (error) {
-      _handleErrorResponse();
-
-      // Handle any errors
-      log('Error creating visitor: $error');
+      log('❌ Error creating visitor: $error');
       return null;
     }
   }
@@ -1983,7 +2022,7 @@ class GlobalStorage {
   static String? get visitorLogId => _visitorLogId;
 
   // Setter for visitorLogId
-// Complete implementation with **ALL METHODS** and utilities included.
+  // Complete implementation with **ALL METHODS** and utilities included.
   static set visitorLogId(String? value) {
     _visitorLogId = value;
     print("VisitorLogId has been set to: $value");
