@@ -543,7 +543,7 @@ class _IdInputViewState extends State<IdInputView> {
       }
 
       setState(() {
-        _imageFile = File(image!.path); // ✅ Assign image to _imageFile
+        _imageFile = File(image!.path);
       });
 
       print("📷 Image captured: ${_imageFile!.path}");
