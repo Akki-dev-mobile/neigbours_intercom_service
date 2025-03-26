@@ -495,10 +495,10 @@ class _IdInputViewState extends State<IdInputView> {
       }
     } catch (e) {
       stopLoading();
-      myFluttertoast(
-        msg: "❌ Error verifying passcode: $e",
-        backgroundColor: Colors.red,
-      );
+      // myFluttertoast(
+      //   msg: "❌ Error verifying passcode: $e",
+      //   backgroundColor: Colors.red,
+      // );
     }
   }
 

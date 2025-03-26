@@ -397,21 +397,23 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         // ✅ Visitor Image
         Column(
           children: [
-            SizedBox(
-              width: 120,
-              height: 120,
-              // decoration: BoxDecoration(
-              //   shape: BoxShape.circle,
-              //   border: Border.all(color: Colors.red.shade400, width: 4),
-              // ),
-              child: widget.visitor.visitor_image?.isNotEmpty == true
-                  ? Image.network(
-                      widget.visitor.visitor_image!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.person, size: 50),
-                    )
-                  : const Icon(Icons.person, size: 50),
+            ClipOval(
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  // Optional border
+                ),
+                child: widget.visitor.visitor_image?.isNotEmpty == true
+                    ? Image.network(
+                        widget.visitor.visitor_image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.person, size: 50),
+                      )
+                    : const Icon(Icons.person, size: 50),
+              ),
             ),
             const SizedBox(height: 15),
           ],

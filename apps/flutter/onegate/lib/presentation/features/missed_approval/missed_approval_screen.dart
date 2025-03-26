@@ -394,33 +394,9 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
               'Missed Approvals',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(width: 8),
-            if (_isRefreshing)
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                ),
-              ),
           ],
         ),
         actions: [
-          // Current time display
-          // Center(
-          //   child: Padding(
-          //     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          //     child: Text(
-          //       _currentTime,
-          //       style: const TextStyle(
-          //         fontSize: 14,
-          //         fontWeight: FontWeight.w500,
-          //       ),
-          //     ),
-          //   ),
-          // ),
-          // Refresh button
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _isRefreshing ? null : _refreshData,
@@ -431,33 +407,6 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
       ),
       body: Column(
         children: [
-          // Last refresh time indicator
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            color: Theme.of(context).colorScheme.surface,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Text(
-                //   'Last updated: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(_lastRefreshTime)}',
-                //   style: TextStyle(
-                //     color: Colors.grey[600],
-                //     fontSize: 12,
-                //   ),
-                // ),
-                if (_isRefreshing)
-                  const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.black,
-                    ),
-                  ),
-              ],
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: _buildSearchField(),
@@ -777,6 +726,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         'visitor_log_id': widget.visitorInfo.visitorLogId ?? visitorLogId,
         'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
         'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
+        "self_check_in": "false"
       };
 
       log("📨 Sending FCM Notification with Data: $requestData");

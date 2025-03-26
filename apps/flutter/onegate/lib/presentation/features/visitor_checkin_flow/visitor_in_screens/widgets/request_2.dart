@@ -52,8 +52,9 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
 
   String requestMessages(RequestType type) {
     return {
-          RequestType.allowByGatekeeper:
-              self == true ? "Visitor is Self Check In" : "Visitor is allowed",
+          RequestType.allowByGatekeeper: self == true
+              ? "Visitor is Self Check In"
+              : "Visitor is allowed by gatekeeper",
         }[type] ??
         "Unknown request type";
   }

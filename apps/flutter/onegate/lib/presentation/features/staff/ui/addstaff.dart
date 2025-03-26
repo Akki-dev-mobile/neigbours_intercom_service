@@ -21,9 +21,7 @@ class AddStaff extends StatefulWidget {
 }
 
 class _AddStaffState extends State<AddStaff> {
-  final RemoteDataSource _remoteDataSource = RemoteDataSource(
-
-  );
+  final RemoteDataSource _remoteDataSource = RemoteDataSource();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -91,8 +89,8 @@ class _AddStaffState extends State<AddStaff> {
     switch (idProofType) {
       case 'Aadhar Card':
         return [
-          LengthLimitingTextInputFormatter(12), // Limit input to 12 digits
-          FilteringTextInputFormatter.digitsOnly, // Allow only digits
+          LengthLimitingTextInputFormatter(12),
+          FilteringTextInputFormatter.digitsOnly,
         ];
       case 'Passport':
         return [

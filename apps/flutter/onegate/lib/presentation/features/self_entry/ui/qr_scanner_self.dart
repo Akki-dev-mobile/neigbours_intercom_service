@@ -863,7 +863,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     );
   }
 
+  bool _isDialogOpen = false; // Track if dialog is already open
+
   void _showErrorDialog() {
+    if (_isDialogOpen) return; // Prevent duplicate pop-ups
+    _isDialogOpen = true;
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -917,6 +922,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                   Navigator.of(context).pop();
                   setState(() {
                     result = null;
+                    _isDialogOpen = false; // Reset the flag when closed
                   });
                 },
                 child: const Text(
@@ -928,7 +934,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           ),
         ),
       ),
-    );
+    ).then((_) {
+      _isDialogOpen = false; // Reset flag when dialog is dismissed
+    });
   }
 
   void _showHelpDialog() {

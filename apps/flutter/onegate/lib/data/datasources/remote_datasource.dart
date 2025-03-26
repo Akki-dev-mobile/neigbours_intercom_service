@@ -458,6 +458,7 @@ class RemoteDataSource {
             "visitor_log",
             response.data["data"]["visitor_log_id"].toString(),
           );
+          print("this is ${responseData['data']}");
 
           return visitorLogResult;
         } else {
@@ -1691,7 +1692,7 @@ class RemoteDataSource {
     if (companyId == null) throw Exception('Company ID not found.');
 
     final String url =
-        'https://societybackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
+        'https://socbackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
 
     try {
       final response = await Dio().get(url);
@@ -1720,7 +1721,7 @@ class RemoteDataSource {
     }
 
     final String addStaffUrl =
-        'https://societybackend.cubeone.in/api/admin/staffs/addStaff?company_id=$companyId';
+        'https://socbackend.cubeone.in/api/admin/staffs/addStaff?company_id=$companyId';
 
     try {
       log('Incoming staffData: $staffData');
@@ -1887,7 +1888,7 @@ class RemoteDataSource {
   Future<Map<String, dynamic>?> uploadStaffImages(
       File file, int companyId) async {
     final String uploadUrl =
-        'https://societybackend.cubeone.in/api/admin/file-upload?company_id=$companyId';
+        'https://socbackend.cubeone.in/api/admin/file-upload?company_id=$companyId';
 
     try {
       FormData formData = FormData.fromMap({

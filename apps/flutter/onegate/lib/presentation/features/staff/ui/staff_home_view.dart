@@ -8,8 +8,6 @@ import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/addstaff.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
 
-import '../model/staff_model.dart';
-
 class StaffScreen extends StatefulWidget {
   const StaffScreen({Key? key}) : super(key: key);
 
@@ -104,24 +102,13 @@ class _StaffScreenState extends State<StaffScreen> {
                 }
 
                 if (_filteredStaffList.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 200.0),
-                      child: Text(
-                        'No such staff available',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  );
+                  return _buildNoStaffWidget();
                 }
 
                 // Show the filtered staff list
                 return StaffListWidget(staffList: _filteredStaffList);
               } else {
-                return const Center(child: Text('No Data Available'));
+                return _buildNoStaffWidget();
               }
             },
           ),
@@ -156,6 +143,34 @@ class _StaffScreenState extends State<StaffScreen> {
           Icons.add,
           size: Theme.of(context).iconTheme.size,
           color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  /// **🛑 No Staff Available Widget**
+  Widget _buildNoStaffWidget() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: 150.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.group_off, // No Staff Icon
+              size: 100,
+              color: Colors.grey,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'No Staff Available',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -329,38 +329,36 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     Color color, {
     required bool isFirst,
     required bool isLast,
-    bool isSecondLast = false,
+    required bool isSecondLast,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 24,
-          child: Column(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: color, width: 2),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 12,
-                ),
+        Column(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 2),
               ),
-              if (!isLast)
-                Container(
-                  width: 2,
-                  height: 40,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  color: Colors.grey.withOpacity(0.3),
-                ),
-            ],
-          ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 12,
+              ),
+            ),
+            if (!(isLast && isSecondLast) ||
+                isFirst) // Ensure line for multiple items
+              Container(
+                width: 2,
+                height: 40,
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                color: Colors.grey.withOpacity(0.3),
+              ),
+          ],
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -375,7 +373,6 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              // If the description is a DateTime, format it. Otherwise, just display the string.
               Text(
                 description is DateTime
                     ? DateFormat('dd MMM yyyy, hh:mm a').format(description)

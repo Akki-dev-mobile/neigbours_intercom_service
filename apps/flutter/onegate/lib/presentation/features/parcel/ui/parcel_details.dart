@@ -26,6 +26,30 @@ class ParcelDetails extends StatelessWidget {
     await launchUrl(launchUri);
   }
 
+  void _showFullImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.black.withOpacity(0.8), // Dark overlay
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context), // Close on tap
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.contain, // Ensure image fits nicely
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
@@ -35,46 +59,39 @@ class ParcelDetails extends StatelessWidget {
           children: [
             // Image.network(parcel['parcel_image']),
             Center(
-              child: Container(
-                height: 200,
-                width: 200,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(20),
+              child: GestureDetector(
+                onTap: () {
+                  if (parcel['parcel_image'] != null &&
+                      parcel['parcel_image'].isNotEmpty) {
+                    _showFullImage(context, parcel['parcel_image']);
+                  }
+                },
+                child: Container(
+                  height: 200,
+                  width: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle, // Ensures the image is circular
+                    border: Border.all(
+                      color: Colors.grey.shade300, // Optional border
+                      width: 3,
+                    ),
+                    image: parcel['parcel_image'] != null &&
+                            parcel['parcel_image'].isNotEmpty
+                        ? DecorationImage(
+                            fit: BoxFit.cover,
+                            image: NetworkImage(parcel['parcel_image']),
+                          )
+                        : null,
                   ),
-                  image: parcel['parcel_image'].isNotEmpty
-                      ? DecorationImage(
-                          fit: BoxFit.cover,
-                          image: NetworkImage(
-                            parcel['parcel_image'],
-                          ),
-                        )
+                  child: parcel['parcel_image'] == null ||
+                          parcel['parcel_image'].isEmpty
+                      ? const Icon(Icons.image,
+                          size: 80, color: Colors.grey) // Default icon
                       : null,
                 ),
-                // parcel['parcel_image'].isNotEmpty
-                //     ? NetworkImage(
-                //         parcel['parcel_image'],
-                //         height: MediaQuery.of(context).size.height * 0.4,
-                //         width: double.maxFinite,
-                //         fit: BoxFit.contain,
-                //       )
-                //     : Center(
-                //         child: CircleAvatar(
-                //           radius: 80,
-                //           backgroundColor: Theme.of(context).colorScheme.primary,
-                //           child: Text(
-                //             parcel['visitor_image'],
-                //             style: const TextStyle(
-                //               fontSize: 60,
-                //               color: Colors.white,
-                //               fontWeight: FontWeight.bold,
-                //             ),
-                //           ),
-                //         ),
-                //       ),
               ),
             ),
+
             const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
