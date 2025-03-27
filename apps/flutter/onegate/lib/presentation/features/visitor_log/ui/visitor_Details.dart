@@ -258,57 +258,70 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 // Define _buildTimeline method outside of the widget
   List<Widget> _buildTimeline() {
     List<Widget> timelineItems = [];
-    bool isFirst = true;
-    bool isLast = false;
-    bool isSecondLast = false;
+    int totalItems = (widget.visitorLog.visitor_check_in != null ? 1 : 0) +
+        (widget.unitList != null ? 1 : 0) +
+        (widget.visitorLog.visitor_check_out != null ? 1 : 0);
 
-    // Add Check-In
-    timelineItems.add(
-      _buildTimelineTile(
-        "Check In",
-        widget.visitorLog.visitor_check_in!,
-        Icons.login,
-        Colors.green,
-        isFirst: isFirst,
-        isLast: widget.visitorLog.visitor_check_out == null,
-        isSecondLast: false,
-      ),
-    );
-    isFirst = false;
-
-    // Add Approved By
-    isSecondLast = widget.visitorLog.visitor_check_out == null;
-    timelineItems.add(
-      _buildTimelineTile(
-        "Approved By",
-        toBeginningOfSentenceCase(widget.unitList == "0001"
-                ? "Pre approved Staff"
-                : (widget.visitorLog.approved_by ?? "Gatekeeper")) ??
-            "N/A",
-        Icons.person,
-        Colors.brown,
-        isFirst: false,
-        isLast: widget.visitorLog.visitor_check_out == null,
-        isSecondLast: isSecondLast,
-      ),
-    );
-
-    // Add Check-Out (if available)
-    if (widget.visitorLog.visitor_check_out != null) {
+    void addTimelineItem({
+      required String label,
+      required dynamic description,
+      required IconData icon,
+      required Color color,
+      required int index,
+    }) {
       timelineItems.add(
-        _buildTimelineTile(
-          "Check Out",
-          widget.visitorLog.visitor_check_out!,
-          Icons.logout,
-          Colors.red,
-          isFirst: false,
-          isLast: true,
-          isSecondLast: false,
+        Column(
+          children: [
+            _buildTimelineTile(
+              label,
+              description,
+              icon,
+              color,
+              isFirst: index == 0,
+              isLast: index == totalItems - 1,
+              showConnector: totalItems > 1 && index < totalItems - 1,
+            ),
+          ],
         ),
       );
     }
 
-    // Return the timeline items to be displayed in the widget
+    int currentIndex = 0;
+
+    // Add Check-In
+    if (widget.visitorLog.visitor_check_in != null) {
+      addTimelineItem(
+        label: "Check In",
+        description: widget.visitorLog.visitor_check_in!,
+        icon: Icons.login,
+        color: Colors.green,
+        index: currentIndex++,
+      );
+    }
+
+    // Add Approved By
+    addTimelineItem(
+      label: "Approved By",
+      description: toBeginningOfSentenceCase(widget.unitList == "0001"
+              ? "Pre approved Staff"
+              : (widget.visitorLog.approved_by ?? "Gatekeeper")) ??
+          "N/A",
+      icon: Icons.person,
+      color: Colors.brown,
+      index: currentIndex++,
+    );
+
+    // Add Check-Out (if available)
+    if (widget.visitorLog.visitor_check_out != null) {
+      addTimelineItem(
+        label: "Check Out",
+        description: widget.visitorLog.visitor_check_out!,
+        icon: Icons.logout,
+        color: Colors.red,
+        index: currentIndex++,
+      );
+    }
+
     return timelineItems;
   }
 
@@ -324,12 +337,12 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
   Widget _buildTimelineTile(
     String label,
-    dynamic description, // This can be a String or DateTime
+    dynamic description,
     IconData icon,
     Color color, {
     required bool isFirst,
     required bool isLast,
-    required bool isSecondLast,
+    bool showConnector = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,13 +363,12 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                 size: 12,
               ),
             ),
-            if (!(isLast && isSecondLast) ||
-                isFirst) // Ensure line for multiple items
+            if (showConnector)
               Container(
                 width: 2,
                 height: 40,
+                color: color.withOpacity(0.5),
                 margin: const EdgeInsets.symmetric(vertical: 4),
-                color: Colors.grey.withOpacity(0.3),
               ),
           ],
         ),
