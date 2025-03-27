@@ -427,99 +427,117 @@ class _IdInputViewState extends State<IdInputView> {
                   ],
                 ),
                 floatingActionButton: CustomLargeBtn(
-                  text: 'Next',
-                  onPressed: () async {
-                    _focusNode.unfocus();
+                    text: 'Next',
+                    onPressed: () async {
+                      _focusNode.unfocus();
 
-                    if (_currentIndex == 0) {
-                      if (mobileControllerFormKey.currentState?.validate() ??
-                          false) {
-                        startLoading(); // Show loader
-                        await remoteDataSource
-                            .searchVisitor(mobileController.text);
-
-                        final prefs = await SharedPreferences.getInstance();
-                        bool isStaff = prefs.getBool('isStaff') ?? false;
-                        print("Staff Check: $isStaff");
-
-                        String visitorName =
-                            prefs.getString('visitorName') ?? "";
-                        String visitorMobile =
-                            prefs.getString('visitorMobile') ?? "";
-                        String visitorImage =
-                            prefs.getString('visitorImage') ?? "";
-                        String? staffCategory =
-                            prefs.getString('staffCategory');
-                        await remoteDataSource.createVisitor(Visitor(
-                          visitor_image: visitorImage,
-                          name: visitorName,
-                          mobile: visitorMobile,
-                        ));
-                        stopLoading(); // Hide loader
-
-                        if (isStaff) {
-                          log("✅ Auto-selecting STAFF");
-
-                          // Show indication before navigation
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  "Number entered belongs to STAFF ($staffCategory)"),
-                              duration: Duration(seconds: 2),
-                              // Show for 2 seconds
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-
-                          // ✅ Wait for a short duration before navigating
-                          await Future.delayed(Duration(seconds: 2));
-
-                          PurposeCategory1 staffPurpose = PurposeCategory1(
-                            categoryName: staffCategory ?? "STAFF",
-                            image: "staff_image_url",
-                            categoryId: 5,
-                          );
-
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UnitSelectionView(
-                                Visitor(
-                                  id: int.parse(
-                                      prefs.getString('visitorId') ?? "0"),
-                                  name: visitorName,
-                                  mobile: visitorMobile,
-                                  visitor_image: visitorImage,
-                                ),
-                                purposeCategory: staffPurpose,
-                                guestname: visitorName,
-                                mobileNumber: visitorMobile,
-                                visitor: Visitor(
-                                  id: int.parse(
-                                      prefs.getString('visitorId') ?? "0"),
-                                  name: visitorName,
-                                  mobile: visitorMobile,
-                                  visitor_image: visitorImage,
-                                ),
-                              ),
-                            ),
-                          );
-                          prefs.remove("isStaff");
-                        } else {
-                          // 🚫 If not staff, proceed with the normal visitor flow
-                          myFluttertoast(
-                              msg: "Number entered is a normal visitor");
+                      if (_currentIndex == 0) {
+                        // Mobile number validation & processing
+                        if (mobileControllerFormKey.currentState?.validate() ??
+                            false) {
                           gateDashboardBloc.add(InputPutViewNextClickedEvent());
                         }
-                      }
-                    } else {
-                      if (passcodeControllerFormKey.currentState?.validate() ??
-                          false) {
-                        _handlePasscodeVerification();
+                      } else {
+                        // Passcode verification process
+                        if (passcodeControllerFormKey.currentState
+                                ?.validate() ??
+                            false) {
+                          _handlePasscodeVerification();
+                        }
                       }
                     }
-                  },
-                ),
+                    // _focusNode.unfocus();
+                    //
+                    // if (_currentIndex == 0) {
+                    //   if (mobileControllerFormKey.currentState?.validate() ??
+                    //       false) {
+                    //     startLoading(); // Show loader
+                    //     await remoteDataSource
+                    //         .searchVisitor(mobileController.text);
+                    //
+                    //     final prefs = await SharedPreferences.getInstance();
+                    //     bool isStaff = prefs.getBool('isStaff') ?? false;
+                    //     print("Staff Check: $isStaff");
+                    //
+                    //     String visitorName =
+                    //         prefs.getString('visitorName') ?? "";
+                    //     String visitorMobile =
+                    //         prefs.getString('visitorMobile') ?? "";
+                    //     String visitorImage =
+                    //         prefs.getString('visitorImage') ?? "";
+                    //     String? staffCategory =
+                    //         prefs.getString('staffCategory');
+                    //     await remoteDataSource.createVisitor(Visitor(
+                    //       visitor_image: visitorImage,
+                    //       name: visitorName,
+                    //       mobile: visitorMobile,
+                    //     ));
+                    //     stopLoading(); // Hide loader
+                    //
+                    //     if (isStaff) {
+                    //       log("✅ Auto-selecting STAFF");
+                    //
+                    //       // Show indication before navigation
+                    //       ScaffoldMessenger.of(context).showSnackBar(
+                    //         SnackBar(
+                    //           content: Text(
+                    //               "Number entered belongs to STAFF ($staffCategory)"),
+                    //           duration: Duration(seconds: 2),
+                    //           // Show for 2 seconds
+                    //           backgroundColor: Colors.green,
+                    //         ),
+                    //       );
+                    //
+                    //       // ✅ Wait for a short duration before navigating
+                    //       await Future.delayed(Duration(seconds: 2));
+                    //
+                    //       PurposeCategory1 staffPurpose = PurposeCategory1(
+                    //         categoryName: staffCategory ?? "STAFF",
+                    //         image: "staff_image_url",
+                    //         categoryId: 5,
+                    //       );
+                    //
+                    //       Navigator.pushReplacement(
+                    //         context,
+                    //         MaterialPageRoute(
+                    //           builder: (context) => UnitSelectionView(
+                    //             Visitor(
+                    //               id: int.parse(
+                    //                   prefs.getString('visitorId') ?? "0"),
+                    //               name: visitorName,
+                    //               mobile: visitorMobile,
+                    //               visitor_image: visitorImage,
+                    //             ),
+                    //             purposeCategory: staffPurpose,
+                    //             guestname: visitorName,
+                    //             mobileNumber: visitorMobile,
+                    //             visitor: Visitor(
+                    //               id: int.parse(
+                    //                   prefs.getString('visitorId') ?? "0"),
+                    //               name: visitorName,
+                    //               mobile: visitorMobile,
+                    //               visitor_image: visitorImage,
+                    //             ),
+                    //           ),
+                    //         ),
+                    //       );
+                    //       prefs.remove("isStaff");
+                    //     } else {
+                    //       // 🚫 If not staff, proceed with the normal visitor flow
+                    //       myFluttertoast(
+                    //           msg: "Number entered is a normal visitor");
+                    //       gateDashboardBloc
+                    //           .add(InputPutViewNextClickedEvent());
+                    //     }
+                    //   }
+                    // } else {
+                    //   if (passcodeControllerFormKey.currentState
+                    //           ?.validate() ??
+                    //       false) {
+                    //     _handlePasscodeVerification();
+                    //   }
+
+                    ),
               ),
             );
           },
