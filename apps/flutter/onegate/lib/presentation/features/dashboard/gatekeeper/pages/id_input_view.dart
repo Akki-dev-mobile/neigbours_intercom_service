@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -548,7 +550,7 @@ class _IdInputViewState extends State<IdInputView> {
   }
 
   File? _imageFile;
-
+var visitorData;
   /// ✅ Handles Passcode Verification & Captures Image if Verified
   Future<void> _handlePasscodeVerification() async {
     startLoading(); // Show loading indicator
@@ -567,8 +569,12 @@ class _IdInputViewState extends State<IdInputView> {
       print("✅ Verification Result: $result");
 
       if (result['success'] == true && result['data'] != null) {
-        final visitorData = result['data'][0]; // Get first visitor entry
+         visitorData = result['data'][0]; // Get first visitor entry
+        print("visitorData$visitorData");
+
         final String mobileNumber = visitorData['mobile'];
+        final String name = visitorData['name'];
+
         final int id = visitorData['visitor_id'];
 
         myFluttertoast(
@@ -580,6 +586,7 @@ class _IdInputViewState extends State<IdInputView> {
 
         // ✅ Check & Request Camera Permission, then Capture Image
         await _requestCameraPermissionAndCapture(mobileNumber, id.toString());
+
       } else {
         myFluttertoast(
           msg: "❌ Invalid passcode. Try again.",
@@ -682,6 +689,19 @@ class _IdInputViewState extends State<IdInputView> {
 
         // ✅ Update Visitor Entry with Uploaded Image URL
         await _updateVisitorEntry(mobileNumber, response, id);
+        await Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => RequestPermissionPage2(
+                visitorLog: VisitorLog(
+                  visitor_purpose_Category_name: visitorData['category']
+                ),
+                visitor: Visitor(
+              name:visitorData['name'],
+                  mobile: visitorData['mobile'],
+                  visitor_image: response
+
+            ))));
+
       }
     } catch (e) {
       print("❌ Error uploading image: $e");
