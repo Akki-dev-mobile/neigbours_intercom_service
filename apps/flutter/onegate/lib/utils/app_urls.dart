@@ -1,10 +1,14 @@
-import '../common/environment.dart';
+import 'package:flutter_onegate/config/gateconfig_holder.dart'
+    show GateConfigHolder;
 
 /// Centralized API URL manager
 class ApiUrls {
-  static String get gateBaseUrl => Environment.gateBaseUrl;
+  static String get gateBaseUrl =>
 
-  static String get societyBaseUrl => Environment.societyUrl;
+      "https://stggateapi.cubeone.in/api"; //
+      // GateConfigHolder.gateBaseUrl;
+
+  static String get societyBaseUrl => 'https://socbackend.cubeone.in/api';
   static String get facerecinfoUrl =>
       'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/gate_facial_e7e469b505.json';
 

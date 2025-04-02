@@ -10,6 +10,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -732,7 +733,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       log("📨 Sending FCM Notification with Data: $requestData");
 
       final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );

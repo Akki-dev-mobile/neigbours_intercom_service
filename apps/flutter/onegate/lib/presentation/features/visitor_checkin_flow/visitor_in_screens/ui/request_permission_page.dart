@@ -905,7 +905,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   Future<void> _allowByGatekeeper() async {
     try {
       if (widget.logID == null) {
-        _showErrorSnackBar("Invalid visitor log ID.");
+        // _showErrorSnackBar("Invalid visitor log ID.");
         return;
       }
 
@@ -917,7 +917,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
       if (response.statusCode == 200) {
         log("✅ Visitor allowed by Gatekeeper successfully");
-        _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
+        // _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
 
         // Navigate back to Dashboard
 
@@ -933,11 +933,11 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         );
       } else {
         log("❌ Failed to allow visitor by Gatekeeper: ${response.statusMessage}");
-        _showErrorSnackBar("Error allowing visitor. Try again.");
+        // _showErrorSnackBar("Error allowing visitor. Try again.");
       }
     } catch (e) {
       log("❌ Error in _allowByGatekeeper: $e");
-      _showErrorSnackBar("Failed to allow visitor.");
+      // _showErrorSnackBar("Failed to allow visitor.");
     }
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show json;
 import 'dart:developer';
 
 import 'package:alarm/alarm.dart';
@@ -9,6 +10,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/common/internet_check_provider.dart';
+import 'package:flutter_onegate/config/gate_config.dart' show GateConfig;
+import 'package:flutter_onegate/config/gateconfig_holder.dart' show GateConfigHolder;
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/splash_screen.dart';
 import 'package:flutter_onegate/utils/no_internet_connection.dart';
@@ -41,11 +44,15 @@ import 'domain/use_cases/visitor_usecase.dart';
 import 'presentation/features/missed_approval/missed_approval_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+late GateConfig appGateConfig;
 
 void main() async {
+  RemoteDataSource remoteDataSource = RemoteDataSource();
   await dotenv.load(fileName: "assets/.env");
   String appId = "onegate";
   WidgetsFlutterBinding.ensureInitialized();
+  final gateConfig = await remoteDataSource.fetchGateBaseDomain();
+  GateConfigHolder.setConfig(gateConfig);
 
   await Alarm.init();
   await setupLocator();

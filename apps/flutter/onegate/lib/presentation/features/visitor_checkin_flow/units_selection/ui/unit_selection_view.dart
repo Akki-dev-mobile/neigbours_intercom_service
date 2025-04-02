@@ -1193,7 +1193,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       if (response.statusCode == 200) {
         log("✅ Visitor allowed by Gatekeeper successfully");
-        _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
+        // _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
         await _showApprovedDialog(context, visitorLogData, onSuccess: () {
           Navigator.pushReplacement(
             context,
@@ -1261,7 +1261,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       // Send FCM API request
       final apiResponse = Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );

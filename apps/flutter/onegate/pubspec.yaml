@@ -67,7 +67,7 @@ dependencies:
   permission_handler: ^11.3.1
   camera: ^0.11.0+2
   dart_amqp: ^0.3.1
-  alarm: ^4.1.1
+  alarm: ^5.1.1
   url_launcher: ^6.3.1
   calendar_date_picker2: ^0.5.3
   flutter_dotenv: ^5.2.1
@@ -82,8 +82,8 @@ dependencies:
   flutter_kiosk_mode: ^0.0.2
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
+#  flutter_test:
+#    sdk: flutter
   one_theme:
     path: ../../../libs/flutter/common/one-theme
   common_widgets:
@@ -93,6 +93,9 @@ dev_dependencies:
 
 dependency_overrides:
   speech_to_text: ^7.0.0
+  device_info_plus: ^11.3.3
+  meta: ^1.16.0
+
 
 
 flutter:

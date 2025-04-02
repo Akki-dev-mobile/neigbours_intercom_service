@@ -448,99 +448,7 @@ class _IdInputViewState extends State<IdInputView> {
                           _handlePasscodeVerification();
                         }
                       }
-                    }
-                    // _focusNode.unfocus();
-                    //
-                    // if (_currentIndex == 0) {
-                    //   if (mobileControllerFormKey.currentState?.validate() ??
-                    //       false) {
-                    //     startLoading(); // Show loader
-                    //     await remoteDataSource
-                    //         .searchVisitor(mobileController.text);
-                    //
-                    //     final prefs = await SharedPreferences.getInstance();
-                    //     bool isStaff = prefs.getBool('isStaff') ?? false;
-                    //     print("Staff Check: $isStaff");
-                    //
-                    //     String visitorName =
-                    //         prefs.getString('visitorName') ?? "";
-                    //     String visitorMobile =
-                    //         prefs.getString('visitorMobile') ?? "";
-                    //     String visitorImage =
-                    //         prefs.getString('visitorImage') ?? "";
-                    //     String? staffCategory =
-                    //         prefs.getString('staffCategory');
-                    //     await remoteDataSource.createVisitor(Visitor(
-                    //       visitor_image: visitorImage,
-                    //       name: visitorName,
-                    //       mobile: visitorMobile,
-                    //     ));
-                    //     stopLoading(); // Hide loader
-                    //
-                    //     if (isStaff) {
-                    //       log("✅ Auto-selecting STAFF");
-                    //
-                    //       // Show indication before navigation
-                    //       ScaffoldMessenger.of(context).showSnackBar(
-                    //         SnackBar(
-                    //           content: Text(
-                    //               "Number entered belongs to STAFF ($staffCategory)"),
-                    //           duration: Duration(seconds: 2),
-                    //           // Show for 2 seconds
-                    //           backgroundColor: Colors.green,
-                    //         ),
-                    //       );
-                    //
-                    //       // ✅ Wait for a short duration before navigating
-                    //       await Future.delayed(Duration(seconds: 2));
-                    //
-                    //       PurposeCategory1 staffPurpose = PurposeCategory1(
-                    //         categoryName: staffCategory ?? "STAFF",
-                    //         image: "staff_image_url",
-                    //         categoryId: 5,
-                    //       );
-                    //
-                    //       Navigator.pushReplacement(
-                    //         context,
-                    //         MaterialPageRoute(
-                    //           builder: (context) => UnitSelectionView(
-                    //             Visitor(
-                    //               id: int.parse(
-                    //                   prefs.getString('visitorId') ?? "0"),
-                    //               name: visitorName,
-                    //               mobile: visitorMobile,
-                    //               visitor_image: visitorImage,
-                    //             ),
-                    //             purposeCategory: staffPurpose,
-                    //             guestname: visitorName,
-                    //             mobileNumber: visitorMobile,
-                    //             visitor: Visitor(
-                    //               id: int.parse(
-                    //                   prefs.getString('visitorId') ?? "0"),
-                    //               name: visitorName,
-                    //               mobile: visitorMobile,
-                    //               visitor_image: visitorImage,
-                    //             ),
-                    //           ),
-                    //         ),
-                    //       );
-                    //       prefs.remove("isStaff");
-                    //     } else {
-                    //       // 🚫 If not staff, proceed with the normal visitor flow
-                    //       myFluttertoast(
-                    //           msg: "Number entered is a normal visitor");
-                    //       gateDashboardBloc
-                    //           .add(InputPutViewNextClickedEvent());
-                    //     }
-                    //   }
-                    // } else {
-                    //   if (passcodeControllerFormKey.currentState
-                    //           ?.validate() ??
-                    //       false) {
-                    //     _handlePasscodeVerification();
-                    //   }
-
-                    ),
+                    }),
               ),
             );
           },
@@ -792,7 +700,7 @@ class ImageGridBottomSheet extends StatefulWidget {
 
 class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   int? selectedImageIndex;
-
+  bool isStaffAutoSelected = false;
   @override
   void initState() {
     super.initState();
@@ -820,6 +728,39 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
       print("Failed to load selected purposes into global variable: $e");
     }
   }
+
+
+
+  // Future<void> _loadSelectedPurposesToGlobal() async {
+  //   try {
+  //     final prefs = await SharedPreferences.getInstance();
+  //     final jsonString = prefs.getString('selected_purposes');
+  //
+  //     if (jsonString != null) {
+  //       final jsonList = jsonDecode(jsonString) as List<dynamic>;
+  //       final loadedPurposes =
+  //           jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
+  //
+  //       final staffIndex = loadedPurposes.indexWhere(
+  //         (purpose) => purpose.categoryName.toUpperCase() == 'STAFF',
+  //       );
+  //
+  //       setState(() {
+  //         globalSelectedPurposes = loadedPurposes;
+  //         if (staffIndex != -1) {
+  //           selectedImageIndex = staffIndex;
+  //           isStaffAutoSelected = true; // 🔒 Lock selection
+  //         }
+  //       });
+  //
+  //       print("Global selected purposes loaded: $globalSelectedPurposes");
+  //     } else {
+  //       print("No selected purposes found in SharedPreferences.");
+  //     }
+  //   } catch (e) {
+  //     print("Failed to load selected purposes into global variable: $e");
+  //   }
+  // }
 
   void selectImage(int index) {
     setState(() {
@@ -973,7 +914,11 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                     itemBuilder: (context, index) {
                       final purpose = globalSelectedPurposes[index];
                       return GestureDetector(
-                        onTap: () => selectImage(index),
+                        onTap: () {
+                          if (!isStaffAutoSelected) {
+                            selectImage(index);
+                          }
+                        },
                         child: Stack(
                           children: [
                             Container(

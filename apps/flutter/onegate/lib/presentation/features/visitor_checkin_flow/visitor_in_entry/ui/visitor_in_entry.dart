@@ -514,7 +514,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   Widget _buildPurposeForm(PurposeCategory1 purpose) {
-    switch (purpose.categoryName) {
+    switch (purpose.categoryName.toUpperCase()) {
       case 'CABS':
         return _buildCabsForm();
       case 'DELIVERY':
@@ -523,10 +523,59 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         return _buildGuestForm();
       case 'VENDOR':
         return _buildVendorForm(purpose);
+      case 'STAFF':
+        return _buildStaffForm();
       default:
         return const Center(child: Text('Unknown Purpose'));
     }
   }
+
+  Widget _buildStaffForm() {
+    return FutureBuilder(
+      future: SharedPreferences.getInstance(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const CircularProgressIndicator();
+        }
+
+        final prefs = snapshot.data!;
+        final staffJson = prefs.getString('search_staff_info');
+        if (staffJson == null) {
+          return const Text("No staff data found.");
+        }
+
+        final staffData = jsonDecode(staffJson);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStaffTextField("Staff Name", staffData['name']),
+            _buildStaffTextField("Mobile", staffData['staff_contact_number']),
+            _buildStaffTextField(
+                "Badge Number", staffData['staff_badge_number']),
+            _buildStaffTextField("DOB", staffData['staff_dob']),
+            _buildStaffTextField(
+                "Qualification", staffData['staff_qualification']),
+            _buildStaffTextField("Skill", staffData['staff_skill']),
+            _buildStaffTextField("Languages", staffData['language_spoken']),
+            const SizedBox(height: 20),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStaffTextField(String label, String? value) {
+    return CustomForm.textField(
+      label,
+      textController: TextEditingController(text: value ?? ''),
+      isReadOnly: true,
+      titleColor: Theme.of(context).colorScheme.onSurface,
+      hintColor: Theme.of(context).colorScheme.onPrimary,
+      hintText: '',
+    );
+  }
+
 
   Widget _buildCabsForm() {
     return Column(

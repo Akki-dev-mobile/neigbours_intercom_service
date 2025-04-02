@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_onegate/common/environment.dart';
+import 'package:flutter_onegate/config/gate_config.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/models/staff_model.dart';
@@ -243,42 +244,87 @@ class RemoteDataSource {
     }
   }
 
+
+  Future<GateConfig> fetchGateBaseDomain() async {
+    final url = Uri.parse(
+        'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/gate_base_domain_f30d9e1d99.json');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        print(json);
+        return GateConfig.fromJson(json);
+      } else {
+        throw Exception('Failed to load data: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching data: $e');
+    }
+  }
   /// Search for a visitor
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
-      // Define API URL with query parameters
+      final String? companyId = await gateStorage.getSocietyId();
+      if (companyId == null) {
+        throw Exception("Company ID not found. Please select a company.");
+      }
+
       final apiUrl =
-          '${ApiUrls.visitorEntry}?mobile_number=$mobileNumber&company_id=26';
+          '${ApiUrls.visitorEntry}?mobile_number=$mobileNumber&company_id=$companyId';
 
       log("API Request: $apiUrl");
 
-      // API call to fetch visitor details
-      final response = await Dio().get(
-        ApiUrls.visitorEntry,
-        queryParameters: {'mobile_number': mobileNumber},
-      );
-
-      // Extract the data from the response
+      final response = await Dio().get(apiUrl);
       final List<dynamic> data = response.data['data'] ?? [];
+
       if (data.isNotEmpty) {
-        final visitorData = data.first;
-        log("Visitor data fetched: $visitorData");
+        log("$data");
 
         final prefs = await SharedPreferences.getInstance();
 
-        // Store the `coming_from` field in SharedPreferences if available
-        final comingFrom = visitorData['coming_from'] as String? ?? "";
-        await prefs.setString('visitor_coming_from', comingFrom);
-        log("Coming from stored: $comingFrom");
+        // Separate visitor and staff entries
+        Map<String, dynamic>? visitorData;
+        Map<String, dynamic>? staffData;
 
-        // Store visitor ID in SharedPreferences
-        final visitorId = visitorData['id']?.toString() ?? "";
-        await prefs.setString('search_visitor_id', visitorId);
+        for (var item in data) {
+          if (item == null) continue; // ✅ Skip nulls
 
-        // Use the factory constructor to create and return the Visitor object
-        return Visitor.fromJson(visitorData);
-      } else {
-        log("No visitor found in the response data.");
+          final Map<String, dynamic> map = Map<String, dynamic>.from(item);
+
+          if (map.containsKey('category') &&
+              (map['category']?.toString().toUpperCase() == 'SECURITY' ||
+                  map['category']?.toString().toUpperCase() == 'STAFF')) {
+            staffData = map;
+          } else {
+            visitorData = map;
+          }
+        }
+
+        // Store visitor info if found
+        if (visitorData != null) {
+          log("Visitor data fetched: $visitorData");
+
+          final comingFrom = visitorData['coming_from'] as String? ?? "";
+          await prefs.setString('visitor_coming_from', comingFrom);
+
+          final visitorId = visitorData['id']?.toString() ?? "";
+          await prefs.setString('search_visitor_id', visitorId);
+        }
+
+        // Store staff info if found
+        if (staffData != null) {
+          final staffJson = jsonEncode(staffData);
+          await prefs.setString('search_staff_info', staffJson);
+          log("Staff info stored in SharedPreferences.");
+        }
+
+        if (visitorData != null) {
+          return Visitor.fromJson(visitorData);
+        } else {
+          log("No visitor found in the response data.");
+        }
       }
     } catch (e) {
       log("Error searching visitor: $e");
@@ -640,7 +686,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data']['data'] ?? [];
+        final List<dynamic> data = responseData['data'] ?? [];
         log("data--$data");
         return data.map((item) => _mapToVisitorLog(item)).toList();
       } else {
@@ -1644,7 +1690,7 @@ class RemoteDataSource {
     final String? companyId = await gateStorage.getSocietyId();
 
     String url = '${ApiUrls.gateBaseUrl}/visitor/parcelData/$companyId';
-
+    print(url);
     try {
       final response = await Dio().get(url);
       if (response.statusCode == 200) {

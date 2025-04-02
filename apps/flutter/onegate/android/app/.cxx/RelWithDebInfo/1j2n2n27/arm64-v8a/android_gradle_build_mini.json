@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/Users/rohitdineshjain/Downloads/flutter_2/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/rohitdineshjain/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/.cxx/RelWithDebInfo/1j2n2n27/arm64-v8a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/rohitdineshjain/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/.cxx/RelWithDebInfo/1j2n2n27/arm64-v8a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

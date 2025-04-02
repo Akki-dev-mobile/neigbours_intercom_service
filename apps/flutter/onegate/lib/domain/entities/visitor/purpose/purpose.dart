@@ -20,8 +20,8 @@ class PurposeCategory1 {
       image: json['category_img'],
       subCategories: json['sub_categories'] != null
           ? (json['sub_categories'] as List<dynamic>)
-          .map((sub) => SubCategory.fromJson(sub))
-          .toList()
+              .map((sub) => SubCategory.fromJson(sub))
+              .toList()
           : null,
       isSelected: json['isSelected'] ?? false,
     );

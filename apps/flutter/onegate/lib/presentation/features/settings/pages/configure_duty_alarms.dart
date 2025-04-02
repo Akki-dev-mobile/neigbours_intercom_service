@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:alarm/alarm.dart';
+import 'package:alarm/model/volume_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -217,13 +218,12 @@ List<DateTime> allalarmTime=[];
         androidFullScreenIntent: true,
         loopAudio: true,
         vibrate: true,
-        fadeDuration: 3.0,
         notificationSettings: const NotificationSettings(
           title: 'Duty Alarm',
           body: 'This is a duty alarm',
           stopButton: 'Stop the alarm',
           icon: 'notification_icon',
-        ),
+        ), volumeSettings:  VolumeSettings.fade(fadeDuration: Duration(seconds: 3)),
       ),
     );
     allalarmTime.add(alarmTime);
