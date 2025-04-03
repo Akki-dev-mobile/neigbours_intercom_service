@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/Users/futurescapetechnology/Desktop/Futurescape/one-monorepo/apps/flutter/onegate/android/app/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/futurescapetechnology/Library/Android/sdk/cmake/3.31.6/bin/ninja",
+      "-C",
+      "/Users/futurescapetechnology/Desktop/Futurescape/one-monorepo/apps/flutter/onegate/android/app/.cxx/Debug/5n53u01a/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/futurescapetechnology/Library/Android/sdk/cmake/3.31.6/bin/ninja",
+    "-C",
+    "/Users/futurescapetechnology/Desktop/Futurescape/one-monorepo/apps/flutter/onegate/android/app/.cxx/Debug/5n53u01a/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

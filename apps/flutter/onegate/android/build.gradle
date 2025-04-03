@@ -13,6 +13,10 @@ buildscript {
 }
 */
 
+//ext {
+//    compileSdkVersion = flutter.compileSdkVersion
+//}
+
 allprojects {
     repositories {
         google()
