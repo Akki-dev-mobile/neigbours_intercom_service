@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/intercom.dart';
+import 'package:flutter_onegate/presentation/features/license_plate_detection/ui/license_plate_detection_page.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/qr_scanner_self.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:vibration/vibration.dart';
@@ -227,6 +228,19 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  LicensePlateDetectionPage()));
+                    },
+                    icon: Icon(
+                      Symbols.car_crash,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
                   IconButton(
                     onPressed: () {
                       Navigator.push(

@@ -11,8 +11,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_onegate/approval_Status.dart';
 import 'package:flutter_onegate/common/internet_check_provider.dart';
 import 'package:flutter_onegate/config/gate_config.dart' show GateConfig;
-import 'package:flutter_onegate/config/gateconfig_holder.dart' show GateConfigHolder;
+import 'package:flutter_onegate/config/gateconfig_holder.dart'
+    show GateConfigHolder;
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/repositories/license_plate_repository.dart';
+import 'package:flutter_onegate/presentation/features/license_plate_detection/bloc/license_plate_bloc.dart';
 import 'package:flutter_onegate/splash_screen.dart';
 import 'package:flutter_onegate/utils/no_internet_connection.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
@@ -110,6 +113,9 @@ void main() async {
         child: MultiBlocProvider(
           providers: [
             BlocProvider(create: (context) => ParcelBloc(RemoteDataSource())),
+            BlocProvider(
+                create: (context) =>
+                    LicensePlateBloc(LicensePlateRepository())),
             BlocProvider<GatekeeperDashboardBloc>(
               create: (context) => GatekeeperDashboardBloc(
                 VisitorUsecase(
