@@ -208,10 +208,9 @@ class GateStorage {
     }
     return null;
   }
-
-  Future<void> clearStorage() async {
+  Future<void> clearStorage(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await prefs.remove(key);
   }
 
   Future<void> saveVisitorLogId(String visitorLogId) async {

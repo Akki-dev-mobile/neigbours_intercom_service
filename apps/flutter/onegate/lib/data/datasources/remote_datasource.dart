@@ -244,7 +244,6 @@ class RemoteDataSource {
     }
   }
 
-
   Future<GateConfig> fetchGateBaseDomain() async {
     final url = Uri.parse(
         'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/gate_base_domain_f30d9e1d99.json');
@@ -263,6 +262,7 @@ class RemoteDataSource {
       throw Exception('Error fetching data: $e');
     }
   }
+
   /// Search for a visitor
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
@@ -415,6 +415,7 @@ class RemoteDataSource {
 
       print("$visitorId visitorId");
       log("createdVisitor:$response");
+
       return Visitor(
         id: visitorId,
         name: visitor.name,
@@ -565,6 +566,7 @@ class RemoteDataSource {
           );
           print("this is ${responseData['data']}");
 
+          // await  gateStorage.clearStorage();åß
           return visitorLogResult;
         } else {
           _handleErrorResponse();

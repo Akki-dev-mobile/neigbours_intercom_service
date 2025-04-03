@@ -295,7 +295,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
       name: _guestNameController?.text,
       mobile: widget.searchedVisitor?.mobile,
-      visitor_image: widget.searchedVisitor?.visitor_image,
+      // visitor_image: widget.searchedVisitor?.visitor_image,
     ));
     // }
 

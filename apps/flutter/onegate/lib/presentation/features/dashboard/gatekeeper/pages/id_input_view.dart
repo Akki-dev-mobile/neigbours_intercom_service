@@ -72,6 +72,7 @@ class _IdInputViewState extends State<IdInputView> {
   TextEditingController mobileController = TextEditingController();
   TextEditingController passcodeController = TextEditingController();
   bool isLoading = false;
+  bool checkVisitorLoading = false;
 
   void startLoading() {
     setState(() {
@@ -430,25 +431,9 @@ class _IdInputViewState extends State<IdInputView> {
                   ],
                 ),
                 floatingActionButton: CustomLargeBtn(
-                    text: 'Next',
-                    onPressed: () async {
-                      _focusNode.unfocus();
-
-                      if (_currentIndex == 0) {
-                        // Mobile number validation & processing
-                        if (mobileControllerFormKey.currentState?.validate() ??
-                            false) {
-                          gateDashboardBloc.add(InputPutViewNextClickedEvent());
-                        }
-                      } else {
-                        // Passcode verification process
-                        if (passcodeControllerFormKey.currentState
-                                ?.validate() ??
-                            false) {
-                          _handlePasscodeVerification();
-                        }
-                      }
-                    }),
+                    text: checkVisitorLoading ? 'Processing...' : 'Next',
+                    onPressed: checkVisitorLoading ? null : checkVisitor,
+              ),
               ),
             );
           },
@@ -456,6 +441,33 @@ class _IdInputViewState extends State<IdInputView> {
         if (isLoading) const LoaderView(), // LoaderView overlay
       ],
     );
+  }
+
+  void checkVisitor() async {
+    checkVisitorLoading = true;
+    _focusNode.unfocus();
+
+    if (_currentIndex == 0) {
+      // Mobile number validation & processing
+      if (mobileControllerFormKey.currentState?.validate() ??
+          false) {
+        gateDashboardBloc.add(InputPutViewNextClickedEvent());
+      }
+    } else {
+      // Passcode verification process
+      if (passcodeControllerFormKey.currentState
+          ?.validate() ??
+          false) {
+        _handlePasscodeVerification();
+      }
+    }
+
+    Future.delayed(const Duration(seconds: 1), () {
+      setState(() {
+        checkVisitorLoading = false;
+      });
+    });
+
   }
 
   File? _imageFile;
@@ -730,6 +742,41 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   }
 
 
+  void purposeSelectionBottomSheet() async {
+    FocusScope.of(context).unfocus();
+    if (selectedImageIndex == null) {
+      myFluttertoast(
+          msg: "please select purpose",
+          backgroundColor: Colors.red);
+      return;
+    }
+
+    if (selectedImageIndex != -1) {
+      final selectedValue = globalSelectedPurposes.isEmpty
+          ? widget.purposeCategories[selectedImageIndex!]
+          : globalSelectedPurposes[selectedImageIndex!];
+
+      Navigator.pop(
+        context,
+        selectedValue,
+      );
+
+      final dialogue = await SharedPreferences.getInstance();
+      await dialogue.setString(
+        "dialoguePurpose",
+        jsonEncode(selectedValue.toJson()),
+      );
+
+      widget.gatekeeperDashboardBloc.add(
+        PurposeNextButtonClickedEvent(
+          selectedValue,
+          searchedVisitor,
+          widget.mobileNumber,
+        ),
+      );
+    }
+  }
+
 
   // Future<void> _loadSelectedPurposesToGlobal() async {
   //   try {
@@ -770,6 +817,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+   bool selectPurposeLoading = false;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
@@ -1002,43 +1050,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                   ),
           ),
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            margin:  EdgeInsets.symmetric(horizontal: 20),
             child: CustomLargeBtn(
-              text: 'Next',
-              onPressed: () async {
-                FocusScope.of(context).unfocus();
-                if (selectedImageIndex == null) {
-                  myFluttertoast(
-                      msg: "please select purpose",
-                      backgroundColor: Colors.red);
-                  return;
-                }
-
-                if (selectedImageIndex != -1) {
-                  final selectedValue = globalSelectedPurposes.isEmpty
-                      ? widget.purposeCategories[selectedImageIndex!]
-                      : globalSelectedPurposes[selectedImageIndex!];
-
-                  Navigator.pop(
-                    context,
-                    selectedValue,
-                  );
-
-                  final dialogue = await SharedPreferences.getInstance();
-                  await dialogue.setString(
-                    "dialoguePurpose",
-                    jsonEncode(selectedValue.toJson()),
-                  );
-
-                  widget.gatekeeperDashboardBloc.add(
-                    PurposeNextButtonClickedEvent(
-                      selectedValue,
-                      searchedVisitor,
-                      widget.mobileNumber,
-                    ),
-                  );
-                }
-              },
+              text: selectPurposeLoading ?  'Processing...' : 'Select Purpose',
+              onPressed: selectPurposeLoading ? null : purposeSelectionBottomSheet,
             ),
           ),
           const SizedBox(height: 10),
@@ -1047,3 +1062,4 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
     );
   }
 }
+

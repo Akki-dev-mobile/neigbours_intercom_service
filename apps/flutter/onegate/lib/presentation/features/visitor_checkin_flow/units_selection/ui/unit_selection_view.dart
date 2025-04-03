@@ -26,7 +26,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import "package:intl/intl.dart";
 import '../../../self_entry/self_home_view.dart';
 import '../../../self_entry/ui/self_profile_view.dart';
-import '../../visitor_in_screens/ui/request_permission_page.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final int? from;
@@ -73,7 +72,7 @@ class UnitSelectionView extends StatefulWidget {
 }
 
 class _UnitSelectionViewState extends State<UnitSelectionView> {
-  final Dio _dio = Dio();
+    // final Dio _dio = Dio();
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage gateStorage = GateStorage();
   final SocketService socketService = SocketService();
@@ -335,15 +334,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () async {
-                          // // Add your confirm logic here
-                          await deleteImage();
-                          Navigator.pop(context);
+                        onPressed: ()  {
                           _handleSelectionSubmit(selectedMembers);
                         },
-                        child: const Text(
-                          'Confirm',
-                          style: TextStyle(
+                        child:  Text(
+                          selectedMemberSelectionLoading ? "Loading..." : 'Confirm',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
@@ -675,6 +671,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   bool _isCheckedIn = false;
+  bool selectedMemberSelectionLoading = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -1123,6 +1121,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   // Selection Submission Methods
   Future<void> _handleSelectionSubmit(Set<String> selectedMembers) async {
+
+    selectedMemberSelectionLoading = true;
+    await deleteImage();
+    Navigator.pop(context);
     log("Handling selection submit...");
     await saveMemberAndUnitToPrefs(selectedMembers, selectedUnits);
 
@@ -1143,6 +1145,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       log("❌ Error in _handleSelectionSubmit: $e");
       _showErrorSnackbar("Error processing selection");
     }
+    Future.delayed(const Duration(seconds: 1), () {
+      selectedMemberSelectionLoading = false;
+      setState(() {});
+    });
   }
 
   Future<void> _handleDirectApproval(VisitorLog visitorLogData) async {
