@@ -12,6 +12,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../bloc/parcel_state.dart';
+import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
 
 class ParcelList extends StatefulWidget {
   const ParcelList({super.key});
@@ -30,6 +31,7 @@ class _ParcelListState extends State<ParcelList> {
   late TextEditingController _searchController;
   late FocusNode _searchFocusNode;
   String _searchQuery = '';
+  String? selectedBuilding = "All Buildings";
 
   @override
   void initState() {
@@ -85,28 +87,66 @@ class _ParcelListState extends State<ParcelList> {
   }
 
   Widget _buildSearchField() {
-    return CustomForm.textField(
-      "Search",
-      hintText: "Search Members",
-      titleColor: Theme.of(context).colorScheme.onSurface,
-      hintColor: Theme.of(context).colorScheme.onSurface,
-      focusNode: _searchFocusNode,
-      prefixIcon: const Icon(Ionicons.search_outline),
-      suffixIcon: _searchQuery.isNotEmpty
-          ? IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                setState(() => _searchQuery = '');
+    return Column(
+      children: [
+        // Search field
+        CustomForm.textField(
+          "Search",
+          hintText: "Search Members",
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onSurface,
+          focusNode: _searchFocusNode,
+          prefixIcon: const Icon(Ionicons.search_outline),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          textController: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+        ),
+
+        // Building selection dropdown
+        BlocBuilder<ParcelBloc, ParcelState>(
+          builder: (context, state) {
+            // Extract building names from parcels using the helper method
+            Set<String> buildingNames = {"All Buildings"};
+
+            if (state is ParcelLoaded) {
+              buildingNames = BuildingDropdown.extractBuildingNames(
+                state.parcels,
+                getUnitName: (dynamic parcel) {
+                  if (parcel['unit_name'] != null &&
+                      parcel['unit_name'].toString().isNotEmpty) {
+                    return parcel['unit_name'].toString();
+                  }
+                  return "";
+                },
+              );
+            }
+
+            List<String> sortedBuildingNames = buildingNames.toList();
+
+            return BuildingDropdown(
+              selectedBuilding: selectedBuilding,
+              onBuildingSelected: (String? value) {
+                setState(() {
+                  selectedBuilding = value;
+                });
               },
-            )
-          : null,
-      textController: _searchController,
-      onChanged: (value) {
-        setState(() {
-          _searchQuery = value;
-        });
-      },
+              buildingNames: sortedBuildingNames,
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -320,7 +360,7 @@ class _ParcelListState extends State<ParcelList> {
 
   Widget parsallist(List<dynamic> parcels, final String searchQuery) {
     final query = searchQuery.toLowerCase();
-    final filteredParcels = parcels.where((parcel) {
+    List<dynamic> filteredParcels = parcels.where((parcel) {
       final memberName = parcel['member_name']?.toString().toLowerCase() ?? '';
       final unitName = parcel['unit_name']?.toString().toLowerCase() ?? '';
       final purposeSubCategory =
@@ -330,6 +370,23 @@ class _ParcelListState extends State<ParcelList> {
           unitName.contains(query) ||
           purposeSubCategory.contains(query);
     }).toList();
+
+    // Filter by selected building if not "All Buildings"
+    if (selectedBuilding != null && selectedBuilding != "All Buildings") {
+      filteredParcels = filteredParcels.where((parcel) {
+        if (parcel['unit_name'] != null &&
+            parcel['unit_name'].toString().isNotEmpty) {
+          String unitName = parcel['unit_name'].toString();
+          if (unitName.contains("-")) {
+            String buildingName = unitName.split("-")[0].trim();
+            return buildingName == selectedBuilding;
+          } else {
+            return unitName == selectedBuilding;
+          }
+        }
+        return false;
+      }).toList();
+    }
 
     if (filteredParcels.isEmpty) {
       return Column(
@@ -383,7 +440,40 @@ class _ParcelListState extends State<ParcelList> {
             ),
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           ),
-          ...groupedParcels[date]!.map((parcel) => parsalView(parcel)).toList(),
+          Builder(builder: (context) {
+            // Sort parcels by building name within each date group
+            List<dynamic> sortedParcels = List.from(groupedParcels[date]!);
+            sortedParcels.sort((a, b) {
+              String buildingA = "";
+              String buildingB = "";
+
+              if (a['unit_name'] != null &&
+                  a['unit_name'].toString().isNotEmpty) {
+                String unitName = a['unit_name'].toString();
+                if (unitName.contains("-")) {
+                  buildingA = unitName.split("-")[0].trim();
+                } else {
+                  buildingA = unitName;
+                }
+              }
+
+              if (b['unit_name'] != null &&
+                  b['unit_name'].toString().isNotEmpty) {
+                String unitName = b['unit_name'].toString();
+                if (unitName.contains("-")) {
+                  buildingB = unitName.split("-")[0].trim();
+                } else {
+                  buildingB = unitName;
+                }
+              }
+
+              return buildingA.compareTo(buildingB);
+            });
+
+            return Column(
+                children:
+                    sortedParcels.map((parcel) => parsalView(parcel)).toList());
+          }),
         ];
       }).toList(),
     );
@@ -397,8 +487,10 @@ class _ParcelListState extends State<ParcelList> {
         isScrollable: false,
         hasBackButton: true,
         backButtonPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => GateDashboardView()));
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const GateDashboardView()));
         },
         pageTitle: 'Parcels',
         pageBody: Column(
@@ -428,7 +520,7 @@ class _ParcelListState extends State<ParcelList> {
                   } else if (state is ParcelError) {
                     return Center(child: Text('Error: ${state.message}'));
                   } else {
-                    return Column(
+                    return const Column(
                       children: [
                         Icon(Symbols.package_2),
                         Center(child: Text('No parcels found.')),

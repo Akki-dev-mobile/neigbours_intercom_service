@@ -19,6 +19,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
 
 // Timer Service
 class TimerState {
@@ -286,6 +287,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
   bool _isRefreshing = false;
   DateTime _lastRefreshTime = DateTime.now();
   String _currentTime = '';
+  String? selectedBuilding = "All Buildings";
 
   @override
   void initState() {
@@ -360,28 +362,67 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
   }
 
   Widget _buildSearchField() {
-    return CustomForm.textField(
-      "Search",
-      hintText: "Search by Visitor Name",
-      titleColor: Theme.of(context).colorScheme.onSurface,
-      hintColor: Theme.of(context).colorScheme.onSurface,
-      focusNode: _searchFocusNode,
-      prefixIcon: const Icon(Ionicons.search_outline),
-      suffixIcon: _searchQuery.isNotEmpty
-          ? IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                setState(() => _searchQuery = '');
+    return Column(
+      children: [
+        // Search field
+        CustomForm.textField(
+          "Search",
+          hintText: "Search by Visitor Name",
+          titleColor: Theme.of(context).colorScheme.onSurface,
+          hintColor: Theme.of(context).colorScheme.onSurface,
+          focusNode: _searchFocusNode,
+          prefixIcon: const Icon(Ionicons.search_outline),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          textController: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+        ),
+
+        // Building selection dropdown
+        FutureBuilder<List<VisitorInfo>>(
+          future: _futureApprovals,
+          builder: (context, snapshot) {
+            // Extract building names from visitor logs using the helper method
+            Set<String> buildingNames = {"All Buildings"};
+
+            if (snapshot.hasData) {
+              buildingNames = BuildingDropdown.extractBuildingNames(
+                snapshot.data!,
+                getUnitName: (VisitorInfo visitor) {
+                  if (visitor.unitDetails.building_unit != null &&
+                      visitor.unitDetails.building_unit!.isNotEmpty) {
+                    return visitor.unitDetails.building_unit!;
+                  }
+                  return "";
+                },
+              );
+            }
+
+            List<String> sortedBuildingNames = buildingNames.toList();
+
+            return BuildingDropdown(
+              selectedBuilding: selectedBuilding,
+              onBuildingSelected: (String? value) {
+                setState(() {
+                  selectedBuilding = value;
+                });
               },
-            )
-          : null,
-      textController: _searchController,
-      onChanged: (value) {
-        setState(() {
-          _searchQuery = value;
-        });
-      },
+              buildingNames: sortedBuildingNames,
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -389,9 +430,9 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: const Row(
           children: [
-            const Text(
+            Text(
               'Missed Approvals',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
@@ -481,6 +522,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                   return ApprovalsList(
                     approvals: snapshot.data!,
                     searchQuery: _searchQuery,
+                    selectedBuilding: selectedBuilding,
                   );
                 },
               ),
@@ -496,22 +538,41 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
 class ApprovalsList extends StatelessWidget {
   final List<VisitorInfo> approvals;
   final String searchQuery;
+  final String? selectedBuilding;
 
   const ApprovalsList({
     Key? key,
     required this.approvals,
     required this.searchQuery,
+    this.selectedBuilding,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Apply search filter
-    final filteredApprovals = approvals.where((visitor) {
+    List<VisitorInfo> filteredApprovals = approvals.where((visitor) {
       final query = searchQuery.toLowerCase();
       return visitor.visitorName.toLowerCase().contains(query) ||
           visitor.memberInfo.name.toLowerCase().contains(query) ||
           visitor.inGate.toLowerCase().contains(query);
     }).toList();
+
+    // Filter by selected building if not "All Buildings"
+    if (selectedBuilding != null && selectedBuilding != "All Buildings") {
+      filteredApprovals = filteredApprovals.where((visitor) {
+        if (visitor.unitDetails.building_unit != null &&
+            visitor.unitDetails.building_unit!.isNotEmpty) {
+          String unitId = visitor.unitDetails.building_unit!;
+          if (unitId.contains("-")) {
+            String buildingName = unitId.split("-")[0].trim();
+            return buildingName == selectedBuilding;
+          } else {
+            return unitId == selectedBuilding;
+          }
+        }
+        return false;
+      }).toList();
+    }
 
     // Group approvals by date
     final Map<String, List<VisitorInfo>> groupedByDate = {};
@@ -583,17 +644,47 @@ class ApprovalsList extends StatelessWidget {
             ),
 
             // Approvals List for this Date
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: approvalsForDate.length,
-              itemBuilder: (context, innerIndex) {
-                return MissedApprovalCard(
-                  visitorInfo: approvalsForDate[innerIndex],
-                  key: ValueKey(approvalsForDate[innerIndex].visitorLogId),
-                );
-              },
-            ),
+            Builder(builder: (context) {
+              // Sort approvals by building name within each date group
+              approvalsForDate.sort((a, b) {
+                String buildingA = "";
+                String buildingB = "";
+
+                if (a.unitDetails.building_unit != null &&
+                    a.unitDetails.building_unit!.isNotEmpty) {
+                  String unitId = a.unitDetails.building_unit!;
+                  if (unitId.contains("-")) {
+                    buildingA = unitId.split("-")[0].trim();
+                  } else {
+                    buildingA = unitId;
+                  }
+                }
+
+                if (b.unitDetails.building_unit != null &&
+                    b.unitDetails.building_unit!.isNotEmpty) {
+                  String unitId = b.unitDetails.building_unit!;
+                  if (unitId.contains("-")) {
+                    buildingB = unitId.split("-")[0].trim();
+                  } else {
+                    buildingB = unitId;
+                  }
+                }
+
+                return buildingA.compareTo(buildingB);
+              });
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: approvalsForDate.length,
+                itemBuilder: (context, innerIndex) {
+                  return MissedApprovalCard(
+                    visitorInfo: approvalsForDate[innerIndex],
+                    key: ValueKey(approvalsForDate[innerIndex].visitorLogId),
+                  );
+                },
+              );
+            }),
           ],
         );
       },

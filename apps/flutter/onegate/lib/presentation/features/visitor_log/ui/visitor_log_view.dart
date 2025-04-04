@@ -27,6 +27,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -50,6 +51,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   String? _searchText = "";
   var selectedGateName;
   late FocusNode _searchFocusNode;
+  String? selectedBuilding = "All Buildings";
 
   List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
   final gateStorage = GateStorage();
@@ -202,11 +204,51 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               }
             }
 
+            // Extract building names from visitor logs using the helper method
+            Set<String> buildingNames = BuildingDropdown.extractBuildingNames(
+              uniqueVisitorLogs,
+              getUnitName: (VisitorLog log) {
+                if (log.visitor_building_assignment != null &&
+                    log.visitor_building_assignment!.isNotEmpty &&
+                    log.visitor_building_assignment!.first.unit_id != null &&
+                    log.visitor_building_assignment!.first.unit_id!
+                        .isNotEmpty) {
+                  return log.visitor_building_assignment!.first.unit_id!.first;
+                }
+                return "";
+              },
+            );
+
+            List<String> sortedBuildingNames = buildingNames.toList();
+
+            // Filter visitors by name search
             List<VisitorLog> filteredVisitors = uniqueVisitorLogs
                 .where((visitorLog) => visitorLog.visitor!.name!
                     .toLowerCase()
                     .contains(_searchText!.toLowerCase()))
                 .toList();
+
+            // Filter by selected building if not "All Buildings"
+            if (selectedBuilding != null &&
+                selectedBuilding != "All Buildings") {
+              filteredVisitors = filteredVisitors.where((log) {
+                if (log.visitor_building_assignment != null &&
+                    log.visitor_building_assignment!.isNotEmpty &&
+                    log.visitor_building_assignment!.first.unit_id != null &&
+                    log.visitor_building_assignment!.first.unit_id!
+                        .isNotEmpty) {
+                  String unitId =
+                      log.visitor_building_assignment!.first.unit_id!.first;
+                  if (unitId.contains("-")) {
+                    String buildingName = unitId.split("-")[0].trim();
+                    return buildingName == selectedBuilding;
+                  } else {
+                    return unitId == selectedBuilding;
+                  }
+                }
+                return false;
+              }).toList();
+            }
 
             final today = DateTime.now();
             final startOfToday = DateTime(today.year, today.month, today.day);
@@ -328,39 +370,54 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                   height: MediaQuery.of(context).size.height,
                   child: Column(
                     children: [
-                      CustomForm.textField(
-                        widget.selectedBuilding ?? 'Search',
-                        focusNode: _searchFocusNode,
-                        titleColor: Theme.of(context).colorScheme.onSurface,
-                        hintColor: Theme.of(context).colorScheme.onSurface,
-                        hintText: 'Search Visitor',
-                        textCapitalization: TextCapitalization.words,
-                        textInputAction: TextInputAction.search,
-                        onFieldSubmitted: (value) {
-                          log(value);
-                        },
-                        onChanged: (value) {
-                          setState(() {
-                            _searchText = value;
-                          });
-                        },
-                        prefixIcon: IconButton(
-                          onPressed: () {},
-                          icon: Icon(
-                            Ionicons.search_outline,
-                            color: Theme.of(context).colorScheme.onSurface,
+                      Column(
+                        children: [
+                          // Building selection dropdown
+                          // Search field
+                          CustomForm.textField(
+                            widget.selectedBuilding ?? 'Search',
+                            focusNode: _searchFocusNode,
+                            titleColor: Theme.of(context).colorScheme.onSurface,
+                            hintColor: Theme.of(context).colorScheme.onSurface,
+                            hintText: 'Search Visitor',
+                            textCapitalization: TextCapitalization.words,
+                            textInputAction: TextInputAction.search,
+                            onFieldSubmitted: (value) {
+                              log(value);
+                            },
+                            onChanged: (value) {
+                              setState(() {
+                                _searchText = value;
+                              });
+                            },
+                            prefixIcon: IconButton(
+                              onPressed: () {},
+                              icon: Icon(
+                                Ionicons.search_outline,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                _showLogBookConfigBottomSheet(context);
+                              },
+                              icon: Icon(
+                                Ionicons.funnel_outline,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                size: 24,
+                              ),
+                            ),
                           ),
-                        ),
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            _showLogBookConfigBottomSheet(context);
-                          },
-                          icon: Icon(
-                            Ionicons.funnel_outline,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            size: 24,
+                          BuildingDropdown(
+                            selectedBuilding: selectedBuilding,
+                            onBuildingSelected: (String? value) {
+                              setState(() {
+                                selectedBuilding = value;
+                              });
+                            },
+                            buildingNames: sortedBuildingNames,
                           ),
-                        ),
+                        ],
                       ),
                       if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
                         Padding(
@@ -474,35 +531,81 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                         Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
-                                ListView.builder(
-                                  padding: EdgeInsets.zero,
-                                  physics: NeverScrollableScrollPhysics(),
-                                  shrinkWrap: true,
-                                  itemCount: logsForDate.length,
-                                  itemBuilder: (context, logIndex) {
-                                    return VisitorLogItem(
-                                      visitorLog: logsForDate[logIndex],
-                                      onCheckOut: () {
-                                        setState(() {
-                                          logsForDate[logIndex]
-                                                  .visitor_check_out =
-                                              Utils.getCurrentTime();
-                                          logsForDate[logIndex].is_checked_out =
-                                              true;
-                                        });
-                                        _visitorLogBloc.emit(
-                                            VisitorLogSuccessState(
-                                                logsForDate));
-                                        _visitorLogBloc.add(
-                                          CheckOutEvent(
+                                Builder(builder: (context) {
+                                  // Sort logs by building name within each date group
+                                  logsForDate.sort((a, b) {
+                                    String buildingA = "";
+                                    String buildingB = "";
+
+                                    if (a.visitor_building_assignment != null &&
+                                        a.visitor_building_assignment!
+                                            .isNotEmpty &&
+                                        a.visitor_building_assignment!.first
+                                                .unit_id !=
+                                            null &&
+                                        a.visitor_building_assignment!.first
+                                            .unit_id!.isNotEmpty) {
+                                      String unitId = a
+                                          .visitor_building_assignment!
+                                          .first
+                                          .unit_id!
+                                          .first;
+                                      if (unitId.contains("-")) {
+                                        buildingA = unitId.split("-")[0].trim();
+                                      } else {
+                                        buildingA = unitId;
+                                      }
+                                    }
+
+                                    if (b.visitor_building_assignment != null &&
+                                        b.visitor_building_assignment!
+                                            .isNotEmpty &&
+                                        b.visitor_building_assignment!.first
+                                                .unit_id !=
+                                            null &&
+                                        b.visitor_building_assignment!.first
+                                            .unit_id!.isNotEmpty) {
+                                      String unitId = b
+                                          .visitor_building_assignment!
+                                          .first
+                                          .unit_id!
+                                          .first;
+                                      if (unitId.contains("-")) {
+                                        buildingB = unitId.split("-")[0].trim();
+                                      } else {
+                                        buildingB = unitId;
+                                      }
+                                    }
+
+                                    return buildingA.compareTo(buildingB);
+                                  });
+
+                                  return ListView.builder(
+                                    padding: EdgeInsets.zero,
+                                    physics: NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    itemCount: logsForDate.length,
+                                    itemBuilder: (context, logIndex) {
+                                      return VisitorLogItem(
+                                        visitorLog: logsForDate[logIndex],
+                                        onCheckOut: () {
+                                          setState(() {
+                                            logsForDate[logIndex]
+                                                    .visitor_check_out =
+                                                Utils.getCurrentTime();
+                                            logsForDate[logIndex]
+                                                .is_checked_out = true;
+                                          });
+                                          // Use add instead of emit
+                                          _visitorLogBloc.add(CheckOutEvent(
                                             logsForDate[logIndex],
                                             widget.id,
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
+                                          ));
+                                        },
+                                      );
+                                    },
+                                  );
+                                }),
                               ],
                             );
                           },
@@ -1185,8 +1288,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       ),
                       const SizedBox(width: 8), // Add spacing
                       Text(
-                        "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name.toString()) ?? "N/A"} - "
-                        "${widget.visitorLog.visitor_building_assignment!.isNotEmpty ? widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() == "0001" ? "Society Office" : widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString() : "N/A"}",
+                        "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name?.toString() ?? "N/A")} - "
+                        "${widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString()}",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontSize: 14,
                               color: Colors.grey[600],

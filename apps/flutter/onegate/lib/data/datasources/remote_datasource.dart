@@ -688,7 +688,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data'] ?? [];
+        final List<dynamic> data = responseData['data']['data'] ?? [];
         log("data--$data");
         return data.map((item) => _mapToVisitorLog(item)).toList();
       } else {
