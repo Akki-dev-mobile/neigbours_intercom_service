@@ -204,22 +204,22 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               }
             }
 
-            // Extract building names from visitor logs using the helper method
-            Set<String> buildingNames = BuildingDropdown.extractBuildingNames(
-              uniqueVisitorLogs,
-              getUnitName: (VisitorLog log) {
-                if (log.visitor_building_assignment != null &&
-                    log.visitor_building_assignment!.isNotEmpty &&
-                    log.visitor_building_assignment!.first.unit_id != null &&
-                    log.visitor_building_assignment!.first.unit_id!
-                        .isNotEmpty) {
-                  return log.visitor_building_assignment!.first.unit_id!.first;
-                }
-                return "";
-              },
-            );
+            // // Extract building names from visitor logs using the helper method
+            // Set<String> buildingNames = BuildingDropdown.extractBuildingNames(
+            //   uniqueVisitorLogs,
+            //   getUnitName: (VisitorLog log) {
+            //     if (log.visitor_building_assignment != null &&
+            //         log.visitor_building_assignment!.isNotEmpty &&
+            //         log.visitor_building_assignment!.first.unit_id != null &&
+            //         log.visitor_building_assignment!.first.unit_id!
+            //             .isNotEmpty) {
+            //       return log.visitor_building_assignment!.first.unit_id!.first;
+            //     }
+            //     return "";
+            //   },
+            // );
 
-            List<String> sortedBuildingNames = buildingNames.toList();
+            // List<String> sortedBuildingNames = buildingNames.toList();
 
             // Filter visitors by name search
             List<VisitorLog> filteredVisitors = uniqueVisitorLogs
@@ -408,15 +408,15 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                               ),
                             ),
                           ),
-                          BuildingDropdown(
-                            selectedBuilding: selectedBuilding,
-                            onBuildingSelected: (String? value) {
-                              setState(() {
-                                selectedBuilding = value;
-                              });
-                            },
-                            buildingNames: sortedBuildingNames,
-                          ),
+                          // BuildingDropdown(
+                          //   selectedBuilding: selectedBuilding,
+                          //   onBuildingSelected: (String? value) {
+                          //     setState(() {
+                          //       selectedBuilding = value;
+                          //     });
+                          //   },
+                          //   buildingNames: sortedBuildingNames,
+                          // ),
                         ],
                       ),
                       if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)

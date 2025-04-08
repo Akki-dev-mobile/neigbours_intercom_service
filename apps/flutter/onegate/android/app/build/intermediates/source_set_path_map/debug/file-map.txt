@@ -1,0 +1,7 @@
+com.cubeonebiz.gate.flutter_onegate.app-pngs-0 /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/build/generated/res/pngs/debug
+com.cubeonebiz.gate.flutter_onegate.app-resValues-1 /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/build/generated/res/resValues/debug
+com.cubeonebiz.gate.flutter_onegate.app-packageDebugResources-2 /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+com.cubeonebiz.gate.flutter_onegate.app-packageDebugResources-3 /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+com.cubeonebiz.gate.flutter_onegate.app-merged_res-4 /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/build/intermediates/merged_res/debug
+com.cubeonebiz.gate.flutter_onegate.app-debug-5 /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/res
+com.cubeonebiz.gate.flutter_onegate.app-main-6 /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res

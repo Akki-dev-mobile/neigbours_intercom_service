@@ -1,0 +1,127 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.cubeonebiz.gate.flutter_onegate.app-merged_res-4:/values-night-v31_values-night-v31.arsc.flat",
+            "map": [
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values-night-v31/styles.xml",
+                    "from": {
+                        "startLines": "3,18",
+                        "startColumns": "4,4",
+                        "startOffsets": "173,1129",
+                        "endLines": "11,20",
+                        "endColumns": "12,12",
+                        "endOffsets": "778,1293"
+                    },
+                    "to": {
+                        "startLines": "2,11",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,665",
+                        "endLines": "10,13",
+                        "endColumns": "12,12",
+                        "endOffsets": "660,829"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.cubeonebiz.gate.flutter_onegate.app-merged_res-4:/values-night-v8_values-night-v8.arsc.flat",
+            "map": [
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values-night/styles.xml",
+                    "from": {
+                        "startLines": "3,18",
+                        "startColumns": "4,4",
+                        "startOffsets": "172,1088",
+                        "endLines": "11,20",
+                        "endColumns": "12,12",
+                        "endOffsets": "746,1252"
+                    },
+                    "to": {
+                        "startLines": "2,10",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,507",
+                        "endLines": "9,12",
+                        "endColumns": "12,12",
+                        "endOffsets": "502,671"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.cubeonebiz.gate.flutter_onegate.app-merged_res-4:/values-v31_values-v31.arsc.flat",
+            "map": [
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values-v31/styles.xml",
+                    "from": {
+                        "startLines": "3,18",
+                        "startColumns": "4,4",
+                        "startOffsets": "173,1129",
+                        "endLines": "11,20",
+                        "endColumns": "12,12",
+                        "endOffsets": "778,1293"
+                    },
+                    "to": {
+                        "startLines": "2,11",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,665",
+                        "endLines": "10,13",
+                        "endColumns": "12,12",
+                        "endOffsets": "660,829"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.cubeonebiz.gate.flutter_onegate.app-merged_res-4:/values_values.arsc.flat",
+            "map": [
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values/styles.xml",
+                    "from": {
+                        "startLines": "3,18",
+                        "startColumns": "4,4",
+                        "startOffsets": "173,1089",
+                        "endLines": "11,20",
+                        "endColumns": "12,12",
+                        "endOffsets": "747,1253"
+                    },
+                    "to": {
+                        "startLines": "4,12",
+                        "startColumns": "4,4",
+                        "startOffsets": "160,612",
+                        "endLines": "11,14",
+                        "endColumns": "12,12",
+                        "endOffsets": "607,776"
+                    }
+                },
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values/colors.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "56",
+                        "endOffsets": "107"
+                    }
+                },
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values/strings.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "47",
+                        "endOffsets": "98"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "112",
+                        "endColumns": "47",
+                        "endOffsets": "155"
+                    }
+                }
+            ]
+        }
+    ]
+}

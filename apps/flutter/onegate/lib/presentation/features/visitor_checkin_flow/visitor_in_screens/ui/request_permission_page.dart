@@ -225,7 +225,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     });
 
     try {
-      final approvals = await _remoteDataSource.fetchApprovals(widget.logID!);
+      final approvals = await _remoteDataSource.fetchApprovals(logID:widget.logID!);
 
       if (approvals.isNotEmpty) {
         final approval = approvals.firstWhere(

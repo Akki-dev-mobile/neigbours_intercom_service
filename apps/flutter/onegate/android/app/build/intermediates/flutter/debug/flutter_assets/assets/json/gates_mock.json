@@ -1,0 +1,83 @@
+{
+    "data": [
+      {
+        "name": "Gate 1",
+        "gatekeeperId": 101,
+        "configuration": {
+          "allowVisitorIn": true,
+          "allowVisitorOut": true,
+          "allowVehicleIn": true,
+          "allowVehicleOut": true
+        },
+        "settings": {
+          "cameraSettings": {
+            "faceRecognition": true
+          },
+          "visitSettings": {
+            "visitorNameRequired": true,
+            "visitorAddressRequired": true,
+            "visitorPurposeRequired": true,
+            "memberApprovalRequired": false
+          },
+          "languageSettings": {
+            "language": "English"
+          },
+          "visitorApprovalTime": "15 minutes",
+          "offlineDataStorageDuration": "30 days"
+        }
+       },
+       {
+        "name": "Gate 2",
+        "gatekeeperId": 102,
+        "configuration": {
+          "allowVisitorIn": true,
+          "allowVisitorOut": true,
+          "allowVehicleIn": true,
+          "allowVehicleOut": true
+        },
+        "settings": {
+          "cameraSettings": {
+            "faceRecognition": true
+          },
+          "visitSettings": {
+            "visitorNameRequired": true,
+            "visitorAddressRequired": true,
+            "visitorPurposeRequired": true,
+            "memberApprovalRequired": false
+          },
+          "languageSettings": {
+            "language": "English"
+          },
+          "visitorApprovalTime": "15 minutes",
+          "offlineDataStorageDuration": "30 days"
+        }
+       },
+       {
+        "name": "Gate 3",
+        "gatekeeperId": 103,
+        "configuration": {
+          "allowVisitorIn": true,
+          "allowVisitorOut": true,
+          "allowVehicleIn": true,
+          "allowVehicleOut": true
+        },
+        "settings": {
+          "cameraSettings": {
+            "faceRecognition": true
+          },
+          "visitSettings": {
+            "visitorNameRequired": true,
+            "visitorAddressRequired": true,
+            "visitorPurposeRequired": true,
+            "memberApprovalRequired": false
+          },
+          "languageSettings": {
+            "language": "English"
+          },
+          "visitorApprovalTime": "15 minutes",
+          "offlineDataStorageDuration": "30 days"
+        }
+       }
+    ]
+  }
+  

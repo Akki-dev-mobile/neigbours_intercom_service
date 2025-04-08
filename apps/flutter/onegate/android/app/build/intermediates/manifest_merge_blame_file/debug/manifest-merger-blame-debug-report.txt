@@ -1,0 +1,142 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.cubeonebiz.gate.flutter_onegate"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:2:5-67
+11-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:2:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:3:5-79
+12-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:3:22-76
+13    <uses-permission android:name="android.permission.CAMERA" />
+13-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:4:5-65
+13-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:4:22-62
+14    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+14-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:5:5-71
+14-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:5:22-68
+15    <uses-permission android:name="android.permission.BLUETOOTH" />
+15-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:6:5-68
+15-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:6:22-65
+16    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+16-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:7:5-74
+16-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:7:22-71
+17    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+17-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:8:5-76
+17-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:8:22-73
+18
+19    <queries>
+19-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:24:5-28:15
+20        <intent>
+20-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:25:9-27:18
+21            <action android:name="android.speech.RecognitionService" />
+21-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:26:13-72
+21-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:26:21-69
+22        </intent>
+23    </queries>
+24
+25    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+25-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:9:5-77
+25-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:9:22-74
+26    <uses-permission
+26-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:10:5-103
+27        android:name="android.permission.NEARBY_WIFI_DEVICES"
+27-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:10:22-75
+28        android:required="false" />
+28-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:10:76-100
+29    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+29-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:11:5-79
+29-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:11:22-76
+30    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+30-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:12:5-81
+30-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:12:22-78
+31    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+31-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:13:5-81
+31-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:13:22-78
+32    <uses-permission android:name="android.permission.WAKE_LOCK" />
+32-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:14:5-68
+32-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:14:22-65
+33    <uses-permission android:name="android.permission.VIBRATE" />
+33-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:15:5-66
+33-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:15:22-63
+34    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+34-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:16:5-81
+34-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:16:22-78
+35    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+35-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:17:5-77
+35-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:17:22-74
+36    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+36-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:18:5-85
+36-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:18:22-82
+37    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+37-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:19:5-80
+37-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:19:22-77
+38    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+38-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:20:5-92
+38-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:20:22-89
+39    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+39-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:21:5-74
+39-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:21:22-71
+40    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+40-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:22:5-79
+40-->/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:22:22-76
+41
+42    <application
+43        android:name="io.flutter.app.FlutterApplication"
+44        android:debuggable="true"
+45        android:enableOnBackInvokedCallback="true"
+46        android:extractNativeLibs="false"
+47        android:icon="@mipmap/ic_launcher"
+48        android:label="onegate" >
+49        <service android:name="com.gdelataillade.alarm.services.NotificationOnKillService" />
+50
+51        <activity
+52            android:name="com.cubeonebiz.gate.flutter_onegate.MainActivity"
+53            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+54            android:exported="true"
+55            android:hardwareAccelerated="true"
+56            android:launchMode="singleTop"
+57            android:theme="@style/LaunchTheme"
+58            android:windowSoftInputMode="adjustResize" >
+59
+60            <!--
+61                 Specifies an Android theme to apply to this Activity as soon as
+62                 the Android process has started. This theme is visible to the user
+63                 while the Flutter UI initializes. After that, this theme continues
+64                 to determine the Window background behind the Flutter UI.
+65            -->
+66            <meta-data
+67                android:name="io.flutter.embedding.android.NormalTheme"
+68                android:resource="@style/NormalTheme" />
+69
+70            <intent-filter>
+71                <action android:name="android.intent.action.MAIN" />
+72
+73                <category android:name="android.intent.category.LAUNCHER" />
+74            </intent-filter>
+75            <intent-filter>
+76                <action android:name="android.intent.action.VIEW" />
+77
+78                <category android:name="android.intent.category.DEFAULT" />
+79                <category android:name="android.intent.category.BROWSABLE" />
+80
+81                <data
+82                    android:host="ssostage.cubeone.in"
+83                    android:scheme="https" />
+84            </intent-filter>
+85        </activity>
+86        <!--
+87             Don't delete the meta-data below.
+88             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java
+89        -->
+90        <meta-data
+91            android:name="flutterEmbedding"
+92            android:value="2" />
+93    </application>
+94
+95</manifest>

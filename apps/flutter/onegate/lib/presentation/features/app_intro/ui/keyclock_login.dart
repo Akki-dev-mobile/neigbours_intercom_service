@@ -244,19 +244,32 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
         if (cleanedGateName.contains("tower")) {
-          // Extract just the tower name if needed
-          // For example, if selectedGateName is "East Tower" and you just need "East"
-          // String extractedTowerName = selectedGateName.replaceAll(" Tower", "");
+          // Format tower name as "TOWER NO XX" format
+          String formattedTowerName = "TOWER NO ";
 
-          // Or use the full name if that's what's expected
+          // Extract tower number if available, otherwise use the original name
+          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
+          var match = regExp.firstMatch(cleanedGateName);
+
+          if (match != null && match.group(1) != null) {
+            // If we found a number, format it as "TOWER NO XX"
+            formattedTowerName += match.group(1)!.padLeft(2, '0');
+          } else {
+            // If no number found, just use the original name but uppercase
+            formattedTowerName = selectedGateName.toUpperCase();
+          }
+
+          // Save the formatted tower name
+          await prefs.setString('selected_gate', formattedTowerName);
+
           destination = MissedApprovalsScreen2(
             remoteDataSource: RemoteDataSource(),
-            towerName: selectedGateName,  // Use the full selected gate name
+            towerName: formattedTowerName,
           );
 
-          log('Navigating to tower: $selectedGateName');
+          log('Navigating to tower: $formattedTowerName');
         } else {
-          // ✅ If not tower, check if already went to visitor settings
+          // If not tower, check if already went to visitor settings
           if (!hasNavigatedToGateSettings) {
             destination = VisitorSettingsView(comingfrom: true);
             await prefs.setBool('hasNavigatedToGateSettings', true);
@@ -455,15 +468,34 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
       if (gates.length == 1) {
         final singleGate = gates.first;
-        await prefs.setString('selected_gate', singleGate["gate_name"]);
+        String gateName = singleGate["gate_name"];
+
+        // Format tower name if needed
+        if (gateName.toLowerCase().contains("tower")) {
+          String formattedTowerName = "TOWER NO ";
+
+          // Extract tower number if available
+          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
+          var match = regExp.firstMatch(gateName.toLowerCase());
+
+          if (match != null && match.group(1) != null) {
+            formattedTowerName += match.group(1)!.padLeft(2, '0');
+          } else {
+            formattedTowerName = gateName.toUpperCase();
+          }
+
+          gateName = formattedTowerName;
+        }
+
+        await prefs.setString('selected_gate', gateName);
         await prefs.setString(
             'selected_gate_id', singleGate["gate_id"].toString());
-        log("Automatically selected single gate: ${singleGate['gate_name']} with ID: ${singleGate['gate_id']}");
+        log("Automatically selected single gate: $gateName with ID: ${singleGate['gate_id']}");
 
         if (context.mounted) {
           myFluttertoast(
               msg:
-                  'Only one gate available. Navigating to ${singleGate['gate_name']}');
+              'Only one gate available. Navigating to $gateName');
         }
 
         await _navigateBasedOnRole(selectedRole);
@@ -481,10 +513,29 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           gates: gates,
           onGateSelected: (gate) async {
             try {
-              await prefs.setString('selected_gate', gate["gate_name"]);
+              String gateName = gate["gate_name"];
+
+              // Format tower name if needed
+              if (gateName.toLowerCase().contains("tower")) {
+                String formattedTowerName = "TOWER NO ";
+
+                // Extract tower number if available
+                RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
+                var match = regExp.firstMatch(gateName.toLowerCase());
+
+                if (match != null && match.group(1) != null) {
+                  formattedTowerName += match.group(1)!.padLeft(2, '0');
+                } else {
+                  formattedTowerName = gateName.toUpperCase();
+                }
+
+                gateName = formattedTowerName;
+              }
+
+              await prefs.setString('selected_gate', gateName);
               await prefs.setString(
                   'selected_gate_id', gate["gate_id"].toString());
-              log("Gate selected: ${gate['gate_name']} with ID: ${gate['gate_id']}");
+              log("Gate selected: $gateName with ID: ${gate['gate_id']}");
 
               Navigator.pop(context); // Close the bottom sheet
               await _navigateBasedOnRole(selectedRole);

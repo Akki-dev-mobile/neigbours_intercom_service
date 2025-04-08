@@ -1,0 +1,55 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.cubeonebiz.gate.flutter_onegate.app-mergeDebugResources-2:/values/values.xml",
+            "map": [
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values/styles.xml",
+                    "from": {
+                        "startLines": "3,18",
+                        "startColumns": "4,4",
+                        "startOffsets": "173,1089",
+                        "endLines": "11,20",
+                        "endColumns": "12,12",
+                        "endOffsets": "747,1253"
+                    },
+                    "to": {
+                        "startLines": "4,12",
+                        "startColumns": "4,4",
+                        "startOffsets": "160,612",
+                        "endLines": "11,14",
+                        "endColumns": "12,12",
+                        "endOffsets": "607,776"
+                    }
+                },
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values/colors.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "56",
+                        "endOffsets": "107"
+                    }
+                },
+                {
+                    "source": "/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/res/values/strings.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "47",
+                        "endOffsets": "98"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "112",
+                        "endColumns": "47",
+                        "endOffsets": "155"
+                    }
+                }
+            ]
+        }
+    ]
+}

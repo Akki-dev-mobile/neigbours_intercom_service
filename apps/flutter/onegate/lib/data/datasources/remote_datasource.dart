@@ -166,7 +166,7 @@ class RemoteDataSource {
     try {
       final response = await Dio().get(
         ApiUrls.gates,
-        queryParameters: {'company_id': companyId},
+        queryParameters: {'company_id': int.parse(companyId.toString())},
         options: Options(
           headers: commonHeaders,
         ),
@@ -529,6 +529,9 @@ class RemoteDataSource {
           : [];
       final companyDetails = await gateStorage.getSocietyDetails();
       final companyName = companyDetails['societyName'] ?? "";
+      var staff = await prefs.getString('search_staff_info');
+      print("staff $staff");
+
 
       data.addAll({
         'in_gate': selectedGateName,
@@ -772,6 +775,7 @@ class RemoteDataSource {
       approved_by: additionalDetails is Map<String, dynamic>
           ? additionalDetails['approved_by'] as String?
           : null,
+
     );
 
     return visitorLog;
@@ -1203,7 +1207,7 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorInfo>> fetchApprovals([String? logID]) async {
+  Future<List<VisitorInfo>> fetchApprovals({String? logID,bool? isSecondary}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
@@ -1220,7 +1224,8 @@ class RemoteDataSource {
         "company_id": resolvedCompanyId,
         "in_gate": selectedGateName,
         "from_date": formattedDate,
-        "to_date": formattedDate
+        "to_date": formattedDate,
+        "is_secondary": isSecondary ?? false,
       };
 
       final uri = Uri.parse(baseUrl);
@@ -1238,7 +1243,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-
+print("responseData $responseData");
         if (!responseData.containsKey('data')) {
           log("🚨 API Response does not contain 'data' key.");
           return [];

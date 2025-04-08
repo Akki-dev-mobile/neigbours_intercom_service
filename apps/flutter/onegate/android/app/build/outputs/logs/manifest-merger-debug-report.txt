@@ -1,0 +1,140 @@
+-- Merging decision tree log ---
+application
+INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:29:5-74:19
+INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml
+	android:extractNativeLibs
+		INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml
+	android:name
+		INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml
+manifest
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:1:1-75:12
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:1:1-75:12
+INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml:1:1-14:12
+INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml:1:1-14:12
+INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml:1:1-14:12
+	package
+		INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml
+	android:versionName
+		INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.INTERNET
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:2:5-67
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:2:5-67
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:2:5-67
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:2:22-64
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:3:5-79
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:3:5-79
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:3:5-79
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:3:22-76
+uses-permission#android.permission.CAMERA
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:4:5-65
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:4:5-65
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:4:5-65
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:4:22-62
+uses-permission#android.permission.RECORD_AUDIO
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:5:5-71
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:5:5-71
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:5:5-71
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:5:22-68
+uses-permission#android.permission.BLUETOOTH
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:6:5-68
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:6:5-68
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:6:5-68
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:6:22-65
+uses-permission#android.permission.BLUETOOTH_ADMIN
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:7:5-74
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:7:5-74
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:7:5-74
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:7:22-71
+uses-permission#android.permission.BLUETOOTH_CONNECT
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:8:5-76
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:8:5-76
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:8:5-76
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:8:22-73
+uses-permission#android.permission.POST_NOTIFICATIONS
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:9:5-77
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:9:22-74
+uses-permission#android.permission.NEARBY_WIFI_DEVICES
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:10:5-103
+	android:required
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:10:76-100
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:10:22-75
+uses-permission#android.permission.ACCESS_FINE_LOCATION
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:11:5-79
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:11:22-76
+uses-permission#android.permission.ACCESS_COARSE_LOCATION
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:12:5-81
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:12:22-78
+uses-permission#android.permission.RECEIVE_BOOT_COMPLETED
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:13:5-81
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:13:22-78
+uses-permission#android.permission.WAKE_LOCK
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:14:5-68
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:14:22-65
+uses-permission#android.permission.VIBRATE
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:15:5-66
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:15:22-63
+uses-permission#android.permission.USE_FULL_SCREEN_INTENT
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:16:5-81
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:16:22-78
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:17:5-77
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:17:22-74
+uses-permission#android.permission.ACCESS_NOTIFICATION_POLICY
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:18:5-85
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:18:22-82
+uses-permission#android.permission.READ_EXTERNAL_STORAGE
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:19:5-80
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:19:22-77
+uses-permission#android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:20:5-92
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:20:22-89
+uses-permission#android.permission.USE_EXACT_ALARM
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:21:5-74
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:21:22-71
+uses-permission#android.permission.SCHEDULE_EXACT_ALARM
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:22:5-79
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:22:22-76
+queries
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:24:5-28:15
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:24:5-28:15
+MERGED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:24:5-28:15
+intent#action:name:android.speech.RecognitionService
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:25:9-27:18
+action#android.speech.RecognitionService
+ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:26:13-72
+	android:name
+		ADDED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/AndroidManifest.xml:26:21-69
+uses-sdk
+INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml
+INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/debug/AndroidManifest.xml

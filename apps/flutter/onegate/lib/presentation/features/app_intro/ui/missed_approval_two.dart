@@ -53,6 +53,22 @@ class TimerService extends ChangeNotifier {
 
   TimerService._internal();
 
+  final Map<int, TimerState> _timers = {};
+  final int _approvalTime = 60; // Static 60 seconds timing ✅
+
+  Duration get approvalDuration => Duration(seconds: _approvalTime);
+
+  Future<void> startTimer(int visitorLogId, BuildContext context) async {
+    // No need to load from provider
+    final endTime = DateTime.now().add(approvalDuration);
+    _timers[visitorLogId] = TimerState(
+      endTime: endTime,
+      isRetryEnabled: false,
+    );
+    await saveTimerState(visitorLogId, endTime);
+    notifyListeners(); // Notify listeners of the change
+  }
+
   void markRetryAttempt(int visitorLogId) {
     final state = _timers[visitorLogId];
     if (state != null) {
@@ -65,26 +81,6 @@ class TimerService extends ChangeNotifier {
     return _timers[visitorLogId]?.hasRetried ?? false;
   }
 
-  final Map<int, TimerState> _timers = {};
-  int _approvalTime = 120; // Default approval time
-
-  Duration get approvalDuration => Duration(seconds: _approvalTime);
-
-  Future<void> loadApprovalTime(BuildContext context) async {
-    _approvalTime = context.read<VisitorApprovalTimeProvider>().approvalTime;
-    notifyListeners();
-  }
-
-  Future<void> startTimer(int visitorLogId, BuildContext context) async {
-    await loadApprovalTime(context); // Get latest approval time
-    final endTime = DateTime.now().add(approvalDuration);
-    _timers[visitorLogId] = TimerState(
-      endTime: endTime,
-      isRetryEnabled: false,
-    );
-    await saveTimerState(visitorLogId, endTime);
-  }
-
   Future<void> saveTimerState(int visitorLogId, DateTime endTime) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('timer_$visitorLogId', endTime.toIso8601String());
@@ -92,6 +88,7 @@ class TimerService extends ChangeNotifier {
 
   Future<void> loadTimerState(int visitorLogId, BuildContext context) async {
     try {
+      print("⏱️ Loading timer state for visitor $visitorLogId");
       final prefs = await SharedPreferences.getInstance();
       final String timerKey = 'timer_$visitorLogId';
       final dynamic savedValue = prefs.get(timerKey);
@@ -112,10 +109,12 @@ class TimerService extends ChangeNotifier {
           endTime: endTime,
           isRetryEnabled: endTime.isBefore(DateTime.now()),
         );
+        print("⏱️ Timer state loaded: ${_timers[visitorLogId]?.endTime}");
       } else {
         // Correct way to restart the timer
         await startTimer(visitorLogId, context);
       }
+      notifyListeners();
     } catch (e) {
       debugPrint("❌ Error in loadTimerState: $e");
 
@@ -128,10 +127,12 @@ class TimerService extends ChangeNotifier {
 
   void disposeTimer(int visitorLogId) {
     _timers.remove(visitorLogId);
+    notifyListeners();
   }
 
   void disposeAllTimers() {
     _timers.clear();
+    notifyListeners();
   }
 }
 
@@ -295,8 +296,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
     super.initState();
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode();
-    _futureApprovals = widget.remoteDataSource.fetchApprovals();
-    _lastRefreshTime = DateTime.now();
+    _futureApprovals = widget.remoteDataSource.fetchApprovals(isSecondary: true);    _lastRefreshTime = DateTime.now();
     _updateCurrentTime();
     _startAutoRefresh();
     _startTimeUpdate();
@@ -344,7 +344,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
     });
 
     try {
-      await widget.remoteDataSource.fetchApprovals().then((data) {
+      await widget.remoteDataSource.fetchApprovals(isSecondary: true).then((data) {
         if (mounted) {
           setState(() {
             _lastRefreshTime = DateTime.now();
@@ -633,8 +633,12 @@ class ApprovalsList extends StatelessWidget {
           visitor.memberInfo.name.toLowerCase().contains(query) ||
           visitor.inGate.toLowerCase().contains(query);
 
-      final matchesTower = visitor.inGate.toLowerCase() == towerName.toLowerCase();
-      return matchesSearch && matchesTower;
+// ✅ Match tower with building_unit instead of in_gate
+      final matchesTower = visitor.unitDetails.building_unit
+          !.toLowerCase()
+          .contains(towerName.toLowerCase());
+
+      return matchesSearch && matchesTower;     return matchesSearch && matchesTower;
     }).toList();
     // Group approvals by date
     final Map<String, List<VisitorInfo>> groupedByDate = {};
@@ -753,12 +757,12 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     _initializeTimer();
   }
 
-  Future<void> _initializeTimer() async {
-    await context
-        .read<TimerService>()
-        .loadTimerState(widget.visitorInfo.visitorLogId ?? 0, context);
-    if (mounted) setState(() {});
-  }
+  // Future<void> _initializeTimer() async {
+  //   await context
+  //       .read<TimerService>()
+  //       .loadTimerState(widget.visitorInfo.visitorLogId ?? 0, context);
+  //   if (mounted) setState(() {});
+  // }
 
   RequestType _getRequestType(String status) {
     switch (status) {
@@ -776,19 +780,26 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         return RequestType.waiting;
       case "always_allowed":
         return RequestType.allowByGatekeeper;
+      case "allowed_by_gatekeeper":
+        return RequestType.allowByGatekeeper;
       default:
         return RequestType.rejected;
     }
   }
 
 
+  Future<void> _initializeTimer() async {
+    print("Initializing timer for visitor ${widget.visitorInfo.visitorLogId}");
+    await _timerService.loadTimerState(widget.visitorInfo.visitorLogId ?? 0, context);
+    if (mounted) setState(() {});
+  }
+
   Future<void> _handleRetry(BuildContext context) async {
     if (_isLoading) return;
 
-    final timerService = context.read<TimerService>();
     final visitorLogId = widget.visitorInfo.visitorLogId ?? 0;
 
-    if (timerService.hasRetried(visitorLogId)) {
+    if (_timerService.hasRetried(visitorLogId)) {
       _showSnackBar('Retry already attempted for this visitor', isError: true);
       return;
     }
@@ -796,34 +807,36 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     setState(() => _isLoading = true);
 
     RequestType requestType =
-        _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
+    _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
 
     if (requestType == RequestType.approved ||
         requestType == RequestType.allowByGatekeeper) {
       _showSnackBar('Visitor is already allowed', isError: false);
-
-      await timerService.startTimer(visitorLogId, context);
-      setState(() {});
+      setState(() => _isLoading = false);
       return;
     } else if (requestType == RequestType.rejected) {
       _showSnackBar('Visitor has been denied entry', isError: true);
+      setState(() => _isLoading = false);
       return;
     } else if (requestType == RequestType.leaveAtGate) {
       _showSnackBar('Visitor is waiting at the gate', isError: false);
+      setState(() => _isLoading = false);
       return;
     } else if (requestType == RequestType.notRecheable) {
       _showSnackBar('Visitor is not reachable', isError: true);
+      setState(() => _isLoading = false);
       return;
     }
 
     try {
+      print("Sending FCM notification for visitor $visitorLogId");
       await _sendFcmNotification();
-
-      await timerService.startTimer(visitorLogId, context);
-      timerService.markRetryAttempt(visitorLogId); // ✅ Mark Retry as Attempted
-
-      setState(() {});
+      print("Starting timer for visitor $visitorLogId");
+      await _timerService.startTimer(visitorLogId, context);
+      _timerService.markRetryAttempt(visitorLogId);
+      _showSnackBar('Notification sent successfully', isError: false);
     } catch (e) {
+      print("❌ Error during retry: $e");
       _showSnackBar('Failed to resend notification', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -1219,16 +1232,17 @@ class _TimerActionSectionState extends State<TimerActionSection> {
     return TimerBuilder.periodic(
       const Duration(seconds: 1),
       builder: (context) {
-        final timerState = TimerService().getTimerState(widget.visitorLogId);
+        final timerService = TimerService(); // Use singleton instance
+        final timerState = timerService.getTimerState(widget.visitorLogId);
         if (timerState == null) return const SizedBox.shrink();
-        final timerService = context.watch<TimerService>();
+
         final hasRetried = timerService.hasRetried(widget.visitorLogId);
         final now = DateTime.now();
         final remaining = timerState.endTime.difference(now);
-        final isEnabled =
-            remaining.isNegative || timerState.isRetryEnabled && !hasRetried;
+        final isEnabled = remaining.isNegative || (timerState.isRetryEnabled && !hasRetried);
 
         final allowStatus = widget.visitorInfo.allowStatus.toLowerCase();
+        print("DEBUG: allowStatus = $allowStatus"); // Add this debug print
 
         return Padding(
           padding: const EdgeInsets.all(16),
@@ -1291,7 +1305,8 @@ class _TimerActionSectionState extends State<TimerActionSection> {
 
               // ✅ Case: Visitor Allowed
               else if (allowStatus == "allowed" ||
-                  allowStatus == "always_allowed")
+                  allowStatus == "always_allowed" ||
+                  allowStatus == "allowed_by_gatekeeper")
                 Row(
                   children: [
                     const Icon(Icons.check_circle,

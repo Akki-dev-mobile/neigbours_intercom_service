@@ -42,12 +42,12 @@ android {
     compileSdk 35
     ndkVersion "26.1.10909125"
 
-    externalNativeBuild {
-        cmake {
-            version "3.31.5"  // Match the required version from your error
-            path "CMakeLists.txt"  // Path to your CMake file if using native code
-        }
-    }
+//    externalNativeBuild {
+//        cmake {
+//            version "3.31.5"  // Match the required version from your error
+//            path "CMakeLists.txt"  // Path to your CMake file if using native code
+//        }
+//    }
 
     defaultConfig {
         applicationId "com.cubeonebiz.gate.flutter_onegate"

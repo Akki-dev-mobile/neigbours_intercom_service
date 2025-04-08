@@ -1,0 +1,119 @@
+{
+  "common": {
+    "kOneRedColor": "#F44336"
+  },
+  "themes": {
+    "light": {
+      "fonts": {
+        "displayLarge": {
+          "size": 36.0,
+          "weight": "bold",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "displayMedium": {
+          "size": 28.0,
+          "weight": "600",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "displaySmall": {
+          "size": 22.0,
+          "weight": "500",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "bodyLarge": {
+          "size": 20.0,
+          "weight": "600",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "bodyMedium": {
+          "size": 18.0,
+          "weight": "500",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "labelMedium": {
+          "size": 18.0,
+          "weight": "500",
+          "color": "mutedText",
+          "fontFamily": "kDefaultFont"
+        },
+       
+        "labelSmall": {
+          "size": 12.0,
+          "weight": "500",
+          "color": "mutedText",
+          "fontFamily": "kDefaultFont"
+        }
+      },
+      "colors": {
+        "kBlackColor": "#121212",
+        "primaryBackground": "#FFFFFF",
+        "primaryText": "#212427",
+        "mutedText": "#57636C",
+        "primaryContainer": "#FFEBE6",
+        "surfaceTint": "#333333",
+        "accent": "#ff5722"
+      }
+    },
+    "dark": {
+      "fonts": {
+        "displayLarge": {
+          "size": 36.0,
+          "weight": "bold",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "displayMedium": {
+          "size": 28.0,
+          "weight": "600",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "displaySmall": {
+          "size": 22.0,
+          "weight": "500",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "bodyLarge": {
+          "size": 20.0,
+          "weight": "600",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "bodyMedium": {
+          "size": 18.0,
+          "weight": "500",
+          "color": "primaryText",
+          "fontFamily": "kDefaultFont"
+        },
+        "labelMedium": {
+          "size": 18.0,
+          "weight": "500",
+          "color": "mutedText",
+          "fontFamily": "kDefaultFont"
+        },
+       
+        "labelSmall": {
+          "size": 12.0,
+          "weight": "500",
+          "color": "mutedText",
+          "fontFamily": "kDefaultFont"
+        }
+      },
+      "colors": {
+        "kBlackColor": "#121212",
+        "primaryBackground": "#121212",
+        "primaryText": "#ffffff",
+        "mutedText": "#AFC0CC",
+        "primaryContainer": "#761600",
+        "surfaceTint": "#333333",
+        "accent": "#ff5722"
+      }
+    }
+  }
+}

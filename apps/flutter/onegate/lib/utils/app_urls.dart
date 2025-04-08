@@ -3,9 +3,11 @@ import 'package:flutter_onegate/config/gateconfig_holder.dart'
 
 /// Centralized API URL manager
 class ApiUrls {
-  static String get gateBaseUrl => "https://stggateapi.cubeone.in/api";
+  static String get gateBaseUrl =>
 
-  // GateConfigHolder.gateBaseUrl;
+      // "https://stggateapi.cubeone.in/api";
+
+  GateConfigHolder.gateBaseUrl;
 
   static String get societyBaseUrl => 'https://socbackend.cubeone.in/api';
   static String get facerecinfoUrl =>

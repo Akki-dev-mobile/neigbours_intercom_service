@@ -390,38 +390,38 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
         ),
 
         // Building selection dropdown
-        FutureBuilder<List<VisitorInfo>>(
-          future: _futureApprovals,
-          builder: (context, snapshot) {
-            // Extract building names from visitor logs using the helper method
-            Set<String> buildingNames = {"All Buildings"};
-
-            if (snapshot.hasData) {
-              buildingNames = BuildingDropdown.extractBuildingNames(
-                snapshot.data!,
-                getUnitName: (VisitorInfo visitor) {
-                  if (visitor.unitDetails.building_unit != null &&
-                      visitor.unitDetails.building_unit!.isNotEmpty) {
-                    return visitor.unitDetails.building_unit!;
-                  }
-                  return "";
-                },
-              );
-            }
-
-            List<String> sortedBuildingNames = buildingNames.toList();
-
-            return BuildingDropdown(
-              selectedBuilding: selectedBuilding,
-              onBuildingSelected: (String? value) {
-                setState(() {
-                  selectedBuilding = value;
-                });
-              },
-              buildingNames: sortedBuildingNames,
-            );
-          },
-        ),
+        // FutureBuilder<List<VisitorInfo>>(
+        //   future: _futureApprovals,
+        //   builder: (context, snapshot) {
+        //     // Extract building names from visitor logs using the helper method
+        //     Set<String> buildingNames = {"All Buildings"};
+        //
+        //     if (snapshot.hasData) {
+        //       buildingNames = BuildingDropdown.extractBuildingNames(
+        //         snapshot.data!,
+        //         getUnitName: (VisitorInfo visitor) {
+        //           if (visitor.unitDetails.building_unit != null &&
+        //               visitor.unitDetails.building_unit!.isNotEmpty) {
+        //             return visitor.unitDetails.building_unit!;
+        //           }
+        //           return "";
+        //         },
+        //       );
+        //     }
+        //
+        //     List<String> sortedBuildingNames = buildingNames.toList();
+        //
+        //     return BuildingDropdown(
+        //       selectedBuilding: selectedBuilding,
+        //       onBuildingSelected: (String? value) {
+        //         setState(() {
+        //           selectedBuilding = value;
+        //         });
+        //       },
+        //       buildingNames: sortedBuildingNames,
+        //     );
+        //   },
+        // ),
       ],
     );
   }

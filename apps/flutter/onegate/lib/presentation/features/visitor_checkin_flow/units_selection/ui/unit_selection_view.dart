@@ -1194,7 +1194,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final response = await Dio().patch(
         '${ApiUrls.gateBaseUrl}/visitor/visitorLog/${widget.visitor.id}',
         options: Options(headers: {"Content-Type": "application/json"}),
-        data: jsonEncode({"allow_status": "allowed_by_gatekeeper"}),
+        data: jsonEncode({"allow_status": "allowed_by_gatekeeper",
+        }),
       );
 
       if (response.statusCode == 200) {

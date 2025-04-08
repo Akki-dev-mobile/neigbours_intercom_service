@@ -115,37 +115,37 @@ class _ParcelListState extends State<ParcelList> {
         ),
 
         // Building selection dropdown
-        BlocBuilder<ParcelBloc, ParcelState>(
-          builder: (context, state) {
-            // Extract building names from parcels using the helper method
-            Set<String> buildingNames = {"All Buildings"};
-
-            if (state is ParcelLoaded) {
-              buildingNames = BuildingDropdown.extractBuildingNames(
-                state.parcels,
-                getUnitName: (dynamic parcel) {
-                  if (parcel['unit_name'] != null &&
-                      parcel['unit_name'].toString().isNotEmpty) {
-                    return parcel['unit_name'].toString();
-                  }
-                  return "";
-                },
-              );
-            }
-
-            List<String> sortedBuildingNames = buildingNames.toList();
-
-            return BuildingDropdown(
-              selectedBuilding: selectedBuilding,
-              onBuildingSelected: (String? value) {
-                setState(() {
-                  selectedBuilding = value;
-                });
-              },
-              buildingNames: sortedBuildingNames,
-            );
-          },
-        ),
+        // BlocBuilder<ParcelBloc, ParcelState>(
+        //   builder: (context, state) {
+        //     // Extract building names from parcels using the helper method
+        //     Set<String> buildingNames = {"All Buildings"};
+        //
+        //     if (state is ParcelLoaded) {
+        //       buildingNames = BuildingDropdown.extractBuildingNames(
+        //         state.parcels,
+        //         getUnitName: (dynamic parcel) {
+        //           if (parcel['unit_name'] != null &&
+        //               parcel['unit_name'].toString().isNotEmpty) {
+        //             return parcel['unit_name'].toString();
+        //           }
+        //           return "";
+        //         },
+        //       );
+        //     }
+        //
+        //     List<String> sortedBuildingNames = buildingNames.toList();
+        //
+        //     return BuildingDropdown(
+        //       selectedBuilding: selectedBuilding,
+        //       onBuildingSelected: (String? value) {
+        //         setState(() {
+        //           selectedBuilding = value;
+        //         });
+        //       },
+        //       buildingNames: sortedBuildingNames,
+        //     );
+        //   },
+        // ),
       ],
     );
   }
