@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -19,6 +20,8 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'missed_approval_two.dart';
 
 class LoginState1 {
   final bool isLoading;
@@ -232,16 +235,34 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       bool hasNavigatedToGateSettings =
           prefs.getBool('hasNavigatedToGateSettings') ?? false;
 
+      final selectedGateName = prefs.getString('selected_gate') ?? '';
+      final cleanedGateName = selectedGateName.toLowerCase();
+
       Widget? destination;
-      bool? comingfrom;
+
       if (role == 'admin') {
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
-        if (!hasNavigatedToGateSettings) {
-          destination = VisitorSettingsView(comingfrom: true);
-          await prefs.setBool('hasNavigatedToGateSettings', true); // Set flag
+        if (cleanedGateName.contains("tower")) {
+          // Extract just the tower name if needed
+          // For example, if selectedGateName is "East Tower" and you just need "East"
+          // String extractedTowerName = selectedGateName.replaceAll(" Tower", "");
+
+          // Or use the full name if that's what's expected
+          destination = MissedApprovalsScreen2(
+            remoteDataSource: RemoteDataSource(),
+            towerName: selectedGateName,  // Use the full selected gate name
+          );
+
+          log('Navigating to tower: $selectedGateName');
         } else {
-          destination = GateDashboardView();
+          // ✅ If not tower, check if already went to visitor settings
+          if (!hasNavigatedToGateSettings) {
+            destination = VisitorSettingsView(comingfrom: true);
+            await prefs.setBool('hasNavigatedToGateSettings', true);
+          } else {
+            destination = GateDashboardView();
+          }
         }
       }
 
@@ -257,7 +278,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           log('Context is not mounted. Unable to navigate.');
         }
       } else {
-        log('No valid role found: $role');
+        log('No valid role found or no destination for role: $role');
       }
     } catch (e, stackTrace) {
       log('Error during navigation: $e');
@@ -281,7 +302,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   // }
   Future<void> _handleLogin() async {
     try {
-      _loginState.value = _loginState.value.copyWith(isLoading: true);
+      if (_isDisposed) return;
+      _safeUpdateState(_loginState.value.copyWith(isLoading: true));
 
       final userInfo = await _loginService.performLogin();
       if (userInfo == null) throw Exception('No user info received');
@@ -294,6 +316,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         throw Exception('No societies found for this user');
       }
 
+      if (_isDisposed) return;
+
       if (societies.length == 1) {
         await _handleSingleSociety(societies.first);
       } else {
@@ -301,14 +325,21 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       }
     } catch (e) {
       log('Login error: $e');
-      _loginState.value = _loginState.value.copyWith(
-        error: e.toString(),
-        isLoading: false,
-      );
-      _showError(e.toString());
+      if (!_isDisposed) {
+        _safeUpdateState(_loginState.value.copyWith(
+          error: e.toString(),
+          isLoading: false,
+        ));
+        _showError(e.toString());
+      }
     }
   }
 
+  void _safeUpdateState(LoginState1 newState) {
+    if (mounted && !_isDisposed) {
+      _loginState.value = newState;
+    }
+  }
   Future<void> _handleSingleSociety(Map<dynamic, dynamic> society) async {
     try {
       final societyId = society['company_id']?.toString();
@@ -319,7 +350,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       log('Raw roles from society: $roles');
 
       final mappedRoles =
-          roles.map((role) => _loginService._mapRole(role)).toSet().toList();
+      roles.map((role) => _loginService._mapRole(role)).toSet().toList();
 
       if (mappedRoles.isEmpty) {
         log('No roles found, assigning default "member" role');
@@ -332,6 +363,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           .saveSocietyDetails(societyId!, societyName);
       await _loginService.gateStorage.saveSocietyId(societyId);
 
+      if (!mounted) return; // Add this check
+
       _loginState.value = _loginState.value.copyWith(
         selectedSocietyId: societyId,
         isLoading: false,
@@ -339,8 +372,10 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
       _showRoleSelection(mappedRoles);
     } catch (e) {
-      _showError('Failed to process society: $e');
-      _loginState.value = _loginState.value.copyWith(isLoading: false);
+      if (mounted) { // Add this check
+        _showError('Failed to process society: $e');
+        _loginState.value = _loginState.value.copyWith(isLoading: false);
+      }
     }
   }
 
@@ -502,9 +537,11 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       },
     );
   }
+  bool _isDisposed = false;
 
   @override
   void dispose() {
+    _isDisposed = true;
     _loginState.dispose();
     super.dispose();
   }
