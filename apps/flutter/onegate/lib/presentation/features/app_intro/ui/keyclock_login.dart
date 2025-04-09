@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
+import 'package:flutter_onegate/utils/ssl_bypass.dart';
 
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -69,6 +70,9 @@ class LoginService {
   Future<void> initialize() async {
     RemoteDataSource().fetchAndStoreFaceRecConfig();
     try {
+      // Set up SSL certificate bypass for debug mode
+      initializeSSLBypass();
+
       await keycloakWrapper.initialize();
       log("Keycloak initialized successfully");
     } catch (e) {
@@ -244,9 +248,9 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
         if (cleanedGateName.contains("tower")) {
-
           String formattedTowerName = "TOWER NO ";
-          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
+          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)',
+              caseSensitive: false);
           var match = regExp.firstMatch(cleanedGateName);
 
           if (match != null && match.group(1) != null) {
@@ -263,13 +267,13 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           );
 
           log('Auto-navigating to tower: $formattedTowerName');
-        }else {
+        } else {
           // If not tower, check if already went to visitor settings
           if (!hasNavigatedToGateSettings) {
             destination = VisitorSettingsView(comingfrom: true);
             await prefs.setBool('hasNavigatedToGateSettings', true);
           } else {
-            destination = GateDashboardView();
+            destination = const GateDashboardView();
           }
         }
       }
@@ -348,6 +352,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       _loginState.value = newState;
     }
   }
+
   Future<void> _handleSingleSociety(Map<dynamic, dynamic> society) async {
     try {
       final societyId = society['company_id']?.toString();
@@ -358,7 +363,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       log('Raw roles from society: $roles');
 
       final mappedRoles =
-      roles.map((role) => _loginService._mapRole(role)).toSet().toList();
+          roles.map((role) => _loginService._mapRole(role)).toSet().toList();
 
       if (mappedRoles.isEmpty) {
         log('No roles found, assigning default "member" role');
@@ -380,7 +385,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
       _showRoleSelection(mappedRoles);
     } catch (e) {
-      if (mounted) { // Add this check
+      if (mounted) {
+        // Add this check
         _showError('Failed to process society: $e');
         _loginState.value = _loginState.value.copyWith(isLoading: false);
       }
@@ -470,7 +476,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           String formattedTowerName = "TOWER NO ";
 
           // Extract tower number if available
-          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
+          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)',
+              caseSensitive: false);
           var match = regExp.firstMatch(gateName.toLowerCase());
 
           if (match != null && match.group(1) != null) {
@@ -489,8 +496,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
         if (context.mounted) {
           myFluttertoast(
-              msg:
-              'Only one gate available. Navigating to $gateName');
+              msg: 'Only one gate available. Navigating to $gateName');
         }
 
         await _navigateBasedOnRole(selectedRole);
@@ -515,7 +521,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
                 String formattedTowerName = "TOWER NO ";
 
                 // Extract tower number if available
-                RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
+                RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)',
+                    caseSensitive: false);
                 var match = regExp.firstMatch(gateName.toLowerCase());
 
                 if (match != null && match.group(1) != null) {
@@ -583,6 +590,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       },
     );
   }
+
   bool _isDisposed = false;
 
   @override
