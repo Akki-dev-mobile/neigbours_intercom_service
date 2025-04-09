@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/utils/ssl_bypass.dart';
+import 'package:flutter_onegate/utils/custom_appauth.dart';
 
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -72,6 +73,9 @@ class LoginService {
     try {
       // Set up SSL certificate bypass for debug mode
       initializeSSLBypass();
+
+      // Configure AppAuth to allow insecure connections
+      await CustomAppAuth.configureAppAuth();
 
       await keycloakWrapper.initialize();
       log("Keycloak initialized successfully");

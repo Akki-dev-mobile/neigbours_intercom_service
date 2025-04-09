@@ -1,36 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Base config to trust user certificates -->
-    <base-config cleartextTrafficPermitted="true">
-        <trust-anchors>
-            <certificates src="system" />
-            <certificates src="user" />
-        </trust-anchors>
-    </base-config>
-
-    <!-- Configuration for Keycloak server -->
-    <domain-config cleartextTrafficPermitted="true">
+    <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">stgsso.cubeone.in</domain>
         <trust-anchors>
+            <!-- Trust system certs -->
             <certificates src="system" />
-            <certificates src="user" />
+            <!-- Trust bundled certificate -->
+            <certificates src="@raw/stgsso" />
         </trust-anchors>
     </domain-config>
-
-    <!-- Configuration for Gate API server -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">gateapi.cubeone.in</domain>
-        <trust-anchors>
-            <certificates src="system" />
-            <certificates src="user" />
-        </trust-anchors>
-    </domain-config>
-
-    <!-- Debug configuration to trust all certificates in debug mode -->
-    <debug-overrides>
-        <trust-anchors>
-            <certificates src="system" />
-            <certificates src="user" />
-        </trust-anchors>
-    </debug-overrides>
 </network-security-config>

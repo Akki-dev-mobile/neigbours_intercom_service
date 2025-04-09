@@ -21,6 +21,8 @@ class KeycloakConfigManager {
       frontendUrl: frontendUrl,
       realm: realm,
       clientSecret: clientSecret,
+      // allowInsecureConnections:
+      //     true, // Allow connections to servers with self-signed certificates
     );
   }
 }

@@ -20,7 +20,7 @@ import 'package:flutter_onegate/splash_screen.dart';
 import 'package:flutter_onegate/utils/no_internet_connection.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/utils/ssl_helper.dart';
-import 'package:flutter_onegate/utils/custom_app_auth.dart';
+import 'package:flutter_onegate/utils/custom_appauth.dart';
 import 'package:flutter_onegate/utils/ssl_bypass.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/app_intro_view.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
@@ -59,8 +59,8 @@ void main() async {
   // Initialize SSL bypass for Android to handle certificate validation
   initializeSSLBypass();
 
-  // Initialize custom AppAuth to allow insecure connections
-  await CustomAppAuth.initialize();
+  // Configure AppAuth to allow insecure connections
+  await CustomAppAuth.configureAppAuth();
 
   RemoteDataSource remoteDataSource = RemoteDataSource();
   await dotenv.load(fileName: "assets/.env");
