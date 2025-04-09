@@ -244,22 +244,17 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
         if (cleanedGateName.contains("tower")) {
-          // Format tower name as "TOWER NO XX" format
-          String formattedTowerName = "TOWER NO ";
 
-          // Extract tower number if available, otherwise use the original name
+          String formattedTowerName = "TOWER NO ";
           RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
           var match = regExp.firstMatch(cleanedGateName);
 
           if (match != null && match.group(1) != null) {
-            // If we found a number, format it as "TOWER NO XX"
             formattedTowerName += match.group(1)!.padLeft(2, '0');
           } else {
-            // If no number found, just use the original name but uppercase
             formattedTowerName = selectedGateName.toUpperCase();
           }
 
-          // Save the formatted tower name
           await prefs.setString('selected_gate', formattedTowerName);
 
           destination = MissedApprovalsScreen2(
@@ -267,8 +262,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
             towerName: formattedTowerName,
           );
 
-          log('Navigating to tower: $formattedTowerName');
-        } else {
+          log('Auto-navigating to tower: $formattedTowerName');
+        }else {
           // If not tower, check if already went to visitor settings
           if (!hasNavigatedToGateSettings) {
             destination = VisitorSettingsView(comingfrom: true);

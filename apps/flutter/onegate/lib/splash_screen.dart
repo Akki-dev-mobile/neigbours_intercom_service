@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/missed_approval_two.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
@@ -84,37 +85,77 @@ class _SplashViewState extends State<SplashView>
     );
   }
 
+
   Future<void> _navigateBasedOnRole(String? role) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       bool hasNavigatedToGateSettings =
           prefs.getBool('hasNavigatedToGateSettings') ?? false;
 
+      final selectedGateName = prefs.getString('selected_gate') ?? '';
+      final cleanedGateName = selectedGateName.toLowerCase();
+
       Widget? destination;
+
       if (role == 'admin') {
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
-        if (!hasNavigatedToGateSettings) {
-          destination = VisitorSettingsView(comingfrom: true);
-          await prefs.setBool('hasNavigatedToGateSettings', true);
-        } else {
-          destination = const GateDashboardView();
+        if (cleanedGateName.contains("tower")) {
+
+          String formattedTowerName = "TOWER NO ";
+          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
+          var match = regExp.firstMatch(cleanedGateName);
+
+          if (match != null && match.group(1) != null) {
+            formattedTowerName += match.group(1)!.padLeft(2, '0');
+          } else {
+            formattedTowerName = selectedGateName.toUpperCase();
+          }
+
+          await prefs.setString('selected_gate', formattedTowerName);
+
+          destination = MissedApprovalsScreen2(
+            remoteDataSource: RemoteDataSource(),
+            towerName: formattedTowerName,
+          );
+
+          log('Auto-navigating to tower: $formattedTowerName');
+        }else {
+          // If not tower, check if already went to visitor settings
+          if (!hasNavigatedToGateSettings) {
+            destination = VisitorSettingsView(comingfrom: true);
+            await prefs.setBool('hasNavigatedToGateSettings', true);
+          } else {
+            destination = GateDashboardView();
+          }
         }
       }
 
       if (destination != null) {
         log('Navigating to $role -> ${destination.runtimeType}');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => destination!),
-        );
+        if (context.mounted) {
+          await Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => destination!),
+          );
+          log('Navigation to ${destination.runtimeType} complete');
+        } else {
+          log('Context is not mounted. Unable to navigate.');
+        }
       } else {
-        _navigateToLogin();
+        log('No valid role found or no destination for role: $role');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       log('Error during navigation: $e');
-      _navigateToLogin();
+      log('Stack trace: $stackTrace');
+      _showError('Failed to navigate based on role: $e');
     }
+  }
+  void _showError(String message) {
+    if (!mounted) return;
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(content: Text(message)),
+    // );
   }
 
   @override
