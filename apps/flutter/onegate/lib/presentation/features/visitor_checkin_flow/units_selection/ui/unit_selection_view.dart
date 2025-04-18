@@ -49,22 +49,22 @@ class UnitSelectionView extends StatefulWidget {
 
   UnitSelectionView(Visitor? searchedVisitor,
       {Key? key,
-      required this.visitor,
-      this.carNumber,
-      required this.purposeCategory,
-      this.comingFrom,
-      this.guestCount,
-      this.companyId,
-      this.visitorId,
-      required this.guestname,
-      required this.mobileNumber,
-      this.visitorNumber,
-      this.purposeCategoryId,
-      this.selectedSubCategoryId,
-      this.isVerified,
-      this.isKioskModeEnabled = true,
-      this.from,
-      this.selfcheckinFlow = false})
+        required this.visitor,
+        this.carNumber,
+        required this.purposeCategory,
+        this.comingFrom,
+        this.guestCount,
+        this.companyId,
+        this.visitorId,
+        required this.guestname,
+        required this.mobileNumber,
+        this.visitorNumber,
+        this.purposeCategoryId,
+        this.selectedSubCategoryId,
+        this.isVerified,
+        this.isKioskModeEnabled = true,
+        this.from,
+        this.selfcheckinFlow = false})
       : super(key: key);
 
   @override
@@ -72,13 +72,13 @@ class UnitSelectionView extends StatefulWidget {
 }
 
 class _UnitSelectionViewState extends State<UnitSelectionView> {
-    // final Dio _dio = Dio();
+  // final Dio _dio = Dio();
   final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage gateStorage = GateStorage();
   final SocketService socketService = SocketService();
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<List<dynamic>> _filteredMembersNotifier =
-      ValueNotifier([]);
+  ValueNotifier([]);
   final ValueNotifier<Set<String>> _selectedMembersNotifier = ValueNotifier({});
   final ValueNotifier<Set<int>> _selectedUnitsNotifier = ValueNotifier({});
   final RemoteDataSource remoteDataSource = RemoteDataSource();
@@ -95,7 +95,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   List<int> selectedMemberIds = [];
   List<String> selectedBuildingUnits = [];
   String formattedInTime =
-      DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+  DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
   String? approvalStatus = "Waiting for approval...";
   bool? _membersApproval;
   late Future<void> _initializeFuture;
@@ -384,15 +384,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       },
       suffixIcon: _searchController.text.isNotEmpty
           ? IconButton(
-              icon: const Icon(
-                Ionicons.close,
-                color: Colors.red,
-              ),
-              onPressed: () {
-                _searchController.clear();
-                _filteredMembersNotifier.value = _allMembers;
-              },
-            )
+        icon: const Icon(
+          Ionicons.close,
+          color: Colors.red,
+        ),
+        onPressed: () {
+          _searchController.clear();
+          _filteredMembersNotifier.value = _allMembers;
+        },
+      )
           : null,
     );
   }
@@ -492,8 +492,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         title: Text(
           '$socBuildingName - $unitFlatNumber',
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         subtitle: Text(
           "${memberDetails.length} Member(s)",
@@ -571,13 +571,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<String> selectedMobileNumbers = {};
 
   Future<void> _handleMemberSelection(
-    String firstName,
-    String userId,
-    dynamic memberId,
-    String buildingUnit,
-    dynamic unitId,
-    String? memberMobileNo,
-  ) async {
+      String firstName,
+      String userId,
+      dynamic memberId,
+      String buildingUnit,
+      dynamic unitId,
+      String? memberMobileNo,
+      ) async {
     final updatedMembers = Set<String>.from(_selectedMembersNotifier.value);
 
     if (_selectedMembersNotifier.value.contains(firstName)) {
@@ -685,15 +685,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         } else {
           widget.selfcheckinFlow
               ? Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SelfHomeView()),
-                  (Route<dynamic> route) => false,
-                )
+            context,
+            MaterialPageRoute(builder: (context) => const SelfHomeView()),
+                (Route<dynamic> route) => false,
+          )
               : Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => GateDashboardView()),
-                  (Route<dynamic> route) => false,
-                );
+            context,
+            MaterialPageRoute(builder: (context) => GateDashboardView()),
+                (Route<dynamic> route) => false,
+          );
           return false; // Prevent default back navigation.
         }
       },
@@ -708,7 +708,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               children: [
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   child: Row(
                     children: [
                       Expanded(
@@ -775,7 +775,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   Expanded(
                                     child: Padding(
                                       padding:
-                                          const EdgeInsets.only(bottom: 40.0),
+                                      const EdgeInsets.only(bottom: 40.0),
                                       child: _buildMemberList(context),
                                     ),
                                   ),
@@ -796,7 +796,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     return Builder(
                                       builder: (context) {
                                         if (DefaultTabController.of(context)
-                                                .index !=
+                                            .index !=
                                             0) {
                                           return const SizedBox.shrink();
                                         }
@@ -818,24 +818,24 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                       right: 20,
                                                       top: 16,
                                                       bottom: MediaQuery.of(
-                                                                      context)
-                                                                  .viewInsets
-                                                                  .bottom >
-                                                              0
+                                                          context)
+                                                          .viewInsets
+                                                          .bottom >
+                                                          0
                                                           ? MediaQuery.of(
-                                                                  context)
-                                                              .viewInsets
-                                                              .bottom
+                                                          context)
+                                                          .viewInsets
+                                                          .bottom
                                                           : 16 +
-                                                              MediaQuery.of(
-                                                                      context)
-                                                                  .padding
-                                                                  .bottom,
+                                                          MediaQuery.of(
+                                                              context)
+                                                              .padding
+                                                              .bottom,
                                                     ),
                                                     child: Row(
                                                       mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
                                                       children: [
                                                         Row(
                                                           children: [
@@ -847,27 +847,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                                 width: 8),
                                                             SizedBox(
                                                               width: MediaQuery.of(
-                                                                          context)
-                                                                      .size
-                                                                      .width *
+                                                                  context)
+                                                                  .size
+                                                                  .width *
                                                                   0.48,
                                                               child: Text(
                                                                 overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                                 selectedMember
-                                                                            .length >
-                                                                        1
+                                                                    .length >
+                                                                    1
                                                                     ? '${selectedMember.length} Selected'
                                                                     : selectedMember
-                                                                        .first,
+                                                                    .first,
                                                                 style: Theme.of(
-                                                                        context)
+                                                                    context)
                                                                     .textTheme
                                                                     .titleLarge
                                                                     ?.copyWith(
-                                                                        color: Colors
-                                                                            .white),
+                                                                    color: Colors
+                                                                        .white),
                                                               ),
                                                             ),
                                                           ],
@@ -875,44 +875,44 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                         ElevatedButton.icon(
                                                           style: ButtonStyle(
                                                             foregroundColor:
-                                                                WidgetStateProperty
-                                                                    .all<Color>(
+                                                            WidgetStateProperty
+                                                                .all<Color>(
                                                               const Color(
                                                                   0xFF7D7C7C),
                                                             ),
                                                             backgroundColor:
-                                                                WidgetStateProperty
-                                                                    .all<Color>(
+                                                            WidgetStateProperty
+                                                                .all<Color>(
                                                               Theme.of(context)
                                                                   .colorScheme
                                                                   .surface,
                                                             ),
                                                             elevation:
-                                                                WidgetStateProperty
-                                                                    .resolveWith<
-                                                                        double>(
-                                                              (Set<WidgetState>
-                                                                      states) =>
-                                                                  states.contains(
-                                                                          WidgetState
-                                                                              .pressed)
-                                                                      ? 8
-                                                                      : 0,
+                                                            WidgetStateProperty
+                                                                .resolveWith<
+                                                                double>(
+                                                                  (Set<WidgetState>
+                                                              states) =>
+                                                              states.contains(
+                                                                  WidgetState
+                                                                      .pressed)
+                                                                  ? 8
+                                                                  : 0,
                                                             ),
                                                             shape: WidgetStateProperty
                                                                 .all<
-                                                                    RoundedRectangleBorder>(
+                                                                RoundedRectangleBorder>(
                                                               RoundedRectangleBorder(
                                                                 borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            15),
+                                                                BorderRadius
+                                                                    .circular(
+                                                                    15),
                                                               ),
                                                             ),
                                                             padding:
-                                                                WidgetStateProperty
-                                                                    .all<
-                                                                        EdgeInsetsGeometry>(
+                                                            WidgetStateProperty
+                                                                .all<
+                                                                EdgeInsetsGeometry>(
                                                               const EdgeInsets
                                                                   .symmetric(
                                                                 horizontal: 20,
@@ -926,15 +926,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                                           label: Text(
                                                             "view",
                                                             style: Theme.of(
-                                                                    context)
+                                                                context)
                                                                 .textTheme
                                                                 .bodyLarge!
                                                                 .copyWith(
-                                                                  color: Theme.of(
-                                                                          context)
-                                                                      .colorScheme
-                                                                      .onSurface,
-                                                                ),
+                                                              color: Theme.of(
+                                                                  context)
+                                                                  .colorScheme
+                                                                  .onSurface,
+                                                            ),
                                                           ),
                                                           icon: const Icon(
                                                             Icons
@@ -1007,22 +1007,22 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   final visitorLogData = VisitorLog(
                                     visitor_id: widget.visitor.id ?? 0,
                                     visitor_purpose_category_id:
-                                        widget.purposeCategoryId == null
-                                            ? 1
-                                            : int.parse(widget.purposeCategoryId
-                                                .toString()),
+                                    widget.purposeCategoryId == null
+                                        ? 1
+                                        : int.parse(widget.purposeCategoryId
+                                        .toString()),
                                     visitor_purpose_sub_category_id:
-                                        widget.selectedSubCategoryId != null
-                                            ? int.parse(widget
-                                                .selectedSubCategoryId
-                                                .toString())
-                                            : null,
+                                    widget.selectedSubCategoryId != null
+                                        ? int.parse(widget
+                                        .selectedSubCategoryId
+                                        .toString())
+                                        : null,
                                     visitor_count: widget.guestCount ?? 0,
                                     visitor: widget.visitor,
                                     visitor_purpose_Category_name:
-                                        widget.purposeCategory.categoryName,
+                                    widget.purposeCategory.categoryName,
                                     visitor_check_in:
-                                        DateTime.parse(formattedInTime),
+                                    DateTime.parse(formattedInTime),
                                     visitor_card_number: widget.visitorNumber,
                                     visitor_coming_from: widget.comingFrom,
                                     visitor_building_assignment: [
@@ -1036,7 +1036,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
                                   // Save society office details to preferences
                                   final prefs =
-                                      await SharedPreferences.getInstance();
+                                  await SharedPreferences.getInstance();
                                   final societyOfficeMemberDetails = [
                                     {
                                       "name": "Society Office",
@@ -1067,7 +1067,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                         builder: (context) =>
                                             GateDashboardView(),
                                       ),
-                                      (route) => false,
+                                          (route) => false,
                                     );
                                   }
                                 } catch (e) {
@@ -1075,7 +1075,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   if (mounted) {
                                     myFluttertoast(
                                       msg:
-                                          "Error during check-in. Please try again.",
+                                      "Error during check-in. Please try again.",
                                       backgroundColor: Colors.red,
                                     );
                                   }
@@ -1089,21 +1089,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               },
                               child: _isLoading
                                   ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
                                   : const Text(
-                                      'Tap to Check-in',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                'Tap to Check-in',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -1159,29 +1159,29 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       // }
       widget.selfcheckinFlow
           ? Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelfProfileView(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
+        context,
+        MaterialPageRoute(
+          builder: (context) => SelfProfileView(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
 
-                  // status: 0,
-                  // visitor: widget.visitor,
-                  // unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  // logID: logID,
-                ),
-              ),
-            )
+            // status: 0,
+            // visitor: widget.visitor,
+            // unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            // logID: logID,
+          ),
+        ),
+      )
           : await _allowByGatekeeper(visitorLogData);
       await Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RequestPermissionPage2(
-                  // status: 0,
-                  visitor: widget.visitor,
-                  visitorLog: visitorLogData,
-                )),
+              // status: 0,
+              visitor: widget.visitor,
+              visitorLog: visitorLogData,
+            )),
       );
     } catch (e) {
       log("❌ Error in _handleDirectApproval: $e");
@@ -1257,7 +1257,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final userId = selectedUserIds.first;
       final selectedMobileNumbers = await _getSelectedMobileNumbers();
       final requestData =
-          await _prepareRequestData(userId, selectedMobileNumbers);
+      await _prepareRequestData(userId, selectedMobileNumbers);
 
       log("✅ Sending FCM notification after Check-in...");
 
@@ -1302,31 +1302,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     if (message == "Visitor is always_allowed") {
       widget.selfcheckinFlow
           ? Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelfProfileView(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
+        context,
+        MaterialPageRoute(
+          builder: (context) => SelfProfileView(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
 
-                  // status: 0,
-                  // visitor: widget.visitor,
-                  // unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  // logID: logID,
-                ),
-              ),
-            )
+            // status: 0,
+            // visitor: widget.visitor,
+            // unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            // logID: logID,
+          ),
+        ),
+      )
           : Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionPage2(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  logID: logID,
-                ),
-              ),
-            );
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage2(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            logID: logID,
+          ),
+        ),
+      );
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
@@ -1334,31 +1334,31 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       visitorLogData.visitor?.mobile = widget.visitor.mobile;
       widget.selfcheckinFlow
           ? Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelfProfileView(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
+        context,
+        MaterialPageRoute(
+          builder: (context) => SelfProfileView(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
 
-                  // status: 0,
-                  // visitor: widget.visitor,
-                  // unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  // logID: logID,
-                ),
-              ),
-            )
+            // status: 0,
+            // visitor: widget.visitor,
+            // unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            // logID: logID,
+          ),
+        ),
+      )
           : Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionPage(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  logID: logID,
-                ),
-              ),
-            );
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            logID: logID,
+          ),
+        ),
+      );
     }
   }
 
@@ -1371,23 +1371,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       widget.selfcheckinFlow
           ? Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelfProfileView(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                ),
-              ),
-            )
+        context,
+        MaterialPageRoute(
+          builder: (context) => SelfProfileView(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+          ),
+        ),
+      )
           : await Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => RequestPermissionPage2(
-                        visitor: widget.visitor,
-                        visitorLog: visitorLogData,
-                      )),
-            );
+        context,
+        MaterialPageRoute(
+            builder: (context) => RequestPermissionPage2(
+              visitor: widget.visitor,
+              visitorLog: visitorLogData,
+            )),
+      );
     } catch (e) {
       log("❌ Error in _handleMultiMemberFlow: $e");
       _showErrorSnackbar("Error processing multi-member check-in.");
@@ -1430,18 +1430,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     _isLoading
                         ? const _LoadingIndicator()
                         : CustomLargeBtn(
-                            onPressed: () async {
-                              if (_isButtonDisabled) return;
-                              await _handleApprovedDialogButton(
-                                context,
-                                data,
-                                setState,
-                                onSuccess,
-                              );
-                            },
-                            text: "Continue",
-                            disabled: _isButtonDisabled,
-                          ),
+                      onPressed: () async {
+                        if (_isButtonDisabled) return;
+                        await _handleApprovedDialogButton(
+                          context,
+                          data,
+                          setState,
+                          onSuccess,
+                        );
+                      },
+                      text: "Continue",
+                      disabled: _isButtonDisabled,
+                    ),
                   ],
                 ),
               ),
@@ -1453,11 +1453,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _handleApprovedDialogButton(
-    BuildContext context,
-    VisitorLog data,
-    StateSetter setState,
-    VoidCallback? onSuccess,
-  ) async {
+      BuildContext context,
+      VisitorLog data,
+      StateSetter setState,
+      VoidCallback? onSuccess,
+      ) async {
     setState(() {
       _isLoading = true;
       _isButtonDisabled = true;
@@ -1528,7 +1528,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           int.parse(widget.purposeCategoryId.toString()),
       visitor_purpose_Category_name: widget.purposeCategory.categoryName,
       purpose_sub_category_name:
-          widget.purposeCategory.subCategories?.first.subCategoryName,
+      widget.purposeCategory.subCategories?.first.subCategoryName,
       visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
           ? int.parse(widget.selectedSubCategoryId.toString())
           : null,
@@ -1567,7 +1567,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         prefs.getString('selected_member_mobile_numbers') ?? '[]';
     selectedgate = prefs.getString('selected_gate');
     final cleanedJson =
-        savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
+    savedMobileNumbersJson.trim().replaceAll(RegExp(r'^,+|,+$'), '');
     return cleanedJson.split(',').where((number) => number.isNotEmpty).toList();
   }
 
@@ -1580,9 +1580,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<Map<String, dynamic>> _prepareRequestData(
-    String userId,
-    List<String> savedMobileNumbers,
-  ) async {
+      String userId,
+      List<String> savedMobileNumbers,
+      ) async {
     final prefs = await SharedPreferences.getInstance();
     final visitorLogId = prefs.getString("visitor_log") ?? "";
     final String? visitorId = prefs.getString('visitorId');
@@ -1603,9 +1603,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? "234567"
           : int.parse(userId).toString(),
       'visitor_count':
-          widget.guestCount != null ? widget.guestCount.toString() : "1",
+      widget.guestCount != null ? widget.guestCount.toString() : "1",
       'member_mobile_number':
-          mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
+      mobileNumbers.isNotEmpty ? mobileNumbers.first : "",
       'visitor_id': widget.visitor.id?.toString() ??
           widget.searchedVisitor?.id?.toString() ??
           '',

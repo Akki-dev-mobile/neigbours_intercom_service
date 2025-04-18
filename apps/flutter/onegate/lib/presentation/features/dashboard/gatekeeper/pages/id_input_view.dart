@@ -148,9 +148,9 @@ class _IdInputViewState extends State<IdInputView> {
         BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
           bloc: gateDashboardBloc,
           listenWhen: (previous, current) =>
-              current is GatekeeperDashboardActionState,
+          current is GatekeeperDashboardActionState,
           buildWhen: (previous, current) =>
-              current is! GatekeeperDashboardActionState,
+          current is! GatekeeperDashboardActionState,
           listener: (context, state) async {
             if (state is OpenPurposeDialogState) {
               if (globalSelectedPurposes.length == 1) {
@@ -181,7 +181,7 @@ class _IdInputViewState extends State<IdInputView> {
                   purposeCategories: state.purposeCategories!.toList(),
                   gatekeeperDashboardBloc: gateDashboardBloc,
                   mobileNumber:
-                      mobileController.text, // Pass mobile number here
+                  mobileController.text, // Pass mobile number here
                 ),
               );
             }
@@ -206,12 +206,12 @@ class _IdInputViewState extends State<IdInputView> {
                 break;
 
               case InputPutViewNextClickedState:
-                // Example: Set loading state here if needed
+              // Example: Set loading state here if needed
                 break;
 
               case NavigateToVisitorDetailsState:
                 final navigateToVisitorDetailsState =
-                    state as NavigateToVisitorDetailsState;
+                state as NavigateToVisitorDetailsState;
                 // mobileController.text = '';
 
                 // Retrieve and decode the saved purpose
@@ -276,164 +276,164 @@ class _IdInputViewState extends State<IdInputView> {
                     SizedBox(height: 20),
                     _currentIndex == 0
                         ? CustomForm.textField(
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Mobile number is required';
+                        } else if (value.length != 10) {
+                          return 'Please enter a 10-digit number';
+                        } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                          return 'No spaces or special characters allowed';
+                        }
+                        return null;
+                      },
+                      titleColor:
+                      Theme.of(context).colorScheme.onBackground,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
+                      "Visitor Mobile Number",
+                      hintText: '0123456789',
+                      prefixIcon: CountryCodePicker(
+                        initialSelection: 'IN',
+                        favorite: ['IN'],
+                        showFlagMain: true,
+                        showFlagDialog: true,
+                        boxDecoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.background,
+                        ),
+                        barrierColor: Theme.of(context)
+                            .colorScheme
+                            .background
+                            .withOpacity(0.5),
+                        closeIcon: Icon(
+                          Icons.close,
+                          color:
+                          Theme.of(context).colorScheme.onBackground,
+                        ),
+                        searchDecoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onBackground,
+                          ),
+                          hintText: 'Search',
+                          hintStyle: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onBackground,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(
+                              style: BorderStyle.solid,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onBackground,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(
+                              style: BorderStyle.solid,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onBackground,
+                            ),
+                          ),
+                        ),
+                        textStyle: TextStyle(
+                          color:
+                          Theme.of(context).colorScheme.onBackground,
+                          fontSize: 18,
+                        ),
+                        dialogTextStyle: TextStyle(
+                          color:
+                          Theme.of(context).colorScheme.onBackground,
+                        ),
+                        onChanged: (CountryCode countryCode) {
+                          setState(() {
+                            selectedCountryCode = countryCode.code!;
+                          });
+                        },
+                      ),
+                      textController: mobileController,
+                      keyboardType: TextInputType.number,
+                      length: 10,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      onChanged: (value) {
+                        if (value.length == 10) {
+                          gateDashboardBloc.add(
+                            GDOnMobileNumberEnteredEvent(
+                                mobileController.text),
+                          );
+                        }
+                      },
+                    )
+                        : Column(
+                      children: [
+                        Form(
+                          key: passcodeControllerFormKey,
+                          child: CustomForm.textField(
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Mobile number is required';
-                              } else if (value.length != 10) {
-                                return 'Please enter a 10-digit number';
-                              } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                                return 'No spaces or special characters allowed';
+                                return 'Passcode is required';
+                              } else if (value.length != 6) {
+                                return 'Please enter a 6-digit passcode';
                               }
                               return null;
                             },
-                            titleColor:
-                                Theme.of(context).colorScheme.onBackground,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            "Visitor Mobile Number",
-                            hintText: '0123456789',
-                            prefixIcon: CountryCodePicker(
-                              initialSelection: 'IN',
-                              favorite: ['IN'],
-                              showFlagMain: true,
-                              showFlagDialog: true,
-                              boxDecoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.background,
-                              ),
-                              barrierColor: Theme.of(context)
-                                  .colorScheme
-                                  .background
-                                  .withOpacity(0.5),
-                              closeIcon: Icon(
-                                Icons.close,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
-                              ),
-                              searchDecoration: InputDecoration(
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
-                                ),
-                                hintText: 'Search',
-                                hintStyle: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    style: BorderStyle.solid,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    style: BorderStyle.solid,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onBackground,
-                                  ),
-                                ),
-                              ),
-                              textStyle: TextStyle(
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
-                                fontSize: 18,
-                              ),
-                              dialogTextStyle: TextStyle(
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
-                              ),
-                              onChanged: (CountryCode countryCode) {
-                                setState(() {
-                                  selectedCountryCode = countryCode.code!;
-                                });
-                              },
-                            ),
-                            textController: mobileController,
+                            titleColor: Theme.of(context)
+                                .colorScheme
+                                .onBackground,
+                            hintColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                            "Visitor Passcode",
+                            hintText: '123456',
+                            textController: passcodeController,
+                            textCapitalization:
+                            TextCapitalization.characters,
+                            length: 6,
                             keyboardType: TextInputType.number,
-                            length: 10,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (value) {
-                              if (value.length == 10) {
-                                gateDashboardBloc.add(
-                                  GDOnMobileNumberEnteredEvent(
-                                      mobileController.text),
-                                );
-                              }
-                            },
-                          )
-                        : Column(
-                            children: [
-                              Form(
-                                key: passcodeControllerFormKey,
-                                child: CustomForm.textField(
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Passcode is required';
-                                    } else if (value.length != 6) {
-                                      return 'Please enter a 6-digit passcode';
-                                    }
-                                    return null;
-                                  },
-                                  titleColor: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
-                                  hintColor:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  "Visitor Passcode",
-                                  hintText: '123456',
-                                  textController: passcodeController,
-                                  textCapitalization:
-                                      TextCapitalization.characters,
-                                  length: 6,
-                                  keyboardType: TextInputType.number,
-                                  // prefixIcon: Padding(
-                                  //   padding:
-                                  //       EdgeInsets.only(left: 10, right: 20),
-                                  //   child: CircleAvatar(
-                                  //     backgroundColor: Color(0xffFFEBE6),
-                                  //     child: Text(
-                                  //       selectedPassAlpha ?? 'A',
-                                  //       style: TextStyle(
-                                  //         color: Colors.black,
-                                  //         fontWeight: FontWeight.bold,
-                                  //       ),
-                                  //     ),
-                                  //   ),
-                                  // ),
-                                  suffixIcon: IconButton(
-                                    onPressed: () {
-                                      if (passcodeControllerFormKey
-                                          .currentState!
-                                          .validate()) {
-                                        // Show modal bottom sheet or handle passcode submission
-                                      }
-                                    },
-                                    icon: Icon(
-                                      Symbols.done_rounded,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onBackground,
-                                    ),
-                                  ),
-                                ),
+                            // prefixIcon: Padding(
+                            //   padding:
+                            //       EdgeInsets.only(left: 10, right: 20),
+                            //   child: CircleAvatar(
+                            //     backgroundColor: Color(0xffFFEBE6),
+                            //     child: Text(
+                            //       selectedPassAlpha ?? 'A',
+                            //       style: TextStyle(
+                            //         color: Colors.black,
+                            //         fontWeight: FontWeight.bold,
+                            //       ),
+                            //     ),
+                            //   ),
+                            // ),
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                if (passcodeControllerFormKey
+                                    .currentState!
+                                    .validate()) {
+                                  // Show modal bottom sheet or handle passcode submission
+                                }
+                              },
+                              icon: Icon(
+                                Symbols.done_rounded,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onBackground,
                               ),
-                            ],
+                            ),
                           ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
                 floatingActionButton: CustomLargeBtn(
-                    text: checkVisitorLoading ? 'Processing...' : 'Next',
-                    onPressed: checkVisitorLoading ? null : checkVisitor,
-              ),
+                  text: checkVisitorLoading ? 'Processing...' : 'Next',
+                  onPressed: checkVisitorLoading ? null : checkVisitor,
+                ),
               ),
             );
           },
@@ -817,7 +817,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-   bool selectPurposeLoading = false;
+    bool selectPurposeLoading = false;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
@@ -836,8 +836,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
             title: Text(
               'Select Purpose of visit',
               style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                fontWeight: FontWeight.w600,
+              ),
             ),
             trailing: const Icon(
               Ionicons.close_circle_outline,
@@ -852,202 +852,202 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           Expanded(
             child: globalSelectedPurposes.isEmpty
                 ? GridView.builder(
-                    shrinkWrap: true,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 3,
-                      crossAxisSpacing: 3,
-                    ),
-                    itemCount: widget.purposeCategories
-                        .where((purpose) => purpose.categoryName == "GUEST")
-                        .length,
-                    itemBuilder: (context, index) {
-                      final guestPurposes = widget.purposeCategories
-                          .where((purpose) => purpose.categoryName == "GUEST")
-                          .toList();
-                      final purpose = guestPurposes[index];
+              shrinkWrap: true,
+              gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 3,
+                crossAxisSpacing: 3,
+              ),
+              itemCount: widget.purposeCategories
+                  .where((purpose) => purpose.categoryName == "GUEST")
+                  .length,
+              itemBuilder: (context, index) {
+                final guestPurposes = widget.purposeCategories
+                    .where((purpose) => purpose.categoryName == "GUEST")
+                    .toList();
+                final purpose = guestPurposes[index];
 
-                      return GestureDetector(
-                        onTap: () => selectImage(4),
-                        child: Stack(
+                return GestureDetector(
+                  onTap: () => selectImage(4),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 250,
+                        width: 200,
+                        margin: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: selectedImageIndex == 4
+                              ? const Color(0x10C08261)
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: selectedImageIndex == 4
+                                ? const Color(0xffC08261)
+                                : Colors.grey,
+                            width: selectedImageIndex == 4 ? 2 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Column(
+                          mainAxisAlignment:
+                          MainAxisAlignment.spaceEvenly,
                           children: [
-                            Container(
-                              height: 250,
-                              width: 200,
-                              margin: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                color: selectedImageIndex == 4
-                                    ? const Color(0x10C08261)
-                                    : Colors.transparent,
-                                border: Border.all(
-                                  color: selectedImageIndex == 4
-                                      ? const Color(0xffC08261)
-                                      : Colors.grey,
-                                  width: selectedImageIndex == 4 ? 2 : 1,
-                                ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 7),
+                              child: ClipRRect(
                                 borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 7),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
-                                      child: CachedNetworkImage(
-                                        maxHeightDiskCache: 90,
-                                        maxWidthDiskCache: 90,
-                                        height: 60,
-                                        width: 60,
-                                        fit: BoxFit.cover,
-                                        imageUrl: purpose.image ?? "",
-                                        placeholder: (context, url) =>
-                                            const CircularProgressIndicator(),
-                                        errorWidget: (context, url, error) =>
-                                            const Icon(
-                                          Icons.error,
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                    ),
+                                child: CachedNetworkImage(
+                                  maxHeightDiskCache: 90,
+                                  maxWidthDiskCache: 90,
+                                  height: 60,
+                                  width: 60,
+                                  fit: BoxFit.cover,
+                                  imageUrl: purpose.image ?? "",
+                                  placeholder: (context, url) =>
+                                  const CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) =>
+                                  const Icon(
+                                    Icons.error,
+                                    color: Colors.red,
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        purpose.categoryName,
-                                        style: TextStyle(
-                                          color: selectedImageIndex == 4
-                                              ? const Color(0xffC08261)
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface,
-                                          fontWeight: selectedImageIndex == 4
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
-                            if (selectedImageIndex == 4)
-                              const Positioned(
-                                right: 10,
-                                top: 10,
-                                child: Icon(
-                                  size: 20,
-                                  Ionicons.checkmark_circle_outline,
-                                  color: Color(0xffC08261),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  )
-                : GridView.builder(
-                    shrinkWrap: true,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 3,
-                      crossAxisSpacing: 3,
-                    ),
-                    itemCount: globalSelectedPurposes.length,
-                    itemBuilder: (context, index) {
-                      final purpose = globalSelectedPurposes[index];
-                      return GestureDetector(
-                        onTap: () {
-                          if (!isStaffAutoSelected) {
-                            selectImage(index);
-                          }
-                        },
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 250,
-                              width: 200,
-                              margin: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                color: selectedImageIndex == index
-                                    ? const Color(0x10C08261)
-                                    : Colors.transparent,
-                                border: Border.all(
-                                  color: selectedImageIndex == index
-                                      ? const Color(0xffC08261)
-                                      : Colors.grey,
-                                  width: selectedImageIndex == index ? 2 : 1,
-                                ),
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 7),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
-                                      child: CachedNetworkImage(
-                                        maxHeightDiskCache: 90,
-                                        maxWidthDiskCache: 90,
-                                        height: 60,
-                                        width: 60,
-                                        fit: BoxFit.cover,
-                                        imageUrl: purpose.image ?? "",
-                                        placeholder: (context, url) =>
-                                            const CircularProgressIndicator(),
-                                        errorWidget: (context, url, error) =>
-                                            const Icon(
-                                          Icons.error,
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                    ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  purpose.categoryName,
+                                  style: TextStyle(
+                                    color: selectedImageIndex == 4
+                                        ? const Color(0xffC08261)
+                                        : Theme.of(context)
+                                        .colorScheme
+                                        .onSurface,
+                                    fontWeight: selectedImageIndex == 4
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        purpose.categoryName,
-                                        style: TextStyle(
-                                          color: selectedImageIndex == index
-                                              ? const Color(0xffC08261)
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface,
-                                          fontWeight:
-                                              selectedImageIndex == index
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
-                            if (selectedImageIndex == index)
-                              const Positioned(
-                                right: 10,
-                                top: 10,
-                                child: Icon(
-                                  size: 20,
-                                  Ionicons.checkmark_circle_outline,
-                                  color: Color(0xffC08261),
-                                ),
-                              ),
                           ],
                         ),
-                      );
-                    },
+                      ),
+                      if (selectedImageIndex == 4)
+                        const Positioned(
+                          right: 10,
+                          top: 10,
+                          child: Icon(
+                            size: 20,
+                            Ionicons.checkmark_circle_outline,
+                            color: Color(0xffC08261),
+                          ),
+                        ),
+                    ],
                   ),
+                );
+              },
+            )
+                : GridView.builder(
+              shrinkWrap: true,
+              gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 3,
+                crossAxisSpacing: 3,
+              ),
+              itemCount: globalSelectedPurposes.length,
+              itemBuilder: (context, index) {
+                final purpose = globalSelectedPurposes[index];
+                return GestureDetector(
+                  onTap: () {
+                    if (!isStaffAutoSelected) {
+                      selectImage(index);
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 250,
+                        width: 200,
+                        margin: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: selectedImageIndex == index
+                              ? const Color(0x10C08261)
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: selectedImageIndex == index
+                                ? const Color(0xffC08261)
+                                : Colors.grey,
+                            width: selectedImageIndex == index ? 2 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Column(
+                          mainAxisAlignment:
+                          MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 7),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(15),
+                                child: CachedNetworkImage(
+                                  maxHeightDiskCache: 90,
+                                  maxWidthDiskCache: 90,
+                                  height: 60,
+                                  width: 60,
+                                  fit: BoxFit.cover,
+                                  imageUrl: purpose.image ?? "",
+                                  placeholder: (context, url) =>
+                                  const CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) =>
+                                  const Icon(
+                                    Icons.error,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  purpose.categoryName,
+                                  style: TextStyle(
+                                    color: selectedImageIndex == index
+                                        ? const Color(0xffC08261)
+                                        : Theme.of(context)
+                                        .colorScheme
+                                        .onSurface,
+                                    fontWeight:
+                                    selectedImageIndex == index
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (selectedImageIndex == index)
+                        const Positioned(
+                          right: 10,
+                          top: 10,
+                          child: Icon(
+                            size: 20,
+                            Ionicons.checkmark_circle_outline,
+                            color: Color(0xffC08261),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
           Container(
             margin:  EdgeInsets.symmetric(horizontal: 20),

@@ -89,17 +89,24 @@ class _GateDashboardViewState extends State<GateDashboardView>
     });
   }
 
-  @override
   Future<void> logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clear all stored preferences
+    try {
+      log("Attempting logout...");
+      await keycloakWrapper.logout();
+      log("Keycloak session ended.");
 
-    log("User logged out. Navigating to login screen.");
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      log("Preferences cleared.");
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MyAppLogin()),
-    );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => MyAppLogin()),
+        (route) => false,
+      );
+    } catch (e, st) {
+      log("Logout failed: $e\n$st");
+    }
   }
 
   Future<void> _loadVisitorSettings() async {

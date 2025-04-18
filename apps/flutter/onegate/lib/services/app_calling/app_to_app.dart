@@ -17,7 +17,7 @@ class SocketService {
       return;
     }
 
-    socket = IO.io('http://stgsocket.cubeone.in/', {
+    socket = IO.io('http://socket.cubeone.in/', {
       'transports': ['websocket'],
       'autoConnect': true,
       'reconnection': true,

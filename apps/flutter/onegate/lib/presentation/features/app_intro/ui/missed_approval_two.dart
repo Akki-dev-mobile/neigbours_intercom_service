@@ -7,10 +7,13 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_detail_@.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -296,7 +299,10 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
     super.initState();
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode();
-    _futureApprovals = widget.remoteDataSource.fetchApprovals(isSecondary: true);    _lastRefreshTime = DateTime.now();
+    _futureApprovals =
+        widget.remoteDataSource.fetchApprovals(isSecondary: true);
+    print("responseData$_futureApprovals");
+    _lastRefreshTime = DateTime.now();
     _updateCurrentTime();
     _startAutoRefresh();
     _startTimeUpdate();
@@ -344,7 +350,9 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
     });
 
     try {
-      await widget.remoteDataSource.fetchApprovals(isSecondary: true).then((data) {
+      await widget.remoteDataSource
+          .fetchApprovals(isSecondary: true)
+          .then((data) {
         if (mounted) {
           setState(() {
             _lastRefreshTime = DateTime.now();
@@ -399,7 +407,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               Text(
+              Text(
                 widget.towerName,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -492,8 +500,9 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                             if (context.mounted) {
                               Navigator.pushAndRemoveUntil(
                                 context,
-                                MaterialPageRoute(builder: (_) => const MyAppLogin()),
-                                    (route) => false,
+                                MaterialPageRoute(
+                                    builder: (_) => const MyAppLogin()),
+                                (route) => false,
                               );
                             }
                           },
@@ -513,7 +522,6 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                 );
               },
             ),
-
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _isRefreshing ? null : _refreshData,
@@ -634,11 +642,12 @@ class ApprovalsList extends StatelessWidget {
           visitor.inGate.toLowerCase().contains(query);
 
 // ✅ Match tower with building_unit instead of in_gate
-      final matchesTower = visitor.unitDetails.building_unit
-          !.toLowerCase()
+      final matchesTower = visitor.unitDetails.building_unit!
+          .toLowerCase()
           .contains(towerName.toLowerCase());
 
-      return matchesSearch && matchesTower;     return matchesSearch && matchesTower;
+      return matchesSearch && matchesTower;
+      return matchesSearch && matchesTower;
     }).toList();
     // Group approvals by date
     final Map<String, List<VisitorInfo>> groupedByDate = {};
@@ -711,9 +720,20 @@ class ApprovalsList extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: approvalsForDate.length,
               itemBuilder: (context, innerIndex) {
-                return MissedApprovalCard(
-                  visitorInfo: approvalsForDate[innerIndex],
-                  key: ValueKey(approvalsForDate[innerIndex].visitorLogId),
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VisitorDetailsScreen2(
+                            visitorLog: approvalsForDate[innerIndex]),
+                      ),
+                    );
+                  },
+                  child: MissedApprovalCard(
+                    visitorInfo: approvalsForDate[innerIndex],
+                    key: ValueKey(approvalsForDate[innerIndex].visitorLogId),
+                  ),
                 );
               },
             ),
@@ -722,15 +742,26 @@ class ApprovalsList extends StatelessWidget {
       },
     );
   }
-  Future<void> logout(BuildContext context) async {
-    log("User logged out. Navigating to login screen.");
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clear all stored preferences
 
-    await Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MyAppLogin()),
-    );
+  Future<void> logout(BuildContext context) async {
+    try {
+      log("Attempting logout...");
+      await keycloakWrapper.logout();
+      log("Keycloak session ended.");
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear(); // Clear all stored preferences
+      log("Preferences cleared.");
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => MyAppLogin()),
+        (route) => false,
+      );
+    } catch (e, st) {
+      log("Logout failed: $e\n$st");
+      // Optionally show a SnackBar or AlertDialog to inform the user
+    }
   }
 }
 
@@ -787,10 +818,10 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     }
   }
 
-
   Future<void> _initializeTimer() async {
     print("Initializing timer for visitor ${widget.visitorInfo.visitorLogId}");
-    await _timerService.loadTimerState(widget.visitorInfo.visitorLogId ?? 0, context);
+    await _timerService.loadTimerState(
+        widget.visitorInfo.visitorLogId ?? 0, context);
     if (mounted) setState(() {});
   }
 
@@ -807,7 +838,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     setState(() => _isLoading = true);
 
     RequestType requestType =
-    _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
+        _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
 
     if (requestType == RequestType.approved ||
         requestType == RequestType.allowByGatekeeper) {
@@ -1239,7 +1270,8 @@ class _TimerActionSectionState extends State<TimerActionSection> {
         final hasRetried = timerService.hasRetried(widget.visitorLogId);
         final now = DateTime.now();
         final remaining = timerState.endTime.difference(now);
-        final isEnabled = remaining.isNegative || (timerState.isRetryEnabled && !hasRetried);
+        final isEnabled =
+            remaining.isNegative || (timerState.isRetryEnabled && !hasRetried);
 
         final allowStatus = widget.visitorInfo.allowStatus.toLowerCase();
         print("DEBUG: allowStatus = $allowStatus"); // Add this debug print

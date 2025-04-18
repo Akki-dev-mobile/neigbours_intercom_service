@@ -6,6 +6,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
@@ -684,14 +685,24 @@ class _SettingsHomeState extends State<SettingsHome> {
   }
 
   Future<void> logout(BuildContext context) async {
-    log("User logged out. Navigating to login screen.");
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clear all stored preferences
+    try {
+      log("Attempting logout...");
+      await keycloakWrapper.logout();
+      log("Keycloak session ended.");
 
-    await Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MyAppLogin()),
-    );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear(); // Clear all stored preferences
+      log("Preferences cleared.");
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => MyAppLogin()),
+            (route) => false,
+      );
+    } catch (e, st) {
+      log("Logout failed: $e\n$st");
+      // Optionally show a SnackBar or AlertDialog to inform the user
+    }
   }
 
   Future<void> getSelectedGate() async {
