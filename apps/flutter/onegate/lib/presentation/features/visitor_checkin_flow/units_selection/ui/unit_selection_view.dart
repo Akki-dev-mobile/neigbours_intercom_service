@@ -1436,7 +1436,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           context,
                           data,
                           setState,
-                          onSuccess,
+                          onSuccess
                         );
                       },
                       text: "Continue",
