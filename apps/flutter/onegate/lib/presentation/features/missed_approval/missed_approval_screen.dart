@@ -1136,7 +1136,7 @@ class _TimerActionSectionState extends State<TimerActionSection> {
 
       var dio = Dio();
       var response = await dio.post(
-        'http://35.154.173.226:8005/api/visitor/uploadFile',
+        'https://gateapi.cubeone.in/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',

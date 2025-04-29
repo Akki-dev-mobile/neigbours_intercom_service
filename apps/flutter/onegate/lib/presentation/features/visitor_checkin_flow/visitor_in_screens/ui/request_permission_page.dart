@@ -225,7 +225,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     });
 
     try {
-      final approvals = await _remoteDataSource.fetchApprovals(logID:widget.logID!);
+      final approvals =
+          await _remoteDataSource.fetchApprovals(logID: widget.logID!);
 
       if (approvals.isNotEmpty) {
         final approval = approvals.firstWhere(
@@ -401,7 +402,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               child: Container(
                 width: 120,
                 height: 120,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   // Optional border
                 ),
@@ -815,7 +816,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
       var dio = Dio();
       var response = await dio.post(
-        'http://35.154.173.226:8005/api/visitor/uploadFile',
+        'http://gateapi.cubeone.in/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',

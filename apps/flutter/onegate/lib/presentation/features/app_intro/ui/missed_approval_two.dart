@@ -296,7 +296,9 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
     super.initState();
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode();
-    _futureApprovals = widget.remoteDataSource.fetchApprovals(isSecondary: true);    _lastRefreshTime = DateTime.now();
+    _futureApprovals =
+        widget.remoteDataSource.fetchApprovals(isSecondary: true);
+    _lastRefreshTime = DateTime.now();
     _updateCurrentTime();
     _startAutoRefresh();
     _startTimeUpdate();
@@ -344,7 +346,9 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
     });
 
     try {
-      await widget.remoteDataSource.fetchApprovals(isSecondary: true).then((data) {
+      await widget.remoteDataSource
+          .fetchApprovals(isSecondary: true)
+          .then((data) {
         if (mounted) {
           setState(() {
             _lastRefreshTime = DateTime.now();
@@ -399,7 +403,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               Text(
+              Text(
                 widget.towerName,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -423,8 +427,8 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      title: Row(
-                        children: const [
+                      title: const Row(
+                        children: [
                           Icon(Icons.warning_amber_rounded, color: Colors.red),
                           SizedBox(width: 8),
                           Text(
@@ -492,8 +496,9 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                             if (context.mounted) {
                               Navigator.pushAndRemoveUntil(
                                 context,
-                                MaterialPageRoute(builder: (_) => const MyAppLogin()),
-                                    (route) => false,
+                                MaterialPageRoute(
+                                    builder: (_) => const MyAppLogin()),
+                                (route) => false,
                               );
                             }
                           },
@@ -513,7 +518,6 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                 );
               },
             ),
-
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _isRefreshing ? null : _refreshData,
@@ -634,11 +638,12 @@ class ApprovalsList extends StatelessWidget {
           visitor.inGate.toLowerCase().contains(query);
 
 // ✅ Match tower with building_unit instead of in_gate
-      final matchesTower = visitor.unitDetails.building_unit
-          !.toLowerCase()
+      final matchesTower = visitor.unitDetails.building_unit!
+          .toLowerCase()
           .contains(towerName.toLowerCase());
 
-      return matchesSearch && matchesTower;     return matchesSearch && matchesTower;
+      return matchesSearch && matchesTower;
+      return matchesSearch && matchesTower;
     }).toList();
     // Group approvals by date
     final Map<String, List<VisitorInfo>> groupedByDate = {};
@@ -722,6 +727,7 @@ class ApprovalsList extends StatelessWidget {
       },
     );
   }
+
   Future<void> logout(BuildContext context) async {
     log("User logged out. Navigating to login screen.");
     final prefs = await SharedPreferences.getInstance();
@@ -787,10 +793,10 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     }
   }
 
-
   Future<void> _initializeTimer() async {
     print("Initializing timer for visitor ${widget.visitorInfo.visitorLogId}");
-    await _timerService.loadTimerState(widget.visitorInfo.visitorLogId ?? 0, context);
+    await _timerService.loadTimerState(
+        widget.visitorInfo.visitorLogId ?? 0, context);
     if (mounted) setState(() {});
   }
 
@@ -807,7 +813,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     setState(() => _isLoading = true);
 
     RequestType requestType =
-    _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
+        _getRequestType(widget.visitorInfo.allowStatus.toLowerCase());
 
     if (requestType == RequestType.approved ||
         requestType == RequestType.allowByGatekeeper) {
@@ -1188,7 +1194,7 @@ class _TimerActionSectionState extends State<TimerActionSection> {
 
       var dio = Dio();
       var response = await dio.post(
-        'http://35.154.173.226:8005/api/visitor/uploadFile',
+        'https://gateapi.cubeone.in/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',
@@ -1239,7 +1245,8 @@ class _TimerActionSectionState extends State<TimerActionSection> {
         final hasRetried = timerService.hasRetried(widget.visitorLogId);
         final now = DateTime.now();
         final remaining = timerState.endTime.difference(now);
-        final isEnabled = remaining.isNegative || (timerState.isRetryEnabled && !hasRetried);
+        final isEnabled =
+            remaining.isNegative || (timerState.isRetryEnabled && !hasRetried);
 
         final allowStatus = widget.visitorInfo.allowStatus.toLowerCase();
         print("DEBUG: allowStatus = $allowStatus"); // Add this debug print
