@@ -7,7 +7,7 @@ class ApiUrls {
 
       // "https://stggateapi.cubeone.in/api";
 
-  GateConfigHolder.gateBaseUrl;
+      GateConfigHolder.gateBaseUrl;
 
   static String get societyBaseUrl => 'https://socbackend.cubeone.in/api';
   static String get facerecinfoUrl =>

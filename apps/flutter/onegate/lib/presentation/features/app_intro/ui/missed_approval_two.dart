@@ -301,7 +301,6 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
     _searchFocusNode = FocusNode();
     _futureApprovals =
         widget.remoteDataSource.fetchApprovals(isSecondary: true);
-    print("responseData$_futureApprovals");
     _lastRefreshTime = DateTime.now();
     _updateCurrentTime();
     _startAutoRefresh();
@@ -431,8 +430,8 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      title: Row(
-                        children: const [
+                      title: const Row(
+                        children: [
                           Icon(Icons.warning_amber_rounded, color: Colors.red),
                           SizedBox(width: 8),
                           Text(
@@ -742,6 +741,11 @@ class ApprovalsList extends StatelessWidget {
       },
     );
   }
+
+  Future<void> logout(BuildContext context) async {
+    log("User logged out. Navigating to login screen.");
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Clear all stored preferences
 
   Future<void> logout(BuildContext context) async {
     try {
@@ -1219,7 +1223,7 @@ class _TimerActionSectionState extends State<TimerActionSection> {
 
       var dio = Dio();
       var response = await dio.post(
-        'http://35.154.173.226:8005/api/visitor/uploadFile',
+        'https://gateapi.cubeone.in/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',
