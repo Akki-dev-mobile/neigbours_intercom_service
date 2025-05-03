@@ -7,6 +7,7 @@ class VisitorInfo {
   final String visitorMobile;
   final String visitorImage;
   final String allowStatus;
+  final int? visitorCount;
   final int? visitorLogId;
   final int companyId;
   final String inGate;
@@ -17,10 +18,12 @@ class VisitorInfo {
   final String? purposeCategoryName;
   final String? purposeSubCategoryName;
   final UnitDetails unitDetails;
+  final String? visitor_check_out;
   final Map<String, dynamic>? additionalDetails; // Parsed Additional Details
 
   VisitorInfo({
     required this.visitorId,
+    this.visitorCount,
     required this.visitorName,
     required this.visitorMobile,
     required this.visitorImage,
@@ -35,6 +38,7 @@ class VisitorInfo {
     this.visitorPurposeCategoryId,
     this.purposeCategoryName,
     this.purposeSubCategoryName,
+    this.visitor_check_out,
     this.additionalDetails, // Include Additional Details
   });
 
@@ -92,12 +96,16 @@ class VisitorInfo {
       parsedAdditionalDetails = {};
     }
 
+
     return VisitorInfo(
       visitorId: _parseToInt(json['visitor_id']),
       visitorName: json['visitor_name']?.toString() ?? '',
       visitorMobile: json['visitor_mobile']?.toString() ?? '',
       visitorImage: json['visitor_image']?.toString() ?? '',
       allowStatus: json['allow_status']?.toString() ?? '',
+      visitorCount: _parseToInt(json['visitor_count']),
+
+      visitor_check_out: json['visitor_check_out']?.toString() ?? '',
       visitorLogId: _parseToInt(json['visitor_log_id']),
       companyId: _parseToInt(json['company_id']),
       inGate: json['in_gate']?.toString() ?? '',
@@ -140,6 +148,7 @@ class VisitorInfo {
       visitorMobile: $visitorMobile, 
       allowStatus: $allowStatus, 
       visitorLogId: $visitorLogId, 
+      visitorCount: $visitorCount,
       companyId: $companyId, 
       inGate: $inGate, 
       logCreatedAt: $logCreatedAt, 
@@ -148,6 +157,8 @@ class VisitorInfo {
       purposeCategoryName: $purposeCategoryName,
       purposeSubCategoryName: $purposeSubCategoryName,
       memberInfo: $memberInfo,
+      visitorImage: $visitorImage,
+      visitor_check_out: $visitor_check_out,
       unitDetails: $unitDetails,
       additionalDetails: $additionalDetails
     )

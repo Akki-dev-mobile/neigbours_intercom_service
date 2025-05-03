@@ -275,8 +275,18 @@ class RemoteDataSource {
           '${ApiUrls.visitorEntry}?mobile_number=$mobileNumber&company_id=$companyId';
 
       log("API Request: $apiUrl");
+      log("Bearer ${keycloakWrapper.accessToken}");
 
-      final response = await Dio().get(apiUrl);
+      final response = await Dio().get(apiUrl,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': keycloakWrapper.accessToken != null
+                ? 'Bearer ${keycloakWrapper.accessToken}'
+                : '',
+          },
+        ),
+      );
       final List<dynamic> data = response.data['data'] ?? [];
 
       if (data.isNotEmpty) {
@@ -389,27 +399,43 @@ class RemoteDataSource {
   Future<Visitor?> createVisitor(Visitor visitor) async {
     log("createVisitor called");
     try {
-      // Fetch the uploaded image URL from GateStorage
-      final uploadImageUrl = await GateStorage().getImage();
 
+      final uploadImageUrl = await GateStorage().getImage();
+      final String? companyId = await gateStorage.getSocietyId();
+      if (companyId == null) throw Exception('Company ID not found.');
+      final SharedPreferences prefs =
+          await SharedPreferences.getInstance(); // Get SharedPreferences
+
+      final selectedGateName =
+          prefs.getString('selected_gate') ?? 'Default Gate';
       // Prepare the data payload
       final data = {
         "name": visitor.name == "" ? "Test" : visitor.name,
         "mobile_number": visitor.mobile.toString(),
         "visitor_image": uploadImageUrl.toString(),
+        "company_id": companyId,
+        "in_gate": selectedGateName.toString()
       };
 
       // Make the POST request to the API
       final response = await Dio().post(
         ApiUrls.visitorEntry,
         data: data,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': keycloakWrapper.accessToken != null
+                ? 'Bearer ${keycloakWrapper.accessToken}'
+                : '',
+          },
+        ),
       );
 
       final visitorData = response.data['data'];
       print(visitorData);
       final visitorId = visitorData['visitor_id'] as int;
       log("createvisitorresponse $response");
-      final prefs = await SharedPreferences.getInstance();
+
       await prefs.setString('visitorId', visitorId.toString());
       GlobalStorage.visitorId = visitorId.toString();
 
@@ -531,7 +557,6 @@ class RemoteDataSource {
       final companyName = companyDetails['societyName'] ?? "";
       var staff = await prefs.getString('search_staff_info');
       print("staff $staff");
-
 
       data.addAll({
         'in_gate': selectedGateName,
@@ -775,7 +800,6 @@ class RemoteDataSource {
       approved_by: additionalDetails is Map<String, dynamic>
           ? additionalDetails['approved_by'] as String?
           : null,
-
     );
 
     return visitorLog;
@@ -1207,7 +1231,8 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorInfo>> fetchApprovals({String? logID,bool? isSecondary}) async {
+  Future<List<VisitorInfo>> fetchApprovals(
+      {String? logID, bool? isSecondary}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
@@ -1243,7 +1268,7 @@ class RemoteDataSource {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-print("responseData $responseData");
+        print("responseData $responseData");
         if (!responseData.containsKey('data')) {
           log("🚨 API Response does not contain 'data' key.");
           return [];
@@ -1328,6 +1353,7 @@ print("responseData $responseData");
             visitorLogId: _parseToInt(json['visitor_log_id']),
             companyId: _parseToInt(json['company_id']),
             inGate: json['in_gate']?.toString() ?? '',
+            visitorCount: json['visitor_count'],
             logCreatedAt: json['log_created_at']?.toString() ?? '',
             unitDetails: parsedUnitDetails.isNotEmpty
                 ? parsedUnitDetails.first
@@ -1635,6 +1661,29 @@ print("responseData $responseData");
     }
   }
 
+  Future<Map<String, dynamic>?> fetchStaffById(int staffId) async {
+    try {
+      final String? companyId = await gateStorage.getSocietyId();
+      if (companyId == null) throw Exception('Company ID not found.');
+
+      final String url = 'https://societybackend.cubeone.in/api/admin/staffs/edit_staff/$staffId?company_id=$companyId';
+      
+      final response = await Dio().get(url);
+      
+      log("Staff by ID response: ${response.data}");
+      
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        _handleErrorResponse();
+        throw Exception('Failed to fetch staff by ID: ${response.statusCode}');
+      }
+    } catch (e) {
+      _handleErrorResponse();
+      log('Error fetching staff by ID: $e');
+      rethrow;
+    }
+  }
   /// Fetch staff list for a company
   Future<List<StaffModel>> fetchStaffList(String companyId) async {
     try {
@@ -1645,7 +1694,9 @@ print("responseData $responseData");
 
       log("response--$response");
       if (response.statusCode == 200) {
+        
         final List<dynamic> data = response.data?['data'];
+        log("data--$data");
         return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
       } else {
         _handleErrorResponse();

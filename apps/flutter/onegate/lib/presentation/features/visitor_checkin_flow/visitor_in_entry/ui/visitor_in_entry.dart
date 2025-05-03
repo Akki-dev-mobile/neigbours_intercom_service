@@ -12,12 +12,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
+import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/entity/purpose_mapper.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:path_provider/path_provider.dart';
@@ -291,11 +295,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         : widget.mobile;
 
     // if (widget.searchedVisitor == null) {
-    // RemoteDataSource().uploadFile(file, userMobile, companyId)
+    final effectiveMobile = widget.searchedVisitor?.mobile?.isNotEmpty == true
+        ? widget.searchedVisitor!.mobile
+        : widget.mobile;
+
     Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
       name: _guestNameController?.text,
-      mobile: widget.searchedVisitor?.mobile,
-      // visitor_image: widget.searchedVisitor?.visitor_image,
+      mobile: effectiveMobile,
     ));
     // }
 
@@ -525,6 +531,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         return _buildVendorForm(purpose);
       case 'STAFF':
         return _buildStaffForm();
+      case 'MEMBER STAFF':
+        return _buildStaffForm();
       default:
         return const Center(child: Text('Unknown Purpose'));
     }
@@ -538,44 +546,42 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           return const CircularProgressIndicator();
         }
 
-        final prefs = snapshot.data!;
-        final staffJson = prefs.getString('search_staff_info');
-        if (staffJson == null) {
-          return const Text("No staff data found.");
-        }
-
-        final staffData = jsonDecode(staffJson);
+        // final prefs = snapshot.data!;
+        // final staffJson = prefs.getString('search_staff_info');
+        // if (staffJson == null) {
+        //   return const Text("No staff data found.");
+        // }
+        //
+        // final staffData = jsonDecode(staffJson);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStaffTextField("Staff Name", staffData['name']),
-            _buildStaffTextField("Mobile", staffData['staff_contact_number']),
-            _buildStaffTextField(
-                "Badge Number", staffData['staff_badge_number']),
-            _buildStaffTextField("DOB", staffData['staff_dob']),
-            _buildStaffTextField(
-                "Qualification", staffData['staff_qualification']),
-            _buildStaffTextField("Skill", staffData['staff_skill']),
-            _buildStaffTextField("Languages", staffData['language_spoken']),
-            const SizedBox(height: 20),
+            CustomForm.textField(
+              "Staff Name",
+              hintText: 'Staff Name',
+              textCapitalization: TextCapitalization.words,
+              textController: _guestNameController,
+              titleColor: Theme.of(context).colorScheme.onSurface,
+              hintColor: Theme.of(context).colorScheme.onPrimary,
+              suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
+            ),
+            // if (_visitorAddress == true)
+            CustomForm.textField(
+              "Coming From",
+              hintText: 'Enter Coming From',
+              textCapitalization: TextCapitalization.words,
+              textController: _guestComingFromController,
+              titleColor: Theme.of(context).colorScheme.onSurface,
+              hintColor: Theme.of(context).colorScheme.onPrimary,
+              suffixIcon:
+                  _buildMicButton(() => _handleMicPress('guestComingFrom')),
+            ),
           ],
         );
       },
     );
   }
-
-  Widget _buildStaffTextField(String label, String? value) {
-    return CustomForm.textField(
-      label,
-      textController: TextEditingController(text: value ?? ''),
-      isReadOnly: true,
-      titleColor: Theme.of(context).colorScheme.onSurface,
-      hintColor: Theme.of(context).colorScheme.onPrimary,
-      hintText: '',
-    );
-  }
-
 
   Widget _buildCabsForm() {
     return Column(

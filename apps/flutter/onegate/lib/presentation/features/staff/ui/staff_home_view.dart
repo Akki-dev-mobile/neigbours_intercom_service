@@ -1,11 +1,9 @@
 import 'dart:developer';
-
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/models/staff_model.dart';
-import 'package:flutter_onegate/presentation/features/staff/ui/addstaff.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
 
 class StaffScreen extends StatefulWidget {
@@ -115,36 +113,36 @@ class _StaffScreenState extends State<StaffScreen> {
           const SizedBox(height: 100),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.onSurface,
-        ),
-        onPressed: () {
-          Navigator.of(context)
-              .push(
-            MaterialPageRoute(
-              builder: (context) => const AddStaff(),
-            ),
-          )
-              .then((_) {
-            // Refresh the staff list after navigation
-            _initializeSocietyId();
-          });
-        },
-        label: Text(
-          'Add Staff',
-          style: Theme.of(context)
-              .textTheme
-              .bodyLarge
-              ?.copyWith(color: Colors.white),
-        ),
-        icon: Icon(
-          Icons.add,
-          size: Theme.of(context).iconTheme.size,
-          color: Colors.white,
-        ),
-      ),
+      // floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      // floatingActionButton: ElevatedButton.icon(
+      //   style: ElevatedButton.styleFrom(
+      //     backgroundColor: Theme.of(context).colorScheme.onSurface,
+      //   ),
+      //   onPressed: () {
+      //     Navigator.of(context)
+      //         .push(
+      //       MaterialPageRoute(
+      //         builder: (context) => const AddStaff(),
+      //       ),
+      //     )
+      //         .then((_) {
+      //       // Refresh the staff list after navigation
+      //       _initializeSocietyId();
+      //     });
+      //   },
+      //   label: Text(
+      //     'Add Staff',
+      //     style: Theme.of(context)
+      //         .textTheme
+      //         .bodyLarge
+      //         ?.copyWith(color: Colors.white),
+      //   ),
+      //   icon: Icon(
+      //     Icons.add,
+      //     size: Theme.of(context).iconTheme.size,
+      //     color: Colors.white,
+      //   ),
+      // ),
     );
   }
 

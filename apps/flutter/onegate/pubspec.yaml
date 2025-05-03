@@ -31,7 +31,7 @@ dependencies:
   get_it: ^7.6.0
   dio: ^4.0.0
   kiosk_mode: ^0.6.0
-  shared_preferences: ^2.0.8
+  shared_preferences: ^2.5.3
   animated_text_kit: ^4.2.2
   material_symbols_icons: ^4.2668.0
   fluttertoast: ^8.2.10

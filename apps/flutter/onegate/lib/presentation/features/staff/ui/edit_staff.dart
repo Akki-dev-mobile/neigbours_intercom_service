@@ -5,6 +5,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -15,11 +16,11 @@ import '../../../../data/datasources/remote_datasource.dart';
 import '../model/staff_model.dart';
 
 class EditStaff extends StatefulWidget {
-  final Staff staff;
+  final String staffId;
 
   const EditStaff({
     Key? key,
-    required this.staff,
+    required this.staffId,
   }) : super(key: key);
 
   @override
@@ -27,9 +28,7 @@ class EditStaff extends StatefulWidget {
 }
 
 class _EditStaffState extends State<EditStaff> {
-  final RemoteDataSource _remoteDataSource = RemoteDataSource(
-
-  );
+  final RemoteDataSource _remoteDataSource = RemoteDataSource();
 
   // TextEditingControllers
   late TextEditingController _nameController;
@@ -76,58 +75,84 @@ class _EditStaffState extends State<EditStaff> {
   final _formKey = GlobalKey<FormState>();
   String selectedCountryCodeSE = 'IN';
   late int _staffId = 0;
+  bool _isLoading = true;
+  StaffModel? _staffData;
+  String _profileImageUrl = '';
+  String _idProofImageUrl = '';
 
   @override
   void initState() {
     super.initState();
-    print("mydataaaaaaaa ${widget.staff}");
-    print('mydataaaaaaaa ${widget.staff}');
     _mobileFocusNode = FocusNode();
-
-    _nameController = TextEditingController(text: widget.staff.name);
-    _emailController = TextEditingController(text: widget.staff.email);
-    _phoneController = TextEditingController(text: widget.staff.phone);
-    _idNumberController =
-        TextEditingController(text: widget.staff.idProofNumber);
-
-    print("mydataaaaaaaa ${widget.staff.idProofNumber}");
-
-    print("Staff ID: ${widget.staff.category}");
-    _addressController = TextEditingController(text: widget.staff.address);
-    _dob = widget.staff.dateOfBirth.toString();
-
-    _selectedDate = widget.staff.dateOfBirth; // Initialize DOB
-
-    _selectedCategory = widget.staff.category;
-    // _selectedCategoryValue = widget.staff.categoryValue;
-
-    log("mydataaaaaaaa $_selectedCategory");
-    log("mydataaaaaaaa value $_selectedCategoryValue");
-
-    // Set qualification
-    _selectedQualification = qualifications.contains(widget.staff.qualification)
-        ? widget.staff.qualification
-        : qualifications.first;
-
-    _selectedIdProof = widget.staff.idProofType;
-    selectedCountryCodeSE = widget.staff.countryCode;
-
-    // Set gender
-    _selectedGender = widget.staff.gender;
-
+    _staffId = int.parse(widget.staffId);
+    
+    // Initialize controllers with empty values
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _phoneController = TextEditingController();
+    _idNumberController = TextEditingController();
+    _addressController = TextEditingController();
+    
+    // Fetch staff data
+    _fetchStaffData();
     _fetchCategories();
+  }
+
+  Future<void> _fetchStaffData() async {
+    try {
+      final response = await _remoteDataSource.fetchStaffById(_staffId);
+      if (response != null && response['data'] != null) {
+        final staffData = StaffModel.fromJson(response['data']);
+        setState(() {
+          _staffData = staffData;
+          
+          // Update controllers with fetched data
+          _nameController.text = staffData.name;
+          // _emailController.text = staffData.staff ?? '';
+          _phoneController.text = staffData.staffContactNumber;
+          // _idNumberController.text = staffData. ?? '';
+          // _addressController.text = staffData.address ?? '';
+          
+          // Update other fields
+          _dob = staffData.staffDob;
+          _selectedDate = DateTime.tryParse(staffData.staffDob);
+          _selectedCategory = staffData.category;
+          // _selectedGender = staffData.gender ?? 'M';
+          _selectedQualification = staffData.staffQualification;
+          _selectedIdProof = staffData.staffBadgeNumber ?? 'Aadhar Card';
+          // selectedCountryCodeSE = staffData. ?? 'IN';
+          
+          // // Store image URLs
+          // _profileImageUrl = staffData.profileImageUrl ?? '';
+          // _idProofImageUrl = staffData.idProofImageUrl ?? '';
+          
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching staff data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      myFluttertoast(
+        msg: "Failed to load staff data",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
   }
 
   @override
   void dispose() {
     _mobileFocusNode.dispose();
-
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _idNumberController.dispose();
     _addressController.dispose();
-
     super.dispose();
   }
 
@@ -341,9 +366,8 @@ class _EditStaffState extends State<EditStaff> {
         throw Exception('Failed to upload images');
       }
     } catch (e) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text('Error: $e')),
-      // );
+      // Handle error
+      debugPrint('Error uploading images: $e');
     }
   }
 
@@ -431,14 +455,14 @@ class _EditStaffState extends State<EditStaff> {
         "idProofType": _selectedIdProof,
         "idProofNumber": _idNumberController.text.trim(),
         "address": _addressController.text.trim(),
-        "profileImageUrl": profileImageUrl ?? widget.staff.profileImageUrl,
-        "idProofImageUrl": idProofImageUrl ?? widget.staff.idProofImageUrl,
+        "profileImageUrl": profileImageUrl ?? _profileImageUrl,
+        "idProofImageUrl": idProofImageUrl ?? _idProofImageUrl,
       };
 
       log('Updating staff data: $staffData');
 
       final response =
-          await _remoteDataSource.editStaff(widget.staff.id, staffData);
+          await _remoteDataSource.editStaff(_staffId, staffData);
 
       if (mounted) {
         if (response != null) {
@@ -468,17 +492,6 @@ class _EditStaffState extends State<EditStaff> {
                       'https://uxwing.com/wp-content/themes/uxwing/download/editing-user-action/tick-mark-user-color-icon.png'),
                 ),
                 content: Text('Staff updated successfully'),
-                // actions: <Widget>[
-                //   TextButton(
-                //     child: Text(
-                //       'OK',
-                //       style: Theme.of(context).textTheme.bodyMedium,
-                //     ),
-                //     onPressed: () {
-                //       Navigator.of(context).pop();
-                //     },
-                //   ),
-                // ],
               );
             },
           );
@@ -505,15 +518,6 @@ class _EditStaffState extends State<EditStaff> {
         }
 
         debugPrint('Error : $errorMessage');
-
-        // myFluttertoast(
-        //   msg: "Error: $errorMessage",
-        //   toastLength: Toast.LENGTH_SHORT,
-        //   gravity: ToastGravity.BOTTOM,
-        //   backgroundColor: Colors.red,
-        //   textColor: Colors.white,
-        //   fontSize: 16.0,
-        // );
       }
     }
   }
@@ -578,8 +582,13 @@ class _EditStaffState extends State<EditStaff> {
           (_newProfileImage == null || _newProfileImage!.path.isEmpty)) {
         final idProofFile = File(_newIdProofImage!.path);
         if (await idProofFile.exists()) {
-          _showConfirmationDialog(
-              context, File(widget.staff.profileImageUrl), idProofFile);
+          if (_profileImageUrl.isNotEmpty) {
+            _showConfirmationDialog(
+                context, File(_profileImageUrl), idProofFile);
+          } else {
+            // Handle case where there's no existing profile image
+            _updateStaffData(null, await _uploadSingleImage(idProofFile));
+          }
         } else {
           throw Exception('ID Proof image file not found');
         }
@@ -588,8 +597,13 @@ class _EditStaffState extends State<EditStaff> {
           (_newIdProofImage == null || _newIdProofImage!.path.isEmpty)) {
         final profileFile = File(_newProfileImage!.path);
         if (await profileFile.exists()) {
-          _showConfirmationDialog(
-              context, profileFile, File(widget.staff.idProofImageUrl));
+          if (_idProofImageUrl.isNotEmpty) {
+            _showConfirmationDialog(
+                context, profileFile, File(_idProofImageUrl));
+          } else {
+            // Handle case where there's no existing ID proof image
+            _updateStaffData(await _uploadSingleImage(profileFile), null);
+          }
         } else {
           throw Exception('Profile image file not found');
         }
@@ -598,14 +612,36 @@ class _EditStaffState extends State<EditStaff> {
       }
     } catch (e) {
       debugPrint('Error: $e');
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text('Error: $e')),
-      // );
+    }
+  }
+
+  Future<String?> _uploadSingleImage(File imageFile) async {
+    try {
+      final int companyId = 1;
+      final response = await _remoteDataSource.uploadStaffImages(imageFile, companyId);
+      if (response != null) {
+        return response['url'];
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error uploading single image: $e');
+      return null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Edit Staff"),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
     return MyScrollView(
       pageTitle: "Edit Staff",
       pageBody: Column(
@@ -623,8 +659,8 @@ class _EditStaffState extends State<EditStaff> {
                   backgroundColor: Theme.of(context).colorScheme.onSurface,
                   foregroundImage: _newProfileImage != null
                       ? FileImage(File(_newProfileImage!.path))
-                      : (widget.staff.profileImageUrl.isNotEmpty
-                              ? NetworkImage(widget.staff.profileImageUrl)
+                      : (_profileImageUrl.isNotEmpty
+                              ? NetworkImage(_profileImageUrl)
                               : const NetworkImage(
                                   "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"))
                           as ImageProvider,
@@ -856,10 +892,9 @@ class _EditStaffState extends State<EditStaff> {
                 // ID Proof Number + camera icon
                 CustomForm.textField(
                   _selectedIdProof,
-                  // hasInitialValue: _idNumberController.toString(),
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
-                  hintText: _idNumberController.toString(),
+                  hintText: "Enter ID Number",
                   textController: _idNumberController,
                   inputFormatters: _getInputFormatters(_selectedIdProof),
                   // Apply input formatters
@@ -888,176 +923,69 @@ class _EditStaffState extends State<EditStaff> {
                         }
                         break;
                       case 'Voter ID':
-                        if (!RegExp(r'^[A-Za-z]{3}\d{7}$').hasMatch(input)) {
-                          return 'Please enter a valid Voter ID (e.g., ABC1234567)';
+                        if (input.length < 10 || !RegExp(r'^[A-Za-z\d]+$').hasMatch(input)) {
+                          return 'Please enter a valid Voter ID';
                         }
                         break;
                       case 'PAN Card':
-                        if (!RegExp(r'^[A-Z]{5}\d{4}[A-Z]$').hasMatch(input)) {
-                          return 'Please enter a valid PAN card number (e.g., ABCDE1234F)';
+                        if (!RegExp(r'^[A-Z\d]{10}$').hasMatch(input)) {
+                          return 'Please enter a valid PAN Card number (10 alphanumeric characters)';
                         }
-                        break;
-                      default:
                         break;
                     }
                     return null;
                   },
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.camera_alt),
                     onPressed: () => _openCamera(isIdProof: true),
+                    icon: const Icon(Icons.camera_alt),
                   ),
-                  counterText: "Upload ID Proof",
                 ),
 
-                SizedBox(
-                  height: 10,
-                ),
-                if ((_newIdProofImage != null &&
-                    _newIdProofImage!.path.isNotEmpty)) ...[
-                  Text(
-                    "Preview Images",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Container(
-                    // decoration: BoxDecoration(
-                    //   border: Border.all(
-                    //     color: Theme.of(context).colorScheme.onSurface,
-                    //   ),
-                    //   borderRadius: BorderRadius.circular(15),
-                    // ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        // Profile Image Container
-                        // if (_newProfileImage != null &&
-                        //     _newProfileImage!.path.isNotEmpty) ...[
-                        //   Container(
-                        //     height: 120,
-                        //     padding: const EdgeInsets.only(top: 8.0),
-                        //     child: Stack(
-                        //       alignment: Alignment.topRight,
-                        //       children: [
-                        //         Image.file(
-                        //           File(_newProfileImage!.path),
-                        //           width: 100,
-                        //           height: 100,
-                        //           fit: BoxFit.cover,
-                        //         ),
-                        //         Positioned(
-                        //           right: 0,
-                        //           top: 0,
-                        //           child: GestureDetector(
-                        //             onTap: () {
-                        //               setState(() {
-                        //                 _newProfileImage = null;
-                        //               });
-                        //             },
-                        //             child: Container(
-                        //               decoration: BoxDecoration(
-                        //                 shape: BoxShape.circle,
-                        //                 color: Colors.redAccent,
-                        //               ),
-                        //               child: const Icon(
-                        //                 Icons.close,
-                        //                 color: Colors.white,
-                        //                 size: 20,
-                        //               ),
-                        //             ),
-                        //           ),
-                        //         ),
-                        //       ],
-                        //     ),
-                        //   ),
-                        // ],
-
-                        // ID Proof Image Container
-                        if ((_newIdProofImage != null &&
-                                _newIdProofImage!.path.isNotEmpty) ||
-                            (widget.staff.idProofImageUrl.isNotEmpty &&
-                                _newIdProofImage == null)) ...[
-                          Container(
-                            height: 120,
-                            padding: EdgeInsets.only(top: 8.0),
-                            child: Stack(
-                              alignment: Alignment.topRight,
-                              children: [
-                                _newIdProofImage != null &&
-                                        _newIdProofImage!.path.isNotEmpty
-                                    ? Image.file(
-                                        File(_newIdProofImage!.path),
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.network(
-                                        widget.staff.idProofImageUrl,
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _newIdProofImage = null;
-                                      });
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.redAccent,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                ],
-
-// Address
+                // Address
                 CustomForm.textField(
-                  "Enter Address",
+                  "Address",
                   textController: _addressController,
-                  lines: 5,
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
                   hintText: "Enter Address",
+                  lines: 3,
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Please enter an address';
+                    }
+                    return null;
+                  },
                 ),
+
+                const SizedBox(height: 30),
+
+                // Submit Button
                 SizedBox(
-                  height: 100,
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      "Update Staff",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
-                // CustomLargeBtn(
-                //   onPressed: _submitForm,
-                //   text: "Update Staff",
-                // ),
-                // const SizedBox(height: 120),
+                const SizedBox(height: 30),
               ],
             ),
           ),
         ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: CustomLargeBtn(
-        onPressed: _submitForm,
-        text: "Update",
       ),
     );
   }
