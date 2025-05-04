@@ -1,19 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
-import 'package:flutter_onegate/utils/ssl_bypass.dart';
-import 'package:flutter_onegate/utils/custom_appauth.dart';
-
-import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
-import 'package:flutter_onegate/utils/myfluttertoast.dart';
-import 'package:http/http.dart' as http;
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
-import 'package:lottie/lottie.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
 
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -21,6 +10,14 @@ import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admi
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
+import 'package:flutter_onegate/utils/custom_appauth.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:flutter_onegate/utils/ssl_bypass.dart';
+import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+import 'package:lottie/lottie.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'missed_approval_two.dart';
@@ -541,7 +538,10 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
               await prefs.setString('selected_gate', gateName);
               await prefs.setString(
                   'selected_gate_id', gate["gate_id"].toString());
-              log("Gate selected: $gateName with ID: ${gate['gate_id']}");
+              // Store gate_type as well
+              await prefs.setString('selected_gate_type',
+                  gate["gate_type"]?.toString() ?? "both");
+              log("Gate selected: $gateName with ID: ${gate['gate_id']}, type: ${gate['gate_type']}");
 
               Navigator.pop(context); // Close the bottom sheet
               await _navigateBasedOnRole(selectedRole);

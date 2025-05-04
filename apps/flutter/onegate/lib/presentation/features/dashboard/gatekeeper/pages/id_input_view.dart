@@ -3,40 +3,37 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
-import 'package:path/path.dart' as path;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:chips_choice/chips_choice.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
+import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/entity/purpose_mapper.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -113,7 +110,7 @@ class _IdInputViewState extends State<IdInputView> {
         ),
       ));
   final provider = PurposeProvider();
-  RemoteDataSource remoteDataSource = new RemoteDataSource();
+  RemoteDataSource remoteDataSource = RemoteDataSource();
 
   @override
   void dispose() {
@@ -148,9 +145,9 @@ class _IdInputViewState extends State<IdInputView> {
         BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
           bloc: gateDashboardBloc,
           listenWhen: (previous, current) =>
-          current is GatekeeperDashboardActionState,
+              current is GatekeeperDashboardActionState,
           buildWhen: (previous, current) =>
-          current is! GatekeeperDashboardActionState,
+              current is! GatekeeperDashboardActionState,
           listener: (context, state) async {
             if (state is OpenPurposeDialogState) {
               if (globalSelectedPurposes.length == 1) {
@@ -181,7 +178,7 @@ class _IdInputViewState extends State<IdInputView> {
                   purposeCategories: state.purposeCategories!.toList(),
                   gatekeeperDashboardBloc: gateDashboardBloc,
                   mobileNumber:
-                  mobileController.text, // Pass mobile number here
+                      mobileController.text, // Pass mobile number here
                 ),
               );
             }
@@ -206,12 +203,12 @@ class _IdInputViewState extends State<IdInputView> {
                 break;
 
               case InputPutViewNextClickedState:
-              // Example: Set loading state here if needed
+                // Example: Set loading state here if needed
                 break;
 
               case NavigateToVisitorDetailsState:
                 final navigateToVisitorDetailsState =
-                state as NavigateToVisitorDetailsState;
+                    state as NavigateToVisitorDetailsState;
                 // mobileController.text = '';
 
                 // Retrieve and decode the saved purpose
@@ -276,158 +273,149 @@ class _IdInputViewState extends State<IdInputView> {
                     SizedBox(height: 20),
                     _currentIndex == 0
                         ? CustomForm.textField(
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Mobile number is required';
-                        } else if (value.length != 10) {
-                          return 'Please enter a 10-digit number';
-                        } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                          return 'No spaces or special characters allowed';
-                        }
-                        return null;
-                      },
-                      titleColor:
-                      Theme.of(context).colorScheme.onBackground,
-                      hintColor: Theme.of(context).colorScheme.onPrimary,
-                      "Visitor Mobile Number",
-                      hintText: '0123456789',
-                      prefixIcon: CountryCodePicker(
-                        initialSelection: 'IN',
-                        favorite: ['IN'],
-                        showFlagMain: true,
-                        showFlagDialog: true,
-                        boxDecoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.background,
-                        ),
-                        barrierColor: Theme.of(context)
-                            .colorScheme
-                            .background
-                            .withOpacity(0.5),
-                        closeIcon: Icon(
-                          Icons.close,
-                          color:
-                          Theme.of(context).colorScheme.onBackground,
-                        ),
-                        searchDecoration: InputDecoration(
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onBackground,
-                          ),
-                          hintText: 'Search',
-                          hintStyle: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onBackground,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(
-                              style: BorderStyle.solid,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onBackground,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(
-                              style: BorderStyle.solid,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onBackground,
-                            ),
-                          ),
-                        ),
-                        textStyle: TextStyle(
-                          color:
-                          Theme.of(context).colorScheme.onBackground,
-                          fontSize: 18,
-                        ),
-                        dialogTextStyle: TextStyle(
-                          color:
-                          Theme.of(context).colorScheme.onBackground,
-                        ),
-                        onChanged: (CountryCode countryCode) {
-                          setState(() {
-                            selectedCountryCode = countryCode.code!;
-                          });
-                        },
-                      ),
-                      textController: mobileController,
-                      keyboardType: TextInputType.number,
-                      length: 10,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      onChanged: (value) {
-                        if (value.length == 10) {
-                          gateDashboardBloc.add(
-                            GDOnMobileNumberEnteredEvent(
-                                mobileController.text),
-                          );
-                        }
-                      },
-                    )
-                        : Column(
-                      children: [
-                        Form(
-                          key: passcodeControllerFormKey,
-                          child: CustomForm.textField(
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Passcode is required';
-                              } else if (value.length != 6) {
-                                return 'Please enter a 6-digit passcode';
+                                return 'Mobile number is required';
+                              } else if (value.length != 10) {
+                                return 'Please enter a 10-digit number';
+                              } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                                return 'No spaces or special characters allowed';
                               }
                               return null;
                             },
-                            titleColor: Theme.of(context)
-                                .colorScheme
-                                .onBackground,
-                            hintColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                            "Visitor Passcode",
-                            hintText: '123456',
-                            textController: passcodeController,
-                            textCapitalization:
-                            TextCapitalization.characters,
-                            length: 6,
-                            keyboardType: TextInputType.number,
-                            // prefixIcon: Padding(
-                            //   padding:
-                            //       EdgeInsets.only(left: 10, right: 20),
-                            //   child: CircleAvatar(
-                            //     backgroundColor: Color(0xffFFEBE6),
-                            //     child: Text(
-                            //       selectedPassAlpha ?? 'A',
-                            //       style: TextStyle(
-                            //         color: Colors.black,
-                            //         fontWeight: FontWeight.bold,
-                            //       ),
-                            //     ),
-                            //   ),
-                            // ),
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                if (passcodeControllerFormKey
-                                    .currentState!
-                                    .validate()) {
-                                  // Show modal bottom sheet or handle passcode submission
-                                }
-                              },
-                              icon: Icon(
-                                Symbols.done_rounded,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onBackground,
+                            titleColor: Theme.of(context).colorScheme.onSurface,
+                            hintColor: Theme.of(context).colorScheme.onPrimary,
+                            "Visitor Mobile Number",
+                            hintText: '0123456789',
+                            prefixIcon: CountryCodePicker(
+                              initialSelection: 'IN',
+                              favorite: ['IN'],
+                              showFlagMain: true,
+                              showFlagDialog: true,
+                              boxDecoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
                               ),
+                              barrierColor: Theme.of(context)
+                                  .colorScheme
+                                  .surface
+                                  .withOpacity(0.5),
+                              closeIcon: Icon(
+                                Icons.close,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              searchDecoration: InputDecoration(
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                                hintText: 'Search',
+                                hintStyle: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: BorderSide(
+                                    style: BorderStyle.solid,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: BorderSide(
+                                    style: BorderStyle.solid,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              textStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 18,
+                              ),
+                              dialogTextStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              onChanged: (CountryCode countryCode) {
+                                setState(() {
+                                  selectedCountryCode = countryCode.code!;
+                                });
+                              },
                             ),
+                            textController: mobileController,
+                            keyboardType: TextInputType.number,
+                            length: 10,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) {
+                              if (value.length == 10) {
+                                gateDashboardBloc.add(
+                                  GDOnMobileNumberEnteredEvent(
+                                      mobileController.text),
+                                );
+                              }
+                            },
+                          )
+                        : Column(
+                            children: [
+                              Form(
+                                key: passcodeControllerFormKey,
+                                child: CustomForm.textField(
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Passcode is required';
+                                    } else if (value.length != 6) {
+                                      return 'Please enter a 6-digit passcode';
+                                    }
+                                    return null;
+                                  },
+                                  titleColor:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  hintColor:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  "Visitor Passcode",
+                                  hintText: '123456',
+                                  textController: passcodeController,
+                                  textCapitalization:
+                                      TextCapitalization.characters,
+                                  length: 6,
+                                  keyboardType: TextInputType.number,
+                                  // prefixIcon: Padding(
+                                  //   padding:
+                                  //       EdgeInsets.only(left: 10, right: 20),
+                                  //   child: CircleAvatar(
+                                  //     backgroundColor: Color(0xffFFEBE6),
+                                  //     child: Text(
+                                  //       selectedPassAlpha ?? 'A',
+                                  //       style: TextStyle(
+                                  //         color: Colors.black,
+                                  //         fontWeight: FontWeight.bold,
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  // ),
+                                  suffixIcon: IconButton(
+                                    onPressed: () {
+                                      if (passcodeControllerFormKey
+                                          .currentState!
+                                          .validate()) {
+                                        // Show modal bottom sheet or handle passcode submission
+                                      }
+                                    },
+                                    icon: Icon(
+                                      Symbols.done_rounded,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
                 floatingActionButton: CustomLargeBtn(
@@ -449,15 +437,12 @@ class _IdInputViewState extends State<IdInputView> {
 
     if (_currentIndex == 0) {
       // Mobile number validation & processing
-      if (mobileControllerFormKey.currentState?.validate() ??
-          false) {
+      if (mobileControllerFormKey.currentState?.validate() ?? false) {
         gateDashboardBloc.add(InputPutViewNextClickedEvent());
       }
     } else {
       // Passcode verification process
-      if (passcodeControllerFormKey.currentState
-          ?.validate() ??
-          false) {
+      if (passcodeControllerFormKey.currentState?.validate() ?? false) {
         _handlePasscodeVerification();
       }
     }
@@ -467,7 +452,6 @@ class _IdInputViewState extends State<IdInputView> {
         checkVisitorLoading = false;
       });
     });
-
   }
 
   File? _imageFile;
@@ -660,8 +644,7 @@ class _IdInputViewState extends State<IdInputView> {
     try {
       int id1 = int.parse(id);
       final dio = Dio();
-      final String apiUrl =
-          "https://stggateapi.cubeone.in/api/visitor/entry/$id1";
+      final String apiUrl = "${ApiUrls.gateBaseUrl}/visitor/entry/$id1";
 
       final data = {
         "visitor_image": imageUrl,
@@ -732,7 +715,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           globalSelectedPurposes =
               jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
         });
-        print("Global selected purposes loaded: ${globalSelectedPurposes}");
+        print("Global selected purposes loaded: $globalSelectedPurposes");
       } else {
         print("No selected purposes found in SharedPreferences.");
       }
@@ -741,13 +724,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
     }
   }
 
-
   void purposeSelectionBottomSheet() async {
     FocusScope.of(context).unfocus();
     if (selectedImageIndex == null) {
-      myFluttertoast(
-          msg: "please select purpose",
-          backgroundColor: Colors.red);
+      myFluttertoast(msg: "please select purpose", backgroundColor: Colors.red);
       return;
     }
 
@@ -776,7 +756,6 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
       );
     }
   }
-
 
   // Future<void> _loadSelectedPurposesToGlobal() async {
   //   try {
@@ -836,8 +815,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
             title: Text(
               'Select Purpose of visit',
               style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             trailing: const Icon(
               Ionicons.close_circle_outline,
@@ -852,208 +831,209 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           Expanded(
             child: globalSelectedPurposes.isEmpty
                 ? GridView.builder(
-              shrinkWrap: true,
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 3,
-                crossAxisSpacing: 3,
-              ),
-              itemCount: widget.purposeCategories
-                  .where((purpose) => purpose.categoryName == "GUEST")
-                  .length,
-              itemBuilder: (context, index) {
-                final guestPurposes = widget.purposeCategories
-                    .where((purpose) => purpose.categoryName == "GUEST")
-                    .toList();
-                final purpose = guestPurposes[index];
+                    shrinkWrap: true,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                    ),
+                    itemCount: widget.purposeCategories
+                        .where((purpose) => purpose.categoryName == "GUEST")
+                        .length,
+                    itemBuilder: (context, index) {
+                      final guestPurposes = widget.purposeCategories
+                          .where((purpose) => purpose.categoryName == "GUEST")
+                          .toList();
+                      final purpose = guestPurposes[index];
 
-                return GestureDetector(
-                  onTap: () => selectImage(4),
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 250,
-                        width: 200,
-                        margin: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: selectedImageIndex == 4
-                              ? const Color(0x10C08261)
-                              : Colors.transparent,
-                          border: Border.all(
-                            color: selectedImageIndex == 4
-                                ? const Color(0xffC08261)
-                                : Colors.grey,
-                            width: selectedImageIndex == 4 ? 2 : 1,
-                          ),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Column(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceEvenly,
+                      return GestureDetector(
+                        onTap: () => selectImage(4),
+                        child: Stack(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 7),
-                              child: ClipRRect(
+                            Container(
+                              height: 250,
+                              width: 200,
+                              margin: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: selectedImageIndex == 4
+                                    ? const Color(0x10C08261)
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: selectedImageIndex == 4
+                                      ? const Color(0xffC08261)
+                                      : Colors.grey,
+                                  width: selectedImageIndex == 4 ? 2 : 1,
+                                ),
                                 borderRadius: BorderRadius.circular(15),
-                                child: CachedNetworkImage(
-                                  maxHeightDiskCache: 90,
-                                  maxWidthDiskCache: 90,
-                                  height: 60,
-                                  width: 60,
-                                  fit: BoxFit.cover,
-                                  imageUrl: purpose.image ?? "",
-                                  placeholder: (context, url) =>
-                                  const CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) =>
-                                  const Icon(
-                                    Icons.error,
-                                    color: Colors.red,
+                              ),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 7),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: CachedNetworkImage(
+                                        maxHeightDiskCache: 90,
+                                        maxWidthDiskCache: 90,
+                                        height: 60,
+                                        width: 60,
+                                        fit: BoxFit.cover,
+                                        imageUrl: purpose.image ?? "",
+                                        placeholder: (context, url) =>
+                                            const CircularProgressIndicator(),
+                                        errorWidget: (context, url, error) =>
+                                            const Icon(
+                                          Icons.error,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        purpose.categoryName,
+                                        style: TextStyle(
+                                          color: selectedImageIndex == 4
+                                              ? const Color(0xffC08261)
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                          fontWeight: selectedImageIndex == 4
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  purpose.categoryName,
-                                  style: TextStyle(
-                                    color: selectedImageIndex == 4
-                                        ? const Color(0xffC08261)
-                                        : Theme.of(context)
-                                        .colorScheme
-                                        .onSurface,
-                                    fontWeight: selectedImageIndex == 4
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
+                            if (selectedImageIndex == 4)
+                              const Positioned(
+                                right: 10,
+                                top: 10,
+                                child: Icon(
+                                  size: 20,
+                                  Ionicons.checkmark_circle_outline,
+                                  color: Color(0xffC08261),
                                 ),
                               ),
-                            ),
                           ],
                         ),
-                      ),
-                      if (selectedImageIndex == 4)
-                        const Positioned(
-                          right: 10,
-                          top: 10,
-                          child: Icon(
-                            size: 20,
-                            Ionicons.checkmark_circle_outline,
-                            color: Color(0xffC08261),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            )
+                      );
+                    },
+                  )
                 : GridView.builder(
-              shrinkWrap: true,
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 3,
-                crossAxisSpacing: 3,
-              ),
-              itemCount: globalSelectedPurposes.length,
-              itemBuilder: (context, index) {
-                final purpose = globalSelectedPurposes[index];
-                return GestureDetector(
-                  onTap: () {
-                    if (!isStaffAutoSelected) {
-                      selectImage(index);
-                    }
-                  },
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 250,
-                        width: 200,
-                        margin: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: selectedImageIndex == index
-                              ? const Color(0x10C08261)
-                              : Colors.transparent,
-                          border: Border.all(
-                            color: selectedImageIndex == index
-                                ? const Color(0xffC08261)
-                                : Colors.grey,
-                            width: selectedImageIndex == index ? 2 : 1,
-                          ),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Column(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceEvenly,
+                    shrinkWrap: true,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                    ),
+                    itemCount: globalSelectedPurposes.length,
+                    itemBuilder: (context, index) {
+                      final purpose = globalSelectedPurposes[index];
+                      return GestureDetector(
+                        onTap: () {
+                          if (!isStaffAutoSelected) {
+                            selectImage(index);
+                          }
+                        },
+                        child: Stack(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 7),
-                              child: ClipRRect(
+                            Container(
+                              height: 250,
+                              width: 200,
+                              margin: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: selectedImageIndex == index
+                                    ? const Color(0x10C08261)
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: selectedImageIndex == index
+                                      ? const Color(0xffC08261)
+                                      : Colors.grey,
+                                  width: selectedImageIndex == index ? 2 : 1,
+                                ),
                                 borderRadius: BorderRadius.circular(15),
-                                child: CachedNetworkImage(
-                                  maxHeightDiskCache: 90,
-                                  maxWidthDiskCache: 90,
-                                  height: 60,
-                                  width: 60,
-                                  fit: BoxFit.cover,
-                                  imageUrl: purpose.image ?? "",
-                                  placeholder: (context, url) =>
-                                  const CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) =>
-                                  const Icon(
-                                    Icons.error,
-                                    color: Colors.red,
+                              ),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 7),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: CachedNetworkImage(
+                                        maxHeightDiskCache: 90,
+                                        maxWidthDiskCache: 90,
+                                        height: 60,
+                                        width: 60,
+                                        fit: BoxFit.cover,
+                                        imageUrl: purpose.image ?? "",
+                                        placeholder: (context, url) =>
+                                            const CircularProgressIndicator(),
+                                        errorWidget: (context, url, error) =>
+                                            const Icon(
+                                          Icons.error,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        purpose.categoryName,
+                                        style: TextStyle(
+                                          color: selectedImageIndex == index
+                                              ? const Color(0xffC08261)
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                          fontWeight:
+                                              selectedImageIndex == index
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  purpose.categoryName,
-                                  style: TextStyle(
-                                    color: selectedImageIndex == index
-                                        ? const Color(0xffC08261)
-                                        : Theme.of(context)
-                                        .colorScheme
-                                        .onSurface,
-                                    fontWeight:
-                                    selectedImageIndex == index
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
+                            if (selectedImageIndex == index)
+                              const Positioned(
+                                right: 10,
+                                top: 10,
+                                child: Icon(
+                                  size: 20,
+                                  Ionicons.checkmark_circle_outline,
+                                  color: Color(0xffC08261),
                                 ),
                               ),
-                            ),
                           ],
                         ),
-                      ),
-                      if (selectedImageIndex == index)
-                        const Positioned(
-                          right: 10,
-                          top: 10,
-                          child: Icon(
-                            size: 20,
-                            Ionicons.checkmark_circle_outline,
-                            color: Color(0xffC08261),
-                          ),
-                        ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           Container(
-            margin:  EdgeInsets.symmetric(horizontal: 20),
+            margin: EdgeInsets.symmetric(horizontal: 20),
             child: CustomLargeBtn(
-              text: selectPurposeLoading ?  'Processing...' : 'Select Purpose',
-              onPressed: selectPurposeLoading ? null : purposeSelectionBottomSheet,
+              text: selectPurposeLoading ? 'Processing...' : 'Select Purpose',
+              onPressed:
+                  selectPurposeLoading ? null : purposeSelectionBottomSheet,
             ),
           ),
           const SizedBox(height: 10),
@@ -1062,4 +1042,3 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
     );
   }
 }
-

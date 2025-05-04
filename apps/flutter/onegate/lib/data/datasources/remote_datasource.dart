@@ -26,9 +26,6 @@ import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../presentation/features/dashboard/gatekeeper/pages/calling_screen.dart';
-import '../../presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
-
 final keycloakWrapper =
     KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
@@ -277,7 +274,8 @@ class RemoteDataSource {
       log("API Request: $apiUrl");
       log("Bearer ${keycloakWrapper.accessToken}");
 
-      final response = await Dio().get(apiUrl,
+      final response = await Dio().get(
+        apiUrl,
         options: Options(
           headers: {
             'Content-Type': 'application/json',
@@ -399,7 +397,6 @@ class RemoteDataSource {
   Future<Visitor?> createVisitor(Visitor visitor) async {
     log("createVisitor called");
     try {
-
       final uploadImageUrl = await GateStorage().getImage();
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
@@ -555,7 +552,7 @@ class RemoteDataSource {
           : [];
       final companyDetails = await gateStorage.getSocietyDetails();
       final companyName = companyDetails['societyName'] ?? "";
-      var staff = await prefs.getString('search_staff_info');
+      var staff = prefs.getString('search_staff_info');
       print("staff $staff");
 
       data.addAll({
@@ -692,6 +689,7 @@ class RemoteDataSource {
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
           prefs.getString('selected_gate') ?? 'Default Gate';
+      final selectedGateType = prefs.getString('selected_gate_type') ?? 'both';
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
       final String formattedDate =
@@ -702,11 +700,14 @@ class RemoteDataSource {
         'to_date': formattedDate,
         'company_id': int.parse(resolvedCompanyId.toString()),
         'in_gate': selectedGateName,
+        'gate_type': selectedGateType, // Include gate type in the request
       };
 
       if (onlyCheckout != null) {
         requestBody['only_checkout'] = onlyCheckout;
       }
+
+      log("Fetching visitor logs with params: $requestBody");
 
       final response = await http.post(
         Uri.parse(ApiUrls.visitorGetLog),
@@ -1063,7 +1064,7 @@ class RemoteDataSource {
 
     try {
       final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/selfCheckin',
+        '${ApiUrls.gateBaseUrl}/visitor/selfCheckin',
         data: {'mobile': mobileNumber, 'company_id': companyId},
       );
 
@@ -1096,7 +1097,7 @@ class RemoteDataSource {
   }) async {
     try {
       final response = await Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/selfCheckin/verify',
+        '${ApiUrls.gateBaseUrl}/visitor/selfCheckin/verify',
         data: {
           'mobile': mobileNumber,
           'otp': otp,
@@ -1666,12 +1667,13 @@ class RemoteDataSource {
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
 
-      final String url = 'https://societybackend.cubeone.in/api/admin/staffs/edit_staff/$staffId?company_id=$companyId';
-      
+      final String url =
+          'https://societybackend.cubeone.in/api/admin/staffs/edit_staff/$staffId?company_id=$companyId';
+
       final response = await Dio().get(url);
-      
+
       log("Staff by ID response: ${response.data}");
-      
+
       if (response.statusCode == 200) {
         return response.data;
       } else {
@@ -1684,6 +1686,7 @@ class RemoteDataSource {
       rethrow;
     }
   }
+
   /// Fetch staff list for a company
   Future<List<StaffModel>> fetchStaffList(String companyId) async {
     try {
@@ -1694,7 +1697,6 @@ class RemoteDataSource {
 
       log("response--$response");
       if (response.statusCode == 200) {
-        
         final List<dynamic> data = response.data?['data'];
         log("data--$data");
         return data.map<StaffModel>((e) => StaffModel.fromJson(e)).toList();
@@ -1781,7 +1783,7 @@ class RemoteDataSource {
       log("Request Data -> parcel_id: $parcelId, otp: $otp");
 
       final response = await http.post(
-        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtpVerify"),
+        Uri.parse("${ApiUrls.gateBaseUrl}/visitor/parcelOtpVerify"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -1823,7 +1825,7 @@ class RemoteDataSource {
         formattedMobileNumber = formattedMobileNumber.substring(2);
       }
       final response = await http.post(
-        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtp"),
+        Uri.parse("${ApiUrls.gateBaseUrl}/visitor/parcelOtp"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -115,6 +114,11 @@ class GateStorage {
     return prefs.getString(_societyIdKey);
   }
 
+  // Future<void> saveAccessToken(String token) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString(_accessTokenKey, token);
+  // }
+
   Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_accessTokenKey);
@@ -208,6 +212,7 @@ class GateStorage {
     }
     return null;
   }
+
   Future<void> clearStorage(String key) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(key);
@@ -280,5 +285,31 @@ class GateStorage {
   Future<bool?> getMemberApproval() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_memberApprovalKey);
+  }
+
+  Future<void> saveSelectedGate(
+      String gateName, String gateId, String gateType) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_gate', gateName);
+    await prefs.setString('selected_gate_id', gateId);
+    await prefs.setString('selected_gate_type', gateType);
+    log("Gate saved: name=$gateName, id=$gateId, type=$gateType");
+  }
+
+  Future<Map<String, String?>> getSelectedGate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('selected_gate');
+    final id = prefs.getString('selected_gate_id');
+    final type = prefs.getString('selected_gate_type');
+    return {
+      'name': name,
+      'id': id,
+      'type': type,
+    };
+  }
+
+  Future<String?> getGateType() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('selected_gate_type');
   }
 }

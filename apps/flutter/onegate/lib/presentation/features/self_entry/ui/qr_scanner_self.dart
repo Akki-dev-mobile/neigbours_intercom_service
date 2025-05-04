@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:common_widgets/common_widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -11,14 +12,14 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path/path.dart' as path;
 
 class QRScannerScreen extends StatefulWidget {
   final String? companyId;
@@ -393,8 +394,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     try {
       int id1 = int.parse(id);
       final dio = Dio();
-      final String apiUrl =
-          "https://stggateapi.cubeone.in/api/visitor/entry/$id1";
+      final String apiUrl = "${ApiUrls.gateBaseUrl}/visitor/entry/$id1";
 
       final data = {
         "visitor_image": imageUrl,
@@ -1154,7 +1154,7 @@ class ScannerEffectPainter extends CustomPainter {
 
 // Draw multiple lines with spacing
     const lineSpacing = 12.0;
-    final numberOfLines = 5;
+    const numberOfLines = 5;
 
     for (int i = 0; i < numberOfLines; i++) {
       final lineY = (y + (i * lineSpacing)) % size.height;

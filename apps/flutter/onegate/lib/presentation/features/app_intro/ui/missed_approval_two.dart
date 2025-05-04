@@ -2,18 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
-import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
-import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
-import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_detail_@.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -21,7 +18,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Timer Service
@@ -719,20 +715,9 @@ class ApprovalsList extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: approvalsForDate.length,
               itemBuilder: (context, innerIndex) {
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => VisitorDetailsScreen2(
-                            visitorLog: approvalsForDate[innerIndex]),
-                      ),
-                    );
-                  },
-                  child: MissedApprovalCard(
-                    visitorInfo: approvalsForDate[innerIndex],
-                    key: ValueKey(approvalsForDate[innerIndex].visitorLogId),
-                  ),
+                return MissedApprovalCard(
+                  visitorInfo: approvalsForDate[innerIndex],
+                  key: ValueKey(approvalsForDate[innerIndex].visitorLogId),
                 );
               },
             ),
@@ -747,25 +732,10 @@ class ApprovalsList extends StatelessWidget {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear(); // Clear all stored preferences
 
-  Future<void> logout(BuildContext context) async {
-    try {
-      log("Attempting logout...");
-      await keycloakWrapper.logout();
-      log("Keycloak session ended.");
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear(); // Clear all stored preferences
-      log("Preferences cleared.");
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => MyAppLogin()),
-        (route) => false,
-      );
-    } catch (e, st) {
-      log("Logout failed: $e\n$st");
-      // Optionally show a SnackBar or AlertDialog to inform the user
-    }
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MyAppLogin()),
+    );
   }
 }
 
