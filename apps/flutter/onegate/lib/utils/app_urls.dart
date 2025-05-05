@@ -1,9 +1,8 @@
 /// Centralized API URL manager
 class ApiUrls {
   static String get gateBaseUrl =>
-      // "https://2ea3-103-178-133-37.ngrok-free.app/api";
-
-  "https://stggateapi.cubeone.in/api";
+      "https://606a-103-178-133-37.ngrok-free.app/api";
+  // "https://stggateapi.cubeone.in/api";
 
   // GateConfigHolder.gateBaseUrl;
 

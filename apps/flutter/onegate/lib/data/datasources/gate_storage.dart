@@ -155,6 +155,13 @@ class GateStorage {
     return prefs.getString("coming_from");
   }
 
+  //remove coming_from
+  Future<void> removeComingFrom() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('coming_from');
+    log("coming_from removed from SharedPreferences");
+  }
+
   Future<String?> getImage() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString("uploaded_image_url");
