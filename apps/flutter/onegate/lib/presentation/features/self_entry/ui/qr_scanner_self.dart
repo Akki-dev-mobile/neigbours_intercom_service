@@ -21,6 +21,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../data/datasources/gate_storage.dart';
+
 class QRScannerScreen extends StatefulWidget {
   final String? companyId;
   final int? status;
@@ -395,9 +397,11 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       int id1 = int.parse(id);
       final dio = Dio();
       final String apiUrl = "${ApiUrls.gateBaseUrl}/visitor/entry/$id1";
-
+      final coming_from = await GateStorage().getComingFrom();
+      log("_updateVisitorEntry : $coming_from");
       final data = {
         "visitor_image": imageUrl,
+        "coming_from": coming_from,
       };
 
       final response = await dio.patch(

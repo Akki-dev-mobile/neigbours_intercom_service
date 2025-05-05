@@ -39,6 +39,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
+import '../../../../../data/datasources/gate_storage.dart';
 import '../../../visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 
 class IdInputView extends StatefulWidget {
@@ -645,9 +646,10 @@ class _IdInputViewState extends State<IdInputView> {
       int id1 = int.parse(id);
       final dio = Dio();
       final String apiUrl = "${ApiUrls.gateBaseUrl}/visitor/entry/$id1";
-
+      final coming_from = await GateStorage().getComingFrom();
       final data = {
         "visitor_image": imageUrl,
+        "coming_from": coming_from,
       };
 
       final response = await dio.patch(

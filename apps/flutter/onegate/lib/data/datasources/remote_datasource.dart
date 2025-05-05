@@ -281,7 +281,7 @@ class RemoteDataSource {
             'Content-Type': 'application/json',
             'Authorization': keycloakWrapper.accessToken != null
                 ? 'Bearer ${keycloakWrapper.accessToken}'
-                : '',
+                : 'sdad',
           },
         ),
       );
@@ -314,19 +314,34 @@ class RemoteDataSource {
         if (visitorData != null) {
           log("Visitor data fetched: $visitorData");
 
-          final comingFrom = visitorData['coming_from'] as String? ?? "";
-          await prefs.setString('visitor_coming_from', comingFrom);
+          final comingFrom = visitorData['coming_from'] as String;
+          log("comingFrom $comingFrom");
+         await gateStorage.setComingFrom(
+            comingFrom,
+          );
+          final myComingFrom = await gateStorage.getComingFrom();
+
+          log("comingFrom pref $myComingFrom");
+          // Store the coming_from value in SharedPreferences
+          // final prefs = await SharedPreferences.getInstance();
+         // await prefs.setString('visitor_coming_from', comingFrom);
+
+
+          GateStorage().saveImage(
+            visitorData['visitor_image'] as String? ?? "",
+          );
+          log("vis data stored in shared pref coming_from $comingFrom, image ${visitorData['visitor_image']}");
 
           final visitorId = visitorData['id']?.toString() ?? "";
           await prefs.setString('search_visitor_id', visitorId);
         }
 
         // Store staff info if found
-        if (staffData != null) {
-          final staffJson = jsonEncode(staffData);
-          await prefs.setString('search_staff_info', staffJson);
-          log("Staff info stored in SharedPreferences.");
-        }
+        // if (staffData != null) {
+        //   final staffJson = jsonEncode(staffData);
+        //   await prefs.setString('search_staff_info', staffJson);
+        //   log("Staff info stored in SharedPreferences.");
+        // }
 
         if (visitorData != null) {
           return Visitor.fromJson(visitorData);
@@ -405,13 +420,15 @@ class RemoteDataSource {
 
       final selectedGateName =
           prefs.getString('selected_gate') ?? 'Default Gate';
+      final coming_from = await gateStorage.getComingFrom();
       // Prepare the data payload
       final data = {
         "name": visitor.name == "" ? "Test" : visitor.name,
         "mobile_number": visitor.mobile.toString(),
         "visitor_image": uploadImageUrl.toString(),
         "company_id": companyId,
-        "in_gate": selectedGateName.toString()
+        "in_gate": selectedGateName.toString(),
+        "coming_from": coming_from,
       };
 
       // Make the POST request to the API
@@ -2101,14 +2118,20 @@ class RemoteDataSource {
             'No visitor ID found. Please search for a visitor first.');
       }
 
+      final coming_from = await gateStorage.getComingFrom();
+      log("updateVisitor : $coming_from");
       // Prepare the API URL
       final url = '${ApiUrls.visitorEntry}/$searchedVisitorId';
+
 
       // Prepare the request payload
       final data = {
         "name": visitor.name,
         "mobile_number": visitor.mobile,
+        "coming_from":coming_from,
       };
+
+      log("comingFrom updateVisitor data: $data");
 
       // Send the PATCH request
       final response = await Dio().patch(
