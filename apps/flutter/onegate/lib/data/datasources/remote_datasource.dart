@@ -847,6 +847,7 @@ class RemoteDataSource {
     String? passcode,
     int? id,
     String? mobile,
+    bool? isStaff,
   }) async {
     try {
       final String url = ApiUrls.verifyGuestPasscode;
@@ -854,13 +855,13 @@ class RemoteDataSource {
       final selectedGateName =
           prefs.getString('selected_gate') ?? 'Default Gate';
       final resolvedCompanyId = await gateStorage.getSocietyId();
-
       final Map<String, dynamic> requestData = {
         "company_id": resolvedCompanyId,
         "in_gate": selectedGateName,
-        "passcode": passcode,
+        if (isStaff == false) "passcode": passcode,
         "mobile": mobile,
-        "pass_id": id
+        if (isStaff == false) "pass_id": id,
+        if (isStaff == true) "is_staff": isStaff,
       };
 
       log("🔍 Sending request to verify passcode: $requestData");
@@ -870,8 +871,10 @@ class RemoteDataSource {
         data: requestData,
         options: Options(
           headers: {
-            "Content-Type": "application/json",
-            "User-Agent": "insomnia/10.3.0",
+            'Content-Type': 'application/json',
+            'Authorization': keycloakWrapper.accessToken != null
+                ? 'Bearer ${keycloakWrapper.accessToken}'
+                : '',
           },
         ),
       );

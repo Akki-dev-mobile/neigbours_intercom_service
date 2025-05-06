@@ -146,6 +146,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         int? id;
         String? name;
         String? passcode;
+        bool? isStaff;
 
         dynamic scannedJson;
         try {
@@ -155,6 +156,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           mobile = scannedJson['mobile']?.toString();
           id = scannedJson['id'];
           name = scannedJson['name'];
+          isStaff = scannedJson['is_staff'];
+
           passcode = scannedJson['passcode']?.toString();
         } catch (jsonError) {
           log("⚠️ QR code isn't valid JSON, treating as passcode: $code");
@@ -162,12 +165,41 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         }
 
         final result = await remoteDataSource.verifyPasscode(
+          isStaff: isStaff,
           companyId: widget.companyId ?? "",
           mobile: mobile,
           id: id,
           passcode: passcode,
         );
+        if (isStaff == true) {
+          Visitor visitor = Visitor(
+            visitor_image: result['data'][0]['visitor_image'],
+            name: result['data'][0]['name'],
+            mobile: result['data'][0]['mobile'],
+            // visitor_image: visitorData['qr_code'],
+          );
+          VisitorLog visitorLog = VisitorLog(
+            visitor: visitor,
+            visitor_coming_from: result['data'][0]['coming_from'],
+            visitor_purpose_Category_name: "Staff",
+            visitor_purpose_category_id: 1,
+            visitor_count: 1,
+          );
 
+          Navigator.of(context).pop();
+
+          await Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RequestPermissionPage2(
+                status: widget.status,
+                visitor: visitor,
+                visitorLog: visitorLog,
+                request: 'allowByGatekeeper',
+              ),
+            ),
+          );
+        }
         final bool isValid = result['success'] == true &&
             result['data'] != null &&
             (result['data'] as List).isNotEmpty;
@@ -210,7 +242,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                   null,
                   purposeCategory:
                       PurposeCategory1(categoryId: 1, categoryName: "Guest"),
-                  guestname: name!,
+                  guestname: name ?? "",
                   mobileNumber: mobile ?? visitor.mobile!,
                   visitor: visitor,
                   selfcheckinFlow: widget.self_checkin,
@@ -397,11 +429,11 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       int id1 = int.parse(id);
       final dio = Dio();
       final String apiUrl = "${ApiUrls.gateBaseUrl}/visitor/entry/$id1";
-      final coming_from = await GateStorage().getComingFrom();
-      log("_updateVisitorEntry : $coming_from");
+      final comingFrom = await GateStorage().getComingFrom();
+      log("_updateVisitorEntry : $comingFrom");
       final data = {
         "visitor_image": imageUrl,
-        "coming_from": coming_from,
+        "coming_from": comingFrom,
       };
 
       final response = await dio.patch(
