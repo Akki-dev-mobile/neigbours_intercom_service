@@ -31,6 +31,6 @@ class Visitor {
         name: json['name'] as String?,
         mobile: json['mobile'] as String?,
         visitor_image: json['visitor_image'] as String?,
-        isStaff: json['isStaff'] as bool?);
+        isStaff: json['is_staff'] as bool?);
   }
 }

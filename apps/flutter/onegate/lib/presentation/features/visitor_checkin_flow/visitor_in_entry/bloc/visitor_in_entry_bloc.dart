@@ -15,29 +15,30 @@ import 'package:meta/meta.dart';
 part 'visitor_in_entry_event.dart';
 part 'visitor_in_entry_state.dart';
 
-
-class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> {
+class VisitorInEntryBloc
+    extends Bloc<VisitorInEntryEvent, VisitorInEntryState> {
   final VisitorUsecase _visitorUsecase;
   final VisitorLogUsecase _visitorLogUsecase;
   final PreferenceUtils _preferenceUtils;
 
   VisitorInEntryBloc(
-      this._visitorUsecase,
-      this._visitorLogUsecase,
-      ) : _preferenceUtils = GetIt.I<PreferenceUtils>(),
+    this._visitorUsecase,
+    this._visitorLogUsecase,
+  )   : _preferenceUtils = GetIt.I<PreferenceUtils>(),
         super(VisitorInEntryInitial()) {
     on<VIEGuestFormSubmitButtonPressedEvent>(_handleGuestFormSubmit);
     on<VIECameraButtonPressedEvent>(_handleCameraButton);
   }
 
   Future<void> _handleGuestFormSubmit(
-      VIEGuestFormSubmitButtonPressedEvent event,
-      Emitter<VisitorInEntryState> emit,
-      ) async {
+    VIEGuestFormSubmitButtonPressedEvent event,
+    Emitter<VisitorInEntryState> emit,
+  ) async {
     final visitor = Visitor(
       name: event.guestName!,
       mobile: event.mobile,
       visitor_image: "",
+      isStaff: event.searchedVisitor?.isStaff, // Preserve isStaff property
     );
 
     if (event.searchedVisitor == null ||
@@ -56,9 +57,9 @@ class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> 
   }
 
   Future<void> _handleCameraButton(
-      VIECameraButtonPressedEvent event,
-      Emitter<VisitorInEntryState> emit,
-      ) async {
+    VIECameraButtonPressedEvent event,
+    Emitter<VisitorInEntryState> emit,
+  ) async {
     emit(VisitorInEntryLoadingState());
 
     try {
@@ -73,7 +74,8 @@ class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> 
       if (event.operation == "new_visitor") {
         await _handleNewVisitor(updatedVisitor, event.purposeCategory!, emit);
       } else {
-        await _handleExistingVisitor(updatedVisitor, event.purposeCategory!, emit);
+        await _handleExistingVisitor(
+            updatedVisitor, event.purposeCategory!, emit);
       }
     } catch (error) {
       emit(VisitorInEntryErrorState(message: error.toString()));
@@ -89,24 +91,20 @@ class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> 
   }
 
   Future<void> _handleNewVisitor(
-      Visitor visitor,
-      PurposeCategory1 purposeCategory,
-      Emitter<VisitorInEntryState> emit,
-      ) async {
+    Visitor visitor,
+    PurposeCategory1 purposeCategory,
+    Emitter<VisitorInEntryState> emit,
+  ) async {
     final createdVisitor = await _visitorUsecase.createVisitor(visitor);
     print("Visitor Name: ${createdVisitor!.name}, Visitor Details:  ");
-    if (createdVisitor != null) {
-      emit(VIENavigateToUnitSelectionState(createdVisitor, purposeCategory));
-    } else {
-      emit(VisitorInEntryErrorState(message: "Error creating visitor"));
-    }
+    emit(VIENavigateToUnitSelectionState(createdVisitor, purposeCategory));
   }
 
   Future<void> _handleExistingVisitor(
-      Visitor visitor,
-      PurposeCategory1 purposeCategory,
-      Emitter<VisitorInEntryState> emit,
-      ) async {
+    Visitor visitor,
+    PurposeCategory1 purposeCategory,
+    Emitter<VisitorInEntryState> emit,
+  ) async {
     final isUpdated = await _visitorUsecase.updateVisitor(visitor);
     if (isUpdated) {
       emit(VIENavigateToUnitSelectionState(visitor, purposeCategory));
@@ -115,4 +113,3 @@ class VisitorInEntryBloc extends Bloc<VisitorInEntryEvent, VisitorInEntryState> 
     }
   }
 }
-

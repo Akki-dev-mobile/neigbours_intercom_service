@@ -316,7 +316,7 @@ class RemoteDataSource {
 
           final comingFrom = visitorData['coming_from'] as String;
           log("comingFrom $comingFrom");
-         await gateStorage.setComingFrom(
+          await gateStorage.setComingFrom(
             comingFrom,
           );
           final myComingFrom = await gateStorage.getComingFrom();
@@ -324,8 +324,7 @@ class RemoteDataSource {
           log("comingFrom pref $myComingFrom");
           // Store the coming_from value in SharedPreferences
           // final prefs = await SharedPreferences.getInstance();
-         // await prefs.setString('visitor_coming_from', comingFrom);
-
+          // await prefs.setString('visitor_coming_from', comingFrom);
 
           GateStorage().saveImage(
             visitorData['visitor_image'] as String? ?? "",
@@ -344,7 +343,13 @@ class RemoteDataSource {
         // }
 
         if (visitorData != null) {
-          return Visitor.fromJson(visitorData);
+          // Create visitor from JSON and set isStaff property
+          Visitor visitor = Visitor.fromJson(visitorData);
+
+          // Set isStaff based on whether a staff entry was found
+          visitor.isStaff = visitor.isStaff;
+
+          return visitor;
         } else {
           log("No visitor found in the response data.");
         }
@@ -420,7 +425,7 @@ class RemoteDataSource {
 
       final selectedGateName =
           prefs.getString('selected_gate') ?? 'Default Gate';
-      final coming_from = await gateStorage.getComingFrom();
+      final comingFrom = await gateStorage.getComingFrom();
       // Prepare the data payload
       final data = {
         "name": visitor.name == "" ? "Test" : visitor.name,
@@ -428,7 +433,7 @@ class RemoteDataSource {
         "visitor_image": uploadImageUrl.toString(),
         "company_id": companyId,
         "in_gate": selectedGateName.toString(),
-        "coming_from": coming_from,
+        "coming_from": comingFrom,
       };
 
       // Make the POST request to the API
@@ -461,6 +466,7 @@ class RemoteDataSource {
         name: visitor.name,
         mobile: visitor.mobile,
         visitor_image: uploadImageUrl.toString(),
+        isStaff: visitor.isStaff, // Preserve isStaff value from input visitor
       );
     } catch (error) {
       _handleErrorResponse();
@@ -2118,17 +2124,17 @@ class RemoteDataSource {
             'No visitor ID found. Please search for a visitor first.');
       }
 
-      final coming_from = await gateStorage.getComingFrom();
-      log("updateVisitor : $coming_from");
+      final comingFrom = await gateStorage.getComingFrom();
+      log("updateVisitor : $comingFrom");
       // Prepare the API URL
       final url = '${ApiUrls.visitorEntry}/$searchedVisitorId';
-
 
       // Prepare the request payload
       final data = {
         "name": visitor.name,
         "mobile_number": visitor.mobile,
-        "coming_from":coming_from,
+        "coming_from": comingFrom,
+        "isStaff": visitor.isStaff, // Include isStaff property in the update
       };
 
       log("comingFrom updateVisitor data: $data");

@@ -165,23 +165,33 @@ class _IdInputViewState extends State<IdInputView> {
                 );
                 return; // Exit early
               }
-              showModalBottomSheet(
-                useSafeArea: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+              if (searchedVisitor?.isStaff == true) {
+                RemoteDataSource().createVisitor(searchedVisitor!);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          RequestPermissionPage2(visitor: searchedVisitor!)),
+                );
+              } else {
+                showModalBottomSheet(
+                  useSafeArea: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
                   ),
-                ),
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                context: context,
-                builder: (context) => ImageGridBottomSheet(
-                  purposeCategories: state.purposeCategories!.toList(),
-                  gatekeeperDashboardBloc: gateDashboardBloc,
-                  mobileNumber:
-                      mobileController.text, // Pass mobile number here
-                ),
-              );
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  context: context,
+                  builder: (context) => ImageGridBottomSheet(
+                    purposeCategories: state.purposeCategories!.toList(),
+                    gatekeeperDashboardBloc: gateDashboardBloc,
+                    mobileNumber:
+                        mobileController.text, // Pass mobile number here
+                  ),
+                );
+              }
             }
 
             switch (state.runtimeType) {
@@ -646,10 +656,10 @@ class _IdInputViewState extends State<IdInputView> {
       int id1 = int.parse(id);
       final dio = Dio();
       final String apiUrl = "${ApiUrls.gateBaseUrl}/visitor/entry/$id1";
-      final coming_from = await GateStorage().getComingFrom();
+      final comingFrom = await GateStorage().getComingFrom();
       final data = {
         "visitor_image": imageUrl,
-        "coming_from": coming_from,
+        "coming_from": comingFrom,
       };
 
       final response = await dio.patch(

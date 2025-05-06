@@ -1,0 +1,1 @@
+/home/app-team/Documents/one-monorepo/apps/flutter/onegate/build/app/intermediates/cxx/Debug/g0y1y504/obj/arm64-v8a

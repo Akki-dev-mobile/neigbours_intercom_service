@@ -9,6 +9,7 @@ import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/visitor_repo_impl.dart';
@@ -117,6 +118,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _guestComingFromController = TextEditingController(
       text: comingFrom ?? widget.comingfrom,
     );
+
+    // Update coming from with value from gateStorage
+    _guestComingFromController!.text =
+        await gateStorage.getComingFrom() ?? "test";
     _guestCountController = TextEditingController(
       text: '1',
     );
@@ -131,6 +136,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     );
   }
 
+  final GateStorage gateStorage = GateStorage();
   Future<void> _loadInitialData() async {
     await Future.wait([
       _loadVisitorSettings(),
@@ -302,6 +308,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
       name: _guestNameController?.text,
       mobile: effectiveMobile,
+      isStaff: widget.searchedVisitor?.isStaff, // Preserve isStaff property
     ));
     // }
 
@@ -448,7 +455,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     : int.parse(searchedId.toString()),
                 name: _guestNameController?.text,
                 mobile: widget.mobile,
-                visitor_image: "");
+                visitor_image: "",
+                isStaff: widget.searchedVisitor?.isStaff);
 
             await _updateVisitor(updatedVisitor);
           }

@@ -33,8 +33,7 @@ class GatekeeperDashboardBloc
     on<GDVisitorsOutButtonPressedEvent>(onVisitorsOutButtonPressedEvent);
   }
 
-  FutureOr<void> onMobileNumberEnteredEvent(
-      GDOnMobileNumberEnteredEvent event,
+  FutureOr<void> onMobileNumberEnteredEvent(GDOnMobileNumberEnteredEvent event,
       Emitter<GatekeeperDashboardState> emit) async {
     emit(GatekeeperDashboardLoadingState());
     try {
@@ -78,24 +77,32 @@ class GatekeeperDashboardBloc
       final today = DateTime.now();
 
       final List<VisitorLog>? allCheckedInVisitors =
-      await visitorLogUsecase.fetchCheckInVisitorLog(int.parse(companyId.toString()),today.toString());
-      final List<VisitorLog> todaysCheckedInVisitors = allCheckedInVisitors?.where((visitor) {
-        final DateTime checkInDate = DateTime.parse(visitor.visitor_check_in.toString()); // Replace 'timestamp' with actual field
-        return checkInDate.year == today.year &&
-            checkInDate.month == today.month &&
-            checkInDate.day == today.day;
-      }).toList() ?? [];
+          await visitorLogUsecase.fetchCheckInVisitorLog(
+              int.parse(companyId.toString()), today.toString());
+      final List<VisitorLog> todaysCheckedInVisitors =
+          allCheckedInVisitors?.where((visitor) {
+                final DateTime checkInDate = DateTime.parse(visitor
+                    .visitor_check_in
+                    .toString()); // Replace 'timestamp' with actual field
+                return checkInDate.year == today.year &&
+                    checkInDate.month == today.month &&
+                    checkInDate.day == today.day;
+              }).toList() ??
+              [];
       final int inBook = todaysCheckedInVisitors.length;
 
-
-      final List<VisitorLog>? allCheckedOutVisitors =
-      await visitorLogUsecase.fetchCheckOutLogs(int.parse(companyId.toString()),today.toString());
-      final List<VisitorLog> todaysCheckedOutVisitors = allCheckedOutVisitors?.where((visitor) {
-        final DateTime checkOutDate = DateTime.parse(visitor.visitor_check_out.toString()); // Replace 'timestamp' with actual field
-        return checkOutDate.year == today.year &&
-            checkOutDate.month == today.month &&
-            checkOutDate.day == today.day;
-      }).toList() ?? [];
+      final List<VisitorLog>? allCheckedOutVisitors = await visitorLogUsecase
+          .fetchCheckOutLogs(int.parse(companyId.toString()), today.toString());
+      final List<VisitorLog> todaysCheckedOutVisitors =
+          allCheckedOutVisitors?.where((visitor) {
+                final DateTime checkOutDate = DateTime.parse(visitor
+                    .visitor_check_out
+                    .toString()); // Replace 'timestamp' with actual field
+                return checkOutDate.year == today.year &&
+                    checkOutDate.month == today.month &&
+                    checkOutDate.day == today.day;
+              }).toList() ??
+              [];
       final int outBook = todaysCheckedOutVisitors.length;
 
       emit(GatekeeperDashboardSuccessState(inBook: inBook, outBook: outBook));
@@ -103,6 +110,7 @@ class GatekeeperDashboardBloc
       emit(GatekeeperDashboardErrorState(message: e.toString()));
     }
   }
+
   FutureOr<void> onInAndOutButtonPressedEvent(
       GDInAndOutButtonPressedEvent event,
       Emitter<GatekeeperDashboardState> emit) async {
@@ -156,34 +164,29 @@ class GatekeeperDashboardBloc
       final today = DateTime.now();
 
       final List<VisitorLog>? allCheckedInVisitors =
-      await visitorLogUsecase.fetchCheckInVisitorLog(
-          int.parse(companyId.toString()), today.toString());
+          await visitorLogUsecase.fetchCheckInVisitorLog(
+              int.parse(companyId.toString()), today.toString());
       final List<VisitorLog> todaysCheckedInVisitors =
-          allCheckedInVisitors
-              ?.where((visitor) {
-            final DateTime checkInDate =
-            DateTime.parse(visitor.visitor_check_in.toString());
-            return checkInDate.year == today.year &&
-                checkInDate.month == today.month &&
-                checkInDate.day == today.day;
-          })
-              .toList() ??
+          allCheckedInVisitors?.where((visitor) {
+                final DateTime checkInDate =
+                    DateTime.parse(visitor.visitor_check_in.toString());
+                return checkInDate.year == today.year &&
+                    checkInDate.month == today.month &&
+                    checkInDate.day == today.day;
+              }).toList() ??
               [];
       final int inBook = todaysCheckedInVisitors.length;
 
-      final List<VisitorLog>? allCheckedOutVisitors =
-      await visitorLogUsecase.fetchCheckOutLogs(
-          int.parse(companyId.toString()), today.toString());
+      final List<VisitorLog>? allCheckedOutVisitors = await visitorLogUsecase
+          .fetchCheckOutLogs(int.parse(companyId.toString()), today.toString());
       final List<VisitorLog> todaysCheckedOutVisitors =
-          allCheckedOutVisitors
-              ?.where((visitor) {
-            final DateTime checkOutDate =
-            DateTime.parse(visitor.visitor_check_out.toString());
-            return checkOutDate.year == today.year &&
-                checkOutDate.month == today.month &&
-                checkOutDate.day == today.day;
-          })
-              .toList() ??
+          allCheckedOutVisitors?.where((visitor) {
+                final DateTime checkOutDate =
+                    DateTime.parse(visitor.visitor_check_out.toString());
+                return checkOutDate.year == today.year &&
+                    checkOutDate.month == today.month &&
+                    checkOutDate.day == today.day;
+              }).toList() ??
               [];
       final int outBook = todaysCheckedOutVisitors.length;
 
@@ -193,7 +196,3 @@ class GatekeeperDashboardBloc
     }
   }
 }
-
-
-
-
