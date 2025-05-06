@@ -992,7 +992,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   Future<List<Map<String, String>>> _getMemberDetails(int visitorLogId) async {
     final prefs = await SharedPreferences.getInstance();
-    final String? memberDetailsJson = prefs.getString('member_details');
+    final String? memberDetailsJson = prefs.getString('rows');
 
     print(memberDetailsJson);
 

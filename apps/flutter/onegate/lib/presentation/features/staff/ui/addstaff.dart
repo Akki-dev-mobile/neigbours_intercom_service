@@ -40,7 +40,7 @@ class _AddStaffState extends State<AddStaff> {
   late FocusNode _mobileFocusNode;
   XFile? _idProofImage;
   bool _isStaff = true; // Default to staff, toggle to member
-  
+
   // Member selection
   List<dynamic> _membersList = [];
   dynamic _selectedMember;
@@ -130,12 +130,12 @@ class _AddStaffState extends State<AddStaff> {
       _isMemberLoading = true;
     });
     try {
-      final members = await _remoteDataSource.getMembersList();
+      final response = await _remoteDataSource.getMembersList();
+      final members = response['data'] as List<dynamic>;
       setState(() {
-      
         _membersList = members;
         _isMemberLoading = false;
-        print('Members fetched successfully $members');
+        log('Members fetched successfully $members');
       });
     } catch (e) {
       setState(() {
@@ -161,11 +161,9 @@ class _AddStaffState extends State<AddStaff> {
       final data = response['data'];
 
       setState(() {
-        categories = Map<String, String>.fromIterable(
-          data,
-          key: (item) => item['id'].toString(),
-          value: (item) => item['category'],
-        );
+        categories = {
+          for (var item in data) item['id'].toString(): item['category']
+        };
 
         if (categories.isNotEmpty) {
           _selectedCategory = categories.keys.first;
@@ -260,21 +258,21 @@ class _AddStaffState extends State<AddStaff> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Select Image Source'),
+          title: const Text('Select Image Source'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.camera_alt),
-                title: Text('Camera'),
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
                 onTap: () {
                   Navigator.pop(context);
                   _openCamera(isIdProof: isIdProof);
                 },
               ),
               ListTile(
-                leading: Icon(Icons.photo_library),
-                title: Text('Gallery'),
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
                 onTap: () {
                   Navigator.pop(context);
                   _openGallery(isIdProof: isIdProof);
@@ -304,7 +302,7 @@ class _AddStaffState extends State<AddStaff> {
               surface: Theme.of(context).colorScheme.surface,
               onSurface: Theme.of(context).colorScheme.onSurface,
             ),
-            dialogBackgroundColor: Colors.white,
+            dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child!,
         );
@@ -320,11 +318,11 @@ class _AddStaffState extends State<AddStaff> {
 
   Future<void> _uploadImages(File profileImage, File idProofImage) async {
     try {
-      final int companyId = 1;
+      const int companyId = 1;
       final profileImageResponse =
-      await _remoteDataSource.uploadStaffImages(profileImage, companyId);
+          await _remoteDataSource.uploadStaffImages(profileImage, companyId);
       final idProofImageResponse =
-      await _remoteDataSource.uploadStaffImages(idProofImage, companyId);
+          await _remoteDataSource.uploadStaffImages(idProofImage, companyId);
 
       if (profileImageResponse != null && idProofImageResponse != null) {
         final profileImageUrl = profileImageResponse['data']?.first;
@@ -480,13 +478,14 @@ class _AddStaffState extends State<AddStaff> {
   //     }
   //   }
   // }
-  List<dynamic> _selectedMembers = []; // Changed to list for multiple selection
+  final List<dynamic> _selectedMembers =
+      []; // Changed to list for multiple selection
 
-bool _isLoading = false;
+  bool _isLoading = false;
 
   // Modify the _submitForm method
-  
-   Future<void> _submitForm() async {
+
+  Future<void> _submitForm() async {
     // First validate the form
     if (!_formKey.currentState!.validate()) return;
 
@@ -607,7 +606,8 @@ bool _isLoading = false;
     } catch (e) {
       debugPrint('Error: $e');
       myFluttertoast(
-        msg: "Error: ${e.toString().substring(0, min(e.toString().length, 100))}",
+        msg:
+            "Error: ${e.toString().substring(0, min(e.toString().length, 100))}",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -629,7 +629,7 @@ bool _isLoading = false;
   Future<void> _submitStaffData(
       String profileImageUrl, String idProofImageUrl) async {
     try {
-            final memberIds = _selectedMembers
+      final memberIds = _selectedMembers
           .map((member) => member['id']?.toString() ?? '')
           .where((id) => id.isNotEmpty)
           .join(',');
@@ -667,11 +667,11 @@ bool _isLoading = false;
           textColor: Colors.white,
           fontSize: 16.0,
         );
-        
+
         // Navigate back to staff screen
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => StaffScreen(),
+            builder: (context) => const StaffScreen(),
           ),
           (route) => false,
         );
@@ -698,460 +698,545 @@ bool _isLoading = false;
       }
     }
   }
-Widget _buildMemberSelection() {
-  return Container(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Members',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black,
-            fontWeight: FontWeight.w500,
+
+  Widget _buildMemberSelection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Members',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: [
-              // Selected members chips
-              if (_selectedMembers.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _selectedMembers.map((member) {
-                      final memberName = "${member['member_first_name'] ?? ''} ${member['member_last_name'] ?? ''}";
-                      final memberType = member['member_type_name'] ?? '';
-                      
-                      return Chip(
-                        backgroundColor: Colors.red.shade100,
-                        label: Text("$memberName ($memberType)"),
-                        deleteIcon: const Icon(Icons.close, size: 18),
-                        onDeleted: () {
-                          setState(() {
-                            _selectedMembers.remove(member);
-                          });
-                        },
-                      );
-                    }).toList(),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                // Selected members chips
+                if (_selectedMembers.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _selectedMembers.map((member) {
+                        final memberName =
+                            "${member['member_first_name'] ?? ''} ${member['member_last_name'] ?? ''}";
+                        final memberType = member['member_type_name'] ?? '';
+
+                        return Chip(
+                          backgroundColor: Colors.red.shade100,
+                          label: Text("$memberName ($memberType)"),
+                          deleteIcon: const Icon(Icons.close, size: 18),
+                          onDeleted: () {
+                            setState(() {
+                              _selectedMembers.remove(member);
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
-              
-              // Member selection button
-              InkWell(
-                onTap: () {
-                  _showMemberSelectionDialog();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _selectedMembers.isEmpty 
-                              ? 'Select members' 
-                              : '${_selectedMembers.length} members selected',
-                          style: TextStyle(
-                            color: _selectedMembers.isEmpty ? Colors.grey : Colors.black,
+
+                // Member selection button
+                InkWell(
+                  onTap: () {
+                    _showMemberSelectionDialog();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _selectedMembers.isEmpty
+                                ? 'Select members'
+                                : '${_selectedMembers.length} members selected',
+                            style: TextStyle(
+                              color: _selectedMembers.isEmpty
+                                  ? Colors.grey
+                                  : Colors.black,
+                            ),
                           ),
                         ),
-                      ),
-                      const Icon(Icons.arrow_drop_down),
-                    ],
+                        const Icon(Icons.arrow_drop_down),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        if (_selectedMembers.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0, left: 12),
-            child: Text(
-              'Please select at least one member',
-              style: TextStyle(
-                color: Colors.red.shade700,
-                fontSize: 12,
-              ),
+              ],
             ),
           ),
-      ],
-    ),
-  );
-}
-void _showMemberSelectionDialog() {
-  TextEditingController searchController = TextEditingController();
-  List<dynamic> filteredMembers = List.from(_membersList);
-  
-  // Prepare individual members from member_details
-  Map<String, List<dynamic>> membersByUnit = {};
-  
-  void buildMembersByUnit(List<dynamic> sourceList) {
-    membersByUnit.clear();
-    for (var memberGroup in sourceList) {
-      final unitNumber = memberGroup['unit_flat_number']?.toString() ?? 'Unknown Unit';
-      final buildingName = memberGroup['soc_building_name']?.toString() ?? '';
-      final unitKey = "$buildingName - $unitNumber";
-      
-      if (!membersByUnit.containsKey(unitKey)) {
-        membersByUnit[unitKey] = [];
-      }
-      
-      // Extract individual members from member_details
-      List<dynamic> memberDetails = memberGroup['member_details'] ?? [];
-      if (memberDetails.isNotEmpty) {
-        for (var member in memberDetails) {
-          // Add unit information to each member for reference
-          member['unit_flat_number'] = memberGroup['unit_flat_number'];
-          member['soc_building_name'] = memberGroup['soc_building_name'];
-          membersByUnit[unitKey]!.add(member);
+          if (_selectedMembers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, left: 12),
+              child: Text(
+                'Please select at least one member',
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showMemberSelectionDialog() {
+    TextEditingController searchController = TextEditingController();
+    List<dynamic> filteredMembers = List.from(_membersList);
+
+    // Prepare individual members from member_details
+    Map<String, List<dynamic>> membersByUnit = {};
+
+    void buildMembersByUnit(List<dynamic> sourceList) {
+      membersByUnit.clear();
+      for (var memberGroup in sourceList) {
+        final unitNumber =
+            memberGroup['unit_flat_number']?.toString() ?? 'Unknown Unit';
+        final buildingName = memberGroup['soc_building_name']?.toString() ?? '';
+        final unitKey = "$buildingName - $unitNumber";
+
+        if (!membersByUnit.containsKey(unitKey)) {
+          membersByUnit[unitKey] = [];
         }
-      } else {
-        // Fallback if member_details is empty
-        membersByUnit[unitKey]!.add(memberGroup);
+
+        // Extract individual members from member_details
+        List<dynamic> memberDetails = memberGroup['member_details'] ?? [];
+        if (memberDetails.isNotEmpty) {
+          for (var member in memberDetails) {
+            // Add unit information to each member for reference
+            member['unit_flat_number'] = memberGroup['unit_flat_number'];
+            member['soc_building_name'] = memberGroup['soc_building_name'];
+            membersByUnit[unitKey]!.add(member);
+          }
+        } else {
+          // Fallback if member_details is empty
+          membersByUnit[unitKey]!.add(memberGroup);
+        }
       }
     }
-  }
-  
-  // Initial build of membersByUnit
-  buildMembersByUnit(_membersList);
-  List<String> sortedUnitKeys = membersByUnit.keys.toList()..sort();
-  
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          void filterMembers(String query) {
-            setState(() {
-              if (query.isEmpty) {
-                // Reset to original list
-                buildMembersByUnit(_membersList);
-              } else {
-                // Create a new filtered list of individual members
-                List<dynamic> tempFilteredMembers = [];
-                
-                for (var memberGroup in _membersList) {
-                  List<dynamic> memberDetails = memberGroup['member_details'] ?? [];
-                  
-                  if (memberDetails.isNotEmpty) {
-                    for (var member in memberDetails) {
-                      final memberName = member['member_first_name']?.toString().toLowerCase() ?? '';
-                      final memberLastName = member['member_last_name']?.toString().toLowerCase() ?? '';
-                      final memberType = member['member_type_name']?.toString().toLowerCase() ?? '';
-                      final memberId = member['member_id']?.toString().toLowerCase() ?? '';
-                      final unitNumber = memberGroup['unit_flat_number']?.toString().toLowerCase() ?? '';
-                      final buildingName = memberGroup['soc_building_name']?.toString().toLowerCase() ?? '';
-                      
+
+    // Initial build of membersByUnit
+    buildMembersByUnit(_membersList);
+    List<String> sortedUnitKeys = membersByUnit.keys.toList()..sort();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            void filterMembers(String query) {
+              setState(() {
+                if (query.isEmpty) {
+                  // Reset to original list
+                  buildMembersByUnit(_membersList);
+                } else {
+                  // Create a new filtered list of individual members
+                  List<dynamic> tempFilteredMembers = [];
+
+                  for (var memberGroup in _membersList) {
+                    List<dynamic> memberDetails =
+                        memberGroup['member_details'] ?? [];
+
+                    if (memberDetails.isNotEmpty) {
+                      for (var member in memberDetails) {
+                        final memberName = member['member_first_name']
+                                ?.toString()
+                                .toLowerCase() ??
+                            '';
+                        final memberLastName = member['member_last_name']
+                                ?.toString()
+                                .toLowerCase() ??
+                            '';
+                        final memberType = member['member_type_name']
+                                ?.toString()
+                                .toLowerCase() ??
+                            '';
+                        final memberId =
+                            member['member_id']?.toString().toLowerCase() ?? '';
+                        final unitNumber = memberGroup['unit_flat_number']
+                                ?.toString()
+                                .toLowerCase() ??
+                            '';
+                        final buildingName = memberGroup['soc_building_name']
+                                ?.toString()
+                                .toLowerCase() ??
+                            '';
+
+                        if (memberName.contains(query.toLowerCase()) ||
+                            memberLastName.contains(query.toLowerCase()) ||
+                            memberType.contains(query.toLowerCase()) ||
+                            memberId.contains(query.toLowerCase()) ||
+                            unitNumber.contains(query.toLowerCase()) ||
+                            buildingName.contains(query.toLowerCase())) {
+                          // Create a copy of the member with unit information
+                          Map<String, dynamic> memberWithUnit =
+                              Map.from(member);
+                          memberWithUnit['unit_flat_number'] =
+                              memberGroup['unit_flat_number'];
+                          memberWithUnit['soc_building_name'] =
+                              memberGroup['soc_building_name'];
+                          tempFilteredMembers.add(memberWithUnit);
+                        }
+                      }
+                    } else {
+                      // Handle the case where member_details is empty
+                      final memberName = memberGroup['member_first_name']
+                              ?.toString()
+                              .toLowerCase() ??
+                          '';
+                      final unitNumber = memberGroup['unit_flat_number']
+                              ?.toString()
+                              .toLowerCase() ??
+                          '';
+                      final buildingName = memberGroup['soc_building_name']
+                              ?.toString()
+                              .toLowerCase() ??
+                          '';
+
                       if (memberName.contains(query.toLowerCase()) ||
-                          memberLastName.contains(query.toLowerCase()) ||
-                          memberType.contains(query.toLowerCase()) ||
-                          memberId.contains(query.toLowerCase()) ||
                           unitNumber.contains(query.toLowerCase()) ||
                           buildingName.contains(query.toLowerCase())) {
-                        
-                        // Create a copy of the member with unit information
-                        Map<String, dynamic> memberWithUnit = Map.from(member);
-                        memberWithUnit['unit_flat_number'] = memberGroup['unit_flat_number'];
-                        memberWithUnit['soc_building_name'] = memberGroup['soc_building_name'];
-                        tempFilteredMembers.add(memberWithUnit);
+                        tempFilteredMembers.add(memberGroup);
                       }
                     }
-                  } else {
-                    // Handle the case where member_details is empty
-                    final memberName = memberGroup['member_first_name']?.toString().toLowerCase() ?? '';
-                    final unitNumber = memberGroup['unit_flat_number']?.toString().toLowerCase() ?? '';
-                    final buildingName = memberGroup['soc_building_name']?.toString().toLowerCase() ?? '';
-                    
-                    if (memberName.contains(query.toLowerCase()) ||
-                        unitNumber.contains(query.toLowerCase()) ||
-                        buildingName.contains(query.toLowerCase())) {
-                      tempFilteredMembers.add(memberGroup);
+                  }
+
+                  // Rebuild the groups with filtered members
+                  membersByUnit.clear();
+                  for (var member in tempFilteredMembers) {
+                    final unitNumber = member['unit_flat_number']?.toString() ??
+                        'Unknown Unit';
+                    final buildingName =
+                        member['soc_building_name']?.toString() ?? '';
+                    final unitKey = "$buildingName - $unitNumber";
+
+                    if (!membersByUnit.containsKey(unitKey)) {
+                      membersByUnit[unitKey] = [];
                     }
+                    membersByUnit[unitKey]!.add(member);
                   }
                 }
-                
-                // Rebuild the groups with filtered members
-                membersByUnit.clear();
-                for (var member in tempFilteredMembers) {
-                  final unitNumber = member['unit_flat_number']?.toString() ?? 'Unknown Unit';
-                  final buildingName = member['soc_building_name']?.toString() ?? '';
-                  final unitKey = "$buildingName - $unitNumber";
-                  
-                  if (!membersByUnit.containsKey(unitKey)) {
-                    membersByUnit[unitKey] = [];
-                  }
-                  membersByUnit[unitKey]!.add(member);
-                }
-              }
-              
-              // Update the sorted keys
-              sortedUnitKeys = membersByUnit.keys.toList()..sort();
-            });
-          }
 
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 0.85,
+                // Update the sorted keys
+                sortedUnitKeys = membersByUnit.keys.toList()..sort();
+              });
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 16,
                     ),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.rectangle,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 10.0,
-                            offset: const Offset(0.0, 10.0),
-                          ),
-                        ],
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.85,
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Select Members',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red.shade700,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () => Navigator.of(context).pop(),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Search Bar
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.rectangle,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 10.0,
+                              offset: Offset(0.0, 10.0),
                             ),
-                            child: TextField(
-                              controller: searchController,
-                              decoration: InputDecoration(
-                                hintText: 'Search members or units...',
-                                border: InputBorder.none,
-                                icon: Icon(Icons.search, color: Colors.red.shade300),
-                                suffixIcon: searchController.text.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.clear),
-                                        onPressed: () {
-                                          searchController.clear();
-                                          filterMembers('');
-                                        },
-                                      )
-                                    : null,
-                              ),
-                              onChanged: filterMembers,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Selected Count
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              '${_selectedMembers.length} members selected',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-
-                          // Members list
-                          Container(
-                            constraints: BoxConstraints(
-                              maxHeight: MediaQuery.of(context).size.height * 0.5,
-                            ),
-                            child: membersByUnit.isEmpty
-                                ? Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Text(
-                                        'No members found',
-                                        style: TextStyle(color: Colors.grey.shade600),
-                                      ),
-                                    ),
-                                  )
-                                : ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: sortedUnitKeys.length,
-                                    itemBuilder: (context, unitIndex) {
-                                      final unitKey = sortedUnitKeys[unitIndex];
-                                      final unitMembers = membersByUnit[unitKey] ?? [];
-
-                                      return Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          // Unit Header
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 8, horizontal: 12),
-                                            margin: const EdgeInsets.only(top: 8),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade200,
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.apartment,
-                                                    size: 18, color: Colors.red.shade700),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    unitKey,
-                                                    style: const TextStyle(
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Text(
-                                                  '${unitMembers.length} members',
-                                                  style: TextStyle(
-                                                    color: Colors.grey.shade700,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-
-                                          // Member List
-                                           // Member List
-                                    ...unitMembers.map((member) {
-  final memberName = member['member_first_name'] ?? 'Unknown Member';
-  final memberLastName = member['member_last_name'] ?? '';
-  final memberType = member['member_type_name'] ?? '';
-  final memberId = member['member_id']?.toString() ?? '';
-  
-  // Check if this specific member is selected
-  final isSelected = _selectedMembers.any((selectedMember) => 
-    selectedMember['member_id']?.toString() == memberId);
-
-  return Card(
-    elevation: 0,
-    color: isSelected ? Colors.red.shade50 : Colors.transparent,
-    margin: const EdgeInsets.symmetric(vertical: 4),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-      side: BorderSide(
-        color: isSelected ? Colors.red.shade200 : Colors.transparent,
-        width: 1,
-      ),
-    ),
-    child: CheckboxListTile(
-      title: Text(
-        "$memberName $memberLastName",
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-      subtitle: Text('Type: $memberType'),
-      value: isSelected,
-      activeColor: Colors.red,
-      checkColor: Colors.white,
-      controlAffinity: ListTileControlAffinity.leading,
-      onChanged: (bool? value) {
-        setState(() {
-          if (value == true) {
-            _selectedMembers.add(member);
-          } else {
-            _selectedMembers.removeWhere((selectedMember) => 
-              selectedMember['member_id']?.toString() == memberId);
-          }
-        });
-      },
-    ),
-  );
-}).toList(),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                          ),
-
-                          // Action Buttons
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                TextButton(
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.grey.shade700,
+                                Text(
+                                  'Select Members',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red.shade700,
                                   ),
-                                  child: const Text('Cancel'),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
                                 ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red.shade600,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 12),
-                                  ),
-                                  child: const Text('Done'),
-                                  onPressed: () {
-                                    this.setState(() {}); // Update the parent state
-                                    Navigator.of(context).pop();
-                                  },
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => Navigator.of(context).pop(),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+
+                            // Search Bar
+                            Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: TextField(
+                                controller: searchController,
+                                decoration: InputDecoration(
+                                  hintText: 'Search members or units...',
+                                  border: InputBorder.none,
+                                  icon: Icon(Icons.search,
+                                      color: Colors.red.shade300),
+                                  suffixIcon: searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear),
+                                          onPressed: () {
+                                            searchController.clear();
+                                            filterMembers('');
+                                          },
+                                        )
+                                      : null,
+                                ),
+                                onChanged: filterMembers,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Selected Count
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(
+                                '${_selectedMembers.length} members selected',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+
+                            // Members list
+                            Container(
+                              constraints: BoxConstraints(
+                                maxHeight:
+                                    MediaQuery.of(context).size.height * 0.5,
+                              ),
+                              child: membersByUnit.isEmpty
+                                  ? Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Text(
+                                          'No members found',
+                                          style: TextStyle(
+                                              color: Colors.grey.shade600),
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      itemCount: sortedUnitKeys.length,
+                                      itemBuilder: (context, unitIndex) {
+                                        final unitKey =
+                                            sortedUnitKeys[unitIndex];
+                                        final unitMembers =
+                                            membersByUnit[unitKey] ?? [];
+
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // Unit Header
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                      horizontal: 12),
+                                              margin:
+                                                  const EdgeInsets.only(top: 8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade200,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.apartment,
+                                                      size: 18,
+                                                      color:
+                                                          Colors.red.shade700),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      unitKey,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '${unitMembers.length} members',
+                                                    style: TextStyle(
+                                                      color:
+                                                          Colors.grey.shade700,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            // Member List
+                                            // Member List
+                                            ...unitMembers.map((member) {
+                                              final memberName =
+                                                  member['member_first_name'] ??
+                                                      'Unknown Member';
+                                              final memberLastName =
+                                                  member['member_last_name'] ??
+                                                      '';
+                                              final memberType =
+                                                  member['member_type_name'] ??
+                                                      '';
+                                              final memberId =
+                                                  member['member_id']
+                                                          ?.toString() ??
+                                                      '';
+
+                                              // Check if this specific member is selected
+                                              final isSelected =
+                                                  _selectedMembers.any(
+                                                      (selectedMember) =>
+                                                          selectedMember[
+                                                                  'member_id']
+                                                              ?.toString() ==
+                                                          memberId);
+
+                                              return Card(
+                                                elevation: 0,
+                                                color: isSelected
+                                                    ? Colors.red.shade50
+                                                    : Colors.transparent,
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 4),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  side: BorderSide(
+                                                    color: isSelected
+                                                        ? Colors.red.shade200
+                                                        : Colors.transparent,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: CheckboxListTile(
+                                                  title: Text(
+                                                    "$memberName $memberLastName",
+                                                    style: TextStyle(
+                                                      fontWeight: isSelected
+                                                          ? FontWeight.bold
+                                                          : FontWeight.normal,
+                                                    ),
+                                                  ),
+                                                  subtitle:
+                                                      Text('Type: $memberType'),
+                                                  value: isSelected,
+                                                  activeColor: Colors.red,
+                                                  checkColor: Colors.white,
+                                                  controlAffinity:
+                                                      ListTileControlAffinity
+                                                          .leading,
+                                                  onChanged: (bool? value) {
+                                                    setState(() {
+                                                      if (value == true) {
+                                                        _selectedMembers
+                                                            .add(member);
+                                                      } else {
+                                                        _selectedMembers.removeWhere(
+                                                            (selectedMember) =>
+                                                                selectedMember[
+                                                                        'member_id']
+                                                                    ?.toString() ==
+                                                                memberId);
+                                                      }
+                                                    });
+                                                  },
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                            ),
+
+                            // Action Buttons
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.grey.shade700,
+                                    ),
+                                    child: const Text('Cancel'),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red.shade600,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                    ),
+                                    child: const Text('Done'),
+                                    onPressed: () {
+                                      this.setState(
+                                          () {}); // Update the parent state
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      );
-    },
-  );
-}
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
 // Add this in your form widget where appropriate
   // if (!_isStaff) _buildMemberSelection(),
@@ -1305,7 +1390,9 @@ void _showMemberSelectionDialog() {
       case 'Aadhar Card':
         return _validateAadharCard(input);
       case 'Passport':
-        if (input.length < 8 || input.length > 9 || !RegExp(r'^[A-Za-z0-9]+$').hasMatch(input)) {
+        if (input.length < 8 ||
+            input.length > 9 ||
+            !RegExp(r'^[A-Za-z0-9]+$').hasMatch(input)) {
           return 'Please enter a valid Passport number (8-9 alphanumeric characters)';
         }
         break;
@@ -1332,462 +1419,472 @@ void _showMemberSelectionDialog() {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-        pageTitle: _isStaff ? "Create Staff" : "Add Member",
-        pageBody: SingleChildScrollView(
-          child: Column(
+      pageTitle: _isStaff ? "Create Staff" : "Add Member",
+      pageBody: SingleChildScrollView(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-          // Staff/Member Toggle at the top
-          _buildStaffMemberToggle(),
-          
-              SizedBox(
+            // Staff/Member Toggle at the top
+            _buildStaffMemberToggle(),
+
+            SizedBox(
               width: double.infinity,
               height: MediaQuery.of(context).size.height * 0.3,
               child: Stack(
-              alignment: Alignment.center,
-              children: [
-              CircleAvatar(
-              radius: 80,
-              backgroundColor: Colors.grey,
-              backgroundImage: _image != null
-              ? FileImage(File(_image!.path))
-          : const NetworkImage(
-              "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"),
+                alignment: Alignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 80,
+                    backgroundColor: Colors.grey,
+                    backgroundImage: _image != null
+                        ? FileImage(File(_image!.path))
+                        : const NetworkImage(
+                            "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"),
+                  ),
+                  Positioned(
+                    bottom: 50,
+                    right: 90,
+                    child: InkWell(
+                      onTap: () => _showImageSourceDialog(isIdProof: false),
+                      child: CircleAvatar(
+                        radius: 20,
+                        child: Icon(
+                          Icons.camera_alt,
+                          color: Colors.grey.withOpacity(0.8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Positioned(
-              bottom: 50,
-              right: 90,
-              child: InkWell(
-              onTap: () => _showImageSourceDialog(isIdProof: false),
-              child: CircleAvatar(
-              radius: 20,
-              child: Icon(
-              Icons.camera_alt,
-              color: Colors.grey.withOpacity(0.8),
-              ),
-              ),
-              ),
-              ),
-              ],
-              ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                child: Form(
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Form(
                 key: _formKey,
                 child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                Text('Personal Details',
-                style: Theme.of(context).textTheme.displaySmall),
-                const SizedBox(height: 20),
-                CustomForm.textField(
-                "Name",
-                textController: _nameController,
-                titleColor: Colors.black,
-                hintColor: Colors.grey,
-                hintText: "Enter Name",
-                validator: (value) {
-                if (value?.isEmpty ?? true) {
-                return 'Please enter a name';
-                }
-                if (value!.length < 3) {
-                return 'Name must be at least 3 characters';
-                }
-                return null;
-                },
-                ),
-                _buildGenderSelection(),
-                CustomForm.textField(
-                textController: _phoneController,
-                titleColor: Theme.of(context).colorScheme.onBackground,
-                hintColor: Theme.of(context).colorScheme.onPrimary,
-                focusNode: _mobileFocusNode,
-                "Mobile Number",
-                hintText: '0123456789',
-                prefixIcon: CountryCodePicker(
-                initialSelection: 'IN',
-                favorite: const ['IN'],
-                showFlagMain: true,
-                showFlagDialog: true,
-                boxDecoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.background,
-                ),
-                barrierColor: Theme.of(context)
-                          .colorScheme
-                          .background
-                          .withOpacity(0.5),
-                closeIcon: Icon(
-                Icons.close,
-                color: Theme.of(context).colorScheme.onBackground,
-                ),
-                searchDecoration: InputDecoration(
-                prefixIcon: Icon(
-                Icons.search,
-                color: Theme.of(context).colorScheme.onBackground,
-                ),
-                hintText: 'Search',
-                hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onBackground,
-                ),
-                focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(
-                style: BorderStyle.solid,
-                color: Theme.of(context).colorScheme.onBackground,
-                ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(
-                style: BorderStyle.solid,
-                color: Theme.of(context).colorScheme.onBackground,
-                ),
-                ),
-                ),
-                textStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onBackground,
-                fontSize: 18,
-                ),
-                dialogTextStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onBackground,
-                ),
-                onChanged: (CountryCode countryCode) {
-                setState(() {
-                selectedCountryCodeSE = countryCode.code!;
-                });
-                },
-                ),
-                suffixIcon: IconButton(
-                onPressed: () {
-                setState(() {
-                FocusScope.of(context).unfocus();
-                });
-                },
-                icon: const CircleAvatar(
-                radius: 20,
-                child: Icon(
-                size: 22,
-                Symbols.done,
-                color: Colors.black,
-                ),
-                ),
-                ),
-                keyboardType: TextInputType.number,
-                length: 10,
-                validator: (value) {
-                if (value == null || value.isEmpty) {
-                return 'Mobile number is required';
-                }
-                          
-                if (value.length != 10) {
-                return 'Please enter a 10-digit number';
-                }
-                          
-                if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                return 'Mobile number should contain only digits';
-                }
-                          
-                // Basic validation for Indian mobile numbers
-                if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value)) {
-                return 'Please enter a valid Indian mobile number';
-                }
-                          
-                return null;
-                },
-                ),
-                CustomForm.textField(
-                "Email",
-                textController: _emailController,
-                hintText: "Enter Email",
-                titleColor: Colors.black,
-                hintColor: Colors.grey,
-                keyboardType: TextInputType.emailAddress,
-                validator: _validateEmail,
-                ),
-                 CustomForm.textField(
-                  "Date of Birth",
-                  titleColor: Colors.black,
-                  hintColor: Colors.grey,
-                  hintText: 'Enter Date of Birth',
-                  textController: TextEditingController(
-                          text: _selectedDate != null
-                            ? "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}"
-                            : ""
-                  ),
-                  isReadOnly: true,
-                  // onTap: () => _selectDateOfBirth(),
-                  suffixIcon: IconButton(
-                          icon: const Icon(Icons.calendar_today),
-                          onPressed: () => _selectDateOfBirth(),
-                  ),
-                ),
-                
-                // Address field
-                CustomForm.textField(
-                  "Address",
-                  textController: addressController,
-                  titleColor: Colors.black,
-                  hintColor: Colors.grey,
-                  hintText: "Enter Address",
-                  lines: 3,
-                  // maxLines: 3,
-                  validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Please enter an address';
-                          }
-                          return null;
-                  },
-                ),
-                
-                const SizedBox(height: 20),
-                Text('Professional Details',
-                          style: Theme.of(context).textTheme.displaySmall),
-                const SizedBox(height: 20),
-                            if (!_isStaff)_buildMemberSelection(),
-                if (!_isStaff) const SizedBox(height: 16),
-                
-                 // Category dropdown
-                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                          const Text(
-                            'Category',
-                            style: TextStyle(
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: categories.isEmpty ? null : _selectedCategory.isEmpty ? null : _selectedCategory,
-                  hint: const Text('Select Category'),
-                  items: categories.entries.map((entry) {
-                    return DropdownMenuItem<String>(
-                      value: entry.key,
-                      child: Text(entry.value),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedCategory = newValue;
-                        _selectedCategoryValue = categories[newValue] ?? '';
-                      });
-                    }
-                  },
-                ),
-                            ),
-                          ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Qualification dropdown
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                          const Text(
-                            'Qualification',
-                            style: TextStyle(
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: _selectedQualification,
-                  hint: const Text('Select Qualification'),
-                  items: qualifications.map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedQualification = newValue;
-                      });
-                    }
-                  },
-                ),
-                            ),
-                          ),
-                  ],
-                ),
-                
-                const SizedBox(height: 20),
-                Text('ID Proof Details',
-                          style: Theme.of(context).textTheme.displaySmall),
-                const SizedBox(height: 20),
-                
-                // ID Proof Type dropdown
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                          const Text(
-                            'ID Proof Type',
-                            style: TextStyle(
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: _selectedIdProof,
-                  hint: const Text('Select ID Proof Type'),
-                  items: idProofs.map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedIdProof = newValue;
-                        _idNumberController.clear(); // Clear ID number when type changes
-                      });
-                    }
-                  },
-                ),
-                            ),
-                          ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // ID Proof Number field
-                CustomForm.textField(
-                  "ID Proof Number",
-                  textController: _idNumberController,
-                  titleColor: Colors.black,
-                  hintColor: Colors.grey,
-                  hintText: "Enter ID Proof Number",
-                  inputFormatters: _getInputFormatters(_selectedIdProof),
-                  validator: _validateIdProof,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // ID Proof Image
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                          const Text(
-                            'ID Proof Image',
-                            style: TextStyle(
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: () => _showImageSourceDialog(isIdProof: true),
-                            child: Container(
-                height: 150,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: _idProofImage != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          File(_idProofImage!.path),
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-                          SizedBox(height: 8),
-                          Text('Upload ID Proof Image'),
-                        ],
-                      ),
-                            ),
-                          ),
-                  ],
-                ),
-                
-                const SizedBox(height: 30),
-                
-                // Submit Button
-                            SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitForm,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+                    Text('Personal Details',
+                        style: Theme.of(context).textTheme.displaySmall),
+                    const SizedBox(height: 20),
+                    CustomForm.textField(
+                      "Name",
+                      textController: _nameController,
+                      titleColor: Colors.black,
+                      hintColor: Colors.grey,
+                      hintText: "Enter Name",
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) {
+                          return 'Please enter a name';
+                        }
+                        if (value!.length < 3) {
+                          return 'Name must be at least 3 characters';
+                        }
+                        return null;
+                      },
                     ),
-                  )
-                : Text(
-                    'Submit',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                    _buildGenderSelection(),
+                    CustomForm.textField(
+                      textController: _phoneController,
+                      titleColor: Theme.of(context).colorScheme.onSurface,
+                      hintColor: Theme.of(context).colorScheme.onPrimary,
+                      focusNode: _mobileFocusNode,
+                      "Mobile Number",
+                      hintText: '0123456789',
+                      prefixIcon: CountryCodePicker(
+                        initialSelection: 'IN',
+                        favorite: const ['IN'],
+                        showFlagMain: true,
+                        showFlagDialog: true,
+                        boxDecoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
                         ),
-                  ),
-                  ),
-                ),  
-                const SizedBox(height: 30),
-                ],
-                ),
+                        barrierColor: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withOpacity(0.5),
+                        closeIcon: Icon(
+                          Icons.close,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        searchDecoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          hintText: 'Search',
+                          hintStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(
+                              style: BorderStyle.solid,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(
+                              style: BorderStyle.solid,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        textStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 18,
+                        ),
+                        dialogTextStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        onChanged: (CountryCode countryCode) {
+                          setState(() {
+                            selectedCountryCodeSE = countryCode.code!;
+                          });
+                        },
+                      ),
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            FocusScope.of(context).unfocus();
+                          });
+                        },
+                        icon: const CircleAvatar(
+                          radius: 20,
+                          child: Icon(
+                            size: 22,
+                            Symbols.done,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
+                      length: 10,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Mobile number is required';
+                        }
+
+                        if (value.length != 10) {
+                          return 'Please enter a 10-digit number';
+                        }
+
+                        if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                          return 'Mobile number should contain only digits';
+                        }
+
+                        // Basic validation for Indian mobile numbers
+                        if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value)) {
+                          return 'Please enter a valid Indian mobile number';
+                        }
+
+                        return null;
+                      },
+                    ),
+                    CustomForm.textField(
+                      "Email",
+                      textController: _emailController,
+                      hintText: "Enter Email",
+                      titleColor: Colors.black,
+                      hintColor: Colors.grey,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: _validateEmail,
+                    ),
+                    CustomForm.textField(
+                      "Date of Birth",
+                      titleColor: Colors.black,
+                      hintColor: Colors.grey,
+                      hintText: 'Enter Date of Birth',
+                      textController: TextEditingController(
+                          text: _selectedDate != null
+                              ? "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}"
+                              : ""),
+                      isReadOnly: true,
+                      // onTap: () => _selectDateOfBirth(),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.calendar_today),
+                        onPressed: () => _selectDateOfBirth(),
+                      ),
+                    ),
+
+                    // Address field
+                    CustomForm.textField(
+                      "Address",
+                      textController: addressController,
+                      titleColor: Colors.black,
+                      hintColor: Colors.grey,
+                      hintText: "Enter Address",
+                      lines: 3,
+                      // maxLines: 3,
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) {
+                          return 'Please enter an address';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+                    Text('Professional Details',
+                        style: Theme.of(context).textTheme.displaySmall),
+                    const SizedBox(height: 20),
+                    if (!_isStaff) _buildMemberSelection(),
+                    if (!_isStaff) const SizedBox(height: 16),
+
+                    // Category dropdown
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Category',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              value: categories.isEmpty
+                                  ? null
+                                  : _selectedCategory.isEmpty
+                                      ? null
+                                      : _selectedCategory,
+                              hint: const Text('Select Category'),
+                              items: categories.entries.map((entry) {
+                                return DropdownMenuItem<String>(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    _selectedCategory = newValue;
+                                    _selectedCategoryValue =
+                                        categories[newValue] ?? '';
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Qualification dropdown
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Qualification',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              value: _selectedQualification,
+                              hint: const Text('Select Qualification'),
+                              items: qualifications.map((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    _selectedQualification = newValue;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+                    Text('ID Proof Details',
+                        style: Theme.of(context).textTheme.displaySmall),
+                    const SizedBox(height: 20),
+
+                    // ID Proof Type dropdown
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'ID Proof Type',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              value: _selectedIdProof,
+                              hint: const Text('Select ID Proof Type'),
+                              items: idProofs.map((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    _selectedIdProof = newValue;
+                                    _idNumberController
+                                        .clear(); // Clear ID number when type changes
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ID Proof Number field
+                    CustomForm.textField(
+                      "ID Proof Number",
+                      textController: _idNumberController,
+                      titleColor: Colors.black,
+                      hintColor: Colors.grey,
+                      hintText: "Enter ID Proof Number",
+                      inputFormatters: _getInputFormatters(_selectedIdProof),
+                      validator: _validateIdProof,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ID Proof Image
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'ID Proof Image',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () => _showImageSourceDialog(isIdProof: true),
+                          child: Container(
+                            height: 150,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: _idProofImage != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(_idProofImage!.path),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_a_photo,
+                                          size: 40, color: Colors.grey),
+                                      SizedBox(height: 8),
+                                      Text('Upload ID Proof Image'),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // Submit Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                'Submit',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                  ],
                 ),
               ),
-              ],
-              ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }

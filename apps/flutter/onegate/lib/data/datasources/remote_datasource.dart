@@ -569,7 +569,7 @@ class RemoteDataSource {
 
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName = prefs.getString('selected_gate') ?? "";
-      final memberDetailsJson = prefs.getString('member_details');
+      final memberDetailsJson = prefs.getString('rows');
       List<dynamic> memberDetails = memberDetailsJson != null
           ? json.decode(memberDetailsJson) as List<dynamic>
           : [];
@@ -593,8 +593,9 @@ class RemoteDataSource {
         data: data,
         options: Options(
           headers: {
+            'Authorization':
+                'Bearer ${keycloakWrapper.accessToken ?? "accessToken"}',
             'Content-Type': 'application/json',
-            'User-Agent': 'insomnia/10.3.0',
           },
         ),
       );
@@ -1585,13 +1586,15 @@ class RemoteDataSource {
   final Duration cacheDuration =
       const Duration(minutes: 30); // Cache expiry time
 
-  Future<List<dynamic>> getMembersList() async {
+  Future<Map<String, dynamic>> getMembersList({String? buildingName}) async {
     try {
-      // Check if cached data is still valid
-      final cachedData = await _getCachedData();
-      if (cachedData != null) {
-        log('Using cached data.');
-        return cachedData;
+      // Check if cached data is still valid and no building filter is applied
+      if (buildingName == null) {
+        final cachedData = await _getCachedData();
+        if (cachedData != null) {
+          log('Using cached data.');
+          return {'data': cachedData, 'meta': await _getCachedMeta()};
+        }
       }
 
       final String? companyId = await gateStorage.getSocietyId();
@@ -1600,21 +1603,43 @@ class RemoteDataSource {
       final Map<String, String> queryParams = {
         "company_id": companyId,
       };
+
+      // Add building_name parameter if provided
+      if (buildingName != null && buildingName.isNotEmpty) {
+        queryParams["building_name"] = buildingName;
+      }
+
       final apiUrl = ApiUrls.memberList;
       final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
       log('API URL: $uri');
 
-      final response = await http.get(uri);
+      // Get access token for authorization
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization':
+              'Bearer ${keycloakWrapper.accessToken ?? accessToken}',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body) as Map<String, dynamic>;
         final membersList = responseData['data'] ?? [];
+        final meta = responseData['meta'] ?? {};
         log('Fetched members list: $membersList');
+        log('Meta data: $meta');
 
-        // Cache the new data
-        await _cacheData(membersList);
+        // Cache the new data only if no building filter is applied
+        if (buildingName == null) {
+          await _cacheData(membersList);
+          await _cacheMeta(meta);
+        }
 
-        return membersList;
+        return {'data': membersList, 'meta': meta};
       } else {
         _handleErrorResponse();
 
@@ -1663,6 +1688,23 @@ class RemoteDataSource {
 
     await prefs.setString(cacheKey, jsonData);
     await prefs.setInt(cacheTimestampKey, timestamp);
+  }
+
+  // Cache meta data
+  final String metaCacheKey = 'members_meta_cache';
+
+  Future<void> _cacheMeta(Map<String, dynamic> meta) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonData = jsonEncode(meta);
+    await prefs.setString(metaCacheKey, jsonData);
+  }
+
+  // Get cached meta data
+  Future<Map<String, dynamic>?> _getCachedMeta() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedJson = prefs.getString(metaCacheKey);
+    if (cachedJson == null) return {};
+    return jsonDecode(cachedJson) as Map<String, dynamic>;
   }
 
   /// Fetch units for a specific building

@@ -1,4 +1,3 @@
-
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 
 class VisitorLogMapper {
@@ -46,8 +45,10 @@ class VisitorLogMapper {
       visitorLogId: json['id'] as int?,
       visitorId: json['visitor_id'] as int? ?? 0,
       visitorName: json['visitor_name'] as String?,
-      visitorPurposeCategoryId: json['visitor_purpose_category_id'] as int? ?? 0,
-      visitorPurposeSubCategoryId: json['visitor_purpose_sub_category_id'] as int?,
+      visitorPurposeCategoryId:
+          json['visitor_purpose_category_id'] as int? ?? 0,
+      visitorPurposeSubCategoryId:
+          json['visitor_purpose_sub_category_id'] as int?,
       visitorCount: json['visitor_count'] as int? ?? 0,
       visitorCheckIn: json['visitor_check_in'] != null
           ? DateTime.tryParse(json['visitor_check_in'])
@@ -90,7 +91,9 @@ class VisitorLogMapper {
       'in_gate': inGate,
       'is_checked_out': isCheckedOut,
       'member_details': memberDetails,
-      'visitors': visitors?.map((visitor) => visitor.toJson()).toList(), // Convert visitors list to JSON
+      'visitors': visitors
+          ?.map((visitor) => visitor.toJson())
+          .toList(), // Convert visitors list to JSON
     };
   }
 }

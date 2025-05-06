@@ -87,6 +87,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<int> selectedUnits = {};
   String? selectedgate;
   List<dynamic> _allMembers = [];
+  List<String> _buildingNames = []; // Store building names from API
+  String? _selectedBuildingName; // Track selected building for filtering
   String? companyId;
   String? companyName;
   bool isLoading = true;
@@ -151,9 +153,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _initializeMembers() async {
-    final members = await remoteDataSource.getMembersList();
-    _allMembers = members;
-    _filteredMembersNotifier.value = members;
+    final response = await remoteDataSource.getMembersList(
+      buildingName: _selectedBuildingName,
+    );
+
+    // Extract members list from response
+    _allMembers = response['data'] ?? [];
+    _filteredMembersNotifier.value = _allMembers;
+
+    // Extract building names from meta if available and not already set
+    if (_buildingNames.isEmpty && response['meta'] != null) {
+      final meta = response['meta'] as Map<String, dynamic>;
+      if (meta.containsKey('building_names')) {
+        final buildingNames = meta['building_names'] as List<dynamic>;
+        _buildingNames = buildingNames.map((name) => name.toString()).toList();
+
+        // Add "All Buildings" option at the beginning
+        if (_buildingNames.isNotEmpty) {
+          _buildingNames.insert(0, "All Buildings");
+        }
+      }
+    }
   }
 
   Future<void> deleteImage() async {
@@ -362,13 +382,71 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> saveMemberAndUnitToPrefs(
       Set<String> memberDetails, Set<int> unitIDs) async {
     savedMemberUnitDetails = {
-      'member_details': formattedMemberDetails,
+      'rows': formattedMemberDetails,
       'unit_ids': unitIDs.whereType<int>().toList(),
       'member_ids': selectedMemberIds.toList(),
       'building_unit': selectedBuildingUnits.toList(),
       'member_old_sso_id': selectedUserIds.first
     };
     log('Saved member and unit details: ${jsonEncode(savedMemberUnitDetails)}');
+  }
+
+  // Building Selection Methods
+  Future<void> _handleBuildingSelection(String buildingName) async {
+    setState(() {
+      _isLoading = true;
+      // If "All Buildings" is selected, set to null to fetch all members
+      _selectedBuildingName =
+          buildingName == "All Buildings" ? null : buildingName;
+    });
+
+    await _initializeMembers();
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  // UI Methods
+  Widget _buildBuildingsList() {
+    if (_buildingNames.isEmpty) {
+      return const SizedBox
+          .shrink(); // Don't show anything if no building names
+    }
+
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _buildingNames.length,
+        itemBuilder: (context, index) {
+          final buildingName = _buildingNames[index];
+          final isSelected = (_selectedBuildingName == null &&
+                  buildingName == "All Buildings") ||
+              buildingName == _selectedBuildingName;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: ChoiceChip(
+              label: Text(buildingName),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  _handleBuildingSelection(buildingName);
+                }
+              },
+              backgroundColor: Colors.grey[200],
+              selectedColor: Colors.black,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   // UI Methods
@@ -465,7 +543,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Widget _buildMemberListView(
       List<dynamic> filteredMembers, Set<String> selectedMembers) {
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(
+        12,
+        12,
+        12,
+        120,
+      ),
       itemCount: filteredMembers.length,
       itemBuilder: (context, index) =>
           _buildMemberTile(filteredMembers[index], selectedMembers),
@@ -473,7 +556,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Widget _buildMemberTile(dynamic member, Set<String> selectedMembers) {
-    final memberDetails = member['member_details'] as List<dynamic>? ?? [];
+    final memberDetails = member['rows'] as List<dynamic>? ?? [];
     final unitFlatNumber = member['unit_flat_number']?.toString() ?? 'N/A';
     final buildingUnit = member['building_unit']?.toString() ?? 'N/A';
     final socBuildingName = member['soc_building_name']?.toString() ?? '';
@@ -774,6 +857,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                         vertical: 0.0, horizontal: 10),
                                     child: _buildSearchField(context),
                                   ),
+                                  // Building list section
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10),
+                                    child: _buildBuildingsList(),
+                                  ),
                                   Expanded(
                                     child: Padding(
                                       padding:
@@ -1050,7 +1139,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   ];
 
                                   await prefs.setString(
-                                    'member_details',
+                                    'rows',
                                     json.encode(societyOfficeMemberDetails),
                                   );
 
@@ -1514,7 +1603,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     print("subbb${widget.selectedSubCategoryId.toString()}");
     try {
       final String memberDetailsJson = json.encode(formattedMemberDetails);
-      await prefs.setString('member_details', memberDetailsJson);
+      await prefs.setString('rows', memberDetailsJson);
       print('Successfully saved member details: $memberDetailsJson');
     } catch (e) {
       print('Error saving member details: $e');
@@ -1545,7 +1634,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 // Helper method to retrieve the saved member details
   Future<List<Map<String, dynamic>>> getSavedMemberDetails() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? memberDetailsJson = prefs.getString('member_details');
+    final String? memberDetailsJson = prefs.getString('rows');
 
     if (memberDetailsJson != null) {
       try {

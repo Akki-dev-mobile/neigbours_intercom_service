@@ -38,7 +38,8 @@ class UnitSelectionController {
   }
 
   Future<void> _initializeMembers() async {
-    allMembers = await remoteDataSource.getMembersList();
+    final response = await remoteDataSource.getMembersList();
+    allMembers = response['data'] as List<dynamic>;
     filteredMembersNotifier.value = allMembers;
   }
 
@@ -133,7 +134,7 @@ class UnitSelectionController {
     final memberDetailsJson = jsonEncode(
       formattedMemberDetails.map((member) => member.toJson()).toList(),
     );
-    await prefs.setString('member_details', memberDetailsJson);
+    await prefs.setString('rows', memberDetailsJson);
   }
 
   void dispose() {

@@ -55,7 +55,7 @@ class VisitorRepoImpl extends VisitorRepository {
   Future<List<dynamic>?>? getMembersList(int companyId) async {
     try {
       final response = await _remoteDataSource.getMembersList();
-      return response;
+      return response['data'] as List<dynamic>;
     } catch (error) {
       return null;
     }

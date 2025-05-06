@@ -33,7 +33,8 @@ class _MemberListState extends State<MemberList> {
   Future<void> _initializeMembers() async {
     setState(() => _isLoading = true);
     try {
-      final members = await remoteDataSource.getMembersList();
+      final response = await remoteDataSource.getMembersList();
+      final members = response['data'] as List<dynamic>;
       setState(() {
         _allUnits = members;
         _filteredUnits.value = members;

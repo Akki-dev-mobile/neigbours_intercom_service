@@ -1257,7 +1257,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               ),
               leading: CircleAvatar(
                 backgroundImage: widget
-                        .visitorLog.visitor!.visitor_image!.isNotEmpty
+                            .visitorLog.visitor!.visitor_image!.isNotEmpty &&
+                        widget.visitorLog.visitor!.visitor_image != null
                     ? NetworkImage(
                         widget.visitorLog.visitor!.visitor_image ?? "")
                     : NetworkImage(

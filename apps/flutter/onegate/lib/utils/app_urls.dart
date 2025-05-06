@@ -6,7 +6,7 @@ class ApiUrls {
 
   // GateConfigHolder.gateBaseUrl;
 
-  static String get societyBaseUrl => 'https://socbackend.cubeone.in/api';
+  static String get societyBaseUrl => 'https://societybackend.cubeone.in/api';
   static String get facerecinfoUrl =>
       'https://fstech-cms-db.s3.ap-south-1.amazonaws.com/gate_facial_e7e469b505.json';
 
@@ -34,7 +34,7 @@ class ApiUrls {
   // Society API Endpoints
   static String get buildingList => '$societyBaseUrl/admin/building/list';
 
-  static String get memberList => '$societyBaseUrl/admin/member/list';
+  static String get memberList => '$societyBaseUrl/v2/admin/member/list';
 
   static String get unitList => '$societyBaseUrl/admin/units/list';
 
