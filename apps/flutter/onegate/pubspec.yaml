@@ -40,7 +40,7 @@ dependencies:
   toggle_switch: ^2.1.0
   country_code_picker: ^3.0.0
   email_validator: ^2.1.17
-  #  flutter_native_splash: ^2.4.1
+  flutter_native_splash: ^2.4.1
   cached_network_image: ^3.4.1
   image_picker: ^1.0.4
   path_provider: ^2.1.4
@@ -122,11 +122,22 @@ flutter_native_splash:
   image: assets/media/images/oneapp_logo.png
   color_dark: "#121212"
   image_dark: assets/media/images/oneapp_logo.png
-
-  android_12:
-    image: assets/media/images/oneapp_logo.png
-    icon_background_color: "#FFACAC"
-    image_dark: assets/media/images/oneapp_logo.png
-    icon_background_color_dark: "#121212"
-
+  
+  android: true
+  ios: true
   web: false
+  
+  android_gravity: center
+  ios_content_mode: center
+  
+  # Use branding instead of image for Android 12+
+  branding: assets/media/images/oneapp_logo.png
+  branding_dark: assets/media/images/oneapp_logo.png
+  
+  # Android 12 configs
+  android_12:
+    # Set these to null to use the branding instead
+    image: null
+    icon_background_color: "#FFACAC"
+    image_dark: null
+    icon_background_color_dark: "#121212"

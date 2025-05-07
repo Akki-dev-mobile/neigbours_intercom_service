@@ -193,7 +193,7 @@ class _SplashViewState extends State<SplashView>
             ),
             SizedBox(height: MediaQuery.of(context).size.height / 20),
             const Text(
-              'Welcome to OneGate',
+              'Welcome to onegate',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
@@ -87,6 +88,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Set<int> selectedUnits = {};
   String? selectedgate;
   List<dynamic> _allMembers = [];
+  Timer? _debounceTimer;
+  bool _isSearching = false;
   List<String> _buildingNames = []; // Store building names from API
   String? _selectedBuildingName; // Track selected building for filtering
   String? companyId;
@@ -106,16 +109,23 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_filterMembers);
+    // We'll handle search changes in the onChanged callback instead
     _fetchCompanyId();
     _loadVisitorSettings();
     _initializeSocketConnection();
-    _initializeFuture = _initializeMembers();
     log("$selectedUnits here is this");
     _isLoading = true; // Set loading state before fetching members
-    _initializeMembers().then((_) {
+
+    // Initialize members with caching
+    _initializeMembers(forceRefresh: false).then((_) {
       if (mounted) {
         setState(() {
+          // If we have buildings and no building is selected yet, select the first one
+          if (_buildingNames.isNotEmpty && _selectedBuildingName == null) {
+            _selectedBuildingName = _buildingNames[0];
+            // Refresh members list with the selected building
+            _initializeMembers(forceRefresh: false);
+          }
           _isLoading = false; // Turn off loading state after members are loaded
         });
       }
@@ -148,11 +158,111 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _filteredMembersNotifier.dispose();
     _selectedMembersNotifier.dispose();
     _searchController.dispose();
-    print("here i am${widget.selectedSubCategoryId}");
+    _debounceTimer?.cancel();
+    log("Disposing UnitSelectionView with subCategoryId: ${widget.selectedSubCategoryId}");
     super.dispose();
   }
 
-  Future<void> _initializeMembers() async {
+  // Cache keys
+  String get _buildingCacheKey => 'members_cache_${_selectedBuildingName ?? "all"}';
+  String get _buildingNamesCacheKey => 'building_names_cache';
+  String get _cacheDateKey => 'members_cache_date_${_selectedBuildingName ?? "all"}';
+
+  // Check if cache is valid (not older than 24 hours)
+  Future<bool> _isCacheValid() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheDate = prefs.getString(_cacheDateKey);
+    if (cacheDate == null) return false;
+
+    final cachedDateTime = DateTime.parse(cacheDate);
+    final now = DateTime.now();
+    final difference = now.difference(cachedDateTime);
+
+    // Cache is valid if less than 24 hours old
+    return difference.inHours < 24;
+  }
+
+  // Save members data to cache
+  Future<void> _cacheMembersData(List<dynamic> members) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_buildingCacheKey, jsonEncode(members));
+      await prefs.setString(_cacheDateKey, DateTime.now().toIso8601String());
+      log('Members data cached for building: ${_selectedBuildingName ?? "all"}');
+    } catch (e) {
+      log('Error caching members data: $e');
+    }
+  }
+
+  // Save building names to cache
+  Future<void> _cacheBuildingNames(List<String> buildingNames) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_buildingNamesCacheKey, jsonEncode(buildingNames));
+      log('Building names cached');
+    } catch (e) {
+      log('Error caching building names: $e');
+    }
+  }
+
+  // Get cached members data
+  Future<List<dynamic>?> _getCachedMembersData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString(_buildingCacheKey);
+      if (cachedData != null) {
+        return jsonDecode(cachedData) as List<dynamic>;
+      }
+    } catch (e) {
+      log('Error retrieving cached members data: $e');
+    }
+    return null;
+  }
+
+  // Get cached building names
+  Future<List<String>?> _getCachedBuildingNames() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString(_buildingNamesCacheKey);
+      if (cachedData != null) {
+        final List<dynamic> decoded = jsonDecode(cachedData);
+        return decoded.map((name) => name.toString()).toList();
+      }
+    } catch (e) {
+      log('Error retrieving cached building names: $e');
+    }
+    return null;
+  }
+
+  Future<void> _initializeMembers({bool forceRefresh = false}) async {
+    if (!forceRefresh) {
+      // Try to get data from cache first
+      final isCacheValid = await _isCacheValid();
+      if (isCacheValid) {
+        final cachedMembers = await _getCachedMembersData();
+        if (cachedMembers != null) {
+          log('Using cached members data for building: ${_selectedBuildingName ?? "all"}');
+          _allMembers = cachedMembers;
+          _filteredMembersNotifier.value = _allMembers;
+
+          // If building names are not set, try to get them from cache
+          if (_buildingNames.isEmpty) {
+            final cachedBuildingNames = await _getCachedBuildingNames();
+            if (cachedBuildingNames != null && cachedBuildingNames.isNotEmpty) {
+              _buildingNames = cachedBuildingNames;
+              if (_selectedBuildingName == null) {
+                _selectedBuildingName = _buildingNames[0];
+              }
+              return;
+            }
+          } else {
+            return;
+          }
+        }
+      }
+    }
+
+    // If cache is not valid or forced refresh, fetch from API
     final response = await remoteDataSource.getMembersList(
       buildingName: _selectedBuildingName,
     );
@@ -161,17 +271,25 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _allMembers = response['data'] ?? [];
     _filteredMembersNotifier.value = _allMembers;
 
+    // Cache the members data
+    await _cacheMembersData(_allMembers);
+
     // Extract building names from meta if available and not already set
-    if (_buildingNames.isEmpty && response['meta'] != null) {
+    if ((_buildingNames.isEmpty || forceRefresh) && response['meta'] != null) {
       final meta = response['meta'] as Map<String, dynamic>;
       if (meta.containsKey('building_names')) {
         final buildingNames = meta['building_names'] as List<dynamic>;
         _buildingNames = buildingNames.map((name) => name.toString()).toList();
 
-        // Add "All Buildings" option at the beginning
+        // Don't add "All Buildings" option - select first building by default
         if (_buildingNames.isNotEmpty) {
-          _buildingNames.insert(0, "All Buildings");
+          if (_selectedBuildingName == null || forceRefresh) {
+            _selectedBuildingName = _buildingNames[0];
+          }
         }
+
+        // Cache the building names
+        await _cacheBuildingNames(_buildingNames);
       }
     }
   }
@@ -180,22 +298,99 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     GateStorage storage = GateStorage();
     await storage.init();
     await storage.removeVisitorImage();
-    print("Image successfully removed.");
+    log("Image successfully removed.");
   }
 
   // Search and Filter Methods
-  void _filterMembers() {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.length >= 3) {
-      _filteredMembersNotifier.value = _allMembers.where((member) {
-        final memberName =
-            member['member_name']?.toLowerCase().contains(query) ?? false;
-        final unitNumber =
-            member['unit_flat_number']?.toLowerCase().contains(query) ?? false;
-        return memberName || unitNumber;
-      }).toList();
-    } else {
-      _filteredMembersNotifier.value = _allMembers;
+
+  void _debouncedSearchMembers(String query) {
+    // Cancel previous timer if it exists
+    _debounceTimer?.cancel();
+
+    // Set a new timer
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _searchMembersFromApi(query);
+    });
+  }
+
+  Future<void> _searchMembersFromApi(String query) async {
+    if (!mounted) return;
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final String? companyId = await gateStorage.getSocietyId();
+      if (companyId == null) {
+        throw Exception("Company ID not found");
+      }
+
+      // Get access token
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      // Check if we have either keycloakWrapper token or access token
+      if (accessToken == null && keycloakWrapper.accessToken == null) {
+        throw Exception('No authentication token found. Please log in again.');
+      }
+
+      final apiUrl = ApiUrls.memberList;
+
+      log("Searching members with query: $query");
+
+      final response = await Dio().get(
+        apiUrl,
+        queryParameters: {
+          'company_id': companyId,
+          'search': query,
+        },
+        options: Options(
+          headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Content-Type': 'application/json',
+            'Authorization': keycloakWrapper.accessToken != null
+                ? 'Bearer ${keycloakWrapper.accessToken}'
+                : 'Bearer $accessToken',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        final membersList = responseData['data'] ?? [];
+
+        log('API search results: ${membersList.length} members found');
+
+        if (mounted) {
+          setState(() {
+            _isSearching = false;
+            _filteredMembersNotifier.value = membersList;
+          });
+        }
+      } else {
+        log('Failed to search members: ${response.statusCode}');
+        if (mounted) {
+          setState(() {
+            _isSearching = false;
+          });
+          myFluttertoast(
+            msg: "Failed to search members",
+            backgroundColor: Colors.red,
+          );
+        }
+      }
+    } catch (e) {
+      log('Error searching members: $e');
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+        myFluttertoast(
+          msg: "Error searching members: ${e.toString()}",
+          backgroundColor: Colors.red,
+        );
+      }
     }
   }
 
@@ -262,7 +457,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
+                            border: Border.all(color: const Color.fromARGB(255, 0, 0, 0)),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: ListTile(
@@ -283,7 +478,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             ),
                             trailing: IconButton(
                               icon: const Icon(
-                                Icons.remove_circle_outline,
+                                Icons.close,
                                 color: Colors.red,
                               ),
                               onPressed: () {
@@ -395,16 +590,37 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> _handleBuildingSelection(String buildingName) async {
     setState(() {
       _isLoading = true;
-      // If "All Buildings" is selected, set to null to fetch all members
-      _selectedBuildingName =
-          buildingName == "All Buildings" ? null : buildingName;
+      // Set the selected building name directly
+      _selectedBuildingName = buildingName;
     });
 
-    await _initializeMembers();
+    await _initializeMembers(forceRefresh: false);
 
     setState(() {
       _isLoading = false;
     });
+  }
+
+  // Refresh data from API
+  Future<void> _refreshData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    await _initializeMembers(forceRefresh: true);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Members data refreshed successfully'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   // UI Methods
@@ -422,13 +638,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         itemCount: _buildingNames.length,
         itemBuilder: (context, index) {
           final buildingName = _buildingNames[index];
-          final isSelected = (_selectedBuildingName == null &&
-                  buildingName == "All Buildings") ||
-              buildingName == _selectedBuildingName;
+          final isSelected = buildingName == _selectedBuildingName;
 
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ChoiceChip(
+            child: ChoiceChip(checkmarkColor:Colors.white,
               label: Text(buildingName),
               selected: isSelected,
               onSelected: (selected) {
@@ -454,26 +668,38 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     return CustomForm.textField(
       'Search Members',
       titleColor: Theme.of(context).colorScheme.onSurface,
-      hintColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-      hintText: 'Search Members',
+      hintColor: Theme.of(context).colorScheme.onSurface.withAlpha(128),
+      hintText: 'Search Members (type at least 3 characters)',
       textController: _searchController,
-      onChanged: (_) {
-        _searchController.text.trim().length >= 3
-            ? _filterMembers()
-            : _filteredMembersNotifier.value = _allMembers;
+      onChanged: (query) {
+        if (query.trim().length >= 3) {
+          _debouncedSearchMembers(query.trim());
+        } else {
+          _filteredMembersNotifier.value = _allMembers;
+        }
       },
-      suffixIcon: _searchController.text.isNotEmpty
-          ? IconButton(
-              icon: const Icon(
-                Ionicons.close,
-                color: Colors.red,
+      suffixIcon: _isSearching
+          ? Container(
+              width: 24,
+              height: 24,
+              padding: const EdgeInsets.all(6),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.grey,
               ),
-              onPressed: () {
-                _searchController.clear();
-                _filteredMembersNotifier.value = _allMembers;
-              },
             )
-          : null,
+          : _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(
+                    Ionicons.close,
+                    color: Colors.red,
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                    _filteredMembersNotifier.value = _allMembers;
+                  },
+                )
+              : null,
     );
   }
 
@@ -495,6 +721,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     const SizedBox(height: 16),
                     Text(
                       'Loading members...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (_isSearching) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(
+                      color: Colors.black,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Searching members...',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -528,7 +775,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No Members Found.\nSearch members by their name or flat',
+            'No Members Found.\nType at least 3 characters to search members by their name or flat',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -852,10 +1099,38 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             children: [
                               Column(
                                 children: [
+                                  // Search and refresh row
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 0.0, horizontal: 10),
-                                    child: _buildSearchField(context),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildSearchField(context),
+                                        ),
+                                        Container(
+                                          margin: const EdgeInsets.only(left: 8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: IconButton(
+                                            icon: _isLoading
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    color: Colors.white,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                )
+                                              : const Icon(Icons.refresh, color: Colors.white),
+                                            tooltip: 'Refresh members data',
+                                            onPressed: _isLoading ? null : _refreshData,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                   // Building list section
                                   Padding(

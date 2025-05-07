@@ -289,6 +289,26 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
   bool _isRefreshing = false;
   DateTime _lastRefreshTime = DateTime.now();
   String _currentTime = '';
+  Future<void> logout(BuildContext context) async {
+    try {
+      log("Attempting logout...");
+      await keycloakWrapper.logout();
+      log("Keycloak session ended.");
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear(); // Clear all stored preferences
+      log("Preferences cleared.");
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => MyAppLogin()),
+            (route) => false,
+      );
+    } catch (e, st) {
+      log("Logout failed: $e\n$st");
+      // Optionally show a SnackBar or AlertDialog to inform the user
+    }
+  }
 
   @override
   void initState() {
@@ -487,19 +507,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                             ),
                           ),
                           onPressed: () async {
-                            Navigator.of(context).pop(); // Close the dialog
-
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.clear(); // Clear all stored data
-
-                            if (context.mounted) {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const MyAppLogin()),
-                                (route) => false,
-                              );
-                            }
+                           logout(context);
                           },
                           child: const Text(
                             'Logout',
@@ -578,7 +586,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                             ),
                             const SizedBox(height: 16),
                             const Text(
-                              'No missed approvals',
+                              'No Visitors Found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
