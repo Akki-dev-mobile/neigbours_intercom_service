@@ -890,24 +890,26 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
   Future<Map<String, dynamic>> _prepareSocketRequestData() async {
     final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
-    return {
-      'company_id': widget.visitorInfo.companyId.toString(),
-      'name': widget.visitorInfo.visitorName,
-      'mobile': widget.visitorInfo.visitorMobile,
-      'in_time': formattedInTime,
-      'user_id': widget.visitorInfo.memberInfo.memberId.toString(),
-      'visitor_count': "1",
-      'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
-      'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "",
-      'visitor_id': widget.visitorInfo.visitorId.toString(),
-      'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
-          ? "delivery"
-          : widget.visitorInfo.visitorPurposeCategoryId.toString(),
-      'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
-      'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
-      'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
-      'socket_request': true // Add flag to identify socket requests
-    };
+return {
+  'company_id': widget.visitorInfo.companyId.toString(),
+  'name': widget.visitorInfo.visitorName,
+  'mobile': widget.visitorInfo.visitorMobile,
+  'in_time': formattedInTime,
+  'user_id': widget.visitorInfo.memberInfo.userId.toString(),
+  'visitor_count': "1",
+  'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+  'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
+  'visitor_id': widget.visitorInfo.visitorId.toString(),
+  'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
+      ? "delivery"
+      : widget.visitorInfo.visitorPurposeCategoryId.toString(),
+  'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
+  'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
+  'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
+  "self_check_in": "false",
+  "company_name": widget.visitorInfo.companyName, // new key
+  "file":  widget.visitorInfo.visitorImage// new key
+};
   }
 
   Future<void> _handleFcmResponse(dynamic responseData) async {
@@ -944,52 +946,57 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     }
   }
 
-  Future<void> _sendFcmNotification() async {
-    final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+Future<void> _sendFcmNotification() async {
+  final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
-    try {
-      // Use the same data structure as the socket request
-      final requestData = {
-        'company_id': widget.visitorInfo.companyId.toString(),
-        'name': widget.visitorInfo.visitorName,
-        'mobile': widget.visitorInfo.visitorMobile,
-        'in_time': formattedInTime,
-        'user_id': widget.visitorInfo.memberInfo.memberId.toString(),
-        'visitor_count': "1",
-        'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
-        'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
-        'visitor_id': widget.visitorInfo.visitorId.toString(),
-        'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
-            ? "delivery"
-            : widget.visitorInfo.visitorPurposeCategoryId.toString(),
-        'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
-        'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
-        'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
-        "self_check_in": "false"
-      };
+  try {
+final requestData = {
+  'company_id': widget.visitorInfo.companyId.toString(),
+  'name': widget.visitorInfo.visitorName,
+  'mobile': widget.visitorInfo.visitorMobile,
+  'in_time': formattedInTime,
+  'user_id': widget.visitorInfo.memberInfo.userId.toString(),
+  'visitor_count': "1",
+  'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+  'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
+  'visitor_id': widget.visitorInfo.visitorId.toString(),
+  'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
+      ? "delivery"
+      : widget.visitorInfo.visitorPurposeCategoryId.toString(),
+  'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
+  'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
+  'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
+  "self_check_in": "false",
+  "company_name": widget.visitorInfo.companyName, // new key
+  "file":  widget.visitorInfo.visitorImage// new key
+};
 
-      log("📨 Sending FCM Notification with Data: $requestData");
 
-      final response = await Dio().post(
-        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
-        data: requestData,
-      );
+    log("📨 Sending FCM Notification (800 bytes) with Data: $requestData");
 
-      if (response.statusCode == 200 && response.data != null) {
-        log("✅ FCM Notification sent successfully: ${response.data}");
-        await _handleFcmResponse(response.data);
-      } else {
-        log("❌ Failed to send notification. Response: ${response.statusCode} - ${response.data}");
-        _showSnackBar("Failed to send notification.", isError: true);
-      }
-    } catch (e, stackTrace) {
-      log("❌ Exception in sending notification: $e");
-      log("$stackTrace");
-      _showSnackBar("Error occurred while sending notification.",
-          isError: true);
+    final response = await Dio().post(
+      '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
+      options: Options(headers: {
+        "Content-Type": "application/json",
+        "Content-Length": "800"
+      }),
+      data: requestData,
+    );
+
+    if (response.statusCode == 200 && response.data != null) {
+      log("✅ FCM Notification sent successfully: ${response.data}");
+      await _handleFcmResponse(response.data);
+    } else {
+      log("❌ Failed to send notification. Response: ${response.statusCode} - ${response.data}");
+      _showSnackBar("Failed to send notification.", isError: true);
     }
+  } catch (e, stackTrace) {
+    log("❌ Exception in sending notification: $e");
+    log("$stackTrace");
+    _showSnackBar("Error occurred while sending notification.", isError: true);
   }
+}
+
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;

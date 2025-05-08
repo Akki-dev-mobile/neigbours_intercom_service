@@ -866,25 +866,26 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       final userId = prefs.getString('visitorId') ?? "0";
       final visitorLogId = prefs.getString("visitor_log") ?? "";
 
-      final requestData = {
-        'company_id': widget.visitorInfo.companyId.toString(),
-        'name': widget.visitorInfo.visitorName,
-        'mobile': widget.visitorInfo.visitorMobile,
-        'in_time': formattedInTime,
-        'user_id': (int.tryParse(userId) ?? 0) == 0 ? "234567" : userId,
-        'visitor_count': "1",
-        'purpose':
-            widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
-        'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber,
-        'visitor_id': widget.visitorInfo.visitorId.toString(),
-        'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
-            ? "delivery"
-            : widget.visitorInfo.visitorPurposeCategoryId.toString(),
-        'visitor_log_id': widget.visitorInfo.visitorLogId ?? visitorLogId,
-        'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
-        'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
-        "self_check_in": "false"
-      };
+final requestData = {
+  'company_id': widget.visitorInfo.companyId.toString(),
+  'name': widget.visitorInfo.visitorName,
+  'mobile': widget.visitorInfo.visitorMobile,
+  'in_time': formattedInTime,
+  'user_id': widget.visitorInfo.memberInfo.memberId.toString(),
+  'visitor_count': "1",
+  'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+  'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
+  'visitor_id': widget.visitorInfo.visitorId.toString(),
+  'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
+      ? "delivery"
+      : widget.visitorInfo.visitorPurposeCategoryId.toString(),
+  'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
+  'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
+  'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
+  "self_check_in": "false",
+  "company_name": widget.visitorInfo.companyName, // new key
+  "file":  widget.visitorInfo.visitorImage// new key
+};
 
       log("📨 Sending FCM Notification with Data: $requestData");
 
