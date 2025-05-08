@@ -19,7 +19,12 @@ class VisitorInfo {
   final String? purposeSubCategoryName;
   final UnitDetails unitDetails;
   final String? visitor_check_out;
-  final Map<String, dynamic>? additionalDetails; // Parsed Additional Details
+  final String? visitor_check_in;
+  final Map<String, dynamic>? additionalDetails;
+  final String? companyName;
+  final bool? isCheckedOut;
+  final String? visitorCardNumber;
+  final String? unitName;
 
   VisitorInfo({
     required this.visitorId,
@@ -39,45 +44,60 @@ class VisitorInfo {
     this.purposeCategoryName,
     this.purposeSubCategoryName,
     this.visitor_check_out,
-    this.additionalDetails, // Include Additional Details
+    this.visitor_check_in,
+    this.additionalDetails,
+    this.companyName,
+    this.isCheckedOut,
+    this.visitorCardNumber,
+    this.unitName,
   });
 
   factory VisitorInfo.fromJson(Map<String, dynamic> json) {
-    List<UnitDetails> parsedUnitDetails = [];
-
+    // Parse unit details
+    UnitDetails parsedUnitDetails = UnitDetails(unitId: 0, building_unit: '');
+    
     try {
       final unitDetailsString = json['unit_details'];
 
       if (unitDetailsString is String) {
-        final List<dynamic> decodedUnitDetails = jsonDecode(unitDetailsString);
+        // Handle the double-encoded JSON string case
+        String cleanJson = unitDetailsString;
+        
+        // If the string starts and ends with quotes, remove them
+        if (cleanJson.startsWith('"') && cleanJson.endsWith('"')) {
+          cleanJson = cleanJson.substring(1, cleanJson.length - 1);
+        }
+        
+        // Replace escaped quotes with regular quotes
+        cleanJson = cleanJson.replaceAll(r'\"', '"');
+        
+        final List<dynamic> decodedUnitDetails = jsonDecode(cleanJson);
 
-        parsedUnitDetails = decodedUnitDetails.map<UnitDetails>((unitJson) {
-          final unit = UnitDetails(
+        if (decodedUnitDetails.isNotEmpty) {
+          final unitJson = decodedUnitDetails.first;
+          parsedUnitDetails = UnitDetails(
             unitId: _parseToInt(unitJson['unit_id']),
             building_unit: unitJson["building_unit"]?.toString() ?? '',
           );
-
-          log("🔍 Parsed building_unit: ${unit.building_unit}");
-
-          return unit;
-        }).toList();
+          
+          log("🔍 Parsed building_unit: ${parsedUnitDetails.building_unit}");
+        }
       } else if (unitDetailsString is List) {
-        parsedUnitDetails = unitDetailsString.map<UnitDetails>((unitJson) {
-          final unit = UnitDetails(
+        if (unitDetailsString.isNotEmpty) {
+          final unitJson = unitDetailsString.first;
+          parsedUnitDetails = UnitDetails(
             unitId: _parseToInt(unitJson['unit_id']),
             building_unit: unitJson["building_unit"]?.toString() ?? '',
           );
-
-          log("🔍 Parsed building_unit: ${unit.building_unit}");
-
-          return unit;
-        }).toList();
+          
+          log("🔍 Parsed building_unit: ${parsedUnitDetails.building_unit}");
+        }
       }
     } catch (e) {
       log("❌ Error decoding unit details: $e");
     }
 
-    // ✅ Fix for `additional_details` Parsing
+    // Parse additional details
     Map<String, dynamic>? parsedAdditionalDetails;
     try {
       final dynamic additionalDetailsString = json['additional_details'];
@@ -85,8 +105,7 @@ class VisitorInfo {
       if (additionalDetailsString != null &&
           additionalDetailsString.toString().isNotEmpty) {
         if (additionalDetailsString is String) {
-          parsedAdditionalDetails = jsonDecode(additionalDetailsString
-              .replaceAll(r'\"', '"')); // Handle escaped quotes
+          parsedAdditionalDetails = jsonDecode(additionalDetailsString);
         } else if (additionalDetailsString is Map<String, dynamic>) {
           parsedAdditionalDetails = additionalDetailsString;
         }
@@ -96,7 +115,6 @@ class VisitorInfo {
       parsedAdditionalDetails = {};
     }
 
-
     return VisitorInfo(
       visitorId: _parseToInt(json['visitor_id']),
       visitorName: json['visitor_name']?.toString() ?? '',
@@ -104,29 +122,33 @@ class VisitorInfo {
       visitorImage: json['visitor_image']?.toString() ?? '',
       allowStatus: json['allow_status']?.toString() ?? '',
       visitorCount: _parseToInt(json['visitor_count']),
-
-      visitor_check_out: json['visitor_check_out']?.toString() ?? '',
+      visitor_check_out: json['visitor_check_out']?.toString(),
+      visitor_check_in: json['visitor_check_in']?.toString(),
       visitorLogId: _parseToInt(json['visitor_log_id']),
       companyId: _parseToInt(json['company_id']),
       inGate: json['in_gate']?.toString() ?? '',
       logCreatedAt: json['log_created_at']?.toString() ?? '',
-      unitDetails: parsedUnitDetails.isNotEmpty
-          ? parsedUnitDetails.first
-          : UnitDetails(unitId: 0, building_unit: ''),
+      unitDetails: parsedUnitDetails,
       memberInfo: MemberInfo(
         name: json['member_name']?.toString() ?? '',
         mobileNumber: json['memb_mobile_number']?.toString(),
         email: json['memb_email']?.toString(),
         memberId: _parseToInt(json['member_id']),
         unitId: _parseToInt(json['unit_id']),
-        building_unit: json["building_unit"]?.toString(),
+        building_unit: json["unit_name"]?.toString() ?? json["building_unit"]?.toString(),
+        userId: json["user_id"]?.toString(),
       ),
-      visitorComingFrom: json['visitor_coming_from']?.toString(),
+      visitorComingFrom: json['coming_from']?.toString(),
       visitorPurposeCategoryId: _parseToInt(json['purpose_category_id']),
       purposeCategoryName: json['purpose_category_name']?.toString(),
       purposeSubCategoryName: json['purpose_sub_category_name']?.toString(),
-      additionalDetails:
-          parsedAdditionalDetails, // ✅ Correctly parsed `additional_details`
+      additionalDetails: parsedAdditionalDetails,
+      companyName: json['company_name']?.toString(),
+      isCheckedOut: json['is_checked_out'] is bool 
+          ? json['is_checked_out'] 
+          : json['is_checked_out']?.toString().toLowerCase() == 'true',
+      visitorCardNumber: json['visitor_card_number']?.toString(),
+      unitName: json['unit_name']?.toString(),
     );
   }
 
@@ -158,9 +180,14 @@ class VisitorInfo {
       purposeSubCategoryName: $purposeSubCategoryName,
       memberInfo: $memberInfo,
       visitorImage: $visitorImage,
+      visitor_check_in: $visitor_check_in,
       visitor_check_out: $visitor_check_out,
       unitDetails: $unitDetails,
-      additionalDetails: $additionalDetails
+      additionalDetails: $additionalDetails,
+      companyName: $companyName,
+      isCheckedOut: $isCheckedOut,
+      visitorCardNumber: $visitorCardNumber,
+      unitName: $unitName
     )
     ''';
   }
@@ -173,20 +200,58 @@ class MemberInfo {
   final int? unitId;
   final int? memberId;
   final String? building_unit;
+  final String? userId;
 
-  MemberInfo(
-      {required this.name,
-      this.mobileNumber,
-      this.email,
-      this.unitId,
-      this.memberId,
-      this.building_unit});
+  MemberInfo({
+    required this.name,
+    this.mobileNumber,
+    this.email,
+    this.unitId,
+    this.memberId,
+    this.building_unit,
+    this.userId,
+  });
+  
+  @override
+  String toString() {
+    return 'MemberInfo(name: $name, mobileNumber: $mobileNumber, email: $email, unitId: $unitId, memberId: $memberId, building_unit: $building_unit, userId: $userId)';
+  }
 }
 
 class UnitDetails {
   final int? unitId;
-
   final String? building_unit;
 
   UnitDetails({this.unitId, this.building_unit});
+  
+  @override
+  String toString() {
+    return 'UnitDetails(unitId: $unitId, building_unit: $building_unit)';
+  }
+}
+
+// Example of a response parser for the API response
+class VisitorResponse {
+  final bool success;
+  final List<VisitorInfo> data;
+  final String message;
+  final int statusCode;
+
+  VisitorResponse({
+    required this.success,
+    required this.data,
+    required this.message,
+    required this.statusCode,
+  });
+
+  factory VisitorResponse.fromJson(Map<String, dynamic> json) {
+    return VisitorResponse(
+      success: json['success'] ?? false,
+      data: (json['data'] as List?)
+          ?.map((item) => VisitorInfo.fromJson(item))
+          .toList() ?? [],
+      message: json['message'] ?? '',
+      statusCode: json['status_code'] ?? 0,
+    );
+  }
 }

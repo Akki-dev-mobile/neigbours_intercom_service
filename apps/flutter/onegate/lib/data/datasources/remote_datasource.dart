@@ -1387,12 +1387,13 @@ class RemoteDataSource {
                 ? parsedUnitDetails.first
                 : UnitDetails(unitId: 0, building_unit: ''),
             memberInfo: MemberInfo(
-              name: json['member_name']?.toString() ?? '',
+              name: json['member_name']?.toString() ?? "",
               mobileNumber: json['memb_mobile_number']?.toString(),
               email: json['memb_email']?.toString(),
-              memberId: _parseToInt(json['member_id']),
-              unitId: _parseToInt(json['unit_id']),
-              building_unit: json["building_unit"]?.toString(),
+              memberId: _parseToInt(json['memberid'] ?? json['member_id']),
+              unitId: _parseToInt(json['unitid'] ?? json['unit_id']),
+              building_unit: json['building_unit']?.toString(),
+              userId: json['user_id']?.toString(),
             ),
             visitorComingFrom: json['visitor_coming_from']?.toString(),
             visitorPurposeCategoryId: _parseToInt(json['purpose_category_id']),

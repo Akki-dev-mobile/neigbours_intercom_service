@@ -10,6 +10,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
+import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -19,7 +20,6 @@ import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
 
 // Timer Service
 class TimerState {
@@ -76,8 +76,21 @@ class TimerService extends ChangeNotifier {
   }
 
   Future<void> startTimer(int visitorLogId, BuildContext context) async {
-    await loadApprovalTime(context); // Get latest approval time
-    final endTime = DateTime.now().add(approvalDuration);
+    // Store approval time in a local variable to avoid BuildContext issues
+    int approvalTimeValue = _approvalTime;
+
+    try {
+      // Try to get the latest approval time if context is valid
+      if (context.mounted) {
+        approvalTimeValue = context.read<VisitorApprovalTimeProvider>().approvalTime;
+      }
+    } catch (e) {
+      debugPrint("❌ Error loading approval time: $e");
+      // Continue with the current _approvalTime value
+    }
+
+    // Use the approval time value
+    final endTime = DateTime.now().add(Duration(seconds: approvalTimeValue));
     _timers[visitorLogId] = TimerState(
       endTime: endTime,
       isRetryEnabled: false,
@@ -113,14 +126,34 @@ class TimerService extends ChangeNotifier {
           isRetryEnabled: endTime.isBefore(DateTime.now()),
         );
       } else {
-        // Correct way to restart the timer
-        await startTimer(visitorLogId, context);
+        // Start timer with the provided context, but check if it's still valid
+        if (context.mounted) {
+          await startTimer(visitorLogId, context);
+        } else {
+          // If context is not valid, use default approval time
+          final endTime = DateTime.now().add(Duration(seconds: _approvalTime));
+          _timers[visitorLogId] = TimerState(
+            endTime: endTime,
+            isRetryEnabled: false,
+          );
+          await saveTimerState(visitorLogId, endTime);
+        }
       }
     } catch (e) {
       debugPrint("❌ Error in loadTimerState: $e");
 
-      // Fallback: Start timer if any error occurs
-      await startTimer(visitorLogId, context);
+      // Fallback: Start timer if any error occurs, but check if context is still valid
+      if (context.mounted) {
+        await startTimer(visitorLogId, context);
+      } else {
+        // If context is not valid, use default approval time
+        final endTime = DateTime.now().add(Duration(seconds: _approvalTime));
+        _timers[visitorLogId] = TimerState(
+          endTime: endTime,
+          isRetryEnabled: false,
+        );
+        await saveTimerState(visitorLogId, endTime);
+      }
     }
   }
 
@@ -285,8 +318,6 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
   Timer? _refreshTimer;
   Timer? _timeUpdateTimer;
   bool _isRefreshing = false;
-  DateTime _lastRefreshTime = DateTime.now();
-  String _currentTime = '';
   String? selectedBuilding = "All Buildings";
 
   @override
@@ -295,25 +326,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode();
     _futureApprovals = widget.remoteDataSource.fetchApprovals();
-    _lastRefreshTime = DateTime.now();
-    _updateCurrentTime();
     _startAutoRefresh();
-    _startTimeUpdate();
-  }
-
-  void _startTimeUpdate() {
-    // Update time every second
-    _timeUpdateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        _updateCurrentTime();
-      }
-    });
-  }
-
-  void _updateCurrentTime() {
-    setState(() {
-      _currentTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-    });
   }
 
   void _startAutoRefresh() {
@@ -345,7 +358,6 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
       await widget.remoteDataSource.fetchApprovals().then((data) {
         if (mounted) {
           setState(() {
-            _lastRefreshTime = DateTime.now();
             _futureApprovals = Future.value(data);
           });
         }
@@ -599,7 +611,7 @@ class ApprovalsList extends StatelessWidget {
           Icon(
             Icons.person_off_outlined,
             size: 48,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(153), // ~0.6 opacity
           ),
           Text(
             searchQuery.isNotEmpty
@@ -706,13 +718,33 @@ class MissedApprovalCard extends StatefulWidget {
 }
 
 class _MissedApprovalCardState extends State<MissedApprovalCard> {
-  final TimerService _timerService = TimerService();
+  late SocketService _socketService;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _initializeTimer();
+    _initializeSocketConnection();
+  }
+
+  @override
+  void dispose() {
+    // Clean up socket connection
+    _socketService.disconnect();
+    super.dispose();
+  }
+
+  void _initializeSocketConnection() {
+    _socketService = SocketService();
+    _socketService.initSocket(widget.visitorInfo.companyId.toString(), "onegate");
+
+    // Listen for socket responses
+    _socketService.messageStream.listen((message) {
+      if (message['event'] == 'fcmResponse') {
+        _handleFcmResponse(message['data']);
+      }
+    });
   }
 
   Future<void> _initializeTimer() async {
@@ -763,8 +795,10 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         requestType == RequestType.allowByGatekeeper) {
       _showSnackBar('Visitor is already allowed', isError: false);
 
-      await timerService.startTimer(visitorLogId, context);
-      setState(() {});
+      if (mounted) {
+        await timerService.startTimer(visitorLogId, context);
+        setState(() {});
+      }
       return;
     } else if (requestType == RequestType.rejected) {
       _showSnackBar('Visitor has been denied entry', isError: true);
@@ -778,44 +812,157 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     }
 
     try {
-      await _sendFcmNotification();
+      await _sendFcmNotification(); // Fallback to REST API
+      // Try to send notification via socket first
+      await _sendNotificationViaSocket();
 
-      await timerService.startTimer(visitorLogId, context);
-      timerService.markRetryAttempt(visitorLogId); // ✅ Mark Retry as Attempted
+      // Start timer and mark retry attempt
+      if (mounted) {
+        timerService.markRetryAttempt(visitorLogId); // ✅ Mark Retry as Attempted
 
-      setState(() {});
+        // Use a separate function to handle the timer to avoid BuildContext issues
+        _startTimerSafely(timerService, visitorLogId);
+      }
     } catch (e) {
+      log("❌ Error in _handleRetry: $e");
       _showSnackBar('Failed to resend notification', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  Future<void> _sendNotificationViaSocket() async {
+    try {
+      // Prepare request data
+      final requestData = await _prepareSocketRequestData();
+
+      log("📡 Preparing to send notification via socket");
+
+      // Check if socket is connected
+      if (_socketService.socket == null || !_socketService.socket!.connected) {
+        log("⚠️ Socket not connected, reconnecting...");
+        // Reinitialize socket if not connected
+        _socketService.disconnect();
+        _socketService = SocketService();
+
+        // Get company ID
+        _socketService.initSocket(widget.visitorInfo.companyId.toString(), "onegate");
+
+        // Wait for connection to establish
+        await Future.delayed(const Duration(seconds: 1));
+
+        if (_socketService.socket == null || !_socketService.socket!.connected) {
+          log("❌ Socket connection failed, falling back to REST API");
+          await _sendFcmNotification(); // Fallback to REST API
+          return;
+        }
+      }
+
+      // Set up listener for response before sending request
+      _socketService.socket!.once("fcmResponse", (responseData) async {
+        log("📩 Socket Response Received: $responseData");
+        await _handleFcmResponse(responseData);
+      });
+
+      // Send notification via socket
+      log("📤 Emitting sendFcmNotification event with data: ${jsonEncode(requestData)}");
+      _socketService.socket!.emit("sendFcmNotification", requestData);
+
+      // Show a toast to indicate the request is being processed
+      _showSnackBar("Sending notification to member...", isError: false);
+
+      // Set a timeout for socket response
+      Timer(const Duration(seconds: 5), () {
+        // If we haven't received a response after 5 seconds, fall back to REST API
+        if (_isLoading) {
+          log("⏱️ Socket response timeout, falling back to REST API");
+          _sendFcmNotification(); // Fallback to REST API
+        }
+      });
+
+    } catch (e) {
+      log("❌ Error in _sendNotificationViaSocket: $e");
+      // Fallback to REST API on error
+      await _sendFcmNotification();
+    }
+  }
+
+  Future<Map<String, dynamic>> _prepareSocketRequestData() async {
+    final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
+    return {
+      'company_id': widget.visitorInfo.companyId.toString(),
+      'name': widget.visitorInfo.visitorName,
+      'mobile': widget.visitorInfo.visitorMobile,
+      'in_time': formattedInTime,
+      'user_id': widget.visitorInfo.memberInfo.memberId.toString(),
+      'visitor_count': "1",
+      'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+      'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "",
+      'visitor_id': widget.visitorInfo.visitorId.toString(),
+      'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
+          ? "delivery"
+          : widget.visitorInfo.visitorPurposeCategoryId.toString(),
+      'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
+      'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
+      'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
+      'socket_request': true // Add flag to identify socket requests
+    };
+  }
+
+  Future<void> _handleFcmResponse(dynamic responseData) async {
+    try {
+      if (responseData == null) {
+        log("❌ FCM Response data is null");
+        return;
+      }
+
+      log("📩 Full FCM Response: $responseData");
+
+      // Check if the response indicates a successful call initiation via Twilio
+      if (responseData["success"] == true &&
+          responseData["message"]?.toString().contains("call initiated successfully") == true) {
+        log("✅ Call initiated successfully via Twilio");
+
+        // Show a toast to inform the user
+        _showSnackBar("Call initiated to member successfully", isError: false);
+        return;
+      }
+
+      // Handle normal FCM response
+      final message = responseData["message"];
+      log("📩 FCM Response message: $message");
+
+      if (responseData["success"] == true) {
+        _showSnackBar("Notification sent successfully", isError: false);
+      } else {
+        _showSnackBar("Failed to send notification: $message", isError: true);
+      }
+    } catch (e) {
+      log("❌ Error handling FCM response: $e");
+      _showSnackBar("Error processing notification response", isError: true);
+    }
+  }
+
   Future<void> _sendFcmNotification() async {
-    final RemoteDataSource remoteDataSource = RemoteDataSource();
-    final formattedInTime =
-        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('visitorId') ?? "0";
-      final visitorLogId = prefs.getString("visitor_log") ?? "";
-
+      // Use the same data structure as the socket request
       final requestData = {
         'company_id': widget.visitorInfo.companyId.toString(),
         'name': widget.visitorInfo.visitorName,
         'mobile': widget.visitorInfo.visitorMobile,
         'in_time': formattedInTime,
-        'user_id': (int.tryParse(userId) ?? 0) == 0 ? "234567" : userId,
+        'user_id': widget.visitorInfo.memberInfo.memberId.toString(),
         'visitor_count': "1",
-        'purpose':
-            widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
-        'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber,
+        'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+        'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
         'visitor_id': widget.visitorInfo.visitorId.toString(),
         'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
             ? "delivery"
             : widget.visitorInfo.visitorPurposeCategoryId.toString(),
-        'visitor_log_id': widget.visitorInfo.visitorLogId ?? visitorLogId,
+        'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
         'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
         'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
         "self_check_in": "false"
@@ -831,7 +978,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
       if (response.statusCode == 200 && response.data != null) {
         log("✅ FCM Notification sent successfully: ${response.data}");
-        _showSnackBar("Notification sent successfully.");
+        await _handleFcmResponse(response.data);
       } else {
         log("❌ Failed to send notification. Response: ${response.statusCode} - ${response.data}");
         _showSnackBar("Failed to send notification.", isError: true);
@@ -850,6 +997,22 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       msg: message,
       backgroundColor: isError ? Colors.red : Colors.green,
     );
+  }
+
+  Future<void> _startTimerSafely(TimerService timerService, int visitorLogId) async {
+    // Create a local copy of the context to avoid BuildContext across async gaps
+    final BuildContext currentContext = context;
+
+    // Only proceed if the widget is still mounted
+    if (!mounted) return;
+
+    // Start the timer
+    await timerService.startTimer(visitorLogId, currentContext);
+
+    // Update the UI if still mounted
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -989,7 +1152,7 @@ class VisitorAvatar extends StatelessWidget {
       tag: 'visitor_${visitorInfo.visitorId}',
       child: CircleAvatar(
         radius: 30,
-        backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+        backgroundColor: Theme.of(context).primaryColor.withAlpha(25),
         child: visitorInfo.visitorImage.isNotEmpty
             ? CachedNetworkImage(
                 imageUrl: visitorInfo.visitorImage,
@@ -1036,14 +1199,13 @@ class TimerActionSection extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _TimerActionSectionState createState() => _TimerActionSectionState();
+  TimerActionSectionState createState() => TimerActionSectionState();
 }
 
-class _TimerActionSectionState extends State<TimerActionSection> {
+class TimerActionSectionState extends State<TimerActionSection> {
   bool _isUploading = false;
   bool _isImageUploaded = false;
   RemoteDataSource remoteDataSource = RemoteDataSource();
-  double _uploadProgress = 0;
 
   @override
   void initState() {
@@ -1121,7 +1283,6 @@ class _TimerActionSectionState extends State<TimerActionSection> {
     try {
       setState(() {
         _isUploading = true;
-        _uploadProgress = 0;
       });
 
       var data = FormData.fromMap({
@@ -1141,11 +1302,6 @@ class _TimerActionSectionState extends State<TimerActionSection> {
         options: Options(
           contentType: 'multipart/form-data',
         ),
-        onSendProgress: (int sent, int total) {
-          setState(() {
-            _uploadProgress = sent / total;
-          });
-        },
       );
 
       if (response.statusCode == 200) {

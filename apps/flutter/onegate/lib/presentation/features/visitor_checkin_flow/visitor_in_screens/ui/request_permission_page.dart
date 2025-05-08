@@ -36,6 +36,7 @@ enum RequestType {
 }
 
 class RequestPermissionPage extends StatefulWidget {
+  final String userId;
   final Visitor visitor;
   final String? logID;
   final VisitorLog? visitorLog;
@@ -46,6 +47,7 @@ class RequestPermissionPage extends StatefulWidget {
   RequestPermissionPage(
       {Key? key,
       required this.visitor,
+      required this.userId,
       this.request,
       this.logID,
       this.visitorLog,
@@ -123,7 +125,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     _startPolling(); // Start API polling as a fallback
 
-    if (widget.logID != null && widget.logID!.isNotEmpty) {
+    if (widget.logID != null && widget.logID!.isNotEmpty) { 
       _initializeTimer(int.parse(widget.logID!));
     }
     log("here i am${widget.visitorLog?.toJson().toString()}");
@@ -979,12 +981,132 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       _startPolling();
     }
 
-    // Send FCM notification again
-    await _sendFcmNotification();
+    // Send notification using socket
+    await _sendNotificationViaSocket();
 
     setState(() {
       trybuttontext = "Try Again";
     });
+  }
+
+  Future<void> _sendNotificationViaSocket() async {
+    try {
+      // Prepare request data
+      final requestData = await _prepareSocketRequestData();
+
+      log("📡 Preparing to send notification via socket");
+
+      // Check if socket is connected
+      if (_socketService.socket == null || !_socketService.socket!.connected) {
+        log("⚠️ Socket not connected, reconnecting...");
+        // Reinitialize socket if not connected
+        _socketService.disconnect();
+        _socketService = SocketService();
+
+        // Get company ID from visitor log
+        final companyId = widget.visitorLog?.company_id?.toString() ?? "8191";
+        _socketService.initSocket(companyId, "onegate");
+
+        // Wait for connection to establish
+        await Future.delayed(const Duration(seconds: 1));
+
+        if (_socketService.socket == null || !_socketService.socket!.connected) {
+          log("❌ Socket connection failed, falling back to REST API");
+          await _sendFcmNotification(); // Fallback to REST API
+          return;
+        }
+      }
+
+      // Set up listener for response before sending request
+      _socketService.socket!.once("fcmResponse", (responseData) async {
+        log("📩 Socket Response Received: $responseData");
+
+        // Check if the response is a string containing XML (Twilio response)
+        if (responseData is String && responseData.contains("<?xml")) {
+          log("📞 Received Twilio XML response via socket");
+          // Create a proper response object for the handler
+          final twilioResponse = {
+            "success": true,
+            "data": responseData,
+            "message": "Device token not found, call initiated successfully",
+            "status_code": 200
+          };
+          await _handleFcmResponse(twilioResponse);
+        } else {
+          // Handle normal JSON response
+          await _handleFcmResponse(responseData);
+        }
+      });
+
+      // Send notification via socket
+      log("📤 Emitting sendFcmNotification event with data: ${jsonEncode(requestData)}");
+      _socketService.socket!.emit("sendFcmNotification", requestData);
+
+      // Show a toast to indicate the request is being processed
+      myFluttertoast(
+        msg: "Sending notification to member...",
+        backgroundColor: Colors.blue,
+      );
+
+      // Set a timeout for socket response
+      Timer(const Duration(seconds: 5), () {
+        // If we haven't received a response after 5 seconds, fall back to REST API
+        if (_requestType == RequestType.waiting) {
+          log("⏱️ Socket response timeout, falling back to REST API");
+          _sendFcmNotification(); // Fallback to REST API
+        }
+      });
+
+    } catch (e) {
+      log("❌ Error in _sendNotificationViaSocket: $e");
+      // Fallback to REST API on error
+      await _sendFcmNotification();
+    }
+  }
+
+  Future<Map<String, dynamic>> _prepareSocketRequestData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? userId = prefs.getString('visitorId');
+    final String? visitorLogId = prefs.getString("visitor_log") ?? widget.logID;
+    final String visitorId = widget.visitor.id.toString();
+
+    // Fetch member details
+    final List<Map<String, String>> selectedMembers =
+        await _getMemberDetails(int.parse(visitorLogId ?? '0'));
+
+    if (selectedMembers.isEmpty) {
+      throw Exception("No member details found");
+    }
+
+    // Use the first member's details
+    final String memberId = selectedMembers.first['member_id'] ?? "";
+    final String memberMobile = selectedMembers.first['mobile_number'] ?? "";
+
+    return {
+      'company_id': widget.visitorLog?.company_id.toString() ?? "",
+      'name': widget.visitor.name,
+      'mobile': widget.visitor.mobile,
+      'in_time': formattedInTime,
+      'user_id': (int.tryParse(userId ?? "0") == null ||
+              int.tryParse(userId ?? "0") == 0)
+          ? "234567"
+          : int.parse(userId!).toString(),
+      'purpose':
+          widget.visitorLog?.visitor_purpose_Category_name?.toLowerCase(),
+      'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
+      'member_mobile_number': memberMobile,
+      'visitor_id': visitorId,
+      'purpose_category':
+          widget.visitorLog?.visitor_purpose_category_id.toString() == "3"
+              ? "delivery"
+              : widget.visitorLog?.visitor_purpose_category_id.toString(),
+      'visitor_log_id': visitorLogId,
+      'coming_from': widget.visitorLog?.visitor_coming_from ?? "Bandra",
+      'member_id': memberId,
+      'company_name': widget.visitorLog?.company_id.toString() ?? "",
+      "self_check_in": widget.selfcheckinFlow != null ? widget.selfcheckinFlow.toString() : "false",
+      "socket_request": true // Add flag to identify socket requests
+    };
   }
 
   String formattedInTime =
@@ -994,7 +1116,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     final prefs = await SharedPreferences.getInstance();
     final String? memberDetailsJson = prefs.getString('rows');
 
-    print(memberDetailsJson);
+    log("Member details from SharedPreferences: $memberDetailsJson");
 
     if (memberDetailsJson != null) {
       try {
@@ -1032,7 +1154,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   Future<void> _sendFcmNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String? userId = prefs.getString('visitorId');
+      final String? userId = prefs.getString('');
       final String? visitorLogId = prefs.getString("visitor_log");
 
       final String visitorId = widget.visitor.id.toString();
@@ -1060,10 +1182,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'name': widget.visitor.name,
         'mobile': widget.visitor.mobile,
         'in_time': formattedInTime,
-        'user_id': (int.tryParse(userId ?? "0") == null ||
-                int.tryParse(userId ?? "0") == 0)
-            ? "234567"
-            : int.parse(userId!).toString(),
+        'user_id':  '77525',
+        
+        // (int.tryParse(userId ?? "0") == null ||
+        //         int.tryParse(userId ?? "0") == 0)
+        //     ? "234567"
+        //     : int.parse(userId!).toString(),
         'purpose':
             widget.visitorLog?.visitor_purpose_Category_name?.toLowerCase(),
         'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
@@ -1078,9 +1202,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'coming_from': widget.visitorLog?.visitor_coming_from ?? "Bandra",
         'member_id': memberId, // ✅ Assigned from `member_details`
         'company_name': widget.visitorLog?.company_id.toString() ?? "",
-        "self_check_in": widget.selfcheckinFlow.toString() ?? "false"
+        "self_check_in": widget.selfcheckinFlow != null ? widget.selfcheckinFlow.toString() : "false"
       };
-
+log("📩 FCM Request Data: $requestData");
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
 
       final response = await Dio().post(
@@ -1092,6 +1216,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       if (response.statusCode == 200) {
         log("✅ FCM Notification Sent Successfully: ${response.data}");
         _showSuccessSnackBar("Notification sent successfully!");
+
+        // Handle the response
+        await _handleFcmResponse(response.data);
       } else {
         log("❌ FCM Notification Failed: ${response.statusMessage}");
         _showErrorSnackBar("Error sending notification.");
@@ -1099,6 +1226,73 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     } catch (e) {
       log("❌ Error in _sendFcmNotification: $e");
       _showErrorSnackBar("Failed to send notification.");
+    }
+  }
+
+  Future<void> _handleFcmResponse(dynamic responseData) async {
+    try {
+      if (responseData == null) {
+        log("❌ FCM Response data is null");
+        return;
+      }
+
+      log("📩 Full FCM Response: $responseData");
+
+      // Check if the response indicates a successful call initiation via Twilio
+      if (responseData["success"] == true &&
+          responseData["message"]?.toString().contains("call initiated successfully") == true) {
+        log("✅ Call initiated successfully via Twilio");
+
+        setState(() {
+          _requestType = RequestType.waiting;
+          _stateStreamController.add(RequestType.waiting);
+        });
+
+        // Show a toast to inform the user
+        myFluttertoast(
+          msg: "Call initiated to member successfully",
+          backgroundColor: Colors.blue,
+        );
+
+        // Continue polling for approval status since we need to wait for the member's response
+        return;
+      }
+
+      // Original message handling for direct app responses
+      final message = responseData["message"];
+      log("📩 FCM Response message: $message");
+
+      // Update the request type based on the response
+      if (message == "Visitor is always_allowed") {
+        setState(() {
+          _requestType = RequestType.approved;
+          _stateStreamController.add(RequestType.approved);
+        });
+      } else if (message == "Visitor is denied") {
+        setState(() {
+          _requestType = RequestType.rejected;
+          _stateStreamController.add(RequestType.rejected);
+        });
+      } else if (message == "Visitor is leave_at_gate") {
+        setState(() {
+          _requestType = RequestType.leaveAtGate;
+          _stateStreamController.add(RequestType.leaveAtGate);
+        });
+      } else {
+        // For any other response, keep waiting
+        setState(() {
+          _requestType = RequestType.waiting;
+          _stateStreamController.add(RequestType.waiting);
+        });
+      }
+
+      // If we got a definitive response, stop polling
+      if (_shouldStopPolling(_requestType)) {
+        _stopPolling();
+      }
+
+    } catch (e) {
+      log("❌ Error handling FCM response: $e");
     }
   }
 

@@ -1718,6 +1718,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               context,
               MaterialPageRoute(
                 builder: (context) => RequestPermissionPage(
+                  userId: selectedUserIds.first,
                   visitor: widget.visitor,
                   unitList: selectedBuildingUnits,
                   visitorLog: visitorLogData,
