@@ -1288,13 +1288,15 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                         size: 18,
                       ),
                       const SizedBox(width: 8), // Add spacing
-                      Text(
-                        "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name?.toString() ?? "N/A")} - "
-                        "${widget.visitorLog.visitor_building_assignment!.first.unit_id!.first.toString()}",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
+                      Flexible(
+                        child: Text(
+                          "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name?.toString() ?? "N/A")} ${_getUnitText()}",
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       )
                     ],
                   ),
@@ -1313,8 +1315,10 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Tooltip(
-                    message: DateFormat('dd-MM-yyyy hh:mm a')
-                        .format(widget.visitorLog.visitor_check_in!),
+                    message: widget.visitorLog.visitor_check_in != null
+                        ? DateFormat('dd-MM-yyyy hh:mm a')
+                            .format(widget.visitorLog.visitor_check_in!)
+                        : "No check-in time",
                     child: RichText(
                       text: TextSpan(
                         children: [
@@ -1325,8 +1329,10 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             ),
                           ),
                           TextSpan(
-                            text: Utils.convertDateTimeFormat(
-                                widget.visitorLog.visitor_check_in!),
+                            text: widget.visitorLog.visitor_check_in != null
+                                ? Utils.convertDateTimeFormat(
+                                    widget.visitorLog.visitor_check_in!)
+                                : "N/A",
                             style:
                                 Theme.of(context).textTheme.labelMedium!.merge(
                                       Theme.of(context)
@@ -1527,8 +1533,10 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           ),
                         )
                       : Tooltip(
-                          message: DateFormat('dd-MM-yyyy hh:mm a')
-                              .format(widget.visitorLog.visitor_check_out!),
+                          message: widget.visitorLog.visitor_check_out != null
+                              ? DateFormat('dd-MM-yyyy hh:mm a')
+                                  .format(widget.visitorLog.visitor_check_out!)
+                              : "No check-out time",
                           child: RichText(
                             text: TextSpan(
                               children: [
@@ -1539,8 +1547,10 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: Utils.convertDateTimeFormat(
-                                      widget.visitorLog.visitor_check_out!),
+                                  text: widget.visitorLog.visitor_check_out != null
+                                      ? Utils.convertDateTimeFormat(
+                                          widget.visitorLog.visitor_check_out!)
+                                      : "N/A",
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelMedium!
@@ -1587,5 +1597,22 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
       default:
         return Symbols.person;
     }
+  }
+
+  String _getUnitText() {
+    // Check if visitor_building_assignment exists and has items
+    if (widget.visitorLog.visitor_building_assignment == null ||
+        widget.visitorLog.visitor_building_assignment!.isEmpty) {
+      return ""; // Return empty string if no building assignment
+    }
+
+    // Check if the first building assignment has unit_id
+    final firstAssignment = widget.visitorLog.visitor_building_assignment!.first;
+    if (firstAssignment.unit_id == null || firstAssignment.unit_id!.isEmpty) {
+      return ""; // Return empty string if no unit_id
+    }
+
+    // Return the unit_id with a dash prefix
+    return "- ${firstAssignment.unit_id!.first}";
   }
 }

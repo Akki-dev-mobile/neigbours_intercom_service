@@ -818,7 +818,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
       var dio = Dio();
       var response = await dio.post(
-        'http://gateapi.cubeone.in/api/visitor/uploadFile',
+        'https://gateapi.cubeone.in/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',

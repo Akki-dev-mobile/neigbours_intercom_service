@@ -122,6 +122,17 @@ class VisitorLog {
   }
 
   /// Create an instance from a JSON map (Handling `unit_details`, `additional_details` and flattened visitor fields)
+  /// Sanitize image URL to prevent "No host specified in URI" errors
+  static String _sanitizeImageUrl(dynamic imageUrl) {
+    // If imageUrl is null or the string "null", return empty string
+    if (imageUrl == null || imageUrl == "null") {
+      return '';
+    }
+
+    // Return the image URL as string
+    return imageUrl as String;
+  }
+
   factory VisitorLog.fromJson(Map<String, dynamic> json) {
     return VisitorLog(
       id: json['visitor_log_id'] as int?,
@@ -130,21 +141,23 @@ class VisitorLog {
         id: json['visitor_id'] as int?,
         name: json['name'] as String? ?? '',
         mobile: json['mobile'] as String? ?? '',
-        visitor_image: json['visitor_image'] as String? ?? '',
+        visitor_image: _sanitizeImageUrl(json['visitor_image']),
       ),
       visitor_purpose_category_id: json['visitor_purpose_category_id'] as int?,
       visitor_purpose_sub_category_id:
           json['visitor_purpose_sub_category_id'] as int?,
-      visitor_building_assignment: (json['unit_details'] as List<dynamic>?)
-          ?.map((unit) => BuildingAssignment(
-                id: null,
-                visitor_id: json['visitor_id'] as int?,
-                visitor_log_id: json['visitor_log_id'] as int?,
-                company_id: json['company_id'] as int? ?? 0,
-                building_id: 0,
-                unit_id: [unit['building_unit'] as String? ?? ''],
-              ))
-          .toList(),
+      visitor_building_assignment: (json['unit_details'] as List<dynamic>?)?.isNotEmpty == true
+          ? (json['unit_details'] as List<dynamic>)
+              .map((unit) => BuildingAssignment(
+                    id: null,
+                    visitor_id: json['visitor_id'] as int?,
+                    visitor_log_id: json['visitor_log_id'] as int?,
+                    company_id: json['company_id'] as int? ?? 0,
+                    building_id: 0,
+                    unit_id: [unit['building_unit'] as String? ?? ''],
+                  ))
+              .toList()
+          : [], // Return empty list instead of null when unit_details is empty
       visitor_count: json['visitor_count'] as int?,
       visitor_check_in: json['visitor_check_in'] != null
           ? DateTime.tryParse(json['visitor_check_in'] as String)

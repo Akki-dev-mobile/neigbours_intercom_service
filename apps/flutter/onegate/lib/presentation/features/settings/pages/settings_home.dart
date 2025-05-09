@@ -553,21 +553,21 @@ class _SettingsHomeState extends State<SettingsHome> {
                 },
               ),
             // Self Entry Settings (for all roles)
-            PrimarySettingsTile(
-              icon: Ionicons.options_outline,
-              title: 'Self Entry Settings',
-              subtitle: 'Enable/Disable Self Entry',
-              onTap: () {
-                _preferenceUtils.setIsSelfTapIn(true);
-                _enableKioskMode();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SelfHomeView(),
-                  ),
-                );
-              },
-            ),
+            // PrimarySettingsTile(
+            //   icon: Ionicons.options_outline,
+            //   title: 'Self Entry Settings',
+            //   subtitle: 'Enable/Disable Self Entry',
+            //   onTap: () {
+            //     _preferenceUtils.setIsSelfTapIn(true);
+            //     _enableKioskMode();
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(
+            //         builder: (context) => SelfHomeView(),
+            //       ),
+            //     );
+            //   },
+            // ),
             if (role == "admin" || role == "master")
               PrimarySettingsTile(
                 icon: Ionicons.shield_half_outline,

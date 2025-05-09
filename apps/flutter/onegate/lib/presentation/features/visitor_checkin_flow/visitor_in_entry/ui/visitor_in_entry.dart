@@ -121,7 +121,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     // Update coming from with value from gateStorage
     _guestComingFromController!.text =
-        await gateStorage.getComingFrom() ?? "test";
+        await gateStorage.getComingFrom() ?? "";
     _guestCountController = TextEditingController(
       text: '1',
     );

@@ -2,6 +2,7 @@
 
 import 'dart:developer';
 import 'dart:io';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/intercom.dart';
 import 'package:flutter_onegate/presentation/features/license_plate_detection/ui/license_plate_detection_page.dart';
@@ -69,7 +70,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
   @override
   void initState() {
     super.initState();
-
+GateStorage().removeComingFrom();
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
     _loadInitialData();
     getSelectedGate();

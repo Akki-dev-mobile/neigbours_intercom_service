@@ -305,7 +305,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                     widget.visitorLog?.visitor_purpose_Category_name),
                 iconColor: Colors.orange,
                 label: "Purpose",
-                value: widget.visitorLog?.visitor_purpose_Category_name ??
+                value: widget.visitor.isStaff==true?"Staff":widget.visitorLog?.visitor_purpose_Category_name ??
                     "Not specified",
               ),
             ],

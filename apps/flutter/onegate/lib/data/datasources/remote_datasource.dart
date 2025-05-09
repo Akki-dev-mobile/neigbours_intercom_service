@@ -138,8 +138,13 @@ class RemoteDataSource {
     final url = Uri.parse(
         "${ApiUrls.gateBaseUrl}/visitor/exotel/callLogs?from_number=$fromNumber");
     try {
-      final response =
-          await http.get(url, headers: {"Content-Type": "application/json"});
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+        }
+      );
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic> && decoded['data'] is List) {
@@ -200,13 +205,16 @@ class RemoteDataSource {
       final response = await Dio().get(
         '${ApiUrls.gateBaseUrl}/admin/companies/$userId',
         options: Options(
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Content-Type': 'application/json',
+          },
         ),
       );
 
       if (response.statusCode == 200) {
         final data = response.data['data'];
-        print("data--$data");
+        log("data--$data"); // Changed from print to log
 
         return data is List ? data : [];
       } else {
@@ -365,7 +373,13 @@ class RemoteDataSource {
     try {
       String apiUrl = "${ApiUrls.gateBaseUrl}/visitor/purposeCategory";
 
-      final response = await http.get(Uri.parse(apiUrl));
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+        },
+      );
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
@@ -428,7 +442,7 @@ class RemoteDataSource {
       final comingFrom = await gateStorage.getComingFrom();
       // Prepare the data payload
       final data = {
-        "name": visitor.name == "" ? "Test" : visitor.name,
+        "name": visitor.name == "" ? "" : visitor.name,
         "mobile_number": visitor.mobile.toString(),
         "visitor_image": uploadImageUrl.toString(),
         "company_id": companyId,
@@ -1069,6 +1083,12 @@ class RemoteDataSource {
       final response = await Dio().get(
         ApiUrls.buildingList,
         queryParameters: {'company_id': companyId},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Content-Type': 'application/json',
+          },
+        ),
       );
 
       return response.data?['data'] ?? [];
@@ -1290,6 +1310,7 @@ class RemoteDataSource {
         uri,
         headers: {
           "Content-Type": "application/json",
+          "Authorization": "Bearer ${keycloakWrapper.accessToken}",
         },
         body: jsonEncode(requestBody),
       );
@@ -1435,7 +1456,10 @@ class RemoteDataSource {
         ApiUrls.visitorSendLogs,
         data: visitorData,
         options: Options(
-          headers: {"Content-Type": "application/json"},
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+          },
         ),
       );
 
@@ -1476,7 +1500,10 @@ class RemoteDataSource {
           "visitor_id": visitorId1,
         },
         options: Options(
-          headers: {"Content-Type": "application/json"},
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+          },
         ),
       );
 
@@ -1720,6 +1747,12 @@ class RemoteDataSource {
           'company_id': companyId,
           'building_id': buildingId,
         },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Content-Type': 'application/json',
+          },
+        ),
       );
 
       return response.data?['data'] ?? [];
@@ -1739,7 +1772,15 @@ class RemoteDataSource {
       final String url =
           'https://societybackend.cubeone.in/api/admin/staffs/edit_staff/$staffId?company_id=$companyId';
 
-      final response = await Dio().get(url);
+      final response = await Dio().get(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
 
       log("Staff by ID response: ${response.data}");
 
@@ -1762,6 +1803,12 @@ class RemoteDataSource {
       final response = await Dio().get(
         ApiUrls.staffList,
         queryParameters: {'company_id': companyId},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Content-Type': 'application/json',
+          },
+        ),
       );
 
       log("response--$response");
@@ -1819,9 +1866,17 @@ class RemoteDataSource {
     final String? companyId = await gateStorage.getSocietyId();
 
     String url = '${ApiUrls.gateBaseUrl}/visitor/parcelData/$companyId';
-    print(url);
+    log(url); // Changed from print to log
     try {
-      final response = await Dio().get(url);
+      final response = await Dio().get(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
       if (response.statusCode == 200) {
         log('Parcels fetched successfully: ${response.data}');
         if (response.data is Map<String, dynamic>) {
@@ -1929,7 +1984,15 @@ class RemoteDataSource {
         'https://socbackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
 
     try {
-      final response = await Dio().get(url);
+      final response = await Dio().get(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
 
       if (response.statusCode == 200) {
         log("Categories${response.data.toString()}");
