@@ -94,6 +94,8 @@ class LoginService {
 
     final userInfo = await keycloakWrapper.getUserInfo();
     log("Access token: ${keycloakWrapper.accessToken}");
+            log("🔑 ref token: ${keycloakWrapper.refreshToken}");
+
     await _saveUserData(userInfo);
     return userInfo;
   }

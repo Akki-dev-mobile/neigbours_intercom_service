@@ -189,7 +189,7 @@ class _ParcelListState extends State<ParcelList> {
                   radius: 30,
                 ),
                 title: Text(
-                  parcel['member_name'] ?? 'N/A',
+                  parcel['visitor_name'] ?? 'N/A',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 subtitle: Text.rich(
