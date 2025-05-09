@@ -259,6 +259,13 @@ class GateStorage {
     print("VisitorLog ID removed from SharedPreferences");
   }
 
+    Future<void> clearVisitorImage() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove("uploaded_image_url");
+    print("uploaded_image_url  removed from SharedPreferences");
+  }
+
+
   bool? getTooglevalue(String key) {
     return _prefs?.getBool(key);
   }

@@ -71,6 +71,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
   void initState() {
     super.initState();
 GateStorage().removeComingFrom();
+GateStorage().clearVisitorImage();
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
     _loadInitialData();
     getSelectedGate();

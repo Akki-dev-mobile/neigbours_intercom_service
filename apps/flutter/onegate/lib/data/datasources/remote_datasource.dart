@@ -2227,7 +2227,8 @@ class RemoteDataSource {
     try {
       // Retrieve the visitor ID from SharedPreferences
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final searchedVisitorId = prefs.getString('search_visitor_id');
+      var searchedVisitorId = prefs.getString('search_visitor_id');
+   searchedVisitorId=    prefs.getString('visitorId');
       if (searchedVisitorId == null) {
         throw Exception(
             'No visitor ID found. Please search for a visitor first.');
@@ -2242,7 +2243,8 @@ class RemoteDataSource {
       final data = {
         "name": visitor.name,
         "mobile_number": visitor.mobile,
-        "coming_from": comingFrom,
+        // "coming_from": comingFrom,
+        "visitor_image": visitor.visitor_image,
         "isStaff": visitor.isStaff, // Include isStaff property in the update
       };
 

@@ -334,6 +334,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       await prefs.remove('visitor_coming_from');
       log(widget.mobile);
       log("widget.searchedVisitor: ${widget.searchedVisitor?.id}");
+      prefs.setString('search_visitor_id',widget.searchedVisitor?.id.toString() ?? "");
       _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
         searchedVisitor: widget.searchedVisitor,
         guestName: _guestNameController?.text,
@@ -491,14 +492,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         } else if (state is VIENavigateToCameraState) {
           // Ensure camera state navigation is handled correctly
           final imageFile = await _captureImageFromCamera(context);
+      final SharedPreferences prefs =
+          await SharedPreferences.getInstance(); // Get SharedPreferences
 
           if (imageFile != null) {
             // Dispatch the camera button pressed event
+        var visitorId=    prefs.getString('visitorId');
+        state.visitor.id=int.parse(visitorId??"") ;
             _bloc.add(VIECameraButtonPressedEvent(
               purposeCategory: state.purposeCategory,
               imageFile: imageFile,
               visitor: state.visitor,
-              operation: state.operation,
+              operation: "update_visitor",
             ));
           } else {
             _showErrorSnackBar("Camera capture was canceled.");
