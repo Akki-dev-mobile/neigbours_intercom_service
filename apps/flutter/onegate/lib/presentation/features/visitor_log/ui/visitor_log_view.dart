@@ -532,53 +532,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   ),
                                 ),
                                 Builder(builder: (context) {
-                                  // Sort logs by building name within each date group
-                                  logsForDate.sort((a, b) {
-                                    String buildingA = "";
-                                    String buildingB = "";
-
-                                    if (a.visitor_building_assignment != null &&
-                                        a.visitor_building_assignment!
-                                            .isNotEmpty &&
-                                        a.visitor_building_assignment!.first
-                                                .unit_id !=
-                                            null &&
-                                        a.visitor_building_assignment!.first
-                                            .unit_id!.isNotEmpty) {
-                                      String unitId = a
-                                          .visitor_building_assignment!
-                                          .first
-                                          .unit_id!
-                                          .first;
-                                      if (unitId.contains("-")) {
-                                        buildingA = unitId.split("-")[0].trim();
-                                      } else {
-                                        buildingA = unitId;
-                                      }
-                                    }
-
-                                    if (b.visitor_building_assignment != null &&
-                                        b.visitor_building_assignment!
-                                            .isNotEmpty &&
-                                        b.visitor_building_assignment!.first
-                                                .unit_id !=
-                                            null &&
-                                        b.visitor_building_assignment!.first
-                                            .unit_id!.isNotEmpty) {
-                                      String unitId = b
-                                          .visitor_building_assignment!
-                                          .first
-                                          .unit_id!
-                                          .first;
-                                      if (unitId.contains("-")) {
-                                        buildingB = unitId.split("-")[0].trim();
-                                      } else {
-                                        buildingB = unitId;
-                                      }
-                                    }
-
-                                    return buildingA.compareTo(buildingB);
-                                  });
+                                  // No sorting - display logs as they come from the API response
 
                                   return ListView.builder(
                                     padding: EdgeInsets.zero,
@@ -1209,6 +1163,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
 
   @override
   void initState() {
+    log("called..............${widget.visitorLog.visitor!.name } ${widget.visitorLog.visitor_check_in}");
     super.initState();
   }
 

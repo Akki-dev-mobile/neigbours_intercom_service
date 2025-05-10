@@ -27,8 +27,8 @@ import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final keycloakWrapper =
-    KeycloakWrapper(config: KeycloakConfigManager.getConfig());
+// Create a global instance of KeycloakWrapper
+final keycloakWrapper = KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {
@@ -45,6 +45,51 @@ class RemoteDataSource {
         ),
       );
     }
+  }
+
+  /// Handle authentication errors and token refresh
+  Future<bool> _handleAuthError(dynamic error) async {
+    // Check if the error is related to an expired token
+    bool isAuthError = false;
+
+    if (error is DioError) {
+      isAuthError = error.response?.statusCode == 401;
+    } else if (error is String && error.contains("Expired refresh token")) {
+      isAuthError = true;
+    }
+
+    if (isAuthError) {
+      log("Authentication error detected: $error");
+
+      // Try to refresh the token
+      final refreshed = await TokenRefreshUtil.refreshTokenIfNeeded();
+
+      if (refreshed) {
+        log("Token refreshed successfully");
+        return true; // Retry the request
+      } else {
+        log("Token refresh failed, redirecting to login");
+
+        // Clear tokens and redirect to login
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('access_token');
+        await prefs.remove('refresh_token');
+
+        // Navigate to login screen
+        navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+
+        // Show toast message
+        myFluttertoast(
+          msg: "Session expired. Please log in again.",
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+
+        return false; // Don't retry the request
+      }
+    }
+
+    return false; // Not an auth error, don't retry
   }
 
   /// Login user via Keycloak
@@ -876,7 +921,8 @@ class RemoteDataSource {
         "in_gate": selectedGateName,
         if (isStaff == false) "passcode": passcode,
         "mobile": mobile,
-        if (isStaff == false) "pass_id": id,
+        //if (isStaff == false)
+        "pass_id": id,
         if (isStaff == true) "is_staff": isStaff,
       };
 
@@ -1307,18 +1353,41 @@ class RemoteDataSource {
       log("🔍 Sending request to: $baseUrl");
       log("📦 Request Body: ${jsonEncode(requestBody)}");
 
+      // Try to refresh token before making the request
+      String? accessToken;
+      try {
+        // First try to get a valid token using TokenRefreshUtil
+        accessToken = await TokenRefreshUtil.getValidAccessToken();
+
+        if (accessToken == null) {
+          // If token refresh failed, try to use the keycloakWrapper token
+          if (keycloakWrapper.accessToken != null) {
+            accessToken = keycloakWrapper.accessToken;
+          } else {
+            // If both methods fail, throw an error
+            throw Exception("Expired refresh token");
+          }
+        }
+      } catch (e) {
+        log("❌ Error refreshing token: $e");
+        // Handle authentication error
+        await _handleAuthError(e);
+        // Return empty list since we can't proceed without a valid token
+        return [];
+      }
+
       final response = await http.post(
         uri,
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+          "Authorization": "Bearer $accessToken",
         },
         body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        print("responseData $responseData");
+        log("Response data: $responseData");
         if (!responseData.containsKey('data')) {
           log("🚨 API Response does not contain 'data' key.");
           return [];
@@ -1355,8 +1424,6 @@ class RemoteDataSource {
               }).toList();
             }
           } catch (e) {
-            _handleErrorResponse();
-
             log("❌ Error decoding unit details: $e");
           }
 
@@ -1387,8 +1454,6 @@ class RemoteDataSource {
               }
             }
           } catch (e) {
-            _handleErrorResponse();
-
             log("❌ Error parsing additional_details: $e");
             parsedAdditionalDetails =
                 {}; // Assign empty map to prevent null errors
@@ -1426,15 +1491,24 @@ class RemoteDataSource {
           );
         }).toList();
         return visitorList;
+      } else if (response.statusCode == 401) {
+        // Handle authentication error
+        await _handleAuthError("Expired refresh token");
+        return [];
       } else {
-        _handleErrorResponse();
+        _handleErrorResponse(response.statusCode);
 
         throw Exception(
             '❌ Failed to fetch approvals: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      _handleErrorResponse();
+      // Check if it's an authentication error
+      if (e.toString().contains("Expired refresh token")) {
+        await _handleAuthError(e);
+        return [];
+      }
 
+      _handleErrorResponse();
       log('❌ Error fetching approvals: $e');
       rethrow;
     }
