@@ -3,17 +3,13 @@ import 'dart:developer';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:http/http.dart' as http;
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 
 class TokenRefreshUtil {
   static final GateStorage _gateStorage = GateStorage();
-  static final KeycloakWrapper _keycloakWrapper = KeycloakWrapper(
-    config: KeycloakConfigManager.getConfig(),
-  );
-  
+
   // Flag to prevent multiple simultaneous refresh attempts
   static bool _isRefreshing = false;
-  
+
   /// Refreshes the access token using the refresh token if needed
   /// Returns true if token was refreshed successfully or wasn't needed
   /// Returns false if refresh failed
@@ -21,12 +17,12 @@ class TokenRefreshUtil {
     try {
       // Check if token is expired
       final isExpired = await _gateStorage.isTokenExpired();
-      
+
       if (!isExpired) {
         // Token is still valid, no need to refresh
         return true;
       }
-      
+
       // Prevent multiple simultaneous refresh attempts
       if (_isRefreshing) {
         // Wait for the ongoing refresh to complete
@@ -35,53 +31,30 @@ class TokenRefreshUtil {
           await Future.delayed(const Duration(milliseconds: 200));
           attempts++;
         }
-        
+
         // Check if token is still expired after waiting
         return !(await _gateStorage.isTokenExpired());
       }
-      
+
       _isRefreshing = true;
-      
+
       try {
         // Get the refresh token
         final refreshToken = await _gateStorage.getRefreshToken();
-        
+
         if (refreshToken == null) {
           log('❌ No refresh token available');
           _isRefreshing = false;
           return false;
         }
-        
-        // Try to refresh using the keycloak_wrapper first
-        if (_keycloakWrapper.isInitialized) {
-          try {
-            final refreshed = await _keycloakWrapper.refreshToken();
-            if (refreshed && _keycloakWrapper.accessToken != null) {
-              // Save the new tokens
-              await _gateStorage.saveAccessToken(_keycloakWrapper.accessToken!);
-              
-              if (_keycloakWrapper.refreshToken != null) {
-                await _gateStorage.saveRefreshToken(_keycloakWrapper.refreshToken!);
-              }
-              
-              // Update token expiry time (typically 1 hour from now)
-              final expiryTime = DateTime.now().add(const Duration(hours: 1));
-              await _gateStorage.saveTokenExpiry(expiryTime);
-              
-              log('✅ Token refreshed successfully using keycloak_wrapper');
-              _isRefreshing = false;
-              return true;
-            }
-          } catch (e) {
-            log('⚠️ Error refreshing token with keycloak_wrapper: $e');
-            // Fall back to manual refresh
-          }
-        }
-        
+
+        // Note: KeycloakWrapper doesn't have a refreshToken() method
+        // We'll use the manual refresh approach directly
+
         // Manual token refresh as fallback
         final config = KeycloakConfigManager.getConfig();
         final tokenEndpoint = '${config.frontendUrl}/realms/${config.realm}/protocol/openid-connect/token';
-        
+
         final response = await http.post(
           Uri.parse(tokenEndpoint),
           headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -92,21 +65,21 @@ class TokenRefreshUtil {
             'refresh_token': refreshToken,
           },
         );
-        
+
         if (response.statusCode == 200) {
           final tokenData = jsonDecode(response.body);
           final newAccessToken = tokenData['access_token'];
           final newRefreshToken = tokenData['refresh_token'];
-          
+
           // Save the new tokens
           await _gateStorage.saveAccessToken(newAccessToken);
           await _gateStorage.saveRefreshToken(newRefreshToken);
-          
+
           // Calculate and save token expiry time
           final expiresIn = tokenData['expires_in'] ?? 3600; // Default to 1 hour
           final expiryTime = DateTime.now().add(Duration(seconds: expiresIn));
           await _gateStorage.saveTokenExpiry(expiryTime);
-          
+
           log('✅ Token refreshed successfully using manual refresh');
           _isRefreshing = false;
           return true;
@@ -124,16 +97,16 @@ class TokenRefreshUtil {
       return false;
     }
   }
-  
+
   /// Gets a valid access token, refreshing if necessary
   /// Returns null if unable to get a valid token
   static Future<String?> getValidAccessToken() async {
     final refreshed = await refreshTokenIfNeeded();
-    
+
     if (refreshed) {
       return await _gateStorage.getAccessToken();
     }
-    
+
     return null;
   }
 }
