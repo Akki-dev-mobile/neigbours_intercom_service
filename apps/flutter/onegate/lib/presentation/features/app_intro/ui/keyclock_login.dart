@@ -129,6 +129,17 @@ class LoginService {
     if (userInfo == null) return;
 
     await gateStorage.saveAccessToken(keycloakWrapper.accessToken!);
+
+    // Save refresh token if available
+    if (keycloakWrapper.refreshToken != null) {
+      await gateStorage.saveRefreshToken(keycloakWrapper.refreshToken!);
+    }
+
+    // Calculate and save token expiry time (typically 1 hour from now)
+    // This is an approximation - ideally we would decode the JWT to get the exact expiry
+    final expiryTime = DateTime.now().add(const Duration(hours: 1));
+    await gateStorage.saveTokenExpiry(expiryTime);
+
     await gateStorage.saveUserId(userInfo["old_sso_user_id"] ?? "");
     await gateStorage.saveUsername(userInfo["preferred_username"] ?? "");
   }

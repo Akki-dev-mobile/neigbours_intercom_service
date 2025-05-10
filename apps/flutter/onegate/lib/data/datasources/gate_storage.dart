@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class GateStorage {
   static const _accessTokenKey = 'access_token';
+  static const _refreshTokenKey = 'refresh_token';
+  static const _tokenExpiryKey = 'token_expiry';
   static const _userIdKey = 'user_id';
   static const _usernameKey = 'username';
   static const _roleKey = 'role';
@@ -55,6 +57,16 @@ class GateStorage {
   Future<void> saveAccessToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accessTokenKey, token);
+  }
+
+  Future<void> saveRefreshToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_refreshTokenKey, token);
+  }
+
+  Future<void> saveTokenExpiry(DateTime expiryTime) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_tokenExpiryKey, expiryTime.millisecondsSinceEpoch);
   }
 
   // static const String _societyIdKey = 'society_id';
@@ -122,6 +134,26 @@ class GateStorage {
   Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_accessTokenKey);
+  }
+
+  Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_refreshTokenKey);
+  }
+
+  Future<bool> isTokenExpired() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expiryTimestamp = prefs.getInt(_tokenExpiryKey);
+
+    if (expiryTimestamp == null) {
+      return true; // If no expiry time is stored, consider token expired
+    }
+
+    final expiryTime = DateTime.fromMillisecondsSinceEpoch(expiryTimestamp);
+    final now = DateTime.now();
+
+    // Consider token expired if it expires in less than 30 seconds
+    return now.isAfter(expiryTime.subtract(const Duration(seconds: 30)));
   }
 
   Future<void> saveUserId(String userId) async {

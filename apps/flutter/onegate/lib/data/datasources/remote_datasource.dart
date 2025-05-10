@@ -19,6 +19,7 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/error_screen.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:flutter_onegate/utils/token_refresh_util.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -1641,15 +1642,20 @@ class RemoteDataSource {
       final uri = Uri.parse(apiUrl).replace(queryParameters: queryParams);
       log('API URL: $uri');
 
-      // Get access token for authorization
-      final prefs = await SharedPreferences.getInstance();
-      final accessToken = prefs.getString('access_token');
+      // Ensure we have a valid token before making the request
+      await TokenRefreshUtil.refreshTokenIfNeeded();
+
+      // Get the valid access token
+      final validToken = await TokenRefreshUtil.getValidAccessToken();
+
+      if (validToken == null) {
+        throw Exception('No valid access token available');
+      }
 
       final response = await http.get(
         uri,
         headers: {
-          'Authorization':
-              'Bearer ${keycloakWrapper.accessToken ?? accessToken}',
+          'Authorization': 'Bearer $validToken',
           'Content-Type': 'application/json',
         },
       );
@@ -1741,6 +1747,16 @@ class RemoteDataSource {
       final String? companyId = await gateStorage.getSocietyId();
       if (companyId == null) throw Exception('Company ID not found.');
 
+      // Ensure we have a valid token before making the request
+      await TokenRefreshUtil.refreshTokenIfNeeded();
+
+      // Get the valid access token
+      final validToken = await TokenRefreshUtil.getValidAccessToken();
+
+      if (validToken == null) {
+        throw Exception('No valid access token available');
+      }
+
       final response = await Dio().get(
         ApiUrls.unitList,
         queryParameters: {
@@ -1749,7 +1765,7 @@ class RemoteDataSource {
         },
         options: Options(
           headers: {
-            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Authorization': 'Bearer $validToken',
             'Content-Type': 'application/json',
           },
         ),
@@ -1868,11 +1884,21 @@ class RemoteDataSource {
     String url = '${ApiUrls.gateBaseUrl}/visitor/parcelData/$companyId';
     log(url); // Changed from print to log
     try {
+      // Ensure we have a valid token before making the request
+      await TokenRefreshUtil.refreshTokenIfNeeded();
+
+      // Get the valid access token
+      final validToken = await TokenRefreshUtil.getValidAccessToken();
+
+      if (validToken == null) {
+        throw Exception('No valid access token available');
+      }
+
       final response = await Dio().get(
         url,
         options: Options(
           headers: {
-            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Authorization': 'Bearer $validToken',
             'Content-Type': 'application/json',
           },
         ),
