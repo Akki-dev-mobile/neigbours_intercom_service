@@ -28,6 +28,8 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/
 import 'package:flutter_onegate/presentation/features/missed_approval/missed_approval_screen.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log_view.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
+import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
@@ -70,8 +72,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
   @override
   void initState() {
     super.initState();
-GateStorage().removeComingFrom();
-GateStorage().clearVisitorImage();
+    GateStorage().removeComingFrom();
+    GateStorage().clearVisitorImage();
     gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
     _loadInitialData();
     getSelectedGate();
@@ -135,6 +137,52 @@ GateStorage().clearVisitorImage();
     } catch (e) {
       log("❌ Error fetching parcels: $e");
     }
+  }
+
+  // Method to make real API requests for network logging
+  Future<void> _makeRealApiRequests(BuildContext context) async {
+    try {
+      // Show a loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Fetching data to generate network logs...')),
+        );
+      }
+
+      // Make multiple real API requests to generate logs
+
+      // 1. Fetch gates
+      await _remoteDataSource.fetchGates();
+
+      // 2. Fetch parcels
+      await _remoteDataSource.fetchParcels();
+
+      // 3. Refresh dashboard data
+      gateDashboardBloc.add(GatekeeperDashboardInitialEvent());
+
+      // Navigate to the network log screen to show the results
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const NetworkLogScreen(),
+          ),
+        );
+      }
+    } catch (e) {
+      // Show error message if the widget is still mounted
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  // For backward compatibility with the test API button
+  Future<void> _makeTestApiRequest(BuildContext context) async {
+    await _makeRealApiRequests(context);
   }
 
   @override
@@ -237,6 +285,19 @@ GateStorage().clearVisitorImage();
                       style: Theme.of(context).textTheme.bodyLarge,
                     )),
                 actions: [
+                  // Network Log Button (for debugging)
+                  IconButton(
+                    onPressed: () {
+                      // Make real API requests and then show network logs
+                      _makeRealApiRequests(context);
+                    },
+                    icon: Icon(
+                      Symbols.bug_report,
+                      color: Colors.red,
+                    ),
+                    tooltip: 'Fetch Data & Show Network Logs',
+                  ),
+
                   IconButton(
                     onPressed: () {
                       Navigator.push(

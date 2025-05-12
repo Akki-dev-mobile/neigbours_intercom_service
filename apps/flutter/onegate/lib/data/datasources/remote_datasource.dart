@@ -15,6 +15,7 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/main.dart';
+import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/error_screen.dart';
@@ -28,13 +29,19 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Create a global instance of KeycloakWrapper
-final keycloakWrapper = KeycloakWrapper(config: KeycloakConfigManager.getConfig());
+final keycloakWrapper =
+    KeycloakWrapper(config: KeycloakConfigManager.getConfig());
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {
   RemoteDataSource();
 
   final GateStorage gateStorage = GateStorage();
+
+  // Get a Dio instance with network logging
+  Dio _getDio() {
+    return DioProvider().getDio();
+  }
 
   void _handleErrorResponse([int? statusCode]) {
     // Only navigate to error screen for 5xx errors
@@ -76,7 +83,8 @@ class RemoteDataSource {
         await prefs.remove('refresh_token');
 
         // Navigate to login screen
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+        navigatorKey.currentState
+            ?.pushNamedAndRemoveUntil('/login', (route) => false);
 
         // Show toast message
         myFluttertoast(
@@ -112,7 +120,7 @@ class RemoteDataSource {
 
       log('Keycloak login successful. Access Token: ${keycloakWrapper.accessToken}');
 
-      final response = await Dio().post(
+      final response = await _getDio().post(
         ApiUrls.gateLogin,
         options: Options(
           headers: {
@@ -184,13 +192,10 @@ class RemoteDataSource {
     final url = Uri.parse(
         "${ApiUrls.gateBaseUrl}/visitor/exotel/callLogs?from_number=$fromNumber");
     try {
-      final response = await http.get(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer ${keycloakWrapper.accessToken}",
-        }
-      );
+      final response = await http.get(url, headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+      });
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic> && decoded['data'] is List) {
@@ -212,7 +217,7 @@ class RemoteDataSource {
     if (companyId == null) throw Exception('Company ID not found.');
     final commonHeaders = await Environment.getHeaders();
     try {
-      final response = await Dio().get(
+      final response = await _getDio().get(
         ApiUrls.gates,
         queryParameters: {'company_id': int.parse(companyId.toString())},
         options: Options(
@@ -248,7 +253,7 @@ class RemoteDataSource {
   /// Fetch societies
   Future<List<dynamic>> fetchSocieties(String userId) async {
     try {
-      final response = await Dio().get(
+      final response = await _getDio().get(
         '${ApiUrls.gateBaseUrl}/admin/companies/$userId',
         options: Options(
           headers: {
@@ -277,7 +282,7 @@ class RemoteDataSource {
 
   Future<void> sendFcmNotification(Map<String, dynamic> requestData) async {
     try {
-      final response = await Dio().post(
+      final response = await _getDio().post(
         '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
@@ -328,7 +333,7 @@ class RemoteDataSource {
       log("API Request: $apiUrl");
       log("Bearer ${keycloakWrapper.accessToken}");
 
-      final response = await Dio().get(
+      final response = await _getDio().get(
         apiUrl,
         options: Options(
           headers: {
@@ -497,7 +502,7 @@ class RemoteDataSource {
       };
 
       // Make the POST request to the API
-      final response = await Dio().post(
+      final response = await _getDio().post(
         ApiUrls.visitorEntry,
         data: data,
         options: Options(
@@ -2328,7 +2333,7 @@ class RemoteDataSource {
       // Retrieve the visitor ID from SharedPreferences
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var searchedVisitorId = prefs.getString('search_visitor_id');
-   searchedVisitorId=    prefs.getString('visitorId');
+      searchedVisitorId = prefs.getString('visitorId');
       if (searchedVisitorId == null) {
         throw Exception(
             'No visitor ID found. Please search for a visitor first.');

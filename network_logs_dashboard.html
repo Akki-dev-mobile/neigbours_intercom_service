@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneGate Network Logs Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f8f9fa;
+        }
+        .log-item {
+            border-left: 4px solid #ccc;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        .log-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .log-item.success {
+            border-left-color: #28a745;
+        }
+        .log-item.error {
+            border-left-color: #dc3545;
+        }
+        .log-item.warning {
+            border-left-color: #ffc107;
+        }
+        .method-badge {
+            font-weight: bold;
+            width: 60px;
+            display: inline-block;
+            text-align: center;
+        }
+        .method-GET {
+            background-color: #28a745;
+            color: white;
+        }
+        .method-POST {
+            background-color: #007bff;
+            color: white;
+        }
+        .method-PUT {
+            background-color: #fd7e14;
+            color: white;
+        }
+        .method-DELETE {
+            background-color: #dc3545;
+            color: white;
+        }
+        .method-PATCH {
+            background-color: #6f42c1;
+            color: white;
+        }
+        .status-code {
+            font-weight: bold;
+        }
+        .status-2xx {
+            color: #28a745;
+        }
+        .status-3xx {
+            color: #17a2b8;
+        }
+        .status-4xx {
+            color: #dc3545;
+        }
+        .status-5xx {
+            color: #dc3545;
+        }
+        .log-details {
+            display: none;
+            background-color: #f8f9fa;
+            border-top: 1px solid #eee;
+            padding: 15px;
+        }
+        .pagination-container {
+            margin-top: 20px;
+        }
+        #loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .tab-content {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            background-color: white;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h1 class="display-5">OneGate Network Logs Dashboard</h1>
+                <p class="lead">View and analyze network logs from the OneGate app</p>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Filters</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="filter-form">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="server-url" class="form-label">Server URL</label>
+                                    <input type="text" class="form-control" id="server-url" value="http://localhost:3000/logs">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="gate-id" class="form-label">Gate ID</label>
+                                    <input type="text" class="form-control" id="gate-id" placeholder="e.g., MAIN_GATE">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="environment" class="form-label">Environment</label>
+                                    <select class="form-select" id="environment">
+                                        <option value="">All</option>
+                                        <option value="dev">Development</option>
+                                        <option value="staging">Staging</option>
+                                        <option value="prod">Production</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="limit" class="form-label">Limit</label>
+                                    <select class="form-select" id="limit">
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50" selected>50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                                    <button type="button" id="refresh-btn" class="btn btn-secondary ms-2">Refresh</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Network Logs</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="loading-spinner">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading logs...</p>
+                        </div>
+                        <div id="logs-container"></div>
+                        <div id="pagination-container" class="pagination-container d-flex justify-content-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Detail Modal -->
+    <div class="modal fade" id="logDetailModal" tabindex="-1" aria-labelledby="logDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logDetailModalLabel">Log Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="logDetailTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">Overview</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="request-tab" data-bs-toggle="tab" data-bs-target="#request" type="button" role="tab" aria-controls="request" aria-selected="false">Request</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="response-tab" data-bs-toggle="tab" data-bs-target="#response" type="button" role="tab" aria-controls="response" aria-selected="false">Response</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="logDetailTabsContent">
+                        <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                            <div id="overview-content"></div>
+                        </div>
+                        <div class="tab-pane fade" id="request" role="tabpanel" aria-labelledby="request-tab">
+                            <div id="request-content"></div>
+                        </div>
+                        <div class="tab-pane fade" id="response" role="tabpanel" aria-labelledby="response-tab">
+                            <div id="response-content"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Current page and logs data
+        let currentPage = 1;
+        let logsData = null;
+
+        // DOM elements
+        const filterForm = document.getElementById('filter-form');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const logsContainer = document.getElementById('logs-container');
+        const paginationContainer = document.getElementById('pagination-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchLogs();
+            
+            // Event listeners
+            filterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                currentPage = 1;
+                fetchLogs();
+            });
+            
+            refreshBtn.addEventListener('click', () => {
+                fetchLogs();
+            });
+        });
+
+        // Fetch logs from the server
+        async function fetchLogs() {
+            showLoading();
+            
+            const serverUrl = document.getElementById('server-url').value;
+            const gateId = document.getElementById('gate-id').value;
+            const environment = document.getElementById('environment').value;
+            const limit = document.getElementById('limit').value;
+            
+            let url = serverUrl;
+            const params = new URLSearchParams();
+            
+            if (gateId) params.append('gateId', gateId);
+            if (environment) params.append('environment', environment);
+            if (limit) params.append('limit', limit);
+            params.append('page', currentPage);
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                logsData = await response.json();
+                renderLogs();
+                renderPagination();
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                logsContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4 class="alert-heading">Error!</h4>
+                        <p>Failed to fetch logs: ${error.message}</p>
+                        <hr>
+                        <p class="mb-0">Make sure the server is running and accessible at ${serverUrl}</p>
+                    </div>
+                `;
+                paginationContainer.innerHTML = '';
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Render logs
+        function renderLogs() {
+            if (!logsData || !logsData.logs || logsData.logs.length === 0) {
+                logsContainer.innerHTML = '<div class="alert alert-info">No logs found</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            logsData.logs.forEach(log => {
+                const statusClass = log.statusCode 
+                    ? (log.statusCode >= 200 && log.statusCode < 300 ? 'success' : 
+                       log.statusCode >= 400 ? 'error' : 'warning')
+                    : 'error';
+                
+                const statusCodeClass = log.statusCode
+                    ? `status-${Math.floor(log.statusCode / 100)}xx`
+                    : '';
+                
+                const formattedDate = new Date(log.timestamp).toLocaleString();
+                const duration = log.duration ? `${log.duration}ms` : 'N/A';
+                
+                html += `
+                    <div class="card log-item ${statusClass}" data-log-id="${log.id}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge method-badge method-${log.method}">${log.method}</span>
+                                    <span class="ms-2">${log.url.split('/').slice(-2).join('/')}</span>
+                                </div>
+                                <div>
+                                    ${log.statusCode 
+                                        ? `<span class="status-code ${statusCodeClass}">${log.statusCode}</span>` 
+                                        : '<span class="badge bg-danger">Error</span>'}
+                                    <span class="ms-2 text-muted">${duration}</span>
+                                </div>
+                            </div>
+                            <div class="mt-2 d-flex justify-content-between">
+                                <small class="text-muted">${formattedDate}</small>
+                                <button class="btn btn-sm btn-outline-primary view-details-btn" data-log-id="${log.id}">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            logsContainer.innerHTML = html;
+            
+            // Add event listeners to view details buttons
+            document.querySelectorAll('.view-details-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const logId = btn.getAttribute('data-log-id');
+                    const log = logsData.logs.find(l => l.id === logId);
+                    showLogDetails(log);
+                });
+            });
+        }
+
+        // Render pagination
+        function renderPagination() {
+            if (!logsData || !logsData.pagination) return;
+            
+            const { page, pages, total, limit } = logsData.pagination;
+            
+            let html = `
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <li class="page-item ${page <= 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" data-page="${page - 1}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+            `;
+            
+            // Show up to 5 page numbers
+            const startPage = Math.max(1, page - 2);
+            const endPage = Math.min(pages, startPage + 4);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <li class="page-item ${i === page ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                    </li>
+                `;
+            }
+            
+            html += `
+                        <li class="page-item ${page >= pages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" data-page="${page + 1}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="ms-3">
+                    <small class="text-muted">
+                        Showing ${(page - 1) * limit + 1} to ${Math.min(page * limit, total)} of ${total} logs
+                    </small>
+                </div>
+            `;
+            
+            paginationContainer.innerHTML = html;
+            
+            // Add event listeners to pagination links
+            document.querySelectorAll('.page-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const newPage = parseInt(link.getAttribute('data-page'));
+                    if (newPage && newPage !== currentPage) {
+                        currentPage = newPage;
+                        fetchLogs();
+                    }
+                });
+            });
+        }
+
+        // Show log details in modal
+        function showLogDetails(log) {
+            const modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
+            
+            // Overview tab
+            let overviewHtml = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>ID</th>
+                                <td>${log.id}</td>
+                            </tr>
+                            <tr>
+                                <th>Method</th>
+                                <td><span class="badge method-badge method-${log.method}">${log.method}</span></td>
+                            </tr>
+                            <tr>
+                                <th>URL</th>
+                                <td>${log.url}</td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>${log.statusCode || 'Error'}</td>
+                            </tr>
+                            <tr>
+                                <th>Duration</th>
+                                <td>${log.duration}ms</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Metadata</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Timestamp</th>
+                                <td>${new Date(log.timestamp).toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <th>Gate ID</th>
+                                <td>${log.gateId}</td>
+                            </tr>
+                            <tr>
+                                <th>Environment</th>
+                                <td>${log.environment}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            if (log.error) {
+                overviewHtml += `
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <h6>Error</h6>
+                            <div class="alert alert-danger">
+                                ${log.error}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('overview-content').innerHTML = overviewHtml;
+            
+            // Request tab
+            let requestHtml = `
+                <h6>URL</h6>
+                <pre>${log.url}</pre>
+                
+                <h6>Method</h6>
+                <pre>${log.method}</pre>
+                
+                <h6>Headers</h6>
+                <pre>${JSON.stringify(log.headers || {}, null, 2)}</pre>
+            `;
+            
+            document.getElementById('request-content').innerHTML = requestHtml;
+            
+            // Response tab
+            let responseHtml = '';
+            
+            if (log.error) {
+                responseHtml = `
+                    <h6>Error</h6>
+                    <div class="alert alert-danger">
+                        ${log.error}
+                    </div>
+                `;
+            } else {
+                responseHtml = `
+                    <h6>Status Code</h6>
+                    <pre>${log.statusCode || 'N/A'}</pre>
+                    
+                    <h6>Response Body</h6>
+                    <pre>${formatResponseBody(log.responseBody)}</pre>
+                `;
+            }
+            
+            document.getElementById('response-content').innerHTML = responseHtml;
+            
+            modal.show();
+        }
+
+        // Format response body for display
+        function formatResponseBody(body) {
+            if (!body) return 'No response body';
+            
+            try {
+                // Try to parse as JSON
+                const parsed = JSON.parse(body);
+                return JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                // If not JSON, return as is
+                return body;
+            }
+        }
+
+        // Show loading spinner
+        function showLoading() {
+            loadingSpinner.style.display = 'block';
+            logsContainer.style.opacity = '0.5';
+        }
+
+        // Hide loading spinner
+        function hideLoading() {
+            loadingSpinner.style.display = 'none';
+            logsContainer.style.opacity = '1';
+        }
+    </script>
+</body>
+</html>

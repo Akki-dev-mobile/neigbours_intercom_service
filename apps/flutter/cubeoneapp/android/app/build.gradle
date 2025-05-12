@@ -8,8 +8,7 @@ plugins {
 android {
     // namespace = "com.cubeone.app.flutter_cubeoneapp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
-
+    ndkVersion "23.1.7779620"
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8

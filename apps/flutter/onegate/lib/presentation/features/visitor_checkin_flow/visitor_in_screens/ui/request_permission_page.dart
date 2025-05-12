@@ -125,7 +125,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     _startPolling(); // Start API polling as a fallback
 
-    if (widget.logID != null && widget.logID!.isNotEmpty) { 
+    if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
     }
     log("here i am${widget.visitorLog?.toJson().toString()}");
@@ -239,12 +239,34 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
         // Only update the stream if the status changes
         if (_requestType != newRequestType) {
-          _requestType = newRequestType;
-          _stateStreamController.add(newRequestType); // Push update to stream
+          setState(() {
+            _requestType = newRequestType;
+
+            // If the status is "not reachable" or timer has elapsed, ensure we show the Allow by Gatekeeper button
+            if (_isTimeElapsed || newRequestType == RequestType.notRecheable) {
+              _stateStreamController.add(RequestType.notRecheable);
+            } else {
+              _stateStreamController
+                  .add(newRequestType); // Push update to stream
+            }
+          });
         }
+      } else if (_isTimeElapsed) {
+        // If no approvals found and timer has elapsed, show not reachable state
+        setState(() {
+          _requestType = RequestType.notRecheable;
+          _stateStreamController.add(RequestType.notRecheable);
+        });
       }
     } catch (e) {
       log('Error fetching approvals: $e');
+      // On error, if timer has elapsed, show not reachable state
+      if (_isTimeElapsed) {
+        setState(() {
+          _requestType = RequestType.notRecheable;
+          _stateStreamController.add(RequestType.notRecheable);
+        });
+      }
     } finally {
       setState(() {
         _isFetching = false;
@@ -369,12 +391,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20.0, vertical: 16.0),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.transparent,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.001),
-                          offset: const Offset(0, -3),
+                          color: Color.fromRGBO(0, 0, 0, 0.001),
+                          offset: Offset(0, -3),
                           blurRadius: 6,
                         ),
                       ],
@@ -505,47 +527,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     }
   }
 
-  Widget _buildDetailsCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        children: [
-          _buildDetailRow(
-            icon: Icons.phone_outlined,
-            iconColor: Colors.green,
-            label: "Mobile",
-            value: widget.visitor.mobile ?? "",
-          ),
-          const SizedBox(height: 15),
-          _buildDetailRow(
-            icon: Icons.location_on_outlined,
-            iconColor: Colors.red,
-            label: "Coming From",
-            value: widget.visitorLog?.visitor_coming_from ?? "Not specified",
-          ),
-          const SizedBox(height: 15),
-          _buildDetailRow(
-            icon: Icons.home_outlined,
-            iconColor: Colors.blue,
-            label: "Host",
-            value: widget.unitList?.first ?? "Not specified",
-          ),
-          const SizedBox(height: 15),
-          _buildDetailRow(
-            icon: Icons.category_outlined,
-            iconColor: Colors.orange,
-            label: "Purpose",
-            value: widget.visitorLog?.visitor_purpose_Category_name ?? "",
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildDetailRow({
     required IconData icon,
     required Color iconColor,
@@ -557,7 +538,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
+            // Create a lighter version of the icon color
+            color: iconColor.withAlpha(25),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: iconColor),
@@ -632,7 +614,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if (requestType == RequestType.notRecheable)
+          if (requestType == RequestType.notRecheable ||
+              (_isTimeElapsed && requestType == RequestType.waiting))
             _buildNotReacheableButtons(),
           if (requestType == RequestType.approved ||
               requestType == RequestType.rejected)
@@ -724,6 +707,11 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       setState(() {
         _requestType = newRequestType;
         _isLoading = false;
+
+        // If the status is "not reachable" or timer has elapsed, ensure we show the Allow by Gatekeeper button
+        if (newRequestType == RequestType.notRecheable || _isTimeElapsed) {
+          _stateStreamController.add(RequestType.notRecheable);
+        }
       });
 
       if (_shouldStopPolling(newRequestType)) {
@@ -922,8 +910,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         log("✅ Visitor allowed by Gatekeeper successfully");
         // _showSuccessSnackBar("Visitor allowed by Gatekeeper.");
 
-        // Navigate back to Dashboard
+        // Check if widget is still mounted before navigating
+        if (!mounted) return;
 
+        // Navigate back to Dashboard
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -1010,7 +1000,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         // Wait for connection to establish
         await Future.delayed(const Duration(seconds: 1));
 
-        if (_socketService.socket == null || !_socketService.socket!.connected) {
+        if (_socketService.socket == null ||
+            !_socketService.socket!.connected) {
           log("❌ Socket connection failed, falling back to REST API");
           await _sendFcmNotification(); // Fallback to REST API
           return;
@@ -1056,7 +1047,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           _sendFcmNotification(); // Fallback to REST API
         }
       });
-
     } catch (e) {
       log("❌ Error in _sendNotificationViaSocket: $e");
       // Fallback to REST API on error
@@ -1104,7 +1094,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       'coming_from': widget.visitorLog?.visitor_coming_from ?? "Bandra",
       'member_id': memberId,
       'company_name': widget.visitorLog?.company_id.toString() ?? "",
-      "self_check_in": widget.selfcheckinFlow != null ? widget.selfcheckinFlow.toString() : "false",
+      "self_check_in": widget.selfcheckinFlow != null
+          ? widget.selfcheckinFlow.toString()
+          : "false",
       "socket_request": true // Add flag to identify socket requests
     };
   }
@@ -1154,8 +1146,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   Future<void> _sendFcmNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String? userId = prefs.getString('');
-      final String? visitorLogId = prefs.getString("visitor_log");
+      // Get visitor log ID from shared preferences or use the one from widget
+      final String? visitorLogId =
+          prefs.getString("visitor_log") ?? widget.logID;
 
       final String visitorId = widget.visitor.id.toString();
 
@@ -1182,8 +1175,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'name': widget.visitor.name,
         'mobile': widget.visitor.mobile,
         'in_time': formattedInTime,
-        'user_id':  '77525',
-        
+        'user_id': '77525',
+
         // (int.tryParse(userId ?? "0") == null ||
         //         int.tryParse(userId ?? "0") == 0)
         //     ? "234567"
@@ -1202,9 +1195,11 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'coming_from': widget.visitorLog?.visitor_coming_from ?? "Bandra",
         'member_id': memberId, // ✅ Assigned from `member_details`
         'company_name': widget.visitorLog?.company_id.toString() ?? "",
-        "self_check_in": widget.selfcheckinFlow != null ? widget.selfcheckinFlow.toString() : "false"
+        "self_check_in": widget.selfcheckinFlow != null
+            ? widget.selfcheckinFlow.toString()
+            : "false"
       };
-log("📩 FCM Request Data: $requestData");
+      log("📩 FCM Request Data: $requestData");
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
 
       final response = await Dio().post(
@@ -1240,7 +1235,10 @@ log("📩 FCM Request Data: $requestData");
 
       // Check if the response indicates a successful call initiation via Twilio
       if (responseData["success"] == true &&
-          responseData["message"]?.toString().contains("call initiated successfully") == true) {
+          responseData["message"]
+                  ?.toString()
+                  .contains("call initiated successfully") ==
+              true) {
         log("✅ Call initiated successfully via Twilio");
 
         setState(() {
@@ -1290,7 +1288,6 @@ log("📩 FCM Request Data: $requestData");
       if (_shouldStopPolling(_requestType)) {
         _stopPolling();
       }
-
     } catch (e) {
       log("❌ Error handling FCM response: $e");
     }

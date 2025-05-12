@@ -80,6 +80,11 @@ dependencies:
   qr_code_scanner_plus: ^2.0.10+1
   vibration: ^3.1.3
   flutter_kiosk_mode: ^0.0.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  http: ^1.2.0
+  intl: ^0.19.0
+  # No background task dependencies needed
 
 dev_dependencies:
 #  flutter_test:
@@ -90,6 +95,8 @@ dev_dependencies:
     path: ../../../libs/flutter/common/common-widgets
   flutter_lints: ^2.0.0
   speech_to_text: ^6.3.0
+  build_runner: ^2.4.8
+  hive_generator: ^2.0.1
 
 dependency_overrides:
   speech_to_text: ^7.0.0
@@ -122,18 +129,18 @@ flutter_native_splash:
   image: assets/media/images/oneapp_logo.png
   color_dark: "#121212"
   image_dark: assets/media/images/oneapp_logo.png
-  
+
   android: true
   ios: true
   web: false
-  
+
   android_gravity: center
   ios_content_mode: center
-  
+
   # Use branding instead of image for Android 12+
   branding: assets/media/images/oneapp_logo.png
   branding_dark: assets/media/images/oneapp_logo.png
-  
+
   # Android 12 configs
   android_12:
     # Set these to null to use the branding instead

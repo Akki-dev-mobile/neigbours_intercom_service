@@ -3,7 +3,10 @@ import 'dart:convert' show json;
 import 'dart:developer';
 
 import 'package:alarm/alarm.dart';
+// No background task dependencies needed
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,17 +20,16 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/repositories/license_plate_repository.dart';
 import 'package:flutter_onegate/presentation/features/license_plate_detection/bloc/license_plate_bloc.dart';
 import 'package:flutter_onegate/splash_screen.dart';
+import 'package:flutter_onegate/utils/network_log/network_log_manager.dart';
+import 'package:flutter_onegate/utils/network_log/ui/network_log_overlay.dart';
 import 'package:flutter_onegate/utils/no_internet_connection.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/utils/ssl_helper.dart';
 import 'package:flutter_onegate/utils/custom_appauth.dart';
 import 'package:flutter_onegate/utils/ssl_bypass.dart';
-import 'package:flutter_onegate/presentation/features/app_intro/ui/app_intro_view.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_provider.dart';
-import 'package:flutter_onegate/presentation/features/auth/pages/login_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
@@ -59,20 +61,41 @@ void main() async {
   // Initialize SSL bypass for Android to handle certificate validation
   initializeSSLBypass();
 
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize NetworkLogManager for debug logging early
+  await NetworkLogManager().initialize();
+
   // Configure AppAuth to allow insecure connections
   await CustomAppAuth.configureAppAuth();
 
   RemoteDataSource remoteDataSource = RemoteDataSource();
   await dotenv.load(fileName: "assets/.env");
   String appId = "onegate";
-  WidgetsFlutterBinding.ensureInitialized();
+
   final gateConfig = await remoteDataSource.fetchGateBaseDomain();
   GateConfigHolder.setConfig(gateConfig);
 
   await Alarm.init();
+  // Workmanager is initialized in NetworkLogBackgroundService
   await setupLocator();
   await GateStorage().init();
   await setupDependencies();
+
+  // Initialize NetworkLogManager and add interceptor to Dio
+  final networkLogManager = NetworkLogManager();
+  await networkLogManager.initialize();
+
+  // Set the gate ID for network logs
+  await networkLogManager.updateGateId('MAIN_GATE');
+
+  // Add network logger interceptor to the Dio instance
+  final dio = GetIt.I<Dio>();
+  networkLogManager.addInterceptorToDio(dio);
+
+  if (kDebugMode) {
+    print('NetworkLogManager initialized and interceptor added to Dio');
+  }
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -156,10 +179,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  final PreferenceUtils preferenceUtils = GetIt.I<PreferenceUtils>();
 
   // Track previous connectivity status to detect changes.
-  bool _prevHasInternet = true;
+  bool prevHasInternet = true;
 
   @override
   void initState() {
@@ -181,8 +204,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final hasInternet = internetProvider.hasInternet;
 
     // If connectivity has changed, schedule a navigation update.
-    if (_prevHasInternet != hasInternet) {
-      _prevHasInternet = hasInternet;
+    if (prevHasInternet != hasInternet) {
+      prevHasInternet = hasInternet;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // When internet is lost, replace the current route with NoInternetScreen.
         if (!hasInternet) {
@@ -204,7 +227,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       });
     }
 
-    return MaterialApp(
+    // Use NetworkLogOverlay in debug mode, otherwise just return the app
+    Widget app = MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme.copyWith(
@@ -224,6 +248,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         child: hasInternet ? const SplashView() : ErrorNoInternetPage(),
       ),
     );
+
+    // In debug mode, wrap with NetworkLogOverlay
+    if (kDebugMode) {
+      return NetworkLogOverlay(child: app);
+    } else {
+      return app;
+    }
   }
 
   Future<bool?> showExitConfirmationDialog(BuildContext context) {

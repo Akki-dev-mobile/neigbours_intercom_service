@@ -17,7 +17,7 @@ class SocketService {
       return;
     }
 
-    socket = IO.io('http://socket.cubeone.in/', {
+    socket = IO.io('https://socket.cubeone.in/', {
       'transports': ['websocket'],
       'autoConnect': true,
       'reconnection': true,
@@ -26,7 +26,6 @@ class SocketService {
     });
 
     socket!.onConnect((_) async {
-      
       final GateStorage gateStorage = GateStorage();
 
       final String? companyId = await gateStorage.getSocietyId();
