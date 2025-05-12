@@ -115,31 +115,64 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void initState() {
     super.initState();
     _socketService = SocketService(); // Initialize WebSocket service
-    _socketService.initSocket("8191", "onegate"); // Pass companyId & appId
 
+    // Get company ID from visitor log or use default
+    final companyId = widget.visitorLog?.company_id?.toString() ?? "8191";
+    log("🔌 Initializing socket with companyId: $companyId");
+    _socketService.initSocket(companyId, "onegate");
+
+    // Listen for socket events
     _socketService.messageStream.listen((message) {
+      log("📩 Socket message received: $message");
       if (message['event'] == 'approvalUpdate') {
         _handleApprovalUpdate(message['data']);
+      } else if (message['event'] == 'fcmResponse') {
+        _handleFcmResponse(message['data']);
       }
     });
+
+    // Store visitor ID in SharedPreferences if available
+    _storeVisitorId();
 
     _startPolling(); // Start API polling as a fallback
 
     if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
     }
-    log("here i am${widget.visitorLog?.toJson().toString()}");
+    log("Visitor log data: ${widget.visitorLog?.toJson().toString()}");
+  }
+
+  // Store visitor ID in SharedPreferences
+  Future<void> _storeVisitorId() async {
+    if (widget.visitor.id != null && widget.visitor.id! > 0) {
+      final prefs = await SharedPreferences.getInstance();
+      final visitorId = widget.visitor.id.toString();
+
+      await prefs.setString('visitorId', visitorId);
+      log("📱 Stored visitor ID in SharedPreferences: $visitorId");
+    } else {
+      log("⚠️ No valid visitor ID available to store");
+    }
   }
 
   Duration _remainingTime = Duration.zero; // Track remaining time
   bool _isTimeElapsed = false; // To check if the time is over
 
   Future<void> _initializeTimer(int visitorLogId) async {
-    await _timerService.loadTimerState(visitorLogId, context);
+    // Store context in local variable to avoid BuildContext across async gaps
+    final currentContext = context;
+
+    if (!mounted) return;
+
+    await _timerService.loadTimerState(visitorLogId, currentContext);
+
+    if (!mounted) return;
 
     if (_timerService.getTimerState(visitorLogId) == null) {
-      await _timerService.startTimer(visitorLogId, context);
+      await _timerService.startTimer(visitorLogId, currentContext);
     }
+
+    if (!mounted) return;
 
     setState(() {
       _remainingTime = _timerService
@@ -159,23 +192,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     });
   }
 
-  void _handleExpiredTimer() {
-    setState(() {
-      _isTimeElapsed = true;
-      _requestType = RequestType.notRecheable;
-      _stateStreamController.add(RequestType.notRecheable);
-    });
-
-    // Stop polling
-    _stopPolling();
-
-    // Show notification
-    // myFluttertoast(
-    //   msg: "Member not reachable",
-    //   backgroundColor: Colors.orange,
-    // );
-  }
-
   void _startPolling() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
@@ -193,10 +209,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               _stopPolling();
 
               // Show notification to user
-              // myFluttertoast(
-              //   msg: "Member not reachable",
-              //   backgroundColor: Colors.orange,
-              // );
+              myFluttertoast(
+                msg: "Member not reachable",
+                backgroundColor: Colors.orange,
+              );
             }
           }
         });
@@ -206,14 +222,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           _fetchApprovals();
         }
       }
-    });
-  }
-
-  void _resetTimerState() {
-    setState(() {
-      _isTimeElapsed = false;
-      _requestType = RequestType.waiting;
-      _stateStreamController.add(RequestType.waiting);
     });
   }
 
@@ -315,14 +323,14 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   bool _isUploading = false;
-  double _uploadProgress = 0;
+  double _uploadProgress = 0; // Keep this for upload progress tracking
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
         // _navigateToDashboard();
-        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -1056,7 +1064,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   Future<Map<String, dynamic>> _prepareSocketRequestData() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? userId = prefs.getString('visitorId');
     final String? visitorLogId = prefs.getString("visitor_log") ?? widget.logID;
     final String visitorId = widget.visitor.id.toString();
 
@@ -1072,15 +1079,28 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     final String memberId = selectedMembers.first['member_id'] ?? "";
     final String memberMobile = selectedMembers.first['mobile_number'] ?? "";
 
+    // Use the member's user ID from the widget
+    final String memberUserId = widget.userId;
+    log("👥 Member User ID from widget for socket: $memberUserId");
+
+    // If member userId is missing or invalid, try to get from SharedPreferences as fallback
+    final String? sharedPrefUserId = prefs.getString('user_id');
+
+    // Use the best available user ID with fallbacks
+    final String effectiveUserId = (memberUserId.isNotEmpty)
+        ? memberUserId
+        : (sharedPrefUserId != null && sharedPrefUserId.isNotEmpty)
+            ? sharedPrefUserId
+            : "77525"; // Default user ID as fallback
+
+    log("👥 Effective User ID for socket: $effectiveUserId");
+
     return {
       'company_id': widget.visitorLog?.company_id.toString() ?? "",
       'name': widget.visitor.name,
       'mobile': widget.visitor.mobile,
       'in_time': formattedInTime,
-      'user_id': (int.tryParse(userId ?? "0") == null ||
-              int.tryParse(userId ?? "0") == 0)
-          ? "234567"
-          : int.parse(userId!).toString(),
+      'user_id': effectiveUserId,
       'purpose':
           widget.visitorLog?.visitor_purpose_Category_name?.toLowerCase(),
       'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
@@ -1097,7 +1117,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       "self_check_in": widget.selfcheckinFlow != null
           ? widget.selfcheckinFlow.toString()
           : "false",
-      "socket_request": true // Add flag to identify socket requests
+      "socket_request": true, // Add flag to identify socket requests
+      "initiate_call":
+          true, // Add flag to initiate call instead of just notification
+      "retry_attempt": true // Indicate this is a retry attempt
     };
   }
 
@@ -1170,17 +1193,28 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       final String memberId = selectedMembers.first['member_id'] ?? "";
       final String memberMobile = selectedMembers.first['mobile_number'] ?? "";
 
+      // Use the member's user ID from the widget
+      final String memberUserId = widget.userId;
+      log("👥 Member User ID from widget: $memberUserId");
+
+      // If member userId is missing or invalid, try to get from SharedPreferences as fallback
+      final String? sharedPrefUserId = prefs.getString('user_id');
+
+      // Use the best available user ID with fallbacks
+      final String effectiveUserId = (memberUserId.isNotEmpty)
+          ? memberUserId
+          : (sharedPrefUserId != null && sharedPrefUserId.isNotEmpty)
+              ? sharedPrefUserId
+              : "77525"; // Default user ID as fallback
+
+      log("👥 Effective User ID for REST API: $effectiveUserId");
+
       final requestData = {
         'company_id': widget.visitorLog?.company_id.toString() ?? "",
         'name': widget.visitor.name,
         'mobile': widget.visitor.mobile,
         'in_time': formattedInTime,
-        'user_id': '77525',
-
-        // (int.tryParse(userId ?? "0") == null ||
-        //         int.tryParse(userId ?? "0") == 0)
-        //     ? "234567"
-        //     : int.parse(userId!).toString(),
+        'user_id': effectiveUserId,
         'purpose':
             widget.visitorLog?.visitor_purpose_Category_name?.toLowerCase(),
         'visitor_count': widget.visitorLog?.visitor_count.toString() ?? "1",
@@ -1197,7 +1231,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'company_name': widget.visitorLog?.company_id.toString() ?? "",
         "self_check_in": widget.selfcheckinFlow != null
             ? widget.selfcheckinFlow.toString()
-            : "false"
+            : "false",
+        "initiate_call":
+            true, // Add flag to initiate call instead of just notification
+        "retry_attempt": true // Indicate this is a retry attempt
       };
       log("📩 FCM Request Data: $requestData");
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
@@ -1233,12 +1270,36 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
       log("📩 Full FCM Response: $responseData");
 
+      // Check for XML response which indicates Twilio call
+      if (responseData is String && responseData.contains("<?xml")) {
+        log("📞 Received Twilio XML response directly");
+
+        setState(() {
+          _requestType = RequestType.waiting;
+          _stateStreamController.add(RequestType.waiting);
+        });
+
+        myFluttertoast(
+          msg: "Call initiated to member successfully",
+          backgroundColor: Colors.blue,
+        );
+
+        return;
+      }
+
       // Check if the response indicates a successful call initiation via Twilio
-      if (responseData["success"] == true &&
-          responseData["message"]
-                  ?.toString()
-                  .contains("call initiated successfully") ==
-              true) {
+      final message = responseData["message"]?.toString() ?? "";
+      final bool isSuccess = responseData["success"] == true;
+
+      // Check for call initiation in various message formats
+      bool isCallInitiated = message.contains("call initiated") ||
+          message.contains("twilio") ||
+          message.contains("device token not found") ||
+          (isSuccess &&
+              responseData["data"] is String &&
+              responseData["data"].toString().contains("<?xml"));
+
+      if (isCallInitiated) {
         log("✅ Call initiated successfully via Twilio");
 
         setState(() {
@@ -1256,22 +1317,20 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         return;
       }
 
-      // Original message handling for direct app responses
-      final message = responseData["message"];
       log("📩 FCM Response message: $message");
 
       // Update the request type based on the response
-      if (message == "Visitor is always_allowed") {
+      if (message.contains("always_allowed")) {
         setState(() {
           _requestType = RequestType.approved;
           _stateStreamController.add(RequestType.approved);
         });
-      } else if (message == "Visitor is denied") {
+      } else if (message.contains("denied")) {
         setState(() {
           _requestType = RequestType.rejected;
           _stateStreamController.add(RequestType.rejected);
         });
-      } else if (message == "Visitor is leave_at_gate") {
+      } else if (message.contains("leave_at_gate")) {
         setState(() {
           _requestType = RequestType.leaveAtGate;
           _stateStreamController.add(RequestType.leaveAtGate);

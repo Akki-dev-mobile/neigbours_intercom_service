@@ -1,21 +1,29 @@
+import 'dart:convert';
 import 'dart:developer';
-import 'dart:ui';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
+import 'package:flutter_onegate/utils/app_urls.dart';
+import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:common_widgets/common_widgets.dart';
 
 class VisitorDetailsScreen2 extends StatefulWidget {
   final VisitorInfo visitorLog;
-  String? image;
-  String? unitList;
+  final String? image;
+  final String? unitList;
+  final bool isFromVisitorInfoSection;
 
-  VisitorDetailsScreen2(
-      {Key? key, required this.visitorLog, this.unitList, this.image})
-      : super(key: key);
+  const VisitorDetailsScreen2({
+    Key? key,
+    required this.visitorLog,
+    this.unitList,
+    this.image,
+    this.isFromVisitorInfoSection = false,
+  }) : super(key: key);
 
   @override
   State<VisitorDetailsScreen2> createState() => _VisitorDetailsScreenState();
@@ -23,9 +31,6 @@ class VisitorDetailsScreen2 extends StatefulWidget {
 
 class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
   late ScrollController _scrollController;
-  double _imageHeight = 160.0; // Initial circular height
-  final double _maxImageHeight = 300.0; // Maximum expanded height
-  bool _isExpanded = false;
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -37,8 +42,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
 
   @override
   void initState() {
-    log("visitsomethingggggg ${widget.unitList}");
-    print(widget.visitorLog.unitDetails);
+    log("Visitor details: ${widget.unitList}");
+    log("Unit details: ${widget.visitorLog.unitDetails}");
     _scrollController = ScrollController()
       ..addListener(() {
         _handleScroll();
@@ -47,18 +52,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
   }
 
   void _handleScroll() {
-    final double offset = _scrollController.offset;
-    setState(() {
-      if (offset < 0) {
-        // Expanding
-        _imageHeight = _maxImageHeight;
-        _isExpanded = true;
-      } else if (offset > 50) {
-        // Collapsing
-        _imageHeight = 160.0;
-        _isExpanded = false;
-      }
-    });
+    // Empty method to handle scroll events
+    // We keep this to maintain the listener structure
   }
 
   @override
@@ -97,146 +92,189 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                 ),
               ),
               const SizedBox(height: 16),
-              Container(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.visitorLog.visitorName ?? "Guest",
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                          ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.visitorLog.visitorName,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                         ),
-                        if (widget.visitorLog.visitorCount != null)
+                      ),
+                      if (widget.visitorLog.visitorCount != null)
                         _buildChip(
                           "${widget.visitorLog.visitorCount} visitor${widget.visitorLog.visitorCount == 1 ? '' : 's'}",
                           Icons.people,
                           const Color(0xffFFB080),
                         ),
-                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // _buildChip(
+                  //   widget.visitorLog.purpose_sub_category_name ??
+                  //       widget.visitorLog.visitor_purpose_Category_name ??
+                  //       "",
+                  //   Icons.category_rounded,
+                  //   const Color(0xffFFEBE6),
+                  // ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFFEBE6),
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                    const SizedBox(height: 8),
-                    // _buildChip(
-                    //   widget.visitorLog.purpose_sub_category_name ??
-                    //       widget.visitorLog.visitor_purpose_Category_name ??
-                    //       "",
-                    //   Icons.category_rounded,
-                    //   const Color(0xffFFEBE6),
-                    // ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffFFEBE6),
-                        borderRadius: BorderRadius.circular(15),
+                    child: Text(
+                      _capitalizeFirstLetter(
+                          widget.visitorLog.purposeSubCategoryName ??
+                              widget.visitorLog.purposeCategoryName ??
+                              ""),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSection(
+                    title: "Contact Information",
+                    children: [
+                      _buildInfoTile(
+                        icon: Icons.phone,
+                        title: "Phone Number",
+                        subtitle: widget.visitorLog.visitorMobile,
+                        iconColor: Colors.green,
+                        trailing: _buildCallButton(),
                       ),
-                      child: Text(
-                        _capitalizeFirstLetter(
-                            widget.visitorLog.purposeSubCategoryName ??
-                                widget.visitorLog.purposeCategoryName ??
-                                ""),
-                        style: Theme.of(context).textTheme.bodySmall,
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSection(
+                    title: "Visit Details",
+                    children: [
+                      _buildInfoTile(
+                        icon: Icons.apartment,
+                        title: "Visiting Unit",
+                        subtitle: widget.visitorLog.unitDetails.building_unit ==
+                                "0001"
+                            ? "Society Office"
+                            : (widget.visitorLog.unitDetails.building_unit !=
+                                        null &&
+                                    widget.visitorLog.unitDetails
+                                            .building_unit !=
+                                        "")
+                                ? widget.visitorLog.unitDetails.building_unit
+                                    .toString()
+                                : "N/A",
+                        iconColor: const Color.fromARGB(255, 225, 181, 154),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSection(
-                      title: "Contact Information",
-                      children: [
+                      if (widget.visitorLog.inGate.isNotEmpty)
                         _buildInfoTile(
-                          icon: Icons.phone,
-                          title: "Phone Number",
-                          subtitle: widget.visitorLog?.visitorMobile ?? "N/A",
-                          iconColor: Colors.green,
-                          trailing: _buildCallButton(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSection(
-                      title: "Visit Details",
-                      children: [
-                        _buildInfoTile(
-                          icon: Icons.apartment,
-                          title: "Visiting Unit",
-                          subtitle: widget
-                                      .visitorLog.unitDetails.building_unit ==
-                                  "0001"
-                              ? "Society Office"
-                              : (widget.visitorLog.unitDetails.building_unit !=
-                                          null &&
-                                      widget.visitorLog.unitDetails
-                                              .building_unit !=
-                                          "")
-                                  ? widget.visitorLog.unitDetails.building_unit
-                                      .toString()
-                                  : "N/A",
+                          icon: Icons.meeting_room,
+                          title: "In-Gate",
+                          subtitle: widget.visitorLog.inGate,
                           iconColor: const Color.fromARGB(255, 225, 181, 154),
                         ),
-                        if (widget.visitorLog.inGate != null &&
-                            widget.visitorLog.inGate!.isNotEmpty)
-                          _buildInfoTile(
-                            icon: Icons.meeting_room,
-                            title: "In-Gate",
-                            subtitle: widget.visitorLog.inGate!,
-                            iconColor: const Color.fromARGB(255, 225, 181, 154),
-                          ),
-                        // if (widget.visitorLog.visitor_coming_from != null)
-                        if (widget.visitorLog.purposeSubCategoryName
-                                    ?.toLowerCase() ==
-                                "DELIVERY" ||
-                            widget.visitorLog.purposeSubCategoryName
-                                        ?.toLowerCase() ==
-                                    "CABS" &&
-                                widget.visitorLog.visitorComingFrom != null)
-                          _buildInfoTile(
-                            icon: Icons.location_on,
-                            title: "Coming From",
-                            subtitle:
-                                widget.visitorLog.visitorComingFrom.toString(),
-                            iconColor: const Color.fromARGB(255, 225, 181, 154),
-                          ),
+                      // if (widget.visitorLog.visitor_coming_from != null)
+                      if (widget.visitorLog.purposeSubCategoryName
+                                  ?.toLowerCase() ==
+                              "DELIVERY" ||
+                          widget.visitorLog.purposeSubCategoryName
+                                      ?.toLowerCase() ==
+                                  "CABS" &&
+                              widget.visitorLog.visitorComingFrom != null)
+                        _buildInfoTile(
+                          icon: Icons.location_on,
+                          title: "Coming From",
+                          subtitle:
+                              widget.visitorLog.visitorComingFrom.toString(),
+                          iconColor: const Color.fromARGB(255, 225, 181, 154),
+                        ),
 
-                        // if (widget.visitorLog. != null ||
-                        //     widget.visitorLog.carNumber != null)
-                        //   _buildInfoTile(
-                        //     icon: widget.visitorLog.visitor_card_number != null
-                        //         ? Icons.badge
-                        //         : Icons.directions_car,
-                        //     // Use car icon if carNumber is present
-                        //     title: widget.visitorLog.visitor_card_number != null
-                        //         ? "Card Number"
-                        //         : "Car Number",
-                        //     // Change title accordingly
-                        //     subtitle: widget.visitorLog.visitor_card_number
-                        //         ?.toString() ??
-                        //         widget.visitorLog.carNumber?.toString() ??
-                        //         'N/A',
-                        //     // Show available value
-                        //     iconColor:
-                        //     widget.visitorLog.visitor_card_number != null
-                        //         ? const Color.fromARGB(255, 225, 181, 154)
-                        //         : Color.fromARGB(255, 225, 181, 154),
-                        //   ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                      // if (widget.visitorLog. != null ||
+                      //     widget.visitorLog.carNumber != null)
+                      //   _buildInfoTile(
+                      //     icon: widget.visitorLog.visitor_card_number != null
+                      //         ? Icons.badge
+                      //         : Icons.directions_car,
+                      //     // Use car icon if carNumber is present
+                      //     title: widget.visitorLog.visitor_card_number != null
+                      //         ? "Card Number"
+                      //         : "Car Number",
+                      //     // Change title accordingly
+                      //     subtitle: widget.visitorLog.visitor_card_number
+                      //         ?.toString() ??
+                      //         widget.visitorLog.carNumber?.toString() ??
+                      //         'N/A',
+                      //     // Show available value
+                      //     iconColor:
+                      //     widget.visitorLog.visitor_card_number != null
+                      //         ? const Color.fromARGB(255, 225, 181, 154)
+                      //         : Color.fromARGB(255, 225, 181, 154),
+                      //   ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Show timeline or buttons based on visitor status and source
+                  if (!widget.isFromVisitorInfoSection ||
+                      widget.visitorLog.allowStatus.toLowerCase() ==
+                          "allowed" ||
+                      widget.visitorLog.allowStatus.toLowerCase() ==
+                          "always_allowed" ||
+                      widget.visitorLog.allowStatus.toLowerCase() ==
+                          "allowed_by_gatekeeper")
                     _buildSection(
                       title: "Visitor Timeline",
                       children:
                           // Call the _buildTimeline method to generate the timeline items
                           _buildTimeline(),
+                    )
+                  else
+                    _buildSection(
+                      title: "Actions",
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.check_circle, size: 16),
+                              label: const Text('Allow by Gatekeeper'),
+                              onPressed: () => _allowByGatekeeper(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text('Retry'),
+                              onPressed: () => _retryPermission(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                ],
               ),
             ]),
           ),
@@ -273,7 +311,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
 // Define _buildTimeline method outside of the widget
   List<Widget> _buildTimeline() {
     List<Widget> timelineItems = [];
-    int totalItems = (widget.visitorLog.logCreatedAt != null ? 1 : 0) +
+    int totalItems = 1 + // For logCreatedAt (always present)
         (widget.unitList != null ? 1 : 0) +
         (widget.visitorLog.visitor_check_out != null ? 1 : 0);
 
@@ -304,23 +342,21 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     int currentIndex = 0;
 
     // Add Check-In
-    if (widget.visitorLog.logCreatedAt != null) {
-      addTimelineItem(
-        label: "Check In",
-        description: widget.visitorLog.logCreatedAt!,
-        icon: Icons.login,
-        color: Colors.green,
-        index: currentIndex++,
-      );
-    }
+    addTimelineItem(
+      label: "Check In",
+      description: widget.visitorLog.logCreatedAt,
+      icon: Icons.login,
+      color: Colors.green,
+      index: currentIndex++,
+    );
 
     // Add Approved By
     addTimelineItem(
       label: "Approved By",
-      description: toBeginningOfSentenceCase(widget.unitList == "0001"
-              ? "Pre approved Staff"
-              : (widget.visitorLog.allowStatus ?? "Gatekeeper")) ??
-          "N/A",
+      description: widget.unitList == "0001"
+          ? "Pre approved Staff"
+          : toBeginningOfSentenceCase(widget.visitorLog.allowStatus) ??
+              "Gatekeeper",
       icon: Icons.person,
       color: Colors.brown,
       index: currentIndex++,
@@ -368,7 +404,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withAlpha(51), // 0.2 * 255 = ~51
                 shape: BoxShape.circle,
                 border: Border.all(color: color, width: 2),
               ),
@@ -382,7 +418,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
               Container(
                 width: 2,
                 height: 40,
-                color: color.withOpacity(0.5),
+                color: color.withAlpha(128), // 0.5 * 255 = ~128
                 margin: const EdgeInsets.symmetric(vertical: 4),
               ),
           ],
@@ -460,7 +496,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withAlpha(26), // 0.1 * 255 = ~26
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: iconColor),
@@ -518,7 +554,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     return ElevatedButton.icon(
       icon: const Icon(Icons.call, size: 16),
       label: const Text('Call'),
-      onPressed: () => _makePhoneCall(widget.visitorLog.visitorMobile ?? ""),
+      onPressed: () => _makePhoneCall(widget.visitorLog.visitorMobile),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
@@ -530,23 +566,119 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     );
   }
 
-  Widget _buildFallbackImage(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-      width: double.infinity,
-      height: _imageHeight,
-      child: Center(
-        child: Text(
-          widget.visitorLog.visitorName.isNotEmpty == true
-              ? widget.visitorLog.visitorName[0].toUpperCase()
-              : 'G',
-          style: TextStyle(
-            fontSize: _isExpanded ? 100 : 60,
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+  // Method to allow visitor by gatekeeper
+  Future<void> _allowByGatekeeper() async {
+    try {
+      if (widget.visitorLog.visitorLogId == null) {
+        _showSnackBar("Invalid visitor log ID", isError: true);
+        return;
+      }
+
+      final response = await Dio().patch(
+        '${ApiUrls.gateBaseUrl}/visitor/visitorLog/${widget.visitorLog.visitorId}',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: jsonEncode({"allow_status": "allowed_by_gatekeeper"}),
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ Visitor allowed by Gatekeeper successfully");
+        _showSnackBar("Visitor allowed by Gatekeeper", isError: false);
+
+        // Refresh the screen or navigate back
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        log("❌ Failed to allow visitor by Gatekeeper: ${response.statusMessage}");
+        _showSnackBar("Error allowing visitor. Try again.", isError: true);
+      }
+    } catch (e) {
+      log("❌ Error in _allowByGatekeeper: $e");
+      _showSnackBar("Failed to allow visitor.", isError: true);
+    }
+  }
+
+  // Method to retry sending permission request
+  Future<void> _retryPermission() async {
+    try {
+      if (widget.visitorLog.visitorLogId == null) {
+        _showSnackBar("Invalid visitor log ID", isError: true);
+        return;
+      }
+
+      final formattedInTime =
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+
+      // Prepare request data
+      final requestData = {
+        'company_id': widget.visitorLog.companyId.toString(),
+        'name': widget.visitorLog.visitorName,
+        'mobile': widget.visitorLog.visitorMobile,
+        'in_time': formattedInTime,
+        'user_id': widget.visitorLog.memberInfo.userId.toString(),
+        'visitor_count': widget.visitorLog.visitorCount.toString(),
+        'purpose':
+            widget.visitorLog.purposeCategoryName?.toLowerCase() ?? "general",
+        'member_mobile_number': widget.visitorLog.memberInfo.mobileNumber ?? "",
+        'visitor_id': widget.visitorLog.visitorId.toString(),
+        'purpose_category':
+            widget.visitorLog.visitorPurposeCategoryId.toString(),
+        'visitor_log_id': widget.visitorLog.visitorLogId.toString(),
+        'coming_from': widget.visitorLog.visitorComingFrom ?? "",
+        'member_id': widget.visitorLog.memberInfo.memberId.toString(),
+        "self_check_in": "false",
+        "company_name": widget.visitorLog.companyName,
+        "file": widget.visitorLog.visitorImage
+      };
+
+      final response = await Dio().post(
+        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ Notification sent successfully");
+        _showSnackBar("Notification sent to member", isError: false);
+
+        // Reset the timer in SharedPreferences
+        await _resetTimer(widget.visitorLog.visitorLogId ?? 0);
+
+        // Navigate back to the previous screen to show the updated timer
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        log("❌ Failed to send notification: ${response.statusMessage}");
+        _showSnackBar("Failed to send notification", isError: true);
+      }
+    } catch (e) {
+      log("❌ Error in _retryPermission: $e");
+      _showSnackBar("Error occurred while sending notification", isError: true);
+    }
+  }
+
+  // Reset the timer for the visitor
+  Future<void> _resetTimer(int visitorLogId) async {
+    try {
+      // Calculate new end time (60 seconds from now)
+      final endTime = DateTime.now().add(const Duration(seconds: 60));
+
+      // Save to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('timer_$visitorLogId', endTime.toIso8601String());
+
+      log("⏱️ Timer reset for visitor $visitorLogId");
+    } catch (e) {
+      log("❌ Error resetting timer: $e");
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    myFluttertoast(
+      msg: message,
+      backgroundColor: isError ? Colors.red : Colors.green,
     );
   }
 }
