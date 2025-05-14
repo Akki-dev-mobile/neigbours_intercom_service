@@ -15,11 +15,11 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/main.dart';
-import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/error_screen.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
 import 'package:flutter_onegate/utils/token_refresh_util.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -320,6 +320,105 @@ class RemoteDataSource {
   }
 
   /// Search for a visitor
+  // Future<Visitor?> searchVisitor(String mobileNumber) async {
+  //   try {
+  //     final String? companyId = await gateStorage.getSocietyId();
+  //     if (companyId == null) {
+  //       throw Exception("Company ID not found. Please select a company.");
+  //     }
+
+  //     final apiUrl =
+  //         '${ApiUrls.visitorEntry}?mobile_number=$mobileNumber&company_id=$companyId';
+
+  //     log("API Request: $apiUrl");
+  //     log("Bearer ${keycloakWrapper.accessToken}");
+
+  //     final response = await _getDio().get(
+  //       apiUrl,
+  //       options: Options(
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': keycloakWrapper.accessToken != null
+  //               ? 'Bearer ${keycloakWrapper.accessToken}'
+  //               : 'sdad',
+  //         },
+  //       ),
+  //     );
+  //     final List<dynamic> data = response.data['data'] ?? [];
+
+  //     if (data.isNotEmpty) {
+  //       log("$data");
+
+  //       final prefs = await SharedPreferences.getInstance();
+
+  //       // Separate visitor and staff entries
+  //       Map<String, dynamic>? visitorData;
+  //       Map<String, dynamic>? staffData;
+
+  //       for (var item in data) {
+  //         if (item == null) continue; // ✅ Skip nulls
+
+  //         final Map<String, dynamic> map = Map<String, dynamic>.from(item);
+
+  //         if (map.containsKey('category') &&
+  //             (map['category']?.toString().toUpperCase() == 'SECURITY' ||
+  //                 map['category']?.toString().toUpperCase() == 'STAFF')) {
+  //           staffData = map;
+  //         } else {
+  //           visitorData = map;
+  //         }
+  //       }
+
+  //       // Store visitor info if found
+  //       if (visitorData != null) {
+  //         log("Visitor data fetched: $visitorData");
+
+  //         final comingFrom = visitorData['coming_from'] as String;
+  //         log("comingFrom $comingFrom");
+  //         await gateStorage.setComingFrom(
+  //           comingFrom,
+  //         );
+  //         final myComingFrom = await gateStorage.getComingFrom();
+
+  //         log("comingFrom pref $myComingFrom");
+  //         // Store the coming_from value in SharedPreferences
+  //         // final prefs = await SharedPreferences.getInstance();
+  //         // await prefs.setString('visitor_coming_from', comingFrom);
+
+  //         GateStorage().saveImage(
+  //           visitorData['visitor_image'] as String? ?? "",
+  //         );
+  //         log("vis data stored in shared pref coming_from $comingFrom, image ${visitorData['visitor_image']}");
+
+  //         final visitorId = visitorData['id']?.toString() ?? "";
+  //         await prefs.setString('search_visitor_id', visitorId);
+  //       }
+
+  //       // Store staff info if found
+  //       // if (staffData != null) {
+  //       //   final staffJson = jsonEncode(staffData);
+  //       //   await prefs.setString('search_staff_info', staffJson);
+  //       //   log("Staff info stored in SharedPreferences.");
+  //       // }
+
+  //       if (visitorData != null) {
+  //         // Create visitor from JSON and set isStaff property
+  //         Visitor visitor = Visitor.fromJson(visitorData);
+
+  //         // Set isStaff based on whether a staff entry was found
+  //         visitor.isStaff = visitor.isStaff;
+
+  //         return visitor;
+  //       } else {
+  //         log("No visitor found in the response data.");
+  //       }
+  //     }
+  //   } catch (e) {
+  //     log("Error searching visitor: $e");
+  //   }
+
+  //   return null;
+  // }
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
       final String? companyId = await gateStorage.getSocietyId();
@@ -344,6 +443,7 @@ class RemoteDataSource {
           },
         ),
       );
+
       final List<dynamic> data = response.data['data'] ?? [];
 
       if (data.isNotEmpty) {
@@ -351,12 +451,11 @@ class RemoteDataSource {
 
         final prefs = await SharedPreferences.getInstance();
 
-        // Separate visitor and staff entries
         Map<String, dynamic>? visitorData;
         Map<String, dynamic>? staffData;
 
         for (var item in data) {
-          if (item == null) continue; // ✅ Skip nulls
+          if (item == null) continue;
 
           final Map<String, dynamic> map = Map<String, dynamic>.from(item);
 
@@ -369,45 +468,29 @@ class RemoteDataSource {
           }
         }
 
-        // Store visitor info if found
         if (visitorData != null) {
           log("Visitor data fetched: $visitorData");
 
-          final comingFrom = visitorData['coming_from'] as String;
-          log("comingFrom $comingFrom");
-          await gateStorage.setComingFrom(
-            comingFrom,
-          );
-          final myComingFrom = await gateStorage.getComingFrom();
+          final comingFromRaw = visitorData['coming_from'];
+          final comingFrom = comingFromRaw is String ? comingFromRaw : '';
 
+          log("comingFrom $comingFrom");
+
+          await gateStorage.setComingFrom(comingFrom);
+          final myComingFrom = await gateStorage.getComingFrom();
           log("comingFrom pref $myComingFrom");
-          // Store the coming_from value in SharedPreferences
-          // final prefs = await SharedPreferences.getInstance();
-          // await prefs.setString('visitor_coming_from', comingFrom);
 
           GateStorage().saveImage(
             visitorData['visitor_image'] as String? ?? "",
           );
-          log("vis data stored in shared pref coming_from $comingFrom, image ${visitorData['visitor_image']}");
 
           final visitorId = visitorData['id']?.toString() ?? "";
           await prefs.setString('search_visitor_id', visitorId);
         }
 
-        // Store staff info if found
-        // if (staffData != null) {
-        //   final staffJson = jsonEncode(staffData);
-        //   await prefs.setString('search_staff_info', staffJson);
-        //   log("Staff info stored in SharedPreferences.");
-        // }
-
         if (visitorData != null) {
-          // Create visitor from JSON and set isStaff property
           Visitor visitor = Visitor.fromJson(visitorData);
-
-          // Set isStaff based on whether a staff entry was found
           visitor.isStaff = visitor.isStaff;
-
           return visitor;
         } else {
           log("No visitor found in the response data.");

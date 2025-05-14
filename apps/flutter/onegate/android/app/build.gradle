@@ -40,7 +40,8 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 android {
     namespace "com.cubeonebiz.gate.flutter_onegate"
     compileSdk 35
-    ndkVersion "29.0.13113456"
+    ndkVersion flutter.ndkVersion
+    //"29.0.13113456"
 
 //    externalNativeBuild {
 //        cmake {

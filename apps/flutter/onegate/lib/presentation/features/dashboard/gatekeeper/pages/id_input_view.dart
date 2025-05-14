@@ -71,6 +71,7 @@ class _IdInputViewState extends State<IdInputView> {
   TextEditingController passcodeController = TextEditingController();
   bool isLoading = false;
   bool checkVisitorLoading = false;
+  bool isMobileApiLoading = false; // Controls the spinner for mobile input
 
   void startLoading() {
     setState(() {
@@ -196,6 +197,12 @@ class _IdInputViewState extends State<IdInputView> {
 
             switch (state.runtimeType) {
               case GatekeeperDashboardErrorState:
+                // Stop spinner on error
+                if (isMobileApiLoading) {
+                  setState(() {
+                    isMobileApiLoading = false;
+                  });
+                }
                 final errorState = state as GatekeeperDashboardErrorState;
                 myFluttertoast(
                   msg: errorState.message!,
@@ -211,6 +218,12 @@ class _IdInputViewState extends State<IdInputView> {
               case SaveSearchedVisitorState:
                 final saveVisitorState = state as SaveSearchedVisitorState;
                 searchedVisitor = saveVisitorState.visitor;
+                // Stop spinner on success
+                if (isMobileApiLoading) {
+                  setState(() {
+                    isMobileApiLoading = false;
+                  });
+                }
                 break;
 
               case InputPutViewNextClickedState:
@@ -362,13 +375,28 @@ class _IdInputViewState extends State<IdInputView> {
                               FilteringTextInputFormatter.digitsOnly,
                             ],
                             onChanged: (value) {
-                              if (value.length == 10) {
+                              if (value.length == 10 && !isMobileApiLoading) {
+                                setState(() {
+                                  isMobileApiLoading = true;
+                                });
                                 gateDashboardBloc.add(
                                   GDOnMobileNumberEnteredEvent(
                                       mobileController.text),
                                 );
                               }
                             },
+                            suffixIcon: isMobileApiLoading
+                                ? SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: Padding(
+                                      padding: EdgeInsets.only(right: 12),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                      ),
+                                    ),
+                                  )
+                                : null,
                           )
                         : Column(
                             children: [
