@@ -1,0 +1,1 @@
+/home/app-team/Documents/FS/one-monorepo/apps/flutter/onegate/build/app/intermediates/cxx/Debug/1w2f6p4u/obj/armeabi-v7a

@@ -1,0 +1,2 @@
+/home/app-team/Documents/FS/one-monorepo/apps/flutter/onegate/android/app/.cxx/RelWithDebInfo/22v473j2/x86/CMakeFiles/edit_cache.dir
+/home/app-team/Documents/FS/one-monorepo/apps/flutter/onegate/android/app/.cxx/RelWithDebInfo/22v473j2/x86/CMakeFiles/rebuild_cache.dir
