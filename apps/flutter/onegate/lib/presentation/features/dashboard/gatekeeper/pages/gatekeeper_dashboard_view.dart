@@ -286,17 +286,17 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     )),
                 actions: [
                   // Network Log Button (for debugging)
-                  IconButton(
-                    onPressed: () {
-                      // Make real API requests and then show network logs
-                      _makeRealApiRequests(context);
-                    },
-                    icon: Icon(
-                      Symbols.bug_report,
-                      color: Colors.red,
-                    ),
-                    tooltip: 'Fetch Data & Show Network Logs',
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     // Make real API requests and then show network logs
+                  //     _makeRealApiRequests(context);
+                  //   },
+                  //   icon: Icon(
+                  //     Symbols.bug_report,
+                  //     color: Colors.red,
+                  //   ),
+                  //   tooltip: 'Fetch Data & Show Network Logs',
+                  // ),
 
                   IconButton(
                     onPressed: () {

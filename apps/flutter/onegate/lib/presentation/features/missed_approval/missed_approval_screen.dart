@@ -10,6 +10,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_detail_@.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -82,7 +83,8 @@ class TimerService extends ChangeNotifier {
     try {
       // Try to get the latest approval time if context is valid
       if (context.mounted) {
-        approvalTimeValue = context.read<VisitorApprovalTimeProvider>().approvalTime;
+        approvalTimeValue =
+            context.read<VisitorApprovalTimeProvider>().approvalTime;
       }
     } catch (e) {
       debugPrint("❌ Error loading approval time: $e");
@@ -611,7 +613,10 @@ class ApprovalsList extends StatelessWidget {
           Icon(
             Icons.person_off_outlined,
             size: 48,
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(153), // ~0.6 opacity
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withAlpha(153), // ~0.6 opacity
           ),
           Text(
             searchQuery.isNotEmpty
@@ -737,7 +742,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
   void _initializeSocketConnection() {
     _socketService = SocketService();
-    _socketService.initSocket(widget.visitorInfo.companyId.toString(), "onegate");
+    _socketService.initSocket(
+        widget.visitorInfo.companyId.toString(), "onegate");
 
     // Listen for socket responses
     _socketService.messageStream.listen((message) {
@@ -818,7 +824,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
       // Start timer and mark retry attempt
       if (mounted) {
-        timerService.markRetryAttempt(visitorLogId); // ✅ Mark Retry as Attempted
+        timerService
+            .markRetryAttempt(visitorLogId); // ✅ Mark Retry as Attempted
 
         // Use a separate function to handle the timer to avoid BuildContext issues
         _startTimerSafely(timerService, visitorLogId);
@@ -846,12 +853,14 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         _socketService = SocketService();
 
         // Get company ID
-        _socketService.initSocket(widget.visitorInfo.companyId.toString(), "onegate");
+        _socketService.initSocket(
+            widget.visitorInfo.companyId.toString(), "onegate");
 
         // Wait for connection to establish
         await Future.delayed(const Duration(seconds: 1));
 
-        if (_socketService.socket == null || !_socketService.socket!.connected) {
+        if (_socketService.socket == null ||
+            !_socketService.socket!.connected) {
           log("❌ Socket connection failed, falling back to REST API");
           await _sendFcmNotification(); // Fallback to REST API
           return;
@@ -879,7 +888,6 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
           _sendFcmNotification(); // Fallback to REST API
         }
       });
-
     } catch (e) {
       log("❌ Error in _sendNotificationViaSocket: $e");
       // Fallback to REST API on error
@@ -888,28 +896,31 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
   }
 
   Future<Map<String, dynamic>> _prepareSocketRequestData() async {
-    final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    final formattedInTime =
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
-return {
-  'company_id': widget.visitorInfo.companyId.toString(),
-  'name': widget.visitorInfo.visitorName,
-  'mobile': widget.visitorInfo.visitorMobile,
-  'in_time': formattedInTime,
-  'user_id': widget.visitorInfo.memberInfo.userId.toString(),
-  'visitor_count': "1",
-  'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
-  'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
-  'visitor_id': widget.visitorInfo.visitorId.toString(),
-  'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
-      ? "delivery"
-      : widget.visitorInfo.visitorPurposeCategoryId.toString(),
-  'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
-  'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
-  'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
-  "self_check_in": "false",
-  "company_name": widget.visitorInfo.companyName, // new key
-  "file":  widget.visitorInfo.visitorImage// new key
-};
+    return {
+      'company_id': widget.visitorInfo.companyId.toString(),
+      'name': widget.visitorInfo.visitorName,
+      'mobile': widget.visitorInfo.visitorMobile,
+      'in_time': formattedInTime,
+      'user_id': widget.visitorInfo.memberInfo.userId.toString(),
+      'visitor_count': "1",
+      'purpose':
+          widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+      'member_mobile_number':
+          widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
+      'visitor_id': widget.visitorInfo.visitorId.toString(),
+      'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
+          ? "delivery"
+          : widget.visitorInfo.visitorPurposeCategoryId.toString(),
+      'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
+      'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
+      'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
+      "self_check_in": "false",
+      "company_name": widget.visitorInfo.companyName, // new key
+      "file": widget.visitorInfo.visitorImage // new key
+    };
   }
 
   Future<void> _handleFcmResponse(dynamic responseData) async {
@@ -923,7 +934,10 @@ return {
 
       // Check if the response indicates a successful call initiation via Twilio
       if (responseData["success"] == true &&
-          responseData["message"]?.toString().contains("call initiated successfully") == true) {
+          responseData["message"]
+                  ?.toString()
+                  .contains("call initiated successfully") ==
+              true) {
         log("✅ Call initiated successfully via Twilio");
 
         // Show a toast to inform the user
@@ -946,57 +960,59 @@ return {
     }
   }
 
-Future<void> _sendFcmNotification() async {
-  final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+  Future<void> _sendFcmNotification() async {
+    final formattedInTime =
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
-  try {
-final requestData = {
-  'company_id': widget.visitorInfo.companyId.toString(),
-  'name': widget.visitorInfo.visitorName,
-  'mobile': widget.visitorInfo.visitorMobile,
-  'in_time': formattedInTime,
-  'user_id': widget.visitorInfo.memberInfo.userId.toString(),
-  'visitor_count': "1",
-  'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
-  'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
-  'visitor_id': widget.visitorInfo.visitorId.toString(),
-  'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
-      ? "delivery"
-      : widget.visitorInfo.visitorPurposeCategoryId.toString(),
-  'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
-  'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
-  'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
-  "self_check_in": "false",
-  "company_name": widget.visitorInfo.companyName, // new key
-  "file":  widget.visitorInfo.visitorImage// new key
-};
+    try {
+      final requestData = {
+        'company_id': widget.visitorInfo.companyId.toString(),
+        'name': widget.visitorInfo.visitorName,
+        'mobile': widget.visitorInfo.visitorMobile,
+        'in_time': formattedInTime,
+        'user_id': widget.visitorInfo.memberInfo.userId.toString(),
+        'visitor_count': "1",
+        'purpose':
+            widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+        'member_mobile_number':
+            widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
+        'visitor_id': widget.visitorInfo.visitorId.toString(),
+        'purpose_category': widget.visitorInfo.visitorPurposeCategoryId == 3
+            ? "delivery"
+            : widget.visitorInfo.visitorPurposeCategoryId.toString(),
+        'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
+        'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
+        'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
+        "self_check_in": "false",
+        "company_name": widget.visitorInfo.companyName, // new key
+        "file": widget.visitorInfo.visitorImage // new key
+      };
 
+      log("📨 Sending FCM Notification (800 bytes) with Data: $requestData");
 
-    log("📨 Sending FCM Notification (800 bytes) with Data: $requestData");
+      final response = await Dio().post(
+        '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
+        options: Options(headers: {
+          "Content-Type": "application/json",
+          "Content-Length": "800"
+        }),
+        data: requestData,
+      );
 
-    final response = await Dio().post(
-      '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
-      options: Options(headers: {
-        "Content-Type": "application/json",
-        "Content-Length": "800"
-      }),
-      data: requestData,
-    );
-
-    if (response.statusCode == 200 && response.data != null) {
-      log("✅ FCM Notification sent successfully: ${response.data}");
-      await _handleFcmResponse(response.data);
-    } else {
-      log("❌ Failed to send notification. Response: ${response.statusCode} - ${response.data}");
-      _showSnackBar("Failed to send notification.", isError: true);
+      if (response.statusCode == 200 && response.data != null) {
+        log("✅ FCM Notification sent successfully: ${response.data}");
+        await _handleFcmResponse(response.data);
+      } else {
+        log("❌ Failed to send notification. Response: ${response.statusCode} - ${response.data}");
+        _showSnackBar("Failed to send notification.", isError: true);
+      }
+    } catch (e, stackTrace) {
+      log("❌ Exception in sending notification: $e");
+      log("$stackTrace");
+      _showSnackBar("Error occurred while sending notification.",
+          isError: true);
     }
-  } catch (e, stackTrace) {
-    log("❌ Exception in sending notification: $e");
-    log("$stackTrace");
-    _showSnackBar("Error occurred while sending notification.", isError: true);
   }
-}
-
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
@@ -1006,7 +1022,8 @@ final requestData = {
     );
   }
 
-  Future<void> _startTimerSafely(TimerService timerService, int visitorLogId) async {
+  Future<void> _startTimerSafely(
+      TimerService timerService, int visitorLogId) async {
     // Create a local copy of the context to avoid BuildContext across async gaps
     final BuildContext currentContext = context;
 
@@ -1055,66 +1072,77 @@ class VisitorInfoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Card(
-        elevation: 2,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ListTile(
-              onTap: () {},
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 2,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => VisitorDetailsScreen2(
+                        visitorLog: visitorInfo,
+                        isFromMissedApprovalScreen: true,
+                      )));
+        },
+        child: Card(
+          elevation: 2,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ListTile(
+                onTap: () {},
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 2,
+                ),
+                leading: CircleAvatar(
+                  backgroundImage: visitorInfo.visitorImage.isNotEmpty
+                      ? NetworkImage(visitorInfo.visitorImage)
+                      : const NetworkImage(
+                          'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                  child: visitorInfo.visitorImage.isEmpty
+                      ? Text(
+                          visitorInfo.visitorImage.isNotEmpty
+                              ? visitorInfo.visitorName[0]
+                              : 'G',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        )
+                      : null,
+                ),
+                title: Text(
+                  visitorInfo.visitorName,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                subtitle: Row(
+                  children: [
+                    Icon(
+                      _getPurposeIcon(visitorInfo.purposeSubCategoryName ??
+                          visitorInfo.purposeCategoryName),
+                      size: 18, // Reduced size for alignment
+                      color: Colors.grey[600], // Greyish color
+                    ),
+                    const SizedBox(width: 6), // Spacing between icon and text
+                    Text(
+                      "${_capitalizeFirstLetter(visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? "")} - ${visitorInfo.unitDetails.building_unit}",
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontSize: 14, // Ensures text size consistency
+                            color: Colors.grey[600], // Greyish color
+                          ),
+                    ),
+                  ],
+                ),
               ),
-              leading: CircleAvatar(
-                backgroundImage: visitorInfo.visitorImage.isNotEmpty
-                    ? NetworkImage(visitorInfo.visitorImage)
-                    : const NetworkImage(
-                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                child: visitorInfo.visitorImage.isEmpty
-                    ? Text(
-                        visitorInfo.visitorImage.isNotEmpty
-                            ? visitorInfo.visitorName[0]
-                            : 'G',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      )
-                    : null,
+              Divider(
+                indent: 16,
+                endIndent: 16,
+                color: Colors.grey[200],
               ),
-              title: Text(
-                visitorInfo.visitorName,
-                style: Theme.of(context).textTheme.bodyMedium,
+              TimerActionSection(
+                visitorInfo: visitorInfo,
+                visitorLogId: visitorInfo.visitorLogId ?? 0,
+                onRetry: onRetry,
+                isLoading: isLoading,
               ),
-              subtitle: Row(
-                children: [
-                  Icon(
-                    _getPurposeIcon(visitorInfo.purposeSubCategoryName ??
-                        visitorInfo.purposeCategoryName),
-                    size: 18, // Reduced size for alignment
-                    color: Colors.grey[600], // Greyish color
-                  ),
-                  const SizedBox(width: 6), // Spacing between icon and text
-                  Text(
-                    "${_capitalizeFirstLetter(visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? "")} - ${visitorInfo.unitDetails.building_unit}",
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontSize: 14, // Ensures text size consistency
-                          color: Colors.grey[600], // Greyish color
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              color: Colors.grey[200],
-            ),
-            TimerActionSection(
-              visitorInfo: visitorInfo,
-              visitorLogId: visitorInfo.visitorLogId ?? 0,
-              onRetry: onRetry,
-              isLoading: isLoading,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1468,14 +1496,7 @@ class TimerActionSectionState extends State<TimerActionSection> {
                       ],
                     ),
                     isEnabled
-                        ? SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.2,
-                            child: RetryButton(
-                              onRetry: widget.onRetry,
-                              isEnabled: isEnabled && !widget.isLoading,
-                              isLoading: widget.isLoading,
-                            ),
-                          )
+                        ? Container()
                         : TimerDisplay(
                             remaining: remaining,
                             isEnabled: isEnabled,
@@ -1506,11 +1527,13 @@ class TimerActionSectionState extends State<TimerActionSection> {
                 Row(
                   children: [
                     Expanded(
-                      child: RetryButton(
-                        onRetry: widget.onRetry,
-                        isEnabled: isEnabled && !widget.isLoading,
-                        isLoading: widget.isLoading,
-                      ),
+                      child:
+                      //  RetryButton(
+                      //   onRetry: widget.onRetry,
+                      //   isEnabled: isEnabled && !widget.isLoading,
+                      //   isLoading: widget.isLoading,
+                      // ),
+                      Container(),
                     ),
                     const SizedBox(width: 16),
                     TimerDisplay(

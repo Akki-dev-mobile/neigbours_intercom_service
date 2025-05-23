@@ -15,14 +15,13 @@ class VisitorDetailsScreen2 extends StatefulWidget {
   final VisitorInfo visitorLog;
   final String? image;
   final String? unitList;
-  final bool isFromVisitorInfoSection;
+  final bool isFromMissedApprovalScreen;
 
   const VisitorDetailsScreen2({
     Key? key,
     required this.visitorLog,
     this.unitList,
-    this.image,
-    this.isFromVisitorInfoSection = false,
+    this.image,required this.isFromMissedApprovalScreen
   }) : super(key: key);
 
   @override
@@ -222,7 +221,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                   ),
                   const SizedBox(height: 16),
                   // Show timeline or buttons based on visitor status and source
-                  if (!widget.isFromVisitorInfoSection ||
+                  if (!widget.isFromMissedApprovalScreen||
                       widget.visitorLog.allowStatus.toLowerCase() ==
                           "allowed" ||
                       widget.visitorLog.allowStatus.toLowerCase() ==
@@ -235,7 +234,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                           // Call the _buildTimeline method to generate the timeline items
                           _buildTimeline(),
                     )
-                  else
+                  else if(widget.isFromMissedApprovalScreen)
                     _buildSection(
                       title: "Actions",
                       children: [
@@ -355,8 +354,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
       label: "Approved By",
       description: widget.unitList == "0001"
           ? "Pre approved Staff"
-          : toBeginningOfSentenceCase(widget.visitorLog.allowStatus) ??
-              "Gatekeeper",
+          : _getFormattedAllowStatus(widget.visitorLog.allowStatus),
       icon: Icons.person,
       color: Colors.brown,
       index: currentIndex++,
@@ -384,6 +382,19 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
             ? word[0].toUpperCase() + word.substring(1).toLowerCase()
             : word)
         .join(' '); // Join words back together
+  }
+
+  String _getFormattedAllowStatus(String allowStatus) {
+    switch (allowStatus.toLowerCase()) {
+      case "allowed":
+        return "Allowed";
+      case "always_allowed":
+        return "Always Allowed";
+      case "allowed_by_gatekeeper":
+        return "Allowed By Gatekeeper";
+      default:
+        return "Gatekeeper";
+    }
   }
 
   Widget _buildTimelineTile(

@@ -11,6 +11,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_detail_@.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -1128,7 +1129,15 @@ class VisitorInfoSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ListTile(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => VisitorDetailsScreen2(
+                              visitorLog: visitorInfo,
+                              isFromMissedApprovalScreen: true,
+                            )));
+              },
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 2,

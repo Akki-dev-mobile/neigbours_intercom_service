@@ -519,23 +519,23 @@ class _SettingsHomeState extends State<SettingsHome> {
             SecondarySettingsTile(
               title: 'Application Settings',
             ),
-            // Network Logs (for all roles)
-            PrimarySettingsTile(
-              icon: Ionicons.analytics_outline,
-              title: 'Network Logs',
-              subtitle: 'View network request logs',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => NetworkLogsDashboard(
-                      serverUrl:
-                          'https://385d-103-178-133-37.ngrok-free.app/logs',
-                    ),
-                  ),
-                );
-              },
-            ),
+            // Network Logs (for all roles)  
+            // PrimarySettingsTile(
+            //   icon: Ionicons.analytics_outline,
+            //   title: 'Network Logs',
+            //   subtitle: 'View network request logs',
+            //   onTap: () {
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(
+            //         builder: (context) => NetworkLogsDashboard(
+            //           serverUrl:
+            //               'https://385d-103-178-133-37.ngrok-free.app/logs',
+            //         ),
+            //       ),
+            //     );
+            //   },
+            // ),
             // Camera Settings (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,
