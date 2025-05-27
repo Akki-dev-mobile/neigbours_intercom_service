@@ -1088,7 +1088,6 @@ class VisitorInfoSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ListTile(
-                onTap: () {},
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 2,
@@ -1382,6 +1381,8 @@ class TimerActionSectionState extends State<TimerActionSection> {
 
         final allowStatus = widget.visitorInfo.allowStatus.toLowerCase();
 
+        debugPrint("=================================> Status:$allowStatus");
+
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -1452,9 +1453,23 @@ class TimerActionSectionState extends State<TimerActionSection> {
                     Text(
                       "Visitor has been allowed.",
                       style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                             color: Colors.green.shade700,
                           ),
+                    ),
+                  ],
+                )
+
+              // ✅ Case: GateKeeper Allowed
+              else if (allowStatus == "allowed_by_gatekeeper")
+                Row(
+                  children: [
+                    Text(
+                      "Visitor is Allowed By Gatekeeper.",
+                      style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.green.shade700,
+                          overflow: TextOverflow.ellipsis),
                     ),
                   ],
                 )
@@ -1528,12 +1543,12 @@ class TimerActionSectionState extends State<TimerActionSection> {
                   children: [
                     Expanded(
                       child:
-                      //  RetryButton(
-                      //   onRetry: widget.onRetry,
-                      //   isEnabled: isEnabled && !widget.isLoading,
-                      //   isLoading: widget.isLoading,
-                      // ),
-                      Container(),
+                          //  RetryButton(
+                          //   onRetry: widget.onRetry,
+                          //   isEnabled: isEnabled && !widget.isLoading,
+                          //   isLoading: widget.isLoading,
+                          // ),
+                          Container(),
                     ),
                     const SizedBox(width: 16),
                     TimerDisplay(

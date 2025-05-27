@@ -1163,7 +1163,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
 
   @override
   void initState() {
-    log("called..............${widget.visitorLog.visitor!.name } ${widget.visitorLog.visitor_check_in}");
+    log("called..............${widget.visitorLog.visitor!.name} ${widget.visitorLog.visitor_check_in}");
     super.initState();
   }
 
@@ -1246,10 +1246,11 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       Flexible(
                         child: Text(
                           "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name?.toString() ?? "N/A")} ${_getUnitText()}",
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       )
@@ -1502,7 +1503,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: widget.visitorLog.visitor_check_out != null
+                                  text: widget.visitorLog.visitor_check_out !=
+                                          null
                                       ? Utils.convertDateTimeFormat(
                                           widget.visitorLog.visitor_check_out!)
                                       : "N/A",
@@ -1562,7 +1564,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
     }
 
     // Check if the first building assignment has unit_id
-    final firstAssignment = widget.visitorLog.visitor_building_assignment!.first;
+    final firstAssignment =
+        widget.visitorLog.visitor_building_assignment!.first;
     if (firstAssignment.unit_id == null || firstAssignment.unit_id!.isEmpty) {
       return ""; // Return empty string if no unit_id
     }

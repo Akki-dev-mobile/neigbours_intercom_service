@@ -41,7 +41,7 @@ class InternetCheckProvider with ChangeNotifier {
 
   Future<void> checkInternetAccess() async {
     try {
-      final result = await InternetAddress.lookup('google.com');
+      final result = await InternetAddress.lookup('1.1.1.1');
       final hasConnection =
           result.isNotEmpty && result.first.rawAddress.isNotEmpty;
       _updateInternetStatus(hasConnection);

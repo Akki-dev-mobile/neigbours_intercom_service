@@ -17,12 +17,13 @@ class VisitorDetailsScreen2 extends StatefulWidget {
   final String? unitList;
   final bool isFromMissedApprovalScreen;
 
-  const VisitorDetailsScreen2({
-    Key? key,
-    required this.visitorLog,
-    this.unitList,
-    this.image,required this.isFromMissedApprovalScreen
-  }) : super(key: key);
+  const VisitorDetailsScreen2(
+      {Key? key,
+      required this.visitorLog,
+      this.unitList,
+      this.image,
+      required this.isFromMissedApprovalScreen})
+      : super(key: key);
 
   @override
   State<VisitorDetailsScreen2> createState() => _VisitorDetailsScreenState();
@@ -71,17 +72,17 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                     GestureDetector(
                       onTap: () {
                         // Open full-screen view when tapped
-                        _showFullImage(context, widget.image);
+                        _showFullImage(context, widget.visitorLog.visitorImage);
                       },
                       child: CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.white,
                         child: CircleAvatar(
                           radius: 100,
-                          backgroundImage: widget.image != null &&
-                                  widget.image!.isNotEmpty
-                              ? NetworkImage(
-                                  widget.image!) // Show visitor's image
+                          backgroundImage: widget
+                                  .visitorLog.visitorImage.isNotEmpty
+                              ? NetworkImage(widget.visitorLog
+                                  .visitorImage) // Show visitor's image
                               : const NetworkImage(
                                   "https://cdn.pixabay.com/photo/2022/06/05/07/04/person-7243410_1280.png"), // Default image
                         ),
@@ -221,7 +222,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                   ),
                   const SizedBox(height: 16),
                   // Show timeline or buttons based on visitor status and source
-                  if (!widget.isFromMissedApprovalScreen||
+                  if (!widget.isFromMissedApprovalScreen ||
                       widget.visitorLog.allowStatus.toLowerCase() ==
                           "allowed" ||
                       widget.visitorLog.allowStatus.toLowerCase() ==
@@ -234,7 +235,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                           // Call the _buildTimeline method to generate the timeline items
                           _buildTimeline(),
                     )
-                  else if(widget.isFromMissedApprovalScreen)
+                  else if (widget.isFromMissedApprovalScreen &&
+                      widget.visitorLog.allowStatus.toLowerCase() == "pending")
                     _buildSection(
                       title: "Actions",
                       children: [
@@ -246,13 +248,14 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                               label: const Text('Allow by Gatekeeper'),
                               onPressed: () => _allowByGatekeeper(),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 12),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    side:
+                                        const BorderSide(color: Colors.black)),
                               ),
                             ),
                             ElevatedButton.icon(
@@ -260,7 +263,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                               label: const Text('Retry'),
                               onPressed: () => _retryPermission(),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
+                                backgroundColor: Colors.black,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 12),
