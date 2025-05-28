@@ -40,8 +40,9 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 android {
     namespace "com.cubeonebiz.gate.flutter_onegate"
     compileSdk 35
-    ndkVersion flutter.ndkVersion
-    //"29.0.13113456"
+    ndkVersion  "29.0.13113456"
+    // flutter.ndkVersion
+
 
 //    externalNativeBuild {
 //        cmake {
@@ -66,10 +67,9 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("/home/app-team/Downloads/my-release-key.jks")
-            keyAlias keystoreProperties['keyAlias']
+            storeFile file(keystoreProperties['storeFile'])
+            keyAlias keystoreProperties['alias_name']
             keyPassword keystoreProperties['keyPassword']
-//            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
             storePassword keystoreProperties['storePassword']
         }
     }
