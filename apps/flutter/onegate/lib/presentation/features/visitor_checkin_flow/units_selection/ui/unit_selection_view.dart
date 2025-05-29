@@ -164,9 +164,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   // Cache keys
-  String get _buildingCacheKey => 'members_cache_${_selectedBuildingName ?? "all"}';
+  String get _buildingCacheKey =>
+      'members_cache_${_selectedBuildingName ?? "all"}';
   String get _buildingNamesCacheKey => 'building_names_cache';
-  String get _cacheDateKey => 'members_cache_date_${_selectedBuildingName ?? "all"}';
+  String get _cacheDateKey =>
+      'members_cache_date_${_selectedBuildingName ?? "all"}';
 
   // Check if cache is valid (not older than 24 hours)
   Future<bool> _isCacheValid() async {
@@ -250,9 +252,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             final cachedBuildingNames = await _getCachedBuildingNames();
             if (cachedBuildingNames != null && cachedBuildingNames.isNotEmpty) {
               _buildingNames = cachedBuildingNames;
-              if (_selectedBuildingName == null) {
-                _selectedBuildingName = _buildingNames[0];
-              }
+              _selectedBuildingName ??= _buildingNames[0];
               return;
             }
           } else {
@@ -330,8 +330,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('access_token');
 
-      // Check if we have either keycloakWrapper token or access token
-      if (accessToken == null && keycloakWrapper.accessToken == null) {
+      // Check if we have access token
+      if (accessToken == null) {
         throw Exception('No authentication token found. Please log in again.');
       }
 
@@ -349,9 +349,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           headers: {
             'Accept': 'application/json, text/plain, */*',
             'Content-Type': 'application/json',
-            'Authorization': keycloakWrapper.accessToken != null
-                ? 'Bearer ${keycloakWrapper.accessToken}'
-                : 'Bearer $accessToken',
+            'Authorization': 'Bearer $accessToken',
           },
         ),
       );
@@ -457,7 +455,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            border: Border.all(color: const Color.fromARGB(255, 0, 0, 0)),
+                            border: Border.all(
+                                color: const Color.fromARGB(255, 0, 0, 0)),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: ListTile(
@@ -642,7 +641,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ChoiceChip(checkmarkColor:Colors.white,
+            child: ChoiceChip(
+              checkmarkColor: Colors.white,
               label: Text(buildingName),
               selected: isSelected,
               onSelected: (selected) {
@@ -1109,24 +1109,30 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                           child: _buildSearchField(context),
                                         ),
                                         Container(
-                                          margin: const EdgeInsets.only(left: 8),
+                                          margin:
+                                              const EdgeInsets.only(left: 8),
                                           decoration: BoxDecoration(
                                             color: Colors.black,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
                                           child: IconButton(
                                             icon: _isLoading
-                                              ? const SizedBox(
-                                                  width: 20,
-                                                  height: 20,
-                                                  child: CircularProgressIndicator(
-                                                    color: Colors.white,
-                                                    strokeWidth: 2,
-                                                  ),
-                                                )
-                                              : const Icon(Icons.refresh, color: Colors.white),
+                                                ? const SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  )
+                                                : const Icon(Icons.refresh,
+                                                    color: Colors.white),
                                             tooltip: 'Refresh members data',
-                                            onPressed: _isLoading ? null : _refreshData,
+                                            onPressed: _isLoading
+                                                ? null
+                                                : _refreshData,
                                           ),
                                         ),
                                       ],

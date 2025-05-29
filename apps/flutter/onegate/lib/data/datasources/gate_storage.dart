@@ -11,6 +11,10 @@ class GateStorage {
   static const _tokenExpiryKey = 'token_expiry';
   static const _userIdKey = 'user_id';
   static const _usernameKey = 'username';
+  static const _userEmailKey = 'user_email';
+  static const _userFullNameKey = 'user_full_name';
+  static const _userRolesKey = 'user_roles';
+  static const _sessionTimestampKey = 'session_timestamp';
   static const _roleKey = 'role';
   static const _societyIdKey = 'society_id';
   static const _visitorLogIdKey = 'visitorLogId';
@@ -203,6 +207,60 @@ class GateStorage {
   Future<String?> getUsername() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_usernameKey);
+  }
+
+  /// Enhanced user session management methods
+  Future<void> saveUserEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userEmailKey, email);
+  }
+
+  Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userEmailKey);
+  }
+
+  Future<void> saveUserFullName(String fullName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userFullNameKey, fullName);
+  }
+
+  Future<String?> getUserFullName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userFullNameKey);
+  }
+
+  Future<void> saveUserRoles(List<String> roles) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userRolesKey, jsonEncode(roles));
+  }
+
+  Future<List<String>> getUserRoles() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rolesJson = prefs.getString(_userRolesKey);
+    if (rolesJson != null) {
+      try {
+        final rolesList = jsonDecode(rolesJson) as List;
+        return rolesList.cast<String>();
+      } catch (e) {
+        log("❌ Error parsing user roles: $e");
+      }
+    }
+    return [];
+  }
+
+  Future<void> saveSessionTimestamp(DateTime timestamp) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_sessionTimestampKey, timestamp.millisecondsSinceEpoch);
+  }
+
+  Future<DateTime?> getSessionTimestamp() async {
+    final prefs = await SharedPreferences.getInstance();
+    final timestamp = prefs.getInt(_sessionTimestampKey);
+    if (timestamp != null) {
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    }
+    return null;
   }
 
   Future<void> saveRole(String role) async {

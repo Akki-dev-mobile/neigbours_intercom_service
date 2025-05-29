@@ -9,6 +9,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:get_it/get_it.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_detail_@.dart';
@@ -315,18 +317,22 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
   Future<void> logout(BuildContext context) async {
     try {
       log("Attempting logout...");
-      await keycloakWrapper.logout();
+      // Logout using AuthService instead of keycloakWrapper
+      final authService = GetIt.instance<AuthService>();
+      await authService.logout();
       log("Keycloak session ended.");
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear(); // Clear all stored preferences
       log("Preferences cleared.");
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => MyAppLogin()),
-            (route) => false,
-      );
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MyAppLogin()),
+          (route) => false,
+        );
+      }
     } catch (e, st) {
       log("Logout failed: $e\n$st");
       // Optionally show a SnackBar or AlertDialog to inform the user
@@ -511,7 +517,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                             ),
                           ),
                           onPressed: () async {
-                           logout(context);
+                            logout(context);
                           },
                           child: const Text(
                             'Logout',
@@ -680,7 +686,10 @@ class ApprovalsList extends StatelessWidget {
           Icon(
             Icons.person_off_outlined,
             size: 48,
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(153), // ~0.6 opacity
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withAlpha(153), // ~0.6 opacity
           ),
           Text(
             searchQuery.isNotEmpty
@@ -790,7 +799,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
   void _initializeSocketConnection() {
     _socketService = SocketService();
-    _socketService.initSocket(widget.visitorInfo.companyId.toString(), "onegate");
+    _socketService.initSocket(
+        widget.visitorInfo.companyId.toString(), "onegate");
 
     // Listen for socket responses
     _socketService.messageStream.listen((message) {
@@ -872,7 +882,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     }
 
     try {
-            await _sendFcmNotification(); // Fallback to REST API
+      await _sendFcmNotification(); // Fallback to REST API
 
       log("Trying to send notification via socket for visitor $visitorLogId");
       // Try to send notification via socket first
@@ -898,7 +908,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     if (!mounted) return;
 
     // Create a new endTime directly without using context
-    final endTime = DateTime.now().add(const Duration(seconds: 60)); // Use default 60 seconds
+    final endTime = DateTime.now()
+        .add(const Duration(seconds: 60)); // Use default 60 seconds
 
     // Update the timer state directly
     _timerService._timers[visitorLogId] = TimerState(
@@ -930,12 +941,14 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         _socketService = SocketService();
 
         // Get company ID
-        _socketService.initSocket(widget.visitorInfo.companyId.toString(), "onegate");
+        _socketService.initSocket(
+            widget.visitorInfo.companyId.toString(), "onegate");
 
         // Wait for connection to establish
         await Future.delayed(const Duration(seconds: 1));
 
-        if (_socketService.socket == null || !_socketService.socket!.connected) {
+        if (_socketService.socket == null ||
+            !_socketService.socket!.connected) {
           log("❌ Socket connection failed, falling back to REST API");
           await _sendFcmNotification(); // Fallback to REST API
           return;
@@ -963,7 +976,6 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
           _sendFcmNotification(); // Fallback to REST API
         }
       });
-
     } catch (e) {
       log("❌ Error in _sendNotificationViaSocket: $e");
       // Fallback to REST API on error
@@ -972,7 +984,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
   }
 
   Future<Map<String, dynamic>> _prepareSocketRequestData() async {
-    final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    final formattedInTime =
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
     return {
       'company_id': widget.visitorInfo.companyId.toString(),
@@ -981,10 +994,13 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       'in_time': formattedInTime,
       'user_id': widget.visitorInfo.memberInfo.memberId.toString(),
       'visitor_count': "1",
-      'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
-      'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
+      'purpose':
+          widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+      'member_mobile_number':
+          widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
       'visitor_id': widget.visitorInfo.visitorId.toString(),
-      'purpose_category': widget.visitorInfo.visitorPurposeCategoryId.toString(),
+      'purpose_category':
+          widget.visitorInfo.visitorPurposeCategoryId.toString(),
       'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
       'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
       'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
@@ -996,7 +1012,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
   }
 
   Future<void> _sendFcmNotification() async {
-    final formattedInTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    final formattedInTime =
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
 
     try {
       // Use the same data structure as the socket request
@@ -1007,10 +1024,13 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         'in_time': formattedInTime,
         'user_id': widget.visitorInfo.memberInfo.userId.toString(),
         'visitor_count': "1",
-        'purpose': widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
-        'member_mobile_number': widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
+        'purpose':
+            widget.visitorInfo.purposeCategoryName?.toLowerCase() ?? "general",
+        'member_mobile_number':
+            widget.visitorInfo.memberInfo.mobileNumber ?? "917378880544",
         'visitor_id': widget.visitorInfo.visitorId.toString(),
-        'purpose_category': widget.visitorInfo.visitorPurposeCategoryId.toString(),
+        'purpose_category':
+            widget.visitorInfo.visitorPurposeCategoryId.toString(),
         'visitor_log_id': widget.visitorInfo.visitorLogId.toString(),
         'coming_from': widget.visitorInfo.visitorComingFrom ?? "Bandra",
         'member_id': widget.visitorInfo.memberInfo.memberId.toString(),
@@ -1061,7 +1081,10 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       // Check if the response is a map with success and message fields
       if (responseData is Map &&
           responseData["success"] == true &&
-          responseData["message"]?.toString().contains("call initiated successfully") == true) {
+          responseData["message"]
+                  ?.toString()
+                  .contains("call initiated successfully") ==
+              true) {
         log("✅ Call initiated successfully via Twilio");
         _showSnackBar("Call initiated to member successfully", isError: false);
         return;
@@ -1235,7 +1258,8 @@ class VisitorAvatar extends StatelessWidget {
       tag: 'visitor_${visitorInfo.visitorId}',
       child: CircleAvatar(
         radius: 30,
-        backgroundColor: Theme.of(context).primaryColor.withAlpha(25), // ~0.1 opacity
+        backgroundColor:
+            Theme.of(context).primaryColor.withAlpha(25), // ~0.1 opacity
         child: visitorInfo.visitorImage.isNotEmpty
             ? CachedNetworkImage(
                 imageUrl: visitorInfo.visitorImage,

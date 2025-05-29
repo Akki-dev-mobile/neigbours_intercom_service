@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:get_it/get_it.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/intercom.dart';
 import 'package:flutter_onegate/presentation/features/license_plate_detection/ui/license_plate_detection_page.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/qr_scanner_self.dart';
@@ -97,7 +99,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
   Future<void> logout(BuildContext context) async {
     try {
       log("Attempting logout...");
-      await keycloakWrapper.logout();
+      // Logout using AuthService instead of keycloakWrapper
+      final authService = GetIt.instance<AuthService>();
+      await authService.logout();
       log("Keycloak session ended.");
 
       final prefs = await SharedPreferences.getInstance();

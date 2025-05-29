@@ -1,48 +1,125 @@
+import 'dart:convert';
 import 'dart:developer';
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 
 class AuthService {
-  final KeycloakWrapper keycloakWrapper;
+  final FlutterAppAuth _appAuth = const FlutterAppAuth();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final GateStorage gateStorage;
   final RemoteDataSource remoteDataSource;
 
+  // Storage keys for secure storage
+  static const String _accessTokenKey = 'access_token_secure';
+  static const String _refreshTokenKey = 'refresh_token_secure';
+  static const String _idTokenKey = 'id_token_secure';
+
   AuthService({
-    required this.keycloakWrapper,
     required this.gateStorage,
     required this.remoteDataSource,
-  }) {
-    _initializeKeycloak();
-  }
+  });
 
-  Future<void> _initializeKeycloak() async {
+  Future<void> initialize() async {
     try {
-      await keycloakWrapper.initialize();
-      log("✅ Keycloak initialized successfully");
+      log("✅ AppAuth service initialized successfully");
     } catch (e) {
-      log('❌ Error initializing Keycloak: $e');
-      throw Exception('Failed to initialize Keycloak: $e');
+      log('❌ Error initializing AppAuth service: $e');
+      throw Exception('Failed to initialize AppAuth service: $e');
     }
   }
 
   Future<Map<String, dynamic>?> login() async {
-    if (!keycloakWrapper.isInitialized) {
-      log('❌ Keycloak is not initialized, retrying...');
-      await _initializeKeycloak();
+    try {
+      log('🔐 ===== STARTING APPAUTH LOGIN FLOW =====');
+
+      // Display comprehensive client configuration
+      AppAuthConfigManager.logClientConfiguration(includeSecret: true);
+
+      log('🚀 Initiating Authorization and Token Exchange...');
+      log('📱 Using authorizeAndExchangeCode for automatic PKCE handling');
+
+      // Use authorizeAndExchangeCode for automatic PKCE handling
+      final AuthorizationTokenResponse result =
+          await _appAuth.authorizeAndExchangeCode(
+        AuthorizationTokenRequest(
+          AppAuthConfigManager.clientId,
+          AppAuthConfigManager.redirectUrl,
+          serviceConfiguration: AppAuthConfigManager.getServiceConfiguration(),
+          scopes: AppAuthConfigManager.scopes,
+          // Include client secret for confidential clients
+          clientSecret: AppAuthConfigManager.clientSecret,
+          additionalParameters: {
+            'access_type': 'offline',
+          },
+        ),
+      );
+
+      if (result.accessToken == null) {
+        log("❌ CRITICAL ERROR: No access token received from authorization");
+        throw Exception('Login failed - no access token received');
+      }
+
+      log("✅ ===== AUTHORIZATION SUCCESSFUL =====");
+      log("🔑 Access Token: ${result.accessToken!.substring(0, 20)}... (${result.accessToken!.length} chars)");
+      log("🔄 Refresh Token: ${result.refreshToken != null ? 'Present (${result.refreshToken!.substring(0, 20)}...)' : 'Not provided'}");
+      log("🆔 ID Token: ${result.idToken != null ? 'Present (${result.idToken!.substring(0, 20)}...)' : 'Not provided'}");
+      log("⏰ Token Expiry: ${result.accessTokenExpirationDateTime ?? 'Not specified'}");
+
+      // Print full tokens for debugging (be careful in production!)
+      log("🔐 ===== FULL TOKEN DETAILS (DEBUG) =====");
+      log("🔑 FULL ACCESS TOKEN:");
+      log(result.accessToken!);
+      log("🔄 FULL REFRESH TOKEN:");
+      log(result.refreshToken ?? 'Not provided');
+      log("🆔 FULL ID TOKEN:");
+      log(result.idToken ?? 'Not provided');
+
+      // Decode and print token contents
+      _printTokenContents("ACCESS TOKEN", result.accessToken!);
+      if (result.idToken != null) {
+        _printTokenContents("ID TOKEN", result.idToken!);
+      }
+      log("🔐 ===================================");
+
+      // Step 3: Store tokens securely
+      log("💾 Storing tokens securely...");
+      await _storeTokensFromAuthResponse(result);
+
+      // Step 4: Get user info from Keycloak
+      log("👤 Fetching user info from Keycloak...");
+      final userInfo = await _getUserInfo(result.accessToken!);
+
+      // Step 5: Save user data to local storage
+      log("💾 Saving user data to local storage...");
+      await _saveUserData(userInfo);
+
+      log("✅ ===== LOGIN COMPLETED SUCCESSFULLY =====");
+      return userInfo;
+    } catch (e) {
+      log('❌ ===== LOGIN FAILED =====');
+      log('❌ Error Type: ${e.runtimeType}');
+      log('❌ Error Message: $e');
+
+      if (e.toString().contains('unauthorized_client')) {
+        log('🔍 DIAGNOSIS: Client credentials are invalid');
+        log('🔍 POSSIBLE CAUSES:');
+        log('   • Client ID "onegate-sso" does not exist in realm "fstech"');
+        log('   • Redirect URI "com.cubeonebiz.gate://login-callback" is not registered');
+        log('   • Client is configured as confidential but no secret provided');
+        log('   • Client is disabled in Keycloak');
+        log('🔧 SOLUTION: Check Keycloak Admin Console → fstech realm → Clients → onegate-sso');
+      } else if (e.toString().contains('PKCE')) {
+        log('🔍 DIAGNOSIS: PKCE configuration issue');
+        log('🔧 SOLUTION: Ensure PKCE is enabled in Keycloak client settings');
+      }
+
+      log('❌ ========================');
+      throw Exception('Login failed: $e');
     }
-
-    final isLoggedIn = await keycloakWrapper.login();
-    if (!isLoggedIn || keycloakWrapper.accessToken == null) {
-      throw Exception('Login failed');
-    }
-
-    final userInfo = await keycloakWrapper.getUserInfo();
-    log("🔑 Access token: ${keycloakWrapper.accessToken}");
-        log("🔑 ref token: ${keycloakWrapper.refreshToken}");
-
-    await _saveUserData(userInfo);
-    return userInfo;
   }
 
   /// ✅ **Implement fetchSocieties**
@@ -55,10 +132,332 @@ class AuthService {
     }
   }
 
+  /// Store tokens securely from AuthorizationTokenResponse
+  Future<void> _storeTokensFromAuthResponse(
+      AuthorizationTokenResponse authResponse) async {
+    try {
+      // Store in secure storage
+      if (authResponse.accessToken != null) {
+        await _secureStorage.write(
+            key: _accessTokenKey, value: authResponse.accessToken!);
+        await gateStorage.saveAccessToken(authResponse.accessToken!);
+      }
+
+      if (authResponse.refreshToken != null) {
+        await _secureStorage.write(
+            key: _refreshTokenKey, value: authResponse.refreshToken!);
+        await gateStorage.saveRefreshToken(authResponse.refreshToken!);
+      }
+
+      if (authResponse.idToken != null) {
+        await _secureStorage.write(
+            key: _idTokenKey, value: authResponse.idToken!);
+      }
+
+      // Calculate and save token expiry
+      if (authResponse.accessTokenExpirationDateTime != null) {
+        await gateStorage
+            .saveTokenExpiry(authResponse.accessTokenExpirationDateTime!);
+      } else {
+        // Default to 1 hour if no expiry provided
+        final expiryTime = DateTime.now().add(const Duration(hours: 1));
+        await gateStorage.saveTokenExpiry(expiryTime);
+      }
+
+      log("✅ Tokens stored successfully");
+    } catch (e) {
+      log("❌ Error storing tokens: $e");
+      throw Exception('Failed to store tokens: $e');
+    }
+  }
+
+  /// Store tokens securely
+  Future<void> _storeTokens(TokenResponse tokenResponse) async {
+    try {
+      // Store in secure storage
+      if (tokenResponse.accessToken != null) {
+        await _secureStorage.write(
+            key: _accessTokenKey, value: tokenResponse.accessToken!);
+        await gateStorage.saveAccessToken(tokenResponse.accessToken!);
+      }
+
+      if (tokenResponse.refreshToken != null) {
+        await _secureStorage.write(
+            key: _refreshTokenKey, value: tokenResponse.refreshToken!);
+        await gateStorage.saveRefreshToken(tokenResponse.refreshToken!);
+      }
+
+      if (tokenResponse.idToken != null) {
+        await _secureStorage.write(
+            key: _idTokenKey, value: tokenResponse.idToken!);
+      }
+
+      // Calculate and save token expiry
+      if (tokenResponse.accessTokenExpirationDateTime != null) {
+        await gateStorage
+            .saveTokenExpiry(tokenResponse.accessTokenExpirationDateTime!);
+      } else {
+        // Default to 1 hour if no expiry provided
+        final expiryTime = DateTime.now().add(const Duration(hours: 1));
+        await gateStorage.saveTokenExpiry(expiryTime);
+      }
+
+      log("✅ Tokens stored successfully");
+    } catch (e) {
+      log("❌ Error storing tokens: $e");
+      throw Exception('Failed to store tokens: $e');
+    }
+  }
+
+  /// Get user info from Keycloak userinfo endpoint
+  Future<Map<String, dynamic>> _getUserInfo(String accessToken) async {
+    try {
+      final response = await http.get(
+        Uri.parse(AppAuthConfigManager.userInfoEndpoint),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final userInfo = jsonDecode(response.body) as Map<String, dynamic>;
+        log("✅ User info retrieved successfully");
+        return userInfo;
+      } else {
+        throw Exception(
+            'Failed to get user info: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      log("❌ Error getting user info: $e");
+      throw Exception('Failed to get user info: $e');
+    }
+  }
+
+  /// Refresh access token using refresh token
+  Future<bool> refreshToken() async {
+    try {
+      final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
+
+      if (refreshToken == null) {
+        log('❌ No refresh token available');
+        return false;
+      }
+
+      final TokenResponse tokenResponse = await _appAuth.token(
+        AppAuthConfigManager.getRefreshTokenRequest(refreshToken),
+      );
+
+      if (tokenResponse.accessToken == null) {
+        log('❌ Token refresh failed');
+        return false;
+      }
+
+      await _storeTokens(tokenResponse);
+      log('✅ Token refreshed successfully');
+      return true;
+    } catch (e) {
+      log('❌ Error refreshing token: $e');
+      return false;
+    }
+  }
+
+  /// Get current access token (refresh if needed)
+  Future<String?> getValidAccessToken() async {
+    try {
+      // Check if current token is expired
+      final isExpired = await gateStorage.isTokenExpired();
+
+      if (isExpired) {
+        log('🔄 Token expired, attempting refresh...');
+        final refreshed = await refreshToken();
+        if (!refreshed) {
+          log('❌ Token refresh failed');
+          return null;
+        }
+      }
+
+      return await gateStorage.getAccessToken();
+    } catch (e) {
+      log('❌ Error getting valid access token: $e');
+      return null;
+    }
+  }
+
+  /// Logout user and clear all tokens
+  Future<void> logout() async {
+    try {
+      // Clear secure storage
+      await _secureStorage.delete(key: _accessTokenKey);
+      await _secureStorage.delete(key: _refreshTokenKey);
+      await _secureStorage.delete(key: _idTokenKey);
+
+      // Clear authentication-related data from local storage
+      await gateStorage.clearStorage('access_token');
+      await gateStorage.clearStorage('refresh_token');
+      await gateStorage.clearStorage('token_expiry');
+      await gateStorage.clearStorage('user_id');
+      await gateStorage.clearStorage('username');
+      await gateStorage.clearStorage('role');
+      await gateStorage.clearStorage('society_id');
+
+      log('✅ Logout completed successfully');
+    } catch (e) {
+      log('❌ Error during logout: $e');
+      throw Exception('Logout failed: $e');
+    }
+  }
+
+  /// Decode and print JWT token contents
+  void _printTokenContents(String tokenType, String token) {
+    try {
+      // JWT tokens have 3 parts separated by dots: header.payload.signature
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        log("❌ Invalid JWT format for $tokenType");
+        return;
+      }
+
+      // Decode the payload (second part)
+      final payload = parts[1];
+      // Add padding if needed for base64 decoding
+      final normalizedPayload = base64Url.normalize(payload);
+      final decodedBytes = base64Url.decode(normalizedPayload);
+      final decodedPayload = utf8.decode(decodedBytes);
+      final payloadJson = jsonDecode(decodedPayload);
+
+      log("📋 ===== $tokenType DECODED PAYLOAD =====");
+      log("👤 Subject (sub): ${payloadJson['sub'] ?? 'Not provided'}");
+      log("📧 Email: ${payloadJson['email'] ?? 'Not provided'}");
+      log("👤 Preferred Username: ${payloadJson['preferred_username'] ?? 'Not provided'}");
+      log("🏢 Name: ${payloadJson['name'] ?? 'Not provided'}");
+      log("🔑 Client ID: ${payloadJson['azp'] ?? payloadJson['aud'] ?? 'Not provided'}");
+      log("🏛️ Issuer: ${payloadJson['iss'] ?? 'Not provided'}");
+      log("⏰ Issued At: ${payloadJson['iat'] != null ? DateTime.fromMillisecondsSinceEpoch(payloadJson['iat'] * 1000) : 'Not provided'}");
+      log("⏰ Expires At: ${payloadJson['exp'] != null ? DateTime.fromMillisecondsSinceEpoch(payloadJson['exp'] * 1000) : 'Not provided'}");
+      log("🔐 Scopes: ${payloadJson['scope'] ?? 'Not provided'}");
+      log("🎭 Roles: ${payloadJson['realm_access']?['roles'] ?? 'Not provided'}");
+      log("📋 Full Payload JSON:");
+      log(jsonEncode(payloadJson));
+      log("📋 =====================================");
+    } catch (e) {
+      log("❌ Error decoding $tokenType: $e");
+    }
+  }
+
+  /// Enhanced user session management
   Future<void> _saveUserData(Map<String, dynamic>? userInfo) async {
     if (userInfo == null) return;
-    await gateStorage.saveAccessToken(keycloakWrapper.accessToken!);
-    await gateStorage.saveUserId(userInfo["old_sso_user_id"] ?? "");
-    await gateStorage.saveUsername(userInfo["preferred_username"] ?? "");
+
+    try {
+      // Save basic user information
+      await gateStorage
+          .saveUserId(userInfo["sub"] ?? userInfo["old_sso_user_id"] ?? "");
+      await gateStorage.saveUsername(
+          userInfo["preferred_username"] ?? userInfo["username"] ?? "");
+
+      // Save additional user session data
+      if (userInfo["email"] != null) {
+        await gateStorage.saveUserEmail(userInfo["email"]);
+      }
+
+      if (userInfo["name"] != null) {
+        await gateStorage.saveUserFullName(userInfo["name"]);
+      }
+
+      // Extract and save user roles
+      final roles = _extractUserRoles(userInfo);
+      if (roles.isNotEmpty) {
+        await gateStorage.saveUserRoles(roles);
+      }
+
+      // Save session timestamp
+      await gateStorage.saveSessionTimestamp(DateTime.now());
+
+      log("✅ Enhanced user data saved successfully");
+      log("👤 User ID: ${userInfo["sub"]}");
+      log("📧 Email: ${userInfo["email"]}");
+      log("🎭 Roles: $roles");
+    } catch (e) {
+      log("❌ Error saving user data: $e");
+      throw Exception('Failed to save user data: $e');
+    }
+  }
+
+  /// Extract user roles from token payload
+  List<String> _extractUserRoles(Map<String, dynamic> userInfo) {
+    final roles = <String>[];
+
+    // Check realm_access roles
+    if (userInfo["realm_access"] != null &&
+        userInfo["realm_access"]["roles"] != null) {
+      final realmRoles = userInfo["realm_access"]["roles"] as List?;
+      if (realmRoles != null) {
+        roles.addAll(realmRoles.cast<String>());
+      }
+    }
+
+    // Check resource_access roles
+    if (userInfo["resource_access"] != null) {
+      final resourceAccess =
+          userInfo["resource_access"] as Map<String, dynamic>?;
+      resourceAccess?.forEach((key, value) {
+        if (value is Map<String, dynamic> && value["roles"] != null) {
+          final resourceRoles = value["roles"] as List?;
+          if (resourceRoles != null) {
+            roles.addAll(resourceRoles.cast<String>());
+          }
+        }
+      });
+    }
+
+    return roles.toSet().toList(); // Remove duplicates
+  }
+
+  /// Check if user is authenticated
+  Future<bool> isAuthenticated() async {
+    try {
+      final accessToken = await gateStorage.getAccessToken();
+      if (accessToken == null) return false;
+
+      final isExpired = await gateStorage.isTokenExpired();
+      if (isExpired) {
+        // Try to refresh token
+        final refreshed = await refreshToken();
+        return refreshed;
+      }
+
+      return true;
+    } catch (e) {
+      log("❌ Error checking authentication: $e");
+      return false;
+    }
+  }
+
+  /// Get current user session information
+  Future<Map<String, dynamic>?> getCurrentUserSession() async {
+    try {
+      final userId = await gateStorage.getUserId();
+      final username = await gateStorage.getUsername();
+      final email = await gateStorage.getUserEmail();
+      final fullName = await gateStorage.getUserFullName();
+      final roles = await gateStorage.getUserRoles();
+      final sessionTimestamp = await gateStorage.getSessionTimestamp();
+
+      if (userId == null) return null;
+
+      return {
+        'userId': userId,
+        'username': username,
+        'email': email,
+        'fullName': fullName,
+        'roles': roles,
+        'sessionTimestamp': sessionTimestamp?.toIso8601String(),
+        'isAuthenticated': await isAuthenticated(),
+      };
+    } catch (e) {
+      log("❌ Error getting user session: $e");
+      return null;
+    }
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
-import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/admin_dash_repo_impl.dart';
 import 'package:flutter_onegate/data/repositories/auth_repo_impl.dart';
@@ -22,7 +21,7 @@ import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/auth/bloc/login_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
+
 import 'package:flutter_onegate/presentation/features/gate_selection/bloc/gate_selection_bloc.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/bloc/self_entry_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
@@ -30,11 +29,14 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/bloc/visitor_in_entry_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/auth_service/enhanced_auth_service.dart';
+import 'package:flutter_onegate/services/api_client/authenticated_api_client.dart';
+import 'package:flutter_onegate/services/api_service/onegate_api_service.dart';
+import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt locator = GetIt.instance;
@@ -50,11 +52,30 @@ setupLocator() {
   // Register GateStorage
   locator.registerLazySingleton(() => GateStorage());
 
-  // ✅ Register AuthService properly
+  // ✅ Register AuthService properly (now using AppAuth)
   locator.registerLazySingleton<AuthService>(
     () => AuthService(
-      keycloakWrapper:
-          KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
+      gateStorage: locator<GateStorage>(),
+      remoteDataSource: locator<RemoteDataSource>(),
+    ),
+  );
+
+  // ✅ Register new authentication and API services
+  locator.registerLazySingleton<AuthenticatedApiClient>(
+    () => AuthenticatedApiClient(),
+  );
+
+  locator.registerLazySingleton<OneGateApiService>(
+    () => OneGateApiService(),
+  );
+
+  locator.registerLazySingleton<UserSessionManager>(
+    () => UserSessionManager(),
+  );
+
+  // ✅ Register Enhanced Auth Service for debugging
+  locator.registerLazySingleton<EnhancedAuthService>(
+    () => EnhancedAuthService(
       gateStorage: locator<GateStorage>(),
       remoteDataSource: locator<RemoteDataSource>(),
     ),

@@ -71,5 +71,17 @@
 		<array>
 			<string>location</string>
 		</array>
+		<!-- AppAuth URL Scheme Configuration -->
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleURLName</key>
+				<string>com.cubeonebiz.gate.oauth</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.cubeonebiz.gate</string>
+				</array>
+			</dict>
+		</array>
 	</dict>
 </plist>

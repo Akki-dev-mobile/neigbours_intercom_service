@@ -48,19 +48,15 @@ class TokenRefreshUtil {
           return false;
         }
 
-        // Note: KeycloakWrapper doesn't have a refreshToken() method
-        // We'll use the manual refresh approach directly
-
-        // Manual token refresh as fallback
-        final config = KeycloakConfigManager.getConfig();
-        final tokenEndpoint = '${config.frontendUrl}/realms/${config.realm}/protocol/openid-connect/token';
+        // Use AppAuth configuration for token refresh
+        final tokenEndpoint = AppAuthConfigManager.tokenEndpoint;
 
         final response = await http.post(
           Uri.parse(tokenEndpoint),
           headers: {'Content-Type': 'application/x-www-form-urlencoded'},
           body: {
-            'client_id': config.clientId,
-            'client_secret': config.clientSecret,
+            'client_id': AppAuthConfigManager.clientId,
+            'client_secret': AppAuthConfigManager.clientSecret,
             'grant_type': 'refresh_token',
             'refresh_token': refreshToken,
           },
@@ -76,7 +72,8 @@ class TokenRefreshUtil {
           await _gateStorage.saveRefreshToken(newRefreshToken);
 
           // Calculate and save token expiry time
-          final expiresIn = tokenData['expires_in'] ?? 3600; // Default to 1 hour
+          final expiresIn =
+              tokenData['expires_in'] ?? 3600; // Default to 1 hour
           final expiryTime = DateTime.now().add(Duration(seconds: expiresIn));
           await _gateStorage.saveTokenExpiry(expiryTime);
 

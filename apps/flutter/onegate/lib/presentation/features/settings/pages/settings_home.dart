@@ -21,6 +21,7 @@ import 'package:flutter_onegate/presentation/features/settings/data_observabilit
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
+import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
@@ -705,7 +706,9 @@ class _SettingsHomeState extends State<SettingsHome> {
   Future<void> logout(BuildContext context) async {
     try {
       log("Attempting logout...");
-      await keycloakWrapper.logout();
+      // Logout using AuthService instead of keycloakWrapper
+      final authService = GetIt.instance<AuthService>();
+      await authService.logout();
       log("Keycloak session ended.");
 
       final prefs = await SharedPreferences.getInstance();

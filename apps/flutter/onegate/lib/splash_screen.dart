@@ -1,14 +1,14 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/missed_approval_two.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:common_widgets/common_widgets.dart';
 
@@ -39,8 +39,10 @@ class _SplashViewState extends State<SplashView>
     );
 
     _loginService = LoginService(
-      keycloakWrapper:
-          KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
+      authService: AuthService(
+        gateStorage: GateStorage(),
+        remoteDataSource: RemoteDataSource(),
+      ),
       gateStorage: GateStorage(),
       remoteDataSource: RemoteDataSource(),
     );
@@ -85,7 +87,6 @@ class _SplashViewState extends State<SplashView>
     );
   }
 
-
   Future<void> _navigateBasedOnRole(String? role) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -101,9 +102,9 @@ class _SplashViewState extends State<SplashView>
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
         if (cleanedGateName.contains("tower")) {
-
           String formattedTowerName = "TOWER NO ";
-          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
+          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)',
+              caseSensitive: false);
           var match = regExp.firstMatch(cleanedGateName);
 
           if (match != null && match.group(1) != null) {
@@ -120,13 +121,13 @@ class _SplashViewState extends State<SplashView>
           );
 
           log('Auto-navigating to tower: $formattedTowerName');
-        }else {
+        } else {
           // If not tower, check if already went to visitor settings
           if (!hasNavigatedToGateSettings) {
             destination = VisitorSettingsView(comingfrom: true);
             await prefs.setBool('hasNavigatedToGateSettings', true);
           } else {
-            destination = GateDashboardView();
+            destination = const GateDashboardView();
           }
         }
       }
@@ -151,6 +152,7 @@ class _SplashViewState extends State<SplashView>
       _showError('Failed to navigate based on role: $e');
     }
   }
+
   void _showError(String message) {
     if (!mounted) return;
     // ScaffoldMessenger.of(context).showSnackBar(

@@ -63,7 +63,8 @@ dependencies:
   flutter_otp_text_field: ^1.1.1
   timezone: ^0.7.0
   ionicons: ^0.2.1
-  keycloak_wrapper: ^1.4.4
+  flutter_appauth: ^7.0.0
+  flutter_secure_storage: ^9.2.2
   permission_handler: ^11.3.1
   camera: ^0.11.0+2
   dart_amqp: ^0.3.1

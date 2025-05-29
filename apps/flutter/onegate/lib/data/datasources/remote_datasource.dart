@@ -8,7 +8,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/config/gate_config.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
-import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
+
 import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
@@ -17,24 +17,60 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
-import 'package:flutter_onegate/utils/error_screen.dart';
+
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
 import 'package:flutter_onegate/utils/token_refresh_util.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Create a global instance of KeycloakWrapper
-final keycloakWrapper =
-    KeycloakWrapper(config: KeycloakConfigManager.getConfig());
+// Legacy comment - KeycloakWrapper removed in favor of AppAuth
 
 /// Remote Data Source for managing API calls
 class RemoteDataSource {
+  final GateStorage _gateStorage = GateStorage();
+
   RemoteDataSource();
+
+  /// Get valid access token for API calls
+  Future<String?> _getAccessToken() async {
+    try {
+      final token = await _gateStorage.getAccessToken();
+      if (token == null) {
+        log('❌ No access token available');
+        return null;
+      }
+
+      // Check if token is expired and refresh if needed
+      final isExpired = await _gateStorage.isTokenExpired();
+      if (isExpired) {
+        log('🔄 Token expired, attempting refresh...');
+        final refreshed = await TokenRefreshUtil.refreshTokenIfNeeded();
+        if (refreshed) {
+          return await _gateStorage.getAccessToken();
+        } else {
+          log('❌ Token refresh failed');
+          return null;
+        }
+      }
+
+      return token;
+    } catch (e) {
+      log('❌ Error getting access token: $e');
+      return null;
+    }
+  }
+
+  /// Handle error responses consistently
+  void _handleErrorResponse() {
+    // This method can be used for consistent error handling
+    // Currently just a placeholder for backward compatibility
+    log('⚠️ Error response handled');
+  }
 
   final GateStorage gateStorage = GateStorage();
 
@@ -43,23 +79,12 @@ class RemoteDataSource {
     return DioProvider().getDio();
   }
 
-  void _handleErrorResponse([int? statusCode]) {
-    // Only navigate to error screen for 5xx errors
-    if (statusCode != null && statusCode >= 500 && statusCode < 600) {
-      navigatorKey.currentState?.pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const ErrorScreen(),
-        ),
-      );
-    }
-  }
-
   /// Handle authentication errors and token refresh
   Future<bool> _handleAuthError(dynamic error) async {
     // Check if the error is related to an expired token
     bool isAuthError = false;
 
-    if (error is DioError) {
+    if (error is DioException) {
       isAuthError = error.response?.statusCode == 401;
     } else if (error is String && error.contains("Expired refresh token")) {
       isAuthError = true;
@@ -100,50 +125,11 @@ class RemoteDataSource {
     return false; // Not an auth error, don't retry
   }
 
-  /// Login user via Keycloak
+  /// Login user via AppAuth (deprecated - use AuthService instead)
+  @deprecated
   Future<Map<String, dynamic>> loginUser() async {
-    try {
-      final keycloakWrapper = KeycloakWrapper(
-        config: KeycloakConfig(
-          bundleIdentifier: 'com.example.keycloakflutter',
-          clientId: 'onegate-sso',
-          frontendUrl: 'http://stgsso.cubeone.in',
-          realm: 'fstech',
-          clientSecret: 'zXpmFL8WzkDoL379FesFl2pgm8vxPa58',
-        ),
-      );
-
-      bool isLoggedIn = await keycloakWrapper.login();
-      if (!isLoggedIn || keycloakWrapper.accessToken == null) {
-        throw Exception('Keycloak login failed.');
-      }
-
-      log('Keycloak login successful. Access Token: ${keycloakWrapper.accessToken}');
-
-      final response = await _getDio().post(
-        ApiUrls.gateLogin,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        log("Bearer ${keycloakWrapper.accessToken}");
-        log('Login response: ${response.data}');
-        return response.data?['data'] ?? {};
-      } else {
-        _handleErrorResponse();
-        return {};
-      }
-    } catch (e) {
-      _handleErrorResponse();
-
-      log('Error during login: $e');
-      return {};
-    }
+    throw Exception(
+        'Login method deprecated. Use AuthService.login() instead.');
   }
 
   Future<void> callMember(String mobile, BuildContext context,
@@ -194,7 +180,7 @@ class RemoteDataSource {
     try {
       final response = await http.get(url, headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+        "Authorization": "Bearer ${await _getAccessToken() ?? ''}",
       });
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
@@ -257,7 +243,7 @@ class RemoteDataSource {
         '${ApiUrls.gateBaseUrl}/admin/companies/$userId',
         options: Options(
           headers: {
-            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Authorization': 'Bearer ${await _getAccessToken() ?? ''}',
             'Content-Type': 'application/json',
           },
         ),
@@ -430,16 +416,17 @@ class RemoteDataSource {
           '${ApiUrls.visitorEntry}?mobile_number=$mobileNumber&company_id=$companyId';
 
       log("API Request: $apiUrl");
-      log("Bearer ${keycloakWrapper.accessToken}");
+      final accessToken = await _getAccessToken();
+      log("Bearer $accessToken");
 
       final response = await _getDio().get(
         apiUrl,
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': keycloakWrapper.accessToken != null
-                ? 'Bearer ${keycloakWrapper.accessToken}'
-                : 'sdad',
+            'Authorization': accessToken != null
+                ? 'Bearer $accessToken'
+                : 'Bearer fallback_token',
           },
         ),
       );
@@ -511,7 +498,7 @@ class RemoteDataSource {
         Uri.parse(apiUrl),
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+          "Authorization": "Bearer ${await _getAccessToken() ?? ''}",
         },
       );
 
@@ -591,8 +578,8 @@ class RemoteDataSource {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': keycloakWrapper.accessToken != null
-                ? 'Bearer ${keycloakWrapper.accessToken}'
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
                 : '',
           },
         ),
@@ -742,7 +729,7 @@ class RemoteDataSource {
         options: Options(
           headers: {
             'Authorization':
-                'Bearer ${keycloakWrapper.accessToken ?? "accessToken"}',
+                'Bearer ${await _getAccessToken() ?? "accessToken"}',
             'Content-Type': 'application/json',
           },
         ),
@@ -772,7 +759,7 @@ class RemoteDataSource {
           _handleErrorResponse();
         }
       }
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       _handleErrorResponse();
 
       if (e.response != null) {
@@ -1022,8 +1009,8 @@ class RemoteDataSource {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': keycloakWrapper.accessToken != null
-                ? 'Bearer ${keycloakWrapper.accessToken}'
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
                 : '',
           },
         ),
@@ -1220,7 +1207,7 @@ class RemoteDataSource {
         queryParameters: {'company_id': companyId},
         options: Options(
           headers: {
-            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Authorization': 'Bearer ${await _getAccessToken() ?? ''}',
             'Content-Type': 'application/json',
           },
         ),
@@ -1262,7 +1249,7 @@ class RemoteDataSource {
     } catch (e) {
       _handleErrorResponse();
 
-      if (e is DioError) {
+      if (e is DioException) {
         log('Error sending OTP: ${e.response?.statusCode} - ${e.response?.data}');
       } else {
         log('Error sending OTP: $e');
@@ -1448,13 +1435,139 @@ class RemoteDataSource {
         accessToken = await TokenRefreshUtil.getValidAccessToken();
 
         if (accessToken == null) {
-          // If token refresh failed, try to use the keycloakWrapper token
-          if (keycloakWrapper.accessToken != null) {
-            accessToken = keycloakWrapper.accessToken;
-          } else {
+          // If token refresh failed, try to get token from storage
+          accessToken = await _gateStorage.getAccessToken();
+          if (accessToken == null) {
             // If both methods fail, throw an error
             throw Exception("Expired refresh token");
           }
+        }
+
+        final response = await http.post(
+          Uri.parse(baseUrl),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $accessToken",
+          },
+          body: jsonEncode(requestBody),
+        );
+
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> responseData = jsonDecode(response.body);
+          log("Response data: $responseData");
+          if (!responseData.containsKey('data')) {
+            log("🚨 API Response does not contain 'data' key.");
+            return [];
+          }
+
+          final List<dynamic> data = responseData['data'];
+          if (data.isEmpty) {
+            log("🚫 No approvals found in response.");
+            return [];
+          }
+
+          // ✅ Parse the API Response to a List of VisitorInfo Objects
+          final List<VisitorInfo> visitorList = data.map((json) {
+            List<UnitDetails> parsedUnitDetails = [];
+
+            try {
+              final dynamic unitDetailsValue = json['unit_details'];
+
+              if (unitDetailsValue is String) {
+                final String cleanedJsonString = unitDetailsValue
+                    .replaceAll(r'\"', '"')
+                    .replaceAll('"[', '[')
+                    .replaceAll(']"', ']');
+
+                final List<dynamic> decodedUnitDetails =
+                    jsonDecode(cleanedJsonString);
+
+                parsedUnitDetails =
+                    decodedUnitDetails.map<UnitDetails>((unitJson) {
+                  return UnitDetails(
+                    unitId: parseToInt(unitJson['unit_id']),
+                    building_unit: unitJson["building_unit"]?.toString() ?? '',
+                  );
+                }).toList();
+              }
+            } catch (e) {
+              log("❌ Error decoding unit details: $e");
+            }
+
+            // ✅ Fix for `additional_details` JSON String Parsing
+
+            Map<String, dynamic>? parsedAdditionalDetails;
+            try {
+              final dynamic additionalDetailsValue = json['additional_details'];
+
+              if (additionalDetailsValue != null &&
+                  additionalDetailsValue.toString().isNotEmpty) {
+                if (additionalDetailsValue is String) {
+                  String cleanedJson = additionalDetailsValue;
+
+                  // ✅ Remove extra surrounding quotes if present
+                  if (cleanedJson.startsWith('"') &&
+                      cleanedJson.endsWith('"')) {
+                    cleanedJson =
+                        cleanedJson.substring(1, cleanedJson.length - 1);
+                  }
+
+                  // ✅ Fix incorrectly escaped JSON (`\"` → `"`)
+                  cleanedJson = cleanedJson.replaceAll(r'\"', '"');
+
+                  // ✅ Decode the cleaned JSON string
+                  parsedAdditionalDetails = jsonDecode(cleanedJson);
+                } else if (additionalDetailsValue is Map<String, dynamic>) {
+                  parsedAdditionalDetails = additionalDetailsValue;
+                }
+              }
+            } catch (e) {
+              log("❌ Error parsing additional_details: $e");
+              parsedAdditionalDetails =
+                  {}; // Assign empty map to prevent null errors
+            }
+
+            return VisitorInfo(
+              visitorId: parseToInt(json['visitor_id']),
+              visitorName: json['visitor_name']?.toString() ?? '',
+              visitorMobile: json['visitor_mobile']?.toString() ?? '',
+              visitorImage: json['visitor_image']?.toString() ?? '',
+              allowStatus: json['allow_status']?.toString() ?? '',
+              visitorLogId: parseToInt(json['visitor_log_id']),
+              companyId: parseToInt(json['company_id']),
+              inGate: json['in_gate']?.toString() ?? '',
+              visitorCount: json['visitor_count'],
+              logCreatedAt: json['log_created_at']?.toString() ?? '',
+              unitDetails: parsedUnitDetails.isNotEmpty
+                  ? parsedUnitDetails.first
+                  : UnitDetails(unitId: 0, building_unit: ''),
+              memberInfo: MemberInfo(
+                name: json['member_name']?.toString() ?? "",
+                mobileNumber: json['memb_mobile_number']?.toString(),
+                email: json['memb_email']?.toString(),
+                memberId: parseToInt(json['memberid'] ?? json['member_id']),
+                unitId: parseToInt(json['unitid'] ?? json['unit_id']),
+                building_unit: json['building_unit']?.toString(),
+                userId: json['user_id']?.toString(),
+              ),
+              visitorComingFrom: json['visitor_coming_from']?.toString(),
+              visitorPurposeCategoryId: parseToInt(json['purpose_category_id']),
+              purposeCategoryName: json['purpose_category_name']?.toString(),
+              purposeSubCategoryName:
+                  json['purpose_sub_category_name']?.toString(),
+              additionalDetails: parsedAdditionalDetails, // ✅ Assigned here
+            );
+          }).toList();
+          return visitorList;
+        } else if (response.statusCode == 401) {
+          // Handle authentication error
+          await _handleAuthError("Expired refresh token");
+          return [];
+        } else {
+          _handleErrorResponse();
+
+          throw Exception(
+              '❌ Failed to fetch approvals: ${response.statusCode}, ${response.body}');
         }
       } catch (e) {
         log("❌ Error refreshing token: $e");
@@ -1462,132 +1575,6 @@ class RemoteDataSource {
         await _handleAuthError(e);
         // Return empty list since we can't proceed without a valid token
         return [];
-      }
-
-      final response = await http.post(
-        uri,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $accessToken",
-        },
-        body: jsonEncode(requestBody),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        log("Response data: $responseData");
-        if (!responseData.containsKey('data')) {
-          log("🚨 API Response does not contain 'data' key.");
-          return [];
-        }
-
-        final List<dynamic> data = responseData['data'];
-        if (data.isEmpty) {
-          log("🚫 No approvals found in response.");
-          return [];
-        }
-
-        // ✅ Parse the API Response to a List of VisitorInfo Objects
-        final List<VisitorInfo> visitorList = data.map((json) {
-          List<UnitDetails> parsedUnitDetails = [];
-
-          try {
-            final dynamic unitDetailsValue = json['unit_details'];
-
-            if (unitDetailsValue is String) {
-              final String cleanedJsonString = unitDetailsValue
-                  .replaceAll(r'\"', '"')
-                  .replaceAll('"[', '[')
-                  .replaceAll(']"', ']');
-
-              final List<dynamic> decodedUnitDetails =
-                  jsonDecode(cleanedJsonString);
-
-              parsedUnitDetails =
-                  decodedUnitDetails.map<UnitDetails>((unitJson) {
-                return UnitDetails(
-                  unitId: _parseToInt(unitJson['unit_id']),
-                  building_unit: unitJson["building_unit"]?.toString() ?? '',
-                );
-              }).toList();
-            }
-          } catch (e) {
-            log("❌ Error decoding unit details: $e");
-          }
-
-          // ✅ Fix for `additional_details` JSON String Parsing
-
-          Map<String, dynamic>? parsedAdditionalDetails;
-          try {
-            final dynamic additionalDetailsValue = json['additional_details'];
-
-            if (additionalDetailsValue != null &&
-                additionalDetailsValue.toString().isNotEmpty) {
-              if (additionalDetailsValue is String) {
-                String cleanedJson = additionalDetailsValue;
-
-                // ✅ Remove extra surrounding quotes if present
-                if (cleanedJson.startsWith('"') && cleanedJson.endsWith('"')) {
-                  cleanedJson =
-                      cleanedJson.substring(1, cleanedJson.length - 1);
-                }
-
-                // ✅ Fix incorrectly escaped JSON (`\"` → `"`)
-                cleanedJson = cleanedJson.replaceAll(r'\"', '"');
-
-                // ✅ Decode the cleaned JSON string
-                parsedAdditionalDetails = jsonDecode(cleanedJson);
-              } else if (additionalDetailsValue is Map<String, dynamic>) {
-                parsedAdditionalDetails = additionalDetailsValue;
-              }
-            }
-          } catch (e) {
-            log("❌ Error parsing additional_details: $e");
-            parsedAdditionalDetails =
-                {}; // Assign empty map to prevent null errors
-          }
-
-          return VisitorInfo(
-            visitorId: _parseToInt(json['visitor_id']),
-            visitorName: json['visitor_name']?.toString() ?? '',
-            visitorMobile: json['visitor_mobile']?.toString() ?? '',
-            visitorImage: json['visitor_image']?.toString() ?? '',
-            allowStatus: json['allow_status']?.toString() ?? '',
-            visitorLogId: _parseToInt(json['visitor_log_id']),
-            companyId: _parseToInt(json['company_id']),
-            inGate: json['in_gate']?.toString() ?? '',
-            visitorCount: json['visitor_count'],
-            logCreatedAt: json['log_created_at']?.toString() ?? '',
-            unitDetails: parsedUnitDetails.isNotEmpty
-                ? parsedUnitDetails.first
-                : UnitDetails(unitId: 0, building_unit: ''),
-            memberInfo: MemberInfo(
-              name: json['member_name']?.toString() ?? "",
-              mobileNumber: json['memb_mobile_number']?.toString(),
-              email: json['memb_email']?.toString(),
-              memberId: _parseToInt(json['memberid'] ?? json['member_id']),
-              unitId: _parseToInt(json['unitid'] ?? json['unit_id']),
-              building_unit: json['building_unit']?.toString(),
-              userId: json['user_id']?.toString(),
-            ),
-            visitorComingFrom: json['visitor_coming_from']?.toString(),
-            visitorPurposeCategoryId: _parseToInt(json['purpose_category_id']),
-            purposeCategoryName: json['purpose_category_name']?.toString(),
-            purposeSubCategoryName:
-                json['purpose_sub_category_name']?.toString(),
-            additionalDetails: parsedAdditionalDetails, // ✅ Assigned here
-          );
-        }).toList();
-        return visitorList;
-      } else if (response.statusCode == 401) {
-        // Handle authentication error
-        await _handleAuthError("Expired refresh token");
-        return [];
-      } else {
-        _handleErrorResponse(response.statusCode);
-
-        throw Exception(
-            '❌ Failed to fetch approvals: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
       // Check if it's an authentication error
@@ -1603,7 +1590,7 @@ class RemoteDataSource {
   }
 
   // Helper method to safely parse integers
-  int _parseToInt(dynamic value) {
+  int parseToInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
     if (value is String) {
@@ -1615,13 +1602,14 @@ class RemoteDataSource {
   /// Send visitor logs
   Future<void> sendLogs(Map<String, dynamic> visitorData) async {
     try {
+      final accessToken = await _getAccessToken();
       final response = await Dio().post(
         ApiUrls.visitorSendLogs,
         data: visitorData,
         options: Options(
           headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+            "Authorization": "Bearer ${accessToken ?? ''}",
           },
         ),
       );
@@ -1655,6 +1643,7 @@ class RemoteDataSource {
       final prefs = await SharedPreferences.getInstance();
 
       final String? visitorId1 = prefs.getString('visitorId');
+      final accessToken = await _getAccessToken();
 
       final response = await Dio().post(
         ApiUrls.readStatus,
@@ -1665,7 +1654,7 @@ class RemoteDataSource {
         options: Options(
           headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer ${keycloakWrapper.accessToken}",
+            "Authorization": "Bearer ${accessToken ?? ''}",
           },
         ),
       );
@@ -1772,19 +1761,19 @@ class RemoteDataSource {
   //   return response.data['data'] ?? [];
   // }
 
-  final String cacheKey = 'members_list_cache';
-  final String cacheTimestampKey = 'members_list_cache_timestamp';
-  final Duration cacheDuration =
-      const Duration(minutes: 30); // Cache expiry time
+  static const String cacheKey = 'members_list_cache';
+  static const String cacheTimestampKey = 'members_list_cache_timestamp';
+  static const Duration cacheDuration =
+      Duration(minutes: 30); // Cache expiry time
 
   Future<Map<String, dynamic>> getMembersList({String? buildingName}) async {
     try {
       // Check if cached data is still valid and no building filter is applied
       if (buildingName == null) {
-        final cachedData = await _getCachedData();
+        final cachedData = await getCachedData();
         if (cachedData != null) {
           log('Using cached data.');
-          return {'data': cachedData, 'meta': await _getCachedMeta()};
+          return {'data': cachedData, 'meta': await getCachedMeta()};
         }
       }
 
@@ -1831,8 +1820,8 @@ class RemoteDataSource {
 
         // Cache the new data only if no building filter is applied
         if (buildingName == null) {
-          await _cacheData(membersList);
-          await _cacheMeta(meta);
+          await cacheData(membersList);
+          await cacheMeta(meta);
         }
 
         return {'data': membersList, 'meta': meta};
@@ -1851,7 +1840,7 @@ class RemoteDataSource {
   }
 
   // Get cached data if it's still valid
-  Future<List<dynamic>?> _getCachedData() async {
+  Future<List<dynamic>?> getCachedData() async {
     final prefs = await SharedPreferences.getInstance();
 
     // Check if cached data exists
@@ -1877,7 +1866,7 @@ class RemoteDataSource {
   }
 
   // Cache the data with a timestamp
-  Future<void> _cacheData(List<dynamic> data) async {
+  Future<void> cacheData(List<dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonData = jsonEncode(data);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -1887,16 +1876,16 @@ class RemoteDataSource {
   }
 
   // Cache meta data
-  final String metaCacheKey = 'members_meta_cache';
+  static const String metaCacheKey = 'members_meta_cache';
 
-  Future<void> _cacheMeta(Map<String, dynamic> meta) async {
+  Future<void> cacheMeta(Map<String, dynamic> meta) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonData = jsonEncode(meta);
     await prefs.setString(metaCacheKey, jsonData);
   }
 
   // Get cached meta data
-  Future<Map<String, dynamic>?> _getCachedMeta() async {
+  Future<Map<String, dynamic>?> getCachedMeta() async {
     final prefs = await SharedPreferences.getInstance();
     final cachedJson = prefs.getString(metaCacheKey);
     if (cachedJson == null) return {};
@@ -1950,11 +1939,12 @@ class RemoteDataSource {
       final String url =
           'https://societybackend.cubeone.in/api/admin/staffs/edit_staff/$staffId?company_id=$companyId';
 
+      final accessToken = await _getAccessToken();
       final response = await Dio().get(
         url,
         options: Options(
           headers: {
-            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Authorization': 'Bearer ${accessToken ?? ''}',
             'Content-Type': 'application/json',
           },
         ),
@@ -1978,12 +1968,13 @@ class RemoteDataSource {
   /// Fetch staff list for a company
   Future<List<StaffModel>> fetchStaffList(String companyId) async {
     try {
+      final accessToken = await _getAccessToken();
       final response = await Dio().get(
         ApiUrls.staffList,
         queryParameters: {'company_id': companyId},
         options: Options(
           headers: {
-            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Authorization': 'Bearer ${accessToken ?? ''}',
             'Content-Type': 'application/json',
           },
         ),
@@ -2172,11 +2163,12 @@ class RemoteDataSource {
         'https://socbackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
 
     try {
+      final accessToken = await _getAccessToken();
       final response = await Dio().get(
         url,
         options: Options(
           headers: {
-            'Authorization': 'Bearer ${keycloakWrapper.accessToken}',
+            'Authorization': 'Bearer ${accessToken ?? ''}',
             'Content-Type': 'application/json',
           },
         ),
@@ -2345,7 +2337,7 @@ class RemoteDataSource {
 
       log('Error editing staff: $e');
 
-      if (e is DioError && e.response?.statusCode == 400) {
+      if (e is DioException && e.response?.statusCode == 400) {
         final responseData = e.response?.data.toString().toLowerCase();
         if (responseData != null &&
             responseData.contains('mobile number already exist')) {

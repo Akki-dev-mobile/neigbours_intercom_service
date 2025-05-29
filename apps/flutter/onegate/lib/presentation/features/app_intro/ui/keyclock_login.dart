@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
-import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
+
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
@@ -14,7 +14,8 @@ import 'package:flutter_onegate/presentation/features/settings/pages/visitor_set
 import 'package:flutter_onegate/utils/custom_appauth.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/ssl_bypass.dart';
-import 'package:keycloak_wrapper/keycloak_wrapper.dart';
+import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:get_it/get_it.dart';
 import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -55,12 +56,12 @@ class LoginState1 {
 }
 
 class LoginService {
-  final KeycloakWrapper keycloakWrapper;
+  final AuthService authService;
   final GateStorage gateStorage;
   final RemoteDataSource remoteDataSource;
 
   LoginService({
-    required this.keycloakWrapper,
+    required this.authService,
     required this.gateStorage,
     required this.remoteDataSource,
   });
@@ -74,30 +75,29 @@ class LoginService {
       // Configure AppAuth to allow insecure connections
       await CustomAppAuth.configureAppAuth();
 
-      await keycloakWrapper.initialize();
-      log("Keycloak initialized successfully");
+      await authService.initialize();
+      log("AppAuth service initialized successfully");
     } catch (e) {
-      log('Error initializing Keycloak: $e');
-      throw Exception('Failed to initialize Keycloak: $e');
+      log('Error initializing AppAuth service: $e');
+      throw Exception('Failed to initialize AppAuth service: $e');
     }
   }
 
   Future<Map<String, dynamic>?> performLogin() async {
-    if (!keycloakWrapper.isInitialized) {
-      throw Exception('Keycloak is not initialized');
+    try {
+      log('🔐 Starting login process...');
+
+      final userInfo = await authService.login();
+      if (userInfo == null) {
+        throw Exception('Login failed - no user info received');
+      }
+
+      log("✅ Login successful, user info received");
+      return userInfo;
+    } catch (e) {
+      log("❌ Login failed: $e");
+      throw Exception('Login failed: $e');
     }
-
-    final isLoggedIn = await keycloakWrapper.login();
-    if (!isLoggedIn || keycloakWrapper.accessToken == null) {
-      throw Exception('Login failed');
-    }
-
-    final userInfo = await keycloakWrapper.getUserInfo();
-    log("Access token: ${keycloakWrapper.accessToken}");
-    log("🔑 ref token: ${keycloakWrapper.refreshToken}");
-
-    await _saveUserData(userInfo);
-    return userInfo;
   }
 
   List<String> getUserRoles(Map society) {
@@ -125,25 +125,6 @@ class LoginService {
     }
   }
 
-  Future<void> _saveUserData(Map<String, dynamic>? userInfo) async {
-    if (userInfo == null) return;
-
-    await gateStorage.saveAccessToken(keycloakWrapper.accessToken!);
-
-    // Save refresh token if available
-    if (keycloakWrapper.refreshToken != null) {
-      await gateStorage.saveRefreshToken(keycloakWrapper.refreshToken!);
-    }
-
-    // Calculate and save token expiry time (typically 1 hour from now)
-    // This is an approximation - ideally we would decode the JWT to get the exact expiry
-    final expiryTime = DateTime.now().add(const Duration(hours: 1));
-    await gateStorage.saveTokenExpiry(expiryTime);
-
-    await gateStorage.saveUserId(userInfo["old_sso_user_id"] ?? "");
-    await gateStorage.saveUsername(userInfo["preferred_username"] ?? "");
-  }
-
   Future<List<dynamic>> fetchSocieties(String userId) async {
     return await remoteDataSource.fetchSocieties(userId);
   }
@@ -167,11 +148,11 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   @override
   void initState() {
     super.initState();
+    // Use dependency injection instead of creating new instances
     _loginService = LoginService(
-      keycloakWrapper:
-          KeycloakWrapper(config: KeycloakConfigManager.getConfig()),
-      gateStorage: GateStorage(),
-      remoteDataSource: RemoteDataSource(),
+      authService: GetIt.I<AuthService>(),
+      gateStorage: GetIt.I<GateStorage>(),
+      remoteDataSource: GetIt.I<RemoteDataSource>(),
     );
     _loginState = ValueNotifier(const LoginState1());
     _initialize();
@@ -271,8 +252,10 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         if (cleanedGateName.contains("tower")) {
           log('🏢 Tower gate detected: $cleanedGateName');
           String formattedTowerName = "TOWER NO ";
-          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)',
-              caseSensitive: false);
+          RegExp regExp = RegExp(
+            r'tower\s*(?:no\.?|number)?\s*(\d+)',
+            caseSensitive: false,
+          );
           var match = regExp.firstMatch(cleanedGateName);
 
           if (match != null && match.group(1) != null) {
@@ -367,10 +350,9 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     } catch (e) {
       log('Login error: $e');
       if (!_isDisposed) {
-        _safeUpdateState(_loginState.value.copyWith(
-          error: e.toString(),
-          isLoading: false,
-        ));
+        _safeUpdateState(
+          _loginState.value.copyWith(error: e.toString(), isLoading: false),
+        );
         _showError(e.toString());
       }
     }
@@ -401,8 +383,10 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
       log('Mapped roles after processing: $mappedRoles');
 
-      await _loginService.gateStorage
-          .saveSocietyDetails(societyId!, societyName);
+      await _loginService.gateStorage.saveSocietyDetails(
+        societyId!,
+        societyName,
+      );
       await _loginService.gateStorage.saveSocietyId(societyId);
 
       if (!mounted) return; // Add this check
@@ -424,23 +408,24 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   void _showSocietySelection(List<dynamic> societies) {
     showModalBottomSheet(
-        context: context,
-        useSafeArea: true,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (context) => SocietySelectionSheet(
-              societies: societies,
-              onSelected: (society) async {
-                try {
-                  Navigator.pop(context);
-                  await _handleSingleSociety(society);
-                } catch (e) {
-                  _showError('Failed to save society: $e');
-                }
-              },
-            ));
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SocietySelectionSheet(
+        societies: societies,
+        onSelected: (society) async {
+          try {
+            Navigator.pop(context);
+            await _handleSingleSociety(society);
+          } catch (e) {
+            _showError('Failed to save society: $e');
+          }
+        },
+      ),
+    );
   }
 
   void _showRoleSelection(List<String> availableRoles) {
@@ -487,7 +472,9 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   }
 
   Future<void> _showGateSelection(
-      List<dynamic> gates, String selectedRole) async {
+    List<dynamic> gates,
+    String selectedRole,
+  ) async {
     try {
       if (gates.isEmpty) {
         _showError('No gates available for selection.');
@@ -505,8 +492,10 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           String formattedTowerName = "TOWER NO ";
 
           // Extract tower number if available
-          RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)',
-              caseSensitive: false);
+          RegExp regExp = RegExp(
+            r'tower\s*(?:no\.?|number)?\s*(\d+)',
+            caseSensitive: false,
+          );
           var match = regExp.firstMatch(gateName.toLowerCase());
 
           if (match != null && match.group(1) != null) {
@@ -520,12 +509,17 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
         await prefs.setString('selected_gate', gateName);
         await prefs.setString(
-            'selected_gate_id', singleGate["gate_id"].toString());
-        log("Automatically selected single gate: $gateName with ID: ${singleGate['gate_id']}");
+          'selected_gate_id',
+          singleGate["gate_id"].toString(),
+        );
+        log(
+          "Automatically selected single gate: $gateName with ID: ${singleGate['gate_id']}",
+        );
 
         if (context.mounted) {
           myFluttertoast(
-              msg: 'Only one gate available. Navigating to $gateName');
+            msg: 'Only one gate available. Navigating to $gateName',
+          );
         }
 
         await _navigateBasedOnRole(selectedRole);
@@ -550,8 +544,10 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
                 String formattedTowerName = "TOWER NO ";
 
                 // Extract tower number if available
-                RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)',
-                    caseSensitive: false);
+                RegExp regExp = RegExp(
+                  r'tower\s*(?:no\.?|number)?\s*(\d+)',
+                  caseSensitive: false,
+                );
                 var match = regExp.firstMatch(gateName.toLowerCase());
 
                 if (match != null && match.group(1) != null) {
@@ -565,11 +561,17 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
               await prefs.setString('selected_gate', gateName);
               await prefs.setString(
-                  'selected_gate_id', gate["gate_id"].toString());
+                'selected_gate_id',
+                gate["gate_id"].toString(),
+              );
               // Store gate_type as well
-              await prefs.setString('selected_gate_type',
-                  gate["gate_type"]?.toString() ?? "both");
-              log("Gate selected: $gateName with ID: ${gate['gate_id']}, type: ${gate['gate_type']}");
+              await prefs.setString(
+                'selected_gate_type',
+                gate["gate_type"]?.toString() ?? "both",
+              );
+              log(
+                "Gate selected: $gateName with ID: ${gate['gate_id']}, type: ${gate['gate_type']}",
+              );
 
               Navigator.pop(context); // Close the bottom sheet
               await _navigateBasedOnRole(selectedRole);
@@ -680,10 +682,7 @@ class LoginContent extends StatelessWidget {
             ),
           ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-          CustomLargeBtn(
-            text: 'Login',
-            onPressed: onLoginPressed,
-          ),
+          CustomLargeBtn(text: 'Login', onPressed: onLoginPressed),
           Padding(
             padding: const EdgeInsets.all(10.0),
             child: TextButton(
@@ -692,9 +691,9 @@ class LoginContent extends StatelessWidget {
                 tag: 'signUpHero',
                 child: Text(
                   'Sign Up',
-                  style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                        fontSize: 20,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelMedium!.copyWith(fontSize: 20),
                 ),
               ),
             ),
@@ -749,11 +748,7 @@ class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
             ),
             subtitle: const Text('Choose the society you want to access'),
           ),
-          const Divider(
-            indent: 20,
-            endIndent: 20,
-            height: 1,
-          ),
+          const Divider(indent: 20, endIndent: 20, height: 1),
           Expanded(
             child: ListView.builder(
               shrinkWrap: true,
@@ -861,11 +856,7 @@ class RoleSelectionSheet extends StatelessWidget {
             ),
             subtitle: const Text('Choose your role for this session'),
           ),
-          const Divider(
-            indent: 20,
-            endIndent: 20,
-            height: 1,
-          ),
+          const Divider(indent: 20, endIndent: 20, height: 1),
           Expanded(
             child: ListView.builder(
               shrinkWrap: true,
@@ -943,11 +934,7 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
             ),
             subtitle: const Text('Choose the gate you want to manage'),
           ),
-          const Divider(
-            indent: 20,
-            endIndent: 20,
-            height: 1,
-          ),
+          const Divider(indent: 20, endIndent: 20, height: 1),
           Expanded(
             child: ListView.builder(
               shrinkWrap: true,
@@ -986,8 +973,10 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                       });
 
                       try {
-                        final gateProvider =
-                            Provider.of<GateProvider>(context, listen: false);
+                        final gateProvider = Provider.of<GateProvider>(
+                          context,
+                          listen: false,
+                        );
                         await gateProvider.selectGate(index);
                         widget.onGateSelected(Map<String, dynamic>.from(gate));
                       } catch (e) {
