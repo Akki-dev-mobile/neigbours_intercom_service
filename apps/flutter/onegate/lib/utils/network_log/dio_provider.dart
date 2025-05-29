@@ -25,9 +25,8 @@ class DioProvider {
       dio = Dio();
 
       // Add default configurations if needed
-      // Using milliseconds for compatibility with older Dio versions
-      dio.options.connectTimeout = 30000; // 30 seconds
-      dio.options.receiveTimeout = 30000; // 30 seconds
+      dio.options.connectTimeout = const Duration(seconds: 30);
+      dio.options.receiveTimeout = const Duration(seconds: 30);
     }
 
     // Add the network logger interceptor if in debug mode

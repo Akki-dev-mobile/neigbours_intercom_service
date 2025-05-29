@@ -22,6 +22,12 @@ import 'package:flutter_onegate/presentation/features/license_plate_detection/bl
 import 'package:flutter_onegate/splash_screen.dart';
 import 'package:flutter_onegate/utils/network_log/network_log_manager.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_overlay.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_onegate/services/notifications/models/notification_models.dart';
+import 'package:flutter_onegate/utils/network_log/models/network_log.dart';
+import 'package:flutter_onegate/services/crash_reporting/models/crash_models.dart';
+import 'package:flutter_onegate/services/crash_reporting/crash_reporter_service.dart';
+import 'package:flutter_onegate/services/crash_reporting/analytics_service.dart';
 import 'package:flutter_onegate/utils/no_internet_connection.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/utils/ssl_helper.dart';
@@ -54,6 +60,50 @@ import 'presentation/features/missed_approval/missed_approval_screen.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 late GateConfig appGateConfig;
 
+/// Initialize Hive with all required adapters
+Future<void> _initializeHive() async {
+  try {
+    // Initialize Hive
+    await Hive.initFlutter();
+
+    // Register all Hive adapters in the correct order
+    // NetworkLog adapter (typeId: 1)
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(NetworkLogAdapter());
+    }
+
+    // NotificationMessage adapter (typeId: 100)
+    if (!Hive.isAdapterRegistered(100)) {
+      Hive.registerAdapter(NotificationMessageAdapter());
+    }
+
+    // NotificationSubscriber adapter (typeId: 101)
+    if (!Hive.isAdapterRegistered(101)) {
+      Hive.registerAdapter(NotificationSubscriberAdapter());
+    }
+
+    // CrashReport adapter (typeId: 102)
+    if (!Hive.isAdapterRegistered(102)) {
+      Hive.registerAdapter(CrashReportAdapter());
+    }
+
+    // AnalyticsEvent adapter (typeId: 103)
+    if (!Hive.isAdapterRegistered(103)) {
+      Hive.registerAdapter(AnalyticsEventAdapter());
+    }
+
+    // UserSession adapter (typeId: 104)
+    if (!Hive.isAdapterRegistered(104)) {
+      Hive.registerAdapter(UserSessionAdapter());
+    }
+
+    log('Hive initialized successfully with all adapters');
+  } catch (e) {
+    log('Error initializing Hive: $e');
+    rethrow;
+  }
+}
+
 void main() async {
   // Initialize SSL helper to bypass certificate validation
   SSLHelper.initialize();
@@ -63,8 +113,15 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize Hive first with all adapters
+  await _initializeHive();
+
   // Initialize NetworkLogManager for debug logging early
   await NetworkLogManager().initialize();
+
+  // Initialize Crash Reporting and Analytics
+  await CrashReporterService().initialize();
+  await AnalyticsService().initialize();
 
   // Configure AppAuth to allow insecure connections
   await CustomAppAuth.configureAppAuth();

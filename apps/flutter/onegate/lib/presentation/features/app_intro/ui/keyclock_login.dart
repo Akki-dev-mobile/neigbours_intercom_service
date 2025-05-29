@@ -94,7 +94,7 @@ class LoginService {
 
     final userInfo = await keycloakWrapper.getUserInfo();
     log("Access token: ${keycloakWrapper.accessToken}");
-            log("🔑 ref token: ${keycloakWrapper.refreshToken}");
+    log("🔑 ref token: ${keycloakWrapper.refreshToken}");
 
     await _saveUserData(userInfo);
     return userInfo;
@@ -249,6 +249,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   Future<void> _navigateBasedOnRole(String? role) async {
     try {
+      log('🔄 Starting navigation for role: $role');
+
       final prefs = await SharedPreferences.getInstance();
       bool hasNavigatedToGateSettings =
           prefs.getBool('hasNavigatedToGateSettings') ?? false;
@@ -256,12 +258,18 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       final selectedGateName = prefs.getString('selected_gate') ?? '';
       final cleanedGateName = selectedGateName.toLowerCase();
 
+      log('📍 Selected gate: $selectedGateName');
+      log('📍 Has navigated to gate settings: $hasNavigatedToGateSettings');
+
       Widget? destination;
 
       if (role == 'admin') {
+        log('👑 Admin role detected - navigating to AdminDashboardView');
         destination = const AdminDashboardView();
       } else if (role == 'gatekeeper') {
+        log('🚪 Gatekeeper role detected');
         if (cleanedGateName.contains("tower")) {
+          log('🏢 Tower gate detected: $cleanedGateName');
           String formattedTowerName = "TOWER NO ";
           RegExp regExp = RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)',
               caseSensitive: false);
@@ -280,35 +288,42 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
             towerName: formattedTowerName,
           );
 
-          log('Auto-navigating to tower: $formattedTowerName');
+          log('🏢 Auto-navigating to tower: $formattedTowerName');
         } else {
+          log('🏠 Regular gate detected');
           // If not tower, check if already went to visitor settings
           if (!hasNavigatedToGateSettings) {
+            log('⚙️ First time - navigating to VisitorSettingsView');
             destination = VisitorSettingsView(comingfrom: true);
             await prefs.setBool('hasNavigatedToGateSettings', true);
           } else {
+            log('🏠 Returning user - navigating to GateDashboardView');
             destination = const GateDashboardView();
           }
         }
+      } else {
+        log('❌ Unknown role: $role');
       }
 
       if (destination != null) {
-        log('Navigating to $role -> ${destination.runtimeType}');
+        log('✅ Destination determined: ${destination.runtimeType}');
+        log('🔄 Checking context.mounted: ${context.mounted}');
         if (context.mounted) {
+          log('🚀 Starting navigation to ${destination.runtimeType}');
           await Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => destination!),
           );
-          log('Navigation to ${destination.runtimeType} complete');
+          log('✅ Navigation to ${destination.runtimeType} complete');
         } else {
-          log('Context is not mounted. Unable to navigate.');
+          log('❌ Context is not mounted. Unable to navigate.');
         }
       } else {
-        log('No valid role found or no destination for role: $role');
+        log('❌ No destination determined for role: $role');
       }
     } catch (e, stackTrace) {
-      log('Error during navigation: $e');
-      log('Stack trace: $stackTrace');
+      log('💥 Error during navigation: $e');
+      log('📚 Stack trace: $stackTrace');
       _showError('Failed to navigate based on role: $e');
     }
   }
@@ -572,7 +587,16 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   }
 
   void _showError(String message) {
-    if (!mounted) return;
+    log('🚨 ERROR: $message');
+    if (!mounted) {
+      log('🚨 Widget not mounted, cannot show error dialog');
+      return;
+    }
+
+    // Show error in console for debugging
+    print('🚨 LOGIN ERROR: $message');
+
+    // Uncomment to show SnackBar
     // ScaffoldMessenger.of(context).showSnackBar(
     //   SnackBar(content: Text(message)),
     // );

@@ -17,6 +17,7 @@ import 'package:flutter_onegate/presentation/features/settings/pages/camera_prov
 import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/network_logs_dashboard.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
+import 'package:flutter_onegate/presentation/features/settings/data_observability_settings_screen.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -519,23 +520,22 @@ class _SettingsHomeState extends State<SettingsHome> {
             SecondarySettingsTile(
               title: 'Application Settings',
             ),
-            // Network Logs (for all roles)  
-            // PrimarySettingsTile(
-            //   icon: Ionicons.analytics_outline,
-            //   title: 'Network Logs',
-            //   subtitle: 'View network request logs',
-            //   onTap: () {
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //         builder: (context) => NetworkLogsDashboard(
-            //           serverUrl:
-            //               'https://385d-103-178-133-37.ngrok-free.app/logs',
-            //         ),
-            //       ),
-            //     );
-            //   },
-            // ),
+            // Data Observability (for Admin, Master, and Gatekeeper)
+            if (role == "admin" || role == "master" || role == "gatekeeper")
+              PrimarySettingsTile(
+                icon: Ionicons.pulse_outline,
+                title: 'Data Observability',
+                subtitle: 'Monitor system health, search & notifications',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const DataObservabilitySettingsScreen(),
+                    ),
+                  );
+                },
+              ),
             // Camera Settings (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,

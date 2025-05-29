@@ -2,7 +2,7 @@ import 'dart:developer' as dev;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'interceptors/network_logger_interceptor.dart';
@@ -32,8 +32,7 @@ class NetworkLogManager {
     if (_initialized || !kDebugMode) return;
 
     try {
-      // Initialize Hive
-      await Hive.initFlutter();
+      // Note: Hive is already initialized in main.dart
 
       // Initialize the log service
       await _logService.init();

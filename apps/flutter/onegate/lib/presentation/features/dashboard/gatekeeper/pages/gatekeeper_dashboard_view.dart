@@ -2,6 +2,7 @@
 
 import 'dart:developer';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/intercom.dart';
@@ -286,17 +287,18 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     )),
                 actions: [
                   // Network Log Button (for debugging)
-                  // IconButton(
-                  //   onPressed: () {
-                  //     // Make real API requests and then show network logs
-                  //     _makeRealApiRequests(context);
-                  //   },
-                  //   icon: Icon(
-                  //     Symbols.bug_report,
-                  //     color: Colors.red,
-                  //   ),
-                  //   tooltip: 'Fetch Data & Show Network Logs',
-                  // ),
+                  if (kDebugMode)
+                    IconButton(
+                      onPressed: () {
+                        // Make real API requests and then show network logs
+                        _makeRealApiRequests(context);
+                      },
+                      icon: const Icon(
+                        Icons.bug_report,
+                        color: Colors.red,
+                      ),
+                      tooltip: 'Fetch Data & Show Network Logs',
+                    ),
 
                   IconButton(
                     onPressed: () {

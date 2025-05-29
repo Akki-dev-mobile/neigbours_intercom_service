@@ -28,11 +28,7 @@ class NetworkLogService {
     if (!kDebugMode) return;
 
     try {
-      // Register the adapter if not already registered
-      if (!Hive.isAdapterRegistered(1)) {
-        Hive.registerAdapter(NetworkLogAdapter());
-      }
-
+      // Note: Hive and adapters are already initialized in main.dart
       // Open the box
       _logsBox = await Hive.openBox<NetworkLog>(_boxName);
 

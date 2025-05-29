@@ -183,8 +183,8 @@ class NetworkLogSyncService {
         data: jsonEncode({'logs': logsJson}),
         options: Options(
           headers: {'Content-Type': 'application/json'},
-          sendTimeout: 10000,
-          receiveTimeout: 10000,
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
         ),
       );
 

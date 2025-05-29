@@ -176,6 +176,7 @@ class GateStorage {
     await prefs.setString('uploaded_image_url', image);
     // print("Image URL saved to SharedPreferences: $response");
   }
+
   Future<void> setComingFrom(String comingFrom) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('coming_from', comingFrom);
@@ -291,12 +292,11 @@ class GateStorage {
     print("VisitorLog ID removed from SharedPreferences");
   }
 
-    Future<void> clearVisitorImage() async {
+  Future<void> clearVisitorImage() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove("uploaded_image_url");
     print("uploaded_image_url  removed from SharedPreferences");
   }
-
 
   bool? getTooglevalue(String key) {
     return _prefs?.getBool(key);
@@ -367,5 +367,101 @@ class GateStorage {
   Future<String?> getGateType() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('selected_gate_type');
+  }
+
+  // Meilisearch configuration
+  Future<void> setMeilisearchHost(String host) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('meilisearch_host', host);
+    log("Meilisearch host saved: $host");
+  }
+
+  Future<String?> getMeilisearchHost() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('meilisearch_host');
+  }
+
+  Future<void> setMeilisearchApiKey(String apiKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('meilisearch_api_key', apiKey);
+    log("Meilisearch API key saved");
+  }
+
+  Future<String?> getMeilisearchApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('meilisearch_api_key');
+  }
+
+  // Custom notification service configuration
+  Future<void> setNotificationServiceEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notification_service_enabled', enabled);
+    log("Custom notification service enabled: $enabled");
+  }
+
+  Future<bool> getNotificationServiceEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('notification_service_enabled') ?? true;
+  }
+
+  Future<void> setNotificationWebhookUrl(String? url) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (url != null) {
+      await prefs.setString('notification_webhook_url', url);
+      log("Notification webhook URL saved: $url");
+    } else {
+      await prefs.remove('notification_webhook_url');
+      log("Notification webhook URL removed");
+    }
+  }
+
+  Future<String?> getNotificationWebhookUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('notification_webhook_url');
+  }
+
+  Future<void> setNotificationRetentionDays(int days) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('notification_retention_days', days);
+    log("Notification retention days saved: $days");
+  }
+
+  Future<int> getNotificationRetentionDays() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('notification_retention_days') ?? 30;
+  }
+
+  // Data observability settings
+  Future<void> setDataObservabilityEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('data_observability_enabled', enabled);
+    log("Data observability enabled: $enabled");
+  }
+
+  Future<bool> getDataObservabilityEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('data_observability_enabled') ?? true;
+  }
+
+  Future<void> setHealthCheckInterval(int minutes) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('health_check_interval', minutes);
+    log("Health check interval saved: $minutes minutes");
+  }
+
+  Future<int> getHealthCheckInterval() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('health_check_interval') ?? 30;
+  }
+
+  Future<void> setMeilisearchIndexSyncInterval(int hours) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('meilisearch_sync_interval', hours);
+    log("Meilisearch sync interval saved: $hours hours");
+  }
+
+  Future<int> getMeilisearchIndexSyncInterval() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('meilisearch_sync_interval') ?? 2;
   }
 }
