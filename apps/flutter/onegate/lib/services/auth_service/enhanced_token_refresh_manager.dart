@@ -6,6 +6,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:flutter_onegate/services/auth_service/token_notification_service.dart';
+import 'package:flutter_onegate/services/auth_service/refresh_token_error_handler.dart';
 
 /// Enhanced token refresh manager with automatic refresh capabilities
 class EnhancedTokenRefreshManager {
@@ -38,7 +39,6 @@ class EnhancedTokenRefreshManager {
   static const Duration _refreshCheckInterval =
       Duration(seconds: 30); // More frequent for precision
   static const int _maxRetryAttempts = 3;
-  static const Duration _retryDelay = Duration(seconds: 5);
 
   // Dynamic refresh buffer (calculated per token)
   Duration? _dynamicRefreshBuffer;
@@ -237,7 +237,7 @@ class EnhancedTokenRefreshManager {
     }
   }
 
-  /// Perform the actual token refresh with retry logic
+  /// Perform the actual token refresh with enhanced error handling
   Future<bool> _performTokenRefresh() async {
     for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++) {
       try {
@@ -246,6 +246,11 @@ class EnhancedTokenRefreshManager {
         final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
         if (refreshToken == null) {
           log("❌ No refresh token available");
+          await _handleRefreshTokenFailure(
+            const RefreshTokenException('No refresh token available'),
+            attempt,
+            RefreshTokenFailureType.missingRefreshToken,
+          );
           return false;
         }
 
@@ -256,9 +261,16 @@ class EnhancedTokenRefreshManager {
 
         if (tokenResponse.accessToken == null) {
           log("❌ Token refresh failed - no access token received");
+          await _handleRefreshTokenFailure(
+            const RefreshTokenException('No access token received'),
+            attempt,
+            RefreshTokenFailureType.invalidResponse,
+          );
+
           if (attempt < _maxRetryAttempts) {
-            log("⏳ Retrying in ${_retryDelay.inSeconds} seconds...");
-            await Future.delayed(_retryDelay);
+            final delay = _calculateBackoffDelay(attempt);
+            log("⏳ Retrying in ${delay.inSeconds} seconds...");
+            await Future.delayed(delay);
             continue;
           }
           return false;
@@ -267,15 +279,23 @@ class EnhancedTokenRefreshManager {
         // Store new tokens
         await _storeTokens(tokenResponse);
         log("✅ Token refreshed successfully on attempt $attempt");
+
+        // Reset failure counters on success
+        await _resetRefreshFailureCounters();
         return true;
       } catch (e) {
         log("❌ Token refresh attempt $attempt failed: $e");
 
-        if (attempt < _maxRetryAttempts) {
-          log("⏳ Retrying in ${_retryDelay.inSeconds} seconds...");
-          await Future.delayed(_retryDelay);
+        // Analyze and handle the specific failure
+        final failureType = _analyzeRefreshFailure(e);
+        await _handleRefreshTokenFailure(e, attempt, failureType);
+
+        if (attempt < _maxRetryAttempts && _shouldRetryFailure(failureType)) {
+          final delay = _calculateBackoffDelay(attempt);
+          log("⏳ Retrying in ${delay.inSeconds} seconds...");
+          await Future.delayed(delay);
         } else {
-          log("❌ All token refresh attempts failed");
+          log("❌ All token refresh attempts failed or failure is non-retryable");
           return false;
         }
       }
@@ -391,6 +411,44 @@ class EnhancedTokenRefreshManager {
     } catch (e) {
       log("❌ Error clearing tokens: $e");
     }
+  }
+
+  /// Analyze refresh failure type
+  RefreshTokenFailureType _analyzeRefreshFailure(dynamic error) {
+    return RefreshTokenErrorHandler.analyzeFailure(error);
+  }
+
+  /// Check if failure should be retried
+  bool _shouldRetryFailure(RefreshTokenFailureType failureType) {
+    return RefreshTokenErrorHandler.shouldRetryFailure(failureType);
+  }
+
+  /// Calculate exponential backoff delay
+  Duration _calculateBackoffDelay(int attemptNumber) {
+    return RefreshTokenErrorHandler.calculateBackoffDelay(attemptNumber);
+  }
+
+  /// Handle refresh token failure
+  Future<void> _handleRefreshTokenFailure(
+    dynamic error,
+    int attemptNumber,
+    RefreshTokenFailureType failureType,
+  ) async {
+    await RefreshTokenErrorHandler.handleRefreshTokenFailure(
+      error,
+      attemptNumber,
+      failureType,
+    );
+  }
+
+  /// Reset refresh failure counters
+  Future<void> _resetRefreshFailureCounters() async {
+    RefreshTokenErrorHandler.resetFailureCounters();
+  }
+
+  /// Get refresh failure statistics
+  Map<String, dynamic> getRefreshFailureStatistics() {
+    return RefreshTokenErrorHandler.getFailureStatistics();
   }
 
   /// Dispose resources

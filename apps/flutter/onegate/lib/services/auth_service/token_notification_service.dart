@@ -211,6 +211,28 @@ class TokenNotificationService {
     log("🚫 Authentication error notification shown");
   }
 
+  /// Show network connectivity warning notification
+  void showNetworkConnectivityWarning() {
+    _showSnackBar(
+      "🌐 Network connectivity lost\nSome features may be limited until connection is restored",
+      backgroundColor: Colors.orange.shade700,
+      duration: const Duration(seconds: 4),
+      action: SnackBarAction(
+        label: 'Retry',
+        textColor: Colors.white,
+        onPressed: () => _retryNetworkConnection(),
+      ),
+    );
+
+    log("🌐 Network connectivity warning notification shown");
+  }
+
+  /// Retry network connection (placeholder for future implementation)
+  void _retryNetworkConnection() {
+    log("🔄 Network connection retry requested");
+    _showToast("🔄 Checking network connection...");
+  }
+
   /// Show a snackbar with custom styling
   void _showSnackBar(
     String message, {

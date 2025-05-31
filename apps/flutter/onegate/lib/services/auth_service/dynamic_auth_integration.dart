@@ -3,20 +3,22 @@ import 'dart:developer';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/dynamic_token_refresh_manager.dart';
-import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:flutter_onegate/services/auth_service/token_notification_service.dart';
 
 /// Integration layer for dynamic token refresh system with OneGate authentication
 class DynamicAuthIntegration with WidgetsBindingObserver {
-  static final DynamicAuthIntegration _instance = DynamicAuthIntegration._internal();
+  static final DynamicAuthIntegration _instance =
+      DynamicAuthIntegration._internal();
   factory DynamicAuthIntegration() => _instance;
   DynamicAuthIntegration._internal();
 
   // Core components
-  final DynamicTokenRefreshManager _dynamicManager = DynamicTokenRefreshManager();
-  final TokenNotificationService _notificationService = TokenNotificationService();
-  
+  final DynamicTokenRefreshManager _dynamicManager =
+      DynamicTokenRefreshManager();
+  final TokenNotificationService _notificationService =
+      TokenNotificationService();
+
   // Integration state
   bool _isInitialized = false;
   bool _isObservingLifecycle = false;
@@ -62,7 +64,8 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
   Future<void> _setupAuthStateMonitoring(AuthService authService) async {
     try {
       // Monitor authentication state changes
-      _authStateSubscription = authService.isLoggedInStream.listen((isLoggedIn) async {
+      _authStateSubscription =
+          authService.isLoggedInStream.listen((isLoggedIn) async {
         if (isLoggedIn) {
           log("🔐 User logged in - starting dynamic token management");
           await _handleUserLogin(authService);
@@ -117,7 +120,8 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
     try {
       log("🔍 Performing initial token analysis");
 
-      final accessToken = await authService.tokenRefreshManager.getValidAccessToken();
+      final accessToken =
+          await authService.tokenRefreshManager.getValidAccessToken();
       if (accessToken == null) {
         log("⚠️ No access token available for initial analysis");
         return;
@@ -125,7 +129,7 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
 
       // Get comprehensive token analysis
       final analysis = JwtTokenUtility.getTokenAnalysis(accessToken);
-      
+
       log("📊 Initial Token Analysis Results:");
       log("   • Token lifespan: ${analysis['lifespanMinutes']} minutes");
       log("   • Refresh buffer: ${analysis['refreshBuffer']} minutes");
@@ -138,9 +142,8 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
       // Show token lifespan notification for very short tokens
       final lifespanMinutes = analysis['lifespanMinutes'] as int?;
       if (lifespanMinutes != null && lifespanMinutes < 10) {
-        _notificationService.showShortTokenLifespanWarning(
-          Duration(minutes: lifespanMinutes)
-        );
+        _notificationService
+            .showShortTokenLifespanWarning(Duration(minutes: lifespanMinutes));
       }
     } catch (e) {
       log("❌ Error during initial token analysis: $e");
@@ -171,10 +174,10 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
   void _handleAppResumed() async {
     try {
       log("📱 App resumed - checking dynamic auth status");
-      
+
       if (_isInitialized) {
         await _dynamicManager.handleAppLifecycleChange(true);
-        
+
         // Show session continuity notification
         final status = _dynamicManager.getDynamicRefreshStatus();
         if (status['hasScheduledRefresh'] == true) {
@@ -190,7 +193,7 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
   void _handleAppPaused() async {
     try {
       log("📱 App paused - maintaining dynamic auth in background");
-      
+
       if (_isInitialized) {
         await _dynamicManager.handleAppLifecycleChange(false);
       }
@@ -224,7 +227,7 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
   Map<String, dynamic> getComprehensiveAuthStatus() {
     try {
       final dynamicStatus = _dynamicManager.getDynamicRefreshStatus();
-      
+
       return {
         'dynamicAuthIntegration': {
           'isInitialized': _isInitialized,
@@ -252,10 +255,10 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
 
       // Get fresh token
       final token = await _dynamicManager.getDynamicValidAccessToken();
-      
+
       if (token != null) {
         log("✅ Comprehensive refresh successful");
-        
+
         // Show success notification
         _notificationService.showComprehensiveRefreshSuccess();
         return true;
@@ -274,19 +277,34 @@ class DynamicAuthIntegration with WidgetsBindingObserver {
     try {
       if (isConnected) {
         log("🌐 Network connectivity restored - resuming dynamic auth");
-        
+
         if (_isInitialized) {
           // Force immediate token check when connectivity returns
           await _dynamicManager.forceTokenAnalysis();
         }
       } else {
         log("🌐 Network connectivity lost - dynamic auth will retry when restored");
-        
+
         // Show connectivity warning
         _notificationService.showNetworkConnectivityWarning();
       }
     } catch (e) {
       log("❌ Error handling network connectivity change: $e");
+    }
+  }
+
+  /// Handle app lifecycle changes for continuous session integration
+  Future<void> handleAppLifecycleChange(bool isAppInForeground) async {
+    try {
+      if (isAppInForeground) {
+        log("📱 App resumed - dynamic auth integration handling");
+        _handleAppResumed();
+      } else {
+        log("📱 App paused - dynamic auth integration handling");
+        _handleAppPaused();
+      }
+    } catch (e) {
+      log("❌ Error handling app lifecycle change in dynamic auth: $e");
     }
   }
 
@@ -343,5 +361,11 @@ extension DynamicRefreshNotifications on TokenNotificationService {
   void showComprehensiveRefreshSuccess() {
     // Implementation would show successful comprehensive refresh
     log("🎉 Comprehensive token refresh successful");
+  }
+
+  /// Show network connectivity warning
+  void showNetworkConnectivityWarning() {
+    // Implementation would show network connectivity warning
+    log("⚠️ Network connectivity lost - some features may be limited");
   }
 }

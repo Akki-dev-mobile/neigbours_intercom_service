@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter_appauth/flutter_appauth.dart';
@@ -18,6 +19,10 @@ class AuthService {
 
   // Enhanced token refresh manager
   late final EnhancedTokenRefreshManager _tokenRefreshManager;
+
+  // Authentication state stream controller
+  final StreamController<bool> _authStateController =
+      StreamController<bool>.broadcast();
 
   // Storage keys for secure storage
   static const String _accessTokenKey = 'access_token_secure';
@@ -111,6 +116,10 @@ class AuthService {
       await _saveUserData(userInfo);
 
       log("✅ ===== LOGIN COMPLETED SUCCESSFULLY =====");
+
+      // Notify authentication state change
+      _notifyAuthStateChange(true);
+
       return userInfo;
     } catch (e) {
       log('❌ ===== LOGIN FAILED =====');
@@ -303,6 +312,8 @@ class AuthService {
 
       if (result.success) {
         log('✅ Enhanced logout completed successfully');
+        // Notify authentication state change
+        _notifyAuthStateChange(false);
       } else {
         log('⚠️ Enhanced logout completed with issues: ${result.getIssues()}');
       }
@@ -329,6 +340,11 @@ class AuthService {
 
       // Stop token refresh manager
       _tokenRefreshManager.stopPeriodicRefreshCheck();
+
+      if (success) {
+        // Notify authentication state change
+        _notifyAuthStateChange(false);
+      }
 
       return success;
     } catch (e) {
@@ -457,5 +473,31 @@ class AuthService {
       log("❌ Error getting user session: $e");
       return null;
     }
+  }
+
+  /// Check if user is logged in (alias for isAuthenticated for compatibility)
+  Future<bool> isLoggedIn() async {
+    try {
+      return await isAuthenticated();
+    } catch (e) {
+      log("❌ Error checking login status: $e");
+      return false;
+    }
+  }
+
+  /// Stream of authentication state changes
+  Stream<bool> get isLoggedInStream => _authStateController.stream;
+
+  /// Notify authentication state change
+  void _notifyAuthStateChange(bool isLoggedIn) {
+    if (!_authStateController.isClosed) {
+      _authStateController.add(isLoggedIn);
+    }
+  }
+
+  /// Dispose resources
+  void dispose() {
+    _authStateController.close();
+    _tokenRefreshManager.dispose();
   }
 }

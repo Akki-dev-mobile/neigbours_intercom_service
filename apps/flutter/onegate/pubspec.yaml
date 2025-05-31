@@ -98,6 +98,12 @@ dependencies:
   common_widgets:
     path: ../../../libs/flutter/common/common-widgets
   provider: ^6.1.2
+  # Riverpod for state management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  # Freezed for immutable data classes
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
   # Additional dependencies for crash reporting
   shimmer: ^3.0.0
   meta: ^1.16.0
@@ -111,6 +117,11 @@ dev_dependencies:
   speech_to_text: ^6.3.0
   build_runner: ^2.4.8
   hive_generator: ^2.0.1
+  # Riverpod code generation
+  riverpod_generator: ^2.3.9
+  # Freezed code generation
+  freezed: ^2.4.7
+  json_serializable: ^6.7.1
 
 dependency_overrides:
   speech_to_text: ^7.0.0

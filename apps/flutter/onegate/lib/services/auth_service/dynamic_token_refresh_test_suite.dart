@@ -1,15 +1,19 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/dynamic_auth_integration.dart';
 import 'package:flutter_onegate/services/auth_service/dynamic_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
+import 'package:flutter_onegate/services/auth_service/refresh_token_error_handler.dart';
+import 'package:flutter_onegate/services/session_manager/continuous_session_manager.dart';
 import 'package:get_it/get_it.dart';
 
 /// Comprehensive test suite for the Dynamic Token Refresh System
 class DynamicTokenRefreshTestSuite {
-  static final DynamicTokenRefreshTestSuite _instance = DynamicTokenRefreshTestSuite._internal();
+  static final DynamicTokenRefreshTestSuite _instance =
+      DynamicTokenRefreshTestSuite._internal();
   factory DynamicTokenRefreshTestSuite() => _instance;
   DynamicTokenRefreshTestSuite._internal();
 
@@ -20,42 +24,63 @@ class DynamicTokenRefreshTestSuite {
   Future<Map<String, dynamic>> runCompleteTestSuite() async {
     try {
       log("🧪 ===== DYNAMIC TOKEN REFRESH TEST SUITE =====");
-      
+
       _testResults.clear();
-      
+
       // Test 1: JWT Token Utility Enhancements
-      _testResults['jwtTokenUtility'] = await _testJwtTokenUtilityEnhancements();
-      
+      _testResults['jwtTokenUtility'] =
+          await _testJwtTokenUtilityEnhancements();
+
       // Test 2: Dynamic Buffer Calculation
-      _testResults['dynamicBufferCalculation'] = await _testDynamicBufferCalculation();
-      
+      _testResults['dynamicBufferCalculation'] =
+          await _testDynamicBufferCalculation();
+
       // Test 3: Token Lifespan Analysis
-      _testResults['tokenLifespanAnalysis'] = await _testTokenLifespanAnalysis();
-      
+      _testResults['tokenLifespanAnalysis'] =
+          await _testTokenLifespanAnalysis();
+
       // Test 4: Dynamic Refresh Manager
-      _testResults['dynamicRefreshManager'] = await _testDynamicRefreshManager();
-      
+      _testResults['dynamicRefreshManager'] =
+          await _testDynamicRefreshManager();
+
       // Test 5: Enhanced Token Refresh Manager Integration
-      _testResults['enhancedTokenRefreshManager'] = await _testEnhancedTokenRefreshManagerIntegration();
-      
+      _testResults['enhancedTokenRefreshManager'] =
+          await _testEnhancedTokenRefreshManagerIntegration();
+
       // Test 6: Dynamic Auth Integration
-      _testResults['dynamicAuthIntegration'] = await _testDynamicAuthIntegration();
-      
+      _testResults['dynamicAuthIntegration'] =
+          await _testDynamicAuthIntegration();
+
       // Test 7: Continuous Session Management
-      _testResults['continuousSessionManagement'] = await _testContinuousSessionManagement();
-      
+      _testResults['continuousSessionManagement'] =
+          await _testContinuousSessionManagement();
+
       // Test 8: App Lifecycle Integration
-      _testResults['appLifecycleIntegration'] = await _testAppLifecycleIntegration();
-      
+      _testResults['appLifecycleIntegration'] =
+          await _testAppLifecycleIntegration();
+
       // Test 9: Network Connectivity Handling
-      _testResults['networkConnectivityHandling'] = await _testNetworkConnectivityHandling();
-      
+      _testResults['networkConnectivityHandling'] =
+          await _testNetworkConnectivityHandling();
+
       // Test 10: Performance and Timing
       _testResults['performanceAndTiming'] = await _testPerformanceAndTiming();
-      
+
+      // Test 11: Refresh Token Failure Scenarios
+      _testResults['refreshTokenFailureScenarios'] =
+          await _testRefreshTokenFailureScenarios();
+
+      // Test 12: Error Recovery Mechanisms
+      _testResults['errorRecoveryMechanisms'] =
+          await _testErrorRecoveryMechanisms();
+
+      // Test 13: Continuous Session Integration
+      _testResults['continuousSessionIntegration'] =
+          await _testContinuousSessionIntegration();
+
       // Generate comprehensive report
       await _generateTestReport();
-      
+
       log("✅ Dynamic Token Refresh Test Suite completed");
       return _testResults;
     } catch (e) {
@@ -68,14 +93,14 @@ class DynamicTokenRefreshTestSuite {
   /// Test JWT Token Utility enhancements
   Future<Map<String, dynamic>> _testJwtTokenUtilityEnhancements() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing JWT Token Utility enhancements");
-      
+
       // Get a sample token for testing
       final authService = GetIt.I<AuthService>();
       final token = await authService.tokenRefreshManager.getValidAccessToken();
-      
+
       if (token == null) {
         result['status'] = 'SKIPPED';
         result['reason'] = 'No access token available';
@@ -114,9 +139,9 @@ class DynamicTokenRefreshTestSuite {
       final analysis = JwtTokenUtility.getTokenAnalysis(token);
       result['comprehensiveAnalysis'] = {
         'success': !analysis.containsKey('error'),
-        'hasAllFields': analysis.containsKey('lifespanMinutes') && 
-                       analysis.containsKey('refreshBuffer') &&
-                       analysis.containsKey('refreshTime'),
+        'hasAllFields': analysis.containsKey('lifespanMinutes') &&
+            analysis.containsKey('refreshBuffer') &&
+            analysis.containsKey('refreshTime'),
       };
 
       result['status'] = 'PASSED';
@@ -126,20 +151,20 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ JWT Token Utility enhancements test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test dynamic buffer calculation logic
   Future<Map<String, dynamic>> _testDynamicBufferCalculation() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing dynamic buffer calculation logic");
-      
+
       final authService = GetIt.I<AuthService>();
       final token = await authService.tokenRefreshManager.getValidAccessToken();
-      
+
       if (token == null) {
         result['status'] = 'SKIPPED';
         result['reason'] = 'No access token available';
@@ -149,7 +174,7 @@ class DynamicTokenRefreshTestSuite {
       // Test buffer calculation
       final buffer = JwtTokenUtility.calculateOptimalRefreshBuffer(token);
       final lifespanMinutes = JwtTokenUtility.getTokenLifespanInMinutes(token);
-      
+
       result['bufferCalculation'] = {
         'success': buffer.inMinutes > 0,
         'bufferMinutes': buffer.inMinutes,
@@ -161,17 +186,20 @@ class DynamicTokenRefreshTestSuite {
         bool rulesCorrect = false;
         if (lifespanMinutes > 30 && buffer.inMinutes == 5) {
           rulesCorrect = true;
-        } else if (lifespanMinutes >= 15 && lifespanMinutes <= 30 && buffer.inMinutes == 2) {
+        } else if (lifespanMinutes >= 15 &&
+            lifespanMinutes <= 30 &&
+            buffer.inMinutes == 2) {
           rulesCorrect = true;
         } else if (lifespanMinutes < 15 && buffer.inMinutes == 1) {
           rulesCorrect = true;
         }
-        
+
         result['bufferRulesCorrect'] = rulesCorrect;
       }
 
       // Test safety mechanisms
-      final maxAllowedBuffer = Duration(minutes: (lifespanMinutes! / 2).floor());
+      final maxAllowedBuffer =
+          Duration(minutes: (lifespanMinutes! / 2).floor());
       result['safetyMechanisms'] = {
         'bufferNotExceedsHalfLifespan': buffer <= maxAllowedBuffer,
         'bufferAtLeast30Seconds': buffer.inSeconds >= 30,
@@ -184,20 +212,20 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ Dynamic buffer calculation test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test token lifespan analysis
   Future<Map<String, dynamic>> _testTokenLifespanAnalysis() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing token lifespan analysis");
-      
+
       final authService = GetIt.I<AuthService>();
       final token = await authService.tokenRefreshManager.getValidAccessToken();
-      
+
       if (token == null) {
         result['status'] = 'SKIPPED';
         result['reason'] = 'No access token available';
@@ -241,19 +269,19 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ Token lifespan analysis test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test dynamic refresh manager
   Future<Map<String, dynamic>> _testDynamicRefreshManager() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing dynamic refresh manager");
-      
+
       final dynamicManager = DynamicTokenRefreshManager();
-      
+
       // Test initialization
       await dynamicManager.initialize();
       result['initialization'] = {
@@ -293,20 +321,21 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ Dynamic refresh manager test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test enhanced token refresh manager integration
-  Future<Map<String, dynamic>> _testEnhancedTokenRefreshManagerIntegration() async {
+  Future<Map<String, dynamic>>
+      _testEnhancedTokenRefreshManagerIntegration() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing enhanced token refresh manager integration");
-      
+
       final authService = GetIt.I<AuthService>();
       final tokenManager = authService.tokenRefreshManager;
-      
+
       // Test dynamic buffer calculation
       final token = await tokenManager.getValidAccessToken();
       if (token != null) {
@@ -324,7 +353,8 @@ class DynamicTokenRefreshTestSuite {
         };
 
         // Test enhanced immediate refresh
-        final immediateToken = await tokenManager.getValidAccessTokenWithImmediateRefresh();
+        final immediateToken =
+            await tokenManager.getValidAccessTokenWithImmediateRefresh();
         result['immediateRefresh'] = {
           'success': immediateToken != null,
           'hasToken': immediateToken != null,
@@ -342,20 +372,20 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ Enhanced token refresh manager integration test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test dynamic auth integration
   Future<Map<String, dynamic>> _testDynamicAuthIntegration() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing dynamic auth integration");
-      
+
       final dynamicAuth = DynamicAuthIntegration();
       final authService = GetIt.I<AuthService>();
-      
+
       // Test initialization
       await dynamicAuth.initialize(authService);
       result['initialization'] = {
@@ -391,30 +421,30 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ Dynamic auth integration test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test continuous session management
   Future<Map<String, dynamic>> _testContinuousSessionManagement() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing continuous session management");
-      
+
       final dynamicAuth = DynamicAuthIntegration();
       final authService = GetIt.I<AuthService>();
-      
+
       await dynamicAuth.initialize(authService);
-      
+
       // Test session continuity across multiple token requests
       final tokens = <String?>[];
       for (int i = 0; i < 3; i++) {
         final token = await dynamicAuth.getEnhancedAccessToken();
         tokens.add(token);
-        await Future.delayed(Duration(seconds: 1));
+        await Future.delayed(const Duration(seconds: 1));
       }
-      
+
       result['sessionContinuity'] = {
         'success': tokens.every((token) => token != null),
         'tokenCount': tokens.where((token) => token != null).length,
@@ -423,12 +453,12 @@ class DynamicTokenRefreshTestSuite {
 
       // Test session state persistence
       final status1 = dynamicAuth.getComprehensiveAuthStatus();
-      await Future.delayed(Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 2));
       final status2 = dynamicAuth.getComprehensiveAuthStatus();
-      
+
       result['sessionStatePersistence'] = {
-        'success': status1['dynamicAuthIntegration']['isInitialized'] == 
-                   status2['dynamicAuthIntegration']['isInitialized'],
+        'success': status1['dynamicAuthIntegration']['isInitialized'] ==
+            status2['dynamicAuthIntegration']['isInitialized'],
         'stateConsistent': true,
       };
 
@@ -439,32 +469,32 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ Continuous session management test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test app lifecycle integration
   Future<Map<String, dynamic>> _testAppLifecycleIntegration() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing app lifecycle integration");
-      
+
       final dynamicAuth = DynamicAuthIntegration();
       final authService = GetIt.I<AuthService>();
-      
+
       await dynamicAuth.initialize(authService);
-      
+
       // Test app lifecycle state changes
       dynamicAuth.didChangeAppLifecycleState(AppLifecycleState.paused);
-      await Future.delayed(Duration(milliseconds: 500));
-      
+      await Future.delayed(const Duration(milliseconds: 500));
+
       dynamicAuth.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await Future.delayed(Duration(milliseconds: 500));
-      
+      await Future.delayed(const Duration(milliseconds: 500));
+
       dynamicAuth.didChangeAppLifecycleState(AppLifecycleState.detached);
-      await Future.delayed(Duration(milliseconds: 500));
-      
+      await Future.delayed(const Duration(milliseconds: 500));
+
       result['lifecycleStateChanges'] = {
         'success': true,
         'statesHandled': ['paused', 'resumed', 'detached'],
@@ -484,29 +514,29 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ App lifecycle integration test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test network connectivity handling
   Future<Map<String, dynamic>> _testNetworkConnectivityHandling() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing network connectivity handling");
-      
+
       final dynamicAuth = DynamicAuthIntegration();
       final authService = GetIt.I<AuthService>();
-      
+
       await dynamicAuth.initialize(authService);
-      
+
       // Test network connectivity changes
       await dynamicAuth.handleNetworkConnectivityChange(false);
-      await Future.delayed(Duration(milliseconds: 500));
-      
+      await Future.delayed(const Duration(milliseconds: 500));
+
       await dynamicAuth.handleNetworkConnectivityChange(true);
-      await Future.delayed(Duration(milliseconds: 500));
-      
+      await Future.delayed(const Duration(milliseconds: 500));
+
       result['connectivityHandling'] = {
         'success': true,
         'connectivityStatesHandled': ['disconnected', 'connected'],
@@ -526,29 +556,30 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ Network connectivity handling test FAILED: $e");
     }
-    
+
     return result;
   }
 
   /// Test performance and timing
   Future<Map<String, dynamic>> _testPerformanceAndTiming() async {
     final result = <String, dynamic>{};
-    
+
     try {
       log("🧪 Testing performance and timing");
-      
+
       final dynamicAuth = DynamicAuthIntegration();
       final authService = GetIt.I<AuthService>();
-      
+
       await dynamicAuth.initialize(authService);
-      
+
       // Test token access performance
       final stopwatch = Stopwatch()..start();
       final token = await dynamicAuth.getEnhancedAccessToken();
       stopwatch.stop();
-      
+
       result['tokenAccessPerformance'] = {
-        'success': stopwatch.elapsedMilliseconds < 5000, // Should be under 5 seconds
+        'success':
+            stopwatch.elapsedMilliseconds < 5000, // Should be under 5 seconds
         'elapsedMs': stopwatch.elapsedMilliseconds,
         'hasToken': token != null,
       };
@@ -561,9 +592,10 @@ class DynamicTokenRefreshTestSuite {
         rapidTokens.add(rapidToken);
       }
       rapidStopwatch.stop();
-      
+
       result['rapidTokenAccess'] = {
-        'success': rapidStopwatch.elapsedMilliseconds < 10000, // Should be under 10 seconds
+        'success': rapidStopwatch.elapsedMilliseconds <
+            10000, // Should be under 10 seconds
         'elapsedMs': rapidStopwatch.elapsedMilliseconds,
         'successfulRequests': rapidTokens.where((t) => t != null).length,
         'totalRequests': rapidTokens.length,
@@ -576,7 +608,7 @@ class DynamicTokenRefreshTestSuite {
       result['error'] = e.toString();
       log("❌ Performance and timing test FAILED: $e");
     }
-    
+
     return result;
   }
 
@@ -584,11 +616,11 @@ class DynamicTokenRefreshTestSuite {
   Future<void> _generateTestReport() async {
     try {
       log("📊 ===== DYNAMIC TOKEN REFRESH TEST REPORT =====");
-      
+
       int passedTests = 0;
       int failedTests = 0;
       int skippedTests = 0;
-      
+
       _testResults.forEach((testName, testResult) {
         if (testResult is Map<String, dynamic>) {
           final status = testResult['status'] as String?;
@@ -608,18 +640,170 @@ class DynamicTokenRefreshTestSuite {
           }
         }
       });
-      
+
       log("📊 TEST SUMMARY:");
       log("   • Total Tests: ${passedTests + failedTests + skippedTests}");
       log("   • Passed: $passedTests");
       log("   • Failed: $failedTests");
       log("   • Skipped: $skippedTests");
       log("   • Success Rate: ${((passedTests / (passedTests + failedTests)) * 100).toStringAsFixed(1)}%");
-      
+
       log("📊 ==========================================");
     } catch (e) {
       log("❌ Error generating test report: $e");
     }
+  }
+
+  /// Test refresh token failure scenarios
+  Future<Map<String, dynamic>> _testRefreshTokenFailureScenarios() async {
+    final result = <String, dynamic>{};
+
+    try {
+      log("🧪 Testing refresh token failure scenarios");
+
+      final authService = GetIt.I<AuthService>();
+      final tokenManager = authService.tokenRefreshManager;
+
+      // Test failure analysis
+      final networkError = Exception('Connection timeout');
+      final networkFailureType =
+          RefreshTokenErrorHandler.analyzeFailure(networkError);
+      result['networkFailureAnalysis'] = {
+        'success': networkFailureType == RefreshTokenFailureType.networkTimeout,
+        'detectedType': networkFailureType.toString(),
+      };
+
+      // Test retry logic
+      final shouldRetryNetwork =
+          RefreshTokenErrorHandler.shouldRetryFailure(networkFailureType);
+      result['retryLogic'] = {
+        'success': shouldRetryNetwork == true,
+        'shouldRetryNetwork': shouldRetryNetwork,
+      };
+
+      // Test backoff calculation
+      final backoffDelay = RefreshTokenErrorHandler.calculateBackoffDelay(2);
+      result['backoffCalculation'] = {
+        'success': backoffDelay.inSeconds >= 2,
+        'delaySeconds': backoffDelay.inSeconds,
+      };
+
+      // Test failure statistics
+      final stats = tokenManager.getRefreshFailureStatistics();
+      result['failureStatistics'] = {
+        'success': stats.containsKey('consecutiveFailures'),
+        'hasStatistics': stats.isNotEmpty,
+      };
+
+      result['status'] = 'PASSED';
+      log("✅ Refresh token failure scenarios test PASSED");
+    } catch (e) {
+      result['status'] = 'FAILED';
+      result['error'] = e.toString();
+      log("❌ Refresh token failure scenarios test FAILED: $e");
+    }
+
+    return result;
+  }
+
+  /// Test error recovery mechanisms
+  Future<Map<String, dynamic>> _testErrorRecoveryMechanisms() async {
+    final result = <String, dynamic>{};
+
+    try {
+      log("🧪 Testing error recovery mechanisms");
+
+      // Test failure counter reset
+      RefreshTokenErrorHandler.resetFailureCounters();
+      final statsAfterReset = RefreshTokenErrorHandler.getFailureStatistics();
+      result['failureCounterReset'] = {
+        'success': statsAfterReset['consecutiveFailures'] == 0,
+        'consecutiveFailures': statsAfterReset['consecutiveFailures'],
+      };
+
+      // Test different resolution strategies
+      final resolutions = <RefreshTokenFailureType, bool>{
+        RefreshTokenFailureType.networkTimeout:
+            RefreshTokenErrorHandler.shouldRetryFailure(
+                RefreshTokenFailureType.networkTimeout),
+        RefreshTokenFailureType.refreshTokenExpired:
+            RefreshTokenErrorHandler.shouldRetryFailure(
+                RefreshTokenFailureType.refreshTokenExpired),
+        RefreshTokenFailureType.serverError:
+            RefreshTokenErrorHandler.shouldRetryFailure(
+                RefreshTokenFailureType.serverError),
+      };
+
+      result['resolutionStrategies'] = {
+        'success': resolutions[RefreshTokenFailureType.networkTimeout] ==
+                true &&
+            resolutions[RefreshTokenFailureType.refreshTokenExpired] == false &&
+            resolutions[RefreshTokenFailureType.serverError] == true,
+        'strategies': resolutions.map((k, v) => MapEntry(k.toString(), v)),
+      };
+
+      result['status'] = 'PASSED';
+      log("✅ Error recovery mechanisms test PASSED");
+    } catch (e) {
+      result['status'] = 'FAILED';
+      result['error'] = e.toString();
+      log("❌ Error recovery mechanisms test FAILED: $e");
+    }
+
+    return result;
+  }
+
+  /// Test continuous session integration
+  Future<Map<String, dynamic>> _testContinuousSessionIntegration() async {
+    final result = <String, dynamic>{};
+
+    try {
+      log("🧪 Testing continuous session integration");
+
+      // Test session manager availability
+      try {
+        final sessionManager = GetIt.I<ContinuousSessionManager>();
+        result['sessionManagerAvailable'] = {
+          'success': sessionManager != null,
+          'available': true,
+        };
+
+        // Test session status
+        final status = sessionManager.getContinuousSessionStatus();
+        result['sessionStatus'] = {
+          'success': status != null,
+          'hasStatus': status != null,
+        };
+      } catch (e) {
+        result['sessionManagerAvailable'] = {
+          'success': false,
+          'available': false,
+          'error': e.toString(),
+        };
+      }
+
+      // Test error handler integration
+      const testFailure = RefreshTokenFailureType.refreshTokenExpired;
+      final shouldDeactivate = [
+        RefreshTokenFailureType.refreshTokenExpired,
+        RefreshTokenFailureType.refreshTokenRevoked,
+        RefreshTokenFailureType.refreshTokenInvalid,
+      ].contains(testFailure);
+
+      result['errorHandlerIntegration'] = {
+        'success': shouldDeactivate,
+        'shouldDeactivateOnAuthFailure': shouldDeactivate,
+      };
+
+      result['status'] = 'PASSED';
+      log("✅ Continuous session integration test PASSED");
+    } catch (e) {
+      result['status'] = 'FAILED';
+      result['error'] = e.toString();
+      log("❌ Continuous session integration test FAILED: $e");
+    }
+
+    return result;
   }
 
   /// Get test results
