@@ -30,6 +30,7 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visit
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_auth_service.dart';
+import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/api_client/authenticated_api_client.dart';
 import 'package:flutter_onegate/services/api_service/onegate_api_service.dart';
 import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
@@ -51,6 +52,11 @@ setupLocator() {
 
   // Register GateStorage
   locator.registerLazySingleton(() => GateStorage());
+
+  // ✅ Register Enhanced Token Refresh Manager
+  locator.registerLazySingleton<EnhancedTokenRefreshManager>(
+    () => EnhancedTokenRefreshManager(),
+  );
 
   // ✅ Register AuthService properly (now using AppAuth)
   locator.registerLazySingleton<AuthService>(

@@ -1,24 +1,21 @@
-import 'dart:io';
+import 'dart:developer';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_onegate/utils/ssl_helper.dart';
 
 class CustomAppAuth {
-  static const MethodChannel _channel = MethodChannel('plugins.flutter.io/flutter_appauth');
-
   static Future<void> initialize() async {
     try {
       // Initialize SSL helper
       SSLHelper.initialize();
-      
-      // Set up platform-specific configurations
-      if (Platform.isAndroid) {
-        await _channel.invokeMethod('configurePlatformSpecifics', {
-          'allowInsecureConnections': true,
-        });
+
+      if (kDebugMode) {
+        log('✅ CustomAppAuth initialized for debug mode with SSL bypass');
+      } else {
+        log('✅ CustomAppAuth initialized for production mode');
       }
     } catch (e) {
-      debugPrint('Error initializing CustomAppAuth: $e');
+      log('⚠️ Error initializing CustomAppAuth: $e');
+      // Don't throw error, just log it
     }
   }
 }

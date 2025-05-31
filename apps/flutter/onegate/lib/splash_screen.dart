@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/missed_approval_two.dart';
@@ -39,12 +40,9 @@ class _SplashViewState extends State<SplashView>
     );
 
     _loginService = LoginService(
-      authService: AuthService(
-        gateStorage: GateStorage(),
-        remoteDataSource: RemoteDataSource(),
-      ),
-      gateStorage: GateStorage(),
-      remoteDataSource: RemoteDataSource(),
+      authService: GetIt.I<AuthService>(),
+      gateStorage: GetIt.I<GateStorage>(),
+      remoteDataSource: GetIt.I<RemoteDataSource>(),
     );
 
     _initialize();

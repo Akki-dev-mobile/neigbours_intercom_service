@@ -1,18 +1,21 @@
-import 'package:flutter/services.dart';
-import 'package:flutter_appauth/flutter_appauth.dart';
+import 'dart:developer';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_onegate/utils/ssl_helper.dart';
 
 class CustomAppAuth {
-  static const MethodChannel _channel = MethodChannel('plugins.flutter.io/flutter_appauth');
-
   static Future<void> configureAppAuth() async {
     try {
-      // Configure the AppAuth plugin to allow insecure connections
-      await _channel.invokeMethod('configure', {
-        'allowInsecureConnections': true,
-      });
-      print('AppAuth configured to allow insecure connections');
+      // Initialize SSL helper for certificate handling
+      SSLHelper.initialize();
+
+      if (kDebugMode) {
+        log('✅ AppAuth configured for debug mode with SSL bypass');
+      } else {
+        log('✅ AppAuth configured for production mode');
+      }
     } catch (e) {
-      print('Error configuring AppAuth: $e');
+      log('⚠️ Error configuring AppAuth: $e');
+      // Don't throw error, just log it
     }
   }
 }

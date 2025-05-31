@@ -1,20 +1,44 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get_it/get_it.dart';
+import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'dart:developer';
 
 class Environment {
   /// Retrieve headers with access token for API requests
+  /// Now uses the enhanced authentication system for consistency
   static Future<Map<String, String>> getHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final accessToken = prefs.getString('access_token');
+    try {
+      // Use the enhanced authentication system
+      final authService = GetIt.I<AuthService>();
+      final accessToken = await authService.getValidAccessToken();
 
-    if (accessToken == null) {
-      throw Exception('Access token not found. Please log in again.');
+      if (accessToken == null) {
+        log('⚠️ No valid access token available in Environment.getHeaders()');
+        throw Exception('Access token not found. Please log in again.');
+      }
+
+      log('🔑 Environment.getHeaders() using enhanced auth system');
+      return {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      };
+    } catch (e) {
+      log('❌ Error in Environment.getHeaders(): $e');
+      // Fallback to old method for backward compatibility during transition
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please log in again.');
+      }
+
+      log('🔄 Environment.getHeaders() using fallback method');
+      return {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      };
     }
-
-    return {
-      'Authorization': 'Bearer $accessToken',
-      'Content-Type': 'application/json',
-    };
   }
 
   /// Fetch environment-specific URL by key

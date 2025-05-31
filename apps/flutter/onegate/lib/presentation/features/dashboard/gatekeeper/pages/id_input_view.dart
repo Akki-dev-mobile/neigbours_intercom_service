@@ -457,10 +457,12 @@ class _IdInputViewState extends State<IdInputView> {
                           ),
                   ],
                 ),
-                floatingActionButton: CustomLargeBtn(
-                  text: checkVisitorLoading ? 'Processing...' : 'Next',
-                  onPressed: checkVisitorLoading ? null : checkVisitor,
-                ),
+                floatingActionButton: isMobileApiLoading
+                    ? null // Hide Next button during mobile number validation
+                    : CustomLargeBtn(
+                        text: checkVisitorLoading ? 'Processing...' : 'Next',
+                        onPressed: checkVisitorLoading ? null : checkVisitor,
+                      ),
               ),
             );
           },

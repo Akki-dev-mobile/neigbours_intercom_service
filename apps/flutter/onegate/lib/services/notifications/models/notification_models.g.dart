@@ -25,7 +25,7 @@ class NotificationMessageAdapter extends TypeAdapter<NotificationMessage> {
       tags: (fields[5] as List).cast<String>(),
       data: (fields[6] as Map).cast<String, dynamic>(),
       timestamp: fields[7] as DateTime,
-      isRead: fields[8] as bool? ?? false,
+      isRead: fields[8] as bool,
     );
   }
 
@@ -64,7 +64,8 @@ class NotificationMessageAdapter extends TypeAdapter<NotificationMessage> {
           typeId == other.typeId;
 }
 
-class NotificationSubscriberAdapter extends TypeAdapter<NotificationSubscriber> {
+class NotificationSubscriberAdapter
+    extends TypeAdapter<NotificationSubscriber> {
   @override
   final int typeId = 101;
 
@@ -83,7 +84,7 @@ class NotificationSubscriberAdapter extends TypeAdapter<NotificationSubscriber> 
       createdAt: fields[5] as DateTime,
       isActive: fields[6] as bool,
       lastDelivery: fields[7] as DateTime?,
-      deliveryCount: fields[8] as int? ?? 0,
+      deliveryCount: fields[8] as int,
     );
   }
 

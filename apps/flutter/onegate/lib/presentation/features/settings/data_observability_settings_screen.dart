@@ -10,6 +10,7 @@ import 'package:flutter_onegate/services/search/meilisearch_service.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/crash_reports_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/analytics_dashboard_screen.dart';
+import 'package:flutter_onegate/presentation/widgets/debug_token_widget.dart';
 import 'package:ionicons/ionicons.dart';
 
 /// Settings screen for data observability and network monitoring
@@ -203,6 +204,10 @@ class _DataObservabilitySettingsScreenState
                 const SizedBox(height: 16),
                 _buildBackgroundTasksCard(),
                 const SizedBox(height: 16),
+                if (kDebugMode) ...[
+                  _buildDebugTokenCard(),
+                  const SizedBox(height: 16),
+                ],
                 _buildActionsCard(),
               ],
             ),
@@ -519,6 +524,70 @@ class _DataObservabilitySettingsScreenState
                     ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugTokenCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Ionicons.key_outline,
+                    color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Debug Token Manager',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.shade300),
+                  ),
+                  child: Text(
+                    'DEBUG ONLY',
+                    style: TextStyle(
+                      color: Colors.orange.shade700,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'View token information, test refresh notifications, and manage authentication state',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => showDebugTokenWidget(context),
+                icon: const Icon(Ionicons.settings_outline),
+                label: const Text('Open Token Manager'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
           ],
         ),
       ),

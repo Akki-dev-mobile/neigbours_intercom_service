@@ -21,6 +21,9 @@ import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
 import 'package:flutter_onegate/utils/token_refresh_util.dart';
+import 'package:flutter_onegate/services/api_client/authenticated_api_client.dart';
+import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
+import 'package:get_it/get_it.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -36,28 +39,41 @@ class RemoteDataSource {
 
   RemoteDataSource();
 
-  /// Get valid access token for API calls
+  /// Get valid access token for API calls using enhanced token manager
   Future<String?> _getAccessToken() async {
     try {
-      final token = await _gateStorage.getAccessToken();
-      if (token == null) {
-        log('❌ No access token available');
-        return null;
-      }
+      // Use EnhancedTokenRefreshManager for consistent token management
+      final enhancedTokenManager = EnhancedTokenRefreshManager();
+      final token = await enhancedTokenManager.getValidAccessToken();
 
-      // Check if token is expired and refresh if needed
-      final isExpired = await _gateStorage.isTokenExpired();
-      if (isExpired) {
-        log('🔄 Token expired, attempting refresh...');
-        final refreshed = await TokenRefreshUtil.refreshTokenIfNeeded();
-        if (refreshed) {
-          return await _gateStorage.getAccessToken();
-        } else {
-          log('❌ Token refresh failed');
+      if (token == null) {
+        log('❌ No valid access token available from enhanced manager');
+
+        // Fallback to legacy method for backward compatibility
+        log('🔄 Falling back to legacy token retrieval...');
+        final legacyToken = await _gateStorage.getAccessToken();
+        if (legacyToken == null) {
+          log('❌ No access token available in legacy storage');
           return null;
         }
+
+        // Check if legacy token is expired and refresh if needed
+        final isExpired = await _gateStorage.isTokenExpired();
+        if (isExpired) {
+          log('🔄 Legacy token expired, attempting refresh...');
+          final refreshed = await enhancedTokenManager.refreshTokenIfNeeded();
+          if (refreshed) {
+            return await enhancedTokenManager.getValidAccessToken();
+          } else {
+            log('❌ Enhanced token refresh failed');
+            return null;
+          }
+        }
+
+        return legacyToken;
       }
 
+      log('✅ Valid access token obtained from enhanced manager');
       return token;
     } catch (e) {
       log('❌ Error getting access token: $e');
@@ -79,6 +95,20 @@ class RemoteDataSource {
     return DioProvider().getDio();
   }
 
+  /// Get AuthenticatedApiClient for enhanced authentication
+  /// This ensures consistent token management and automatic refresh
+  AuthenticatedApiClient _getAuthenticatedApiClient() {
+    try {
+      final apiClient = GetIt.I<AuthenticatedApiClient>();
+      log("🔑 Using AuthenticatedApiClient for enhanced auth");
+      return apiClient;
+    } catch (e) {
+      log("❌ Error getting AuthenticatedApiClient: $e");
+      throw Exception(
+          "AuthenticatedApiClient not available. Please ensure proper initialization.");
+    }
+  }
+
   /// Handle authentication errors and token refresh
   Future<bool> _handleAuthError(dynamic error) async {
     // Check if the error is related to an expired token
@@ -93,14 +123,15 @@ class RemoteDataSource {
     if (isAuthError) {
       log("Authentication error detected: $error");
 
-      // Try to refresh the token
-      final refreshed = await TokenRefreshUtil.refreshTokenIfNeeded();
+      // Try to refresh the token using enhanced token manager
+      final enhancedTokenManager = EnhancedTokenRefreshManager();
+      final refreshed = await enhancedTokenManager.refreshTokenIfNeeded();
 
       if (refreshed) {
-        log("Token refreshed successfully");
+        log("Token refreshed successfully using enhanced manager");
         return true; // Retry the request
       } else {
-        log("Token refresh failed, redirecting to login");
+        log("Enhanced token refresh failed, redirecting to login");
 
         // Clear tokens and redirect to login
         final prefs = await SharedPreferences.getInstance();
@@ -201,15 +232,15 @@ class RemoteDataSource {
   Future<List<dynamic>> fetchGates() async {
     final String? companyId = await gateStorage.getSocietyId();
     if (companyId == null) throw Exception('Company ID not found.');
-    final commonHeaders = await Environment.getHeaders();
+
     try {
-      final response = await _getDio().get(
+      // Use AuthenticatedApiClient for consistent token management
+      final apiClient = _getAuthenticatedApiClient();
+      final response = await apiClient.get(
         ApiUrls.gates,
         queryParameters: {'company_id': int.parse(companyId.toString())},
-        options: Options(
-          headers: commonHeaders,
-        ),
       );
+
       final responseData = response.data;
 
       if (responseData == null) {
@@ -217,11 +248,12 @@ class RemoteDataSource {
       }
 
       if (responseData is List) {
+        log("✅ Gates fetched successfully using enhanced auth");
         return responseData;
       } else if (responseData is Map && responseData.containsKey('data')) {
         final data = responseData['data'];
         if (data is List) {
-          print("gates$data");
+          log("✅ Gates fetched successfully: ${data.length} gates");
           return data;
         } else {
           throw Exception('Unexpected data format in "data" key');
@@ -230,39 +262,81 @@ class RemoteDataSource {
         throw Exception('Unexpected response structure');
       }
     } catch (e, stackTrace) {
-      log('Error fetching gates: $e');
+      log('❌ Error fetching gates with enhanced auth: $e');
       log('Stack trace: $stackTrace');
-      throw Exception('Failed to fetch gates: $e');
+
+      // Fallback to old method for backward compatibility
+      try {
+        log('🔄 Falling back to legacy method');
+        final commonHeaders = await Environment.getHeaders();
+        final response = await _getDio().get(
+          ApiUrls.gates,
+          queryParameters: {'company_id': int.parse(companyId.toString())},
+          options: Options(headers: commonHeaders),
+        );
+
+        final responseData = response.data;
+        if (responseData is Map && responseData.containsKey('data')) {
+          final data = responseData['data'];
+          if (data is List) {
+            log("✅ Gates fetched successfully using fallback method");
+            return data;
+          }
+        }
+        throw Exception('Fallback method also failed');
+      } catch (fallbackError) {
+        log('❌ Fallback method also failed: $fallbackError');
+        throw Exception('Failed to fetch gates: $e');
+      }
     }
   }
 
   /// Fetch societies
   Future<List<dynamic>> fetchSocieties(String userId) async {
     try {
-      final response = await _getDio().get(
+      // Use AuthenticatedApiClient for consistent token management
+      final apiClient = _getAuthenticatedApiClient();
+      final response = await apiClient.get(
         '${ApiUrls.gateBaseUrl}/admin/companies/$userId',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer ${await _getAccessToken() ?? ''}',
-            'Content-Type': 'application/json',
-          },
-        ),
       );
 
       if (response.statusCode == 200) {
         final data = response.data['data'];
-        log("data--$data"); // Changed from print to log
-
+        log("✅ Societies fetched successfully using enhanced auth: $data");
         return data is List ? data : [];
       } else {
         _handleErrorResponse();
         return [];
       }
     } catch (e) {
-      _handleErrorResponse();
+      log('❌ Error fetching societies with enhanced auth: $e');
 
-      log('Error fetching societies: $e');
-      rethrow;
+      // Fallback to old method for backward compatibility
+      try {
+        log('🔄 Falling back to legacy method for societies');
+        final response = await _getDio().get(
+          '${ApiUrls.gateBaseUrl}/admin/companies/$userId',
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer ${await _getAccessToken() ?? ''}',
+              'Content-Type': 'application/json',
+            },
+          ),
+        );
+
+        if (response.statusCode == 200) {
+          final data = response.data['data'];
+          log("✅ Societies fetched successfully using fallback method");
+          return data is List ? data : [];
+        } else {
+          _handleErrorResponse();
+          return [];
+        }
+      } catch (fallbackError) {
+        _handleErrorResponse();
+        log('❌ Fallback method also failed for societies: $fallbackError');
+        rethrow;
+      }
     }
   }
 

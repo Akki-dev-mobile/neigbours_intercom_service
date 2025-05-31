@@ -43,6 +43,7 @@ import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Set
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -138,6 +139,16 @@ void main() async {
   await setupLocator();
   await GateStorage().init();
   await setupDependencies();
+
+  // Initialize Enhanced Token Refresh Manager for automatic token management
+  try {
+    final enhancedTokenManager = EnhancedTokenRefreshManager();
+    final gateStorage = GateStorage();
+    await enhancedTokenManager.initialize(gateStorage);
+    log('✅ Enhanced Token Refresh Manager initialized successfully');
+  } catch (e) {
+    log('❌ Error initializing Enhanced Token Refresh Manager: $e');
+  }
 
   // Initialize NetworkLogManager and add interceptor to Dio
   final networkLogManager = NetworkLogManager();

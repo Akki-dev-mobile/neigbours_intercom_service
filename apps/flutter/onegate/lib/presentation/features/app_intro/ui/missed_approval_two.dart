@@ -316,17 +316,21 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
 
   Future<void> logout(BuildContext context) async {
     try {
-      log("Attempting logout...");
-      // Logout using AuthService instead of keycloakWrapper
+      log("Attempting enhanced logout...");
+      // Logout using enhanced AuthService with Keycloak end session
       final authService = GetIt.instance<AuthService>();
-      await authService.logout();
-      log("Keycloak session ended.");
+      final logoutResult = await authService.logout(clearAllPreferences: true);
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear(); // Clear all stored preferences
-      log("Preferences cleared.");
+      if (logoutResult.success) {
+        log("✅ Enhanced logout completed successfully");
+        if (!logoutResult.keycloakEndSessionResult) {
+          log("⚠️ Keycloak end session failed, but local session cleared");
+        }
+      } else {
+        log("⚠️ Logout completed with issues: ${logoutResult.getIssues()}");
+      }
 
-      if (mounted) {
+      if (mounted && context.mounted) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const MyAppLogin()),
@@ -335,7 +339,23 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
       }
     } catch (e, st) {
       log("Logout failed: $e\n$st");
-      // Optionally show a SnackBar or AlertDialog to inform the user
+
+      // Fallback to quick logout if enhanced logout fails
+      try {
+        final authService = GetIt.instance<AuthService>();
+        await authService.quickLogout();
+        log("✅ Quick logout completed as fallback");
+
+        if (mounted && context.mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const MyAppLogin()),
+            (route) => false,
+          );
+        }
+      } catch (fallbackError) {
+        log("❌ Fallback logout also failed: $fallbackError");
+      }
     }
   }
 

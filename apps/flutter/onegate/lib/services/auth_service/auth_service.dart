@@ -6,12 +6,18 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
+import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
+import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
+import 'package:flutter_onegate/services/auth_service/enhanced_logout_service.dart';
 
 class AuthService {
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final GateStorage gateStorage;
   final RemoteDataSource remoteDataSource;
+
+  // Enhanced token refresh manager
+  late final EnhancedTokenRefreshManager _tokenRefreshManager;
 
   // Storage keys for secure storage
   static const String _accessTokenKey = 'access_token_secure';
@@ -21,11 +27,18 @@ class AuthService {
   AuthService({
     required this.gateStorage,
     required this.remoteDataSource,
-  });
+  }) {
+    _tokenRefreshManager = EnhancedTokenRefreshManager();
+  }
+
+  /// Get access to the enhanced token refresh manager
+  EnhancedTokenRefreshManager get tokenRefreshManager => _tokenRefreshManager;
 
   Future<void> initialize() async {
     try {
-      log("✅ AppAuth service initialized successfully");
+      // Initialize the enhanced token refresh manager
+      await _tokenRefreshManager.initialize(gateStorage);
+      log("✅ AppAuth service and enhanced token refresh manager initialized successfully");
     } catch (e) {
       log('❌ Error initializing AppAuth service: $e');
       throw Exception('Failed to initialize AppAuth service: $e');
@@ -262,87 +275,72 @@ class AuthService {
     }
   }
 
-  /// Get current access token (refresh if needed)
+  /// Get current access token (refresh if needed) - Enhanced version
   Future<String?> getValidAccessToken() async {
     try {
-      // Check if current token is expired
-      final isExpired = await gateStorage.isTokenExpired();
-
-      if (isExpired) {
-        log('🔄 Token expired, attempting refresh...');
-        final refreshed = await refreshToken();
-        if (!refreshed) {
-          log('❌ Token refresh failed');
-          return null;
-        }
-      }
-
-      return await gateStorage.getAccessToken();
+      // Use the enhanced token refresh manager for better token handling
+      return await _tokenRefreshManager.getValidAccessToken();
     } catch (e) {
       log('❌ Error getting valid access token: $e');
       return null;
     }
   }
 
-  /// Logout user and clear all tokens
-  Future<void> logout() async {
+  /// Logout user and clear all tokens - Enhanced version with Keycloak end session
+  Future<LogoutResult> logout({bool clearAllPreferences = true}) async {
     try {
-      // Clear secure storage
-      await _secureStorage.delete(key: _accessTokenKey);
-      await _secureStorage.delete(key: _refreshTokenKey);
-      await _secureStorage.delete(key: _idTokenKey);
+      log('🚪 Starting enhanced logout with Keycloak end session...');
 
-      // Clear authentication-related data from local storage
-      await gateStorage.clearStorage('access_token');
-      await gateStorage.clearStorage('refresh_token');
-      await gateStorage.clearStorage('token_expiry');
-      await gateStorage.clearStorage('user_id');
-      await gateStorage.clearStorage('username');
-      await gateStorage.clearStorage('role');
-      await gateStorage.clearStorage('society_id');
+      // Use enhanced logout service for complete logout
+      final logoutService = EnhancedLogoutService();
+      final result = await logoutService.performCompleteLogout(
+        showNotifications: true,
+        clearAllPreferences: clearAllPreferences,
+      );
 
-      log('✅ Logout completed successfully');
+      // Stop token refresh manager
+      _tokenRefreshManager.stopPeriodicRefreshCheck();
+
+      if (result.success) {
+        log('✅ Enhanced logout completed successfully');
+      } else {
+        log('⚠️ Enhanced logout completed with issues: ${result.getIssues()}');
+      }
+
+      return result;
     } catch (e) {
-      log('❌ Error during logout: $e');
-      throw Exception('Logout failed: $e');
+      log('❌ Error during enhanced logout: $e');
+
+      // Return failed result
+      final result = LogoutResult();
+      result.success = false;
+      result.error = e.toString();
+      return result;
     }
   }
 
-  /// Decode and print JWT token contents
-  void _printTokenContents(String tokenType, String token) {
+  /// Quick logout method for emergency situations
+  Future<bool> quickLogout() async {
     try {
-      // JWT tokens have 3 parts separated by dots: header.payload.signature
-      final parts = token.split('.');
-      if (parts.length != 3) {
-        log("❌ Invalid JWT format for $tokenType");
-        return;
-      }
+      log('⚡ Performing quick logout...');
 
-      // Decode the payload (second part)
-      final payload = parts[1];
-      // Add padding if needed for base64 decoding
-      final normalizedPayload = base64Url.normalize(payload);
-      final decodedBytes = base64Url.decode(normalizedPayload);
-      final decodedPayload = utf8.decode(decodedBytes);
-      final payloadJson = jsonDecode(decodedPayload);
+      final logoutService = EnhancedLogoutService();
+      final success = await logoutService.performQuickLogout();
 
-      log("📋 ===== $tokenType DECODED PAYLOAD =====");
-      log("👤 Subject (sub): ${payloadJson['sub'] ?? 'Not provided'}");
-      log("📧 Email: ${payloadJson['email'] ?? 'Not provided'}");
-      log("👤 Preferred Username: ${payloadJson['preferred_username'] ?? 'Not provided'}");
-      log("🏢 Name: ${payloadJson['name'] ?? 'Not provided'}");
-      log("🔑 Client ID: ${payloadJson['azp'] ?? payloadJson['aud'] ?? 'Not provided'}");
-      log("🏛️ Issuer: ${payloadJson['iss'] ?? 'Not provided'}");
-      log("⏰ Issued At: ${payloadJson['iat'] != null ? DateTime.fromMillisecondsSinceEpoch(payloadJson['iat'] * 1000) : 'Not provided'}");
-      log("⏰ Expires At: ${payloadJson['exp'] != null ? DateTime.fromMillisecondsSinceEpoch(payloadJson['exp'] * 1000) : 'Not provided'}");
-      log("🔐 Scopes: ${payloadJson['scope'] ?? 'Not provided'}");
-      log("🎭 Roles: ${payloadJson['realm_access']?['roles'] ?? 'Not provided'}");
-      log("📋 Full Payload JSON:");
-      log(jsonEncode(payloadJson));
-      log("📋 =====================================");
+      // Stop token refresh manager
+      _tokenRefreshManager.stopPeriodicRefreshCheck();
+
+      return success;
     } catch (e) {
-      log("❌ Error decoding $tokenType: $e");
+      log('❌ Error during quick logout: $e');
+      return false;
     }
+  }
+
+  /// Decode and print JWT token contents - Enhanced version
+  void _printTokenContents(String tokenType, String token) {
+    // Use the enhanced JWT utility for better token parsing
+    JwtTokenUtility.logTokenDetails(tokenType, token);
   }
 
   /// Enhanced user session management

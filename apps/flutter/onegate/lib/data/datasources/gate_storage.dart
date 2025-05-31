@@ -326,6 +326,15 @@ class GateStorage {
     await prefs.remove(key);
   }
 
+  /// Clear all authentication tokens
+  Future<void> clearTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_accessTokenKey);
+    await prefs.remove(_refreshTokenKey);
+    await prefs.remove(_tokenExpiryKey);
+    log("✅ All authentication tokens cleared from GateStorage");
+  }
+
   Future<void> saveVisitorLogId(String visitorLogId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 

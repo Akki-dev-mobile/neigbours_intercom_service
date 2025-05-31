@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'dart:developer';
 import 'package:dio/dio.dart';
-import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
-import 'package:flutter_onegate/utils/token_refresh_util.dart';
+import 'package:flutter_onegate/services/auth_service/enhanced_auth_interceptor.dart';
+import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:get_it/get_it.dart';
 
 /// Enhanced API client with automatic token management and authentication
@@ -18,7 +17,6 @@ class AuthenticatedApiClient {
   AuthenticatedApiClient._internal();
 
   late final Dio _dio;
-  late final GateStorage _gateStorage;
   late final AuthService _authService;
 
   bool _isInitialized = false;
@@ -28,7 +26,6 @@ class AuthenticatedApiClient {
     if (_isInitialized) return;
 
     _dio = Dio();
-    _gateStorage = GetIt.I<GateStorage>();
     _authService = GetIt.I<AuthService>();
 
     // Configure Dio
@@ -37,7 +34,7 @@ class AuthenticatedApiClient {
     _dio.options.sendTimeout = const Duration(seconds: 30);
 
     // Add interceptors
-    _dio.interceptors.add(_createAuthInterceptor());
+    _dio.interceptors.add(_createEnhancedAuthInterceptor());
     _dio.interceptors.add(_createLoggingInterceptor());
     _dio.interceptors.add(_createErrorInterceptor());
 
@@ -45,60 +42,14 @@ class AuthenticatedApiClient {
     log("✅ AuthenticatedApiClient initialized");
   }
 
-  /// Create authentication interceptor
-  Interceptor _createAuthInterceptor() {
-    return InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        try {
-          // Get valid access token (automatically refreshes if needed)
-          final accessToken = await _authService.getValidAccessToken();
-
-          if (accessToken != null) {
-            options.headers['Authorization'] = 'Bearer $accessToken';
-            log("🔑 Added Bearer token to request: ${options.path}");
-          } else {
-            log("⚠️ No valid access token available for request: ${options.path}");
-          }
-
-          // Add default headers
-          options.headers['Content-Type'] = 'application/json';
-          options.headers['Accept'] = 'application/json';
-        } catch (e) {
-          log("❌ Error adding auth headers: $e");
-        }
-
-        handler.next(options);
-      },
-      onError: (error, handler) async {
-        // Handle 401 Unauthorized errors
-        if (error.response?.statusCode == 401) {
-          log("🔄 Received 401, attempting token refresh...");
-
-          try {
-            final refreshed = await _authService.refreshToken();
-            if (refreshed) {
-              // Retry the original request with new token
-              final newToken = await _authService.getValidAccessToken();
-              if (newToken != null) {
-                error.requestOptions.headers['Authorization'] =
-                    'Bearer $newToken';
-
-                // Retry the request
-                final response = await _dio.fetch(error.requestOptions);
-                handler.resolve(response);
-                return;
-              }
-            }
-          } catch (e) {
-            log("❌ Token refresh failed: $e");
-          }
-
-          // If refresh failed, redirect to login
-          log("🚪 Token refresh failed, user needs to re-authenticate");
-          // You can emit an event here to redirect to login screen
-        }
-
-        handler.next(error);
+  /// Create enhanced authentication interceptor
+  Interceptor _createEnhancedAuthInterceptor() {
+    return EnhancedAuthInterceptorFactory.createWithDefaultHandler(
+      tokenManager: _authService.tokenRefreshManager,
+      customHandler: () {
+        log("🚪 Authentication failed in API client, user needs to re-authenticate");
+        // Here you could emit an event, navigate to login, or show a dialog
+        // This will be implemented based on your app's navigation structure
       },
     );
   }
@@ -144,7 +95,7 @@ class AuthenticatedApiClient {
     );
   }
 
-  /// Make authenticated GET request
+  /// Make authenticated GET request with pre-validation (401 error fix)
   Future<Response<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
@@ -152,6 +103,9 @@ class AuthenticatedApiClient {
     CancelToken? cancelToken,
   }) async {
     await _ensureInitialized();
+
+    // Pre-request token validation to prevent 401 errors
+    await _validateTokenBeforeRequest(path);
 
     return await _dio.get<T>(
       path,
@@ -222,6 +176,30 @@ class AuthenticatedApiClient {
   Future<void> _ensureInitialized() async {
     if (!_isInitialized) {
       await initialize();
+    }
+  }
+
+  /// Pre-request token validation to prevent 401 errors
+  Future<void> _validateTokenBeforeRequest(String path) async {
+    try {
+      log("🔍 Pre-validating token for request: $path");
+
+      // Get token with immediate refresh if needed
+      final validToken = await _authService.tokenRefreshManager
+          .getValidAccessTokenWithImmediateRefresh();
+
+      if (validToken == null) {
+        log("❌ No valid token available for request: $path");
+        throw Exception("No valid authentication token available");
+      }
+
+      // Log token status for debugging
+      final timeUntilExpiry =
+          JwtTokenUtility.getTimeUntilExpiration(validToken);
+      log("✅ Token pre-validation successful for: $path (expires in ${timeUntilExpiry?.inMinutes ?? 'unknown'} minutes)");
+    } catch (e) {
+      log("❌ Token pre-validation failed for $path: $e");
+      rethrow;
     }
   }
 
