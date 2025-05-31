@@ -296,107 +296,132 @@ class _IdInputViewState extends State<IdInputView> {
                     ),
                     SizedBox(height: 20),
                     _currentIndex == 0
-                        ? CustomForm.textField(
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Mobile number is required';
-                              } else if (value.length != 10) {
-                                return 'Please enter a 10-digit number';
-                              } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                                return 'No spaces or special characters allowed';
-                              }
-                              return null;
-                            },
-                            titleColor: Theme.of(context).colorScheme.onSurface,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            "Visitor Mobile Number",
-                            hintText: '0123456789',
-                            prefixIcon: CountryCodePicker(
-                              initialSelection: 'IN',
-                              favorite: ['IN'],
-                              showFlagMain: true,
-                              showFlagDialog: true,
-                              boxDecoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                              ),
-                              barrierColor: Theme.of(context)
-                                  .colorScheme
-                                  .surface
-                                  .withOpacity(0.5),
-                              closeIcon: Icon(
-                                Icons.close,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              searchDecoration: InputDecoration(
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                                hintText: 'Search',
-                                hintStyle: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    style: BorderStyle.solid,
+                        ? Column(
+                            children: [
+                              CustomForm.textField(
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Mobile number is required';
+                                  } else if (value.length != 10) {
+                                    return 'Please enter a 10-digit number';
+                                  } else if (!RegExp(r'^[0-9]+$')
+                                      .hasMatch(value)) {
+                                    return 'No spaces or special characters allowed';
+                                  }
+                                  return null;
+                                },
+                                titleColor:
+                                    Theme.of(context).colorScheme.onSurface,
+                                hintColor:
+                                    Theme.of(context).colorScheme.onPrimary,
+                                "Visitor Mobile Number",
+                                hintText: '0123456789',
+                                prefixIcon: CountryCodePicker(
+                                  initialSelection: 'IN',
+                                  favorite: ['IN'],
+                                  showFlagMain: true,
+                                  showFlagDialog: true,
+                                  boxDecoration: BoxDecoration(
+                                    color:
+                                        Theme.of(context).colorScheme.surface,
+                                  ),
+                                  barrierColor: Theme.of(context)
+                                      .colorScheme
+                                      .surface
+                                      .withOpacity(0.5),
+                                  closeIcon: Icon(
+                                    Icons.close,
                                     color:
                                         Theme.of(context).colorScheme.onSurface,
                                   ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    style: BorderStyle.solid,
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                              textStyle: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 18,
-                              ),
-                              dialogTextStyle: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onChanged: (CountryCode countryCode) {
-                                setState(() {
-                                  selectedCountryCode = countryCode.code!;
-                                });
-                              },
-                            ),
-                            textController: mobileController,
-                            keyboardType: TextInputType.number,
-                            length: 10,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (value) {
-                              if (value.length == 10 && !isMobileApiLoading) {
-                                setState(() {
-                                  isMobileApiLoading = true;
-                                });
-                                gateDashboardBloc.add(
-                                  GDOnMobileNumberEnteredEvent(
-                                      mobileController.text),
-                                );
-                              }
-                            },
-                            suffixIcon: isMobileApiLoading
-                                ? SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: Padding(
-                                      padding: EdgeInsets.only(right: 12),
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
+                                  searchDecoration: InputDecoration(
+                                    prefixIcon: Icon(
+                                      Icons.search,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                                    hintText: 'Search',
+                                    hintStyle: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                        style: BorderStyle.solid,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
                                       ),
                                     ),
-                                  )
-                                : null,
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                        style: BorderStyle.solid,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  textStyle: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 18,
+                                  ),
+                                  dialogTextStyle: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                  onChanged: (CountryCode countryCode) {
+                                    setState(() {
+                                      selectedCountryCode = countryCode.code!;
+                                    });
+                                  },
+                                ),
+                                textController: mobileController,
+                                keyboardType: TextInputType.number,
+                                length: 10,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                onChanged: (value) {
+                                  if (value.length == 10 &&
+                                      !isMobileApiLoading) {
+                                    setState(() {
+                                      isMobileApiLoading = true;
+                                    });
+                                    gateDashboardBloc.add(
+                                      GDOnMobileNumberEnteredEvent(
+                                          mobileController.text),
+                                    );
+                                  }
+                                },
+                                // suffixIcon: isMobileApiLoading
+                                //     ? SizedBox(
+                                //         width: 24,
+                                //         height: 24,
+                                //         child: Padding(
+                                //           padding: EdgeInsets.only(right: 12),
+                                //           child: CircularProgressIndicator(
+                                //             strokeWidth: 2.5,
+                                //           ),
+                                //         ),
+                                //       )
+                                //     : null,
+                              ),
+                              isMobileApiLoading
+                                  ? Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: LinearProgressIndicator(
+                                        color: Colors.red,
+                                        backgroundColor: Colors.black12,
+                                      ),
+                                    )
+                                  : SizedBox.shrink(),
+                            ],
                           )
                         : Column(
                             children: [
@@ -738,6 +763,7 @@ class ImageGridBottomSheet extends StatefulWidget {
 class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   int? selectedImageIndex;
   bool isStaffAutoSelected = false;
+
   @override
   void initState() {
     super.initState();
