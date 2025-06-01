@@ -6,6 +6,7 @@ import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/presentation/widgets/session_expired_bottom_sheet.dart';
 import 'package:flutter_onegate/services/session_manager/continuous_session_manager.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Exception thrown when refresh token operations fail
 class RefreshTokenException implements Exception {
@@ -342,6 +343,16 @@ class RefreshTokenErrorHandler {
     try {
       log("🚪 Starting forced reauthentication for: $failureType");
 
+      // Check if continuous session should override refresh token expiration
+      final shouldOverride =
+          await _shouldOverrideRefreshTokenExpiration(failureType);
+
+      if (shouldOverride) {
+        log("🔒 Continuous session overriding refresh token expiration - maintaining session");
+        await _handleContinuousSessionOverride(failureType);
+        return;
+      }
+
       // Deactivate continuous session first
       await _deactivateContinuousSession(failureType);
 
@@ -356,6 +367,117 @@ class RefreshTokenErrorHandler {
       log("❌ Error during forced reauthentication: $e");
       // Fallback to direct navigation
       _navigateToLogin();
+    }
+  }
+
+  /// Check if continuous session should override refresh token expiration
+  static Future<bool> _shouldOverrideRefreshTokenExpiration(
+      RefreshTokenFailureType failureType) async {
+    try {
+      // Only override for refresh token expiration, not other failures
+      if (failureType != RefreshTokenFailureType.refreshTokenExpired) {
+        return false;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // Check if continuous session mode is active
+      final tokenExpirationLogoutDisabled =
+          prefs.getBool('token_expiration_logout_disabled') ?? false;
+      final autoLogoutDisabled = prefs.getBool('auto_logout_disabled') ?? false;
+      final continuousSessionActive =
+          prefs.getBool('continuous_session_active') ?? false;
+
+      // Check for specific 10-minute refresh token override
+      final tenMinuteTokenOverride =
+          prefs.getBool('ten_minute_refresh_token_override') ?? false;
+      final shortRefreshTokenOverride =
+          prefs.getBool('short_refresh_token_override') ?? false;
+
+      final isContinuousSessionMode = tokenExpirationLogoutDisabled ||
+          autoLogoutDisabled ||
+          continuousSessionActive ||
+          tenMinuteTokenOverride ||
+          shortRefreshTokenOverride;
+
+      log("🔍 Continuous session override check:");
+      log("   • Failure Type: $failureType");
+      log("   • Token Expiration Logout Disabled: $tokenExpirationLogoutDisabled");
+      log("   • Auto Logout Disabled: $autoLogoutDisabled");
+      log("   • Continuous Session Active: $continuousSessionActive");
+      log("   • 10-Minute Token Override: $tenMinuteTokenOverride");
+      log("   • Short Refresh Token Override: $shortRefreshTokenOverride");
+      log("   • Should Override: $isContinuousSessionMode");
+
+      return isContinuousSessionMode;
+    } catch (e) {
+      log("❌ Error checking continuous session override: $e");
+      return false;
+    }
+  }
+
+  /// Handle continuous session override for refresh token expiration
+  static Future<void> _handleContinuousSessionOverride(
+      RefreshTokenFailureType failureType) async {
+    try {
+      log("🔄 Handling continuous session override for: $failureType");
+
+      // Instead of forcing logout, trigger a fresh login to get new tokens
+      // while maintaining the session state
+      await _triggerSilentTokenRenewal();
+    } catch (e) {
+      log("❌ Error handling continuous session override: $e");
+      // Fallback to normal reauthentication
+      await _deactivateContinuousSession(failureType);
+      await showSessionExpiredBottomSheet(
+        errorMessage: _getSessionExpiredMessage(failureType),
+        onLoginComplete: () {
+          resetFailureCounters();
+        },
+      );
+    }
+  }
+
+  /// Trigger silent token renewal for continuous session
+  static Future<void> _triggerSilentTokenRenewal() async {
+    try {
+      log("🔄 Triggering silent token renewal for continuous session");
+
+      // Show a non-blocking notification instead of modal
+      await _showTokenRenewalNotification();
+
+      // Navigate to login but preserve session state
+      await _navigateToLoginWithSessionPreservation();
+    } catch (e) {
+      log("❌ Error during silent token renewal: $e");
+    }
+  }
+
+  /// Show token renewal notification instead of blocking modal
+  static Future<void> _showTokenRenewalNotification() async {
+    try {
+      // You can implement a toast or snackbar here instead of modal
+      log("📱 Token renewal required - showing notification");
+      // TODO: Implement non-blocking notification
+    } catch (e) {
+      log("❌ Error showing token renewal notification: $e");
+    }
+  }
+
+  /// Navigate to login while preserving session state
+  static Future<void> _navigateToLoginWithSessionPreservation() async {
+    try {
+      log("🔄 Navigating to login with session preservation");
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // Mark that this is a token renewal, not a logout
+      await prefs.setBool('is_token_renewal', true);
+      await prefs.setBool('preserve_continuous_session', true);
+
+      _navigateToLogin();
+    } catch (e) {
+      log("❌ Error navigating to login with session preservation: $e");
     }
   }
 

@@ -206,16 +206,41 @@ class JwtTokenUtility {
       } else if (lifespanMinutes >= 15) {
         buffer = const Duration(minutes: 2);
         log("📊 Token lifespan 15-30 minutes ($lifespanMinutes min) → Using 2-minute refresh buffer");
+      } else if (lifespanMinutes >= 10) {
+        buffer = const Duration(minutes: 2);
+        log("📊 Token lifespan 10-15 minutes ($lifespanMinutes min) → Using 2-minute refresh buffer");
+      } else if (lifespanMinutes >= 5) {
+        // For 5-minute tokens, use 2-minute buffer (refresh at 3 minutes)
+        buffer = const Duration(minutes: 2);
+        log("📊 Token lifespan 5-10 minutes ($lifespanMinutes min) → Using 2-minute refresh buffer");
       } else {
-        buffer = const Duration(minutes: 1);
-        log("📊 Token lifespan < 15 minutes ($lifespanMinutes min) → Using 1-minute refresh buffer");
+        // For very short tokens (< 5 minutes), use 40% of lifespan as buffer
+        buffer = Duration(seconds: (lifespanMinutes * 60 * 0.4).round());
+        log("📊 Token lifespan < 5 minutes ($lifespanMinutes min) → Using ${buffer.inSeconds}s refresh buffer");
       }
 
-      // Ensure buffer is not larger than half the token lifespan
-      final maxBuffer = Duration(minutes: (lifespanMinutes / 2).floor());
-      if (buffer > maxBuffer) {
-        buffer = maxBuffer;
-        log("⚠️ Adjusted buffer to $buffer to not exceed half of token lifespan");
+      // For short-lived tokens, ensure minimum effective refresh window
+      if (lifespanMinutes <= 5) {
+        // For 5-minute tokens, ensure we refresh at 3 minutes (2-minute buffer)
+        // For shorter tokens, use 40% of lifespan but minimum 30 seconds
+        const minBuffer = Duration(seconds: 30);
+        final maxBuffer = Duration(
+            seconds: (lifespanMinutes * 60 * 0.6).round()); // 60% of lifespan
+
+        if (buffer < minBuffer) {
+          buffer = minBuffer;
+          log("⚠️ Adjusted buffer to minimum ${buffer.inSeconds}s for short token");
+        } else if (buffer > maxBuffer) {
+          buffer = maxBuffer;
+          log("⚠️ Adjusted buffer to ${buffer.inSeconds}s (60% of ${lifespanMinutes}min lifespan)");
+        }
+      } else {
+        // For longer tokens, ensure buffer is not larger than half the token lifespan
+        final maxBuffer = Duration(minutes: (lifespanMinutes / 2).floor());
+        if (buffer > maxBuffer) {
+          buffer = maxBuffer;
+          log("⚠️ Adjusted buffer to $buffer to not exceed half of token lifespan");
+        }
       }
 
       return buffer;
@@ -286,12 +311,87 @@ class JwtTokenUtility {
         'refreshBuffer': buffer.inMinutes,
         'refreshTime': refreshTime?.toIso8601String(),
         'timeUntilExpiryMinutes': timeUntilExpiry?.inMinutes,
+        'timeUntilExpirySeconds': timeUntilExpiry?.inSeconds,
         'shouldRefreshNow': shouldRefresh,
         'isValid': isValidJwtToken(token),
+        'isExpired': timeUntilExpiry?.inSeconds == 0,
         'timestamp': DateTime.now().toIso8601String(),
       };
     } catch (e) {
       log("❌ Error getting token analysis: $e");
+      return {
+        'error': e.toString(),
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    }
+  }
+
+  /// Analyze both access and refresh tokens for comprehensive session management
+  static Map<String, dynamic> analyzeBothTokens(
+      String? accessToken, String? refreshToken) {
+    try {
+      final now = DateTime.now();
+      final result = <String, dynamic>{
+        'timestamp': now.toIso8601String(),
+        'hasAccessToken': accessToken != null,
+        'hasRefreshToken': refreshToken != null,
+      };
+
+      // Analyze access token
+      if (accessToken != null) {
+        final accessAnalysis = getTokenAnalysis(accessToken);
+        result['accessToken'] = accessAnalysis;
+
+        final accessExpiresAt = getTokenExpirationTime(accessToken);
+        if (accessExpiresAt != null) {
+          result['accessTokenExpiresAt'] = accessExpiresAt.toIso8601String();
+          result['accessTokenTimeUntilExpiry'] =
+              accessExpiresAt.difference(now).inSeconds;
+          result['accessTokenIsExpired'] = now.isAfter(accessExpiresAt);
+        }
+      }
+
+      // Analyze refresh token
+      if (refreshToken != null) {
+        final refreshAnalysis = getTokenAnalysis(refreshToken);
+        result['refreshToken'] = refreshAnalysis;
+
+        final refreshExpiresAt = getTokenExpirationTime(refreshToken);
+        if (refreshExpiresAt != null) {
+          result['refreshTokenExpiresAt'] = refreshExpiresAt.toIso8601String();
+          result['refreshTokenTimeUntilExpiry'] =
+              refreshExpiresAt.difference(now).inSeconds;
+          result['refreshTokenIsExpired'] = now.isAfter(refreshExpiresAt);
+        }
+      }
+
+      // Determine session state
+      final accessExpired = result['accessTokenIsExpired'] ?? true;
+      final refreshExpired = result['refreshTokenIsExpired'] ?? true;
+
+      if (!accessExpired) {
+        result['sessionState'] = 'active';
+        result['recommendedAction'] = 'none';
+      } else if (!refreshExpired) {
+        result['sessionState'] = 'accessExpired';
+        result['recommendedAction'] = 'refreshAccessToken';
+      } else {
+        result['sessionState'] = 'expired';
+        result['recommendedAction'] = 'reauthenticate';
+      }
+
+      // Calculate when to refresh access token
+      if (accessToken != null && !accessExpired) {
+        final refreshTime = getOptimalRefreshTime(accessToken);
+        if (refreshTime != null) {
+          result['nextRefreshTime'] = refreshTime.toIso8601String();
+          result['shouldRefreshNow'] = now.isAfter(refreshTime);
+        }
+      }
+
+      return result;
+    } catch (e) {
+      log("❌ Error analyzing both tokens: $e");
       return {
         'error': e.toString(),
         'timestamp': DateTime.now().toIso8601String(),

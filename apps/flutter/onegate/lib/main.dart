@@ -43,13 +43,17 @@ import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Set
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
-import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
+import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
+import 'package:flutter_onegate/presentation/widgets/session_expired_bottom_sheet.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 import 'package:one_theme/theme.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/services/session_manager/session_expiry_fix.dart';
+import 'package:flutter_onegate/services/session_manager/eleven_minute_expiry_fix.dart';
 
 import 'data/datasources/remote_datasource.dart';
 import 'data/repositories/visitor_log_repo_impl.dart';
@@ -140,14 +144,29 @@ void main() async {
   await GateStorage().init();
   await setupDependencies();
 
-  // Initialize Enhanced Token Refresh Manager for automatic token management
+  // Initialize ONLY UserSessionManager - single unified session management system
   try {
-    final enhancedTokenManager = EnhancedTokenRefreshManager();
-    final gateStorage = GateStorage();
-    await enhancedTokenManager.initialize(gateStorage);
-    log('✅ Enhanced Token Refresh Manager initialized successfully');
+    final userSessionManager = GetIt.I<UserSessionManager>();
+    await userSessionManager.initialize();
+    log('✅ Unified Session Management initialized successfully');
   } catch (e) {
-    log('❌ Error initializing Enhanced Token Refresh Manager: $e');
+    log('❌ Error initializing Unified Session Management: $e');
+  }
+
+  // Initialize Session Expiry Fix for dynamic JWT handling
+  try {
+    await SessionExpiryFix.initialize();
+    log('✅ Session Expiry Fix with dynamic JWT handling initialized successfully');
+  } catch (e) {
+    log('❌ Error initializing Session Expiry Fix: $e');
+  }
+
+  // Initialize 11-Minute Expiry Fix for specific session expiry issue
+  try {
+    await ElevenMinuteExpiryFix.initialize();
+    log('✅ 11-Minute Session Expiry Fix initialized successfully');
+  } catch (e) {
+    log('❌ Error initializing 11-Minute Expiry Fix: $e');
   }
 
   // Initialize NetworkLogManager and add interceptor to Dio
@@ -252,10 +271,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   // Track previous connectivity status to detect changes.
   bool prevHasInternet = true;
 
+  // Session management
+  UserSessionManager? _sessionManager;
+  StreamSubscription<UserSessionState>? _sessionStateSubscription;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Initialize session state listener
+    _initializeSessionStateListener();
 
     // Perform an initial internet check after first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -263,6 +289,117 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           Provider.of<InternetCheckProvider>(context, listen: false);
       provider.checkInternetAccess();
     });
+  }
+
+  /// Initialize session state listener to handle token expiration
+  void _initializeSessionStateListener() {
+    try {
+      _sessionManager = GetIt.I<UserSessionManager>();
+
+      // Listen to session state changes
+      _sessionStateSubscription =
+          _sessionManager!.sessionStateStream.listen((state) {
+        if (mounted) {
+          _handleSessionStateChange(state);
+        }
+      });
+
+      log('✅ Session state listener initialized');
+    } catch (e) {
+      log('❌ Error initializing session state listener: $e');
+    }
+  }
+
+  /// Handle session state changes
+  void _handleSessionStateChange(UserSessionState state) async {
+    log('🔄 Session state changed to: $state');
+
+    switch (state) {
+      case UserSessionState.tokenExpired:
+        log('⏰ Token expired - checking if should show session expired modal');
+        // Check if continuous session mode is active before showing modal
+        final shouldShow = await _shouldShowSessionExpiredModal();
+        if (shouldShow) {
+          log('🔒 Showing session expired modal (continuous session not active)');
+          _showSessionExpiredModal();
+        } else {
+          log('🔒 Continuous session active - not showing session expired modal');
+        }
+        break;
+      case UserSessionState.unauthenticated:
+        log('🚪 User unauthenticated - navigating to login');
+        _navigateToLogin();
+        break;
+      case UserSessionState.authenticated:
+        log('✅ User authenticated');
+        break;
+      case UserSessionState.error:
+        log('❌ Session error detected');
+        break;
+      case UserSessionState.unknown:
+        log('❓ Session state unknown');
+        break;
+    }
+  }
+
+  /// Check if session expired modal should be shown
+  Future<bool> _shouldShowSessionExpiredModal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Check if continuous session mode is active
+      final tokenExpirationLogoutDisabled =
+          prefs.getBool('token_expiration_logout_disabled') ?? false;
+      final autoLogoutDisabled = prefs.getBool('auto_logout_disabled') ?? false;
+      final continuousSessionActive =
+          prefs.getBool('continuous_session_active') ?? false;
+
+      final isContinuousSessionMode = tokenExpirationLogoutDisabled ||
+          autoLogoutDisabled ||
+          continuousSessionActive;
+
+      log('🔍 Session Modal Check:');
+      log('   • Token Expiration Logout Disabled: $tokenExpirationLogoutDisabled');
+      log('   • Auto Logout Disabled: $autoLogoutDisabled');
+      log('   • Continuous Session Active: $continuousSessionActive');
+      log('   • Continuous Session Mode: $isContinuousSessionMode');
+
+      // Should NOT show modal if continuous session mode is active
+      return !isContinuousSessionMode;
+    } catch (e) {
+      log('❌ Error checking if should show session expired modal: $e');
+      // Default to showing modal if we can't determine the state
+      return true;
+    }
+  }
+
+  /// Show session expired modal
+  void _showSessionExpiredModal() {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      showSessionExpiredBottomSheet(
+        errorMessage:
+            'Your session has expired. Please log in again to continue.',
+        onLoginComplete: () {
+          log('✅ Session expired modal login completed');
+        },
+      );
+    } else {
+      log('⚠️ No context available for session expired modal');
+      // Fallback to direct navigation
+      _navigateToLogin();
+    }
+  }
+
+  /// Navigate to login screen
+  void _navigateToLogin() {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/login',
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -366,6 +503,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _sessionStateSubscription?.cancel();
     super.dispose();
   }
 }

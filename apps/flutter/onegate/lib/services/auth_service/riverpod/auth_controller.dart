@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../data/datasources/keycloack_config.dart';
+import '../jwt_token_utility.dart';
 import 'auth_tokens.dart';
 import 'auth_storage.dart';
 import 'auth_state.dart';
@@ -16,7 +17,7 @@ part 'auth_controller.g.dart';
 class AuthController extends _$AuthController {
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
   final AuthStorage _storage = AuthStorage();
-  
+
   Timer? _refreshTimer;
   bool _isRefreshing = false;
 
@@ -31,7 +32,7 @@ class AuthController extends _$AuthController {
   Future<void> _initializeFromStorage() async {
     try {
       log('🔄 Initializing auth state from storage...');
-      
+
       final tokens = await _storage.getTokens();
       if (tokens == null || !tokens.isValid) {
         log('ℹ️ No valid tokens found in storage');
@@ -87,8 +88,8 @@ class AuthController extends _$AuthController {
         ),
       );
 
-      if (result.accessToken == null || 
-          result.refreshToken == null || 
+      if (result.accessToken == null ||
+          result.refreshToken == null ||
           result.accessTokenExpirationDateTime == null) {
         throw Exception('Incomplete token response from authorization server');
       }
@@ -127,7 +128,7 @@ class AuthController extends _$AuthController {
   Future<void> logout() async {
     try {
       log('🚪 Starting logout process...');
-      
+
       // Cancel refresh timer
       _refreshTimer?.cancel();
       _refreshTimer = null;
@@ -174,15 +175,17 @@ class AuthController extends _$AuthController {
   /// Internal method to perform token refresh
   Future<bool> _performTokenRefresh(String refreshToken) async {
     if (_isRefreshing) return false;
-    
+
     _isRefreshing = true;
     try {
       log('🔄 Refreshing access token...');
 
-      final tokenRequest = AppAuthConfigManager.getRefreshTokenRequest(refreshToken);
+      final tokenRequest =
+          AppAuthConfigManager.getRefreshTokenRequest(refreshToken);
       final result = await _appAuth.token(tokenRequest);
 
-      if (result.accessToken == null || result.accessTokenExpirationDateTime == null) {
+      if (result.accessToken == null ||
+          result.accessTokenExpirationDateTime == null) {
         throw Exception('Invalid token refresh response');
       }
 
@@ -192,18 +195,59 @@ class AuthController extends _$AuthController {
         throw Exception('Cannot refresh token: not in authenticated state');
       }
 
-      final updatedTokens = currentState.tokens.withNewTokens(
-        newAccessToken: result.accessToken!,
-        newExpiresAt: result.accessTokenExpirationDateTime!,
-        newIdToken: result.idToken,
+      // Calculate expiry time from JWT claims for accuracy
+      DateTime expiresAt;
+      if (result.accessTokenExpirationDateTime != null) {
+        expiresAt = result.accessTokenExpirationDateTime!;
+      } else {
+        // Extract expiry from JWT token
+        final jwtExpiryTime =
+            JwtTokenUtility.getTokenExpirationTime(result.accessToken!);
+        if (jwtExpiryTime != null) {
+          expiresAt = jwtExpiryTime;
+          log('🔍 Using JWT-extracted expiry time: ${expiresAt.toIso8601String()}');
+        } else {
+          // Conservative fallback
+          expiresAt = DateTime.now().add(const Duration(minutes: 5));
+          log('⚠️ Using conservative 5-minute expiry (no expiry info available)');
+        }
+      }
+
+      // Log token duration analysis
+      final issuedTime =
+          JwtTokenUtility.getTokenIssuedAtTime(result.accessToken!);
+      if (issuedTime != null) {
+        final actualDuration = expiresAt.difference(issuedTime);
+        log('⏱️ Riverpod Token Duration Analysis:');
+        log('   • Issued At (iat): ${issuedTime.toIso8601String()}');
+        log('   • Expires At (exp): ${expiresAt.toIso8601String()}');
+        log('   • Calculated Duration: ${actualDuration.inMinutes}min ${actualDuration.inSeconds % 60}s');
+      }
+
+      // Update tokens - use new refresh token if provided, otherwise keep existing
+      final updatedRefreshToken =
+          result.refreshToken ?? currentState.tokens.refreshToken;
+
+      final updatedTokens = currentState.tokens.copyWith(
+        accessToken: result.accessToken!,
+        expiresAt: expiresAt,
+        idToken: result.idToken ?? currentState.tokens.idToken,
+        refreshToken: updatedRefreshToken,
       );
+
+      // Log refresh token update status
+      if (result.refreshToken != null) {
+        log('🔄 Refresh token updated with new token from server');
+      } else {
+        log('🔄 Refresh token preserved (server did not provide new refresh token)');
+      }
 
       // Store updated tokens
       await _storage.storeTokens(updatedTokens);
 
       // Update state
       state = AuthState.authenticated(
-        tokens: updatedTokens, 
+        tokens: updatedTokens,
         userInfo: currentState.userInfo,
       );
 
@@ -214,7 +258,7 @@ class AuthController extends _$AuthController {
       return true;
     } catch (e) {
       log('❌ Token refresh failed: $e');
-      
+
       // If refresh fails, logout user
       await logout();
       return false;
@@ -228,18 +272,43 @@ class AuthController extends _$AuthController {
     _refreshTimer?.cancel();
 
     final timeUntilExpiry = tokens.timeUntilExpiration;
-    if (timeUntilExpiry == null || timeUntilExpiry.inMinutes <= 2) {
-      log('⚠️ Token expires too soon, scheduling immediate refresh');
+    if (timeUntilExpiry == null) {
+      log('⚠️ Cannot determine token expiry, scheduling immediate refresh');
       Timer(const Duration(seconds: 30), () => refreshToken());
       return;
     }
 
-    // Schedule refresh 2 minutes before expiration
-    final refreshTime = timeUntilExpiry - const Duration(minutes: 2);
-    
-    log('⏰ Scheduling token refresh in ${refreshTime.inMinutes} minutes');
+    Duration refreshBuffer;
+    Duration refreshTime;
+
+    // Calculate refresh timing based on token lifespan
+    if (timeUntilExpiry.inMinutes <= 5) {
+      // For 5-minute or shorter tokens, refresh at 60% of lifespan (e.g., 3 minutes for 5-minute token)
+      refreshBuffer =
+          Duration(seconds: (timeUntilExpiry.inSeconds * 0.4).round());
+      refreshTime = timeUntilExpiry - refreshBuffer;
+
+      // Ensure minimum refresh time of 30 seconds
+      if (refreshTime.inSeconds < 30) {
+        refreshTime = const Duration(seconds: 30);
+      }
+
+      log('⏰ Short token (${timeUntilExpiry.inMinutes}min) - scheduling refresh in ${refreshTime.inMinutes}min ${refreshTime.inSeconds % 60}s');
+    } else if (timeUntilExpiry.inMinutes <= 15) {
+      // For 6-15 minute tokens, use 2-minute buffer
+      refreshBuffer = const Duration(minutes: 2);
+      refreshTime = timeUntilExpiry - refreshBuffer;
+      log('⏰ Medium token (${timeUntilExpiry.inMinutes}min) - scheduling refresh in ${refreshTime.inMinutes} minutes');
+    } else {
+      // For longer tokens, use 2-minute buffer
+      refreshBuffer = const Duration(minutes: 2);
+      refreshTime = timeUntilExpiry - refreshBuffer;
+      log('⏰ Long token (${timeUntilExpiry.inMinutes}min) - scheduling refresh in ${refreshTime.inMinutes} minutes');
+    }
+
+    // Schedule the refresh
     _refreshTimer = Timer(refreshTime, () {
-      log('⏰ Automatic token refresh triggered');
+      log('⏰ Automatic token refresh triggered (${refreshBuffer.inMinutes}min before expiry)');
       refreshToken();
     });
   }
@@ -249,16 +318,16 @@ class AuthController extends _$AuthController {
     // This would typically make an HTTP request to the userinfo endpoint
     // For now, we'll return a placeholder implementation
     // You should implement this based on your Keycloak setup
-    
+
     log('👤 Getting user info from Keycloak...');
-    
+
     // TODO: Implement actual HTTP request to userinfo endpoint
     // Example implementation would be:
     // final response = await http.get(
     //   Uri.parse(AppAuthConfigManager.userInfoEndpoint),
     //   headers: {'Authorization': 'Bearer $accessToken'},
     // );
-    
+
     return {
       'sub': 'user-id',
       'email': 'user@example.com',

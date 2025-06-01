@@ -193,20 +193,35 @@ class AuthService {
     }
   }
 
-  /// Store tokens securely
+  /// Store tokens securely with JWT-based duration calculation
   Future<void> _storeTokens(TokenResponse tokenResponse) async {
     try {
-      // Store in secure storage
+      log('💾 Storing tokens with JWT-based duration calculation...');
+
+      // Store access token and analyze its JWT claims
       if (tokenResponse.accessToken != null) {
         await _secureStorage.write(
             key: _accessTokenKey, value: tokenResponse.accessToken!);
         await gateStorage.saveAccessToken(tokenResponse.accessToken!);
+
+        // Log detailed token analysis
+        JwtTokenUtility.logTokenDetails("ACCESS", tokenResponse.accessToken!);
       }
 
+      // Store refresh token and check if it's a JWT
       if (tokenResponse.refreshToken != null) {
         await _secureStorage.write(
             key: _refreshTokenKey, value: tokenResponse.refreshToken!);
         await gateStorage.saveRefreshToken(tokenResponse.refreshToken!);
+
+        // Analyze refresh token if it's a JWT
+        if (JwtTokenUtility.isValidJwtToken(tokenResponse.refreshToken!)) {
+          JwtTokenUtility.logTokenDetails(
+              "REFRESH", tokenResponse.refreshToken!);
+          log("🔄 Refresh token is JWT with expiration info");
+        } else {
+          log("🔄 Refresh token is opaque (server-managed expiration)");
+        }
       }
 
       if (tokenResponse.idToken != null) {
@@ -214,19 +229,46 @@ class AuthService {
             key: _idTokenKey, value: tokenResponse.idToken!);
       }
 
-      // Calculate and save token expiry
-      if (tokenResponse.accessTokenExpirationDateTime != null) {
-        await gateStorage
-            .saveTokenExpiry(tokenResponse.accessTokenExpirationDateTime!);
-      } else {
-        // Default to 1 hour if no expiry provided
-        final expiryTime = DateTime.now().add(const Duration(hours: 1));
-        await gateStorage.saveTokenExpiry(expiryTime);
+      // Store token expiry time using JWT claims (iat/exp) for accuracy
+      if (tokenResponse.accessToken != null) {
+        final expiryTime =
+            JwtTokenUtility.getTokenExpirationTime(tokenResponse.accessToken!);
+        final issuedTime =
+            JwtTokenUtility.getTokenIssuedAtTime(tokenResponse.accessToken!);
+
+        if (expiryTime != null && issuedTime != null) {
+          await gateStorage.saveTokenExpiry(expiryTime);
+
+          // Calculate actual duration from JWT claims
+          final actualDuration = expiryTime.difference(issuedTime);
+          log('⏱️ JWT Token Duration Analysis:');
+          log('   • Issued At (iat): ${issuedTime.toIso8601String()}');
+          log('   • Expires At (exp): ${expiryTime.toIso8601String()}');
+          log('   • Calculated Duration: ${actualDuration.inMinutes}min ${actualDuration.inSeconds % 60}s');
+
+          // Verify against server-provided expiry if available
+          if (tokenResponse.accessTokenExpirationDateTime != null) {
+            final serverExpiry = tokenResponse.accessTokenExpirationDateTime!;
+            final timeDiff = expiryTime.difference(serverExpiry).abs();
+            if (timeDiff.inSeconds > 5) {
+              log('⚠️ JWT vs Server expiry mismatch: ${timeDiff.inSeconds}s difference');
+            } else {
+              log('✅ JWT and server expiry times match');
+            }
+          }
+        } else if (tokenResponse.accessTokenExpirationDateTime != null) {
+          // Fallback to server-provided expiry
+          await gateStorage
+              .saveTokenExpiry(tokenResponse.accessTokenExpirationDateTime!);
+          log('⚠️ Using server-provided expiry (JWT parsing failed)');
+        } else {
+          log('❌ No expiry information available - this may cause issues');
+        }
       }
 
-      log("✅ Tokens stored successfully");
+      log('✅ Tokens stored successfully with JWT-based duration');
     } catch (e) {
-      log("❌ Error storing tokens: $e");
+      log('❌ Error storing tokens: $e');
       throw Exception('Failed to store tokens: $e');
     }
   }

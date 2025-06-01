@@ -37,7 +37,7 @@ class EnhancedTokenRefreshManager {
   static const Duration _fallbackRefreshBuffer =
       Duration(minutes: 1); // Fallback when dynamic calculation fails
   static const Duration _refreshCheckInterval =
-      Duration(seconds: 30); // More frequent for precision
+      Duration(seconds: 15); // More frequent for short-lived tokens
   static const int _maxRetryAttempts = 3;
 
   // Dynamic refresh buffer (calculated per token)
@@ -304,18 +304,41 @@ class EnhancedTokenRefreshManager {
     return false;
   }
 
-  /// Store tokens securely
+  /// Store tokens securely with dynamic duration calculation based on JWT iat/exp
   Future<void> _storeTokens(TokenResponse tokenResponse) async {
     try {
-      // Store tokens in secure storage
+      log("💾 Storing tokens with dynamic duration calculation...");
+
+      // Store access token and analyze its duration
       if (tokenResponse.accessToken != null) {
         await _secureStorage.write(
             key: _accessTokenKey, value: tokenResponse.accessToken!);
+
+        // Log detailed token analysis
+        JwtTokenUtility.logTokenDetails("ACCESS", tokenResponse.accessToken!);
+
+        // Calculate actual token duration from JWT claims
+        final tokenAnalysis =
+            JwtTokenUtility.getTokenAnalysis(tokenResponse.accessToken!);
+        log("📊 Access Token Duration Analysis:");
+        log("   • Lifespan: ${tokenAnalysis['lifespanMinutes']} minutes");
+        log("   • Refresh Buffer: ${tokenAnalysis['refreshBuffer']} minutes");
+        log("   • Should Refresh Now: ${tokenAnalysis['shouldRefreshNow']}");
       }
 
+      // Store refresh token and analyze if it's a JWT
       if (tokenResponse.refreshToken != null) {
         await _secureStorage.write(
             key: _refreshTokenKey, value: tokenResponse.refreshToken!);
+
+        // Check if refresh token is also a JWT and log its details
+        if (JwtTokenUtility.isValidJwtToken(tokenResponse.refreshToken!)) {
+          JwtTokenUtility.logTokenDetails(
+              "REFRESH", tokenResponse.refreshToken!);
+          log("🔄 Refresh token is JWT - analyzing duration...");
+        } else {
+          log("🔄 Refresh token is opaque (non-JWT)");
+        }
       }
 
       if (tokenResponse.idToken != null) {
@@ -323,21 +346,42 @@ class EnhancedTokenRefreshManager {
             key: _idTokenKey, value: tokenResponse.idToken!);
       }
 
-      // Store expiry time in GateStorage for compatibility
-      if (_gateStorage != null) {
-        if (tokenResponse.accessTokenExpirationDateTime != null) {
-          await _gateStorage!
-              .saveTokenExpiry(tokenResponse.accessTokenExpirationDateTime!);
-        } else if (tokenResponse.accessToken != null) {
-          // Extract expiry from JWT token
-          final expiryTime = JwtTokenUtility.getTokenExpirationTime(
-              tokenResponse.accessToken!);
-          if (expiryTime != null) {
-            await _gateStorage!.saveTokenExpiry(expiryTime);
+      // Store expiry time in GateStorage using JWT-based calculation (not hardcoded)
+      if (_gateStorage != null && tokenResponse.accessToken != null) {
+        // Always extract expiry from JWT token for accuracy
+        final expiryTime =
+            JwtTokenUtility.getTokenExpirationTime(tokenResponse.accessToken!);
+        final issuedTime =
+            JwtTokenUtility.getTokenIssuedAtTime(tokenResponse.accessToken!);
+
+        if (expiryTime != null && issuedTime != null) {
+          await _gateStorage!.saveTokenExpiry(expiryTime);
+
+          // Calculate and log actual token duration from JWT claims
+          final actualDuration = expiryTime.difference(issuedTime);
+          log("⏱️ JWT-based Token Duration:");
+          log("   • Issued At (iat): ${issuedTime.toIso8601String()}");
+          log("   • Expires At (exp): ${expiryTime.toIso8601String()}");
+          log("   • Actual Duration: ${actualDuration.inMinutes}min ${actualDuration.inSeconds % 60}s");
+
+          // Compare with server-provided expiry if available
+          if (tokenResponse.accessTokenExpirationDateTime != null) {
+            final serverExpiry = tokenResponse.accessTokenExpirationDateTime!;
+            final timeDiff = expiryTime.difference(serverExpiry).abs();
+            log("   • Server vs JWT expiry diff: ${timeDiff.inSeconds}s");
+          }
+        } else {
+          // Fallback to server-provided expiry
+          if (tokenResponse.accessTokenExpirationDateTime != null) {
+            await _gateStorage!
+                .saveTokenExpiry(tokenResponse.accessTokenExpirationDateTime!);
+            log("⚠️ Using server-provided expiry (JWT parsing failed)");
           } else {
-            // Default to 1 hour if no expiry can be determined
-            final defaultExpiry = DateTime.now().add(const Duration(hours: 1));
-            await _gateStorage!.saveTokenExpiry(defaultExpiry);
+            // Conservative fallback based on common token patterns
+            final now = DateTime.now();
+            final conservativeExpiry = now.add(const Duration(minutes: 5));
+            await _gateStorage!.saveTokenExpiry(conservativeExpiry);
+            log("⚠️ Using conservative 5-minute expiry (no expiry info available)");
           }
         }
 
@@ -350,7 +394,7 @@ class EnhancedTokenRefreshManager {
         }
       }
 
-      log("✅ Tokens stored successfully");
+      log("✅ Tokens stored successfully with JWT-based duration calculation");
     } catch (e) {
       log("❌ Error storing tokens: $e");
       throw Exception('Failed to store tokens: $e');

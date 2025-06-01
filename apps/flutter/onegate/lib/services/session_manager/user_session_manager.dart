@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// User session manager with automatic token refresh and session monitoring
 class UserSessionManager {
@@ -33,24 +35,50 @@ class UserSessionManager {
   /// Current session state
   UserSessionState get currentState => _currentState;
 
-  /// Initialize the session manager
+  /// Initialize the session manager with unified session management
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     _gateStorage = GetIt.I<GateStorage>();
     _authService = GetIt.I<AuthService>();
 
+    // Enable continuous session management by default
+    await _enableContinuousSessionManagement();
+
     // Check initial session state
     await _checkSessionState();
 
-    // Start session monitoring
+    // Start session monitoring with more frequent checks
     _startSessionMonitoring();
 
-    // Start token refresh monitoring
+    // Start token refresh monitoring with intelligent timing
     _startTokenRefreshMonitoring();
 
     _isInitialized = true;
-    log("✅ UserSessionManager initialized");
+    log("✅ Unified Session Manager initialized with continuous session support");
+  }
+
+  /// Enable continuous session management
+  Future<void> _enableContinuousSessionManagement() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Set all necessary flags for continuous session
+      await prefs.setBool('token_expiration_logout_disabled', true);
+      await prefs.setBool('auto_logout_disabled', true);
+      await prefs.setBool('session_timeout_disabled', true);
+      await prefs.setBool('idle_timeout_disabled', true);
+      await prefs.setBool('continuous_session_active', true);
+
+      // Set infinite timeout values
+      final infiniteTimeout = const Duration(days: 365).inMilliseconds;
+      await prefs.setInt('session_timeout_ms', infiniteTimeout);
+      await prefs.setInt('idle_timeout_ms', infiniteTimeout);
+
+      log("🔒 Continuous session management enabled");
+    } catch (e) {
+      log("❌ Error enabling continuous session management: $e");
+    }
   }
 
   /// Start session monitoring
@@ -66,7 +94,7 @@ class UserSessionManager {
   void _startTokenRefreshMonitoring() {
     _tokenRefreshTimer?.cancel();
     _tokenRefreshTimer = Timer.periodic(
-      const Duration(minutes: 5), // Check every 5 minutes
+      const Duration(minutes: 1), // Check every 1 minute for short-lived tokens
       (_) => _checkAndRefreshToken(),
     );
   }
@@ -92,26 +120,152 @@ class UserSessionManager {
     }
   }
 
-  /// Check and refresh token if needed
+  /// Check and refresh token if needed using dynamic JWT analysis
   Future<void> _checkAndRefreshToken() async {
     try {
-      final isExpired = await _gateStorage.isTokenExpired();
+      // Check if token expiration logout is disabled (continuous session mode)
+      final prefs = await SharedPreferences.getInstance();
+      final tokenExpirationLogoutDisabled =
+          prefs.getBool('token_expiration_logout_disabled') ?? false;
+      final autoLogoutDisabled = prefs.getBool('auto_logout_disabled') ?? false;
+      final continuousSessionActive =
+          prefs.getBool('continuous_session_active') ?? false;
+      final jwtBasedSessionManagement =
+          prefs.getBool('jwt_based_session_management') ?? false;
 
-      if (isExpired) {
-        log("🔄 Token expired, attempting refresh...");
-        final refreshed = await _authService.refreshToken();
+      // Check if any continuous session mechanism is active
+      final isContinuousSessionMode = tokenExpirationLogoutDisabled ||
+          autoLogoutDisabled ||
+          continuousSessionActive;
 
-        if (refreshed) {
-          log("✅ Token refreshed successfully");
-          _updateSessionState(UserSessionState.authenticated);
-        } else {
-          log("❌ Token refresh failed");
-          _updateSessionState(UserSessionState.tokenExpired);
-        }
+      // Use JWT-based analysis if enabled
+      if (jwtBasedSessionManagement) {
+        await _performJWTBasedTokenCheck(isContinuousSessionMode);
+      } else {
+        // Fallback to legacy token expiry check
+        await _performLegacyTokenCheck(isContinuousSessionMode);
       }
     } catch (e) {
       log("❌ Error checking/refreshing token: $e");
     }
+  }
+
+  /// Perform JWT-based token check using dynamic analysis
+  Future<void> _performJWTBasedTokenCheck(bool isContinuousSessionMode) async {
+    try {
+      final accessToken = await _gateStorage.getAccessToken();
+      final refreshToken = await _gateStorage.getRefreshToken();
+
+      if (accessToken == null || refreshToken == null) {
+        log("⚠️ Missing tokens for JWT analysis");
+        if (!isContinuousSessionMode) {
+          _updateSessionState(UserSessionState.unauthenticated);
+        }
+        return;
+      }
+
+      // Analyze both tokens using JWT utility
+      final analysis =
+          JwtTokenUtility.analyzeBothTokens(accessToken, refreshToken);
+      final sessionState = analysis['sessionState'] as String?;
+      final recommendedAction = analysis['recommendedAction'] as String?;
+      final shouldRefreshNow = analysis['shouldRefreshNow'] as bool? ?? false;
+
+      log("🔍 JWT-based token analysis:");
+      log("   • Session State: $sessionState");
+      log("   • Recommended Action: $recommendedAction");
+      log("   • Should Refresh Now: $shouldRefreshNow");
+
+      // Handle based on JWT analysis
+      switch (recommendedAction) {
+        case 'refreshAccessToken':
+          if (shouldRefreshNow) {
+            log("🔄 JWT analysis recommends token refresh");
+            final refreshed = await _authService.refreshToken();
+
+            if (refreshed) {
+              log("✅ JWT-based token refresh successful");
+              _updateSessionState(UserSessionState.authenticated);
+            } else {
+              log("❌ JWT-based token refresh failed");
+              await _handleRefreshFailure(isContinuousSessionMode);
+            }
+          } else {
+            log("ℹ️ JWT analysis: Token refresh not needed yet");
+            _updateSessionState(UserSessionState.authenticated);
+          }
+          break;
+        case 'reauthenticate':
+          log("⚠️ JWT analysis: Both tokens expired, reauthentication needed");
+          await _handleSessionExpired(isContinuousSessionMode);
+          break;
+        case 'none':
+          log("✅ JWT analysis: Session is active, no action needed");
+          _updateSessionState(UserSessionState.authenticated);
+          break;
+        default:
+          log("⚠️ Unknown JWT analysis recommendation: $recommendedAction");
+          await _performLegacyTokenCheck(isContinuousSessionMode);
+      }
+    } catch (e) {
+      log("❌ Error during JWT-based token check: $e");
+      await _performLegacyTokenCheck(isContinuousSessionMode);
+    }
+  }
+
+  /// Perform legacy token check (fallback)
+  Future<void> _performLegacyTokenCheck(bool isContinuousSessionMode) async {
+    try {
+      final isExpired = await _gateStorage.isTokenExpired();
+
+      if (isExpired) {
+        log("🔄 Legacy check: Token expired, attempting refresh...");
+        final refreshed = await _authService.refreshToken();
+
+        if (refreshed) {
+          log("✅ Legacy token refresh successful");
+          _updateSessionState(UserSessionState.authenticated);
+        } else {
+          log("❌ Legacy token refresh failed");
+          await _handleRefreshFailure(isContinuousSessionMode);
+        }
+      } else {
+        log("✅ Legacy check: Token is valid");
+        _updateSessionState(UserSessionState.authenticated);
+      }
+    } catch (e) {
+      log("❌ Error during legacy token check: $e");
+    }
+  }
+
+  /// Handle token refresh failure
+  Future<void> _handleRefreshFailure(bool isContinuousSessionMode) async {
+    if (!isContinuousSessionMode) {
+      log("⏰ Continuous session mode not active - setting tokenExpired state");
+      _updateSessionState(UserSessionState.tokenExpired);
+    } else {
+      log("🔒 Continuous session mode active - maintaining session and retrying refresh");
+      _scheduleRetryRefresh();
+    }
+  }
+
+  /// Handle session expired scenario
+  Future<void> _handleSessionExpired(bool isContinuousSessionMode) async {
+    if (!isContinuousSessionMode) {
+      log("🚪 Session expired - triggering logout");
+      _updateSessionState(UserSessionState.tokenExpired);
+    } else {
+      log("🔒 Continuous session mode active - attempting recovery");
+      _scheduleRetryRefresh();
+    }
+  }
+
+  /// Schedule retry refresh for continuous session mode
+  void _scheduleRetryRefresh() {
+    Timer(const Duration(seconds: 30), () async {
+      log("🔄 Retrying token refresh in continuous session mode");
+      await _checkAndRefreshToken();
+    });
   }
 
   /// Update session state and notify listeners

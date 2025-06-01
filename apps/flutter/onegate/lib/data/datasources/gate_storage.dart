@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 
 class GateStorage {
   static const _accessTokenKey = 'access_token';
@@ -146,18 +147,94 @@ class GateStorage {
   }
 
   Future<bool> isTokenExpired() async {
-    final prefs = await SharedPreferences.getInstance();
-    final expiryTimestamp = prefs.getInt(_tokenExpiryKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    if (expiryTimestamp == null) {
-      return true; // If no expiry time is stored, consider token expired
+      // Check if session timeout override is active (check multiple keys for compatibility)
+      final tokenExpirationLogoutDisabled =
+          prefs.getBool('token_expiration_logout_disabled') ?? false;
+      final gateStorageTimeoutDisabled =
+          prefs.getBool('gate_storage_token_expiration_disabled') ?? false;
+      final autoLogoutDisabled = prefs.getBool('auto_logout_disabled') ?? false;
+      final continuousSessionActive =
+          prefs.getBool('continuous_session_active') ?? false;
+
+      // If any timeout override is active, use JWT-based expiry only
+      if (tokenExpirationLogoutDisabled ||
+          gateStorageTimeoutDisabled ||
+          autoLogoutDisabled ||
+          continuousSessionActive) {
+        log("🔒 Token expiration override active - using JWT-based expiry only");
+        return await _isTokenExpiredFromJWT();
+      }
+
+      // For normal mode, use JWT-based expiry with buffer
+      return await _isTokenExpiredWithBuffer();
+    } catch (e) {
+      log("❌ Error checking token expiry: $e");
+      return true; // Consider expired on error
     }
+  }
 
-    final expiryTime = DateTime.fromMillisecondsSinceEpoch(expiryTimestamp);
-    final now = DateTime.now();
+  /// Check if token is expired based on JWT exp claim only (no buffer)
+  Future<bool> _isTokenExpiredFromJWT() async {
+    try {
+      final accessToken = await getAccessToken();
+      if (accessToken == null) {
+        log("⚠️ No access token available");
+        return true;
+      }
 
-    // Consider token expired if it expires in less than 30 seconds
-    return now.isAfter(expiryTime.subtract(const Duration(seconds: 30)));
+      // Use JWT utility to get actual expiration time
+      final expirationTime =
+          JwtTokenUtility.getTokenExpirationTime(accessToken);
+      if (expirationTime == null) {
+        log("⚠️ Could not determine token expiration from JWT");
+        return true;
+      }
+
+      final now = DateTime.now();
+      final isExpired = now.isAfter(expirationTime);
+
+      if (isExpired) {
+        log("⏰ JWT token expired at $expirationTime (${now.difference(expirationTime).inMinutes} minutes ago)");
+      } else {
+        final timeUntilExpiry = expirationTime.difference(now);
+        log("✅ JWT token valid for ${timeUntilExpiry.inMinutes}min ${timeUntilExpiry.inSeconds % 60}s");
+      }
+
+      return isExpired;
+    } catch (e) {
+      log("❌ Error checking JWT token expiry: $e");
+      return true;
+    }
+  }
+
+  /// Check if token is expired with dynamic buffer for refresh timing
+  Future<bool> _isTokenExpiredWithBuffer() async {
+    try {
+      final accessToken = await getAccessToken();
+      if (accessToken == null) {
+        log("⚠️ No access token available");
+        return true;
+      }
+
+      // Use JWT utility for dynamic buffer calculation
+      final buffer = JwtTokenUtility.calculateOptimalRefreshBuffer(accessToken);
+      final isExpiring =
+          JwtTokenUtility.isTokenExpiredOrExpiring(accessToken, buffer: buffer);
+
+      if (isExpiring) {
+        final expirationTime =
+            JwtTokenUtility.getTokenExpirationTime(accessToken);
+        log("🔄 Token expiring within ${buffer.inMinutes}min buffer (expires at $expirationTime)");
+      }
+
+      return isExpiring;
+    } catch (e) {
+      log("❌ Error checking token expiry with buffer: $e");
+      return true;
+    }
   }
 
   Future<void> saveUserId(String userId) async {
