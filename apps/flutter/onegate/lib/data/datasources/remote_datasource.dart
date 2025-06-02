@@ -22,6 +22,7 @@ import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
 import 'package:flutter_onegate/utils/token_refresh_util.dart';
 import 'package:flutter_onegate/services/api_client/authenticated_api_client.dart';
+import 'package:flutter_onegate/services/api_client/authenticated_dio_factory.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:get_it/get_it.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -107,6 +108,35 @@ class RemoteDataSource {
       throw Exception(
           "AuthenticatedApiClient not available. Please ensure proper initialization.");
     }
+  }
+
+  /// Get authenticated Dio client for Gate API
+  Dio _getAuthenticatedGateDio() {
+    return AuthenticatedDioFactory.createOneGateApiClient(
+      baseUrl: ApiUrls.gateBaseUrl,
+      customHeaders: {
+        'X-Service': 'RemoteDataSource-Gate',
+      },
+    );
+  }
+
+  /// Get authenticated Dio client for Society API
+  Dio _getAuthenticatedSocietyDio() {
+    return AuthenticatedDioFactory.createSocietyApiClient(
+      customHeaders: {
+        'X-Service': 'RemoteDataSource-Society',
+      },
+    );
+  }
+
+  /// Get public Dio client (no authentication)
+  Dio _getPublicDio() {
+    return AuthenticatedDioFactory.createPublicDio(
+      baseUrl: ApiUrls.gateBaseUrl,
+      customHeaders: {
+        'X-Service': 'RemoteDataSource-Public',
+      },
+    );
   }
 
   /// Handle authentication errors and token refresh
@@ -794,8 +824,6 @@ class RemoteDataSource {
         "is_always_allowed": statusallowed
       });
 
-      log("Final Payload: $data");
-
       // Make the POST request
       final Response response = await dio.post(
         apiUrl,
@@ -808,7 +836,7 @@ class RemoteDataSource {
           },
         ),
       );
-
+      log("Final Payload: $data");
       log("VisitorLog Response: ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {

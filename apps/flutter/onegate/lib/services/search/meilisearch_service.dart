@@ -235,14 +235,43 @@ class MeilisearchService {
     }
   }
 
-  /// Check if Meilisearch is healthy
+  /// Check if Meilisearch is healthy with detailed error reporting
   Future<bool> isHealthy() async {
     try {
-      await _client.health();
+      final health = await _client.health();
+      dev.log('✅ Meilisearch health check passed: $health');
       return true;
     } catch (e) {
-      dev.log('Meilisearch health check failed: $e');
+      dev.log('❌ Meilisearch health check failed: $e');
+
+      // Log more detailed error information
+      if (e.toString().contains('Connection refused')) {
+        dev.log(
+            '🔌 Connection Error: Meilisearch server is not running or not accessible');
+      } else if (e.toString().contains('timeout')) {
+        dev.log('⏱️ Timeout Error: Meilisearch server is not responding');
+      } else if (e.toString().contains('401') || e.toString().contains('403')) {
+        dev.log(
+            '🔐 Authentication Error: Invalid API key or insufficient permissions');
+      } else {
+        dev.log('🔍 Unknown Error: $e');
+      }
+
       return false;
     }
+  }
+
+  /// Get detailed connection status for debugging
+  Future<Map<String, dynamic>> getConnectionStatus() async {
+    final gateStorage = GateStorage();
+    final host = await gateStorage.getMeilisearchHost() ?? _defaultHost;
+    final hasApiKey = await gateStorage.getMeilisearchApiKey() != null;
+
+    return {
+      'host': host,
+      'hasApiKey': hasApiKey,
+      'isHealthy': await isHealthy(),
+      'timestamp': DateTime.now().toIso8601String(),
+    };
   }
 }

@@ -2,18 +2,20 @@ import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:get_it/get_it.dart';
-import 'package:flutter_onegate/services/api_client/authenticated_api_client.dart';
+import 'package:flutter_onegate/services/api_client/authenticated_dio_factory.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 
-/// Enhanced RemoteDataSource that consistently uses AuthenticatedApiClient
-/// This ensures all API calls go through the enhanced authentication system
+/// Enhanced RemoteDataSource with unified authentication using Dio factory
+/// This ensures all API calls go through the unified authentication system
 class EnhancedRemoteDataSource {
   static final EnhancedRemoteDataSource _instance =
       EnhancedRemoteDataSource._internal();
   factory EnhancedRemoteDataSource() => _instance;
   EnhancedRemoteDataSource._internal();
 
-  late final AuthenticatedApiClient _apiClient;
+  late final Dio _gateApiClient;
+  late final Dio _societyApiClient;
+  late final Dio _publicApiClient;
   late final GateStorage _gateStorage;
   bool _isInitialized = false;
 
@@ -21,13 +23,31 @@ class EnhancedRemoteDataSource {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    _apiClient = GetIt.I<AuthenticatedApiClient>();
-    await _apiClient.initialize();
+    // Create authenticated Dio clients using the factory
+    _gateApiClient = AuthenticatedDioFactory.createOneGateApiClient(
+      baseUrl: ApiUrls.gateBaseUrl,
+      customHeaders: {
+        'X-Service': 'EnhancedRemoteDataSource-Gate',
+      },
+    );
+
+    _societyApiClient = AuthenticatedDioFactory.createSocietyApiClient(
+      customHeaders: {
+        'X-Service': 'EnhancedRemoteDataSource-Society',
+      },
+    );
+
+    _publicApiClient = AuthenticatedDioFactory.createPublicDio(
+      baseUrl: ApiUrls.gateBaseUrl,
+      customHeaders: {
+        'X-Service': 'EnhancedRemoteDataSource-Public',
+      },
+    );
 
     _gateStorage = GetIt.I<GateStorage>();
 
     _isInitialized = true;
-    log("✅ EnhancedRemoteDataSource initialized");
+    log("✅ EnhancedRemoteDataSource initialized with unified authentication");
   }
 
   /// Ensure the data source is initialized
@@ -49,8 +69,8 @@ class EnhancedRemoteDataSource {
         throw Exception('Company ID not found.');
       }
 
-      final response = await _apiClient.get(
-        ApiUrls.gates,
+      final response = await _gateApiClient.get(
+        '/admin/gates',
         queryParameters: {'company_id': int.parse(companyId.toString())},
       );
 
@@ -83,8 +103,8 @@ class EnhancedRemoteDataSource {
         throw Exception('Company ID not found. Please select a company.');
       }
 
-      final response = await _apiClient.get(
-        ApiUrls.buildingList,
+      final response = await _societyApiClient.get(
+        '/admin/building/list',
         queryParameters: {'company_id': companyId},
       );
 
@@ -112,10 +132,10 @@ class EnhancedRemoteDataSource {
         throw Exception('Company ID not found');
       }
 
-      final url = '${ApiUrls.gateBaseUrl}/visitor/parcelData/$companyId';
-      log("🔍 Fetching parcels from: $url");
+      log("🔍 Fetching parcels for company: $companyId");
 
-      final response = await _apiClient.get(url);
+      final response =
+          await _gateApiClient.get('/visitor/parcelData/$companyId');
 
       if (response.statusCode == 200) {
         log("✅ Parcels fetched successfully using enhanced auth");
@@ -140,8 +160,8 @@ class EnhancedRemoteDataSource {
     await _ensureInitialized();
 
     try {
-      final response = await _apiClient.post(
-        '${ApiUrls.gateBaseUrl}/visitor/exotel/call',
+      final response = await _gateApiClient.post(
+        '/visitor/exotel/call',
         data: {
           'member_mobile_number': memberMobileNumber,
           'visitor_id': visitorId,
@@ -189,8 +209,8 @@ class EnhancedRemoteDataSource {
         queryParams['search'] = searchQuery;
       }
 
-      final response = await _apiClient.get(
-        ApiUrls.memberList,
+      final response = await _societyApiClient.get(
+        '/v2/admin/member/list',
         queryParameters: queryParams,
       );
 
@@ -217,8 +237,8 @@ class EnhancedRemoteDataSource {
       log("🔍 Submitting visitor log with enhanced auth");
       log("📦 Request Body: $requestBody");
 
-      final response = await _apiClient.post(
-        '${ApiUrls.gateBaseUrl}/visitor/log',
+      final response = await _gateApiClient.post(
+        '/visitor/log',
         data: requestBody,
       );
 
@@ -246,8 +266,8 @@ class EnhancedRemoteDataSource {
         extra: {'skip_auth': true},
       );
 
-      final response = await _apiClient.get(
-        '${ApiUrls.gateBaseUrl}/sms/verification-code',
+      final response = await _publicApiClient.get(
+        '/sms/verification-code',
         queryParameters: {'phoneNumber': '91$mobileNumber'},
         options: options,
       );
@@ -281,8 +301,8 @@ class EnhancedRemoteDataSource {
         extra: {'skip_auth': true},
       );
 
-      final response = await _apiClient.post(
-        '${ApiUrls.gateBaseUrl}/visitor/selfCheckin',
+      final response = await _publicApiClient.post(
+        '/visitor/selfCheckin',
         data: {'mobile': mobileNumber, 'company_id': companyId},
         options: options,
       );
@@ -302,8 +322,14 @@ class EnhancedRemoteDataSource {
 
   // ==================== UTILITY METHODS ====================
 
-  /// Get the underlying API client for advanced usage
-  AuthenticatedApiClient get apiClient => _apiClient;
+  /// Get the gate API client for advanced usage
+  Dio get gateApiClient => _gateApiClient;
+
+  /// Get the society API client for advanced usage
+  Dio get societyApiClient => _societyApiClient;
+
+  /// Get the public API client for advanced usage
+  Dio get publicApiClient => _publicApiClient;
 
   /// Check if the data source is initialized
   bool get isInitialized => _isInitialized;

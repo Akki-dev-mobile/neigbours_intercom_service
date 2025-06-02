@@ -7,6 +7,8 @@ import 'package:flutter_onegate/services/notifications/custom_notification_servi
 import 'package:flutter_onegate/services/notifications/notification_manager.dart';
 import 'package:flutter_onegate/presentation/features/settings/custom_notifications_screen.dart';
 import 'package:flutter_onegate/services/search/meilisearch_service.dart';
+import 'package:flutter_onegate/services/search/meilisearch_config_helper.dart';
+import 'package:flutter_onegate/presentation/features/settings/meilisearch_config_screen.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/crash_reports_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/analytics_dashboard_screen.dart';
@@ -37,6 +39,8 @@ class _DataObservabilitySettingsScreenState
   bool _backgroundTasksEnabled = false;
   bool _notificationsEnabled = false;
   bool _meilisearchHealthy = false;
+  Map<String, dynamic>? _meilisearchStatus;
+  String? _lastSyncError;
 
   @override
   void initState() {
@@ -134,34 +138,151 @@ class _DataObservabilitySettingsScreenState
   }
 
   Future<void> _syncMeilisearchIndex() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _lastSyncError = null;
+    });
 
     try {
+      // First, check Meilisearch configuration
+      final configStatus =
+          await MeilisearchConfigHelper.getConfigurationStatus();
+      setState(() => _meilisearchStatus = configStatus);
+
+      if (!configStatus['isConfigured']) {
+        // Try to initialize with defaults
+        final initialized =
+            await MeilisearchConfigHelper.initializeWithDefaults();
+        if (!initialized) {
+          throw Exception(
+              'Failed to initialize Meilisearch with default configuration');
+        }
+      }
+
+      // Perform the sync
       final success = await _observabilityService.performImmediateIndexSync();
-      setState(() => _meilisearchHealthy = success);
+
+      setState(() {
+        _meilisearchHealthy = success;
+        if (!success) {
+          _lastSyncError = 'Index sync failed - check logs for details';
+        }
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(success
                 ? 'Index sync completed successfully'
-                : 'Index sync failed'),
+                : 'Index sync failed - check configuration'),
             backgroundColor: success ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 4),
+            action: !success
+                ? SnackBarAction(
+                    label: 'Details',
+                    onPressed: () => _showSyncErrorDialog(),
+                  )
+                : null,
           ),
         );
       }
     } catch (e) {
+      setState(() => _lastSyncError = e.toString());
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error syncing index: $e'),
+            content: Text(
+                'Error syncing index: ${e.toString().length > 50 ? '${e.toString().substring(0, 50)}...' : e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Details',
+              onPressed: () => _showSyncErrorDialog(),
+            ),
           ),
         );
       }
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _navigateToMeilisearchConfig() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => const MeilisearchConfigScreen(),
+      ),
+    );
+
+    // If configuration was successful, reload the status
+    if (result == true) {
+      await _loadCurrentStatus();
+    }
+  }
+
+  void _showSyncErrorDialog() {
+    if (_lastSyncError == null && _meilisearchStatus == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Meilisearch Sync Error'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_lastSyncError != null) ...[
+                const Text('Error:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text(_lastSyncError!),
+                const SizedBox(height: 16),
+              ],
+              if (_meilisearchStatus != null) ...[
+                const Text('Configuration Status:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...(_meilisearchStatus!.entries.map((entry) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text('${entry.key}: ${entry.value}'),
+                    ))),
+                const SizedBox(height: 16),
+              ],
+              const Text('Troubleshooting:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text(
+                  '1. Ensure Meilisearch server is running on localhost:7700'),
+              const Text('2. Check network connectivity'),
+              const Text('3. Verify API key configuration'),
+              const Text('4. Check app logs for detailed error messages'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToMeilisearchConfig();
+            },
+            child: const Text('Configure'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _syncMeilisearchIndex(); // Retry
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 
   Color _getStatusColor(HealthStatus status) {
@@ -396,6 +517,12 @@ class _DataObservabilitySettingsScreenState
                   ),
                 ),
                 const Spacer(),
+                TextButton.icon(
+                  onPressed: () => _navigateToMeilisearchConfig(),
+                  icon: const Icon(Icons.settings, size: 16),
+                  label: const Text('Configure'),
+                ),
+                const SizedBox(width: 8),
                 TextButton(
                   onPressed: _syncMeilisearchIndex,
                   child: const Text('Sync Index'),

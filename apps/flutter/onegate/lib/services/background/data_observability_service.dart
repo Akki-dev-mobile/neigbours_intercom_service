@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_onegate/services/data_health/data_health_service.dart';
 import 'package:flutter_onegate/services/notifications/custom_notification_service.dart';
 import 'package:flutter_onegate/services/notifications/models/notification_models.dart';
+import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/domain/entities/society/member.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/services/search/meilisearch_service.dart';
 
 /// Background service for data observability and periodic health checks
@@ -106,20 +109,118 @@ class DataObservabilityService {
   /// Perform immediate index sync
   Future<bool> performImmediateIndexSync() async {
     try {
-      final meilisearchService = MeilisearchService();
-      final isHealthy = await meilisearchService.isHealthy();
+      dev.log('🔄 Starting immediate Meilisearch index sync...');
 
-      if (!isHealthy) {
-        dev.log('Meilisearch is not healthy, skipping index sync');
+      final meilisearchService = MeilisearchService();
+
+      // Initialize Meilisearch service
+      final initialized = await meilisearchService.initialize();
+      if (!initialized) {
+        dev.log('❌ Failed to initialize Meilisearch service');
         return false;
       }
 
-      // This would typically sync data from your primary database to Meilisearch
-      // For now, we'll just log that the sync would happen
-      dev.log('Index sync completed successfully');
-      return true;
+      // Check if Meilisearch is healthy
+      final isHealthy = await meilisearchService.isHealthy();
+      if (!isHealthy) {
+        dev.log('❌ Meilisearch is not healthy, skipping index sync');
+        return false;
+      }
+
+      dev.log('✅ Meilisearch is healthy, proceeding with data sync...');
+
+      // Perform actual data indexing
+      final syncResult = await _performDataIndexing(meilisearchService);
+
+      if (syncResult) {
+        dev.log('✅ Index sync completed successfully');
+      } else {
+        dev.log('❌ Index sync failed during data indexing');
+      }
+
+      return syncResult;
     } catch (e) {
-      dev.log('Error during index sync: $e');
+      dev.log('❌ Error during index sync: $e');
+      return false;
+    }
+  }
+
+  /// Perform the actual data indexing from APIs to Meilisearch
+  Future<bool> _performDataIndexing(
+      MeilisearchService meilisearchService) async {
+    try {
+      // Import required services
+      final remoteDataSource = RemoteDataSource();
+      bool overallSuccess = true;
+
+      dev.log('📊 Fetching and indexing residents data...');
+
+      // Fetch and index residents data
+      try {
+        final membersResponse = await remoteDataSource.getMembersList();
+        final membersList = membersResponse['data'] as List<dynamic>? ?? [];
+
+        if (membersList.isNotEmpty) {
+          // Convert to Member objects and index
+          final members = membersList.map((memberData) {
+            return Member.fromJson(memberData as Map<String, dynamic>);
+          }).toList();
+
+          final residentsIndexed =
+              await meilisearchService.indexResidents(members);
+          if (residentsIndexed) {
+            dev.log('✅ Successfully indexed ${members.length} residents');
+          } else {
+            dev.log('❌ Failed to index residents data');
+            overallSuccess = false;
+          }
+        } else {
+          dev.log('⚠️ No residents data found to index');
+        }
+      } catch (e) {
+        dev.log('❌ Error fetching/indexing residents: $e');
+        overallSuccess = false;
+      }
+
+      dev.log('👥 Fetching and indexing visitors data...');
+
+      // Fetch and index visitors data
+      try {
+        final visitorLogs = await remoteDataSource.fetchCheckInLogs();
+
+        if (visitorLogs.isNotEmpty) {
+          // Convert VisitorLog to Visitor objects for indexing
+          final visitors =
+              visitorLogs.where((log) => log.visitor != null).map((log) {
+            final visitor = log.visitor!;
+            return Visitor(
+              id: visitor.id,
+              name: visitor.name ?? '',
+              mobile: visitor.mobile ?? '',
+              visitor_image: visitor.visitor_image ?? '',
+              isStaff: visitor.isStaff ?? false,
+            );
+          }).toList();
+
+          final visitorsIndexed =
+              await meilisearchService.indexVisitors(visitors);
+          if (visitorsIndexed) {
+            dev.log('✅ Successfully indexed ${visitors.length} visitors');
+          } else {
+            dev.log('❌ Failed to index visitors data');
+            overallSuccess = false;
+          }
+        } else {
+          dev.log('⚠️ No visitors data found to index');
+        }
+      } catch (e) {
+        dev.log('❌ Error fetching/indexing visitors: $e');
+        overallSuccess = false;
+      }
+
+      return overallSuccess;
+    } catch (e) {
+      dev.log('❌ Critical error during data indexing: $e');
       return false;
     }
   }
@@ -218,13 +319,23 @@ class DataObservabilityService {
         return;
       }
 
-      // Perform index sync
-      // This is where you would typically:
-      // 1. Fetch latest data from your APIs
-      // 2. Index the data in Meilisearch
-      // 3. Verify the indexing was successful
+      // Perform index sync with actual data
+      final syncResult = await _performDataIndexing(meilisearchService);
 
-      dev.log('Background index sync completed successfully');
+      if (syncResult) {
+        dev.log('✅ Background index sync completed successfully');
+      } else {
+        dev.log('❌ Background index sync failed');
+        // Send error notification
+        await notificationService.sendSearchErrorAlert(
+          title: 'Background Index Sync Failed',
+          message: 'Failed to sync data to Meilisearch during background task',
+          data: {
+            'indexName': 'background_sync',
+            'error': 'Data indexing failed',
+          },
+        );
+      }
     } catch (e) {
       dev.log('Error in background index sync: $e');
 

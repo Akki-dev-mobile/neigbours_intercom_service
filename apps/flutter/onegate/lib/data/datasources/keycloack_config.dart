@@ -5,12 +5,12 @@ import 'package:flutter_appauth/flutter_appauth.dart';
 
 class AppAuthConfigManager {
   static const String bundleIdentifier = 'com.cubeonebiz.gate';
-  // static const String clientId = 'onegate-sso';
-  static const String clientId = 'flutter-dummy';
+  static const String clientId = 'onegate-sso';
+  // static const String clientId = 'flutter-dummy';
   static const String frontendUrl = 'https://stgsso.cubeone.in';
   static const String realm = 'fstech';
-  // static const String clientSecret = 'zXpmFL8WzkDoL379FesFl2pgm8vxPa58';
-  static const String clientSecret = 'htBm6RGbbZGzQ5cCaXUSUwGDSnLqWQHa';
+  static const String clientSecret = 'zXpmFL8WzkDoL379FesFl2pgm8vxPa58';
+  // static const String clientSecret = 'htBm6RGbbZGzQ5cCaXUSUwGDSnLqWQHa';
 
   // OAuth/OIDC endpoints
   static String get authorizationEndpoint =>

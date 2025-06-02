@@ -1,6 +1,6 @@
 import 'dart:developer';
 import 'package:dio/dio.dart';
-import 'package:flutter_onegate/services/api_client/authenticated_api_client.dart';
+import 'package:flutter_onegate/services/api_client/authenticated_dio_factory.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:get_it/get_it.dart';
@@ -15,7 +15,7 @@ class OneGateApiService {
 
   OneGateApiService._internal();
 
-  late final AuthenticatedApiClient _apiClient;
+  late final Dio _apiClient;
   late final GateStorage _gateStorage;
 
   bool _isInitialized = false;
@@ -24,13 +24,18 @@ class OneGateApiService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    _apiClient = AuthenticatedApiClient();
-    await _apiClient.initialize();
+    // Create authenticated Dio client using the factory
+    _apiClient = AuthenticatedDioFactory.createOneGateApiClient(
+      baseUrl: ApiUrls.gateBaseUrl,
+      customHeaders: {
+        'X-Service': 'OneGateApiService',
+      },
+    );
 
     _gateStorage = GetIt.I<GateStorage>();
 
     _isInitialized = true;
-    log("✅ OneGateApiService initialized");
+    log("✅ OneGateApiService initialized with unified authentication");
   }
 
   /// Ensure service is initialized
@@ -202,9 +207,12 @@ class OneGateApiService {
       };
 
       if (status != null) queryParams['status'] = status;
-      if (fromDate != null)
+      if (fromDate != null) {
         queryParams['from_date'] = fromDate.toIso8601String();
-      if (toDate != null) queryParams['to_date'] = toDate.toIso8601String();
+      }
+      if (toDate != null) {
+        queryParams['to_date'] = toDate.toIso8601String();
+      }
 
       final response = await _apiClient.get(
         '${ApiUrls.gateBaseUrl}/visitor/logs',

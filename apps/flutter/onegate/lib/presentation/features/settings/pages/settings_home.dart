@@ -3,6 +3,7 @@
 import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
@@ -522,21 +523,22 @@ class _SettingsHomeState extends State<SettingsHome> {
               title: 'Application Settings',
             ),
             // Data Observability (for Admin, Master, and Gatekeeper)
-            if (role == "admin" || role == "master" || role == "gatekeeper")
-              PrimarySettingsTile(
-                icon: Ionicons.pulse_outline,
-                title: 'Data Observability',
-                subtitle: 'Monitor system health, search & notifications',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const DataObservabilitySettingsScreen(),
-                    ),
-                  );
-                },
-              ),
+            if (kDebugMode)
+              if (role == "admin" || role == "master" || role == "gatekeeper")
+                PrimarySettingsTile(
+                  icon: Ionicons.pulse_outline,
+                  title: 'Data Observability',
+                  subtitle: 'Monitor system health, search & notifications',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const DataObservabilitySettingsScreen(),
+                      ),
+                    );
+                  },
+                ),
             // Camera Settings (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,

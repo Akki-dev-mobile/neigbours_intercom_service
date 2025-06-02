@@ -4,9 +4,9 @@ import 'package:flutter_onegate/config/gateconfig_holder.dart';
 class ApiUrls {
   static String get gateBaseUrl =>
       // "https://606a-103-178-133-37.ngrok-free.app/api";
-      //"https://stggateapi.cubeone.in/api";
+      "https://stggateapi.cubeone.in/api";
 
-      GateConfigHolder.gateBaseUrl;
+  // GateConfigHolder.gateBaseUrl;
 
   static String get societyBaseUrl => 'https://societybackend.cubeone.in/api';
   static String get facerecinfoUrl =>
