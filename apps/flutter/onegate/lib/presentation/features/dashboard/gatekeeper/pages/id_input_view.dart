@@ -73,6 +73,7 @@ class _IdInputViewState extends State<IdInputView> {
   bool checkVisitorLoading = false;
   bool isMobileApiLoading = false; // Controls the spinner for mobile input
   bool hideNextButton = false; // Controls whether to hide the Next button
+  final GateStorage _gateStorage = GateStorage();
 
   void startLoading() {
     setState(() {
@@ -92,6 +93,9 @@ class _IdInputViewState extends State<IdInputView> {
 
     _focusNode = FocusNode();
 
+    // Clear visitor data when view is initialized
+    _clearVisitorData();
+
     // Request focus after the build phase
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
@@ -99,6 +103,32 @@ class _IdInputViewState extends State<IdInputView> {
     });
 
     loadPurposes();
+  }
+
+  /// Clears all visitor-related data to prevent data persistence between check-ins
+  Future<void> _clearVisitorData() async {
+    try {
+      log("🔍 Before clearing visitor data:");
+      await _logVisitorDataState();
+
+      await _gateStorage.clearVisitorSessionData();
+
+      // Reset global variables
+      searchedVisitor = null;
+
+      // Reset UI state
+      setState(() {
+        hideNextButton = false;
+        isMobileApiLoading = false;
+      });
+
+      log("🧹 After clearing visitor data:");
+      await _logVisitorDataState();
+
+      log("✅ Visitor data cleared successfully");
+    } catch (e) {
+      log("❌ Error clearing visitor data: $e");
+    }
   }
 
   final gateDashboardBloc = GatekeeperDashboardBloc(
@@ -143,393 +173,278 @@ class _IdInputViewState extends State<IdInputView> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
-          bloc: gateDashboardBloc,
-          listenWhen: (previous, current) =>
-              current is GatekeeperDashboardActionState,
-          buildWhen: (previous, current) =>
-              current is! GatekeeperDashboardActionState,
-          listener: (context, state) async {
-            if (state is OpenPurposeDialogState) {
-              if (globalSelectedPurposes.length == 1) {
-                final singlePurpose = globalSelectedPurposes.first;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VisitorsInEntry(
-                      searchedVisitor: searchedVisitor,
-                      selectedValue: singlePurpose,
-                      mobile: mobileController.text,
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        // Clear data when navigating back to this screen
+        if (!didPop) {
+          _clearVisitorData();
+          log("🧹 Visitor data cleared when returning to ID Input View");
+        }
+      },
+      child: Stack(
+        children: [
+          BlocConsumer<GatekeeperDashboardBloc, GatekeeperDashboardState>(
+            bloc: gateDashboardBloc,
+            listenWhen: (previous, current) =>
+                current is GatekeeperDashboardActionState,
+            buildWhen: (previous, current) =>
+                current is! GatekeeperDashboardActionState,
+            listener: (context, state) async {
+              if (state is OpenPurposeDialogState) {
+                if (globalSelectedPurposes.length == 1) {
+                  final singlePurpose = globalSelectedPurposes.first;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VisitorsInEntry(
+                        searchedVisitor: searchedVisitor,
+                        selectedValue: singlePurpose,
+                        mobile: mobileController.text,
+                      ),
                     ),
-                  ),
-                );
-                return; // Exit early
-              }
-              if (searchedVisitor?.isStaff == true) {
-                RemoteDataSource().createVisitor(searchedVisitor!);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          RequestPermissionPage2(visitor: searchedVisitor!)),
-                );
-              } else {
-                showModalBottomSheet(
-                  useSafeArea: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+                  );
+                  return; // Exit early
+                }
+                if (searchedVisitor?.isStaff == true) {
+                  RemoteDataSource().createVisitor(searchedVisitor!);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            RequestPermissionPage2(visitor: searchedVisitor!)),
+                  );
+                } else {
+                  showModalBottomSheet(
+                    useSafeArea: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
                     ),
-                  ),
-                  backgroundColor: Theme.of(context).colorScheme.surface,
-                  context: context,
-                  builder: (context) => ImageGridBottomSheet(
-                    purposeCategories: state.purposeCategories!.toList(),
-                    gatekeeperDashboardBloc: gateDashboardBloc,
-                    mobileNumber:
-                        mobileController.text, // Pass mobile number here
-                  ),
-                );
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    context: context,
+                    builder: (context) => ImageGridBottomSheet(
+                      purposeCategories: state.purposeCategories!.toList(),
+                      gatekeeperDashboardBloc: gateDashboardBloc,
+                      mobileNumber:
+                          mobileController.text, // Pass mobile number here
+                    ),
+                  );
+                }
               }
-            }
-            debugPrint("state.runtimeType :${state.runtimeType}");
+              debugPrint("state.runtimeType :${state.runtimeType}");
 
-            // Print detailed state information
-            if (state is SaveSearchedVisitorState) {
-              debugPrint(
-                  "SaveSearchedVisitorState - Visitor: ${state.visitor?.toJson()}");
-            } else if (state is VisitorAlreadyCheckedInErrorState) {
-              debugPrint(
-                  "VisitorAlreadyCheckedInErrorState - Message: ${state.message}");
-            } else if (state is VisitorApiErrorState) {
-              debugPrint(
-                  "VisitorApiErrorState - Message: ${state.message}, Status: ${state.statusCode}");
-            } else if (state is GatekeeperDashboardErrorState) {
-              debugPrint(
-                  "GatekeeperDashboardErrorState - Message: ${state.message}");
-            } else {
-              debugPrint("state response: $state");
-            }
-            switch (state.runtimeType) {
-              case VisitorAlreadyCheckedInErrorState:
-                print("🎯 UI: Handling VisitorAlreadyCheckedInErrorState");
-                // Stop spinner and hide Next button for visitor already checked in error
-                setState(() {
-                  isMobileApiLoading = false; // Always stop the spinner
-                  hideNextButton =
-                      true; // Hide the Next button - visitor already checked in
-                  print(
-                      "🟠 UI: hideNextButton set to TRUE, isMobileApiLoading set to FALSE - Visitor already checked in");
-                });
-
-                final visitorCheckedInErrorState =
-                    state as VisitorAlreadyCheckedInErrorState;
-
+              // Print detailed state information
+              if (state is SaveSearchedVisitorState) {
                 debugPrint(
-                    "Visitor already checked in error: ${visitorCheckedInErrorState.message}");
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(visitorCheckedInErrorState.message),
-                    backgroundColor: Colors.orange,
-                    duration: Duration(seconds: 4),
-                    behavior: SnackBarBehavior.floating,
-                    action: SnackBarAction(
-                      label: 'OK',
-                      textColor: Colors.white,
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      },
-                    ),
-                  ),
-                );
-                break;
-
-              case VisitorApiErrorState:
-                print("🎯 UI: Handling VisitorApiErrorState");
-                // Stop spinner on API error with non-200 status code and hide Next button
-                setState(() {
-                  isMobileApiLoading =
-                      false; // Always stop the spinner on error
-                  hideNextButton = true; // Hide the Next button on error
-                  print(
-                      "🔴 UI: hideNextButton set to TRUE, isMobileApiLoading set to FALSE - Next button should be hidden");
-                });
-                final apiErrorState = state as VisitorApiErrorState;
-                print(
-                    "🎯 UI: Showing snackbar with message: ${apiErrorState.message}");
-                // Show snackbar for API error
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(apiErrorState.message),
-                    backgroundColor: Colors.red,
-                    duration: Duration(seconds: 4),
-                    behavior: SnackBarBehavior.floating,
-                    action: SnackBarAction(
-                      label: 'OK',
-                      textColor: Colors.white,
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      },
-                    ),
-                  ),
-                );
-                break;
-
-              case GatekeeperDashboardErrorState:
-                // Stop spinner on error
-                if (isMobileApiLoading) {
+                    "SaveSearchedVisitorState - Visitor: ${state.visitor?.toJson()}");
+              } else if (state is VisitorAlreadyCheckedInErrorState) {
+                debugPrint(
+                    "VisitorAlreadyCheckedInErrorState - Message: ${state.message}");
+              } else if (state is VisitorApiErrorState) {
+                debugPrint(
+                    "VisitorApiErrorState - Message: ${state.message}, Status: ${state.statusCode}");
+              } else if (state is GatekeeperDashboardErrorState) {
+                debugPrint(
+                    "GatekeeperDashboardErrorState - Message: ${state.message}");
+              } else {
+                debugPrint("state response: $state");
+              }
+              switch (state.runtimeType) {
+                case VisitorAlreadyCheckedInErrorState:
+                  print("🎯 UI: Handling VisitorAlreadyCheckedInErrorState");
+                  // Stop spinner and hide Next button for visitor already checked in error
                   setState(() {
-                    isMobileApiLoading = false;
+                    isMobileApiLoading = false; // Always stop the spinner
+                    hideNextButton =
+                        true; // Hide the Next button - visitor already checked in
+                    print(
+                        "🟠 UI: hideNextButton set to TRUE, isMobileApiLoading set to FALSE - Visitor already checked in");
                   });
-                }
-                final errorState = state as GatekeeperDashboardErrorState;
-                myFluttertoast(
-                  msg: errorState.message!,
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                  timeInSecForIosWeb: 1,
-                  backgroundColor: Colors.red,
-                  textColor: Colors.white,
-                  fontSize: 16.0,
-                );
-                break;
 
-              case SaveSearchedVisitorState:
-                print("🎯 UI: Handling SaveSearchedVisitorState");
-                final saveVisitorState = state as SaveSearchedVisitorState;
-                searchedVisitor = saveVisitorState.visitor;
-                // Stop spinner on success and show Next button
-                setState(() {
-                  isMobileApiLoading =
-                      false; // Always stop the spinner on success
-                  hideNextButton = false; // Show the Next button on success
+                  final visitorCheckedInErrorState =
+                      state as VisitorAlreadyCheckedInErrorState;
+
+                  debugPrint(
+                      "Visitor already checked in error: ${visitorCheckedInErrorState.message}");
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(visitorCheckedInErrorState.message),
+                      backgroundColor: Colors.orange,
+                      duration: Duration(seconds: 4),
+                      behavior: SnackBarBehavior.floating,
+                      action: SnackBarAction(
+                        label: 'OK',
+                        textColor: Colors.white,
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        },
+                      ),
+                    ),
+                  );
+                  break;
+
+                case VisitorApiErrorState:
+                  print("🎯 UI: Handling VisitorApiErrorState");
+                  // Stop spinner on API error with non-200 status code and hide Next button
+                  setState(() {
+                    isMobileApiLoading =
+                        false; // Always stop the spinner on error
+                    hideNextButton = true; // Hide the Next button on error
+                    print(
+                        "🔴 UI: hideNextButton set to TRUE, isMobileApiLoading set to FALSE - Next button should be hidden");
+                  });
+                  final apiErrorState = state as VisitorApiErrorState;
                   print(
-                      "🟢 UI: hideNextButton set to FALSE, isMobileApiLoading set to FALSE - Next button should be visible");
-                });
-                break;
-
-              case InputPutViewNextClickedState:
-                // Example: Set loading state here if needed
-                break;
-
-              case NavigateToVisitorDetailsState:
-                final navigateToVisitorDetailsState =
-                    state as NavigateToVisitorDetailsState;
-                // mobileController.text = '';
-
-                // Retrieve and decode the saved purpose
-                final prefs = await SharedPreferences.getInstance();
-                final jsonString = prefs.getString("dialoguePurpose");
-                PurposeCategory1? selectedPurpose;
-                if (jsonString != null) {
-                  final json = jsonDecode(jsonString);
-                  selectedPurpose = PurposeCategory1.fromJson(json);
-                }
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VisitorsInEntry(
-                      searchedVisitor: navigateToVisitorDetailsState.visitor,
-                      mobile: mobileController.text,
-                      selectedValue: selectedPurpose,
+                      "🎯 UI: Showing snackbar with message: ${apiErrorState.message}");
+                  // Show snackbar for API error
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(apiErrorState.message),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 4),
+                      behavior: SnackBarBehavior.floating,
+                      action: SnackBarAction(
+                        label: 'OK',
+                        textColor: Colors.white,
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        },
+                      ),
                     ),
-                  ),
-                );
-                break;
-            }
-          },
-          builder: (context, state) {
-            return Form(
-              key: mobileControllerFormKey,
-              child: MyScrollView(
-                pageTitle: _currentIndex == 0
-                    ? 'Enter Mobile Number'
-                    : 'Enter Passcode',
-                pageBody: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ToggleSwitch(
-                      totalSwitches: 2,
-                      labels: _labels,
-                      minWidth: 400.0,
-                      cornerRadius: 0.0,
-                      // Rectangle shape
-                      activeBgColors: [
-                        [Colors.black],
-                        [Colors.black],
-                      ],
-                      activeFgColor: Colors.white,
-                      inactiveBgColor: Colors.white,
-                      inactiveFgColor: Colors.black,
-                      borderWidth: 2,
-                      borderColor: [Colors.black],
-                      fontSize: 16.0,
-                      animate: true,
-                      curve: Curves.easeInOut,
-                      initialLabelIndex: _currentIndex,
-                      onToggle: (index) {
-                        if (index != null) {
-                          setState(() {
-                            _currentIndex = index;
-                          });
-                        }
-                      },
-                    ),
-                    SizedBox(height: 20),
-                    _currentIndex == 0
-                        ? Column(
-                            children: [
-                              CustomForm.textField(
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Mobile number is required';
-                                  } else if (value.length != 10) {
-                                    return 'Please enter a 10-digit number';
-                                  } else if (!RegExp(r'^[0-9]+$')
-                                      .hasMatch(value)) {
-                                    return 'No spaces or special characters allowed';
-                                  }
-                                  return null;
-                                },
-                                titleColor:
-                                    Theme.of(context).colorScheme.onSurface,
-                                hintColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                "Visitor Mobile Number",
-                                hintText: '0123456789',
-                                prefixIcon: CountryCodePicker(
-                                  initialSelection: 'IN',
-                                  favorite: ['IN'],
-                                  showFlagMain: true,
-                                  showFlagDialog: true,
-                                  boxDecoration: BoxDecoration(
-                                    color:
-                                        Theme.of(context).colorScheme.surface,
-                                  ),
-                                  barrierColor: Theme.of(context)
-                                      .colorScheme
-                                      .surface
-                                      .withOpacity(0.5),
-                                  closeIcon: Icon(
-                                    Icons.close,
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                  searchDecoration: InputDecoration(
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                                    hintText: 'Search',
-                                    hintStyle: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                      borderSide: BorderSide(
-                                        style: BorderStyle.solid,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                      ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                      borderSide: BorderSide(
-                                        style: BorderStyle.solid,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  textStyle: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                    fontSize: 18,
-                                  ),
-                                  dialogTextStyle: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                  onChanged: (CountryCode countryCode) {
-                                    setState(() {
-                                      selectedCountryCode = countryCode.code!;
-                                    });
-                                  },
-                                ),
-                                textController: mobileController,
-                                keyboardType: TextInputType.number,
-                                length: 10,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                onChanged: (value) {
-                                  // Reset hideNextButton when user starts typing
-                                  if (value.length < 10 && hideNextButton) {
-                                    setState(() {
-                                      hideNextButton = false;
-                                      print(
-                                          "🔄 UI: hideNextButton reset to FALSE - user typing");
-                                    });
-                                  }
+                  );
+                  break;
 
-                                  if (value.length == 10 &&
-                                      !isMobileApiLoading) {
-                                    setState(() {
-                                      isMobileApiLoading = true;
-                                      print(
-                                          "🔄 UI: Starting API call - isMobileApiLoading set to TRUE");
-                                    });
-                                    gateDashboardBloc.add(
-                                      GDOnMobileNumberEnteredEvent(
-                                          mobileController.text),
-                                    );
-                                  }
-                                },
-                                // suffixIcon: isMobileApiLoading
-                                //     ? SizedBox(
-                                //         width: 24,
-                                //         height: 24,
-                                //         child: Padding(
-                                //           padding: EdgeInsets.only(right: 12),
-                                //           child: CircularProgressIndicator(
-                                //             strokeWidth: 2.5,
-                                //           ),
-                                //         ),
-                                //       )
-                                //     : null,
-                              ),
-                              isMobileApiLoading
-                                  ? Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: LinearProgressIndicator(
-                                        color: Colors.red,
-                                        backgroundColor: Colors.black12,
-                                      ),
-                                    )
-                                  : SizedBox.shrink(),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              Form(
-                                key: passcodeControllerFormKey,
-                                child: CustomForm.textField(
+                case GatekeeperDashboardErrorState:
+                  // Stop spinner on error
+                  if (isMobileApiLoading) {
+                    setState(() {
+                      isMobileApiLoading = false;
+                    });
+                  }
+                  final errorState = state as GatekeeperDashboardErrorState;
+                  myFluttertoast(
+                    msg: errorState.message!,
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    timeInSecForIosWeb: 1,
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
+                    fontSize: 16.0,
+                  );
+                  break;
+
+                case SaveSearchedVisitorState:
+                  print("🎯 UI: Handling SaveSearchedVisitorState");
+                  final saveVisitorState = state as SaveSearchedVisitorState;
+                  searchedVisitor = saveVisitorState.visitor;
+                  // Stop spinner on success and show Next button
+                  setState(() {
+                    isMobileApiLoading =
+                        false; // Always stop the spinner on success
+                    hideNextButton = false; // Show the Next button on success
+                    print(
+                        "🟢 UI: hideNextButton set to FALSE, isMobileApiLoading set to FALSE - Next button should be visible");
+                  });
+                  break;
+
+                case InputPutViewNextClickedState:
+                  // Example: Set loading state here if needed
+                  break;
+
+                case NavigateToVisitorDetailsState:
+                  final navigateToVisitorDetailsState =
+                      state as NavigateToVisitorDetailsState;
+                  // mobileController.text = '';
+
+                  // Retrieve and decode the saved purpose
+                  final prefs = await SharedPreferences.getInstance();
+                  final jsonString = prefs.getString("dialoguePurpose");
+                  PurposeCategory1? selectedPurpose;
+                  if (jsonString != null) {
+                    final json = jsonDecode(jsonString);
+                    selectedPurpose = PurposeCategory1.fromJson(json);
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VisitorsInEntry(
+                        searchedVisitor: navigateToVisitorDetailsState.visitor,
+                        mobile: mobileController.text,
+                        selectedValue: selectedPurpose,
+                      ),
+                    ),
+                  );
+                  break;
+              }
+            },
+            builder: (context, state) {
+              return Form(
+                key: mobileControllerFormKey,
+                child: MyScrollView(
+                  pageTitle: _currentIndex == 0
+                      ? 'Enter Mobile Number'
+                      : 'Enter Passcode',
+                  pageBody: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ToggleSwitch(
+                        totalSwitches: 2,
+                        labels: _labels,
+                        minWidth: 400.0,
+                        cornerRadius: 0.0,
+                        // Rectangle shape
+                        activeBgColors: [
+                          [Colors.black],
+                          [Colors.black],
+                        ],
+                        activeFgColor: Colors.white,
+                        inactiveBgColor: Colors.white,
+                        inactiveFgColor: Colors.black,
+                        borderWidth: 2,
+                        borderColor: [Colors.black],
+                        fontSize: 16.0,
+                        animate: true,
+                        curve: Curves.easeInOut,
+                        initialLabelIndex: _currentIndex,
+                        onToggle: (index) {
+                          if (index != null) {
+                            setState(() {
+                              _currentIndex = index;
+                            });
+
+                            // Clear visitor data when switching to Mobile tab
+                            if (index == 0) {
+                              _clearVisitorData();
+                              mobileController.clear();
+
+                              // Request focus to mobile field
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                FocusScope.of(context).requestFocus(_focusNode);
+                              });
+
+                              log("🧹 Visitor data cleared when switching to Mobile tab");
+                            }
+                          }
+                        },
+                      ),
+                      SizedBox(height: 20),
+                      _currentIndex == 0
+                          ? Column(
+                              children: [
+                                CustomForm.textField(
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Passcode is required';
-                                    } else if (value.length != 6) {
-                                      return 'Please enter a 6-digit passcode';
+                                      return 'Mobile number is required';
+                                    } else if (value.length != 10) {
+                                      return 'Please enter a 10-digit number';
+                                    } else if (!RegExp(r'^[0-9]+$')
+                                        .hasMatch(value)) {
+                                      return 'No spaces or special characters allowed';
                                     }
                                     return null;
                                   },
@@ -537,69 +452,213 @@ class _IdInputViewState extends State<IdInputView> {
                                       Theme.of(context).colorScheme.onSurface,
                                   hintColor:
                                       Theme.of(context).colorScheme.onPrimary,
-                                  "Visitor Passcode",
-                                  hintText: '123456',
-                                  textController: passcodeController,
-                                  textCapitalization:
-                                      TextCapitalization.characters,
-                                  length: 6,
-                                  keyboardType: TextInputType.number,
-                                  // prefixIcon: Padding(
-                                  //   padding:
-                                  //       EdgeInsets.only(left: 10, right: 20),
-                                  //   child: CircleAvatar(
-                                  //     backgroundColor: Color(0xffFFEBE6),
-                                  //     child: Text(
-                                  //       selectedPassAlpha ?? 'A',
-                                  //       style: TextStyle(
-                                  //         color: Colors.black,
-                                  //         fontWeight: FontWeight.bold,
-                                  //       ),
-                                  //     ),
-                                  //   ),
-                                  // ),
-                                  suffixIcon: IconButton(
-                                    onPressed: () {
-                                      if (passcodeControllerFormKey
-                                          .currentState!
-                                          .validate()) {
-                                        // Show modal bottom sheet or handle passcode submission
-                                      }
-                                    },
-                                    icon: Icon(
-                                      Symbols.done_rounded,
+                                  "Visitor Mobile Number",
+                                  hintText: '0123456789',
+                                  prefixIcon: CountryCodePicker(
+                                    initialSelection: 'IN',
+                                    favorite: ['IN'],
+                                    showFlagMain: true,
+                                    showFlagDialog: true,
+                                    boxDecoration: BoxDecoration(
+                                      color:
+                                          Theme.of(context).colorScheme.surface,
+                                    ),
+                                    barrierColor: Theme.of(context)
+                                        .colorScheme
+                                        .surface
+                                        .withOpacity(0.5),
+                                    closeIcon: Icon(
+                                      Icons.close,
                                       color: Theme.of(context)
                                           .colorScheme
                                           .onSurface,
                                     ),
+                                    searchDecoration: InputDecoration(
+                                      prefixIcon: Icon(
+                                        Icons.search,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                      ),
+                                      hintText: 'Search',
+                                      hintStyle: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                        borderSide: BorderSide(
+                                          style: BorderStyle.solid,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                        borderSide: BorderSide(
+                                          style: BorderStyle.solid,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
+                                        ),
+                                      ),
+                                    ),
+                                    textStyle: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                      fontSize: 18,
+                                    ),
+                                    dialogTextStyle: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                                    onChanged: (CountryCode countryCode) {
+                                      setState(() {
+                                        selectedCountryCode = countryCode.code!;
+                                      });
+                                    },
+                                  ),
+                                  textController: mobileController,
+                                  keyboardType: TextInputType.number,
+                                  length: 10,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  focusNode: _focusNode,
+                                  onChanged: (value) {
+                                    // Reset hideNextButton when user starts typing
+                                    if (value.length < 10 && hideNextButton) {
+                                      setState(() {
+                                        hideNextButton = false;
+                                        print(
+                                            "🔄 UI: hideNextButton reset to FALSE - user typing");
+                                      });
+                                    }
+
+                                    if (value.length == 10 &&
+                                        !isMobileApiLoading) {
+                                      setState(() {
+                                        isMobileApiLoading = true;
+                                        print(
+                                            "🔄 UI: Starting API call - isMobileApiLoading set to TRUE");
+                                      });
+                                      gateDashboardBloc.add(
+                                        GDOnMobileNumberEnteredEvent(
+                                            mobileController.text),
+                                      );
+                                    }
+                                  },
+                                  // suffixIcon: isMobileApiLoading
+                                  //     ? SizedBox(
+                                  //         width: 24,
+                                  //         height: 24,
+                                  //         child: Padding(
+                                  //           padding: EdgeInsets.only(right: 12),
+                                  //           child: CircularProgressIndicator(
+                                  //             strokeWidth: 2.5,
+                                  //           ),
+                                  //         ),
+                                  //       )
+                                  //     : null,
+                                ),
+                                isMobileApiLoading
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: LinearProgressIndicator(
+                                          color: Colors.red,
+                                          backgroundColor: Colors.black12,
+                                        ),
+                                      )
+                                    : SizedBox.shrink(),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                Form(
+                                  key: passcodeControllerFormKey,
+                                  child: CustomForm.textField(
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Passcode is required';
+                                      } else if (value.length != 6) {
+                                        return 'Please enter a 6-digit passcode';
+                                      }
+                                      return null;
+                                    },
+                                    titleColor:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    hintColor:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                    "Visitor Passcode",
+                                    hintText: '123456',
+                                    textController: passcodeController,
+                                    textCapitalization:
+                                        TextCapitalization.characters,
+                                    length: 6,
+                                    keyboardType: TextInputType.number,
+                                    // prefixIcon: Padding(
+                                    //   padding:
+                                    //       EdgeInsets.only(left: 10, right: 20),
+                                    //   child: CircleAvatar(
+                                    //     backgroundColor: Color(0xffFFEBE6),
+                                    //     child: Text(
+                                    //       selectedPassAlpha ?? 'A',
+                                    //       style: TextStyle(
+                                    //         color: Colors.black,
+                                    //         fontWeight: FontWeight.bold,
+                                    //       ),
+                                    //     ),
+                                    //   ),
+                                    // ),
+                                    suffixIcon: IconButton(
+                                      onPressed: () {
+                                        if (passcodeControllerFormKey
+                                            .currentState!
+                                            .validate()) {
+                                          // Show modal bottom sheet or handle passcode submission
+                                        }
+                                      },
+                                      icon: Icon(
+                                        Symbols.done_rounded,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                  ],
-                ),
-                floatingActionButton: () {
-                  final shouldHideButton =
-                      (isMobileApiLoading || hideNextButton);
-                  print("🔍 UI: FloatingActionButton condition check:");
-                  print("   - isMobileApiLoading: $isMobileApiLoading");
-                  print("   - hideNextButton: $hideNextButton");
-                  print("   - shouldHideButton: $shouldHideButton");
+                              ],
+                            ),
+                    ],
+                  ),
+                  floatingActionButton: () {
+                    final shouldHideButton =
+                        (isMobileApiLoading || hideNextButton);
+                    print("🔍 UI: FloatingActionButton condition check:");
+                    print("   - isMobileApiLoading: $isMobileApiLoading");
+                    print("   - hideNextButton: $hideNextButton");
+                    print("   - shouldHideButton: $shouldHideButton");
 
-                  return shouldHideButton
-                      ? null // Hide Next button during mobile number validation or API errors
-                      : CustomLargeBtn(
-                          text: checkVisitorLoading ? 'Processing...' : 'Next',
-                          onPressed: checkVisitorLoading ? null : checkVisitor,
-                        );
-                }(),
-              ),
-            );
-          },
-        ),
-        if (isLoading) const LoaderView(), // LoaderView overlay
-      ],
+                    return shouldHideButton
+                        ? null // Hide Next button during mobile number validation or API errors
+                        : CustomLargeBtn(
+                            text:
+                                checkVisitorLoading ? 'Processing...' : 'Next',
+                            onPressed:
+                                checkVisitorLoading ? null : checkVisitor,
+                          );
+                  }(),
+                ),
+              );
+            },
+          ),
+          if (isLoading) const LoaderView(), // LoaderView overlay
+        ],
+      ),
     );
   }
 
@@ -845,6 +904,20 @@ class _IdInputViewState extends State<IdInputView> {
         builder: (context) => GateDashboardView(),
       ),
     );
+  }
+
+  /// Logs the current state of visitor data for debugging purposes
+  Future<void> _logVisitorDataState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final visitorId = prefs.getString('visitorId');
+    final visitorLogId = prefs.getString('visitor_log_id');
+
+    log("📊 Visitor data state:");
+    log("  - searchedVisitor: ${searchedVisitor?.toJson()}");
+    log("  - visitorId in SharedPreferences: $visitorId");
+    log("  - visitorLogId in SharedPreferences: $visitorLogId");
+    log("  - hideNextButton: $hideNextButton");
+    log("  - isMobileApiLoading: $isMobileApiLoading");
   }
 }
 

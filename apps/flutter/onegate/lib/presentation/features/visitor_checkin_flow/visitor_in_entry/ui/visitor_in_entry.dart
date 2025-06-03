@@ -87,8 +87,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _initializeBloc();
     _loadInitialData();
     _initializeCameras();
-    // _guestComingFromController!.text = await gateStorage.getComingFrom() ?? "";
-    debugPrint("coming from ${gateStorage.getComingFrom()}");
   }
 
   void _initSpeech() async {

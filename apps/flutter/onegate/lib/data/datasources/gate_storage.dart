@@ -608,4 +608,34 @@ class GateStorage {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('meilisearch_sync_interval') ?? 2;
   }
+
+  /// Clears all visitor-related data from SharedPreferences
+  Future<void> clearVisitorSessionData() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      // Clear visitor identification data
+      await prefs.remove('visitorId');
+      await prefs.remove('search_visitor_id');
+      await prefs.remove('visitor_log');
+
+      // Clear visitor details
+      await prefs.remove('visitor_name');
+      await prefs.remove('visitor_mobile');
+      await prefs.remove('visitor_coming_from');
+      await prefs.remove('uploaded_image_url');
+      await prefs.remove('dialoguePurpose');
+
+      // Clear any cached search results
+      await prefs.remove('last_search_result');
+      await prefs.remove('last_search_mobile');
+
+      // Clear any session-specific data
+      await prefs.remove('current_visitor_session');
+
+      log("✅ Visitor session data cleared from SharedPreferences");
+    } catch (e) {
+      log("❌ Error clearing visitor session data: $e");
+    }
+  }
 }
