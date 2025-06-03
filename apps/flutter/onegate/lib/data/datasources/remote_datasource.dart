@@ -14,6 +14,7 @@ import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
+import 'package:flutter_onegate/domain/exceptions/visitor_exceptions.dart';
 import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
@@ -202,9 +203,13 @@ class RemoteDataSource {
       "to_number": mobile,
     });
     try {
+      final accessToken = await _getAccessToken();
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': accessToken != null ? 'Bearer $accessToken' : '',
+        },
         body: body,
       );
       if (response.statusCode == 200) {
@@ -374,7 +379,14 @@ class RemoteDataSource {
     try {
       final response = await _getDio().post(
         '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
+        ),
         data: requestData,
       );
 
@@ -535,6 +547,35 @@ class RemoteDataSource {
         ),
       );
 
+      // Debug: Print complete API response
+      log("🔍 API Response Status: ${response.statusCode}");
+      log("🔍 API Response Headers: ${response.headers}");
+      log("🔍 API Response Data: ${response.data}");
+      log("🔍 API Response Data Type: ${response.data.runtimeType}");
+
+      // Check if response contains status_code field and it's not 200
+      if (response.data is Map<String, dynamic>) {
+        final responseMap = response.data as Map<String, dynamic>;
+        final statusCode = responseMap['status_code'] as int?;
+        final message = responseMap['message'] as String?;
+        final success = responseMap['success'] as bool?;
+
+        log("🔍 Extracted status_code: $statusCode");
+        log("🔍 Extracted message: $message");
+        log("🔍 Extracted success: $success");
+
+        if (statusCode != null && statusCode != 200) {
+          log("🚨 Non-200 status code detected: $statusCode - Throwing VisitorApiException");
+          throw VisitorApiException(message ?? 'API Error', statusCode);
+        } else if (statusCode == null) {
+          log("⚠️ No status_code field found in response");
+        } else {
+          log("✅ Status code is 200, continuing normal flow");
+        }
+      } else {
+        log("⚠️ Response data is not a Map<String, dynamic>, type: ${response.data.runtimeType}");
+      }
+
       final List<dynamic> data = response.data['data'] ?? [];
 
       if (data.isNotEmpty) {
@@ -587,8 +628,40 @@ class RemoteDataSource {
           log("No visitor found in the response data.");
         }
       }
+    } on DioException catch (e) {
+      log("🚨 DioException searching visitor: ${e.response?.statusCode}");
+      log("🚨 Error Response Headers: ${e.response?.headers}");
+      log("🚨 Error Response Data: ${e.response?.data}");
+      log("🚨 Error Message: ${e.message}");
+
+      // Handle specific 400 status code with visitor already checked in message
+      if (e.response?.statusCode == 400) {
+        final responseData = e.response?.data;
+        log("🔍 Processing 400 error - Response Data: $responseData");
+
+        if (responseData is Map<String, dynamic>) {
+          final message = responseData['message'] as String?;
+          final statusCode = responseData['status_code'] as int?;
+
+          log("🔍 Extracted message: $message");
+          log("🔍 Extracted status_code: $statusCode");
+
+          if (statusCode != 200 &&
+              message != null &&
+              message.contains(
+                  "Visitor is already checked in within the last 3 minutes")) {
+            log("✅ Throwing VisitorAlreadyCheckedInException");
+            // Throw a specific exception for this case
+            throw VisitorAlreadyCheckedInException(message);
+          }
+        }
+      }
+
+      // Re-throw the original exception for other cases
+      rethrow;
     } catch (e) {
       log("Error searching visitor: $e");
+      rethrow;
     }
 
     return null;
@@ -898,7 +971,12 @@ class RemoteDataSource {
         url,
         data: visitorData,
         options: Options(
-          headers: {"Content-Type": "application/json"},
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
         ),
       );
 
@@ -970,9 +1048,13 @@ class RemoteDataSource {
 
       log("Fetching visitor logs with params: $requestBody");
 
+      final accessToken = await _getAccessToken();
       final response = await http.post(
         Uri.parse(ApiUrls.visitorGetLog),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': accessToken != null ? 'Bearer $accessToken' : '',
+        },
         body: jsonEncode(requestBody),
       );
 
@@ -1337,6 +1419,14 @@ class RemoteDataSource {
       final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/visitor/selfCheckin',
         data: {'mobile': mobileNumber, 'company_id': companyId},
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -1376,6 +1466,9 @@ class RemoteDataSource {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
           },
         ),
       );
@@ -1402,6 +1495,14 @@ class RemoteDataSource {
       final response = await Dio().get(
         '${ApiUrls.gateBaseUrl}/sms/verification-code',
         queryParameters: {'phoneNumber': '91$mobileNumber'},
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -1432,6 +1533,14 @@ class RemoteDataSource {
       final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/sms/verify',
         data: {'phoneNumber': '91$mobileNumber', 'otp': otp},
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -1462,7 +1571,18 @@ class RemoteDataSource {
         'out_gate': selectedGateName ?? 'Unknown Gate',
       };
 
-      final response = await Dio().patch(ApiUrls.visitorCheckout, data: data);
+      final response = await Dio().patch(
+        ApiUrls.visitorCheckout,
+        data: data,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
+        ),
+      );
 
       if (response.statusCode == 200) {
         return true;
@@ -1493,6 +1613,14 @@ class RemoteDataSource {
           'visitor_log_id': visitorLogId,
           'parcel_image': imageUrl,
         },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
+        ),
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -1819,6 +1947,11 @@ class RemoteDataSource {
         data: data,
         options: Options(
           contentType: 'multipart/form-data',
+          headers: {
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
         ),
       );
 
@@ -2110,7 +2243,14 @@ class RemoteDataSource {
     try {
       final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/visitor/exotel/call',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
+        ),
         data: {
           'member_mobile_number': memberMobileNumber,
           'visitor_id': visitorId,
@@ -2187,10 +2327,12 @@ class RemoteDataSource {
       log("Starting verifyParcelOtp API call...");
       log("Request Data -> parcel_id: $parcelId, otp: $otp");
 
+      final accessToken = await _getAccessToken();
       final response = await http.post(
         Uri.parse("${ApiUrls.gateBaseUrl}/visitor/parcelOtpVerify"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': accessToken != null ? 'Bearer $accessToken' : '',
         },
         body: jsonEncode(<String, dynamic>{
           'parcel_id': int.parse(parcelId), // Convert parcel_id to int
@@ -2229,10 +2371,12 @@ class RemoteDataSource {
           formattedMobileNumber.startsWith('91')) {
         formattedMobileNumber = formattedMobileNumber.substring(2);
       }
+      final accessToken = await _getAccessToken();
       final response = await http.post(
         Uri.parse("${ApiUrls.gateBaseUrl}/visitor/parcelOtp"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': accessToken != null ? 'Bearer $accessToken' : '',
         },
         body: jsonEncode(<String, String>{
           'parcel_id': parcelId,
@@ -2340,6 +2484,9 @@ class RemoteDataSource {
           contentType: 'multipart/form-data',
           headers: {
             'Accept': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
           },
         ),
       );
@@ -2412,6 +2559,9 @@ class RemoteDataSource {
           contentType: 'application/json',
           headers: {
             'Accept': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
           },
         ),
       );
@@ -2484,6 +2634,9 @@ class RemoteDataSource {
           headers: {
             'Content-Type': 'multipart/form-data',
             'Accept': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
           },
         ),
       );
@@ -2525,7 +2678,7 @@ class RemoteDataSource {
       final data = {
         "name": visitor.name,
         "mobile_number": visitor.mobile,
-        // "coming_from": comingFrom,
+        // "coming_from": comingFrom, //to check here has saurav changed this
         "visitor_image": visitor.visitor_image,
         "isStaff": visitor.isStaff, // Include isStaff property in the update
       };
@@ -2539,6 +2692,9 @@ class RemoteDataSource {
         options: Options(
           headers: {
             "Content-Type": "application/json",
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
           },
         ),
       );

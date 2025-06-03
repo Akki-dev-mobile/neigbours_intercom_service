@@ -71,7 +71,8 @@ class _IdInputViewState extends State<IdInputView> {
   TextEditingController passcodeController = TextEditingController();
   bool isLoading = false;
   bool checkVisitorLoading = false;
-  bool isMobileApiLoading = false; // Controls the spinner for mobile input
+  bool isMobileApiLoading =
+      false; // Controls the spinner for mobile input AND Next button visibility
 
   void startLoading() {
     setState(() {
@@ -194,8 +195,82 @@ class _IdInputViewState extends State<IdInputView> {
                 );
               }
             }
+            debugPrint("state.runtimeType :${state.runtimeType}");
 
+            // Print detailed state information
+            if (state is SaveSearchedVisitorState) {
+              debugPrint(
+                  "SaveSearchedVisitorState - Visitor: ${state.visitor?.toJson()}");
+            } else if (state is VisitorAlreadyCheckedInErrorState) {
+              debugPrint(
+                  "VisitorAlreadyCheckedInErrorState - Message: ${state.message}");
+            } else if (state is VisitorApiErrorState) {
+              debugPrint(
+                  "VisitorApiErrorState - Message: ${state.message}, Status: ${state.statusCode}");
+            } else if (state is GatekeeperDashboardErrorState) {
+              debugPrint(
+                  "GatekeeperDashboardErrorState - Message: ${state.message}");
+            } else {
+              debugPrint("state response: $state");
+            }
             switch (state.runtimeType) {
+              case VisitorAlreadyCheckedInErrorState:
+                // Stop spinner on specific visitor already checked in error
+                if (isMobileApiLoading) {
+                  setState(() {
+                    isMobileApiLoading = false;
+                  });
+                }
+                final visitorCheckedInErrorState =
+                    state as VisitorAlreadyCheckedInErrorState;
+                // Show snackbar for visitor already checked in error
+
+                debugPrint(
+                    "Visitor already checked in error: ${visitorCheckedInErrorState.message}");
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(visitorCheckedInErrorState.message),
+                    backgroundColor: Colors.orange,
+                    duration: Duration(seconds: 4),
+                    behavior: SnackBarBehavior.floating,
+                    action: SnackBarAction(
+                      label: 'OK',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      },
+                    ),
+                  ),
+                );
+                break;
+
+              case VisitorApiErrorState:
+                print("🎯 UI: Handling VisitorApiErrorState");
+                // Keep isMobileApiLoading = true to hide Next button on API error
+                print(
+                    "🔴 UI: Keeping isMobileApiLoading = true - Next button remains hidden");
+                final apiErrorState = state as VisitorApiErrorState;
+                print(
+                    "🎯 UI: Showing snackbar with message: ${apiErrorState.message}");
+                // Show snackbar for API error
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(apiErrorState.message),
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 4),
+                    behavior: SnackBarBehavior.floating,
+                    action: SnackBarAction(
+                      label: 'OK',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      },
+                    ),
+                  ),
+                );
+                break;
+
               case GatekeeperDashboardErrorState:
                 // Stop spinner on error
                 if (isMobileApiLoading) {
@@ -216,14 +291,15 @@ class _IdInputViewState extends State<IdInputView> {
                 break;
 
               case SaveSearchedVisitorState:
+                print("🎯 UI: Handling SaveSearchedVisitorState");
                 final saveVisitorState = state as SaveSearchedVisitorState;
                 searchedVisitor = saveVisitorState.visitor;
-                // Stop spinner on success
-                if (isMobileApiLoading) {
-                  setState(() {
-                    isMobileApiLoading = false;
-                  });
-                }
+                // Stop spinner on success - this will show the Next button
+                setState(() {
+                  isMobileApiLoading = false;
+                  print(
+                      "🟢 UI: isMobileApiLoading set to FALSE - Next button should be visible");
+                });
                 break;
 
               case InputPutViewNextClickedState:
@@ -388,10 +464,21 @@ class _IdInputViewState extends State<IdInputView> {
                                   FilteringTextInputFormatter.digitsOnly,
                                 ],
                                 onChanged: (value) {
+                                  // Reset isMobileApiLoading when user starts typing (clears errors)
+                                  if (value.length < 10 && isMobileApiLoading) {
+                                    setState(() {
+                                      isMobileApiLoading = false;
+                                      print(
+                                          "🔄 UI: isMobileApiLoading reset to FALSE - user typing");
+                                    });
+                                  }
+
                                   if (value.length == 10 &&
                                       !isMobileApiLoading) {
                                     setState(() {
                                       isMobileApiLoading = true;
+                                      print(
+                                          "🔄 UI: Starting API call - isMobileApiLoading set to TRUE");
                                     });
                                     gateDashboardBloc.add(
                                       GDOnMobileNumberEnteredEvent(
@@ -483,7 +570,7 @@ class _IdInputViewState extends State<IdInputView> {
                   ],
                 ),
                 floatingActionButton: isMobileApiLoading
-                    ? null // Hide Next button during mobile number validation
+                    ? null // Hide Next button during mobile number validation or API errors
                     : CustomLargeBtn(
                         text: checkVisitorLoading ? 'Processing...' : 'Next',
                         onPressed: checkVisitorLoading ? null : checkVisitor,

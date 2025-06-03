@@ -6,6 +6,7 @@ import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
+import 'package:flutter_onegate/domain/exceptions/visitor_exceptions.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -37,9 +38,22 @@ class GatekeeperDashboardBloc
       Emitter<GatekeeperDashboardState> emit) async {
     emit(GatekeeperDashboardLoadingState());
     try {
+      print(
+          "🔄 Bloc: Starting searchVisitor for mobile: ${event.mobileNumber}");
       final response = await _visitorUsecase.searchVisitor(event.mobileNumber);
+      print("✅ Bloc: searchVisitor completed successfully");
       emit(SaveSearchedVisitorState(visitor: response));
+    } on VisitorAlreadyCheckedInException catch (e) {
+      // Handle specific case where visitor is already checked in within 3 minutes
+      print("🚨 Bloc: Caught VisitorAlreadyCheckedInException: ${e.message}");
+      emit(VisitorAlreadyCheckedInErrorState(message: e.message));
+    } on VisitorApiException catch (e) {
+      // Handle general API errors with non-200 status codes
+      print(
+          "🚨 Bloc: Caught VisitorApiException: ${e.message}, Status: ${e.statusCode}");
+      emit(VisitorApiErrorState(message: e.message, statusCode: e.statusCode));
     } catch (e) {
+      print("🚨 Bloc: Caught general exception: $e");
       emit(GatekeeperDashboardErrorState(message: e.toString()));
     }
   }
@@ -123,7 +137,8 @@ class GatekeeperDashboardBloc
     // Fetch the updated data for the dashboard
     await _emitDashboardSuccessState(emit);
 
-    Future.delayed(Duration(milliseconds: 500), () => _hasNavigated = false);
+    Future.delayed(
+        const Duration(milliseconds: 500), () => _hasNavigated = false);
   }
 
   FutureOr<void> onVisitorsInButtonPressedEvent(
@@ -138,7 +153,8 @@ class GatekeeperDashboardBloc
     // Fetch the updated data for the dashboard
     await _emitDashboardSuccessState(emit);
 
-    Future.delayed(Duration(milliseconds: 500), () => _hasNavigated = false);
+    Future.delayed(
+        const Duration(milliseconds: 500), () => _hasNavigated = false);
   }
 
   FutureOr<void> onVisitorsOutButtonPressedEvent(
@@ -151,7 +167,8 @@ class GatekeeperDashboardBloc
 
     await _emitDashboardSuccessState(emit);
 
-    Future.delayed(Duration(milliseconds: 500), () => _hasNavigated = false);
+    Future.delayed(
+        const Duration(milliseconds: 500), () => _hasNavigated = false);
   }
 
   Future<void> _emitDashboardSuccessState(

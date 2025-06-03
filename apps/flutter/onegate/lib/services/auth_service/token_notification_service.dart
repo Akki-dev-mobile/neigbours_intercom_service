@@ -16,6 +16,19 @@ class TokenNotificationService {
   bool _isShowingRefreshNotification = false;
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _currentSnackBar;
 
+  // Configuration flag to control whether notifications are shown
+  bool _showNotifications = false;
+
+  /// Configure whether to show notifications
+  /// Set to false to hide all token refresh snackbars
+  void setShowNotifications(bool show) {
+    _showNotifications = show;
+    log("🔧 Token notifications ${show ? 'enabled' : 'disabled'}");
+  }
+
+  /// Get current notification configuration
+  bool get showNotifications => _showNotifications;
+
   /// Show token information in a snackbar
   void showTokenInfo(String token, {String tokenType = "Access Token"}) {
     try {
@@ -116,15 +129,18 @@ class TokenNotificationService {
 
     _isShowingRefreshNotification = true;
 
-    _showSnackBar(
-      message,
-      backgroundColor: Colors.orange.shade700,
-      duration:
-          const Duration(seconds: 30), // Long duration for refresh process
-      showProgress: true,
-    );
+    // Only show snackbar if notifications are enabled
+    if (_showNotifications) {
+      _showSnackBar(
+        message,
+        backgroundColor: Colors.orange.shade700,
+        duration:
+            const Duration(seconds: 30), // Long duration for refresh process
+        showProgress: true,
+      );
+    }
 
-    log("🔄 Token refresh progress notification shown");
+    log("🔄 Token refresh progress notification ${_showNotifications ? 'shown' : 'logged only'}");
   }
 
   /// Show token refresh success notification
@@ -132,27 +148,30 @@ class TokenNotificationService {
     _dismissCurrentSnackBar();
     _isShowingRefreshNotification = false;
 
-    if (newToken != null) {
-      final userInfo = JwtTokenUtility.getUserInfoFromToken(newToken);
-      final userName =
-          userInfo?['name'] ?? userInfo?['preferred_username'] ?? 'User';
+    // Only show notifications if enabled
+    if (_showNotifications) {
+      if (newToken != null) {
+        final userInfo = JwtTokenUtility.getUserInfoFromToken(newToken);
+        final userName =
+            userInfo?['name'] ?? userInfo?['preferred_username'] ?? 'User';
 
-      _showSnackBar(
-        "✅ Token refreshed successfully!\n👤 Welcome back, $userName",
-        backgroundColor: Colors.green.shade700,
-        duration: const Duration(seconds: 3),
-        action: SnackBarAction(
-          label: 'View',
-          textColor: Colors.white,
-          onPressed: () =>
-              showTokenInfo(newToken, tokenType: "New Access Token"),
-        ),
-      );
-    } else {
-      _showToast("✅ Token refreshed successfully!", isError: false);
+        _showSnackBar(
+          "✅ Token refreshed successfully!\n👤 Welcome back, $userName",
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: Colors.white,
+            onPressed: () =>
+                showTokenInfo(newToken, tokenType: "New Access Token"),
+          ),
+        );
+      } else {
+        _showToast("✅ Token refreshed successfully!", isError: false);
+      }
     }
 
-    log("✅ Token refresh success notification shown");
+    log("✅ Token refresh success notification ${_showNotifications ? 'shown' : 'logged only'}");
   }
 
   /// Show token refresh failure notification
@@ -164,18 +183,21 @@ class TokenNotificationService {
         ? "❌ Token refresh failed: $errorMessage"
         : "❌ Token refresh failed. Please login again.";
 
-    _showSnackBar(
-      message,
-      backgroundColor: Colors.red.shade700,
-      duration: const Duration(seconds: 5),
-      action: SnackBarAction(
-        label: 'Login',
-        textColor: Colors.white,
-        onPressed: () => _navigateToLogin(),
-      ),
-    );
+    // Only show snackbar if notifications are enabled
+    if (_showNotifications) {
+      _showSnackBar(
+        message,
+        backgroundColor: Colors.red.shade700,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Login',
+          textColor: Colors.white,
+          onPressed: () => _navigateToLogin(),
+        ),
+      );
+    }
 
-    log("❌ Token refresh failure notification shown");
+    log("❌ Token refresh failure notification ${_showNotifications ? 'shown' : 'logged only'}");
   }
 
   /// Show token expiration warning
@@ -197,18 +219,21 @@ class TokenNotificationService {
         ? "🚫 Authentication error: $errorMessage"
         : "🚫 Authentication failed. Please login again.";
 
-    _showSnackBar(
-      message,
-      backgroundColor: Colors.red.shade800,
-      duration: const Duration(seconds: 5),
-      action: SnackBarAction(
-        label: 'Login',
-        textColor: Colors.white,
-        onPressed: () => _navigateToLogin(),
-      ),
-    );
+    // Only show snackbar if notifications are enabled
+    if (_showNotifications) {
+      _showSnackBar(
+        message,
+        backgroundColor: Colors.red.shade800,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Login',
+          textColor: Colors.white,
+          onPressed: () => _navigateToLogin(),
+        ),
+      );
+    }
 
-    log("🚫 Authentication error notification shown");
+    log("🚫 Authentication error notification ${_showNotifications ? 'shown' : 'logged only'}");
   }
 
   /// Show network connectivity warning notification

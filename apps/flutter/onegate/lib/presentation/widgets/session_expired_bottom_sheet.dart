@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'dart:developer';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/auth_service/centralized_logout_service.dart';
+import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
 import 'package:flutter_onegate/main.dart';
 
 /// Animated bottom sheet that appears when session expires
@@ -19,7 +21,8 @@ class SessionExpiredBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<SessionExpiredBottomSheet> createState() => _SessionExpiredBottomSheetState();
+  State<SessionExpiredBottomSheet> createState() =>
+      _SessionExpiredBottomSheetState();
 }
 
 class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
@@ -27,12 +30,12 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
   late AnimationController _slideController;
   late AnimationController _iconController;
   late AnimationController _buttonController;
-  
+
   late Animation<double> _slideAnimation;
   late Animation<double> _iconRotationAnimation;
   late Animation<double> _iconPulseAnimation;
   late Animation<double> _buttonScaleAnimation;
-  
+
   bool _isLoggingOut = false;
 
   @override
@@ -48,13 +51,13 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     // Icon animations
     _iconController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-    
+
     // Button animation
     _buttonController = AnimationController(
       duration: const Duration(milliseconds: 150),
@@ -66,7 +69,7 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
       parent: _slideController,
       curve: Curves.easeOutCubic,
     );
-    
+
     _iconRotationAnimation = Tween<double>(
       begin: 0.0,
       end: 2 * math.pi,
@@ -74,7 +77,7 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
       parent: _iconController,
       curve: Curves.linear,
     ));
-    
+
     _iconPulseAnimation = Tween<double>(
       begin: 0.8,
       end: 1.2,
@@ -82,7 +85,7 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
       parent: _iconController,
       curve: Curves.easeInOut,
     ));
-    
+
     _buttonScaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,
@@ -120,69 +123,39 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
     HapticFeedback.mediumImpact();
 
     try {
-      log("🚪 Session expired - clearing all tokens and navigating to login");
+      log("🚪 Session expired - starting centralized logout process");
 
-      // Clear all authentication state using enhanced logout
-      await _clearAuthenticationState();
-
-      // Navigate to login screen
-      await _navigateToLogin();
-
-      // Call completion callback if provided
-      if (widget.onLoginComplete != null) {
-        widget.onLoginComplete!();
-      }
-
+      // Use centralized logout service for consistent behavior
+      await CentralizedLogoutService.performLogoutWithNavigation(
+        context: null, // Use global navigator for session expired modal
+        source: 'Session Expired Modal',
+        showNotifications: true,
+        onComplete: () {
+          log("✅ Session expired modal logout completed successfully");
+          // Call completion callback if provided
+          if (widget.onLoginComplete != null) {
+            widget.onLoginComplete!();
+          }
+        },
+      );
     } catch (e) {
       log("❌ Error during logout process: $e");
       setState(() {
         _isLoggingOut = false;
       });
-      
+
       // Show error feedback
       HapticFeedback.heavyImpact();
-      
-      // Still try to navigate to login as fallback
-      _navigateToLogin();
-    }
-  }
 
-  Future<void> _clearAuthenticationState() async {
-    try {
-      // Use enhanced logout service for complete session clearing
-      final authService = GetIt.I<AuthService>();
-      final logoutResult = await authService.logout(clearAllPreferences: true);
-      
-      if (logoutResult.success) {
-        log("✅ Complete authentication state cleared successfully");
-        if (!logoutResult.keycloakEndSessionResult) {
-          log("⚠️ Keycloak end session failed, but local tokens cleared");
-        }
-      } else {
-        log("⚠️ Authentication state clearing completed with issues: ${logoutResult.getIssues()}");
-        // Continue with navigation even if some clearing fails
-      }
-    } catch (e) {
-      log("❌ Error clearing authentication state: $e");
-      // Continue with navigation even if clearing fails
-    }
-  }
-
-  Future<void> _navigateToLogin() async {
-    try {
-      final context = navigatorKey.currentContext;
-      if (context != null && mounted) {
-        // Clear navigation stack and go to login
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false,
+      // Fallback: Try to navigate to login anyway
+      try {
+        await CentralizedLogoutService.navigateToLogin(
+          null,
+          source: 'Session Expired Modal (fallback)',
         );
-        log("✅ Navigated to login screen");
-      } else {
-        log("⚠️ No context available for navigation");
+      } catch (navError) {
+        log("❌ Fallback navigation also failed: $navError");
       }
-    } catch (e) {
-      log("❌ Error navigating to login: $e");
     }
   }
 
@@ -217,37 +190,38 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
                   children: [
                     // Animated Icon
                     _buildAnimatedIcon(),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Title
                     Text(
                       'Session Expired',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade700,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red.shade700,
+                              ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Message
                     Text(
-                      widget.errorMessage ?? 
-                      'Your session has expired for security reasons. Please log in again to continue.',
+                      widget.errorMessage ??
+                          'Your session has expired for security reasons. Please log in again to continue.',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey.shade700,
-                        height: 1.5,
-                      ),
+                            color: Colors.grey.shade700,
+                            height: 1.5,
+                          ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Login Again Button
                     _buildLoginButton(),
-                    
+
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -261,7 +235,8 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
 
   Widget _buildAnimatedIcon() {
     return AnimatedBuilder(
-      animation: Listenable.merge([_iconRotationAnimation, _iconPulseAnimation]),
+      animation:
+          Listenable.merge([_iconRotationAnimation, _iconPulseAnimation]),
       builder: (context, child) {
         return Transform.scale(
           scale: _iconPulseAnimation.value,

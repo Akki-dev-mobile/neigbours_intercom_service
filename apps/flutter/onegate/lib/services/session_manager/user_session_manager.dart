@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
+import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -123,6 +124,12 @@ class UserSessionManager {
   /// Check and refresh token if needed using dynamic JWT analysis
   Future<void> _checkAndRefreshToken() async {
     try {
+      // Check if we're currently on login screen - skip token checks if so
+      if (await _isOnLoginScreen()) {
+        log("📱 Currently on login screen - skipping token check");
+        return;
+      }
+
       // Check if token expiration logout is disabled (continuous session mode)
       final prefs = await SharedPreferences.getInstance();
       final tokenExpirationLogoutDisabled =
@@ -147,6 +154,31 @@ class UserSessionManager {
       }
     } catch (e) {
       log("❌ Error checking/refreshing token: $e");
+    }
+  }
+
+  /// Check if currently on login screen or navigating to it
+  Future<bool> _isOnLoginScreen() async {
+    try {
+      // Use the coordinator to check if session monitoring should be paused
+      final shouldPause =
+          await SessionManagementCoordinator.shouldPauseSessionMonitoring();
+      if (shouldPause) {
+        log('🔍 Session Management Coordinator indicates login state');
+        return true;
+      }
+
+      // Fallback: Check if we have no valid tokens
+      final accessToken = await _gateStorage.getAccessToken();
+      if (accessToken == null) {
+        log('🔍 No access token found - user should be on login screen');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      log('❌ Error checking if on login screen: $e');
+      return false;
     }
   }
 

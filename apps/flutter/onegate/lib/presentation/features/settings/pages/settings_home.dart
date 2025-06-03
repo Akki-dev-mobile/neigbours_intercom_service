@@ -23,6 +23,8 @@ import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.d
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/auth_service/centralized_logout_service.dart';
+import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
@@ -707,24 +709,40 @@ class _SettingsHomeState extends State<SettingsHome> {
 
   Future<void> logout(BuildContext context) async {
     try {
-      log("Attempting logout...");
-      // Logout using AuthService instead of keycloakWrapper
-      final authService = GetIt.instance<AuthService>();
-      await authService.logout();
-      log("Keycloak session ended.");
+      log("🚪 Settings Screen - Starting centralized logout process...");
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear(); // Clear all stored preferences
-      log("Preferences cleared.");
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => MyAppLogin()),
-        (route) => false,
+      // Use centralized logout service for consistent behavior
+      await CentralizedLogoutService.performLogoutWithNavigation(
+        context: context,
+        source: 'Settings Screen',
+        showNotifications: true,
+        onComplete: () {
+          log("✅ Settings Screen logout completed successfully");
+        },
       );
     } catch (e, st) {
-      log("Logout failed: $e\n$st");
-      // Optionally show a SnackBar or AlertDialog to inform the user
+      log("❌ Settings Screen logout failed: $e\n$st");
+
+      // Show error feedback to user
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed. Please try again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+
+      // Fallback: Try to navigate to login anyway
+      try {
+        await CentralizedLogoutService.navigateToLogin(
+          context,
+          source: 'Settings Screen (fallback)',
+        );
+      } catch (navError) {
+        log("❌ Fallback navigation also failed: $navError");
+      }
     }
   }
 

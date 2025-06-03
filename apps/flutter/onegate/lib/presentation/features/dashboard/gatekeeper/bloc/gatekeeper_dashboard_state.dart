@@ -26,6 +26,19 @@ class GatekeeperDashboardErrorState extends GatekeeperDashboardActionState {
   GatekeeperDashboardErrorState({this.message});
 }
 
+class VisitorAlreadyCheckedInErrorState extends GatekeeperDashboardActionState {
+  final String message;
+
+  VisitorAlreadyCheckedInErrorState({required this.message});
+}
+
+class VisitorApiErrorState extends GatekeeperDashboardActionState {
+  final String message;
+  final int statusCode;
+
+  VisitorApiErrorState({required this.message, required this.statusCode});
+}
+
 class GDIntercomButtonPressedState extends GatekeeperDashboardActionState {}
 
 class GDParcelButtonPressedState extends GatekeeperDashboardActionState {}

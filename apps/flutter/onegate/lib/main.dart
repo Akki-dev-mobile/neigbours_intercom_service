@@ -43,6 +43,7 @@ import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Set
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/auth_service/token_notification_service.dart';
 import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
 import 'package:flutter_onegate/presentation/widgets/session_expired_bottom_sheet.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
@@ -54,6 +55,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/services/session_manager/session_expiry_fix.dart';
 import 'package:flutter_onegate/services/session_manager/eleven_minute_expiry_fix.dart';
+import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
 
 import 'data/datasources/remote_datasource.dart';
 import 'data/repositories/visitor_log_repo_impl.dart';
@@ -144,6 +146,12 @@ void main() async {
   await GateStorage().init();
   await setupDependencies();
 
+  // Configure TokenNotificationService to hide snackbar notifications
+  // This disables the "refreshing token", "token refreshed successfully", and "login again" snackbars
+  final tokenNotificationService = TokenNotificationService();
+  tokenNotificationService.setShowNotifications(false);
+  log('🔧 Token refresh snackbar notifications disabled');
+
   // Initialize ONLY UserSessionManager - single unified session management system
   try {
     final userSessionManager = GetIt.I<UserSessionManager>();
@@ -167,6 +175,18 @@ void main() async {
     log('✅ 11-Minute Session Expiry Fix initialized successfully');
   } catch (e) {
     log('❌ Error initializing 11-Minute Expiry Fix: $e');
+  }
+
+  // Initialize Session Management Coordinator to prevent conflicts
+  try {
+    await SessionManagementCoordinator.initialize();
+    log('✅ Session Management Coordinator initialized successfully');
+
+    // Apply emergency fix for login screen session expired modal issue
+    await SessionManagementCoordinator.applyEmergencyLoginFix();
+    log('✅ Emergency login fix applied successfully');
+  } catch (e) {
+    log('❌ Error initializing Session Management Coordinator: $e');
   }
 
   // Initialize NetworkLogManager and add interceptor to Dio
@@ -314,6 +334,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void _handleSessionStateChange(UserSessionState state) async {
     log('🔄 Session state changed to: $state');
 
+    // Use coordinator to check if session expired modal should be shown
+    final shouldShowModal =
+        await SessionManagementCoordinator.shouldShowSessionExpiredModal();
+    if (!shouldShowModal) {
+      log('📱 Session Management Coordinator blocking session expired modal');
+      return;
+    }
+
     switch (state) {
       case UserSessionState.tokenExpired:
         log('⏰ Token expired - checking if should show session expired modal');
@@ -328,6 +356,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         break;
       case UserSessionState.unauthenticated:
         log('🚪 User unauthenticated - navigating to login');
+        SessionManagementCoordinator.setNavigatingToLogin(true);
         _navigateToLogin();
         break;
       case UserSessionState.authenticated:
@@ -446,8 +475,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ),
       home: WillPopScope(
         onWillPop: () async {
-          final shouldExit = await showExitConfirmationDialog(context);
-          return shouldExit ?? false;
+          final currentContext = navigatorKey.currentContext;
+          if (currentContext != null) {
+            final shouldExit = await showExitConfirmationDialog(currentContext);
+            return shouldExit ?? false;
+          }
+          return false; // Don't exit if no context available
         },
         // Initially show the correct screen based on connectivity.
         child: hasInternet ? const SplashView() : ErrorNoInternetPage(),

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/exceptions/visitor_exceptions.dart';
 import 'package:flutter_onegate/domain/repositories/visitor_repo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,9 +15,23 @@ class VisitorRepoImpl extends VisitorRepository {
   @override
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
+      print(
+          "🔄 Repo: Calling RemoteDataSource.searchVisitor for: $mobileNumber");
       final response = await _remoteDataSource.searchVisitor(mobileNumber);
+      print("✅ Repo: RemoteDataSource.searchVisitor completed successfully");
       return response;
+    } on VisitorAlreadyCheckedInException catch (e) {
+      // Re-throw specific visitor exceptions so they reach the bloc
+      print(
+          "🚨 Repo: Re-throwing VisitorAlreadyCheckedInException: ${e.message}");
+      rethrow;
+    } on VisitorApiException catch (e) {
+      // Re-throw specific API exceptions so they reach the bloc
+      print(
+          "🚨 Repo: Re-throwing VisitorApiException: ${e.message}, Status: ${e.statusCode}");
+      rethrow;
     } catch (error) {
+      print("🚨 Repo: Caught general error: $error");
       return null;
     }
   }

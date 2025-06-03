@@ -131,8 +131,9 @@ class SessionExpiryFix {
 
       if (accessToken != null && refreshToken != null) {
         // Analyze both tokens
-        final analysis = JwtTokenUtility.analyzeBothTokens(accessToken, refreshToken);
-        
+        final analysis =
+            JwtTokenUtility.analyzeBothTokens(accessToken, refreshToken);
+
         log('📊 [$_tag] Token Analysis Results:');
         log('   • Session State: ${analysis['sessionState']}');
         log('   • Recommended Action: ${analysis['recommendedAction']}');
@@ -142,8 +143,10 @@ class SessionExpiryFix {
 
         // Verify continuous session flags
         final prefs = await SharedPreferences.getInstance();
-        final continuousActive = prefs.getBool('continuous_session_active') ?? false;
-        final logoutDisabled = prefs.getBool('token_expiration_logout_disabled') ?? false;
+        final continuousActive =
+            prefs.getBool('continuous_session_active') ?? false;
+        final logoutDisabled =
+            prefs.getBool('token_expiration_logout_disabled') ?? false;
 
         if (continuousActive && logoutDisabled) {
           log('✅ [$_tag] Session configuration verified successfully');
@@ -224,9 +227,13 @@ class SessionExpiryFix {
       await prefs.setBool('jwt_based_session_management', true);
       await prefs.setBool('use_jwt_exp_claims_only', true);
 
+      // Add login screen awareness to prevent session checks during login
+      await prefs.setBool('login_screen_aware_session_management', true);
+
       log('✅ [$_tag] EMERGENCY FIX APPLIED');
       log('🔄 [$_tag] Session expired modal should now be disabled');
       log('📋 [$_tag] Tokens will refresh based on JWT exp claims');
+      log('📱 [$_tag] Login screen awareness enabled');
 
       // Verify the fix
       await _verifySessionConfiguration();
@@ -264,7 +271,8 @@ class SessionExpiryFix {
       }
 
       if (accessToken != null && refreshToken != null) {
-        final bothAnalysis = JwtTokenUtility.analyzeBothTokens(accessToken, refreshToken);
+        final bothAnalysis =
+            JwtTokenUtility.analyzeBothTokens(accessToken, refreshToken);
         log('📊 [$_tag] Combined Analysis:');
         log('   • Session State: ${bothAnalysis['sessionState']}');
         log('   • Recommended Action: ${bothAnalysis['recommendedAction']}');

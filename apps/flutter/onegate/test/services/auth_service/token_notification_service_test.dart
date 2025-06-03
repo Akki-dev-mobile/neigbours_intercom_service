@@ -154,6 +154,37 @@ void main() {
       });
     });
 
+    group('Notification Configuration', () {
+      test('should allow enabling notifications', () {
+        // Test that notifications can be enabled
+        expect(() => notificationService.setShowNotifications(true),
+            returnsNormally);
+        expect(notificationService.showNotifications, isTrue);
+      });
+
+      test('should allow disabling notifications', () {
+        // Test that notifications can be disabled
+        expect(() => notificationService.setShowNotifications(false),
+            returnsNormally);
+        expect(notificationService.showNotifications, isFalse);
+      });
+
+      test('should default to notifications disabled', () {
+        // Test that notifications are disabled by default
+        final newService = TokenNotificationService();
+        expect(newService.showNotifications, isFalse);
+      });
+
+      test('should maintain configuration state', () {
+        // Test that configuration state is maintained
+        notificationService.setShowNotifications(true);
+        expect(notificationService.showNotifications, isTrue);
+
+        notificationService.setShowNotifications(false);
+        expect(notificationService.showNotifications, isFalse);
+      });
+    });
+
     group('Duration Formatting', () {
       test('should format seconds correctly', () {
         // Test internal duration formatting (if accessible)

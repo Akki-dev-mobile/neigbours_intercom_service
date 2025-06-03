@@ -87,6 +87,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _initializeBloc();
     _loadInitialData();
     _initializeCameras();
+    // _guestComingFromController!.text = await gateStorage.getComingFrom() ?? "";
+    debugPrint("coming from ${gateStorage.getComingFrom()}");
   }
 
   void _initSpeech() async {
@@ -120,8 +122,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     );
 
     // Update coming from with value from gateStorage
-    _guestComingFromController!.text =
-        await gateStorage.getComingFrom() ?? "";
+    _guestComingFromController!.text = await gateStorage.getComingFrom() ?? "";
     _guestCountController = TextEditingController(
       text: '1',
     );
@@ -334,7 +335,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       await prefs.remove('visitor_coming_from');
       log(widget.mobile);
       log("widget.searchedVisitor: ${widget.searchedVisitor?.id}");
-      prefs.setString('search_visitor_id',widget.searchedVisitor?.id.toString() ?? "");
+      prefs.setString(
+          'search_visitor_id', widget.searchedVisitor?.id.toString() ?? "");
       _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
         searchedVisitor: widget.searchedVisitor,
         guestName: _guestNameController?.text,
@@ -492,13 +494,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         } else if (state is VIENavigateToCameraState) {
           // Ensure camera state navigation is handled correctly
           final imageFile = await _captureImageFromCamera(context);
-      final SharedPreferences prefs =
-          await SharedPreferences.getInstance(); // Get SharedPreferences
+          final SharedPreferences prefs =
+              await SharedPreferences.getInstance(); // Get SharedPreferences
 
           if (imageFile != null) {
             // Dispatch the camera button pressed event
-        var visitorId=    prefs.getString('visitorId');
-        state.visitor.id=int.parse(visitorId??"") ;
+            var visitorId = prefs.getString('visitorId');
+            state.visitor.id = int.parse(visitorId ?? "");
             _bloc.add(VIECameraButtonPressedEvent(
               purposeCategory: state.purposeCategory,
               imageFile: imageFile,
@@ -1093,6 +1095,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   void dispose() {
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove('visitor_coming_from');
+      prefs.remove('visitorId');
+
+      debugPrint(
+          "----------------------------------->>>>>>>>>--------${prefs.remove('visitorId')}");
     });
 
     _guestNameController?.dispose();
