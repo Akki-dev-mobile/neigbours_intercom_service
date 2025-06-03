@@ -71,8 +71,8 @@ class _IdInputViewState extends State<IdInputView> {
   TextEditingController passcodeController = TextEditingController();
   bool isLoading = false;
   bool checkVisitorLoading = false;
-  bool isMobileApiLoading =
-      false; // Controls the spinner for mobile input AND Next button visibility
+  bool isMobileApiLoading = false; // Controls the spinner for mobile input
+  bool hideNextButton = false; // Controls whether to hide the Next button
 
   void startLoading() {
     setState(() {
@@ -215,15 +215,18 @@ class _IdInputViewState extends State<IdInputView> {
             }
             switch (state.runtimeType) {
               case VisitorAlreadyCheckedInErrorState:
-                // Stop spinner on specific visitor already checked in error
-                if (isMobileApiLoading) {
-                  setState(() {
-                    isMobileApiLoading = false;
-                  });
-                }
+                print("🎯 UI: Handling VisitorAlreadyCheckedInErrorState");
+                // Stop spinner and hide Next button for visitor already checked in error
+                setState(() {
+                  isMobileApiLoading = false; // Always stop the spinner
+                  hideNextButton =
+                      true; // Hide the Next button - visitor already checked in
+                  print(
+                      "🟠 UI: hideNextButton set to TRUE, isMobileApiLoading set to FALSE - Visitor already checked in");
+                });
+
                 final visitorCheckedInErrorState =
                     state as VisitorAlreadyCheckedInErrorState;
-                // Show snackbar for visitor already checked in error
 
                 debugPrint(
                     "Visitor already checked in error: ${visitorCheckedInErrorState.message}");
@@ -247,9 +250,14 @@ class _IdInputViewState extends State<IdInputView> {
 
               case VisitorApiErrorState:
                 print("🎯 UI: Handling VisitorApiErrorState");
-                // Keep isMobileApiLoading = true to hide Next button on API error
-                print(
-                    "🔴 UI: Keeping isMobileApiLoading = true - Next button remains hidden");
+                // Stop spinner on API error with non-200 status code and hide Next button
+                setState(() {
+                  isMobileApiLoading =
+                      false; // Always stop the spinner on error
+                  hideNextButton = true; // Hide the Next button on error
+                  print(
+                      "🔴 UI: hideNextButton set to TRUE, isMobileApiLoading set to FALSE - Next button should be hidden");
+                });
                 final apiErrorState = state as VisitorApiErrorState;
                 print(
                     "🎯 UI: Showing snackbar with message: ${apiErrorState.message}");
@@ -294,11 +302,13 @@ class _IdInputViewState extends State<IdInputView> {
                 print("🎯 UI: Handling SaveSearchedVisitorState");
                 final saveVisitorState = state as SaveSearchedVisitorState;
                 searchedVisitor = saveVisitorState.visitor;
-                // Stop spinner on success - this will show the Next button
+                // Stop spinner on success and show Next button
                 setState(() {
-                  isMobileApiLoading = false;
+                  isMobileApiLoading =
+                      false; // Always stop the spinner on success
+                  hideNextButton = false; // Show the Next button on success
                   print(
-                      "🟢 UI: isMobileApiLoading set to FALSE - Next button should be visible");
+                      "🟢 UI: hideNextButton set to FALSE, isMobileApiLoading set to FALSE - Next button should be visible");
                 });
                 break;
 
@@ -464,12 +474,12 @@ class _IdInputViewState extends State<IdInputView> {
                                   FilteringTextInputFormatter.digitsOnly,
                                 ],
                                 onChanged: (value) {
-                                  // Reset isMobileApiLoading when user starts typing (clears errors)
-                                  if (value.length < 10 && isMobileApiLoading) {
+                                  // Reset hideNextButton when user starts typing
+                                  if (value.length < 10 && hideNextButton) {
                                     setState(() {
-                                      isMobileApiLoading = false;
+                                      hideNextButton = false;
                                       print(
-                                          "🔄 UI: isMobileApiLoading reset to FALSE - user typing");
+                                          "🔄 UI: hideNextButton reset to FALSE - user typing");
                                     });
                                   }
 
@@ -569,12 +579,21 @@ class _IdInputViewState extends State<IdInputView> {
                           ),
                   ],
                 ),
-                floatingActionButton: isMobileApiLoading
-                    ? null // Hide Next button during mobile number validation or API errors
-                    : CustomLargeBtn(
-                        text: checkVisitorLoading ? 'Processing...' : 'Next',
-                        onPressed: checkVisitorLoading ? null : checkVisitor,
-                      ),
+                floatingActionButton: () {
+                  final shouldHideButton =
+                      (isMobileApiLoading || hideNextButton);
+                  print("🔍 UI: FloatingActionButton condition check:");
+                  print("   - isMobileApiLoading: $isMobileApiLoading");
+                  print("   - hideNextButton: $hideNextButton");
+                  print("   - shouldHideButton: $shouldHideButton");
+
+                  return shouldHideButton
+                      ? null // Hide Next button during mobile number validation or API errors
+                      : CustomLargeBtn(
+                          text: checkVisitorLoading ? 'Processing...' : 'Next',
+                          onPressed: checkVisitorLoading ? null : checkVisitor,
+                        );
+                }(),
               ),
             );
           },
