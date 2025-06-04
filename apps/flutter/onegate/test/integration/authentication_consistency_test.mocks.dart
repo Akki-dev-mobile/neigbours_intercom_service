@@ -792,6 +792,16 @@ class MockGateStorage extends _i1.Mock implements _i2.GateStorage {
         ),
         returnValue: _i8.Future<int>.value(0),
       ) as _i8.Future<int>);
+
+  @override
+  _i8.Future<void> clearVisitorSessionData() => (super.noSuchMethod(
+        Invocation.method(
+          #clearVisitorSessionData,
+          [],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
 }
 
 /// A class which mocks [RemoteDataSource].

@@ -18,6 +18,7 @@ import 'package:flutter_onegate/domain/exceptions/visitor_exceptions.dart';
 import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
+import 'package:flutter_onegate/utils/visitor_sorting_utility.dart';
 
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
@@ -1062,7 +1063,21 @@ class RemoteDataSource {
         final responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data']['data'] ?? [];
         log("data--$data");
-        return data.map((item) => _mapToVisitorLog(item)).toList();
+
+        // Map API response to VisitorLog objects
+        final visitorLogs = data.map((item) => _mapToVisitorLog(item)).toList();
+
+        // Apply client-side sorting fallback to address API ordering issues
+        // This ensures visitors are displayed in chronological order (newest first)
+        // with secondary alphabetical sorting when check-in times are identical
+        final sortedLogs = VisitorSortingUtility.sortVisitorLogs(visitorLogs);
+
+        // Log sorting statistics for monitoring
+        final stats = VisitorSortingUtility.getSortingStatistics(sortedLogs);
+        log("📊 Visitor logs sorting applied: ${stats['total_logs']} logs, "
+            "${stats['logs_with_check_in']} with check-in times");
+
+        return sortedLogs;
       } else {
         _handleErrorResponse();
         throw Exception(

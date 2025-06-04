@@ -1,0 +1,387 @@
+version: '3.8'
+
+services:
+  # OneApp Observatory Centralized Dashboard
+  observatory-dashboard:
+    image: node:18-alpine
+    container_name: onegate-observatory-dashboard
+    ports:
+      - "5015:5015"
+    volumes:
+      - ./dashboard:/app
+      - ./config:/app/config
+    working_dir: /app
+    command: npm start
+    environment:
+      - NODE_ENV=production
+      - PORT=5015
+      - DASHBOARD_TITLE=OneGate Observatory
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - observatory-network
+
+  # Enhanced Consolidated Dashboard
+  consolidated-dashboard:
+    image: node:18-alpine
+    container_name: onegate-consolidated-dashboard
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./consolidated:/app
+      - ./config:/app/config
+    working_dir: /app
+    command: npm start
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://postgres:password@postgres:5432/observatory
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - observatory-network
+
+  # SigNoz APM (Application Performance Monitoring)
+  signoz-frontend:
+    image: signoz/frontend:0.39.0
+    container_name: onegate-signoz-frontend
+    ports:
+      - "3301:3301"
+    environment:
+      - FRONTEND_API_ENDPOINT=http://signoz-query-service:8080
+    depends_on:
+      - signoz-query-service
+    networks:
+      - observatory-network
+
+  signoz-query-service:
+    image: signoz/query-service:0.39.0
+    container_name: onegate-signoz-query-service
+    ports:
+      - "8080:8080"
+    environment:
+      - ClickHouseUrl=tcp://clickhouse:9000
+      - STORAGE=clickhouse
+      - GODEBUG=netdns=go
+      - TELEMETRY_ENABLED=true
+      - DEPLOYMENT_TYPE=docker-standalone-amd
+    depends_on:
+      - clickhouse
+    networks:
+      - observatory-network
+
+  signoz-otel-collector:
+    image: signoz/signoz-otel-collector:0.88.11
+    container_name: onegate-signoz-otel-collector
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # OtelCollector internal metrics
+      - "8889:8889"   # signoz spanmetrics exposed by the agent
+      - "9411:9411"   # Zipkin port
+      - "13133:13133" # health check extension
+      - "14250:14250" # Jaeger gRPC
+      - "14268:14268" # Jaeger thrift HTTP
+    volumes:
+      - ./signoz/otel-collector-config.yaml:/etc/otelcol-contrib/otel-collector-config.yaml
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=onegate-flutter,service.version=1.0.0
+    depends_on:
+      - clickhouse
+    networks:
+      - observatory-network
+
+  # ClickHouse for SigNoz
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.7
+    container_name: onegate-clickhouse
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse/
+      - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.xml
+      - ./clickhouse/clickhouse-users.xml:/etc/clickhouse-server/users.xml
+    environment:
+      - CLICKHOUSE_DB=signoz_traces
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+    networks:
+      - observatory-network
+
+  # Grafana for Dashboards
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: onegate-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    depends_on:
+      - prometheus
+    networks:
+      - observatory-network
+
+  # Prometheus for Metrics
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: onegate-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - observatory-network
+
+  # Loki for Log Aggregation
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: onegate-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observatory-network
+
+  # Tempo for Distributed Tracing
+  tempo:
+    image: grafana/tempo:2.2.0
+    container_name: onegate-tempo
+    ports:
+      - "3200:3200"
+      - "14268:14268"  # jaeger ingest
+    volumes:
+      - tempo-data:/tmp/tempo
+      - ./tempo/tempo.yaml:/etc/tempo.yaml
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    networks:
+      - observatory-network
+
+  # PostHog Analytics
+  posthog:
+    image: posthog/posthog:latest
+    container_name: onegate-posthog
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/posthog
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=onegate-posthog-secret-key
+      - DISABLE_SECURE_SSL_REDIRECT=1
+      - IS_BEHIND_PROXY=1
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - posthog-data:/code/media
+    networks:
+      - observatory-network
+
+  # HyperDX for Logs and Session Replay
+  hyperdx:
+    image: hyperdx/hyperdx:latest
+    container_name: onegate-hyperdx
+    ports:
+      - "8080:8080"
+    environment:
+      - HYPERDX_API_KEY=onegate-hyperdx-key
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/hyperdx
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - hyperdx-data:/app/data
+    networks:
+      - observatory-network
+
+  # SkyWalking for Distributed Tracing
+  skywalking-oap:
+    image: apache/skywalking-oap-server:9.5.0
+    container_name: onegate-skywalking-oap
+    ports:
+      - "11800:11800"
+      - "12800:12800"
+    environment:
+      - SW_STORAGE=elasticsearch
+      - SW_STORAGE_ES_CLUSTER_NODES=elasticsearch:9200
+      - SW_HEALTH_CHECKER=default
+      - SW_TELEMETRY=prometheus
+      - JAVA_OPTS=-Xms2g -Xmx2g
+    depends_on:
+      - elasticsearch
+    networks:
+      - observatory-network
+
+  skywalking-ui:
+    image: apache/skywalking-ui:9.5.0
+    container_name: onegate-skywalking-ui
+    ports:
+      - "8080:8080"
+    environment:
+      - SW_OAP_ADDRESS=http://skywalking-oap:12800
+    depends_on:
+      - skywalking-oap
+    networks:
+      - observatory-network
+
+  # Elasticsearch for SkyWalking
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: onegate-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - observatory-network
+
+  # Measure Analytics
+  measure-analytics:
+    image: node:18-alpine
+    container_name: onegate-measure-analytics
+    ports:
+      - "3003:3000"
+    volumes:
+      - ./measure:/app
+    working_dir: /app
+    command: npm start
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/measure
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - observatory-network
+
+  # Highlight Session Replay
+  highlight:
+    image: highlight/highlight:latest
+    container_name: onegate-highlight
+    ports:
+      - "4318:4318"
+    environment:
+      - HIGHLIGHT_PROJECT_ID=onegate-project
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/highlight
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - highlight-data:/app/data
+    networks:
+      - observatory-network
+
+  # Sentry Error Tracking
+  sentry:
+    image: sentry:latest
+    container_name: onegate-sentry
+    ports:
+      - "9000:9000"
+    environment:
+      - SENTRY_SECRET_KEY=onegate-sentry-secret-key
+      - SENTRY_POSTGRES_HOST=postgres
+      - SENTRY_POSTGRES_PORT=5432
+      - SENTRY_DB_NAME=sentry
+      - SENTRY_DB_USER=postgres
+      - SENTRY_DB_PASSWORD=password
+      - SENTRY_REDIS_HOST=redis
+      - SENTRY_REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - sentry-data:/var/lib/sentry/files
+    networks:
+      - observatory-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: onegate-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_MULTIPLE_DATABASES=observatory,posthog,hyperdx,measure,highlight,sentry
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+    networks:
+      - observatory-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: onegate-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - observatory-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: onegate-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - observatory-dashboard
+      - consolidated-dashboard
+      - grafana
+      - signoz-frontend
+    networks:
+      - observatory-network
+
+volumes:
+  postgres-data:
+  redis-data:
+  grafana-data:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  clickhouse-data:
+  elasticsearch-data:
+  posthog-data:
+  hyperdx-data:
+  highlight-data:
+  sentry-data:
+
+networks:
+  observatory-network:
+    driver: bridge

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostHog - OneGate Analytics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1d4ed8;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-item {
+            color: #6b7280;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #6b7280;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-title {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-change.positive {
+            color: #059669;
+        }
+
+        .stat-change.negative {
+            color: #dc2626;
+        }
+
+        .chart-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-btn {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .chart-btn.active {
+            background: #1d4ed8;
+            color: white;
+            border-color: #1d4ed8;
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .events-table {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .event-badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .refresh-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🦔 PostHog</div>
+        <nav class="nav">
+            <a href="#" class="nav-item active">Analytics</a>
+            <a href="#" class="nav-item">Events</a>
+            <a href="#" class="nav-item">Funnels</a>
+            <a href="#" class="nav-item">Cohorts</a>
+            <a href="#" class="nav-item">Feature Flags</a>
+        </nav>
+        <div style="display: flex; align-items: center;">
+            <span class="refresh-indicator"></span>
+            <span style="font-size: 0.9rem; color: #6b7280;">Live</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">OneGate Analytics Dashboard</h1>
+            <p class="page-subtitle">Real-time user behavior and app analytics</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Total Events</div>
+                <div class="stat-value" id="total-events">8,456</div>
+                <div class="stat-change positive">↗️ +127 today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Active Users</div>
+                <div class="stat-value" id="active-users">127</div>
+                <div class="stat-change positive">↗️ +5 this hour</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Session Duration</div>
+                <div class="stat-value" id="session-duration">12m 34s</div>
+                <div class="stat-change positive">↗️ +1m 12s</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Conversion Rate</div>
+                <div class="stat-value" id="conversion-rate">3.2%</div>
+                <div class="stat-change negative">↘️ -0.1%</div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-header">
+                <h3 class="chart-title">User Activity Over Time</h3>
+                <div class="chart-controls">
+                    <button class="chart-btn active">1H</button>
+                    <button class="chart-btn">24H</button>
+                    <button class="chart-btn">7D</button>
+                    <button class="chart-btn">30D</button>
+                </div>
+            </div>
+            <div class="chart-placeholder">📊 Real-time User Activity Chart</div>
+        </div>
+
+        <div class="events-table">
+            <h3 style="margin-bottom: 1rem;">Recent Events</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>User</th>
+                        <th>Properties</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="events-tbody">
+                    <tr>
+                        <td><span class="event-badge">screen_view</span></td>
+                        <td>user_001</td>
+                        <td>screen: visitor_details</td>
+                        <td>2 minutes ago</td>
+                    </tr>
+                    <tr>
+                        <td><span class="event-badge">button_click</span></td>
+                        <td>user_002</td>
+                        <td>button: approve_visitor</td>
+                        <td>3 minutes ago</td>
+                    </tr>
+                    <tr>
+                        <td><span class="event-badge">api_call</span></td>
+                        <td>user_001</td>
+                        <td>endpoint: /api/visitors</td>
+                        <td>4 minutes ago</td>
+                    </tr>
+                    <tr>
+                        <td><span class="event-badge">login</span></td>
+                        <td>user_003</td>
+                        <td>method: keycloak_sso</td>
+                        <td>5 minutes ago</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Simulate real-time analytics updates
+        function updateAnalytics() {
+            // Update total events
+            const eventsEl = document.getElementById('total-events');
+            const currentEvents = parseInt(eventsEl.textContent.replace(',', ''));
+            eventsEl.textContent = (currentEvents + Math.floor(Math.random() * 10)).toLocaleString();
+
+            // Update active users
+            const usersEl = document.getElementById('active-users');
+            const currentUsers = parseInt(usersEl.textContent);
+            usersEl.textContent = (currentUsers + Math.floor(Math.random() * 6 - 3)).toString();
+
+            // Update session duration
+            const sessionEl = document.getElementById('session-duration');
+            const minutes = Math.floor(Math.random() * 20 + 10);
+            const seconds = Math.floor(Math.random() * 60);
+            sessionEl.textContent = `${minutes}m ${seconds}s`;
+
+            // Update conversion rate
+            const conversionEl = document.getElementById('conversion-rate');
+            const currentRate = parseFloat(conversionEl.textContent.replace('%', ''));
+            conversionEl.textContent = (currentRate + (Math.random() * 0.2 - 0.1)).toFixed(1) + '%';
+        }
+
+        function addNewEvent() {
+            const tbody = document.getElementById('events-tbody');
+            const events = [
+                { type: 'screen_view', user: 'user_' + Math.floor(Math.random() * 100), props: 'screen: visitor_list' },
+                { type: 'button_click', user: 'user_' + Math.floor(Math.random() * 100), props: 'button: add_visitor' },
+                { type: 'api_call', user: 'user_' + Math.floor(Math.random() * 100), props: 'endpoint: /api/residents' },
+                { type: 'form_submit', user: 'user_' + Math.floor(Math.random() * 100), props: 'form: visitor_registration' },
+                { type: 'logout', user: 'user_' + Math.floor(Math.random() * 100), props: 'method: manual' }
+            ];
+
+            const randomEvent = events[Math.floor(Math.random() * events.length)];
+            
+            const newRow = tbody.insertRow(0);
+            newRow.innerHTML = `
+                <td><span class="event-badge">${randomEvent.type}</span></td>
+                <td>${randomEvent.user}</td>
+                <td>${randomEvent.props}</td>
+                <td>Just now</td>
+            `;
+
+            // Keep only last 10 events
+            while (tbody.rows.length > 10) {
+                tbody.deleteRow(tbody.rows.length - 1);
+            }
+        }
+
+        // Auto-update every 5 seconds
+        setInterval(updateAnalytics, 5000);
+        setInterval(addNewEvent, 7000);
+
+        // Try to fetch real data from OneGate API
+        async function fetchOneGateAnalytics() {
+            try {
+                const response = await fetch('http://localhost:8866/api/dashboard');
+                const data = await response.json();
+                
+                if (data.dashboard) {
+                    document.getElementById('total-events').textContent = 
+                        data.dashboard.total_events.toLocaleString();
+                    document.getElementById('active-users').textContent = 
+                        data.dashboard.active_users.toString();
+                    document.getElementById('session-duration').textContent = 
+                        data.dashboard.session_duration;
+                }
+            } catch (error) {
+                console.log('Using simulated analytics data - API not available');
+            }
+        }
+
+        // Initial load and periodic updates
+        fetchOneGateAnalytics();
+        setInterval(fetchOneGateAnalytics, 10000);
+
+        console.log('🦔 PostHog Analytics loaded for OneGate monitoring');
+    </script>
+</body>
+</html>

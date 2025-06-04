@@ -12,6 +12,8 @@ import 'package:flutter_onegate/presentation/features/settings/meilisearch_confi
 import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/crash_reports_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/analytics_dashboard_screen.dart';
+import 'package:flutter_onegate/presentation/features/settings/observatory_dashboard_screen.dart';
+import 'package:flutter_onegate/services/observatory/observatory_dashboard_service.dart';
 import 'package:flutter_onegate/presentation/widgets/debug_token_widget.dart';
 import 'package:ionicons/ionicons.dart';
 
@@ -33,6 +35,8 @@ class _DataObservabilitySettingsScreenState
       CustomNotificationService();
   final NotificationManager _notificationManager = NotificationManager();
   final MeilisearchService _meilisearchService = MeilisearchService();
+  final ObservatoryDashboardService _observatoryService =
+      ObservatoryDashboardService();
 
   bool _isLoading = true;
   HealthCheckResult? _lastHealthCheck;
@@ -57,6 +61,7 @@ class _DataObservabilitySettingsScreenState
       await _notificationService.initialize();
       await _notificationManager.initialize();
       await _meilisearchService.initialize();
+      await _observatoryService.initialize();
 
       await _loadCurrentStatus();
     } catch (e) {
@@ -317,6 +322,8 @@ class _DataObservabilitySettingsScreenState
               children: [
                 _buildHealthStatusCard(),
                 const SizedBox(height: 16),
+                _buildObservatoryCard(),
+                const SizedBox(height: 16),
                 _buildMonitoringCardsRow(),
                 const SizedBox(height: 16),
                 _buildMeilisearchCard(),
@@ -427,6 +434,101 @@ class _DataObservabilitySettingsScreenState
         );
       }).toList(),
     );
+  }
+
+  Widget _buildObservatoryCard() {
+    final isActive = _observatoryService.isInitialized &&
+        _observatoryService.isCollectingMetrics;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Ionicons.telescope_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Observatory Dashboard',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const Spacer(),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: isActive ? Colors.green : Colors.grey,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Centralized monitoring with SigNoz, Grafana, PostHog, and more',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const ObservatoryDashboardScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Ionicons.analytics_outline),
+                    label: const Text('Open Dashboard'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: isActive ? null : _initializeObservatory,
+                  icon: Icon(isActive
+                      ? Ionicons.checkmark_outline
+                      : Ionicons.play_outline),
+                  label: Text(isActive ? 'Active' : 'Start'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _initializeObservatory() async {
+    try {
+      await _observatoryService.initialize();
+      if (mounted) {
+        setState(() {});
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Observatory Dashboard initialized successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to initialize Observatory: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildMonitoringCardsRow() {

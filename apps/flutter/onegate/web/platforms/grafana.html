@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafana - OneGate Dashboards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0b1426;
+            color: #d9d9d9;
+        }
+
+        .header {
+            background: #1f2937;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f97316;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-item {
+            color: #d1d5db;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #374151;
+            color: white;
+        }
+
+        .container {
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .dashboard-meta {
+            color: #9ca3af;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .panels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            height: 200px;
+            background: #111827;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-display {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #10b981;
+        }
+
+        .metric-label {
+            color: #9ca3af;
+            margin-top: 0.5rem;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1f2937, #374151);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            margin-right: 0.5rem;
+        }
+
+        .refresh-btn {
+            background: #f97316;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .refresh-btn:hover {
+            background: #ea580c;
+        }
+
+        .time-range {
+            background: #374151;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .alert-panel {
+            background: #7f1d1d;
+            border-color: #dc2626;
+        }
+
+        .success-panel {
+            background: #064e3b;
+            border-color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">📈 Grafana</div>
+        <nav class="nav">
+            <a href="#" class="nav-item active">Dashboards</a>
+            <a href="#" class="nav-item">Explore</a>
+            <a href="#" class="nav-item">Alerting</a>
+            <a href="#" class="nav-item">Configuration</a>
+        </nav>
+        <div class="time-range">Last 1 hour</div>
+    </div>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">OneGate Application Monitoring</h1>
+            <div class="dashboard-meta">
+                <span class="status-indicator"></span>
+                <span>Auto-refresh: 5s</span>
+                <span>•</span>
+                <span>Last updated: <span id="last-updated">just now</span></span>
+            </div>
+        </div>
+
+        <div class="panels-grid">
+            <div class="panel success-panel">
+                <div class="panel-title">
+                    Network Requests
+                    <button class="refresh-btn" onclick="refreshPanel('network')">↻</button>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-display">
+                        <div class="metric-value" id="network-requests">1,247</div>
+                        <div class="metric-label">Total Requests</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">
+                    Response Time
+                    <button class="refresh-btn" onclick="refreshPanel('response')">↻</button>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-display">
+                        <div class="metric-value" id="response-time" style="color: #3b82f6;">245ms</div>
+                        <div class="metric-label">Average Response Time</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel alert-panel">
+                <div class="panel-title">
+                    Error Rate
+                    <button class="refresh-btn" onclick="refreshPanel('errors')">↻</button>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-display">
+                        <div class="metric-value" id="error-rate" style="color: #ef4444;">0.24%</div>
+                        <div class="metric-label">Error Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">
+                    Active Users
+                    <button class="refresh-btn" onclick="refreshPanel('users')">↻</button>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-display">
+                        <div class="metric-value" id="active-users" style="color: #8b5cf6;">127</div>
+                        <div class="metric-label">Current Active Users</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="grid-column: span 2;">
+                <div class="panel-title">
+                    Request Rate Over Time
+                    <button class="refresh-btn" onclick="refreshPanel('chart')">↻</button>
+                </div>
+                <div class="panel-content">
+                    <div class="chart-placeholder">📊 Real-time Request Rate Chart</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">
+                    Memory Usage
+                    <button class="refresh-btn" onclick="refreshPanel('memory')">↻</button>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-display">
+                        <div class="metric-value" id="memory-usage" style="color: #f59e0b;">156MB</div>
+                        <div class="metric-label">App Memory Usage</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">
+                    CPU Usage
+                    <button class="refresh-btn" onclick="refreshPanel('cpu')">↻</button>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-display">
+                        <div class="metric-value" id="cpu-usage" style="color: #06b6d4;">23%</div>
+                        <div class="metric-label">CPU Usage</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulate real-time dashboard updates
+        function updateMetrics() {
+            // Network requests
+            const networkEl = document.getElementById('network-requests');
+            const current = parseInt(networkEl.textContent.replace(',', ''));
+            networkEl.textContent = (current + Math.floor(Math.random() * 5)).toLocaleString();
+
+            // Response time
+            const responseEl = document.getElementById('response-time');
+            const currentResponse = parseInt(responseEl.textContent.replace('ms', ''));
+            responseEl.textContent = (currentResponse + Math.floor(Math.random() * 20 - 10)) + 'ms';
+
+            // Error rate
+            const errorEl = document.getElementById('error-rate');
+            const currentError = parseFloat(errorEl.textContent.replace('%', ''));
+            errorEl.textContent = (currentError + (Math.random() * 0.1 - 0.05)).toFixed(2) + '%';
+
+            // Active users
+            const usersEl = document.getElementById('active-users');
+            const currentUsers = parseInt(usersEl.textContent);
+            usersEl.textContent = (currentUsers + Math.floor(Math.random() * 6 - 3)).toString();
+
+            // Memory usage
+            const memoryEl = document.getElementById('memory-usage');
+            const currentMemory = parseInt(memoryEl.textContent.replace('MB', ''));
+            memoryEl.textContent = (currentMemory + Math.floor(Math.random() * 10 - 5)) + 'MB';
+
+            // CPU usage
+            const cpuEl = document.getElementById('cpu-usage');
+            const currentCpu = parseInt(cpuEl.textContent.replace('%', ''));
+            cpuEl.textContent = Math.max(0, Math.min(100, currentCpu + Math.floor(Math.random() * 10 - 5))) + '%';
+
+            // Update timestamp
+            document.getElementById('last-updated').textContent = 'just now';
+        }
+
+        function refreshPanel(panelType) {
+            console.log(`Refreshing ${panelType} panel`);
+            updateMetrics();
+        }
+
+        // Auto-update every 5 seconds
+        setInterval(updateMetrics, 5000);
+
+        // Simulate data fetching from OneGate API
+        async function fetchOneGateMetrics() {
+            try {
+                const response = await fetch('http://localhost:8866/api/dashboard');
+                const data = await response.json();
+                
+                if (data.dashboard) {
+                    document.getElementById('network-requests').textContent = 
+                        data.dashboard.network_requests.toLocaleString();
+                    document.getElementById('response-time').textContent = 
+                        data.dashboard.avg_response_time + 'ms';
+                    document.getElementById('error-rate').textContent = 
+                        data.dashboard.error_rate + '%';
+                    document.getElementById('active-users').textContent = 
+                        data.dashboard.active_users.toString();
+                }
+            } catch (error) {
+                console.log('Using simulated data - API not available');
+            }
+        }
+
+        // Try to fetch real data, fallback to simulated
+        fetchOneGateMetrics();
+        setInterval(fetchOneGateMetrics, 10000);
+
+        console.log('📈 Grafana Dashboard loaded for OneGate monitoring');
+    </script>
+</body>
+</html>

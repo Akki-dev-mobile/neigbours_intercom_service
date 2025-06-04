@@ -53,15 +53,19 @@ void main() {
       test('should login successfully', () async {
         // Arrange
         final authResponse = AuthorizationTokenResponse(
-          accessToken: sampleAccessToken,
-          refreshToken: sampleRefreshToken,
-          idToken: sampleIdToken,
-          accessTokenExpirationDateTime: DateTime.now().add(Duration(hours: 1)),
+          sampleAccessToken,
+          sampleRefreshToken,
+          DateTime.now().add(const Duration(hours: 1)),
+          sampleIdToken,
+          'Bearer',
+          <String>[],
+          <String, dynamic>{},
+          <String, dynamic>{},
         );
 
         when(mockAppAuth.authorizeAndExchangeCode(any))
             .thenAnswer((_) async => authResponse);
-        
+
         when(mockTokenManager.storeTokens(
           accessToken: anyNamed('accessToken'),
           refreshToken: anyNamed('refreshToken'),
@@ -81,11 +85,18 @@ void main() {
         ));
       });
 
-      test('should handle login failure when no access token received', () async {
+      test('should handle login failure when no access token received',
+          () async {
         // Arrange
         final authResponse = AuthorizationTokenResponse(
-          accessToken: null, // No access token
-          refreshToken: sampleRefreshToken,
+          null, // No access token
+          sampleRefreshToken,
+          DateTime.now().add(const Duration(hours: 1)),
+          sampleIdToken,
+          'Bearer',
+          <String>[],
+          <String, dynamic>{},
+          <String, dynamic>{},
         );
 
         when(mockAppAuth.authorizeAndExchangeCode(any))
@@ -119,7 +130,8 @@ void main() {
 
       test('should handle logout errors', () async {
         // Arrange
-        when(mockTokenManager.clearTokens()).thenThrow(Exception('Clear failed'));
+        when(mockTokenManager.clearTokens())
+            .thenThrow(Exception('Clear failed'));
 
         // Act & Assert
         expect(() => authService.logout(), throwsException);
@@ -197,7 +209,7 @@ void main() {
           'name': 'John Doe',
           'email': 'john@example.com',
         };
-        
+
         when(mockTokenManager.getUserInfo()).thenAnswer((_) async => userInfo);
 
         // Act

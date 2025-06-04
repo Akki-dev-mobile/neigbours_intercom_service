@@ -1191,4 +1191,14 @@ class MockGateStorage extends _i1.Mock implements _i7.GateStorage {
         ),
         returnValue: _i5.Future<int>.value(0),
       ) as _i5.Future<int>);
+
+  @override
+  _i5.Future<void> clearVisitorSessionData() => (super.noSuchMethod(
+        Invocation.method(
+          #clearVisitorSessionData,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 }

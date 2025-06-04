@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SigNoz APM - OneGate Monitoring</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+        }
+
+        .header {
+            background: #2d3748;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .status {
+            background: #48bb78;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .metric-title {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .metric-trend {
+            font-size: 0.8rem;
+            color: #48bb78;
+            margin-top: 0.5rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .chart {
+            height: 200px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .traces-table {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table th {
+            background: #f7fafc;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        .refresh-btn:hover {
+            background: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">📊 SigNoz APM</div>
+        <div class="status">🟢 Connected to OneGate</div>
+    </div>
+
+    <div class="container">
+        <h1>Application Performance Monitoring</h1>
+        <p style="margin-bottom: 2rem; color: #718096;">Real-time APM data for OneGate Flutter Application</p>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">Total Requests</div>
+                <div class="metric-value" id="total-requests">1,247</div>
+                <div class="metric-trend">↗️ +12% from last hour</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Average Response Time</div>
+                <div class="metric-value" id="avg-response">245ms</div>
+                <div class="metric-trend">↘️ -15ms improvement</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Error Rate</div>
+                <div class="metric-value" id="error-rate">0.24%</div>
+                <div class="metric-trend">↘️ -0.1% improvement</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Throughput</div>
+                <div class="metric-value" id="throughput">24.5/min</div>
+                <div class="metric-trend">↗️ +2.3 req/min</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Response Time Trends</div>
+            <div class="chart">📈 Real-time Response Time Chart (Simulated)</div>
+        </div>
+
+        <div class="traces-table">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3>Recent Traces</h3>
+                <button class="refresh-btn" onclick="refreshTraces()">🔄 Refresh</button>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Trace ID</th>
+                        <th>Service</th>
+                        <th>Operation</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="traces-tbody">
+                    <tr>
+                        <td>trace_001</td>
+                        <td>onegate-flutter</td>
+                        <td>GET /api/visitors</td>
+                        <td>234ms</td>
+                        <td><span class="status-badge status-success">Success</span></td>
+                        <td>2 minutes ago</td>
+                    </tr>
+                    <tr>
+                        <td>trace_002</td>
+                        <td>onegate-flutter</td>
+                        <td>POST /api/auth/login</td>
+                        <td>156ms</td>
+                        <td><span class="status-badge status-success">Success</span></td>
+                        <td>3 minutes ago</td>
+                    </tr>
+                    <tr>
+                        <td>trace_003</td>
+                        <td>onegate-flutter</td>
+                        <td>GET /api/residents</td>
+                        <td>445ms</td>
+                        <td><span class="status-badge status-error">Error</span></td>
+                        <td>5 minutes ago</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Simulate real-time updates
+        function updateMetrics() {
+            const totalRequests = document.getElementById('total-requests');
+            const avgResponse = document.getElementById('avg-response');
+            const errorRate = document.getElementById('error-rate');
+            const throughput = document.getElementById('throughput');
+
+            // Update with realistic variations
+            const currentRequests = parseInt(totalRequests.textContent.replace(',', ''));
+            totalRequests.textContent = (currentRequests + Math.floor(Math.random() * 5)).toLocaleString();
+
+            const currentResponse = parseInt(avgResponse.textContent.replace('ms', ''));
+            avgResponse.textContent = (currentResponse + Math.floor(Math.random() * 20 - 10)) + 'ms';
+
+            const currentError = parseFloat(errorRate.textContent.replace('%', ''));
+            errorRate.textContent = (currentError + (Math.random() * 0.1 - 0.05)).toFixed(2) + '%';
+
+            const currentThroughput = parseFloat(throughput.textContent.replace('/min', ''));
+            throughput.textContent = (currentThroughput + (Math.random() * 2 - 1)).toFixed(1) + '/min';
+        }
+
+        function refreshTraces() {
+            const tbody = document.getElementById('traces-tbody');
+            const operations = [
+                'GET /api/visitors',
+                'POST /api/auth/login',
+                'GET /api/residents',
+                'PUT /api/visitor/approve',
+                'GET /api/health',
+                'POST /api/visitor/checkin'
+            ];
+
+            // Add a new trace at the top
+            const newRow = tbody.insertRow(0);
+            const traceId = 'trace_' + Math.floor(Math.random() * 1000);
+            const operation = operations[Math.floor(Math.random() * operations.length)];
+            const duration = Math.floor(Math.random() * 500 + 100);
+            const status = Math.random() > 0.1 ? 'Success' : 'Error';
+            const statusClass = status === 'Success' ? 'status-success' : 'status-error';
+
+            newRow.innerHTML = `
+                <td>${traceId}</td>
+                <td>onegate-flutter</td>
+                <td>${operation}</td>
+                <td>${duration}ms</td>
+                <td><span class="status-badge ${statusClass}">${status}</span></td>
+                <td>Just now</td>
+            `;
+
+            // Remove old rows (keep only 10)
+            while (tbody.rows.length > 10) {
+                tbody.deleteRow(tbody.rows.length - 1);
+            }
+        }
+
+        // Auto-update every 5 seconds
+        setInterval(updateMetrics, 5000);
+        setInterval(refreshTraces, 8000);
+
+        console.log('📊 SigNoz APM Interface loaded for OneGate monitoring');
+    </script>
+</body>
+</html>

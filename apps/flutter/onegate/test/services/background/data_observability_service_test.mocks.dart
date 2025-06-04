@@ -3,25 +3,12 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i6;
-import 'dart:io' as _i4;
+import 'dart:async' as _i3;
 
-import 'package:dio/dio.dart' as _i14;
-import 'package:flutter/material.dart' as _i10;
-import 'package:flutter_onegate/config/gate_config.dart' as _i3;
-import 'package:flutter_onegate/data/datasources/gate_storage.dart' as _i2;
-import 'package:flutter_onegate/data/datasources/remote_datasource.dart' as _i9;
-import 'package:flutter_onegate/data/models/staff_model.dart' as _i15;
-import 'package:flutter_onegate/domain/entities/society/member.dart' as _i7;
-import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart'
-    as _i11;
-import 'package:flutter_onegate/domain/entities/visitor/visitor.dart' as _i8;
-import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart'
-    as _i12;
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart'
-    as _i13;
+import 'package:flutter_onegate/domain/entities/society/member.dart' as _i4;
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart' as _i5;
 import 'package:flutter_onegate/services/search/meilisearch_service.dart'
-    as _i5;
+    as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint
@@ -38,47 +25,17 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeGateStorage_0 extends _i1.SmartFake implements _i2.GateStorage {
-  _FakeGateStorage_0(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-}
-
-class _FakeGateConfig_1 extends _i1.SmartFake implements _i3.GateConfig {
-  _FakeGateConfig_1(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-}
-
-class _FakeFile_2 extends _i1.SmartFake implements _i4.File {
-  _FakeFile_2(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-}
-
 /// A class which mocks [MeilisearchService].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockMeilisearchService extends _i1.Mock
-    implements _i5.MeilisearchService {
+    implements _i2.MeilisearchService {
   MockMeilisearchService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i6.Future<bool> initialize({
+  _i3.Future<bool> initialize({
     String? host,
     String? apiKey,
   }) =>
@@ -91,31 +48,31 @@ class MockMeilisearchService extends _i1.Mock
             #apiKey: apiKey,
           },
         ),
-        returnValue: _i6.Future<bool>.value(false),
-      ) as _i6.Future<bool>);
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
 
   @override
-  _i6.Future<bool> indexResidents(List<_i7.Member>? residents) =>
+  _i3.Future<bool> indexResidents(List<_i4.Member>? residents) =>
       (super.noSuchMethod(
         Invocation.method(
           #indexResidents,
           [residents],
         ),
-        returnValue: _i6.Future<bool>.value(false),
-      ) as _i6.Future<bool>);
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
 
   @override
-  _i6.Future<bool> indexVisitors(List<_i8.Visitor>? visitors) =>
+  _i3.Future<bool> indexVisitors(List<_i5.Visitor>? visitors) =>
       (super.noSuchMethod(
         Invocation.method(
           #indexVisitors,
           [visitors],
         ),
-        returnValue: _i6.Future<bool>.value(false),
-      ) as _i6.Future<bool>);
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
 
   @override
-  _i6.Future<List<Map<String, dynamic>>> searchResidents({
+  _i3.Future<List<Map<String, dynamic>>> searchResidents({
     required String? query,
     String? building,
     String? memberStatus,
@@ -136,12 +93,12 @@ class MockMeilisearchService extends _i1.Mock
             #offset: offset,
           },
         ),
-        returnValue: _i6.Future<List<Map<String, dynamic>>>.value(
+        returnValue: _i3.Future<List<Map<String, dynamic>>>.value(
             <Map<String, dynamic>>[]),
-      ) as _i6.Future<List<Map<String, dynamic>>>);
+      ) as _i3.Future<List<Map<String, dynamic>>>);
 
   @override
-  _i6.Future<List<Map<String, dynamic>>> searchVisitors({
+  _i3.Future<List<Map<String, dynamic>>> searchVisitors({
     required String? query,
     bool? isStaff,
     DateTime? fromDate,
@@ -162,12 +119,12 @@ class MockMeilisearchService extends _i1.Mock
             #offset: offset,
           },
         ),
-        returnValue: _i6.Future<List<Map<String, dynamic>>>.value(
+        returnValue: _i3.Future<List<Map<String, dynamic>>>.value(
             <Map<String, dynamic>>[]),
-      ) as _i6.Future<List<Map<String, dynamic>>>);
+      ) as _i3.Future<List<Map<String, dynamic>>>);
 
   @override
-  _i6.Future<List<String>> getSearchSuggestions(
+  _i3.Future<List<String>> getSearchSuggestions(
     String? query, {
     String? index = 'residents',
   }) =>
@@ -177,704 +134,34 @@ class MockMeilisearchService extends _i1.Mock
           [query],
           {#index: index},
         ),
-        returnValue: _i6.Future<List<String>>.value(<String>[]),
-      ) as _i6.Future<List<String>>);
+        returnValue: _i3.Future<List<String>>.value(<String>[]),
+      ) as _i3.Future<List<String>>);
 
   @override
-  _i6.Future<bool> clearAllIndexes() => (super.noSuchMethod(
+  _i3.Future<bool> clearAllIndexes() => (super.noSuchMethod(
         Invocation.method(
           #clearAllIndexes,
           [],
         ),
-        returnValue: _i6.Future<bool>.value(false),
-      ) as _i6.Future<bool>);
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
 
   @override
-  _i6.Future<bool> isHealthy() => (super.noSuchMethod(
+  _i3.Future<bool> isHealthy() => (super.noSuchMethod(
         Invocation.method(
           #isHealthy,
           [],
         ),
-        returnValue: _i6.Future<bool>.value(false),
-      ) as _i6.Future<bool>);
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
 
   @override
-  _i6.Future<Map<String, dynamic>> getConnectionStatus() => (super.noSuchMethod(
+  _i3.Future<Map<String, dynamic>> getConnectionStatus() => (super.noSuchMethod(
         Invocation.method(
           #getConnectionStatus,
           [],
         ),
         returnValue:
-            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i6.Future<Map<String, dynamic>>);
-}
-
-/// A class which mocks [RemoteDataSource].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockRemoteDataSource extends _i1.Mock implements _i9.RemoteDataSource {
-  MockRemoteDataSource() {
-    _i1.throwOnMissingStub(this);
-  }
-
-  @override
-  _i2.GateStorage get gateStorage => (super.noSuchMethod(
-        Invocation.getter(#gateStorage),
-        returnValue: _FakeGateStorage_0(
-          this,
-          Invocation.getter(#gateStorage),
-        ),
-      ) as _i2.GateStorage);
-
-  @override
-  _i6.Future<Map<String, dynamic>> loginUser() => (super.noSuchMethod(
-        Invocation.method(
-          #loginUser,
-          [],
-        ),
-        returnValue:
-            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<void> callMember(
-    String? mobile,
-    _i10.BuildContext? context, {
-    String? name,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #callMember,
-          [
-            mobile,
-            context,
-          ],
-          {#name: name},
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<List<dynamic>> getCallHistory(String? fromNumber) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getCallHistory,
-          [fromNumber],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<List<dynamic>> fetchGates() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchGates,
-          [],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<List<dynamic>> fetchSocieties(String? userId) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #fetchSocieties,
-          [userId],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<void> sendFcmNotification(Map<String, dynamic>? requestData) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #sendFcmNotification,
-          [requestData],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<_i3.GateConfig> fetchGateBaseDomain() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchGateBaseDomain,
-          [],
-        ),
-        returnValue: _i6.Future<_i3.GateConfig>.value(_FakeGateConfig_1(
-          this,
-          Invocation.method(
-            #fetchGateBaseDomain,
-            [],
-          ),
-        )),
-      ) as _i6.Future<_i3.GateConfig>);
-
-  @override
-  _i6.Future<_i8.Visitor?> searchVisitor(String? mobileNumber) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #searchVisitor,
-          [mobileNumber],
-        ),
-        returnValue: _i6.Future<_i8.Visitor?>.value(),
-      ) as _i6.Future<_i8.Visitor?>);
-
-  @override
-  _i6.Future<List<_i11.PurposeCategory1>?> fetchPurpose() =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #fetchPurpose,
-          [],
-        ),
-        returnValue: _i6.Future<List<_i11.PurposeCategory1>?>.value(),
-      ) as _i6.Future<List<_i11.PurposeCategory1>?>);
-
-  @override
-  _i6.Future<void> fetchAndStoreFaceRecConfig() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchAndStoreFaceRecConfig,
-          [],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<_i8.Visitor?> createVisitor(_i8.Visitor? visitor) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #createVisitor,
-          [visitor],
-        ),
-        returnValue: _i6.Future<_i8.Visitor?>.value(),
-      ) as _i6.Future<_i8.Visitor?>);
-
-  @override
-  _i6.Future<List<_i12.VisitorLog>?> fetchCardNumbers() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchCardNumbers,
-          [],
-        ),
-        returnValue: _i6.Future<List<_i12.VisitorLog>?>.value(),
-      ) as _i6.Future<List<_i12.VisitorLog>?>);
-
-  @override
-  _i6.Future<_i12.VisitorLog?> checkIn(
-    _i12.VisitorLog? visitorLog, [
-    bool? statusallowed,
-  ]) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #checkIn,
-          [
-            visitorLog,
-            statusallowed,
-          ],
-        ),
-        returnValue: _i6.Future<_i12.VisitorLog?>.value(),
-      ) as _i6.Future<_i12.VisitorLog?>);
-
-  @override
-  _i6.Future<void> exportLogs(Map<String, dynamic>? visitorData) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #exportLogs,
-          [visitorData],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<List<_i12.VisitorLog>> fetchCheckInLogs() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchCheckInLogs,
-          [],
-        ),
-        returnValue:
-            _i6.Future<List<_i12.VisitorLog>>.value(<_i12.VisitorLog>[]),
-      ) as _i6.Future<List<_i12.VisitorLog>>);
-
-  @override
-  _i6.Future<List<_i12.VisitorLog>> fetchAllLogs() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchAllLogs,
-          [],
-        ),
-        returnValue:
-            _i6.Future<List<_i12.VisitorLog>>.value(<_i12.VisitorLog>[]),
-      ) as _i6.Future<List<_i12.VisitorLog>>);
-
-  @override
-  _i6.Future<List<_i12.VisitorLog>> fetchCheckOutLogs() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchCheckOutLogs,
-          [],
-        ),
-        returnValue:
-            _i6.Future<List<_i12.VisitorLog>>.value(<_i12.VisitorLog>[]),
-      ) as _i6.Future<List<_i12.VisitorLog>>);
-
-  @override
-  DateTime? tryParseDate(String? dateStr) =>
-      (super.noSuchMethod(Invocation.method(
-        #tryParseDate,
-        [dateStr],
-      )) as DateTime?);
-
-  @override
-  _i6.Future<Map<String, dynamic>> verifyPasscode({
-    required String? companyId,
-    String? passcode,
-    int? id,
-    String? mobile,
-    bool? isStaff,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #verifyPasscode,
-          [],
-          {
-            #companyId: companyId,
-            #passcode: passcode,
-            #id: id,
-            #mobile: mobile,
-            #isStaff: isStaff,
-          },
-        ),
-        returnValue:
-            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<List<dynamic>> getMember(int? companyId) => (super.noSuchMethod(
-        Invocation.method(
-          #getMember,
-          [companyId],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<List<dynamic>> getSubCategoryId(int? companyId) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getSubCategoryId,
-          [companyId],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<List<dynamic>> getMemberUnit(
-    int? companyId,
-    int? buildingId,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getMemberUnit,
-          [
-            companyId,
-            buildingId,
-          ],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<List<Map<String, dynamic>>> getBuilding(int? companyId) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getBuilding,
-          [companyId],
-        ),
-        returnValue: _i6.Future<List<Map<String, dynamic>>>.value(
-            <Map<String, dynamic>>[]),
-      ) as _i6.Future<List<Map<String, dynamic>>>);
-
-  @override
-  _i6.Future<List<dynamic>> getBuildingsList() => (super.noSuchMethod(
-        Invocation.method(
-          #getBuildingsList,
-          [],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<Map<String, dynamic>> sendOtpForSelfCheckIn(
-          String? mobileNumber) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #sendOtpForSelfCheckIn,
-          [mobileNumber],
-        ),
-        returnValue:
-            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<Map<String, dynamic>> verifySelfCheckin({
-    required String? mobileNumber,
-    required String? otp,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #verifySelfCheckin,
-          [],
-          {
-            #mobileNumber: mobileNumber,
-            #otp: otp,
-          },
-        ),
-        returnValue:
-            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<String?> sendOTP(String? mobileNumber) => (super.noSuchMethod(
-        Invocation.method(
-          #sendOTP,
-          [mobileNumber],
-        ),
-        returnValue: _i6.Future<String?>.value(),
-      ) as _i6.Future<String?>);
-
-  @override
-  _i6.Future<String?> verifyOTP(
-    String? mobileNumber,
-    String? otp,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #verifyOTP,
-          [
-            mobileNumber,
-            otp,
-          ],
-        ),
-        returnValue: _i6.Future<String?>.value(),
-      ) as _i6.Future<String?>);
-
-  @override
-  _i6.Future<bool> checkOut(_i12.VisitorLog? visitorLog) => (super.noSuchMethod(
-        Invocation.method(
-          #checkOut,
-          [visitorLog],
-        ),
-        returnValue: _i6.Future<bool>.value(false),
-      ) as _i6.Future<bool>);
-
-  @override
-  _i6.Future<bool> uploadParcelImage({
-    required int? visitorLogId,
-    required String? imageUrl,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #uploadParcelImage,
-          [],
-          {
-            #visitorLogId: visitorLogId,
-            #imageUrl: imageUrl,
-          },
-        ),
-        returnValue: _i6.Future<bool>.value(false),
-      ) as _i6.Future<bool>);
-
-  @override
-  _i6.Future<List<_i13.VisitorInfo>> fetchApprovals({
-    String? logID,
-    bool? isSecondary,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #fetchApprovals,
-          [],
-          {
-            #logID: logID,
-            #isSecondary: isSecondary,
-          },
-        ),
-        returnValue:
-            _i6.Future<List<_i13.VisitorInfo>>.value(<_i13.VisitorInfo>[]),
-      ) as _i6.Future<List<_i13.VisitorInfo>>);
-
-  @override
-  int parseToInt(dynamic value) => (super.noSuchMethod(
-        Invocation.method(
-          #parseToInt,
-          [value],
-        ),
-        returnValue: 0,
-      ) as int);
-
-  @override
-  _i6.Future<void> sendLogs(Map<String, dynamic>? visitorData) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #sendLogs,
-          [visitorData],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<_i14.Response<dynamic>?> readStatus(
-    String? memberID,
-    String? visitorId,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #readStatus,
-          [
-            memberID,
-            visitorId,
-          ],
-        ),
-        returnValue: _i6.Future<_i14.Response<dynamic>?>.value(),
-      ) as _i6.Future<_i14.Response<dynamic>?>);
-
-  @override
-  _i6.Future<_i4.File> compressImage(_i4.File? file) => (super.noSuchMethod(
-        Invocation.method(
-          #compressImage,
-          [file],
-        ),
-        returnValue: _i6.Future<_i4.File>.value(_FakeFile_2(
-          this,
-          Invocation.method(
-            #compressImage,
-            [file],
-          ),
-        )),
-      ) as _i6.Future<_i4.File>);
-
-  @override
-  _i6.Future<String?> uploadFile(
-    _i4.File? thisfile,
-    String? userMobile,
-    int? companyId,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #uploadFile,
-          [
-            thisfile,
-            userMobile,
-            companyId,
-          ],
-        ),
-        returnValue: _i6.Future<String?>.value(),
-      ) as _i6.Future<String?>);
-
-  @override
-  _i6.Future<Map<String, dynamic>> getMembersList({String? buildingName}) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getMembersList,
-          [],
-          {#buildingName: buildingName},
-        ),
-        returnValue:
-            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<List<dynamic>?> getCachedData() => (super.noSuchMethod(
-        Invocation.method(
-          #getCachedData,
-          [],
-        ),
-        returnValue: _i6.Future<List<dynamic>?>.value(),
-      ) as _i6.Future<List<dynamic>?>);
-
-  @override
-  _i6.Future<void> cacheData(List<dynamic>? data) => (super.noSuchMethod(
-        Invocation.method(
-          #cacheData,
-          [data],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> cacheMeta(Map<String, dynamic>? meta) => (super.noSuchMethod(
-        Invocation.method(
-          #cacheMeta,
-          [meta],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<Map<String, dynamic>?> getCachedMeta() => (super.noSuchMethod(
-        Invocation.method(
-          #getCachedMeta,
-          [],
-        ),
-        returnValue: _i6.Future<Map<String, dynamic>?>.value(),
-      ) as _i6.Future<Map<String, dynamic>?>);
-
-  @override
-  _i6.Future<List<dynamic>> getUnitsList(int? buildingId) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getUnitsList,
-          [buildingId],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<Map<String, dynamic>?> fetchStaffById(int? staffId) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #fetchStaffById,
-          [staffId],
-        ),
-        returnValue: _i6.Future<Map<String, dynamic>?>.value(),
-      ) as _i6.Future<Map<String, dynamic>?>);
-
-  @override
-  _i6.Future<List<_i15.StaffModel>> fetchStaffList(String? companyId) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #fetchStaffList,
-          [companyId],
-        ),
-        returnValue:
-            _i6.Future<List<_i15.StaffModel>>.value(<_i15.StaffModel>[]),
-      ) as _i6.Future<List<_i15.StaffModel>>);
-
-  @override
-  _i6.Future<void> makeExotelCall({
-    required String? memberMobileNumber,
-    required int? visitorId,
-    required int? memberId,
-    required int? visitorLogId,
-    required String? purposeCategory,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #makeExotelCall,
-          [],
-          {
-            #memberMobileNumber: memberMobileNumber,
-            #visitorId: visitorId,
-            #memberId: memberId,
-            #visitorLogId: visitorLogId,
-            #purposeCategory: purposeCategory,
-          },
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<List<dynamic>> fetchParcels() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchParcels,
-          [],
-        ),
-        returnValue: _i6.Future<List<dynamic>>.value(<dynamic>[]),
-      ) as _i6.Future<List<dynamic>>);
-
-  @override
-  _i6.Future<Map<String, dynamic>> verifyParcelOtp(
-    String? parcelId,
-    String? otp,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #verifyParcelOtp,
-          [
-            parcelId,
-            otp,
-          ],
-        ),
-        returnValue:
-            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<Map<String, dynamic>> getParcelOtp(
-    String? parcelId,
-    String? mobileNumber,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getParcelOtp,
-          [
-            parcelId,
-            mobileNumber,
-          ],
-        ),
-        returnValue:
-            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i6.Future<Map<String, dynamic>>);
-
-  @override
-  _i6.Future<dynamic> fetchStaffCategory() => (super.noSuchMethod(
-        Invocation.method(
-          #fetchStaffCategory,
-          [],
-        ),
-        returnValue: _i6.Future<dynamic>.value(),
-      ) as _i6.Future<dynamic>);
-
-  @override
-  _i6.Future<dynamic> addStaff(Map<String, dynamic>? staffData) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #addStaff,
-          [staffData],
-        ),
-        returnValue: _i6.Future<dynamic>.value(),
-      ) as _i6.Future<dynamic>);
-
-  @override
-  _i6.Future<dynamic> editStaff(
-    int? staffId,
-    Map<String, dynamic>? staffData,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #editStaff,
-          [
-            staffId,
-            staffData,
-          ],
-        ),
-        returnValue: _i6.Future<dynamic>.value(),
-      ) as _i6.Future<dynamic>);
-
-  @override
-  _i6.Future<Map<String, dynamic>?> uploadStaffImages(
-    _i4.File? file,
-    int? companyId,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #uploadStaffImages,
-          [
-            file,
-            companyId,
-          ],
-        ),
-        returnValue: _i6.Future<Map<String, dynamic>?>.value(),
-      ) as _i6.Future<Map<String, dynamic>?>);
-
-  @override
-  _i6.Future<bool> updateVisitor(_i8.Visitor? visitor) => (super.noSuchMethod(
-        Invocation.method(
-          #updateVisitor,
-          [visitor],
-        ),
-        returnValue: _i6.Future<bool>.value(false),
-      ) as _i6.Future<bool>);
+            _i3.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
+      ) as _i3.Future<Map<String, dynamic>>);
 }

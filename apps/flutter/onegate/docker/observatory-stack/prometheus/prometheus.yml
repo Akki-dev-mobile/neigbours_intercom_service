@@ -1,0 +1,155 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # OneGate Flutter App Metrics
+  - job_name: 'onegate-flutter'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Observatory Dashboard
+  - job_name: 'observatory-dashboard'
+    static_configs:
+      - targets: ['observatory-dashboard:5015']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Consolidated Dashboard
+  - job_name: 'consolidated-dashboard'
+    static_configs:
+      - targets: ['consolidated-dashboard:3002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # SigNoz Components
+  - job_name: 'signoz-query-service'
+    static_configs:
+      - targets: ['signoz-query-service:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'signoz-otel-collector'
+    static_configs:
+      - targets: ['signoz-otel-collector:8888']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # ClickHouse
+  - job_name: 'clickhouse'
+    static_configs:
+      - targets: ['clickhouse:8123']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Loki
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Tempo
+  - job_name: 'tempo'
+    static_configs:
+      - targets: ['tempo:3200']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # PostHog
+  - job_name: 'posthog'
+    static_configs:
+      - targets: ['posthog:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 60s
+
+  # HyperDX
+  - job_name: 'hyperdx'
+    static_configs:
+      - targets: ['hyperdx:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 60s
+
+  # SkyWalking OAP
+  - job_name: 'skywalking-oap'
+    static_configs:
+      - targets: ['skywalking-oap:12800']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Elasticsearch
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+    metrics_path: '/_prometheus/metrics'
+    scrape_interval: 30s
+
+  # Measure Analytics
+  - job_name: 'measure-analytics'
+    static_configs:
+      - targets: ['measure-analytics:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 60s
+
+  # Highlight
+  - job_name: 'highlight'
+    static_configs:
+      - targets: ['highlight:4318']
+    metrics_path: '/metrics'
+    scrape_interval: 60s
+
+  # Sentry
+  - job_name: 'sentry'
+    static_configs:
+      - targets: ['sentry:9000']
+    metrics_path: '/metrics'
+    scrape_interval: 60s
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node Exporter (if available)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['host.docker.internal:9100']
+    scrape_interval: 30s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - "alert_rules.yml"

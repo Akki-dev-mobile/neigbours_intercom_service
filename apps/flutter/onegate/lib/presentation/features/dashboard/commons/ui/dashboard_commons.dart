@@ -13,7 +13,7 @@ class DashboardBlocks extends StatelessWidget {
   final int? outBook;
   final Bloc bloc;
 
-  DashboardBlocks({
+  const DashboardBlocks({
     super.key,
     this.inBook,
     this.outBook,
@@ -100,13 +100,20 @@ class DashboardBlocks extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    splashColor: Color.fromARGB(255, 255, 226, 172),
+                    splashColor: const Color.fromARGB(255, 255, 226, 172),
                     autofocus: true,
+                    // onTap: () {
+                    //   bloc is GatekeeperDashboardBloc
+                    //       ? bloc.add(GDInAndOutButtonPressedEvent())
+                    //       : bloc.add(ADInAndOutButtonPressedEvent());
+                    //   bloc.add(GDInAndOutButtonPressedEvent());
+                    // },
                     onTap: () {
-                      bloc is GatekeeperDashboardBloc
-                          ? bloc.add(GDInAndOutButtonPressedEvent())
-                          : bloc.add(ADInAndOutButtonPressedEvent());
-                      bloc.add(GDInAndOutButtonPressedEvent());
+                      if (bloc is GatekeeperDashboardBloc) {
+                        bloc.add(GDInAndOutButtonPressedEvent());
+                      } else if (bloc is AdminDashboardBloc) {
+                        bloc.add(ADInAndOutButtonPressedEvent());
+                      }
                     },
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
