@@ -1,0 +1,2 @@
+/Users/futurescapetechnology/Desktop/Futurescape/one-monorepo/apps/flutter/onegate/android/app/.cxx/Debug/106164c6/x86/CMakeFiles/edit_cache.dir
+/Users/futurescapetechnology/Desktop/Futurescape/one-monorepo/apps/flutter/onegate/android/app/.cxx/Debug/106164c6/x86/CMakeFiles/rebuild_cache.dir
