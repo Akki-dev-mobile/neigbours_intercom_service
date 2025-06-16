@@ -11,6 +11,7 @@ import 'package:flutter_onegate/services/crash_reporting/models/crash_models.dar
 import 'package:flutter_onegate/services/notifications/custom_notification_service.dart';
 import 'package:flutter_onegate/services/notifications/models/notification_models.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/services/error_tracking/posthog_error_tracking_service.dart';
 import 'dart:developer' as dev;
 
 /// Comprehensive crash reporting service for OneGate app
@@ -123,6 +124,9 @@ class CrashReporterService {
       await _saveCrashReport(crashReport);
       await _sendCrashAlert(crashReport);
 
+      // Send to PostHog Error Tracking
+      await PostHogErrorTrackingService.instance.captureFlutterError(details);
+
       // Also report to Flutter's default error handler in debug mode
       if (kDebugMode) {
         FlutterError.presentError(details);
@@ -144,6 +148,10 @@ class CrashReporterService {
 
       await _saveCrashReport(crashReport);
       await _sendCrashAlert(crashReport);
+
+      // Send to PostHog Error Tracking
+      await PostHogErrorTrackingService.instance
+          .capturePlatformError(error, stack);
     } catch (e) {
       dev.log('Error handling platform error: $e');
     }
@@ -183,6 +191,16 @@ class CrashReporterService {
       );
 
       await _saveCrashReport(crashReport);
+
+      // Send to PostHog Error Tracking
+      await PostHogErrorTrackingService.instance.captureError(
+        error: error,
+        stackTrace: stackTrace,
+        context: 'manual_error',
+        additionalProperties: customKeys,
+        isFatal: isFatal,
+        errorType: 'ManualError',
+      );
 
       if (isFatal) {
         await _sendCrashAlert(crashReport);

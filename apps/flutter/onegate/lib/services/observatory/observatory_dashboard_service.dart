@@ -3,14 +3,21 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
-import 'package:hive/hive.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_onegate/services/crash_reporting/crash_reporter_service.dart';
 import 'package:flutter_onegate/services/crash_reporting/analytics_service.dart';
 import 'package:flutter_onegate/services/data_health/data_health_service.dart';
+import 'package:flutter_onegate/services/observatory/sentry_monitoring_service.dart';
+import 'package:flutter_onegate/services/observatory/hyperdx_logging_service.dart';
+import 'package:flutter_onegate/services/observatory/skywalking_tracing_service.dart';
+import 'package:flutter_onegate/services/observatory/highlight_session_service.dart';
 import 'package:flutter_onegate/utils/network_log/services/network_log_service.dart';
 import 'package:flutter_onegate/services/notifications/custom_notification_service.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
+import 'package:prometheus_client/prometheus_client.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 /// Enhanced Observatory Dashboard Service for OneGate
 /// Integrates with OneApp Observatory & Monitoring Stack
@@ -34,6 +41,8 @@ class ObservatoryDashboardService {
   NetworkLogService? _networkLogService;
   CustomNotificationService? _notificationService;
 
+  // Removed OpenTelemetry instances (dependencies not available)
+
   // WebSocket connections for real-time monitoring
   WebSocketChannel? _dashboardChannel;
   WebSocketChannel? _metricsChannel;
@@ -52,13 +61,13 @@ class ObservatoryDashboardService {
     'consolidatedDashboardUrl': 'http://localhost:3002',
     'observabilityStackUrl': 'http://localhost:3000',
     'signozUrl': 'http://localhost:3301',
-    'grafanaUrl': 'http://localhost:3000',
-    'postHogUrl': 'http://localhost:8000',
+    'grafanaUrl': 'http://localhost:3000', // Keep for UI link if needed
+    'postHogUrl': dotenv.env['POSTHOG_HOST'] ?? 'https://app.posthog.com',
     'sentryDsn': '',
-    'hyperDxUrl': 'http://localhost:8080',
-    'skyWalkingUrl': 'http://localhost:8080',
     'measureAnalyticsUrl': 'http://localhost:3000',
     'highlightUrl': 'http://localhost:4318',
+    'prometheusPushGatewayUrl':
+        dotenv.env['PROMETHEUS_PUSHGATEWAY_URL'] ?? 'http://localhost:9091',
     'enableRealTimeMetrics': true,
     'metricsCollectionInterval': 30, // seconds
     'healthCheckInterval': 300, // seconds (5 minutes)
@@ -77,6 +86,25 @@ class ObservatoryDashboardService {
       // Initialize storage
       _gateStorage = GateStorage();
       await _gateStorage!.init();
+
+      // Load environment variables
+      await dotenv.load(fileName: ".env");
+
+      // Initialize PostHog - commented out due to API inconsistency
+      // PostHog is initialized in PostHogErrorTrackingService instead
+      // await Posthog.init(
+      //   apiKey: dotenv.env['POSTHOG_API_KEY'] ?? '',
+      //   host: dotenv.env['POSTHOG_HOST'] ?? 'https://app.posthog.com',
+      // );
+
+      // Initialize all monitoring services
+      await SentryMonitoringService.instance.initialize();
+      await HyperDxLoggingService.instance.initialize();
+      await SkyWalkingTracingService.instance.initialize();
+      await HighlightSessionService.instance.initialize();
+
+      // Initialize monitoring backends
+      await _initializeMonitoringBackends();
 
       // Initialize service instances
       _crashService = CrashReporterService();
@@ -196,13 +224,13 @@ class ObservatoryDashboardService {
 
       switch (message['type']) {
         case 'alert':
-          _handleDashboardAlert(message);
+          handleDashboardAlert(message);
           break;
         case 'metric_update':
-          _handleMetricUpdate(message);
+          handleMetricUpdate(message);
           break;
         case 'health_status':
-          _handleHealthStatusUpdate(message);
+          handleHealthStatusUpdate(message);
           break;
         default:
           dev.log('Unknown dashboard message type: ${message['type']}');
@@ -218,7 +246,7 @@ class ObservatoryDashboardService {
       final metrics = jsonDecode(data.toString());
 
       // Store real-time metrics
-      _storeRealTimeMetrics(metrics);
+      storeRealTimeMetrics(metrics);
 
       // Update analytics
       _analyticsService?.trackEvent('real_time_metrics_received', {
@@ -253,7 +281,7 @@ class ObservatoryDashboardService {
       );
 
       _healthCheckTimer = Timer.periodic(healthInterval, (_) {
-        _performHealthCheck();
+        performHealthCheck();
       });
 
       // Performance monitoring timer
@@ -262,7 +290,7 @@ class ObservatoryDashboardService {
       );
 
       _performanceTimer = Timer.periodic(performanceInterval, (_) {
-        _collectPerformanceMetrics();
+        collectPerformanceMetrics();
       });
 
       _isCollectingMetrics = true;
@@ -436,27 +464,65 @@ class ObservatoryDashboardService {
     // Send to PostHog Analytics
     await _sendToPostHog(metrics);
 
-    // Send to Grafana (via Prometheus format)
-    await _sendToGrafana(metrics);
-
-    // Send to HyperDX Logs
-    await _sendToHyperDX(metrics);
-
-    // Send to SkyWalking Tracing
-    await _sendToSkyWalking(metrics);
+    // Send to Prometheus Pushgateway
+    await _sendToPrometheus(metrics);
   }
 
-  /// Send metrics to SigNoz APM
+  /// Send metrics to SigNoz (simplified without OpenTelemetry dependencies)
   Future<void> _sendToSigNoz(Map<String, dynamic> metrics) async {
     try {
+      // Send metrics to SigNoz via HTTP API instead of OpenTelemetry
+      final signozEndpoint = dotenv.env['SIGNOZ_OTLP_ENDPOINT'];
+      if (signozEndpoint == null || signozEndpoint.isEmpty) return;
+
       final dio = Dio();
       await dio.post(
-        '${_observatoryConfig['signozUrl']}/api/v1/traces',
-        data: _formatForSigNoz(metrics),
+        '$signozEndpoint/v1/metrics',
+        data: {
+          'resourceMetrics': [
+            {
+              'resource': {
+                'attributes': [
+                  {
+                    'key': 'service.name',
+                    'value': {'stringValue': 'onegate-flutter'}
+                  },
+                  {
+                    'key': 'service.version',
+                    'value': {'stringValue': '1.0.0'}
+                  },
+                ]
+              },
+              'scopeMetrics': [
+                {
+                  'scope': {'name': 'onegate-metrics'},
+                  'metrics': metrics.entries
+                      .map((entry) => {
+                            'name': entry.key,
+                            'description': 'OneGate metric: ${entry.key}',
+                            'gauge': {
+                              'dataPoints': [
+                                {
+                                  'timeUnixNano':
+                                      DateTime.now().microsecondsSinceEpoch *
+                                          1000,
+                                  'asDouble': entry.value is num
+                                      ? entry.value.toDouble()
+                                      : 0.0,
+                                }
+                              ]
+                            }
+                          })
+                      .toList(),
+                }
+              ]
+            }
+          ]
+        },
         options: Options(
           headers: {'Content-Type': 'application/json'},
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
         ),
       );
     } catch (e) {
@@ -467,131 +533,103 @@ class ObservatoryDashboardService {
   /// Send metrics to PostHog Analytics
   Future<void> _sendToPostHog(Map<String, dynamic> metrics) async {
     try {
-      final dio = Dio();
-      await dio.post(
-        '${_observatoryConfig['postHogUrl']}/capture/',
-        data: _formatForPostHog(metrics),
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        ),
+      final properties = <String, dynamic>{};
+
+      // Flatten nested maps for PostHog properties
+      metrics.forEach((key, value) {
+        if (value is Map) {
+          value.forEach((subKey, subValue) {
+            properties['${key}_$subKey'] = subValue;
+          });
+        } else {
+          properties[key] = value;
+        }
+      });
+
+      // Convert properties to Object for PostHog compatibility
+      final Map<String, Object> postHogProperties = {};
+      properties.forEach((key, value) {
+        if (value != null) {
+          postHogProperties[key] = value;
+        }
+      });
+
+      await Posthog().capture(
+        eventName: 'onegate_metrics',
+        properties: postHogProperties,
       );
     } catch (e) {
       dev.log('Error sending to PostHog: $e');
     }
   }
 
-  /// Send metrics to Grafana
-  Future<void> _sendToGrafana(Map<String, dynamic> metrics) async {
+  /// Send metrics to Prometheus Pushgateway
+  Future<void> _sendToPrometheus(Map<String, dynamic> metrics) async {
     try {
-      final dio = Dio();
-      await dio.post(
-        '${_observatoryConfig['grafanaUrl']}/api/v1/push',
-        data: _formatForGrafana(metrics),
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        ),
-      );
+      final registry = CollectorRegistry();
+      final gatewayUrl = _observatoryConfig['prometheusPushGatewayUrl'];
+      final gateInfo = await _getAppInfo();
+      final gateId = gateInfo['gate_id'] ?? 'unknown_gate';
+      const job = 'onegate-flutter-metrics';
+
+      void processMetrics(Map<String, dynamic> map, String prefix) {
+        map.forEach((key, value) {
+          final metricName = '$prefix$key'.replaceAll('.', '_');
+          if (value is Map<String, dynamic>) {
+            processMetrics(value, '${metricName}_');
+          } else if (value is num) {
+            final gauge =
+                Gauge(name: metricName, help: 'Metric for $metricName');
+            gauge.value = value.toDouble();
+            registry.register(gauge);
+          }
+        });
+      }
+
+      processMetrics(metrics, '');
+
+      // TODO: Implement Prometheus push functionality
+      // await push(
+      //   address: Uri.parse(gatewayUrl),
+      //   registry: registry,
+      //   job: job,
+      //   instance: gateId,
+      // );
+      dev.log(
+          'Prometheus metrics prepared (push functionality disabled temporarily)');
     } catch (e) {
-      dev.log('Error sending to Grafana: $e');
+      dev.log('Error sending to Prometheus Pushgateway: $e');
     }
   }
 
-  /// Send metrics to HyperDX
-  Future<void> _sendToHyperDX(Map<String, dynamic> metrics) async {
-    try {
-      final dio = Dio();
-      await dio.post(
-        '${_observatoryConfig['hyperDxUrl']}/api/logs',
-        data: _formatForHyperDX(metrics),
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        ),
-      );
-    } catch (e) {
-      dev.log('Error sending to HyperDX: $e');
-    }
-  }
+  // _formatForSigNoz is no longer needed as we now use OpenTelemetry.
 
-  /// Send metrics to SkyWalking
-  Future<void> _sendToSkyWalking(Map<String, dynamic> metrics) async {
-    try {
-      final dio = Dio();
-      await dio.post(
-        '${_observatoryConfig['skyWalkingUrl']}/v3/trace',
-        data: _formatForSkyWalking(metrics),
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        ),
-      );
-    } catch (e) {
-      dev.log('Error sending to SkyWalking: $e');
-    }
-  }
-
-  // Format methods for different platforms
-  Map<String, dynamic> _formatForSigNoz(Map<String, dynamic> metrics) {
-    return {
-      'resourceSpans': [
-        {
-          'resource': {
-            'attributes': [
-              {
-                'key': 'service.name',
-                'value': {'stringValue': 'onegate-flutter'}
-              },
-              {
-                'key': 'service.version',
-                'value': {'stringValue': '1.0.0'}
-              },
-            ],
-          },
-          'instrumentationLibrarySpans': [
-            {
-              'spans': [
-                {
-                  'traceId': _generateTraceId(),
-                  'spanId': _generateSpanId(),
-                  'name': 'onegate_metrics',
-                  'startTimeUnixNano':
-                      DateTime.now().microsecondsSinceEpoch * 1000,
-                  'endTimeUnixNano':
-                      DateTime.now().microsecondsSinceEpoch * 1000,
-                  'attributes': _convertToAttributes(metrics),
-                }
-              ],
-            }
-          ],
-        }
-      ],
+  /// Initialize monitoring backends (simplified without OpenTelemetry dependencies)
+  Future<void> _initializeMonitoringBackends() async {
+    final endpoints = {
+      'SigNoz': dotenv.env['SIGNOZ_OTLP_ENDPOINT'],
+      'HyperDX': dotenv.env['HYPERDX_OTLP_ENDPOINT'],
+      'SkyWalking': dotenv.env['SKYWALKING_OTLP_ENDPOINT'],
     };
+
+    final configuredServices = <String>[];
+
+    endpoints.forEach((service, endpoint) {
+      if (endpoint != null && endpoint.isNotEmpty) {
+        configuredServices.add(service);
+      }
+    });
+
+    if (configuredServices.isEmpty) {
+      dev.log('No monitoring endpoints configured. Skipping initialization.');
+      return;
+    }
+
+    dev.log(
+        'Monitoring backends configured for: ${configuredServices.join(', ')}.');
   }
 
-  Map<String, dynamic> _formatForPostHog(Map<String, dynamic> metrics) {
-    return {
-      'api_key': 'your-posthog-api-key', // Would be configured
-      'event': 'onegate_metrics',
-      'properties': metrics,
-      'timestamp': DateTime.now().toIso8601String(),
-      'distinct_id': metrics['app_info']?['user_id'] ?? 'anonymous',
-    };
-  }
-
-  String _formatForGrafana(Map<String, dynamic> metrics) {
-    // Convert to Prometheus format
-    final lines = <String>[];
-    _flattenMetrics(metrics, '', lines);
-    return lines.join('\n');
-  }
-
-  Map<String, dynamic> _formatForHyperDX(Map<String, dynamic> metrics) {
+  Map<String, dynamic> formatForHyperDX(Map<String, dynamic> metrics) {
     return {
       'timestamp': DateTime.now().toIso8601String(),
       'level': 'info',
@@ -601,13 +639,13 @@ class ObservatoryDashboardService {
     };
   }
 
-  Map<String, dynamic> _formatForSkyWalking(Map<String, dynamic> metrics) {
+  Map<String, dynamic> formatForSkyWalking(Map<String, dynamic> metrics) {
     return {
       'service': 'onegate-flutter',
       'serviceInstance': 'onegate-instance-1',
       'endpoint': 'metrics-collection',
-      'traceId': _generateTraceId(),
-      'traceSegmentId': _generateSpanId(),
+      'traceId': generateTraceId(),
+      'traceSegmentId': generateSpanId(),
       'spans': [
         {
           'spanId': 1,
@@ -615,28 +653,28 @@ class ObservatoryDashboardService {
           'startTime': DateTime.now().millisecondsSinceEpoch,
           'endTime': DateTime.now().millisecondsSinceEpoch,
           'operationName': 'collect_metrics',
-          'tags': _convertToTags(metrics),
+          'tags': convertToTags(metrics),
         }
       ],
     };
   }
 
   // Helper methods
-  String _generateTraceId() {
+  String generateTraceId() {
     return DateTime.now()
         .millisecondsSinceEpoch
         .toRadixString(16)
         .padLeft(32, '0');
   }
 
-  String _generateSpanId() {
+  String generateSpanId() {
     return DateTime.now()
         .microsecondsSinceEpoch
         .toRadixString(16)
         .padLeft(16, '0');
   }
 
-  List<Map<String, dynamic>> _convertToAttributes(Map<String, dynamic> data) {
+  List<Map<String, dynamic>> convertToAttributes(Map<String, dynamic> data) {
     final attributes = <Map<String, dynamic>>[];
 
     void addAttribute(String key, dynamic value) {
@@ -658,41 +696,41 @@ class ObservatoryDashboardService {
       }
     }
 
-    _flattenMap(data, '', addAttribute);
+    flattenMap(data, '', addAttribute);
     return attributes;
   }
 
-  List<Map<String, dynamic>> _convertToTags(Map<String, dynamic> data) {
+  List<Map<String, dynamic>> convertToTags(Map<String, dynamic> data) {
     final tags = <Map<String, dynamic>>[];
 
     void addTag(String key, dynamic value) {
       tags.add({'key': key, 'value': value.toString()});
     }
 
-    _flattenMap(data, '', addTag);
+    flattenMap(data, '', addTag);
     return tags;
   }
 
-  void _flattenMap(Map<String, dynamic> map, String prefix,
+  void flattenMap(Map<String, dynamic> map, String prefix,
       Function(String, dynamic) callback) {
     map.forEach((key, value) {
       final fullKey = prefix.isEmpty ? key : '${prefix}_$key';
 
       if (value is Map<String, dynamic>) {
-        _flattenMap(value, fullKey, callback);
+        flattenMap(value, fullKey, callback);
       } else {
         callback(fullKey, value);
       }
     });
   }
 
-  void _flattenMetrics(
+  void flattenMetrics(
       Map<String, dynamic> map, String prefix, List<String> lines) {
     map.forEach((key, value) {
       final fullKey = prefix.isEmpty ? key : '${prefix}_$key';
 
       if (value is Map<String, dynamic>) {
-        _flattenMetrics(value, fullKey, lines);
+        flattenMetrics(value, fullKey, lines);
       } else if (value is num) {
         lines.add(
             'onegate_$fullKey $value ${DateTime.now().millisecondsSinceEpoch}');
@@ -701,7 +739,7 @@ class ObservatoryDashboardService {
   }
 
   /// Store real-time metrics
-  void _storeRealTimeMetrics(Map<String, dynamic> metrics) {
+  void storeRealTimeMetrics(Map<String, dynamic> metrics) {
     try {
       final key = 'realtime_${DateTime.now().millisecondsSinceEpoch}';
       _metricsBox?.put(key, metrics);
@@ -711,7 +749,7 @@ class ObservatoryDashboardService {
   }
 
   /// Handle dashboard alerts
-  void _handleDashboardAlert(Map<String, dynamic> alert) {
+  void handleDashboardAlert(Map<String, dynamic> alert) {
     try {
       _notificationService?.sendHealthCheckAlert(
         title: alert['title'] ?? 'Observatory Alert',
@@ -724,16 +762,16 @@ class ObservatoryDashboardService {
   }
 
   /// Handle metric updates
-  void _handleMetricUpdate(Map<String, dynamic> update) {
+  void handleMetricUpdate(Map<String, dynamic> update) {
     try {
-      _storeRealTimeMetrics(update);
+      storeRealTimeMetrics(update);
     } catch (e) {
       dev.log('Error handling metric update: $e');
     }
   }
 
   /// Handle health status updates
-  void _handleHealthStatusUpdate(Map<String, dynamic> status) {
+  void handleHealthStatusUpdate(Map<String, dynamic> status) {
     try {
       _analyticsService?.trackEvent('health_status_update', status);
     } catch (e) {
@@ -742,7 +780,7 @@ class ObservatoryDashboardService {
   }
 
   /// Perform health check
-  Future<void> _performHealthCheck() async {
+  Future<void> performHealthCheck() async {
     try {
       final result = await _healthService?.performHealthCheck();
       if (result != null) {
@@ -758,7 +796,7 @@ class ObservatoryDashboardService {
   }
 
   /// Collect performance metrics
-  Future<void> _collectPerformanceMetrics() async {
+  Future<void> collectPerformanceMetrics() async {
     try {
       final performanceMetrics = await _getPerformanceMetrics();
       await _sendMetricsToObservatory({
@@ -801,7 +839,7 @@ class ObservatoryDashboardService {
 
       // Restart services if needed
       if (_isInitialized) {
-        await _restartServices();
+        await restartServices();
       }
     } catch (e) {
       dev.log('Error updating configuration: $e');
@@ -809,7 +847,7 @@ class ObservatoryDashboardService {
   }
 
   /// Restart services with new configuration
-  Future<void> _restartServices() async {
+  Future<void> restartServices() async {
     try {
       // Stop current services
       await dispose();

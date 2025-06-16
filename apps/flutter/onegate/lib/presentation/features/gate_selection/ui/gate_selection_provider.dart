@@ -13,16 +13,24 @@ class GateProvider with ChangeNotifier {
   static const String selectedGateKey = 'selected_gate';
   static const String numberOfGatesKey = 'number_of_gates';
 
-  GateProvider()
-      : remoteDataSource = RemoteDataSource(
-
-  ) {
+  GateProvider() : remoteDataSource = RemoteDataSource() {
     _initialize();
   }
 
   Future<void> _initialize() async {
     if (!isLoading && gates.isEmpty) {
       await loadGates();
+
+      // Initialize gate information early for consistent API calls
+      try {
+        log('🚪 Initializing gate information during GateProvider startup...');
+        await remoteDataSource
+            .fetchAndUpdateGateInfo('gate_provider_initialization');
+        log('✅ Gate information initialized successfully during GateProvider startup');
+      } catch (e) {
+        log('⚠️ Failed to initialize gate information during GateProvider startup: $e');
+        // Continue initialization even if gate info fails
+      }
     }
   }
 
@@ -50,7 +58,7 @@ class GateProvider with ChangeNotifier {
         log("Previously Selected Gate: $selectedGateName");
 
         selectedGate = gates.firstWhere(
-              (gate) => gate['gate_name'] == selectedGateName,
+          (gate) => gate['gate_name'] == selectedGateName,
           orElse: () {
             // Fallback to the first gate if not found
             gates[0]['isSelected'] = true;
@@ -100,7 +108,6 @@ class GateProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('selected_gate', gates[index]['gate_name']);
       log("Selected Gate Saved: ${gates[index]['gate_name']}");
-
     } catch (e, stackTrace) {
       debugPrint('Error saving selected gate: $e');
       debugPrint('Stack trace: $stackTrace');

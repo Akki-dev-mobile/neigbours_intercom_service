@@ -1024,12 +1024,293 @@ class RemoteDataSource {
     return _fetchVisitorLogs(onlyCheckout: true);
   }
 
+  /// Helper method to fetch and update gate information from API before making visitor-related calls
+  ///
+  /// This method ensures that visitor logs and approvals are always fetched with the most up-to-date
+  /// gate information from the server rather than relying on potentially stale cached values.
+  ///
+  /// Flow:
+  /// 1. Calls the gates API (AppUrls.gates) to fetch current gate data
+  /// 2. Updates selectedGateName and selectedGateType from the API response
+  /// 3. Saves the updated gate information to SharedPreferences
+  /// 4. Falls back to cached values if the gates API call fails
+  ///
+  /// Returns a Map with 'gateName' and 'gateType' keys
+  Future<Map<String, String>> fetchAndUpdateGateInfo(String context) async {
+    debugPrint("🚪 Fetching updated gate information for $context");
+    String selectedGateName = 'Default Gate';
+    String selectedGateType = 'both';
+
+    try {
+      final gatesData = await fetchGates();
+      debugPrint("✅ Gates API response for $context: $gatesData");
+      debugPrint("🔍 Gates API response type: ${gatesData.runtimeType}");
+      debugPrint("🔍 Gates API response length: ${gatesData.length}");
+
+      if (gatesData.isNotEmpty) {
+        // Log all gates for debugging with detailed structure analysis
+        debugPrint("🔍 ===== COMPLETE GATES API RESPONSE ANALYSIS =====");
+        for (int i = 0; i < gatesData.length; i++) {
+          final gate = gatesData[i];
+          debugPrint("🔍 Gate $i COMPLETE DATA: $gate");
+          debugPrint("🔍 Gate $i TYPE: ${gate.runtimeType}");
+
+          if (gate is Map<String, dynamic>) {
+            debugPrint("🔍 Gate $i ALL KEYS: ${gate.keys.toList()}");
+            debugPrint("🔍 Gate $i ALL VALUES: ${gate.values.toList()}");
+
+            // Check every possible field that might contain the gate name
+            gate.forEach((key, value) {
+              debugPrint(
+                  "🔍 Gate $i Field '$key': '$value' (type: ${value.runtimeType})");
+            });
+          }
+        }
+        debugPrint("🔍 ===== END GATES API RESPONSE ANALYSIS =====");
+
+        // Find the appropriate gate instead of just taking the first one
+        Map<String, dynamic>? selectedGate;
+
+        // Strategy 1: Check if there's a cached gate name and find matching gate
+        final prefs = await SharedPreferences.getInstance();
+        final cachedGateName = prefs.getString('selected_gate');
+        debugPrint(
+            "🔍 Cached gate name from SharedPreferences: '$cachedGateName'");
+
+        if (cachedGateName != null && cachedGateName != 'Default Gate') {
+          // Try to find a gate that matches the cached name
+          for (final gate in gatesData) {
+            if (gate is Map<String, dynamic>) {
+              final gateName = gate['gate_name']?.toString() ??
+                  gate['name']?.toString() ??
+                  gate['gateName']?.toString();
+              if (gateName == cachedGateName) {
+                selectedGate = gate;
+                debugPrint(
+                    "🎯 Found matching gate for cached name '$cachedGateName': $gate");
+                break;
+              }
+            }
+          }
+        }
+
+        // Strategy 2: If no cached match, look for active/default gate
+        if (selectedGate == null) {
+          for (final gate in gatesData) {
+            if (gate is Map<String, dynamic>) {
+              // Check for active, default, or primary flags
+              final isActive =
+                  gate['is_active'] == true || gate['active'] == true;
+              final isDefault =
+                  gate['is_default'] == true || gate['default'] == true;
+              final isPrimary =
+                  gate['is_primary'] == true || gate['primary'] == true;
+
+              if (isActive || isDefault || isPrimary) {
+                selectedGate = gate;
+                debugPrint("🎯 Found active/default/primary gate: $gate");
+                break;
+              }
+            }
+          }
+        }
+
+        // Strategy 3: If still no gate found, use the first valid gate as fallback
+        if (selectedGate == null && gatesData.isNotEmpty) {
+          for (final gate in gatesData) {
+            if (gate is Map<String, dynamic>) {
+              selectedGate = gate;
+              debugPrint("🎯 Using first valid gate as fallback: $gate");
+              break;
+            }
+          }
+        }
+
+        if (selectedGate == null) {
+          debugPrint("❌ No valid gate found in gates API response");
+          throw Exception("No valid gate found in gates API response");
+        }
+
+        debugPrint("🔍 SELECTED GATE for extraction: $selectedGate");
+        debugPrint("🔍 Selected gate type: ${selectedGate.runtimeType}");
+
+        // Log all available keys in the gate object
+        debugPrint(
+            "🔍 Available keys in selected gate object: ${selectedGate.keys.toList()}");
+
+        // Check ALL possible field names that might contain gate name
+        final possibleGateNameFields = [
+          'gate_name',
+          'name',
+          'gateName',
+          'gate',
+          'title',
+          'label',
+          'display_name',
+          'gate_title',
+          'gate_label',
+          'description',
+          'gate_description',
+          'identifier',
+          'gate_identifier'
+        ];
+
+        debugPrint("🔍 ===== CHECKING ALL POSSIBLE GATE NAME FIELDS =====");
+        String? gateNameFromApi;
+        String? selectedFieldName;
+
+        for (String fieldName in possibleGateNameFields) {
+          final fieldValue = selectedGate[fieldName];
+          debugPrint(
+              "🔍 Field '$fieldName': '$fieldValue' (type: ${fieldValue.runtimeType})");
+
+          // Look for a field that contains "Gate 777" or similar pattern
+          if (fieldValue != null && fieldValue.toString().isNotEmpty) {
+            final fieldStr = fieldValue.toString();
+            if (fieldStr.toLowerCase().contains('gate') &&
+                fieldStr.length > 4) {
+              debugPrint(
+                  "🎯 POTENTIAL GATE NAME FIELD FOUND: '$fieldName' = '$fieldStr'");
+              if (gateNameFromApi == null) {
+                gateNameFromApi = fieldStr;
+                selectedFieldName = fieldName;
+              }
+            }
+          }
+        }
+
+        // If no field with "gate" pattern found, try the standard fields
+        if (gateNameFromApi == null) {
+          gateNameFromApi = selectedGate['gate_name']?.toString() ??
+              selectedGate['name']?.toString() ??
+              selectedGate['gateName']?.toString();
+          selectedFieldName = gateNameFromApi != null
+              ? (selectedGate['gate_name'] != null
+                  ? 'gate_name'
+                  : selectedGate['name'] != null
+                      ? 'name'
+                      : 'gateName')
+              : null;
+        }
+
+        log("🔍 ===== GATE NAME EXTRACTION RESULT =====");
+        log("🔍 Selected field: '$selectedFieldName'");
+        log("🔍 Extracted gate name: '$gateNameFromApi'");
+
+        // Check for different possible key names for gate type
+        final possibleGateTypeFields = [
+          'gate_type',
+          'type',
+          'gateType',
+          'category',
+          'kind'
+        ];
+
+        log("🔍 ===== CHECKING ALL POSSIBLE GATE TYPE FIELDS =====");
+        String? gateTypeFromApi;
+
+        for (String fieldName in possibleGateTypeFields) {
+          final fieldValue = selectedGate[fieldName];
+          debugPrint("🔍 Type field '$fieldName': '$fieldValue'");
+          if (fieldValue != null &&
+              fieldValue.toString().isNotEmpty &&
+              gateTypeFromApi == null) {
+            gateTypeFromApi = fieldValue.toString();
+          }
+        }
+
+        debugPrint("🔍 Final extracted gate_name: '$gateNameFromApi'");
+        debugPrint("🔍 Final extracted gate_type: '$gateTypeFromApi'");
+
+        // Validate that we got valid values
+        if (gateNameFromApi != null && gateNameFromApi.isNotEmpty) {
+          selectedGateName = gateNameFromApi;
+          debugPrint("✅ Successfully extracted gate name: '$selectedGateName'");
+        } else {
+          debugPrint("⚠️ Could not extract gate name, using default");
+          selectedGateName = 'Default Gate';
+        }
+
+        if (gateTypeFromApi != null && gateTypeFromApi.isNotEmpty) {
+          selectedGateType = gateTypeFromApi;
+          debugPrint("✅ Successfully extracted gate type: '$selectedGateType'");
+        } else {
+          debugPrint("⚠️ Could not extract gate type, using default");
+          selectedGateType = 'both';
+        }
+
+        debugPrint(
+            "📝 Final gate info from API for $context - Name: '$selectedGateName', Type: '$selectedGateType'");
+
+        // Additional validation: Check if extracted gate name makes sense
+        if (selectedGateName.toLowerCase() == 'gate' ||
+            selectedGateName.length < 4) {
+          debugPrint(
+              "⚠️ WARNING: Extracted gate name '$selectedGateName' seems too generic!");
+          debugPrint(
+              "⚠️ This might indicate we're extracting from the wrong field");
+          debugPrint(
+              "⚠️ Expected something like 'Gate 777' but got '$selectedGateName'");
+        }
+
+        // Save updated gate information to SharedPreferences (reuse existing prefs instance)
+        await prefs.setString('selected_gate', selectedGateName);
+        await prefs.setString('selected_gate_type', selectedGateType);
+        debugPrint(
+            "💾 Gate information saved to SharedPreferences for $context");
+
+        // Verify what was actually saved
+        final savedGateName = prefs.getString('selected_gate');
+        final savedGateType = prefs.getString('selected_gate_type');
+        debugPrint(
+            "✅ Verified saved gate info - Name: '$savedGateName', Type: '$savedGateType'");
+
+        // Cross-reference with expected pattern
+        if (savedGateName != null &&
+            savedGateName.toLowerCase().contains('gate') &&
+            savedGateName.length > 4) {
+          debugPrint("✅ Gate name looks valid: '$savedGateName'");
+        } else {
+          debugPrint(
+              "❌ Gate name looks suspicious: '$savedGateName' - may need field mapping adjustment");
+        }
+      } else {
+        debugPrint("⚠️ Gates API returned empty list");
+      }
+    } catch (gatesError) {
+      debugPrint(
+          "⚠️ Gates API call failed for $context, using fallback values: $gatesError");
+      // Fallback to existing cached values if gates API fails
+      final prefs = await SharedPreferences.getInstance();
+      selectedGateName = prefs.getString('selected_gate') ?? 'Default Gate';
+      selectedGateType = prefs.getString('selected_gate_type') ?? 'both';
+      debugPrint(
+          "📱 Using cached gate values for $context - Name: $selectedGateName, Type: $selectedGateType");
+    }
+
+    // Final verification and return
+    debugPrint("🎯 FINAL RESULT for $context:");
+    debugPrint("🎯 Returning gateName: '$selectedGateName'");
+    debugPrint("🎯 Returning gateType: '$selectedGateType'");
+    debugPrint("🎯 Expected in visitor logs: gate names like 'Gate 777'");
+
+    return {
+      'gateName': selectedGateName,
+      'gateType': selectedGateType,
+    };
+  }
+
   Future<List<VisitorLog>> _fetchVisitorLogs({bool? onlyCheckout}) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final selectedGateName =
-          prefs.getString('selected_gate') ?? 'Default Gate';
-      final selectedGateType = prefs.getString('selected_gate_type') ?? 'both';
+      // Step 1: Fetch and update gate information using helper method
+      final gateInfo = await fetchAndUpdateGateInfo('visitor logs');
+      final selectedGateName = gateInfo['gateName']!;
+      final selectedGateType = gateInfo['gateType']!;
+
+      debugPrint(
+          "🎯 VISITOR LOGS - Using gate info: Name='$selectedGateName', Type='$selectedGateType'");
+
+      // Step 2: Get company ID (keep existing logic)
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
       final String formattedDate =
@@ -1047,7 +1328,16 @@ class RemoteDataSource {
         requestBody['only_checkout'] = onlyCheckout;
       }
 
-      log("Fetching visitor logs with params: $requestBody");
+      debugPrint("🔍 Step 3: VISITOR LOGS REQUEST BODY:");
+      debugPrint("📦 in_gate parameter: '${requestBody['in_gate']}'");
+      debugPrint("📦 gate_type parameter: '${requestBody['gate_type']}'");
+      debugPrint("📦 company_id parameter: '${requestBody['company_id']}'");
+      debugPrint("📦 Complete request body: $requestBody");
+      debugPrint(
+          "⚠️ NOTE: Check if the in_gate value matches the gate names in the returned visitor logs!");
+
+      debugPrint(
+          "Fetching visitor logs with updated gate params: ${requestBody.toString()}");
 
       final accessToken = await _getAccessToken();
       final response = await http.post(
@@ -1063,6 +1353,19 @@ class RemoteDataSource {
         final responseData = jsonDecode(response.body);
         final List<dynamic> data = responseData['data']['data'] ?? [];
         log("data--$data");
+
+        // Log gate names found in visitor logs for comparison
+        if (data.isNotEmpty) {
+          log("🔍 GATE NAMES IN RETURNED VISITOR LOGS:");
+          for (int i = 0; i < data.length && i < 5; i++) {
+            // Log first 5 entries
+            final item = data[i];
+            if (item is Map<String, dynamic>) {
+              final inGate = item['in_gate'];
+              log("🔍 Visitor log $i in_gate: '$inGate'");
+            }
+          }
+        }
 
         // Map API response to VisitorLog objects
         final visitorLogs = data.map((item) => _mapToVisitorLog(item)).toList();
@@ -1649,9 +1952,14 @@ class RemoteDataSource {
   Future<List<VisitorInfo>> fetchApprovals(
       {String? logID, bool? isSecondary}) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final selectedGateName =
-          prefs.getString('selected_gate') ?? "Default Gate";
+      // Step 1: Fetch and update gate information using helper method
+      final gateInfo = await fetchAndUpdateGateInfo('approvals');
+      final selectedGateName = gateInfo['gateName']!;
+      // Note: selectedGateType is fetched and saved but not used in approvals API
+
+      log("🎯 APPROVALS - Using gate info: Name='$selectedGateName'");
+
+      // Step 2: Get company ID (keep existing logic)
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
       final String baseUrl = '${ApiUrls.gateBaseUrl}/visitor/approvals/';
@@ -1668,10 +1976,17 @@ class RemoteDataSource {
         "is_secondary": isSecondary ?? false,
       };
 
-      final uri = Uri.parse(baseUrl);
+      if (logID != null) {
+        requestBody["log_id"] = logID;
+      }
 
-      log("🔍 Sending request to: $baseUrl");
-      log("📦 Request Body: ${jsonEncode(requestBody)}");
+      log("🔍 Step 3: APPROVALS REQUEST BODY:");
+      log("📦 in_gate parameter: '${requestBody['in_gate']}'");
+      log("📦 company_id parameter: '${requestBody['company_id']}'");
+      log("📦 from_date parameter: '${requestBody['from_date']}'");
+      log("📦 to_date parameter: '${requestBody['to_date']}'");
+      log("📦 Complete request body: ${jsonEncode(requestBody)}");
+      log("🌐 Sending approvals request with updated gate context to: $baseUrl");
 
       // Try to refresh token before making the request
       String? accessToken;

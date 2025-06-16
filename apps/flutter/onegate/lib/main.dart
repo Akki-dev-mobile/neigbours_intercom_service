@@ -28,6 +28,7 @@ import 'package:flutter_onegate/utils/network_log/models/network_log.dart';
 import 'package:flutter_onegate/services/crash_reporting/models/crash_models.dart';
 import 'package:flutter_onegate/services/crash_reporting/crash_reporter_service.dart';
 import 'package:flutter_onegate/services/crash_reporting/analytics_service.dart';
+import 'package:flutter_onegate/services/observatory/comprehensive_monitoring_service.dart';
 import 'package:flutter_onegate/utils/no_internet_connection.dart';
 import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/utils/ssl_helper.dart';
@@ -63,9 +64,39 @@ import 'data/repositories/visitor_repo_impl.dart';
 import 'domain/use_cases/visitor_log_usecae.dart';
 import 'domain/use_cases/visitor_usecase.dart';
 import 'presentation/features/missed_approval/missed_approval_screen.dart';
+// Debug imports
+import 'debug/error_tracking_test.dart';
+// Error tracking imports
+import 'services/error_tracking/posthog_error_tracking_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 late GateConfig appGateConfig;
+
+/// Send a test error to PostHog for verification (debug mode only)
+Future<void> _sendTestErrorToPostHog() async {
+  try {
+    await PostHogErrorTrackingService.instance.captureError(
+      error: Exception(
+          '🧪 TEST ERROR: OneGate PostHog Error Tracking Verification'),
+      stackTrace: StackTrace.current,
+      context: 'app_initialization_test',
+      errorType: 'TestError',
+      isFatal: false,
+      additionalProperties: {
+        'test_type': 'posthog_verification',
+        'test_description':
+            'This is a test error sent during app initialization to verify PostHog Error Tracking is working',
+        'timestamp': DateTime.now().toIso8601String(),
+        'app_startup': true,
+      },
+    );
+
+    log('🧪 Test error sent to PostHog Error Tracking for verification');
+    log('📊 Check dashboard: https://us.posthog.com/project/170509/error_tracking');
+  } catch (e) {
+    log('❌ Failed to send test error to PostHog: $e');
+  }
+}
 
 /// Initialize Hive with all required adapters
 Future<void> _initializeHive() async {
@@ -126,9 +157,18 @@ void main() async {
   // Initialize NetworkLogManager for debug logging early
   await NetworkLogManager().initialize();
 
-  // Initialize Crash Reporting and Analytics
+  // Initialize Crash Reporting, Analytics, and Comprehensive Monitoring
   await CrashReporterService().initialize();
   await AnalyticsService().initialize();
+  await ComprehensiveMonitoringService.instance.initialize();
+
+  // Initialize PostHog Error Tracking
+  await PostHogErrorTrackingService.instance.initialize();
+
+  // Send a test error to verify PostHog Error Tracking (only in debug mode)
+  if (kDebugMode) {
+    await _sendTestErrorToPostHog();
+  }
 
   // Configure AppAuth to allow insecure connections
   await CustomAppAuth.configureAppAuth();
@@ -473,6 +513,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           },
         ),
       ),
+      // Add debug routes in debug mode
+      routes: kDebugMode
+          ? {
+              '/error-tracking-test': (context) =>
+                  const ErrorTrackingTestWidget(),
+            }
+          : {},
       home: WillPopScope(
         onWillPop: () async {
           final currentContext = navigatorKey.currentContext;

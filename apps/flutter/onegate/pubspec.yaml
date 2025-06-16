@@ -2,12 +2,12 @@ name: flutter_onegate
 description: A new Flutter project.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: ">=3.4.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -18,7 +18,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -110,9 +109,13 @@ dependencies:
   # Observatory & Monitoring Stack dependencies
   web_socket_channel: ^2.4.0
   fl_chart: ^0.69.0
+  prometheus_client: ^0.5.0
+  posthog_flutter: ^4.3.0
   # Real-time data streaming
   stream_channel: ^2.1.2
   # No background task dependencies needed
+  # Sentry for comprehensive error tracking and performance monitoring
+  sentry_flutter: ^7.18.0
 
 dev_dependencies:
   flutter_test:
@@ -141,8 +144,6 @@ dependency_overrides:
   device_info_plus: ^11.3.3
   meta: ^1.16.0
 
-
-
 flutter:
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -150,6 +151,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/
     - assets/media/images/
     - assets/onegate/theme.json

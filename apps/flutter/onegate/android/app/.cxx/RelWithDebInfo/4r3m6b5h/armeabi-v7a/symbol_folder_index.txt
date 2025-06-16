@@ -1,0 +1,1 @@
+/Users/futurescapetechnology/Desktop/Futurescape/one-monorepo/apps/flutter/onegate/build/app/intermediates/cxx/RelWithDebInfo/4r3m6b5h/obj/armeabi-v7a

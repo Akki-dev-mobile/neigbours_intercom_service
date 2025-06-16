@@ -1525,6 +1525,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.1"
+  posthog_flutter:
+    dependency: "direct main"
+    description:
+      name: posthog_flutter
+      sha256: "2a74b86306b3e1b27ad227aeeb5d63374afb03aa50e87af5062fec1341824b3b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.11.0"
   process:
     dependency: transitive
     description:
@@ -1533,6 +1541,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.3"
+  prometheus_client:
+    dependency: "direct main"
+    description:
+      name: prometheus_client
+      sha256: e76ee6f9bb1c15d58f15871dcb1c694fe81eb940362ee4faa97aec9c1a0a166e
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.1"
   provider:
     dependency: "direct main"
     description:
@@ -1613,6 +1629,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.28.0"
+  sentry:
+    dependency: transitive
+    description:
+      name: sentry
+      sha256: "57514bc72d441ffdc463f498d6886aa586a2494fa467a1eb9d649c28010d7ee3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.20.2"
+  sentry_flutter:
+    dependency: "direct main"
+    description:
+      name: sentry_flutter
+      sha256: "9723d58470ca43a360681ddd26abb71ca7b815f706bc8d3747afd054cf639ded"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.20.2"
   serverpod_client:
     dependency: transitive
     description:

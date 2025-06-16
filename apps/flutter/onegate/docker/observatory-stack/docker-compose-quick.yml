@@ -1,0 +1,50 @@
+services:
+  # Grafana for Dashboards
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: onegate-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+  # Prometheus for Metrics
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: onegate-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: onegate-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=observatory
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: onegate-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres-data:
+  redis-data:
+  grafana-data:
+  prometheus-data:

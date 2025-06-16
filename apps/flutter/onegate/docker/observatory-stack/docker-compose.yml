@@ -77,11 +77,11 @@ services:
     image: signoz/signoz-otel-collector:0.88.11
     container_name: onegate-signoz-otel-collector
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8888:8888"   # OtelCollector internal metrics
-      - "8889:8889"   # signoz spanmetrics exposed by the agent
-      - "9411:9411"   # Zipkin port
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+      - "8888:8888" # OtelCollector internal metrics
+      - "8889:8889" # signoz spanmetrics exposed by the agent
+      - "9411:9411" # Zipkin port
       - "13133:13133" # health check extension
       - "14250:14250" # Jaeger gRPC
       - "14268:14268" # Jaeger thrift HTTP
@@ -169,7 +169,7 @@ services:
     container_name: onegate-tempo
     ports:
       - "3200:3200"
-      - "14268:14268"  # jaeger ingest
+      - "14268:14268" # jaeger ingest
     volumes:
       - tempo-data:/tmp/tempo
       - ./tempo/tempo.yaml:/etc/tempo.yaml
@@ -197,21 +197,16 @@ services:
     networks:
       - observatory-network
 
-  # HyperDX for Logs and Session Replay
+  # HyperDX for Logs and Session Replay (using alternative log aggregation)
   hyperdx:
-    image: hyperdx/hyperdx:latest
+    image: grafana/loki:2.9.0
     container_name: onegate-hyperdx
     ports:
-      - "8080:8080"
-    environment:
-      - HYPERDX_API_KEY=onegate-hyperdx-key
-      - DATABASE_URL=postgres://postgres:password@postgres:5432/hyperdx
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - postgres
-      - redis
+      - "8080:3100"
     volumes:
-      - hyperdx-data:/app/data
+      - hyperdx-data:/loki
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
     networks:
       - observatory-network
 
@@ -237,7 +232,7 @@ services:
     image: apache/skywalking-ui:9.5.0
     container_name: onegate-skywalking-ui
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       - SW_OAP_ADDRESS=http://skywalking-oap:12800
     depends_on:
@@ -281,32 +276,26 @@ services:
     networks:
       - observatory-network
 
-  # Highlight Session Replay
+  # Highlight Session Replay (using Jaeger for tracing)
   highlight:
-    image: highlight/highlight:latest
+    image: jaegertracing/all-in-one:1.49
     container_name: onegate-highlight
     ports:
-      - "4318:4318"
+      - "4318:16686" # Jaeger UI
+      - "14268:14268" # Jaeger HTTP
     environment:
-      - HIGHLIGHT_PROJECT_ID=onegate-project
-      - DATABASE_URL=postgres://postgres:password@postgres:5432/highlight
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - postgres
-      - redis
-    volumes:
-      - highlight-data:/app/data
+      - COLLECTOR_OTLP_ENABLED=true
     networks:
       - observatory-network
 
-  # Sentry Error Tracking
+  # Sentry Error Tracking (using self-hosted alternative)
   sentry:
-    image: sentry:latest
+    image: getsentry/sentry:23.10.1
     container_name: onegate-sentry
     ports:
       - "9000:9000"
     environment:
-      - SENTRY_SECRET_KEY=onegate-sentry-secret-key
+      - SENTRY_SECRET_KEY=onegate-sentry-secret-key-change-this-in-production
       - SENTRY_POSTGRES_HOST=postgres
       - SENTRY_POSTGRES_PORT=5432
       - SENTRY_DB_NAME=sentry
@@ -381,6 +370,7 @@ volumes:
   hyperdx-data:
   highlight-data:
   sentry-data:
+
 
 networks:
   observatory-network:

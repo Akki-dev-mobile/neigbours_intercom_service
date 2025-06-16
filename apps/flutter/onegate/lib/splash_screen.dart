@@ -51,6 +51,18 @@ class _SplashViewState extends State<SplashView>
   Future<void> _initialize() async {
     try {
       await _loginService.initialize();
+
+      // Initialize gate information early during splash screen
+      try {
+        log('🚪 Initializing gate information during splash screen...');
+        await _loginService.remoteDataSource
+            .fetchAndUpdateGateInfo('splash_screen_initialization');
+        log('✅ Gate information initialized successfully during splash screen');
+      } catch (e) {
+        log('⚠️ Failed to initialize gate information during splash screen: $e');
+        // Continue initialization even if gate info fails
+      }
+
       await _checkLoginState();
     } catch (e) {
       log('Initialization error: $e');
