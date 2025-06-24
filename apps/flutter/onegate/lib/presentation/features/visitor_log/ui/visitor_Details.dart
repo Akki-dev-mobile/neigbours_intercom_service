@@ -62,6 +62,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
     return MyScrollView(
       pageBody: CustomScrollView(
         shrinkWrap: true,
@@ -75,28 +76,31 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        // Open full-screen view when tapped
                         _showFullImage(context, widget.image);
                       },
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.white,
+                      child: Padding(
+                        padding: EdgeInsets.all(isTablet ? 8 : 6),
                         child: CircleAvatar(
-                          radius: 100,
-                          backgroundImage: widget.image != null &&
-                                  widget.image!.isNotEmpty
-                              ? NetworkImage(
-                                  widget.image!) // Show visitor's image
-                              : const NetworkImage(
-                                  "https://cdn.pixabay.com/photo/2022/06/05/07/04/person-7243410_1280.png"), // Default image
+                          radius: isTablet ? 80 : 60,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: isTablet ? 100 : 80,
+                            backgroundImage: widget.image != null &&
+                                    widget.image!.isNotEmpty
+                                ? NetworkImage(widget.image!)
+                                : const NetworkImage(
+                                    "https://cdn.pixabay.com/photo/2022/06/05/07/04/person-7243410_1280.png"),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: isTablet ? 24 : 16),
               Container(
+                margin: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 12),
+                color: Colors.transparent,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -111,7 +115,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                 .headlineMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                                  color: const Color(0xff212427),
+                                  fontSize: isTablet ? 28 : 22,
                                 ),
                           ),
                         ),
@@ -123,44 +128,48 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    // _buildChip(
-                    //   widget.visitorLog.purpose_sub_category_name ??
-                    //       widget.visitorLog.visitor_purpose_Category_name ??
-                    //       "",
-                    //   Icons.category_rounded,
-                    //   const Color(0xffFFEBE6),
-                    // ),
+                    SizedBox(height: isTablet ? 12 : 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 12 : 8,
+                          vertical: isTablet ? 6 : 2),
                       decoration: BoxDecoration(
                         color: const Color(0xffFFEBE6),
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(isTablet ? 15 : 10),
                       ),
                       child: Text(
                         _capitalizeFirstLetter(widget
                                 .visitorLog.purpose_sub_category_name ??
                             widget.visitorLog.visitor_purpose_Category_name ??
                             ""),
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(fontSize: isTablet ? 16 : 13),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    _buildSection(
+                    SizedBox(height: isTablet ? 20 : 16),
+                    _buildBorderedSection(
+                      context,
+                      isTablet,
                       title: "Contact Information",
                       children: [
                         _buildInfoTile(
                           icon: Icons.phone,
                           title: "Phone Number",
                           subtitle: widget.visitorLog.visitor?.mobile ?? "N/A",
-                          iconColor: Colors.green,
+                          iconColor:
+                              const Color(0xff43A047), // Green (Scan icon)
+                          iconBg:
+                              const Color(0xffE8F5E9), // Light green background
                           trailing: _buildCallButton(),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildSection(
+                    SizedBox(height: isTablet ? 20 : 16),
+                    _buildBorderedSection(
+                      context,
+                      isTablet,
                       title: "Visit Details",
                       children: [
                         _buildInfoTile(
@@ -172,9 +181,10 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                       widget.unitList != "")
                                   ? widget.unitList.toString()
                                   : "N/A",
-                          iconColor: const Color.fromARGB(255, 225, 181, 154),
+                          iconColor: const Color(0xffF44336), // Red
+                          iconBg:
+                              const Color(0xffFFEBEE), // Light red background
                         ),
-                        // if (widget.visitorLog.visitor_coming_from != null)
                         if (widget.visitorLog.visitor_purpose_Category_name
                                     ?.toLowerCase() ==
                                 "DELIVERY" ||
@@ -187,38 +197,29 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                             title: "Coming From",
                             subtitle: widget.visitorLog.visitor_coming_from
                                 .toString(),
-                            iconColor: const Color.fromARGB(255, 225, 181, 154),
+                            iconColor: const Color(0xffF44336), // Red
+                            iconBg:
+                                const Color(0xffFFEBEE), // Light red background
                           ),
-
-                        if (widget.visitorLog.visitor_card_number != null ||
-                            widget.visitorLog.carNumber != null)
+                        if (widget.visitorLog.visitor_card_number != null &&
+                            widget.visitorLog.visitor_card_number!.isNotEmpty)
                           _buildInfoTile(
-                            icon: widget.visitorLog.visitor_card_number != null
-                                ? Icons.badge
-                                : Icons.directions_car,
-                            // Use car icon if carNumber is present
-                            title: widget.visitorLog.visitor_card_number != null
-                                ? "Card Number"
-                                : "Car Number",
-                            // Change title accordingly
-                            subtitle: widget.visitorLog.visitor_card_number
-                                    ?.toString() ??
-                                widget.visitorLog.carNumber?.toString() ??
-                                'N/A',
-                            // Show available value
-                            iconColor:
-                                widget.visitorLog.visitor_card_number != null
-                                    ? const Color.fromARGB(255, 225, 181, 154)
-                                    : Color.fromARGB(255, 225, 181, 154),
+                            icon: Icons.badge,
+                            title: "Card Number",
+                            subtitle:
+                                widget.visitorLog.visitor_card_number ?? 'N/A',
+                            iconColor: Colors.white, // White icon for contrast
+                            iconBg:
+                                const Color(0xffF44336), // Solid red background
                           ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildSection(
+                    SizedBox(height: isTablet ? 20 : 16),
+                    _buildBorderedSection(
+                      context,
+                      isTablet,
                       title: "Visitor Timeline",
-                      children:
-                          // Call the _buildTimeline method to generate the timeline items
-                          _buildTimeline(),
+                      children: _buildTimeline(),
                     ),
                   ],
                 ),
@@ -235,20 +236,55 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
     showDialog(
       context: context,
+      barrierColor: Colors.black.withOpacity(0.85),
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          child: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.cover,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Stack(
+            children: [
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.white.withOpacity(0.9),
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Color(0xffF44336)),
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'Close',
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -350,24 +386,24 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         Column(
           children: [
             Container(
-              width: 24,
-              height: 24,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
                 border: Border.all(color: color, width: 2),
               ),
               child: Icon(
                 icon,
                 color: color,
-                size: 12,
+                size: 16,
               ),
             ),
             if (showConnector)
               Container(
                 width: 2,
                 height: 40,
-                color: color.withOpacity(0.5),
+                color: color.withOpacity(0.3),
                 margin: const EdgeInsets.symmetric(vertical: 4),
               ),
           ],
@@ -382,6 +418,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 4),
@@ -390,9 +427,10 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                     ? DateFormat('dd MMM yyyy, hh:mm a').format(description)
                     : description.toString(),
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: color,
+                  letterSpacing: 0.1,
                 ),
               ),
               const SizedBox(height: 16),
@@ -403,30 +441,33 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     );
   }
 
-  Widget _buildSection(
+  Widget _buildBorderedSection(BuildContext context, bool isTablet,
       {required String title, required List<Widget> children}) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...children,
-          ],
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 20 : 14),
+      padding: EdgeInsets.all(isTablet ? 18 : 12),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1.2,
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xff212427),
+                  fontSize: isTablet ? 20 : 16,
+                ),
+          ),
+          SizedBox(height: isTablet ? 12 : 8),
+          ...children,
+        ],
       ),
     );
   }
@@ -436,6 +477,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     required String title,
     required String subtitle,
     required Color iconColor,
+    required Color iconBg,
     Widget? trailing,
   }) {
     return Padding(
@@ -443,12 +485,12 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconBg,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: iconColor),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -460,6 +502,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 14,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 Text(
@@ -467,6 +510,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: Color(0xff212427),
+                    letterSpacing: 0.1,
                   ),
                 ),
               ],
@@ -482,17 +527,18 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color,
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16),
+          Icon(icon, size: 16, color: color),
           const SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, color: Color(0xff212427)),
           ),
         ],
       ),
@@ -501,8 +547,9 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
   Widget _buildCallButton() {
     return ElevatedButton.icon(
-      icon: const Icon(Icons.call, size: 16),
-      label: const Text('Call'),
+      icon: const Icon(Icons.call, size: 16, color: Colors.white),
+      label: const Text('Call',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
       onPressed: () => _makePhoneCall(widget.visitorLog.visitor?.mobile ?? ""),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.green,
@@ -511,6 +558,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
+        elevation: 0,
+        shadowColor: Colors.transparent,
       ),
     );
   }

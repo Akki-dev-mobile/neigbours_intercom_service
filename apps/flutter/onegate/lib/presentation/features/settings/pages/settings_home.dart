@@ -52,6 +52,10 @@ class _SettingsHomeState extends State<SettingsHome> {
   String? cameraValue;
   final _flutterKioskMode = FlutterKioskMode.instance();
 
+  // Temporary selection values for bottom sheets
+  String? _tempCameraValue;
+  int? _tempApprovalTimeValue;
+
   List<String> options = [
     'Gate 1',
     'Gate 2',
@@ -91,87 +95,412 @@ class _SettingsHomeState extends State<SettingsHome> {
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
+          builder: (BuildContext context, StateSetter setModalState) {
             final cameraProvider =
                 Provider.of<CameraSettingsProvider>(context, listen: false);
-            _cameraValue =
-                cameraProvider.selectedCameraValue; // Get the selected value
+            final currentValue = cameraProvider.selectedCameraValue;
+
+            // Initialize temp value if not set
+            _tempCameraValue ??= currentValue;
 
             return Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                color: Theme.of(context).colorScheme.surface,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
               ),
-              padding: const EdgeInsets.all(16.0),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Enhanced drag handle
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Enhanced header with gradient background
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xffF44336).withOpacity(0.08),
+                          const Color(0xffff5722).withOpacity(0.03),
+                        ],
+                      ),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Compact icon section
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF44336).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xffF44336).withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            color: Color(0xffF44336),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Simple label section
+                        Expanded(
+                          child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Select Camera',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xff212427),
+                                      fontSize: 20,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Choose camera preference',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xff57636C),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+
+                  // Enhanced content area
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ListView.builder(
                     shrinkWrap: true,
+                        padding: const EdgeInsets.only(top: 16),
                     itemCount: _cameraItems.length,
                     itemBuilder: (context, index) {
                       final item = _cameraItems[index];
-                      return RadioListTile<String>(
-                        contentPadding: EdgeInsets.zero,
-                        fillColor: WidgetStateProperty.all(Colors.black),
-                        title: Text(
-                          item.label,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        value: item.value,
-                        groupValue: _cameraValue,
-                        // Reflect selected value
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _cameraValue = value;
-                            });
-                            cameraProvider
-                                .updateCameraValue(value); // Save selection
-                          }
-                        },
-                      );
-                    },
-                  ),
-                  CustomLargeBtn(
-                    text: 'Confirm',
-                    onPressed: () async {
-                      final role = await GateStorage().getRole();
+                          final isSelected = _tempCameraValue == item.value;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setModalState(() {
+                                    _tempCameraValue = item.value;
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(16),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xffF44336)
+                                          : Colors.grey[200]!,
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Camera icon with background
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          item.value == 'front'
+                                              ? Icons.camera_front
+                                              : Icons.camera_rear,
+                                          color: const Color(0xffF44336),
+                                          size: 26,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GateDashboardView(),
-                        ),
+                                      // Camera information
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                          item.label,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        const Color(0xff212427),
+                                                    fontSize: 18,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              item.value == 'front'
+                                                  ? 'Use front-facing camera'
+                                                  : 'Use rear-facing camera',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color:
+                                                        const Color(0xff57636C),
+                                                    fontSize: 14,
+                                                    height: 1.3,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // Selection indicator - Checkbox
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? const Color(0xffF44336)
+                                              : Colors.transparent,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? const Color(0xffF44336)
+                                                : const Color(0xff57636C),
+                                            width: 2,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: isSelected
+                                            ? const Icon(
+                                                Icons.check,
+                                                size: 16,
+                                                color: Colors.white,
+                                              )
+                                            : null,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                       );
-                      // Navigator.pop(context); // Close modal
-                      // if (role == 'admin' || role == 'master') {
-                      //   Navigator.push(
-                      //     context,
-                      //     MaterialPageRoute(
-                      //       builder: (context) => AdminDashboardView(),
-                      //     ),
-                      //   );
-                      // } else {
-                      //   Navigator.push(
-                      //     context,
-                      //     MaterialPageRoute(
-                      //       builder: (context) => GateDashboardView(),
-                      //     ),
-                      //   );
-                      // }
                     },
                   ),
-                  const SizedBox(height: 50.0),
+                    ),
+                  ),
+
+                  // Confirm Button Section
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xffF44336),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: const BorderSide(
+                                  color: Color(0xffF44336),
+                                  width: 1,
+                                ),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xff212427), Color(0xff57636C)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _cameraValue = _tempCameraValue;
+                                });
+                                cameraProvider
+                                    .updateCameraValue(_tempCameraValue!);
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xff4CAF50),
+                                            Color(0xff45A049),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xff4CAF50)
+                                                .withOpacity(0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.white.withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.check_circle_rounded,
+                                              color: Colors.white,
+                                              size: 24,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'Success!',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 2),
+                                                Text(
+                                                  'Camera setting updated successfully',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(seconds: 3),
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                                shadowColor: Colors.transparent,
+                  ),
+                              child: const Text(
+                                'Confirm',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             );
@@ -201,52 +530,162 @@ class _SettingsHomeState extends State<SettingsHome> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.surface,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white,
+                    Colors.red.shade50.withOpacity(0.3),
+                  ],
               ),
-              padding: EdgeInsets.all(16.0),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Select an option',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  // Enhanced header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.red.shade300,
+                          Colors.red.shade400,
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.language_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Text(
+                            'Select Language',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                   ListView.builder(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                     shrinkWrap: true,
                     itemCount: _languageItems.length,
                     itemBuilder: (context, index) {
                       final item = _languageItems[index];
-                      return RadioListTile<String>(
-                        contentPadding: EdgeInsets.zero,
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _languageValue == item.value
+                                      ? Colors.red.shade300
+                                      : Colors.grey.shade300,
+                                  width: _languageValue == item.value ? 2 : 1,
+                                ),
+                              ),
+                              child: RadioListTile<String>(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                         fillColor: WidgetStateProperty.all(
-                          Colors.black,
-                        ),
+                                    Colors.red.shade400),
                         title: Text(
                           item.label,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: _languageValue == item.value
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                        color: _languageValue == item.value
+                                            ? Colors.red.shade400
+                                            : Colors.grey.shade700,
+                                      ),
                         ),
                         value: item.value,
-                        groupValue: _cameraValue,
+                                groupValue: _languageValue,
                         onChanged: (value) {
                           setState(() {
                             _languageValue = value!;
                           });
                         },
+                              ),
                       );
                     },
                   ),
-                  CustomLargeBtn(
-                    text: 'Confirm',
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Colors.red.shade400,
+                                Colors.red.shade500,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                     onPressed: () {
                       setState(() {
                         _languageValue = _languageValue;
                       });
                       Navigator.pop(context);
                     },
+                            child: const Text(
+                              'Confirm',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
                   ),
-                  SizedBox(height: 50.0),
+                        const SizedBox(height: 50.0),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             );
@@ -257,8 +696,8 @@ class _SettingsHomeState extends State<SettingsHome> {
   }
 
   void _showVisitorApprovalTime(BuildContext context) {
-    int selectedValue =
-        context.read<VisitorApprovalTimeProvider>().approvalTime;
+    int currentValue = context.read<VisitorApprovalTimeProvider>().approvalTime;
+    int tempSelectedValue = currentValue; // Track temporary selection
 
     showModalBottomSheet(
       isScrollControlled: true,
@@ -274,56 +713,398 @@ class _SettingsHomeState extends State<SettingsHome> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                color: Theme.of(context).colorScheme.surface,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
               ),
-              padding: EdgeInsets.all(16.0),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Enhanced drag handle
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Enhanced header with gradient background
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xffF44336).withOpacity(0.08),
+                          const Color(0xffff5722).withOpacity(0.03),
+                        ],
+                      ),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Compact icon section
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF44336).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xffF44336).withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.timer_rounded,
+                            color: Color(0xffF44336),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Simple label section
+                        Expanded(
+                          child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Select Approval Time',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xff212427),
+                                      fontSize: 20,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Choose visitor approval duration',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xff57636C),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 16.0),
-                  ListView.builder(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+
+                  // Enhanced content area
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ListView.builder(
                     shrinkWrap: true,
+                        padding: const EdgeInsets.only(top: 16),
                     itemCount: _visitorApprovalTimeItems.length,
                     itemBuilder: (context, index) {
                       final item = _visitorApprovalTimeItems[index];
-                      return RadioListTile<int>(
-                        contentPadding: EdgeInsets.zero,
-                        fillColor: WidgetStateProperty.all(Colors.black),
-                        title: Text(
-                          item.label,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        value: int.parse(item.value),
-                        groupValue: selectedValue,
-                        onChanged: (int? value) {
+                          final isSelected =
+                              tempSelectedValue == int.parse(item.value);
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
                           setState(() {
-                            selectedValue = value!;
+                                    tempSelectedValue = int.parse(item.value);
                           });
                         },
+                                borderRadius: BorderRadius.circular(16),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xffF44336)
+                                          : Colors.grey[200]!,
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Time icon with background
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(
+                                          Icons.schedule,
+                                          color: Color(0xffF44336),
+                                          size: 26,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+
+                                      // Time information
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.label,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        const Color(0xff212427),
+                                                    fontSize: 18,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Approval timeout duration',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color:
+                                                        const Color(0xff57636C),
+                                                    fontSize: 14,
+                                                    height: 1.3,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // Selection indicator - Checkbox
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? const Color(0xffF44336)
+                                              : Colors.transparent,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? const Color(0xffF44336)
+                                                : const Color(0xff57636C),
+                                            width: 2,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: isSelected
+                                            ? const Icon(
+                                                Icons.check,
+                                                size: 16,
+                                                color: Colors.white,
+                                              )
+                                            : null,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                       );
                     },
                   ),
-                  CustomLargeBtn(
-                    text: 'Confirm',
+                    ),
+                  ),
+
+                  // Confirm Button Section
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xffF44336),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: const BorderSide(
+                                  color: Color(0xffF44336),
+                                  width: 1,
+                                ),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xff212427), Color(0xff57636C)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
                     onPressed: () {
                       context
                           .read<VisitorApprovalTimeProvider>()
-                          .setApprovalTime(selectedValue);
-                      Navigator.pop(context);
-                    },
+                                    .setApprovalTime(tempSelectedValue);
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
                   ),
-                  SizedBox(height: 50.0),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xff4CAF50),
+                                            Color(0xff45A049),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xff4CAF50)
+                                                .withOpacity(0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.white.withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.timer_rounded,
+                                              color: Colors.white,
+                                              size: 24,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'Success!',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 2),
+                                                Text(
+                                                  'Approval time updated successfully',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(seconds: 3),
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                                shadowColor: Colors.transparent,
+                              ),
+                              child: const Text(
+                                'Confirm',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             );
@@ -353,52 +1134,164 @@ class _SettingsHomeState extends State<SettingsHome> {
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                color: Theme.of(context).colorScheme.surface,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white,
+                    Colors.red.shade50.withOpacity(0.3),
+                  ],
               ),
-              padding: EdgeInsets.all(16.0),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Select an option',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  // Enhanced header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.red.shade300,
+                          Colors.red.shade400,
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.storage_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Text(
+                            'Select Data Storage',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                   ListView.builder(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                     shrinkWrap: true,
                     itemCount: _dataStorageItems.length,
                     itemBuilder: (context, index) {
                       final item = _dataStorageItems[index];
-                      return RadioListTile<String>(
-                        contentPadding: EdgeInsets.zero,
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _dataStorageValue == item.value
+                                      ? Colors.red.shade300
+                                      : Colors.grey.shade300,
+                                  width:
+                                      _dataStorageValue == item.value ? 2 : 1,
+                                ),
+                              ),
+                              child: RadioListTile<String>(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                         fillColor: WidgetStateProperty.all(
-                          Colors.black,
-                        ),
+                                    Colors.red.shade400),
                         title: Text(
                           item.label,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight:
+                                            _dataStorageValue == item.value
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
+                                        color: _dataStorageValue == item.value
+                                            ? Colors.red.shade400
+                                            : Colors.grey.shade700,
+                                      ),
                         ),
                         value: item.value,
-                        groupValue: _visitorApprovalTimeValue,
+                                groupValue: _dataStorageValue,
                         onChanged: (value) {
                           setState(() {
                             _dataStorageValue = value!;
                           });
                         },
+                              ),
                       );
                     },
                   ),
-                  CustomLargeBtn(
-                    text: 'Confirm',
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Colors.red.shade400,
+                                Colors.red.shade500,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                     onPressed: () {
                       setState(() {
                         _dataStorageValue = _dataStorageValue;
                       });
                       Navigator.pop(context);
                     },
+                            child: const Text(
+                              'Confirm',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
                   ),
-                  SizedBox(height: 50.0),
+                        const SizedBox(height: 50.0),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             );
@@ -417,6 +1310,9 @@ class _SettingsHomeState extends State<SettingsHome> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return MyScrollView(
       backButtonPressed: () {
         Navigator.of(context).pushAndRemoveUntil(
@@ -427,15 +1323,23 @@ class _SettingsHomeState extends State<SettingsHome> {
         );
       },
       pageTitle: "Settings",
-      pageBody: SingleChildScrollView(
+      pageBody: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 24 : 16,
+          vertical: isTablet ? 16 : 8,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SecondarySettingsTile(
+            _buildEnhancedSectionHeader(
+              context: context,
+              isTablet: isTablet,
               title: 'Gate Settings',
+              icon: Icons.settings_rounded,
             ),
+            SizedBox(height: isTablet ? 16 : 12),
             // if (role == "admin" || role == "master")
             PrimarySettingsTile(
               icon: Ionicons.people_outline,
@@ -521,9 +1425,14 @@ class _SettingsHomeState extends State<SettingsHome> {
                   );
                 },
               ),
-            SecondarySettingsTile(
+            SizedBox(height: isTablet ? 32 : 24),
+            _buildEnhancedSectionHeader(
+              context: context,
+              isTablet: isTablet,
               title: 'Application Settings',
+              icon: Icons.apps_rounded,
             ),
+            SizedBox(height: isTablet ? 16 : 12),
             // Data Observability (for Admin, Master, and Gatekeeper)
             if (kDebugMode)
               if (role == "admin" || role == "master" || role == "gatekeeper")
@@ -617,90 +1526,264 @@ class _SettingsHomeState extends State<SettingsHome> {
               onTap: () {
                 showDialog(
                   context: context,
+                  barrierDismissible: false,
                   builder: (BuildContext context) {
-                    return AlertDialog(
-                      shape: RoundedRectangleBorder(
+                    final isTablet = MediaQuery.of(context).size.width > 600;
+
+                    return Dialog(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      child: Container(
+                        width: isTablet ? 400 : double.infinity,
+                        margin:
+                            EdgeInsets.symmetric(horizontal: isTablet ? 0 : 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              spreadRadius: 2,
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(isTablet ? 32 : 24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Enhanced header with gradient background
+                              Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 24 : 20,
+                                  vertical: isTablet ? 20 : 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      const Color(0xffF44336).withOpacity(0.08),
+                                      const Color(0xffff5722).withOpacity(0.03),
+                                    ],
+                                  ),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      title: Row(
-                        children: const [
-                          Icon(Icons.warning_amber_rounded, color: Colors.red),
-                          SizedBox(width: 8),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding:
+                                          EdgeInsets.all(isTablet ? 16 : 14),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            const Color(0xffF44336),
+                                            const Color(0xffF44336)
+                                                .withOpacity(0.8),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xffF44336)
+                                                .withOpacity(0.3),
+                                            spreadRadius: 1,
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        Ionicons.log_out_outline,
+                                        color: Colors.white,
+                                        size: isTablet ? 32 : 28,
+                                      ),
+                                    ),
+                                    SizedBox(width: isTablet ? 20 : 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
                           Text(
                             'Confirm Logout',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                                              fontSize: isTablet ? 24 : 20,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xff212427),
+                                            ),
+                                          ),
+                                          SizedBox(height: isTablet ? 6 : 4),
+                                          Text(
+                                            'Security confirmation required',
+                                            style: TextStyle(
+                                              fontSize: isTablet ? 14 : 13,
+                                              color: const Color(0xff57636C),
+                                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: isTablet ? 28 : 24),
+                              // Enhanced content section
+                              Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.all(isTablet ? 20 : 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Are you sure you want to logout?',
-                            style: TextStyle(fontSize: 16),
+                                      style: TextStyle(
+                                        fontSize: isTablet ? 18 : 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xff212427),
+                                        height: 1.4,
+                                      ),
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            'This action cannot be undone.',
+                                    SizedBox(height: isTablet ? 12 : 10),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding:
+                                              EdgeInsets.all(isTablet ? 8 : 6),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.orange.withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            Ionicons.information_circle_outline,
+                                            color: Colors.orange.shade600,
+                                            size: isTablet ? 18 : 16,
+                                          ),
+                                        ),
+                                        SizedBox(width: isTablet ? 12 : 10),
+                                        Expanded(
+                                          child: Text(
+                                            'You will need to sign in again to access your account.',
                             style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                                              fontSize: isTablet ? 15 : 14,
+                                              color: const Color(0xff57636C),
+                                              height: 1.3,
+                                            ),
                             ),
                           ),
                         ],
                       ),
-                      actions: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            elevation: 0,
-                            side: BorderSide(color: Colors.grey[300]!),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: isTablet ? 32 : 28),
+                              // Enhanced action buttons
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: isTablet ? 56 : 52,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                          width: 1,
                             ),
                           ),
+                                      child: TextButton(
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
+                                        style: TextButton.styleFrom(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                        ),
                           child: Text(
                             'Cancel',
                             style: TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w500,
+                                            color: const Color(0xff212427),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: isTablet ? 16 : 15,
                             ),
                           ),
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
+                                    ),
+                                  ),
+                                  SizedBox(width: isTablet ? 16 : 12),
+                                  Expanded(
+                                    child: Container(
+                                      height: isTablet ? 56 : 52,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.centerLeft,
+                                          end: Alignment.centerRight,
+                                          colors: [
+                                            const Color(0xffF44336),
+                                            const Color(0xffF44336)
+                                                .withOpacity(0.8),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xffF44336)
+                                                .withOpacity(0.4),
+                                            spreadRadius: 1,
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: TextButton(
                           onPressed: () {
                             logout(context);
                           },
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                        ),
                           child: Text(
                             'Logout',
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: isTablet ? 16 : 15,
+                                          ),
+                                        ),
                             ),
                           ),
                         ),
                       ],
-                      actionsPadding: EdgeInsets.all(16),
-                      actionsAlignment: MainAxisAlignment.end,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   },
                 );
               },
             ),
+            // Add bottom spacing for better scrolling
+            SizedBox(height: isTablet ? 120 : 100),
           ],
         ),
       ),
@@ -710,6 +1793,88 @@ class _SettingsHomeState extends State<SettingsHome> {
   Future<void> logout(BuildContext context) async {
     try {
       log("🚪 Settings Screen - Starting centralized logout process...");
+
+      // Show logout success toast before navigation
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xffFF9800),
+                    Color(0xffF57C00),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xffFF9800).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Logged Out Successfully',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'You have been securely logged out of the application',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+
+      // Small delay to show the toast before navigation
+      await Future.delayed(const Duration(milliseconds: 500));
 
       // Use centralized logout service for consistent behavior
       await CentralizedLogoutService.performLogoutWithNavigation(
@@ -759,6 +1924,71 @@ class _SettingsHomeState extends State<SettingsHome> {
       cameraValue = prefs.getString('selected_camera');
     });
   }
+
+  // Enhanced section header
+  Widget _buildEnhancedSectionHeader({
+    required BuildContext context,
+    required bool isTablet,
+    required String title,
+    required IconData icon,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.red.shade300.withOpacity(0.08),
+            Colors.red.shade400.withOpacity(0.15),
+            Colors.red.shade300.withOpacity(0.08),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.red.shade300.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(isTablet ? 12 : 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.red.shade300,
+                  Colors.red.shade400,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: isTablet ? 28 : 24,
+            ),
+          ),
+          SizedBox(width: isTablet ? 16 : 14),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xff212427),
+                    fontSize: isTablet ? 22 : 20,
+                    letterSpacing: 0.3,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class PrimarySettingsTile extends StatelessWidget {
@@ -787,32 +2017,93 @@ class PrimarySettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: leadingIcon ??
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 16 : 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: EdgeInsets.all(isTablet ? 20 : 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isTablet ? 14 : 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: leadingIcon ??
           Icon(
             icon,
-            size: 22,
-            color: Theme.of(context).colorScheme.onSurface,
+                          size: isTablet ? 28 : 24,
+                          color: Colors.red.shade400,
+                        ),
+                  ),
           ),
-      title: Text(
+                SizedBox(width: isTablet ? 16 : 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
         title,
-        style: titleStyle ?? Theme.of(context).textTheme.bodyMedium,
+                        style: titleStyle ??
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xff212427),
+                                  fontSize: isTablet ? 18 : 16,
+                                  letterSpacing: 0.2,
+                                ),
       ),
-      subtitle: subtitleWidget ??
+                      if (subtitle != null || subtitleWidget != null) ...[
+                        SizedBox(height: isTablet ? 6 : 4),
+                        subtitleWidget ??
           Text(
             subtitle ?? '',
             style: subtitleStyle ??
-                Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontSize: 16,
-                      color:
-                          Theme.of(context).colorScheme.onSurface.withOpacity(
-                                0.6,
+                                  Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: Colors.grey.shade600,
+                                        fontSize: isTablet ? 15 : 14,
+                                        height: 1.3,
                               ),
                     ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (trailing != null) ...[
+                  SizedBox(width: isTablet ? 12 : 8),
+                  trailing!,
+                ] else ...[
+                  SizedBox(width: isTablet ? 12 : 8),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.grey.shade400,
+                    size: isTablet ? 28 : 24,
+                  ),
+                ],
+              ],
+            ),
           ),
-      onTap: onTap,
-      trailing: trailing,
+        ),
+      ),
     );
   }
 }
@@ -850,28 +2141,3 @@ List<MultiSelectItem<String>> _visitorApprovalTimeItems = [
   MultiSelectItem<String>('100 seconds', '100'),
   MultiSelectItem<String>('120 seconds', '120'),
 ];
-
-class SecondarySettingsTile extends StatelessWidget {
-  const SecondarySettingsTile({
-    super.key,
-    required this.title,
-  });
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.symmetric(
-        vertical: 0,
-        horizontal: 10,
-      ),
-      title: Text(
-        title,
-        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-      ),
-    );
-  }
-}

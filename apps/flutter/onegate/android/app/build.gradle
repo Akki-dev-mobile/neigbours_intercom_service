@@ -61,7 +61,7 @@ android {
 
         manifestPlaceholders = [
                 appAuthRedirectScheme: 'com.cubeonebiz.gate',
-                applicationName      : 'io.flutter.app.FlutterApplication' // Default Flutter Application class
+                applicationName      : 'android.app.Application' // Use standard Android Application class
         ]
     }
 

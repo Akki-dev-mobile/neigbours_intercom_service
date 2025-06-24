@@ -23,6 +23,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 
 enum RequestType {
   approved,
@@ -209,9 +210,48 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               _stopPolling();
 
               // Show notification to user
-              myFluttertoast(
-                msg: "Member not reachable",
-                backgroundColor: Colors.orange,
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Container(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.signal_wifi_off_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Text(
+                            'Member not reachable',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  backgroundColor: Colors.orange.shade600,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  margin: const EdgeInsets.all(16),
+                  duration: const Duration(milliseconds: 3000),
+                  elevation: 8,
+                ),
               );
             }
           }
@@ -337,25 +377,31 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          leading: _buildHeader(),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const GateDashboardView()),
-                  );
-                },
-                child: const Text(
-                  "",
-                  style: TextStyle(color: Colors.black),
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: _navigateToDashboard,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xffF44336).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                padding: const EdgeInsets.all(6),
+                child: const Icon(Icons.home_outlined,
+                    color: Color(0xffF44336), size: 28),
               ),
             ),
-          ],
+          ),
+          title: const Text(
+            'Request',
+            style: TextStyle(
+              color: Color(0xff212427),
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: true,
         ),
         body: StreamBuilder<RequestType>(
           stream: _stateStreamController.stream,
@@ -423,100 +469,102 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   Widget _buildVisitorProfile() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // ✅ Visitor Image
-        Column(
-          children: [
-            ClipOval(
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  // Optional border
-                ),
-                child: widget.visitor.visitor_image?.isNotEmpty == true
-                    ? Image.network(
-                        widget.visitor.visitor_image!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.person, size: 50),
-                      )
-                    : const Icon(Icons.person, size: 50),
-              ),
-            ),
-            const SizedBox(height: 15),
-          ],
-        ),
-
-        // ✅ Right side content with divider
-        Expanded(
-          child: Stack(
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Visitor Image
+          Column(
             children: [
-              // Divider line
-              Positioned(
-                left: 16, // Padding from the image
-                top: 0,
-                bottom: 0,
+              ClipOval(
                 child: Container(
-                  width: 1.5,
-                  color: Colors.grey.shade400,
+                  width: 100,
+                  height: 100,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                  ),
+                  child: widget.visitor.visitor_image?.isNotEmpty == true
+                      ? Image.network(
+                          widget.visitor.visitor_image!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.person, size: 50),
+                        )
+                      : const Icon(Icons.person, size: 50),
                 ),
               ),
-
-              // Visitor Details
-              Padding(
-                padding: const EdgeInsets.only(left: 32), // Space after divider
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "${widget.visitor.name}",
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildDetailRow(
-                      icon: Icons.phone_outlined,
-                      iconColor: Colors.green,
-                      label: "Mobile",
-                      value: widget.visitor.mobile ?? "",
-                    ),
-                    const SizedBox(height: 10),
-                    if (widget.visitorLog?.visitor_coming_from != null &&
-                        widget.visitorLog!.visitor_coming_from!.isNotEmpty)
-                      Column(
-                        children: [
-                          _buildDetailRow(
-                            icon: Icons.location_on_outlined,
-                            iconColor: Colors.orange,
-                            label: "Coming From",
-                            value: widget.visitorLog?.visitor_coming_from ??
-                                "Not specified",
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                      ),
-                    _buildDetailRow(
-                      icon: _getPurposeIcon(
-                          widget.visitorLog?.visitor_purpose_Category_name),
-                      iconColor: Colors.orange,
-                      label: "Purpose",
-                      value: widget.visitorLog?.visitor_purpose_Category_name ??
-                          "Not specified",
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 10),
             ],
           ),
-        ),
-      ],
+          const SizedBox(width: 24),
+          // Vertical Divider
+          Container(
+            width: 1.5,
+            height: 100,
+            color: Colors.black.withOpacity(0.2),
+          ),
+          const SizedBox(width: 24),
+          // Visitor Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "${widget.visitor.name}",
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildDetailRow(
+                  icon: Icons.phone_outlined,
+                  iconColor: Colors.green,
+                  label: "Mobile",
+                  value: widget.visitor.mobile ?? "",
+                ),
+                const SizedBox(height: 10),
+                if (widget.visitorLog?.visitor_coming_from != null &&
+                    widget.visitorLog!.visitor_coming_from!.isNotEmpty)
+                  Column(
+                    children: [
+                      _buildDetailRow(
+                        icon: Icons.location_on_outlined,
+                        iconColor: Colors.orange,
+                        label: "Coming From",
+                        value: widget.visitorLog?.visitor_coming_from ??
+                            "Not specified",
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                _buildDetailRow(
+                  icon: _getPurposeIcon(
+                      widget.visitorLog?.visitor_purpose_Category_name),
+                  iconColor: Colors.orange,
+                  label: "Purpose",
+                  value: widget.visitorLog?.visitor_purpose_Category_name ??
+                      "Not specified",
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -546,11 +594,14 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            // Create a lighter version of the icon color
-            color: iconColor.withAlpha(25),
-            borderRadius: BorderRadius.circular(8),
+            color: const Color(0xffF44336).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: iconColor),
+          child: Icon(
+            icon,
+            color: const Color(0xffF44336),
+            size: 20,
+          ),
         ),
         const SizedBox(width: 15),
         Column(
@@ -698,9 +749,60 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 // Inside _RequestPermissionPageState class
 
   Widget _buildCapturePhotoButton() {
-    return CustomLargeBtn(
-      onPressed: () => _handleImageCapture(),
-      text: "Capture photo",
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      width: MediaQuery.of(context).size.width * 0.85,
+      height: 60,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xff2C2C2C), // Dark black/charcoal
+              Color(0xff6E6E6E), // Medium grey
+            ],
+          ),
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ElevatedButton.icon(
+          onPressed: () => _handleImageCapture(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+          icon: const Icon(
+            Icons.camera_alt_rounded,
+            color: Colors.white,
+            size: 24,
+          ),
+          label: const Text(
+            "Capture Photo",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -776,8 +878,22 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
       if (success) {
         _showSuccessSnackBar('Image uploaded successfully');
-        _navigateToRequestPermission(
-          PurposeCategory1(categoryId: 123, categoryName: "categoryName"),
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UnitSelectionView(
+              null,
+              visitor: widget.visitor,
+              purposeCategory: PurposeCategory1(
+                categoryId: widget.visitorLog?.visitor_purpose_category_id ?? 0,
+                categoryName:
+                    widget.visitorLog?.visitor_purpose_Category_name ?? '',
+              ),
+              guestname: widget.visitor.name ?? '',
+              mobileNumber: widget.visitor.mobile ?? '',
+            ),
+          ),
+          (Route<dynamic> route) => false,
         );
       } else {
         _showErrorSnackBar('Failed to upload image');
@@ -846,37 +962,229 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
-    myFluttertoast(msg: message, backgroundColor: Colors.red);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.error_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Error',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color(0xffF44336),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 3000),
+        elevation: 8,
+      ),
+    );
   }
 
   void _showSuccessSnackBar(String message) {
     if (!mounted) return;
-    myFluttertoast(msg: message);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Success',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 3000),
+        elevation: 8,
+      ),
+    );
+  }
+
+  void _showInfoSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.info_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Information',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: Colors.blue.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 3000),
+        elevation: 8,
+      ),
+    );
   }
 
   Widget _buildNotReacheableButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Allow by Gatekeeper Button
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: ElevatedButton(
-            style: _getAllowButtonStyle(),
-            onPressed: () async {
-              _allowByGatekeeper();
-            },
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.3,
-              height: 60,
-              child: const Center(
-                child: Text(
-                  "Allow by Gatekeeper",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 15,
-                    wordSpacing: 1.2,
-                  ),
+        // Enhanced Allow by Gatekeeper Button with Grey Border
+        Expanded(
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: Colors.grey.shade400,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextButton(
+              onPressed: () async {
+                _allowByGatekeeper();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
+                ),
+              ),
+              child: const Text(
+                "Allow by Gatekeeper",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
@@ -884,17 +1192,56 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         ),
         const SizedBox(width: 8),
 
-        // Try Again Button
+        // Enhanced Try Again Button
         Expanded(
-          child: CustomLargeBtn(
-            width: MediaQuery.of(context).size.width * 0.45,
-            onPressed: () async {
-              setState(() {
-                trybuttontext = "Trying...";
-              });
-              await _handleTryAgain();
-            },
-            text: trybuttontext,
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Color(0xff212427),
+                  Color(0xff57636C),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: TextButton(
+              onPressed: () async {
+                setState(() {
+                  trybuttontext = "Trying...";
+                });
+                await _handleTryAgain();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
+                ),
+              ),
+              child: Text(
+                trybuttontext,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -947,9 +1294,47 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     // Show snackbar for notification resend
     if (mounted) {
-      myFluttertoast(
-        msg: "Notification resent again",
-        backgroundColor: Colors.blue,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Notification resent again',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          backgroundColor: Colors.blue.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(milliseconds: 2000),
+          elevation: 8,
+        ),
       );
     }
 
@@ -1042,9 +1427,47 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       _socketService.socket!.emit("sendFcmNotification", requestData);
 
       // Show a toast to indicate the request is being processed
-      myFluttertoast(
-        msg: "Sending notification to member...",
-        backgroundColor: Colors.blue,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Sending notification to member...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          backgroundColor: Colors.blue.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(milliseconds: 2500),
+          elevation: 8,
+        ),
       );
 
       // Set a timeout for socket response
@@ -1160,10 +1583,11 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
-    myFluttertoast(
-      msg: message,
-      backgroundColor: isError ? Colors.red : Colors.green,
-    );
+    if (isError) {
+      _showErrorSnackBar(message);
+    } else {
+      _showSuccessSnackBar(message);
+    }
   }
 
   Future<void> _sendFcmNotification() async {
@@ -1279,9 +1703,47 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           _stateStreamController.add(RequestType.waiting);
         });
 
-        myFluttertoast(
-          msg: "Call initiated to member successfully",
-          backgroundColor: Colors.blue,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.call_made_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Call initiated to member successfully',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            backgroundColor: Colors.blue.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(milliseconds: 3000),
+            elevation: 8,
+          ),
         );
 
         return;
@@ -1308,9 +1770,47 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         });
 
         // Show a toast to inform the user
-        myFluttertoast(
-          msg: "Call initiated to member successfully",
-          backgroundColor: Colors.blue,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.call_made_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Call initiated to member successfully',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            backgroundColor: Colors.blue.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(milliseconds: 3000),
+            elevation: 8,
+          ),
         );
 
         // Continue polling for approval status since we need to wait for the member's response
@@ -1399,7 +1899,51 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   Widget _buildFinishButton() {
-    return CustomLargeBtn(onPressed: _navigateToDashboard, text: "Finish");
+    return Container(
+      height: 56,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Color(0xff212427),
+            Color(0xff57636C),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextButton(
+        onPressed: _navigateToDashboard,
+        style: TextButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(32),
+          ),
+        ),
+        child: const Text(
+          "Finish",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
   }
 
   void _navigateToDashboard() {
@@ -1427,58 +1971,239 @@ class ImagePreviewDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 60 : 20,
+        vertical: 40,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: screenHeight * 0.85,
+          maxWidth: isTablet ? 500 : double.infinity,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-            child: ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.file(
-                imageFile,
-                fit: BoxFit.contain,
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header with title and close button
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Color(0xffF8F9FA),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff2C2C2C).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Color(0xff2C2C2C),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Image Preview',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xff2C2C2C),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Review your captured photo',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xff6E6E6E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+
+            // Image container with enhanced styling
+            Flexible(
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                constraints: BoxConstraints(
+                  maxHeight: screenHeight * 0.5,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
-                    onPressed: onRetake,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Retake'),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.file(
+                    imageFile,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: onConfirm,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Upload'),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+
+            // Enhanced action buttons
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Color(0xffF8F9FA),
+                borderRadius:
+                    BorderRadius.vertical(bottom: Radius.circular(24)),
+              ),
+              child: Row(
+                children: [
+                  // Retake button with enhanced styling
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Color(0xffF44336),
+                            Color(0xffD32F2F),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xffF44336).withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: TextButton.icon(
+                        onPressed: onRetake,
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        label: const Text(
+                          'Retake',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  // Upload button with enhanced styling
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Colors.green.shade600,
+                            Colors.green.shade700,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: TextButton.icon(
+                        onPressed: onConfirm,
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.cloud_upload_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        label: const Text(
+                          'Upload',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -10,7 +10,8 @@ class AnalyticsDashboardScreen extends StatefulWidget {
   const AnalyticsDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<AnalyticsDashboardScreen> createState() => _AnalyticsDashboardScreenState();
+  State<AnalyticsDashboardScreen> createState() =>
+      _AnalyticsDashboardScreenState();
 }
 
 class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
@@ -62,49 +63,133 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Analytics Dashboard'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Analytics Dashboard',
+          style: TextStyle(
+            color: const Color(0xff212427),
+            fontWeight: FontWeight.w700,
+            fontSize: isTablet ? 22 : 20,
+          ),
+        ),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(
+            Ionicons.chevron_back,
+            color: const Color(0xff212427),
+            size: isTablet ? 26 : 24,
+          ),
+        ),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Ionicons.stats_chart), text: 'Overview'),
-            Tab(icon: Icon(Ionicons.person), text: 'User Behavior'),
-            Tab(icon: Icon(Ionicons.speedometer), text: 'Performance'),
-            Tab(icon: Icon(Ionicons.list), text: 'Events'),
+          indicatorColor: const Color(0xffF44336),
+          labelColor: const Color(0xffF44336),
+          unselectedLabelColor: const Color(0xff57636C),
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: isTablet ? 14 : 13,
+          ),
+          unselectedLabelStyle: TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: isTablet ? 14 : 13,
+          ),
+          tabs: [
+            Tab(
+              icon: Icon(Ionicons.stats_chart, size: isTablet ? 22 : 20),
+              text: 'Overview',
+            ),
+            Tab(
+              icon: Icon(Ionicons.person, size: isTablet ? 22 : 20),
+              text: 'User Behavior',
+            ),
+            Tab(
+              icon: Icon(Ionicons.speedometer, size: isTablet ? 22 : 20),
+              text: 'Performance',
+            ),
+            Tab(
+              icon: Icon(Ionicons.list, size: isTablet ? 22 : 20),
+              text: 'Events',
+            ),
           ],
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildLoadingState(isTablet)
           : TabBarView(
               controller: _tabController,
               children: [
-                _buildOverviewTab(),
-                _buildUserBehaviorTab(),
-                _buildPerformanceTab(),
-                _buildEventsTab(),
+                _buildOverviewTab(isTablet),
+                _buildUserBehaviorTab(isTablet),
+                _buildPerformanceTab(isTablet),
+                _buildEventsTab(isTablet),
               ],
             ),
     );
   }
 
-  Widget _buildOverviewTab() {
+  Widget _buildLoadingState(bool isTablet) {
+    return Center(
+      child: Container(
+        padding: EdgeInsets.all(isTablet ? 40 : 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(isTablet ? 24 : 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xffF44336).withOpacity(0.1),
+                    const Color(0xffff5722).withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: CircularProgressIndicator(
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xffF44336)),
+                strokeWidth: isTablet ? 4 : 3,
+              ),
+            ),
+            SizedBox(height: isTablet ? 24 : 20),
+            Text(
+              'Loading analytics data...',
+              style: TextStyle(
+                color: const Color(0xff57636C),
+                fontSize: isTablet ? 18 : 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewTab(bool isTablet) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _buildStatisticsCard(),
-          const SizedBox(height: 16),
-          _buildSessionInfoCard(),
-          const SizedBox(height: 16),
-          _buildEventCategoriesCard(),
+          _buildStatisticsCard(isTablet),
+          SizedBox(height: isTablet ? 20 : 16),
+          _buildSessionInfoCard(isTablet),
+          SizedBox(height: isTablet ? 20 : 16),
+          _buildEventCategoriesCard(isTablet),
         ],
       ),
     );
   }
 
-  Widget _buildStatisticsCard() {
+  Widget _buildStatisticsCard(bool isTablet) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -172,7 +257,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color, IconData icon) {
+  Widget _buildStatItem(
+      String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -205,7 +291,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     );
   }
 
-  Widget _buildSessionInfoCard() {
+  Widget _buildSessionInfoCard(bool isTablet) {
     final currentSessionId = _statistics['currentSessionId'];
     final sessionStartTime = _statistics['sessionStartTime'];
     
@@ -245,8 +331,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     );
   }
 
-  Widget _buildEventCategoriesCard() {
-    final categoryCounts = _statistics['categoryCounts'] as Map<String, int>? ?? {};
+  Widget _buildEventCategoriesCard(bool isTablet) {
+    final categoryCounts =
+        _statistics['categoryCounts'] as Map<String, int>? ?? {};
     
     return Card(
       child: Padding(
@@ -289,7 +376,10 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -309,25 +399,25 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     );
   }
 
-  Widget _buildUserBehaviorTab() {
+  Widget _buildUserBehaviorTab(bool isTablet) {
     final userActionEvents = _analyticsService.getEvents(
       eventName: 'user_action',
       limit: 20,
     );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
       child: Column(
         children: [
-          _buildTopActionsCard(userActionEvents),
-          const SizedBox(height: 16),
-          _buildNavigationPatternsCard(),
+          _buildTopActionsCard(userActionEvents, isTablet),
+          SizedBox(height: isTablet ? 20 : 16),
+          _buildNavigationPatternsCard(isTablet),
         ],
       ),
     );
   }
 
-  Widget _buildTopActionsCard(List<AnalyticsEvent> userActions) {
+  Widget _buildTopActionsCard(List<AnalyticsEvent> userActions, bool isTablet) {
     final actionCounts = <String, int>{};
     for (final event in userActions) {
       final action = event.parameters['action'] as String? ?? 'Unknown';
@@ -400,7 +490,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     );
   }
 
-  Widget _buildNavigationPatternsCard() {
+  Widget _buildNavigationPatternsCard(bool isTablet) {
     final screenViewEvents = _analyticsService.getEvents(
       eventName: 'screen_view',
       limit: 20,
@@ -478,26 +568,28 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     );
   }
 
-  Widget _buildPerformanceTab() {
+  Widget _buildPerformanceTab(bool isTablet) {
     final performanceEvents = _analyticsService.getEvents(
       category: EventCategory.performance,
       limit: 50,
     );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
       child: Column(
         children: [
-          _buildPerformanceMetricsCard(performanceEvents),
-          const SizedBox(height: 16),
-          _buildApiPerformanceCard(performanceEvents),
+          _buildPerformanceMetricsCard(performanceEvents, isTablet),
+          SizedBox(height: isTablet ? 20 : 16),
+          _buildApiPerformanceCard(performanceEvents, isTablet),
         ],
       ),
     );
   }
 
-  Widget _buildPerformanceMetricsCard(List<AnalyticsEvent> events) {
-    final screenTimeEvents = events.where((e) => e.eventName == 'screen_time').toList();
+  Widget _buildPerformanceMetricsCard(
+      List<AnalyticsEvent> events, bool isTablet) {
+    final screenTimeEvents =
+        events.where((e) => e.eventName == 'screen_time').toList();
     final avgScreenTime = screenTimeEvents.isNotEmpty
         ? screenTimeEvents
                 .map((e) => e.parameters['duration_ms'] as int? ?? 0)
@@ -559,7 +651,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     );
   }
 
-  Widget _buildApiPerformanceCard(List<AnalyticsEvent> events) {
+  Widget _buildApiPerformanceCard(List<AnalyticsEvent> events, bool isTablet) {
     final apiEvents = events.where((e) => e.eventName == 'api_call').toList();
     
     return Card(
@@ -595,7 +687,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                         Expanded(
                           child: Text(
                             '${event.parameters['method']} ${event.parameters['endpoint']}',
-                            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                            style: const TextStyle(
+                                fontFamily: 'monospace', fontSize: 12),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -606,7 +699,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: (event.parameters['is_successful'] as bool? ?? false)
+                            color:
+                                (event.parameters['is_successful'] as bool? ??
+                                        false)
                                 ? Colors.green.withOpacity(0.1)
                                 : Colors.red.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -615,7 +710,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                             '${event.parameters['duration_ms']}ms',
                             style: TextStyle(
                               fontSize: 10,
-                              color: (event.parameters['is_successful'] as bool? ?? false)
+                              color:
+                                  (event.parameters['is_successful'] as bool? ??
+                                          false)
                                   ? Colors.green
                                   : Colors.red,
                               fontWeight: FontWeight.bold,
@@ -631,18 +728,18 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     );
   }
 
-  Widget _buildEventsTab() {
+  Widget _buildEventsTab(bool isTablet) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
       itemCount: _recentEvents.length,
       itemBuilder: (context, index) {
         final event = _recentEvents[index];
-        return _buildEventCard(event);
+        return _buildEventCard(event, isTablet);
       },
     );
   }
 
-  Widget _buildEventCard(AnalyticsEvent event) {
+  Widget _buildEventCard(AnalyticsEvent event, bool isTablet) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -708,12 +805,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildInfoRow('Category', _formatCategoryName(event.eventCategory)),
+              _buildInfoRow(
+                  'Category', _formatCategoryName(event.eventCategory)),
               _buildInfoRow('Timestamp', event.timestamp.toString()),
-              if (event.userId != null)
-                _buildInfoRow('User ID', event.userId!),
-              if (event.gateId != null)
-                _buildInfoRow('Gate ID', event.gateId!),
+              if (event.userId != null) _buildInfoRow('User ID', event.userId!),
+              if (event.gateId != null) _buildInfoRow('Gate ID', event.gateId!),
               if (event.sessionId != null)
                 _buildInfoRow('Session ID', event.sessionId!),
               if (event.duration != null)
@@ -785,9 +881,12 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   }
 
   String _formatActionName(String action) {
-    return action.replaceAll('_', ' ').split(' ').map((word) => 
-        word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : word
-    ).join(' ');
+    return action
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) =>
+            word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : word)
+        .join(' ');
   }
 
   Color _getCategoryColor(String category) {

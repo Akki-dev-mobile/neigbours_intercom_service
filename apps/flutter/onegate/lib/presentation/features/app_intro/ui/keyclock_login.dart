@@ -517,8 +517,77 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         );
 
         if (context.mounted) {
-          myFluttertoast(
-            msg: 'Only one gate available. Navigating to $gateName',
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff2196F3), Color(0xff1976D2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xff2196F3).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.location_on_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Auto-Selected Gate',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Only one gate available. Navigating to $gateName',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+              margin: const EdgeInsets.all(16),
+            ),
           );
         }
 
@@ -609,12 +678,10 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     return ValueListenableBuilder<LoginState1>(
       valueListenable: _loginState,
       builder: (context, state, child) {
-        return Stack(
+        return Scaffold(
+          body: Stack(
           children: [
-            MyScrollView(
-              isScrollable: false,
-              hasBackButton: false,
-              pageBody: LoginContent(
+              LoginContent(
                 onLoginPressed: _handleLogin,
                 onSignUpPressed: () {
                   Navigator.push(
@@ -624,11 +691,11 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
                     ),
                   );
                 },
-              ),
             ),
             if (state.isLoading)
               const Center(child: CircularProgressIndicator()),
           ],
+          ),
         );
       },
     );
@@ -656,50 +723,254 @@ class LoginContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
+    return Container(
+      height: MediaQuery.of(context).size.height +
+          MediaQuery.of(context).padding.top,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xffF44336).withOpacity(0.12),
+            const Color(0xffff5722).withOpacity(0.05),
+            Colors.white.withOpacity(0.0),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 20,
+          ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Lottie.network(
-            'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/auth_Animation_fec8c8284d.json',
-            height: MediaQuery.of(context).size.height * 0.3,
+              // Enhanced Society Gate Illustration
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.45,
             width: double.infinity,
-          ),
-          ListTile(
-            contentPadding: const EdgeInsets.only(top: 20, bottom: 10),
-            title: Text(
-              'Login',
-              style: Theme.of(context).textTheme.displayLarge,
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 5),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Society Gate Icon - Enhanced
+                    Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xffF44336), Color(0xffD32F2F)],
+                        ),
+                        borderRadius: BorderRadius.circular(35),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xffF44336).withOpacity(0.4),
+                            spreadRadius: 0,
+                            blurRadius: 25,
+                            offset: const Offset(0, 10),
+                          ),
+                          BoxShadow(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            spreadRadius: 0,
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.fence,
+                        size: 70,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Society Name
+                    Text(
+                      'OneGate',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xffF44336),
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Tagline
+                    Text(
+                      'Smart Gate Management',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xff57636C),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Enhanced Content Container
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 32,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.15),
+                      spreadRadius: 3,
+                      blurRadius: 30,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.08),
+                      spreadRadius: 1,
+                      blurRadius: 15,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Enhanced Title Section
+                    Column(
+                      children: [
+                        Text(
+                          'Welcome Back!',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displayLarge?.copyWith(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xff212427),
+                                height: 1.2,
+                              ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          "Let's dive in and start recording your visitors",
+                          textAlign: TextAlign.center,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyLarge?.copyWith(
+                                fontSize: 16,
+                                color: const Color(0xff57636C),
+                                fontWeight: FontWeight.w400,
+                                height: 1.4,
+                              ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // Enhanced Login Button
+                    Container(
+                      width: double.infinity,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xff212427), Color(0xff57636C)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xff212427).withOpacity(0.3),
+                            spreadRadius: 1,
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: onLoginPressed,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Center(
               child: Text(
-                "Welcome back! Let's dive in.",
-                style: Theme.of(context).textTheme.labelMedium,
+                              'Login',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
               ),
             ),
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-          CustomLargeBtn(text: 'Login', onPressed: onLoginPressed),
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: TextButton(
-              onPressed: onSignUpPressed,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Enhanced Sign Up Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account? ",
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                                color: const Color(0xff57636C),
+                                fontSize: 16,
+                              ),
+                        ),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onSignUpPressed,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
               child: Hero(
                 tag: 'signUpHero',
                 child: Text(
                   'Sign Up',
                   style: Theme.of(
                     context,
-                  ).textTheme.labelMedium!.copyWith(fontSize: 20),
+                                  ).textTheme.bodyMedium?.copyWith(
+                                        color: const Color(0xffF44336),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 30),
-        ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -723,35 +994,130 @@ class SocietySelectionSheet extends StatefulWidget {
 class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
   int? selectedIndex;
 
+  IconData _getSocietyIcon(String societyName) {
+    // You can customize icons based on society names if needed
+    if (societyName.toLowerCase().contains('residential')) {
+      return Icons.home;
+    } else if (societyName.toLowerCase().contains('commercial')) {
+      return Icons.business;
+    } else if (societyName.toLowerCase().contains('apartment')) {
+      return Icons.apartment;
+    } else {
+      return Icons.location_city;
+    }
+  }
+
+  String _getSocietyDescription(String societyName) {
+    return 'Access $societyName facilities and services';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 16),
+          // Enhanced drag handle
+          const SizedBox(height: 12),
           Container(
-            width: 40,
-            height: 4,
+            width: 50,
+            height: 5,
             decoration: BoxDecoration(
               color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(3),
             ),
           ),
-          ListTile(
-            title: Text(
-              'Select Society',
-              style: Theme.of(context).textTheme.headlineSmall,
+          const SizedBox(height: 8),
+
+          // Enhanced header with gradient background
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xffF44336).withOpacity(0.08),
+                  const Color(0xffff5722).withOpacity(0.03),
+                ],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
-            subtitle: const Text('Choose the society you want to access'),
-          ),
-          const Divider(indent: 20, endIndent: 20, height: 1),
+            child: Row(
+              children: [
+                // Compact icon section
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF44336).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.location_city,
+                    color: Color(0xffF44336),
+                    size: 24,
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                // Simple label section
           Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Select Your Society',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xff212427),
+                              fontSize: 20,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Choose your society to continue',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xff57636C),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Enhanced content area
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView.builder(
               shrinkWrap: true,
+                padding: const EdgeInsets.only(top: 16),
               itemCount: widget.societies.length,
               itemBuilder: (context, index) {
                 final society = widget.societies[index];
@@ -759,42 +1125,135 @@ class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
                     society['company_name'] ?? 'Unknown Society';
                 final isSelected = selectedIndex == index;
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      societyName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            selectedIndex = index;
+                          });
+                          widget.onSelected(society);
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurface,
+                                ? const Color(0xffF44336).withOpacity(0.05)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xffF44336).withOpacity(0.3)
+                                  : Colors.grey[200]!,
+                              width: isSelected ? 2 : 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isSelected
+                                    ? const Color(
+                                        0xffF44336,
+                                      ).withOpacity(0.1)
+                                    : Colors.grey.withOpacity(0.1),
+                                spreadRadius: isSelected ? 2 : 1,
+                                blurRadius: isSelected ? 12 : 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                    ),
-                    trailing: isSelected
-                        ? Icon(
-                            Icons.check_circle,
-                            color: Theme.of(context).colorScheme.primary,
-                          )
-                        : const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      setState(() {
-                        selectedIndex = index;
-                      });
+                          child: Row(
+                            children: [
+                              // Society icon with background
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(
+                                          0xffF44336,
+                                        ).withOpacity(0.2)
+                                      : const Color(
+                                          0xffF44336,
+                                        ).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  _getSocietyIcon(societyName),
+                                  color: const Color(0xffF44336),
+                                  size: 26,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
 
-                      widget.onSelected(society);
-                    },
+                              // Society information
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                      societyName,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium?.copyWith(
+                            fontWeight: isSelected
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                            color: isSelected
+                                                ? const Color(0xffF44336)
+                                                : const Color(0xff212427),
+                                            fontSize: 18,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _getSocietyDescription(societyName),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
+                                            color: const Color(0xff57636C),
+                                            fontSize: 14,
+                                            height: 1.3,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Selection indicator
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(
+                                          0xffF44336,
+                                        ).withOpacity(0.1)
+                                      : const Color(0xffF5F5F5),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  isSelected
+                                      ? Icons.check_circle
+                                      : Icons.arrow_forward_ios,
+                                  size: 16,
+                                  color: isSelected
+                                      ? const Color(0xffF44336)
+                                      : const Color(0xff57636C),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -831,60 +1290,233 @@ class RoleSelectionSheet extends StatelessWidget {
     }
   }
 
+  IconData _getRoleIcon(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return Icons.admin_panel_settings;
+      case 'gatekeeper':
+        return Icons.security;
+      case 'manager':
+        return Icons.manage_accounts;
+      case 'supervisor':
+        return Icons.supervisor_account;
+      default:
+        return Icons.person;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 16),
+          // Enhanced drag handle
+          const SizedBox(height: 12),
           Container(
-            width: 40,
-            height: 4,
+            width: 50,
+            height: 5,
             decoration: BoxDecoration(
               color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(3),
             ),
           ),
-          ListTile(
-            title: Text(
-              'Select Role',
-              style: Theme.of(context).textTheme.headlineSmall,
+          const SizedBox(height: 8),
+
+          // Enhanced header with gradient background
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xffF44336).withOpacity(0.08),
+                  const Color(0xffff5722).withOpacity(0.03),
+                ],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
-            subtitle: const Text('Choose your role for this session'),
-          ),
-          const Divider(indent: 20, endIndent: 20, height: 1),
+            child: Row(
+              children: [
+                // Compact icon section
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF44336).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.person_pin_circle,
+                    color: Color(0xffF44336),
+                    size: 24,
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                // Simple label section
           Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Select Your Role',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xff212427),
+                              fontSize: 20,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Choose your role to continue',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xff57636C),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Enhanced content area
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView.builder(
               shrinkWrap: true,
+                padding: const EdgeInsets.only(top: 16),
               itemCount: availableRoles.length,
               itemBuilder: (context, index) {
                 final role = availableRoles[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: ListTile(
-                    title: Text(
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => onRoleSelected(role),
+                        borderRadius: BorderRadius.circular(16),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey[200]!,
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Role icon with background
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xffF44336,
+                                  ).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  _getRoleIcon(role),
+                                  color: const Color(0xffF44336),
+                                  size: 26,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Role information
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
                       _getRoleDisplayName(role),
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    subtitle: Text(
-                      'Access with role: ${_getRoleDisplayName(role)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => onRoleSelected(role),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xff212427),
+                                            fontSize: 18,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _getRoleDescription(role).isNotEmpty
+                                          ? _getRoleDescription(role)
+                                          : 'Access with ${_getRoleDisplayName(role)} privileges',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
+                                            color: const Color(0xff57636C),
+                                            fontSize: 14,
+                                            height: 1.3,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Arrow icon
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF5F5F5),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 16,
+                                  color: Color(0xff57636C),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -909,64 +1541,193 @@ class GateSelectionSheet extends StatefulWidget {
 class _GateSelectionSheetState extends State<GateSelectionSheet> {
   int? selectedIndex;
 
+  String _getGateDisplayName(String gateName) {
+    // Format gate name for better readability
+    if (gateName.toLowerCase().contains("tower")) {
+      String formattedTowerName = "TOWER NO ";
+
+      // Extract tower number if available
+      RegExp regExp = RegExp(
+        r'tower\s*(?:no\.?|number)?\s*(\d+)',
+        caseSensitive: false,
+      );
+      var match = regExp.firstMatch(gateName.toLowerCase());
+
+      if (match != null && match.group(1) != null) {
+        formattedTowerName += match.group(1)!.padLeft(2, '0');
+      } else {
+        formattedTowerName = gateName.toUpperCase();
+      }
+
+      return formattedTowerName;
+    }
+
+    // Capitalize each word
+    return gateName
+        .split(' ')
+        .map(
+          (e) => e.isNotEmpty
+              ? e[0].toUpperCase() + e.substring(1).toLowerCase()
+              : '',
+        )
+        .join(' ');
+  }
+
+  String _getGateDescription(String gateName) {
+    final lowerName = gateName.toLowerCase();
+
+    if (lowerName.contains('main') || lowerName.contains('entrance')) {
+      return 'Main entrance access point';
+    } else if (lowerName.contains('tower')) {
+      return 'Tower residential access';
+    } else if (lowerName.contains('society') ||
+        lowerName.contains('community')) {
+      return 'Society community gate';
+    } else if (lowerName.contains('parking')) {
+      return 'Parking area access';
+    } else if (lowerName.contains('exit')) {
+      return 'Exit gate access';
+    } else {
+      return 'Gate access point';
+    }
+  }
+
+  IconData _getGateIcon(String gateName) {
+    final lowerName = gateName.toLowerCase();
+
+    if (lowerName.contains('main') || lowerName.contains('entrance')) {
+      return Icons.home;
+    } else if (lowerName.contains('tower')) {
+      return Icons.apartment;
+    } else if (lowerName.contains('society') ||
+        lowerName.contains('community')) {
+      return Icons.location_city;
+    } else if (lowerName.contains('parking')) {
+      return Icons.local_parking;
+    } else if (lowerName.contains('exit')) {
+      return Icons.exit_to_app;
+    } else {
+      return Icons.location_on;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 16),
+          // Enhanced drag handle
+          const SizedBox(height: 12),
           Container(
-            width: 40,
-            height: 4,
+            width: 50,
+            height: 5,
             decoration: BoxDecoration(
               color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(3),
             ),
           ),
-          ListTile(
-            title: Text(
+          const SizedBox(height: 8),
+
+          // Enhanced header with gradient background
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xffF44336).withOpacity(0.08),
+                  const Color(0xffff5722).withOpacity(0.03),
+                ],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Compact icon section
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF44336).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.door_front_door,
+                    color: Color(0xffF44336),
+                    size: 24,
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                // Simple label section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
               'Select Gate',
-              style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xff212427),
+                              fontSize: 20,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Choose your gate to continue',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xff57636C),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            subtitle: const Text('Choose the gate you want to manage'),
           ),
-          const Divider(indent: 20, endIndent: 20, height: 1),
+
+          // Enhanced content area
           Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView.builder(
               shrinkWrap: true,
+                padding: const EdgeInsets.only(top: 16),
               itemCount: widget.gates.length,
               itemBuilder: (context, index) {
                 final gate = widget.gates[index];
                 final gateName = gate['gate_name'] ?? 'Unknown Gate';
-                final isSelected = selectedIndex == index;
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      gateName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurface,
-                          ),
-                    ),
-                    trailing: isSelected
-                        ? Icon(
-                            Icons.check_circle,
-                            color: Theme.of(context).colorScheme.primary,
-                          )
-                        : const Icon(Icons.arrow_forward_ios, size: 16),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
                     onTap: () async {
                       setState(() {
                         selectedIndex = index;
@@ -978,7 +1739,9 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                           listen: false,
                         );
                         await gateProvider.selectGate(index);
-                        widget.onGateSelected(Map<String, dynamic>.from(gate));
+                            widget.onGateSelected(
+                              Map<String, dynamic>.from(gate),
+                            );
                       } catch (e) {
                         if (mounted) {
                           // ScaffoldMessenger.of(context).showSnackBar(
@@ -987,12 +1750,100 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                         }
                       }
                     },
+                        borderRadius: BorderRadius.circular(16),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey[200]!,
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Gate icon with background
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xffF44336,
+                                  ).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  _getGateIcon(gateName),
+                                  color: const Color(0xffF44336),
+                                  size: 26,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Gate information
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _getGateDisplayName(gateName),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xff212427),
+                                            fontSize: 18,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _getGateDescription(gateName),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
+                                            color: const Color(0xff57636C),
+                                            fontSize: 14,
+                                            height: 1.3,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Arrow icon
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF5F5F5),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 16,
+                                  color: Color(0xff57636C),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );

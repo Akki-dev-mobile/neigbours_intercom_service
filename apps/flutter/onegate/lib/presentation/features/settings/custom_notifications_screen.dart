@@ -9,7 +9,8 @@ class CustomNotificationsScreen extends StatefulWidget {
   const CustomNotificationsScreen({super.key});
 
   @override
-  State<CustomNotificationsScreen> createState() => _CustomNotificationsScreenState();
+  State<CustomNotificationsScreen> createState() =>
+      _CustomNotificationsScreenState();
 }
 
 class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
@@ -79,7 +80,8 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
   }
 
   Future<void> _deleteNotification(String notificationId) async {
-    final success = await _notificationManager.deleteNotification(notificationId);
+    final success =
+        await _notificationManager.deleteNotification(notificationId);
     if (success) {
       await _loadNotifications();
       if (mounted) {
@@ -95,7 +97,8 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Notifications'),
-        content: const Text('Are you sure you want to delete all notifications? This action cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to delete all notifications? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -124,16 +127,64 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Custom Notifications'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Custom Notifications',
+          style: TextStyle(
+            color: const Color(0xff212427),
+            fontWeight: FontWeight.w700,
+            fontSize: isTablet ? 22 : 20,
+          ),
+        ),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(
+            Ionicons.chevron_back,
+            color: const Color(0xff212427),
+            size: isTablet ? 26 : 24,
+          ),
+        ),
         actions: [
           if (_stats != null && _stats!.unreadNotifications > 0)
-            TextButton(
+            Container(
+              margin: EdgeInsets.only(right: isTablet ? 12 : 8),
+              decoration: BoxDecoration(
+                color: const Color(0xffF44336).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xffF44336).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: TextButton(
               onPressed: _markAllAsRead,
-              child: const Text('Mark All Read'),
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Mark All Read',
+                  style: TextStyle(
+                    color: const Color(0xffF44336),
+                    fontWeight: FontWeight.w600,
+                    fontSize: isTablet ? 14 : 13,
+                  ),
+                ),
+              ),
             ),
           PopupMenuButton<String>(
+            icon: Icon(
+              Ionicons.ellipsis_vertical,
+              color: const Color(0xff212427),
+              size: isTablet ? 22 : 20,
+            ),
             onSelected: (value) {
               switch (value) {
                 case 'clear_all':
@@ -164,41 +215,51 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildLoadingState(isTablet)
           : Column(
               children: [
-                _buildStatsCard(),
-                _buildFilters(),
-                Expanded(child: _buildNotificationsList()),
+                _buildStatsCard(isTablet),
+                _buildFilters(isTablet),
+                Expanded(child: _buildNotificationsList(isTablet)),
               ],
             ),
     );
   }
 
-  Widget _buildStatsCard() {
-    if (_stats == null) return const SizedBox.shrink();
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+  Widget _buildLoadingState(bool isTablet) {
+    return Center(
+      child: Container(
+        padding: EdgeInsets.all(isTablet ? 40 : 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildStatItem(
-              'Total',
-              _stats!.totalNotifications.toString(),
-              Ionicons.notifications_outline,
+            Container(
+              padding: EdgeInsets.all(isTablet ? 24 : 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xffF44336).withOpacity(0.1),
+                    const Color(0xffff5722).withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: CircularProgressIndicator(
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xffF44336)),
+                strokeWidth: isTablet ? 4 : 3,
+              ),
             ),
-            _buildStatItem(
-              'Unread',
-              _stats!.unreadNotifications.toString(),
-              Ionicons.mail_unread_outline,
-            ),
-            _buildStatItem(
-              'Subscribers',
-              _stats!.activeSubscribers.toString(),
-              Ionicons.people_outline,
+            SizedBox(height: isTablet ? 24 : 20),
+            Text(
+              'Loading notifications...',
+              style: TextStyle(
+                color: const Color(0xff57636C),
+                fontSize: isTablet ? 18 : 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -206,40 +267,177 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+  Widget _buildStatsCard(bool isTablet) {
+    if (_stats == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: EdgeInsets.all(isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 1,
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 24 : 20),
+        child: Column(
+          children: [
+            // Header with gradient background
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: isTablet ? 20 : 16,
+                vertical: isTablet ? 16 : 14,
               ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xffF44336).withOpacity(0.08),
+                    const Color(0xffff5722).withOpacity(0.03),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isTablet ? 12 : 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF44336).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Ionicons.bar_chart_outline,
+                      color: const Color(0xffF44336),
+                      size: isTablet ? 24 : 20,
+                    ),
+                  ),
+                  SizedBox(width: isTablet ? 16 : 12),
+                  Text(
+                    'Notification Statistics',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xff212427),
+                      fontSize: isTablet ? 20 : 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: isTablet ? 20 : 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              'Total',
+              _stats!.totalNotifications.toString(),
+              Ionicons.notifications_outline,
+                  isTablet,
+            ),
+            _buildStatItem(
+              'Unread',
+              _stats!.unreadNotifications.toString(),
+              Ionicons.mail_unread_outline,
+                  isTablet,
+            ),
+            _buildStatItem(
+              'Subscribers',
+              _stats!.activeSubscribers.toString(),
+              Ionicons.people_outline,
+                  isTablet,
+                ),
+              ],
+            ),
+          ],
         ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildFilters() {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+  Widget _buildStatItem(
+      String label, String value, IconData icon, bool isTablet) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.all(isTablet ? 16 : 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+      children: [
+            Container(
+              padding: EdgeInsets.all(isTablet ? 10 : 8),
+              decoration: BoxDecoration(
+                color: const Color(0xffF44336).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xffF44336),
+                size: isTablet ? 24 : 20,
+              ),
+            ),
+            SizedBox(height: isTablet ? 12 : 8),
+        Text(
+          value,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: const Color(0xff212427),
+                fontSize: isTablet ? 24 : 20,
+              ),
+            ),
+            SizedBox(height: isTablet ? 4 : 2),
+        Text(
+          label,
+              style: TextStyle(
+                color: const Color(0xff57636C),
+                fontSize: isTablet ? 14 : 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilters(bool isTablet) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 1,
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(isTablet ? 20 : 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Filters',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: const Color(0xff212427),
+                fontSize: isTablet ? 18 : 16,
+              ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: isTablet ? 16 : 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -256,7 +454,8 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                   value: _selectedTopic,
                   hint: const Text('All Topics'),
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('All Topics')),
+                    const DropdownMenuItem(
+                        value: null, child: Text('All Topics')),
                     ..._notificationManager.getAvailableTopics().map(
                       (topic) => DropdownMenuItem(
                         value: topic,
@@ -273,7 +472,8 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                   value: _selectedPriority,
                   hint: const Text('All Priorities'),
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('All Priorities')),
+                    const DropdownMenuItem(
+                        value: null, child: Text('All Priorities')),
                     ...AlertPriority.values.map(
                       (priority) => DropdownMenuItem(
                         value: priority,
@@ -294,104 +494,199 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationsList() {
+  Widget _buildNotificationsList(bool isTablet) {
     if (_notifications.isEmpty) {
       return Center(
+        child: Container(
+          padding: EdgeInsets.all(isTablet ? 40 : 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+              Container(
+                padding: EdgeInsets.all(isTablet ? 24 : 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
               Ionicons.notifications_off_outline,
-              size: 64,
-              color: Colors.grey[400],
+                  size: isTablet ? 80 : 64,
+                  color: const Color(0xff57636C),
+                ),
             ),
-            const SizedBox(height: 16),
+              SizedBox(height: isTablet ? 24 : 20),
             Text(
               'No notifications found',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xff212427),
+                  fontSize: isTablet ? 22 : 18,
+                ),
+              ),
+              SizedBox(height: isTablet ? 12 : 8),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 24),
+                child: Text(
               'Notifications will appear here when they are received',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
+                  style: TextStyle(
+                    color: const Color(0xff57636C),
+                    fontSize: isTablet ? 16 : 14,
+                    height: 1.4,
                   ),
               textAlign: TextAlign.center,
+                ),
             ),
           ],
+          ),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
       itemCount: _notifications.length,
       itemBuilder: (context, index) {
         final notification = _notifications[index];
-        return _buildNotificationCard(notification);
+        return _buildNotificationCard(notification, isTablet);
       },
     );
   }
 
-  Widget _buildNotificationCard(NotificationMessage notification) {
+  Widget _buildNotificationCard(
+      NotificationMessage notification, bool isTablet) {
     final priority = notification.priorityEnum;
-    final priorityColor = Color(int.parse(priority.colorHex.substring(1), radix: 16) + 0xFF000000);
+    final priorityColor = Color(
+        int.parse(priority.colorHex.substring(1), radix: 16) + 0xFF000000);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: priorityColor.withOpacity(0.1),
-          child: Icon(
-            _getTopicIcon(notification.topic),
-            color: priorityColor,
-            size: 20,
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-        title: Text(
-          notification.title,
-          style: TextStyle(
-            fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(notification.message),
-            const SizedBox(height: 4),
-            Row(
+        ],
+        border: notification.isRead
+            ? null
+            : Border.all(
+                color: const Color(0xffF44336).withOpacity(0.2),
+                width: 1,
+              ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (!notification.isRead) {
+              _markAsRead(notification.id);
+            }
+            _showNotificationDetails(notification);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: EdgeInsets.all(isTablet ? 20 : 16),
+            child: Row(
               children: [
-                Icon(Ionicons.time_outline, size: 12, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  notification.formattedTimestamp,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                ),
-                const SizedBox(width: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: EdgeInsets.all(isTablet ? 12 : 10),
                   decoration: BoxDecoration(
                     color: priorityColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _getTopicIcon(notification.topic),
+                    color: priorityColor,
+                    size: isTablet ? 24 : 20,
+                  ),
+                ),
+                SizedBox(width: isTablet ? 16 : 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notification.title,
+                        style: TextStyle(
+                          fontWeight: notification.isRead
+                              ? FontWeight.w600
+                              : FontWeight.w700,
+                          color: const Color(0xff212427),
+                          fontSize: isTablet ? 16 : 15,
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 8 : 6),
+                      Text(
+                        notification.message,
+                        style: TextStyle(
+                          color: const Color(0xff57636C),
+                          fontSize: isTablet ? 14 : 13,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: isTablet ? 12 : 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Ionicons.time_outline,
+                            size: isTablet ? 14 : 12,
+                            color: const Color(0xff57636C),
+                          ),
+                          SizedBox(width: isTablet ? 6 : 4),
+                          Text(
+                            notification.formattedTimestamp,
+                            style: TextStyle(
+                              color: const Color(0xff57636C),
+                              fontSize: isTablet ? 12 : 11,
+                            ),
+                          ),
+                          SizedBox(width: isTablet ? 16 : 12),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isTablet ? 8 : 6,
+                              vertical: isTablet ? 4 : 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: priorityColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     priority.displayName,
                     style: TextStyle(
-                      fontSize: 10,
+                                fontSize: isTablet ? 11 : 10,
                       color: priorityColor,
-                      fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
+                          if (!notification.isRead) ...[
+                            const Spacer(),
+                            Container(
+                              width: isTablet ? 8 : 6,
+                              height: isTablet ? 8 : 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xffF44336),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
               ],
             ),
           ],
         ),
-        trailing: PopupMenuButton<String>(
+                ),
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Ionicons.ellipsis_vertical,
+                    color: const Color(0xff57636C),
+                    size: isTablet ? 20 : 18,
+                  ),
           onSelected: (value) {
             switch (value) {
               case 'mark_read':
@@ -420,12 +715,10 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
             ),
           ],
         ),
-        onTap: () {
-          if (!notification.isRead) {
-            _markAsRead(notification.id);
-          }
-          _showNotificationDetails(notification);
-        },
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -9,12 +9,14 @@ class ObservatoryDashboardScreen extends StatefulWidget {
   const ObservatoryDashboardScreen({super.key});
 
   @override
-  State<ObservatoryDashboardScreen> createState() => _ObservatoryDashboardScreenState();
+  State<ObservatoryDashboardScreen> createState() =>
+      _ObservatoryDashboardScreenState();
 }
 
 class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     with TickerProviderStateMixin {
-  final ObservatoryDashboardService _observatoryService = ObservatoryDashboardService();
+  final ObservatoryDashboardService _observatoryService =
+      ObservatoryDashboardService();
   
   late TabController _tabController;
   bool _isLoading = true;
@@ -71,50 +73,174 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
     return MyScrollView(
       pageTitle: 'Observatory Dashboard',
       pageBody: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Container(
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 2,
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xffF44336).withOpacity(0.1),
+                            const Color(0xffff5722).withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: const CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xffF44336)),
+                        strokeWidth: 3,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Loading Observatory...',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xff212427),
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Initializing dashboard components',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: const Color(0xff57636C),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : !_isInitialized
-              ? _buildInitializationError()
+              ? _buildInitializationError(isTablet)
               : Column(
                   children: [
-                    _buildStatusCard(),
-                    const SizedBox(height: 16),
-                    _buildTabBar(),
-                    const SizedBox(height: 16),
-                    _buildTabContent(),
+                    _buildStatusCard(isTablet),
+                    SizedBox(height: isTablet ? 24 : 16),
+                    _buildTabBar(isTablet),
+                    SizedBox(height: isTablet ? 24 : 16),
+                    _buildTabContent(isTablet),
                   ],
                 ),
     );
   }
 
-  Widget _buildInitializationError() {
-    return Card(
+  Widget _buildInitializationError(bool isTablet) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 1,
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(isTablet ? 32 : 24),
         child: Column(
           children: [
-            Icon(
+            Container(
+              padding: EdgeInsets.all(isTablet ? 20 : 16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
               Ionicons.warning_outline,
-              size: 64,
+                size: isTablet ? 72 : 64,
               color: Colors.orange,
             ),
-            const SizedBox(height: 16),
+            ),
+            SizedBox(height: isTablet ? 24 : 16),
             Text(
               'Observatory Initialization Failed',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xff212427),
+                    fontSize: isTablet ? 24 : 22,
             ),
-            const SizedBox(height: 8),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: isTablet ? 12 : 8),
             Text(
               'Unable to initialize the Observatory Dashboard Service. Please check your configuration and try again.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xff57636C),
+                    fontSize: isTablet ? 16 : 15,
+                    height: 1.4,
+                  ),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
+            SizedBox(height: isTablet ? 24 : 16),
+            Container(
+              width: double.infinity,
+              height: isTablet ? 52 : 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    const Color(0xffF44336),
+                    const Color(0xffF44336).withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xffF44336).withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
               onPressed: _initializeObservatory,
-              child: const Text('Retry Initialization'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Retry Initialization',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: isTablet ? 16 : 15,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -122,7 +248,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     );
   }
 
-  Widget _buildStatusCard() {
+  Widget _buildStatusCard(bool isTablet) {
     final isCollecting = _observatoryService.isCollectingMetrics;
     
     return Card(
@@ -170,28 +296,74 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(bool isTablet) {
     return Container(
+      margin: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 0),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 1,
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: TabBar(
         controller: _tabController,
-        tabs: const [
-          Tab(text: 'Real-time', icon: Icon(Ionicons.pulse_outline)),
-          Tab(text: 'Analytics', icon: Icon(Ionicons.analytics_outline)),
-          Tab(text: 'Platforms', icon: Icon(Ionicons.server_outline)),
-          Tab(text: 'Config', icon: Icon(Ionicons.settings_outline)),
+        tabs: [
+          Tab(
+            text: 'Real-time',
+            icon: Icon(
+              Ionicons.pulse_outline,
+              size: isTablet ? 22 : 20,
+            ),
+          ),
+          Tab(
+            text: 'Analytics',
+            icon: Icon(
+              Ionicons.analytics_outline,
+              size: isTablet ? 22 : 20,
+            ),
+          ),
+          Tab(
+            text: 'Platforms',
+            icon: Icon(
+              Ionicons.server_outline,
+              size: isTablet ? 22 : 20,
+            ),
+          ),
+          Tab(
+            text: 'Config',
+            icon: Icon(
+              Ionicons.settings_outline,
+              size: isTablet ? 22 : 20,
+            ),
+          ),
         ],
-        labelColor: Theme.of(context).colorScheme.primary,
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: Theme.of(context).colorScheme.primary,
+        labelColor: const Color(0xffF44336),
+        unselectedLabelColor: const Color(0xff57636C),
+        indicatorColor: const Color(0xffF44336),
+        indicatorWeight: 3,
+        labelStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: isTablet ? 15 : 14,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: isTablet ? 15 : 14,
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 16 : 8,
+          vertical: isTablet ? 12 : 8,
+        ),
       ),
     );
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(bool isTablet) {
     return SizedBox(
       height: 600,
       child: TabBarView(
@@ -221,7 +393,8 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
   }
 
   Widget _buildMetricsOverview() {
-    final latestMetrics = _realtimeMetrics.isNotEmpty ? _realtimeMetrics.first : null;
+    final latestMetrics =
+        _realtimeMetrics.isNotEmpty ? _realtimeMetrics.first : null;
     
     return Card(
       child: Padding(
@@ -242,7 +415,9 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                   Expanded(
                     child: _buildMetricItem(
                       'Network Requests',
-                      latestMetrics['network_metrics']?['total_requests']?.toString() ?? '0',
+                      latestMetrics['network_metrics']?['total_requests']
+                              ?.toString() ??
+                          '0',
                       Ionicons.globe_outline,
                       Colors.blue,
                     ),
@@ -250,7 +425,9 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                   Expanded(
                     child: _buildMetricItem(
                       'Crash Reports',
-                      latestMetrics['crash_metrics']?['totalCrashes']?.toString() ?? '0',
+                      latestMetrics['crash_metrics']?['totalCrashes']
+                              ?.toString() ??
+                          '0',
                       Ionicons.bug_outline,
                       Colors.red,
                     ),
@@ -263,7 +440,8 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                   Expanded(
                     child: _buildMetricItem(
                       'Health Status',
-                      latestMetrics['health_metrics']?['overall_status'] ?? 'Unknown',
+                      latestMetrics['health_metrics']?['overall_status'] ??
+                          'Unknown',
                       Ionicons.heart_outline,
                       Colors.green,
                     ),
@@ -271,7 +449,9 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                   Expanded(
                     child: _buildMetricItem(
                       'Analytics Events',
-                      latestMetrics['analytics_metrics']?['totalEvents']?.toString() ?? '0',
+                      latestMetrics['analytics_metrics']?['totalEvents']
+                              ?.toString() ??
+                          '0',
                       Ionicons.analytics_outline,
                       Colors.orange,
                     ),
@@ -286,7 +466,8 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     );
   }
 
-  Widget _buildMetricItem(String label, String value, IconData icon, Color color) {
+  Widget _buildMetricItem(
+      String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -390,7 +571,9 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
             if (_realtimeMetrics.isEmpty)
               const Text('No recent metrics available')
             else
-              ...(_realtimeMetrics.take(5).map((metric) => _buildMetricListItem(metric))),
+              ...(_realtimeMetrics
+                  .take(5)
+                  .map((metric) => _buildMetricListItem(metric))),
           ],
         ),
       ),
@@ -531,7 +714,8 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
+  Widget _buildSummaryItem(
+      String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -673,7 +857,9 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
             if (_allMetrics.isEmpty)
               const Text('No activity data available')
             else
-              ...(_allMetrics.take(5).map((metric) => _buildActivityItem(metric))),
+              ...(_allMetrics
+                  .take(5)
+                  .map((metric) => _buildActivityItem(metric))),
           ],
         ),
       ),
@@ -720,17 +906,48 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
 
   Widget _buildPlatformsTab() {
     final platforms = [
-      {'name': 'SigNoz APM', 'url': _configuration['signozUrl'], 'status': 'Active', 'icon': Ionicons.analytics_outline},
-      {'name': 'Grafana', 'url': _configuration['grafanaUrl'], 'status': 'Active', 'icon': Ionicons.bar_chart_outline},
-      {'name': 'PostHog', 'url': _configuration['postHogUrl'], 'status': 'Active', 'icon': Ionicons.people_outline},
-      {'name': 'HyperDX', 'url': _configuration['hyperDxUrl'], 'status': 'Active', 'icon': Ionicons.document_text_outline},
-      {'name': 'SkyWalking', 'url': _configuration['skyWalkingUrl'], 'status': 'Active', 'icon': Ionicons.airplane_outline},
-      {'name': 'Highlight', 'url': _configuration['highlightUrl'], 'status': 'Active', 'icon': Ionicons.videocam_outline},
+      {
+        'name': 'SigNoz APM',
+        'url': _configuration['signozUrl'],
+        'status': 'Active',
+        'icon': Ionicons.analytics_outline
+      },
+      {
+        'name': 'Grafana',
+        'url': _configuration['grafanaUrl'],
+        'status': 'Active',
+        'icon': Ionicons.bar_chart_outline
+      },
+      {
+        'name': 'PostHog',
+        'url': _configuration['postHogUrl'],
+        'status': 'Active',
+        'icon': Ionicons.people_outline
+      },
+      {
+        'name': 'HyperDX',
+        'url': _configuration['hyperDxUrl'],
+        'status': 'Active',
+        'icon': Ionicons.document_text_outline
+      },
+      {
+        'name': 'SkyWalking',
+        'url': _configuration['skyWalkingUrl'],
+        'status': 'Active',
+        'icon': Ionicons.airplane_outline
+      },
+      {
+        'name': 'Highlight',
+        'url': _configuration['highlightUrl'],
+        'status': 'Active',
+        'icon': Ionicons.videocam_outline
+      },
     ];
 
     return SingleChildScrollView(
       child: Column(
-        children: platforms.map((platform) => _buildPlatformCard(platform)).toList(),
+        children:
+            platforms.map((platform) => _buildPlatformCard(platform)).toList(),
       ),
     );
   }
@@ -793,7 +1010,8 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                   ),
             ),
             const SizedBox(height: 16),
-            ..._configuration.entries.map((entry) => _buildConfigItem(entry.key, entry.value)),
+            ..._configuration.entries
+                .map((entry) => _buildConfigItem(entry.key, entry.value)),
           ],
         ),
       ),

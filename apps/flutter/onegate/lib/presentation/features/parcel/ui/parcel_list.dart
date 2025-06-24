@@ -13,6 +13,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../bloc/parcel_state.dart';
 import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
+import 'package:common_widgets/loading_view.dart';
 
 class ParcelList extends StatefulWidget {
   const ParcelList({super.key});
@@ -91,7 +92,7 @@ class _ParcelListState extends State<ParcelList> {
       children: [
         // Search field
         CustomForm.textField(
-          "Search",
+          "",
           hintText: "Search Members",
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onSurface,
@@ -154,195 +155,296 @@ class _ParcelListState extends State<ParcelList> {
     final checkIn = parcel['visitor_check_in'];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.only(
-            bottom: 8.0,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: Colors.grey.shade300,
+            width: 1,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 2,
-                ),
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ParcelDetails(parcel: parcel),
-                    ),
-                  );
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ListTile(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ParcelDetails(parcel: parcel),
+                  ),
+                );
 
-                  // Refresh if any update happened in ParcelDetails
-                  if (result == true) {
-                    if (context.mounted) {
-                      context.read<ParcelBloc>().add(FetchParcels());
-                    }
+                // Refresh if any update happened in ParcelDetails
+                if (result == true) {
+                  if (context.mounted) {
+                    context.read<ParcelBloc>().add(FetchParcels());
                   }
-                },
-                leading: CircleAvatar(
-                  backgroundImage: NetworkImage(parcel['visitor_image'] ?? ''),
-                  radius: 30,
-                ),
-                title: Text(
-                  parcel['visitor_name'] ?? 'N/A',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                subtitle: Text.rich(
-                  TextSpan(
-                    children: [
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment
-                            .middle, // Aligns icon with text
-                        child: Icon(
-                          _getPurposeIcon(parcel['purpose_sub_category_name']),
-                          size: 16, // Same size as text
-                          color: Colors.grey[600], // Greyish color
-                        ),
-                      ),
-                      const WidgetSpan(
-                          child: SizedBox(
-                              width: 6)), // Space between icon and text
-                      TextSpan(
-                        text:
-                            "${parcel['unit_name']?.toString() ?? 'No Description'} - ${parcel['purpose_sub_category_name'] ?? 'N/A'}",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize:
-                                  14, // Ensures text and icon size are the same
-                              color: Colors.grey[600], // Greyish color
-                            ),
-                      ),
-                    ],
+                }
+              },
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 8,
+              ),
+              leading: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                    width: 2,
                   ),
                 ),
-              ),
-              Divider(
-                indent: 16,
-                endIndent: 16,
-                color: Colors.grey[200],
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 12.0, right: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Tooltip(
-                      message: checkIn != null
-                          ? DateFormat('HH:mm').format(
-                              DateTime.tryParse(checkIn) ?? DateTime.now(),
-                            )
-                          : 'N/A',
-                      child: RichText(
-                        textAlign: TextAlign.start,
-                        text: TextSpan(
-                          children: [
-                            const WidgetSpan(
-                              child: Icon(
-                                Symbols.directions_walk_rounded,
-                                color: Colors.green,
-                              ),
-                            ),
-                            TextSpan(
-                              text: DateFormat('hh:mm a').format(
-                                DateFormat('yyyy-MM-dd hh:mm:ss a')
-                                    .parse(parcel['log_created_at']),
-                              ),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium!
-                                  .merge(
-                                    const TextStyle(
-                                      color: Colors.green,
-                                    ),
+                child: CircleAvatar(
+                  radius: 26,
+                  backgroundImage: parcel['visitor_image'] != null &&
+                          parcel['visitor_image'].toString().isNotEmpty
+                      ? NetworkImage(parcel['visitor_image'])
+                      : NetworkImage(
+                          'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                  child: parcel['visitor_image'] == null ||
+                          parcel['visitor_image'].toString().isEmpty
+                      ? Text(
+                          parcel['visitor_name'] != null &&
+                                  parcel['visitor_name'].toString().isNotEmpty
+                              ? parcel['visitor_name']
+                                  .toString()[0]
+                                  .toUpperCase()
+                              : 'P',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xffF44336),
                                   ),
-                            ),
-                          ],
-                        ),
-                      ),
+                        )
+                      : null,
+                ),
+              ),
+              title: Text(
+                parcel['visitor_name'] ?? 'Parcel Delivery',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xff212427),
+                      fontSize: 16,
+                      letterSpacing: 0.1,
                     ),
-                    parcel['parcel_status'] == 'pending'
-                        ? ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () async {
-                              TextEditingController otpController =
-                                  TextEditingController();
-                              remoteDataSource.getParcelOtp(
-                                parcel['parcel_id'].toString(),
-                                parcel['memb_mobile_number'].toString(),
-                              );
-
-                              final result = await showModalBottomSheet<bool>(
-                                context: context,
-                                isScrollControlled: true,
-                                builder: (BuildContext context) {
-                                  return OtpBottomSheet(
-                                    remoteDataSource: remoteDataSource,
-                                    parcel: parcel,
-                                    otpController: otpController,
-                                  );
-                                },
-                              );
-
-                              // If result is true, refresh the parcel list
-                              if (result == true) {
-                                if (context.mounted) {
-                                  context
-                                      .read<ParcelBloc>()
-                                      .add(FetchParcels());
-                                }
-                              }
-                            },
-                            child: Text(
-                              'Pick',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    color: Colors.white,
-                                  ),
-                            ),
-                          )
-                        : Container(
-                            decoration: BoxDecoration(
-                                border: Border.all(color: Colors.green),
-                                borderRadius: BorderRadius.circular(10)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.verified,
-                                    color: Colors.green,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(parcel['parcel_status'] ?? 'N/A',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium!
-                                          .copyWith(color: Colors.green)),
-                                ],
-                              ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF44336).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xffF44336).withOpacity(0.2),
+                              width: 1,
                             ),
                           ),
+                          child: Icon(
+                            _getPurposeIcon(
+                                parcel['purpose_sub_category_name']),
+                            color: const Color(0xffF44336),
+                            size: 15,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Flexible(
+                          child: Text(
+                            "${_capitalizeFirstLetter(parcel['purpose_sub_category_name']?.toString() ?? "Parcel")} - ${parcel['unit_name']?.toString() ?? 'N/A'}",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  fontSize: 14,
+                                  color: const Color(0xff57636C),
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.2,
+                                  height: 1.4,
+                                ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        )
+                      ],
+                    ),
                   ],
                 ),
-              )
-            ],
-          ),
+              ),
+            ),
+            Divider(
+              indent: 20,
+              endIndent: 20,
+              height: 24,
+              thickness: 1,
+              color: Colors.grey.shade200,
+            ),
+            Container(
+              padding: const EdgeInsets.only(
+                  bottom: 16.0, top: 12, left: 20, right: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Tooltip(
+                    message: checkIn != null
+                        ? DateFormat('dd-MM-yyyy hh:mm a').format(
+                            DateTime.tryParse(checkIn) ?? DateTime.now(),
+                          )
+                        : "No check-in time",
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.green.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Symbols.directions_walk_rounded,
+                            color: Colors.green.shade600,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            DateFormat('hh:mm a').format(
+                              DateFormat('yyyy-MM-dd hh:mm:ss a')
+                                  .parse(parcel['log_created_at']),
+                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.green.shade700,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      letterSpacing: 0.3,
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  parcel['parcel_status'] == 'pending'
+                      ? ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xffF44336),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                          onPressed: () async {
+                            TextEditingController otpController =
+                                TextEditingController();
+                            remoteDataSource.getParcelOtp(
+                              parcel['parcel_id'].toString(),
+                              parcel['memb_mobile_number'].toString(),
+                            );
+
+                            final result = await showModalBottomSheet<bool>(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (BuildContext context) {
+                                return OtpBottomSheet(
+                                  remoteDataSource: remoteDataSource,
+                                  parcel: parcel,
+                                  otpController: otpController,
+                                );
+                              },
+                            );
+
+                            // If result is true, refresh the parcel list
+                            if (result == true) {
+                              if (context.mounted) {
+                                context.read<ParcelBloc>().add(FetchParcels());
+                              }
+                            }
+                          },
+                          child: Text(
+                            'Pick',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  letterSpacing: 0.5,
+                                ),
+                          ),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.green.shade200,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified,
+                                color: Colors.green.shade600,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _capitalizeFirstLetter(
+                                    parcel['parcel_status'] ?? 'N/A'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Colors.green.shade700,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      letterSpacing: 0.3,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  String _capitalizeFirstLetter(String text) {
+    if (text.isEmpty) return "";
+    return text
+        .split(' ') // Split into words
+        .map((word) => word.isNotEmpty
+            ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+            : word)
+        .join(' '); // Join words back
   }
 
   IconData _getPurposeIcon(String? category) {
@@ -506,10 +608,9 @@ class _ParcelListState extends State<ParcelList> {
               child: BlocBuilder<ParcelBloc, ParcelState>(
                 builder: (context, state) {
                   if (state is ParcelLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.black,
-                      ),
+                    return const LoaderView(
+                      title: "Loading Parcels",
+                      subtitle: "Please wait while we fetch the data",
                     );
                   } else if (state is ParcelLoaded) {
                     return Stack(

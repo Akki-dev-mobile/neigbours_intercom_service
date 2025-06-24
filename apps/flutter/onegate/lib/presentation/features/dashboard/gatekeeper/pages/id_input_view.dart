@@ -73,6 +73,7 @@ class _IdInputViewState extends State<IdInputView> {
   bool checkVisitorLoading = false;
   bool isMobileApiLoading = false; // Controls the spinner for mobile input
   bool hideNextButton = false; // Controls whether to hide the Next button
+  bool isPasscodeVerifying = false; // Controls passcode verification loading
   final GateStorage _gateStorage = GateStorage();
 
   void startLoading() {
@@ -270,20 +271,9 @@ class _IdInputViewState extends State<IdInputView> {
                   debugPrint(
                       "Visitor already checked in error: ${visitorCheckedInErrorState.message}");
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(visitorCheckedInErrorState.message),
-                      backgroundColor: Colors.orange,
-                      duration: Duration(seconds: 4),
-                      behavior: SnackBarBehavior.floating,
-                      action: SnackBarAction(
-                        label: 'OK',
-                        textColor: Colors.white,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        },
-                      ),
-                    ),
+                  _showEnhancedErrorToast(
+                    title: "Visitor Already Checked In",
+                    message: visitorCheckedInErrorState.message,
                   );
                   break;
 
@@ -301,20 +291,9 @@ class _IdInputViewState extends State<IdInputView> {
                   print(
                       "🎯 UI: Showing snackbar with message: ${apiErrorState.message}");
                   // Show snackbar for API error
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(apiErrorState.message),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 4),
-                      behavior: SnackBarBehavior.floating,
-                      action: SnackBarAction(
-                        label: 'OK',
-                        textColor: Colors.white,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        },
-                      ),
-                    ),
+                  _showEnhancedErrorToast(
+                    title: "API Error",
+                    message: apiErrorState.message,
                   );
                   break;
 
@@ -383,155 +362,327 @@ class _IdInputViewState extends State<IdInputView> {
               }
             },
             builder: (context, state) {
-              return Form(
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.45, 1.0],
+                    colors: [
+                      const Color(0xffF44336).withOpacity(0.15),
+                      const Color(0xffD32F2F).withOpacity(0.08),
+                      Colors.white.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+                child: Form(
                 key: mobileControllerFormKey,
                 child: MyScrollView(
                   pageTitle: _currentIndex == 0
                       ? 'Enter Mobile Number'
                       : 'Enter Passcode',
-                  pageBody: Column(
+                    pageBody: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ToggleSwitch(
-                        totalSwitches: 2,
-                        labels: _labels,
-                        minWidth: 400.0,
-                        cornerRadius: 0.0,
-                        // Rectangle shape
-                        activeBgColors: [
-                          [Colors.black],
-                          [Colors.black],
-                        ],
-                        activeFgColor: Colors.white,
-                        inactiveBgColor: Colors.white,
-                        inactiveFgColor: Colors.black,
-                        borderWidth: 2,
-                        borderColor: [Colors.black],
-                        fontSize: 16.0,
-                        animate: true,
-                        curve: Curves.easeInOut,
-                        initialLabelIndex: _currentIndex,
-                        onToggle: (index) {
-                          if (index != null) {
+                          // Enhanced Toggle Switch Card
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Row(
+                                children: [
+                                  // Mobile Number Tab
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
                             setState(() {
-                              _currentIndex = index;
+                                          _currentIndex = 0;
                             });
-
-                            // Clear visitor data when switching to Mobile tab
-                            if (index == 0) {
                               _clearVisitorData();
                               mobileController.clear();
-
-                              // Request focus to mobile field
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                FocusScope.of(context).requestFocus(_focusNode);
-                              });
-
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          FocusScope.of(context)
+                                              .requestFocus(_focusNode);
+                                        });
                               log("🧹 Visitor data cleared when switching to Mobile tab");
-                            }
-                          }
-                        },
-                      ),
-                      SizedBox(height: 20),
-                      _currentIndex == 0
-                          ? Column(
-                              children: [
-                                CustomForm.textField(
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Mobile number is required';
-                                    } else if (value.length != 10) {
-                                      return 'Please enter a 10-digit number';
-                                    } else if (!RegExp(r'^[0-9]+$')
-                                        .hasMatch(value)) {
-                                      return 'No spaces or special characters allowed';
-                                    }
-                                    return null;
-                                  },
-                                  titleColor:
-                                      Theme.of(context).colorScheme.onSurface,
-                                  hintColor:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  "Visitor Mobile Number",
-                                  hintText: '0123456789',
-                                  prefixIcon: CountryCodePicker(
-                                    initialSelection: 'IN',
-                                    favorite: ['IN'],
-                                    showFlagMain: true,
-                                    showFlagDialog: true,
-                                    boxDecoration: BoxDecoration(
-                                      color:
-                                          Theme.of(context).colorScheme.surface,
-                                    ),
-                                    barrierColor: Theme.of(context)
-                                        .colorScheme
-                                        .surface
-                                        .withOpacity(0.5),
-                                    closeIcon: Icon(
-                                      Icons.close,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                                    searchDecoration: InputDecoration(
-                                      prefixIcon: Icon(
-                                        Icons.search,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                      ),
-                                      hintText: 'Search',
-                                      hintStyle: TextStyle(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(15),
-                                        borderSide: BorderSide(
-                                          style: BorderStyle.solid,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
+                                      },
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        curve: Curves.easeInOut,
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                        decoration: BoxDecoration(
+                                          gradient: _currentIndex == 0
+                                              ? const LinearGradient(
+                                                  colors: [
+                                                    Color(0xffF44336),
+                                                    Color(0xffD32F2F)
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                )
+                                              : null,
+                                          color: _currentIndex == 0
+                                              ? null
+                                              : Colors.white,
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(8),
+                                            bottomLeft: Radius.circular(8),
+                                          ),
+                                          border: Border.all(
+                                            color: _currentIndex == 0
+                                                ? const Color(0xffF44336)
+                                                : Colors.grey.withOpacity(0.3),
+                                            width: 1.5,
+                                          ),
                                         ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(15),
-                                        borderSide: BorderSide(
-                                          style: BorderStyle.solid,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
+                                        child: Center(
+                                          child: Text(
+                                            _labels[0],
+                                            style: TextStyle(
+                                              fontSize: 16.0,
+                                              fontWeight: FontWeight.w500,
+                                              color: _currentIndex == 0
+                                                  ? Colors.white
+                                                  : const Color(0xff57636C),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                    textStyle: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                      fontSize: 18,
-                                    ),
-                                    dialogTextStyle: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                                    onChanged: (CountryCode countryCode) {
-                                      setState(() {
-                                        selectedCountryCode = countryCode.code!;
-                                      });
-                                    },
                                   ),
-                                  textController: mobileController,
-                                  keyboardType: TextInputType.number,
-                                  length: 10,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
+                                  // Passcode Tab
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _currentIndex = 1;
+                                        });
+                                      },
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        curve: Curves.easeInOut,
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                        decoration: BoxDecoration(
+                                          gradient: _currentIndex == 1
+                                              ? const LinearGradient(
+                                                  colors: [
+                                                    Color(0xffF44336),
+                                                    Color(0xffD32F2F)
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                )
+                                              : null,
+                                          color: _currentIndex == 1
+                                              ? null
+                                              : Colors.white,
+                                          borderRadius: const BorderRadius.only(
+                                            topRight: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                          ),
+                                          border: Border.all(
+                                            color: _currentIndex == 1
+                                                ? const Color(0xffF44336)
+                                                : Colors.grey.withOpacity(0.3),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            _labels[1],
+                                            style: TextStyle(
+                                              fontSize: 16.0,
+                                              fontWeight: FontWeight.w500,
+                                              color: _currentIndex == 1
+                                                  ? Colors.white
+                                                  : const Color(0xff57636C),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Enhanced Form Section
+                          Padding(
+                            padding: const EdgeInsets.all(0.0),
+                            child: _currentIndex == 0
+                          ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                              children: [
+                                      // Enhanced Mobile Number Field Card
+                                      Container(
+                                        margin: const EdgeInsets.symmetric(
+                                            horizontal: 0, vertical: 0),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.05),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 8),
+                                            ),
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.03),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            // Header Section with Icon and Title
+                                            Container(
+                                              padding: const EdgeInsets.all(20),
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            12),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                              0xffF44336)
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.phone,
+                                                      color: Color(0xffF44336),
+                                                      size: 24,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 16),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        RichText(
+                                                          text: const TextSpan(
+                                                            children: [
+                                                              TextSpan(
+                                                                text:
+                                                                    'Visitor Mobile Number',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: Color(
+                                                                      0xff212427),
+                                                                ),
+                                                              ),
+                                                              TextSpan(
+                                                                text: ' *',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: Color(
+                                                                      0xffF44336),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 4),
+                                                        const Text(
+                                                          'Enter the visitor mobile number',
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color: Color(
+                                                                0xff57636C),
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            // Input Field Section
+                                            Container(
+                                              padding: const EdgeInsets.only(
+                                                  left: 20,
+                                                  right: 20,
+                                                  bottom: 20),
+                                              child: TextFormField(
+                                                controller: mobileController,
                                   focusNode: _focusNode,
+                                                maxLength: 10,
+                                                keyboardType:
+                                                    TextInputType.number,
+                                                inputFormatters: [
+                                                  FilteringTextInputFormatter
+                                                      .digitsOnly,
+                                                ],
+                                                cursorColor: Colors.black,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xff212427),
+                                                ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.isEmpty) {
+                                                    return 'Mobile number is required';
+                                                  } else if (value.length !=
+                                                      10) {
+                                                    return 'Please enter a 10-digit number';
+                                                  } else if (!RegExp(
+                                                          r'^[0-9]+$')
+                                                      .hasMatch(value)) {
+                                                    return 'No spaces or special characters allowed';
+                                                  }
+                                                  return null;
+                                                },
                                   onChanged: (value) {
                                     // Reset hideNextButton when user starts typing
-                                    if (value.length < 10 && hideNextButton) {
+                                                  if (value.length < 10 &&
+                                                      hideNextButton) {
                                       setState(() {
                                         hideNextButton = false;
                                         print(
@@ -548,92 +699,642 @@ class _IdInputViewState extends State<IdInputView> {
                                       });
                                       gateDashboardBloc.add(
                                         GDOnMobileNumberEnteredEvent(
-                                            mobileController.text),
+                                                          mobileController
+                                                              .text),
                                       );
                                     }
                                   },
-                                  // suffixIcon: isMobileApiLoading
-                                  //     ? SizedBox(
-                                  //         width: 24,
-                                  //         height: 24,
-                                  //         child: Padding(
-                                  //           padding: EdgeInsets.only(right: 12),
-                                  //           child: CircularProgressIndicator(
-                                  //             strokeWidth: 2.5,
-                                  //           ),
-                                  //         ),
-                                  //       )
-                                  //     : null,
-                                ),
-                                isMobileApiLoading
-                                    ? Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: LinearProgressIndicator(
-                                          color: Colors.red,
-                                          backgroundColor: Colors.black12,
+                                                decoration: InputDecoration(
+                                                  hintText: '0123456789',
+                                                  hintStyle: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w400,
+                                                    color: Color(0xff57636C),
+                                                  ),
+                                                  filled: true,
+                                                  fillColor:
+                                                      const Color(0xffF44336)
+                                                          .withOpacity(0.02),
+                                                  contentPadding:
+                                                      const EdgeInsets
+                                                          .symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 16,
+                                                  ),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    borderSide: BorderSide(
+                                                      color: const Color(
+                                                              0xffF44336)
+                                                          .withOpacity(0.2),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    borderSide: BorderSide(
+                                                      color: const Color(
+                                                              0xffF44336)
+                                                          .withOpacity(0.2),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    borderSide:
+                                                        const BorderSide(
+                                                      color: Color(0xffF44336),
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  counterText: '',
+                                                  prefixIcon: CountryCodePicker(
+                                                    initialSelection: 'IN',
+                                                    favorite: [
+                                                      'IN',
+                                                      'US',
+                                                      'GB',
+                                                      'CA',
+                                                      'AU'
+                                                    ],
+                                                    showFlagMain: true,
+                                                    showFlagDialog: true,
+                                                    flagWidth: 32,
+                                                    dialogSize:
+                                                        const Size(350, 500),
+                                                    boxDecoration:
+                                                        BoxDecoration(
+                                                      color: Colors.white,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              20),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black
+                                                              .withOpacity(0.1),
+                                                          blurRadius: 20,
+                                                          offset: const Offset(
+                                                              0, 8),
+                                                        ),
+                                                        BoxShadow(
+                                                          color: Colors.black
+                                                              .withOpacity(
+                                                                  0.05),
+                                                          blurRadius: 10,
+                                                          offset: const Offset(
+                                                              0, 4),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    barrierColor: Colors.black
+                                                        .withOpacity(0.5),
+                                                    closeIcon: const Icon(
+                                                      Icons.close,
+                                                      color: Color(0xffF44336),
+                                                      size: 24,
+                                                    ),
+                                                    searchDecoration:
+                                                        InputDecoration(
+                                                      prefixIcon: Container(
+                                                        margin: const EdgeInsets
+                                                            .all(8),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          gradient:
+                                                              LinearGradient(
+                                                            colors: [
+                                                              const Color(
+                                                                      0xffF44336)
+                                                                  .withOpacity(
+                                                                      0.1),
+                                                              const Color(
+                                                                      0xffD32F2F)
+                                                                  .withOpacity(
+                                                                      0.05),
+                                                            ],
+                                                          ),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(10),
+                                                        ),
+                                                        child: const Icon(
+                                                          Icons.search,
+                                                          color:
+                                                              Color(0xffF44336),
+                                                          size: 22,
+                                                        ),
+                                                      ),
+                                                      hintText:
+                                                          'Search countries...',
+                                                      hintStyle:
+                                                          const TextStyle(
+                                                        color:
+                                                            Color(0xff57636C),
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                      filled: true,
+                                                      fillColor: const Color(
+                                                              0xffF44336)
+                                                          .withOpacity(0.02),
+                                                      contentPadding:
+                                                          const EdgeInsets
+                                                              .symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 16,
+                                                      ),
+                                                      border:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(16),
+                                                        borderSide: BorderSide(
+                                                          color: const Color(
+                                                                  0xffF44336)
+                                                              .withOpacity(0.2),
+                                                          width: 1.5,
+                                                        ),
+                                                      ),
+                                                      focusedBorder:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(16),
+                                                        borderSide:
+                                                            const BorderSide(
+                                                          color:
+                                                              Color(0xffF44336),
+                                                          width: 2,
+                                                        ),
+                                                      ),
+                                                      enabledBorder:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(16),
+                                                        borderSide: BorderSide(
+                                                          color: const Color(
+                                                                  0xffF44336)
+                                                              .withOpacity(0.2),
+                                                          width: 1.5,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    textStyle: const TextStyle(
+                                                      color: Color(0xff212427),
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                    dialogTextStyle:
+                                                        const TextStyle(
+                                                      color: Color(0xff212427),
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                    emptySearchBuilder:
+                                                        (context) => Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              32),
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(16),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: const Color(
+                                                                      0xffF44336)
+                                                                  .withOpacity(
+                                                                      0.1),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          50),
+                                                            ),
+                                                            child: const Icon(
+                                                              Icons.search_off,
+                                                              color: Color(
+                                                                  0xffF44336),
+                                                              size: 32,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 16),
+                                                          const Text(
+                                                            'No countries found',
+                                                            style: TextStyle(
+                                                              fontSize: 18,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: Color(
+                                                                  0xff212427),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 8),
+                                                          const Text(
+                                                            'Try searching with a different term',
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                              color: Color(
+                                                                  0xff57636C),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    onChanged: (CountryCode
+                                                        countryCode) {
+                                                      setState(() {
+                                                        selectedCountryCode =
+                                                            countryCode.code!;
+                                                      });
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      )
-                                    : SizedBox.shrink(),
+                                      ),
+                                      if (isMobileApiLoading) ...[
+                                        const SizedBox(height: 20),
+                                        // Enhanced Loading Card with Green Theme
+                                        Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                Colors.green.withOpacity(0.1),
+                                                Colors.green.withOpacity(0.05),
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color:
+                                                  Colors.green.withOpacity(0.2),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              // Animated Loading Indicator
+                                              Container(
+                                                width: 24,
+                                                height: 24,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2.5,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                          Color>(
+                                                    Colors.green,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              // Loading Text with Animation
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Validating mobile number...',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.green,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      'Please wait while we check your details',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: const Color(
+                                                            0xff57636C),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              // Animated Dots Loader
+                                              Row(
+                                                children: [
+                                                  for (int i = 0; i < 3; i++)
+                                                    Container(
+                                                      margin:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 2),
+                                                      width: 6,
+                                                      height: 6,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.green,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                               ],
                             )
                           : Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                               children: [
-                                Form(
+                                      // Enhanced Passcode Field Card
+                                      Container(
+                                        margin: const EdgeInsets.symmetric(
+                                            horizontal: 0, vertical: 0),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.05),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 8),
+                                            ),
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.03),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            // Header Section with Icon and Title
+                                            Container(
+                                              padding: const EdgeInsets.all(20),
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            12),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                              0xffF44336)
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.lock,
+                                                      color: Color(0xffF44336),
+                                                      size: 24,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 16),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        RichText(
+                                                          text: const TextSpan(
+                                                            children: [
+                                                              TextSpan(
+                                                                text:
+                                                                    'Visitor Passcode',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: Color(
+                                                                      0xff212427),
+                                                                ),
+                                                              ),
+                                                              TextSpan(
+                                                                text: ' *',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: Color(
+                                                                      0xffF44336),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 4),
+                                                        const Text(
+                                                          'Enter your 6-digit passcode to continue',
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color: Color(
+                                                                0xff57636C),
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            // Input Field Section
+                                            Container(
+                                              padding: const EdgeInsets.only(
+                                                  left: 20,
+                                                  right: 20,
+                                                  bottom: 20),
+                                              child: Form(
                                   key: passcodeControllerFormKey,
-                                  child: CustomForm.textField(
+                                                child: TextFormField(
+                                                  controller:
+                                                      passcodeController,
+                                                  maxLength: 6,
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  textCapitalization:
+                                                      TextCapitalization
+                                                          .characters,
+                                                  cursorColor: Colors.black,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color(0xff212427),
+                                                  ),
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) {
+                                                    if (value == null ||
+                                                        value.isEmpty) {
                                         return 'Passcode is required';
-                                      } else if (value.length != 6) {
+                                                    } else if (value.length !=
+                                                        6) {
                                         return 'Please enter a 6-digit passcode';
                                       }
                                       return null;
                                     },
-                                    titleColor:
-                                        Theme.of(context).colorScheme.onSurface,
-                                    hintColor:
-                                        Theme.of(context).colorScheme.onPrimary,
-                                    "Visitor Passcode",
+                                                  decoration: InputDecoration(
                                     hintText: '123456',
-                                    textController: passcodeController,
-                                    textCapitalization:
-                                        TextCapitalization.characters,
-                                    length: 6,
-                                    keyboardType: TextInputType.number,
-                                    // prefixIcon: Padding(
-                                    //   padding:
-                                    //       EdgeInsets.only(left: 10, right: 20),
-                                    //   child: CircleAvatar(
-                                    //     backgroundColor: Color(0xffFFEBE6),
-                                    //     child: Text(
-                                    //       selectedPassAlpha ?? 'A',
-                                    //       style: TextStyle(
-                                    //         color: Colors.black,
-                                    //         fontWeight: FontWeight.bold,
-                                    //       ),
-                                    //     ),
-                                    //   ),
-                                    // ),
-                                    suffixIcon: IconButton(
-                                      onPressed: () {
+                                                    hintStyle: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      color: Color(0xff57636C),
+                                                    ),
+                                                    filled: true,
+                                                    fillColor:
+                                                        const Color(0xffF44336)
+                                                            .withOpacity(0.02),
+                                                    contentPadding:
+                                                        const EdgeInsets
+                                                            .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 16,
+                                                    ),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                      borderSide: BorderSide(
+                                                        color: const Color(
+                                                                0xffF44336)
+                                                            .withOpacity(0.2),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    enabledBorder:
+                                                        OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                      borderSide: BorderSide(
+                                                        color: const Color(
+                                                                0xffF44336)
+                                                            .withOpacity(0.2),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    focusedBorder:
+                                                        OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                      borderSide:
+                                                          const BorderSide(
+                                                        color:
+                                                            Color(0xffF44336),
+                                                        width: 2,
+                                                      ),
+                                                    ),
+                                                    counterText: '',
+                                                    suffixIcon: Container(
+                                                      margin:
+                                                          const EdgeInsets.all(
+                                                              8),
+                                                      child: CircleAvatar(
+                                                        backgroundColor: Colors
+                                                            .green
+                                                            .withOpacity(0.1),
+                                                        radius: 20,
+                                                        child: IconButton(
+                                                          onPressed:
+                                                              isPasscodeVerifying
+                                                                  ? null
+                                                                  : () async {
                                         if (passcodeControllerFormKey
                                             .currentState!
                                             .validate()) {
-                                          // Show modal bottom sheet or handle passcode submission
-                                        }
-                                      },
-                                      icon: Icon(
-                                        Symbols.done_rounded,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                      ),
+                                                                        // Trigger passcode verification
+                                                                        setState(
+                                                                            () {
+                                                                          isPasscodeVerifying =
+                                                                              true;
+                                                                        });
+
+                                                                        // Add haptic feedback
+                                                                        HapticFeedback
+                                                                            .lightImpact();
+
+                                                                        // Call the verification function
+                                                                        await _handlePasscodeVerification();
+
+                                                                        setState(
+                                                                            () {
+                                                                          isPasscodeVerifying =
+                                                                              false;
+                                                                        });
+                                                                      }
+                                                                    },
+                                                          icon: isPasscodeVerifying
+                                                              ? const SizedBox(
+                                                                  width: 20,
+                                                                  height: 20,
+                                                                  child:
+                                                                      CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        2,
+                                                                    valueColor: AlwaysStoppedAnimation<
+                                                                            Color>(
+                                                                        Color(
+                                                                            0xffF44336)),
+                                                                  ),
+                                                                )
+                                                              : const Icon(
+                                                                  Symbols
+                                                                      .done_rounded,
+                                                                  color: Colors
+                                                                      .green,
+                                                                  size: 20,
+                                                                ),
+                                                          padding:
+                                                              EdgeInsets.zero,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
                                     ),
                                   ),
                                 ),
                               ],
+                                        ),
                             ),
                     ],
+                                  ),
+                          ),
+                        ],
+                      ),
                   ),
                   floatingActionButton: () {
                     final shouldHideButton =
@@ -645,13 +1346,63 @@ class _IdInputViewState extends State<IdInputView> {
 
                     return shouldHideButton
                         ? null // Hide Next button during mobile number validation or API errors
-                        : CustomLargeBtn(
-                            text:
-                                checkVisitorLoading ? 'Processing...' : 'Next',
-                            onPressed:
-                                checkVisitorLoading ? null : checkVisitor,
+                          : Container(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 16),
+                              child: Container(
+                                width: double.infinity,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xff212427),
+                                      Color(0xff57636C)
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(16),
+                                    onTap: checkVisitorLoading
+                                        ? null
+                                        : checkVisitor,
+                                    child: Center(
+                                      child: Text(
+                                        checkVisitorLoading
+                                            ? 'Processing...'
+                                            : 'Next',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                           );
                   }(),
+                    floatingActionButtonLocation:
+                        FloatingActionButtonLocation.centerDocked,
+                  ),
                 ),
               );
             },
@@ -714,27 +1465,50 @@ class _IdInputViewState extends State<IdInputView> {
 
         final int id = visitorData['visitor_id'];
 
-        myFluttertoast(
-          msg: "✅ Passcode verified successfully!",
-          backgroundColor: Colors.green,
+        _showEnhancedSuccessToast(
+          title: "Passcode Verified",
+          message: "Welcome ${name}! Proceeding to capture your photo.",
+          icon: Icons.verified_user,
         );
-
-        // print("📞 Extracted Mobile Number: $mobileNumber $id");
 
         // ✅ Check & Request Camera Permission, then Capture Image
         await _requestCameraPermissionAndCapture(mobileNumber, id.toString());
       } else {
-        myFluttertoast(
-          msg: "❌ Invalid passcode. Try again.",
-          backgroundColor: Colors.red,
+        _showEnhancedErrorToast(
+          title: "Invalid Passcode",
+          message: "Not a valid passcode",
+          icon: Icons.lock_outline,
         );
       }
     } catch (e) {
       stopLoading();
-      // myFluttertoast(
-      //   msg: "❌ Error verifying passcode: $e",
-      //   backgroundColor: Colors.red,
-      // );
+
+      // Provide more specific error messages based on the error type
+      String errorTitle = "Verification Failed";
+      String errorMessage = "Unable to verify passcode. Please try again.";
+      IconData errorIcon = Icons.error_outline;
+
+      if (e.toString().contains('network') ||
+          e.toString().contains('connection')) {
+        errorTitle = "Network Error";
+        errorMessage = "Please check your internet connection and try again.";
+        errorIcon = Icons.wifi_off;
+      } else if (e.toString().contains('timeout')) {
+        errorTitle = "Request Timeout";
+        errorMessage = "The request took too long. Please try again.";
+        errorIcon = Icons.access_time;
+      } else if (e.toString().contains('server')) {
+        errorTitle = "Server Error";
+        errorMessage =
+            "Server is temporarily unavailable. Please try again later.";
+        errorIcon = Icons.dns;
+      }
+
+      _showEnhancedErrorToast(
+        title: errorTitle,
+        message: errorMessage,
+        icon: errorIcon,
+      );
     }
   }
 
@@ -919,13 +1693,150 @@ class _IdInputViewState extends State<IdInputView> {
     log("  - hideNextButton: $hideNextButton");
     log("  - isMobileApiLoading: $isMobileApiLoading");
   }
+
+  /// Enhanced error toast with better styling and messages
+  void _showEnhancedErrorToast({
+    required String title,
+    required String message,
+    IconData? icon,
+  }) {
+    // Use a more sophisticated toast with better styling
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon ?? Icons.error_outline,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color(0xffF44336),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+        elevation: 8,
+      ),
+    );
+
+    // Add haptic feedback for error
+    HapticFeedback.heavyImpact();
+  }
+
+  /// Enhanced success toast
+  void _showEnhancedSuccessToast({
+    required String title,
+    required String message,
+    IconData? icon,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon ?? Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+        elevation: 8,
+      ),
+    );
+
+    // Add haptic feedback for success
+    HapticFeedback.lightImpact();
+  }
 }
 
 class ImageGridBottomSheet extends StatefulWidget {
   final List<PurposeCategory1> purposeCategories;
   final GatekeeperDashboardBloc gatekeeperDashboardBloc;
   final String mobileNumber; // <-- Add this
-  VisitorMapper? searchedVisitor;
+  Visitor? searchedVisitor;
 
   ImageGridBottomSheet({
     super.key,
@@ -947,6 +1858,24 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   void initState() {
     super.initState();
     _loadSelectedPurposesToGlobal();
+
+    // Auto-select GUEST purpose (index 0 after reordering)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (globalSelectedPurposes.isNotEmpty) {
+        setState(() {
+          selectedImageIndex = 0; // GUEST is always first after reordering
+        });
+      } else if (widget.purposeCategories.isNotEmpty) {
+        // Reorder widget.purposeCategories and find GUEST index
+        final reorderedCategories =
+            _reorderPurposeCategories(widget.purposeCategories);
+        final guestIndex = reorderedCategories.indexWhere(
+            (purpose) => purpose.categoryName.toUpperCase() == 'GUEST');
+        setState(() {
+          selectedImageIndex = guestIndex != -1 ? guestIndex : 0;
+        });
+      }
+    });
   }
 
   List<PurposeCategory1> globalSelectedPurposes = [];
@@ -958,17 +1887,52 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
 
       if (jsonString != null) {
         final jsonList = jsonDecode(jsonString) as List<dynamic>;
-        setState(() {
-          globalSelectedPurposes =
+        final loadedPurposes =
               jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
+
+        setState(() {
+          globalSelectedPurposes = _reorderPurposeCategories(loadedPurposes);
         });
-        print("Global selected purposes loaded: $globalSelectedPurposes");
+        print(
+            "Global selected purposes loaded and reordered: $globalSelectedPurposes");
       } else {
         print("No selected purposes found in SharedPreferences.");
       }
     } catch (e) {
       print("Failed to load selected purposes into global variable: $e");
     }
+  }
+
+  /// Reorders purpose categories in the specified order: GUEST, DELIVERY, STAFF, MEMBER STAFF, VENDOR, CABS
+  List<PurposeCategory1> _reorderPurposeCategories(
+      List<PurposeCategory1> purposes) {
+    final reorderedList = <PurposeCategory1>[];
+    final orderPriority = [
+      'GUEST',
+      'DELIVERY',
+      'STAFF',
+      'MEMBER STAFF',
+      'VENDOR',
+      'CABS'
+    ];
+
+    // Add purposes in the specified order
+    for (String categoryName in orderPriority) {
+      final matchingPurposes = purposes
+          .where((purpose) =>
+              purpose.categoryName.toUpperCase() == categoryName.toUpperCase())
+          .toList();
+      reorderedList.addAll(matchingPurposes);
+    }
+
+    // Add any remaining purposes that weren't in the priority list
+    final remainingPurposes = purposes
+        .where((purpose) => !orderPriority.any((priority) =>
+            priority.toUpperCase() == purpose.categoryName.toUpperCase()))
+        .toList();
+    reorderedList.addAll(remainingPurposes);
+
+    return reorderedList;
   }
 
   void purposeSelectionBottomSheet() async {
@@ -980,7 +1944,8 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
 
     if (selectedImageIndex != -1) {
       final selectedValue = globalSelectedPurposes.isEmpty
-          ? widget.purposeCategories[selectedImageIndex!]
+          ? _reorderPurposeCategories(
+              widget.purposeCategories)[selectedImageIndex!]
           : globalSelectedPurposes[selectedImageIndex!];
 
       Navigator.pop(
@@ -997,7 +1962,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
       widget.gatekeeperDashboardBloc.add(
         PurposeNextButtonClickedEvent(
           selectedValue,
-          searchedVisitor,
+          widget.searchedVisitor,
           widget.mobileNumber,
         ),
       );
@@ -1045,245 +2010,439 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   Widget build(BuildContext context) {
     bool selectPurposeLoading = false;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white,
+            Colors.white,
+            Colors.white,
+          ],
         ),
-        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -8),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          ListTile(
-            title: Text(
-              'Select Purpose of visit',
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontWeight: FontWeight.w600,
+          // Enhanced Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Purpose Icon
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF44336).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-            ),
-            trailing: const Icon(
-              Ionicons.close_circle_outline,
-              color: Colors.red,
-              size: 28,
-            ),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 10),
+                  child: Icon(
+                    Icons.assignment,
+                    color: const Color(0xffF44336),
+                    size: 20,
+                  ),
+                ),
           Expanded(
+                  child: Text(
+                    'Select Purpose of Visit',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xff212427),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                // Enhanced Close Button
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xffF44336), Color(0xffD32F2F)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xffF44336).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(
+                          Ionicons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Enhanced Grid Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
             child: globalSelectedPurposes.isEmpty
                 ? GridView.builder(
                     shrinkWrap: true,
+                      physics: const BouncingScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
-                      mainAxisSpacing: 3,
-                      crossAxisSpacing: 3,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.85,
                     ),
-                    itemCount: widget.purposeCategories
-                        .where((purpose) => purpose.categoryName == "GUEST")
+                      itemCount:
+                          _reorderPurposeCategories(widget.purposeCategories)
                         .length,
                     itemBuilder: (context, index) {
-                      final guestPurposes = widget.purposeCategories
-                          .where((purpose) => purpose.categoryName == "GUEST")
-                          .toList();
-                      final purpose = guestPurposes[index];
+                        final reorderedPurposes =
+                            _reorderPurposeCategories(widget.purposeCategories);
+                        final purpose = reorderedPurposes[index];
+                        final isSelected = selectedImageIndex == index;
 
                       return GestureDetector(
-                        onTap: () => selectImage(4),
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 250,
-                              width: 200,
-                              margin: const EdgeInsets.all(3),
+                          onTap: () {
+                            selectImage(index);
+                            HapticFeedback.lightImpact();
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
                               decoration: BoxDecoration(
-                                color: selectedImageIndex == 4
-                                    ? const Color(0x10C08261)
-                                    : Colors.transparent,
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: selectedImageIndex == 4
-                                      ? const Color(0xffC08261)
-                                      : Colors.grey,
-                                  width: selectedImageIndex == 4 ? 2 : 1,
+                                color: isSelected
+                                    ? const Color(0xffF44336)
+                                    : Colors.grey.withOpacity(0.2),
+                                width: isSelected ? 2 : 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isSelected
+                                      ? const Color(0xffF44336).withOpacity(0.2)
+                                      : Colors.black.withOpacity(0.05),
+                                  blurRadius: isSelected ? 12 : 6,
+                                  offset: const Offset(0, 4),
                                 ),
-                                borderRadius: BorderRadius.circular(15),
+                              ],
                               ),
                               child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
+                              mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 7),
+                                // Enhanced Image Container
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
+                                    borderRadius: BorderRadius.circular(12),
                                       child: CachedNetworkImage(
-                                        maxHeightDiskCache: 90,
-                                        maxWidthDiskCache: 90,
-                                        height: 60,
-                                        width: 60,
-                                        fit: BoxFit.cover,
                                         imageUrl: purpose.image ?? "",
-                                        placeholder: (context, url) =>
-                                            const CircularProgressIndicator(),
-                                        errorWidget: (context, url, error) =>
-                                            const Icon(
-                                          Icons.error,
-                                          color: Colors.red,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.1),
                                         ),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              Color(0xffF44336),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                        errorWidget: (context, url, error) =>
+                                          Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.1),
+                                        ),
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          color: Color(0xffF44336),
+                                          size: 24,
                                       ),
                                     ),
                                   ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                // Enhanced Text
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
                                       child: Text(
                                         purpose.categoryName,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                          color: selectedImageIndex == 4
-                                              ? const Color(0xffC08261)
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface,
-                                          fontWeight: selectedImageIndex == 4
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
+                                      fontSize: 12,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? const Color(0xffF44336)
+                                          : const Color(0xff212427),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (selectedImageIndex == 4)
-                              const Positioned(
-                                right: 10,
-                                top: 10,
+
+                                // Selection Indicator
+                                if (isSelected)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 4),
                                 child: Icon(
-                                  size: 20,
-                                  Ionicons.checkmark_circle_outline,
-                                  color: Color(0xffC08261),
+                                      Icons.check_circle,
+                                      color: const Color(0xffF44336),
+                                      size: 16,
                                 ),
                               ),
                           ],
+                            ),
                         ),
                       );
                     },
                   )
                 : GridView.builder(
                     shrinkWrap: true,
+                      physics: const BouncingScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
-                      mainAxisSpacing: 3,
-                      crossAxisSpacing: 3,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.85,
                     ),
                     itemCount: globalSelectedPurposes.length,
                     itemBuilder: (context, index) {
                       final purpose = globalSelectedPurposes[index];
+                        final isSelected = selectedImageIndex == index;
+
                       return GestureDetector(
                         onTap: () {
                           if (!isStaffAutoSelected) {
                             selectImage(index);
-                          }
-                        },
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 250,
-                              width: 200,
-                              margin: const EdgeInsets.all(3),
+                              HapticFeedback.lightImpact();
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
                               decoration: BoxDecoration(
-                                color: selectedImageIndex == index
-                                    ? const Color(0x10C08261)
-                                    : Colors.transparent,
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: selectedImageIndex == index
-                                      ? const Color(0xffC08261)
-                                      : Colors.grey,
-                                  width: selectedImageIndex == index ? 2 : 1,
+                                color: isSelected
+                                    ? const Color(0xffF44336)
+                                    : Colors.grey.withOpacity(0.2),
+                                width: isSelected ? 2 : 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isSelected
+                                      ? const Color(0xffF44336).withOpacity(0.2)
+                                      : Colors.black.withOpacity(0.05),
+                                  blurRadius: isSelected ? 12 : 6,
+                                  offset: const Offset(0, 4),
                                 ),
-                                borderRadius: BorderRadius.circular(15),
+                              ],
                               ),
                               child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
+                              mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 7),
+                                // Enhanced Image Container
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
+                                    borderRadius: BorderRadius.circular(12),
                                       child: CachedNetworkImage(
-                                        maxHeightDiskCache: 90,
-                                        maxWidthDiskCache: 90,
-                                        height: 60,
-                                        width: 60,
-                                        fit: BoxFit.cover,
                                         imageUrl: purpose.image ?? "",
-                                        placeholder: (context, url) =>
-                                            const CircularProgressIndicator(),
-                                        errorWidget: (context, url, error) =>
-                                            const Icon(
-                                          Icons.error,
-                                          color: Colors.red,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.1),
                                         ),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              Color(0xffF44336),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                        errorWidget: (context, url, error) =>
+                                          Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.1),
+                                        ),
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          color: Color(0xffF44336),
+                                          size: 24,
                                       ),
                                     ),
                                   ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                // Enhanced Text
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
                                       child: Text(
                                         purpose.categoryName,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                          color: selectedImageIndex == index
-                                              ? const Color(0xffC08261)
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface,
-                                          fontWeight:
-                                              selectedImageIndex == index
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
+                                      fontSize: 12,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? const Color(0xffF44336)
+                                          : const Color(0xff212427),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (selectedImageIndex == index)
-                              const Positioned(
-                                right: 10,
-                                top: 10,
+
+                                // Selection Indicator
+                                if (isSelected)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 4),
                                 child: Icon(
-                                  size: 20,
-                                  Ionicons.checkmark_circle_outline,
-                                  color: Color(0xffC08261),
+                                      Icons.check_circle,
+                                      color: const Color(0xffF44336),
+                                      size: 16,
                                 ),
                               ),
                           ],
+                            ),
                         ),
                       );
                     },
                   ),
           ),
+          ),
+
+          // Enhanced Action Button
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 20),
-            child: CustomLargeBtn(
-              text: selectPurposeLoading ? 'Processing...' : 'Select Purpose',
-              onPressed:
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                top: BorderSide(
+                  color: Colors.grey.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xff212427), Color(0xff57636C)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap:
                   selectPurposeLoading ? null : purposeSelectionBottomSheet,
+                  child: Center(
+                    child: Text(
+                      selectPurposeLoading ? 'Processing...' : 'Select Purpose',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 10),
         ],
       ),
     );

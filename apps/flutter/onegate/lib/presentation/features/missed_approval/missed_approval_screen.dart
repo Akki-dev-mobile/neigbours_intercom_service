@@ -21,6 +21,8 @@ import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:common_widgets/loading_view.dart';
+import 'package:flutter/services.dart';
 
 // Timer Service
 class TimerState {
@@ -278,12 +280,30 @@ class TimerDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isEnabled) {
-      return Text(
-        'Time ELapsed',
-        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              color: Colors.green,
-              fontWeight: FontWeight.bold,
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.red.withOpacity(0.18),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.timer, color: Colors.red, size: 28),
+            const SizedBox(width: 8),
+            Text(
+              'Time Elapsed',
+              style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
+          ],
+        ),
       );
     }
 
@@ -380,7 +400,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
       children: [
         // Search field
         CustomForm.textField(
-          "Search",
+          "",
           hintText: "Search by Visitor Name",
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onSurface,
@@ -444,22 +464,90 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        toolbarHeight: 70,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xffF44336), Color(0xffD32F2F)],
+                ),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xffF44336).withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.phone_missed_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
             Text(
               'Missed Approvals',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: const Color(0xff212427),
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isRefreshing ? null : _refreshData,
-            tooltip: 'Refresh',
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _isRefreshing
+                    ? null
+                    : () {
+                        HapticFeedback.lightImpact();
+                        _refreshData();
+                      },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(12),
+                  child: Icon(
+                    Icons.refresh,
+                    color: const Color(0xff57636C),
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
-        elevation: 0,
       ),
       body: Column(
         children: [
@@ -475,10 +563,9 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting &&
                       !_isRefreshing) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.black,
-                      ),
+                    return const LoaderView(
+                      title: "Loading Missed Approvals",
+                      subtitle: "Please wait while we fetch the data",
                     );
                   }
 
@@ -1041,106 +1128,150 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        VisitorInfoSection(
-          visitorInfo: widget.visitorInfo,
-          onRetry: () {
-            _handleRetry(context);
-          },
-          isLoading: _isLoading,
-        ),
-      ],
-    );
-  }
-}
-
-class VisitorInfoSection extends StatelessWidget {
-  final VoidCallback onRetry;
-  final bool isLoading;
-
-  final VisitorInfo visitorInfo;
-
-  const VisitorInfoSection(
-      {Key? key,
-      required this.visitorInfo,
-      required this.onRetry,
-      required this.isLoading})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => VisitorDetailsScreen2(
-                        visitorLog: visitorInfo,
-                        isFromMissedApprovalScreen: true,
-                      )));
+            context,
+            MaterialPageRoute(
+              builder: (context) => VisitorDetailsScreen2(
+                visitorLog: widget.visitorInfo,
+                isFromMissedApprovalScreen: true,
+              ),
+            ),
+          );
         },
         child: Card(
-          elevation: 2,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 2,
-                ),
-                leading: CircleAvatar(
-                  backgroundImage: visitorInfo.visitorImage.isNotEmpty
-                      ? NetworkImage(visitorInfo.visitorImage)
-                      : const NetworkImage(
-                          'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                  child: visitorInfo.visitorImage.isEmpty
-                      ? Text(
-                          visitorInfo.visitorImage.isNotEmpty
-                              ? visitorInfo.visitorName[0]
-                              : 'G',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        )
-                      : null,
-                ),
-                title: Text(
-                  visitorInfo.visitorName,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                subtitle: Row(
-                  children: [
-                    Icon(
-                      _getPurposeIcon(visitorInfo.purposeSubCategoryName ??
-                          visitorInfo.purposeCategoryName),
-                      size: 18, // Reduced size for alignment
-                      color: Colors.grey[600], // Greyish color
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                vertical: 4.0), // Reduced for more compact card
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 2,
+                      ),
                     ),
-                    const SizedBox(width: 6), // Spacing between icon and text
-                    Text(
-                      "${_capitalizeFirstLetter(visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? "")} - ${visitorInfo.unitDetails.building_unit}",
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontSize: 14, // Ensures text size consistency
-                            color: Colors.grey[600], // Greyish color
-                          ),
+                    child: CircleAvatar(
+                      radius: 26,
+                      backgroundImage: widget
+                              .visitorInfo.visitorImage.isNotEmpty
+                          ? NetworkImage(widget.visitorInfo.visitorImage)
+                          : NetworkImage(
+                              'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                      child: widget.visitorInfo.visitorImage.isEmpty
+                          ? Text(
+                              widget.visitorInfo.visitorName.isNotEmpty
+                                  ? widget.visitorInfo.visitorName[0]
+                                      .toUpperCase()
+                                  : 'G',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xffF44336),
+                                  ),
+                            )
+                          : null,
                     ),
-                  ],
+                  ),
+                  title: Text(
+                    widget.visitorInfo.visitorName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                          fontSize: 16,
+                          letterSpacing: 0.1,
+                        ),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffF44336).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color:
+                                      const Color(0xffF44336).withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                _getPurposeIcon(
+                                    widget.visitorInfo.purposeSubCategoryName),
+                                color: const Color(0xffF44336),
+                                size: 15,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Flexible(
+                              child: Text(
+                                "${_capitalizeFirstLetter(widget.visitorInfo.purposeSubCategoryName ?? "N/A")} - ${widget.visitorInfo.unitDetails.building_unit ?? 'N/A'}",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      fontSize: 14,
+                                      color: const Color(0xff57636C),
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.2,
+                                      height: 1.4,
+                                    ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              Divider(
-                indent: 16,
-                endIndent: 16,
-                color: Colors.grey[200],
-              ),
-              TimerActionSection(
-                visitorInfo: visitorInfo,
-                visitorLogId: visitorInfo.visitorLogId ?? 0,
-                onRetry: onRetry,
-                isLoading: isLoading,
-              ),
-            ],
+                Divider(
+                  indent: 20,
+                  endIndent: 20,
+                  height: 16,
+                  thickness: 1,
+                  color: Colors.grey.shade200,
+                ),
+                Container(
+                  padding: const EdgeInsets.only(
+                      bottom: 8.0, top: 6, left: 12, right: 12),
+                  child: TimerActionSection(
+                    visitorInfo: widget.visitorInfo,
+                    visitorLogId: widget.visitorInfo.visitorLogId ?? 0,
+                    onRetry: () {
+                      _handleRetry(context);
+                    },
+                    isLoading: _isLoading,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1392,8 +1523,8 @@ class TimerActionSectionState extends State<TimerActionSection> {
                 _isImageUploaded
                     ? Row(
                         children: [
-                          const Icon(Icons.directions_walk,
-                              color: Colors.brown, size: 20),
+                          const Icon(Icons.inventory_2,
+                              color: Colors.brown, size: 28),
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
@@ -1443,12 +1574,11 @@ class TimerActionSectionState extends State<TimerActionSection> {
                       )
 
               // ✅ Case: Visitor Allowed
-              else if (allowStatus == "allowed" ||
-                  allowStatus == "always_allowed")
+              else if (allowStatus == "allowed")
                 Row(
                   children: [
                     const Icon(Icons.check_circle,
-                        color: Colors.green, size: 15),
+                        color: Colors.green, size: 28),
                     const SizedBox(width: 8),
                     Text(
                       "Visitor has been allowed.",
@@ -1464,11 +1594,14 @@ class TimerActionSectionState extends State<TimerActionSection> {
               else if (allowStatus == "allowed_by_gatekeeper")
                 Row(
                   children: [
+                    const Icon(Icons.admin_panel_settings,
+                        color: Colors.blue, size: 28),
+                    const SizedBox(width: 8),
                     Text(
                       "Visitor is Allowed By Gatekeeper.",
                       style: Theme.of(context).textTheme.labelMedium!.copyWith(
                           fontWeight: FontWeight.w500,
-                          color: Colors.green.shade700,
+                          color: Colors.blue.shade700,
                           overflow: TextOverflow.ellipsis),
                     ),
                   ],
@@ -1478,7 +1611,7 @@ class TimerActionSectionState extends State<TimerActionSection> {
               else if (allowStatus == "declined" || allowStatus == "denied")
                 Row(
                   children: [
-                    const Icon(Icons.cancel, color: Colors.red, size: 15),
+                    const Icon(Icons.cancel, color: Colors.red, size: 28),
                     const SizedBox(width: 8),
                     Text(
                       "Visitor has been declined.",
@@ -1497,9 +1630,20 @@ class TimerActionSectionState extends State<TimerActionSection> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.hourglass_empty,
-                            color: Colors.orange, size: 15),
-                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(0.18),
+                              width: 1,
+                            ),
+                          ),
+                          child: const Icon(Icons.hourglass_empty,
+                              color: Colors.orange, size: 28),
+                        ),
+                        const SizedBox(width: 10),
                         Text(
                           "Approval is pending...",
                           style:
@@ -1525,7 +1669,7 @@ class TimerActionSectionState extends State<TimerActionSection> {
                 Row(
                   children: [
                     const Icon(Icons.signal_wifi_off,
-                        color: Colors.grey, size: 15),
+                        color: Colors.grey, size: 28),
                     const SizedBox(width: 8),
                     Text(
                       "Visitor is not reachable.",

@@ -1,3 +1,4 @@
+// DEPRECATED: Use enhanced SnackBar UI in unit_selection_view.dart for success/info toasts. Retained for legacy error toasts.
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 

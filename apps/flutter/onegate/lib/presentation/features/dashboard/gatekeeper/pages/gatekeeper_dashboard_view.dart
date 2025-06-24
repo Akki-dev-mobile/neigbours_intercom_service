@@ -19,6 +19,7 @@ import 'package:badges/badges.dart' as badges;
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/visitor_log_repo_impl.dart';
@@ -267,17 +268,112 @@ class _GateDashboardViewState extends State<GateDashboardView>
       builder: (context, state) {
         switch (state.runtimeType) {
           case GatekeeperDashboardLoadingState:
-            return LoaderView();
+            return _buildEnhancedLoader(context);
           case GatekeeperDashboardSuccessState:
             final successState = state as GatekeeperDashboardSuccessState;
             return WillPopScope(
               onWillPop: () async {
                 return false;
               },
-              child: MyScrollView(
-                hasBackButton: false,
-                pageTitleWidget: Hero(
+              child: _buildEnhancedDashboard(context, successState),
+            );
+          default:
+            return Container();
+        }
+      },
+    );
+  }
+
+  // Enhanced Dashboard UI
+  Widget _buildEnhancedDashboard(
+      BuildContext context, GatekeeperDashboardSuccessState successState) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: _buildEnhancedAppBar(context, isTablet),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 24 : 16,
+          vertical: isTablet ? 20 : 16,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Enhanced shortcuts section
+            _buildEnhancedShortcuts(context, isTablet),
+
+            SizedBox(height: isTablet ? 24 : 20),
+
+            // Enhanced dashboard blocks
+            DashboardBlocks(
+              inBook: successState.inBook,
+              outBook: successState.outBook,
+              bloc: gateDashboardBloc,
+            ),
+
+            SizedBox(height: isTablet ? 24 : 20),
+
+            // Enhanced visitor input section
+            _buildEnhancedVisitorInput(context, isTablet),
+
+            SizedBox(height: isTablet ? 20 : 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Enhanced App Bar
+  PreferredSizeWidget _buildEnhancedAppBar(
+      BuildContext context, bool isTablet) {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      automaticallyImplyLeading: false,
+      toolbarHeight: isTablet ? 80 : 70,
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Enhanced gate icon
+          Container(
+            padding: EdgeInsets.all(isTablet ? 8 : 6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xffF44336),
+                  const Color(0xffD32F2F),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xffF44336).withOpacity(0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.sensor_door_rounded,
+              color: Colors.white,
+              size: isTablet ? 20 : 16,
+            ),
+          ),
+          SizedBox(width: isTablet ? 12 : 10),
+          // Enhanced gate name with animation
+          Hero(
                     tag: 'gate_dashboard',
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 300),
+              style: TextStyle(
+                color: const Color(0xff212427),
+                fontSize: isTablet ? 24 : 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
                     child: Text(
                       selectedGateName
                           .toString()
@@ -287,132 +383,207 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                   word.substring(1).toLowerCase()
                               : '')
                           .join(' '),
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    )),
-                actions: [
-                  // Network Log Button (for debugging)
-                  // if (kDebugMode)
-                  //   IconButton(
-                  //     onPressed: () {
-                  //       // Make real API requests and then show network logs
-                  //       _makeRealApiRequests(context);
-                  //     },
-                  //     icon: const Icon(
-                  //       Icons.bug_report,
-                  //       color: Colors.red,
-                  //     ),
-                  //     tooltip: 'Fetch Data & Show Network Logs',
-                  //   ),
-
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  LicensePlateDetectionPage()));
-                    },
-                    icon: Icon(
-                      Symbols.car_crash,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        _buildEnhancedActionButton(
+          context,
+          isTablet,
+          icon: Icons.phone_missed_rounded,
+          onTap: () {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => MissedApprovalsScreen(
                                     remoteDataSource: _remoteDataSource,
-                                  )));
-                    },
-                    icon: Icon(
-                      Symbols.phone_missed_rounded,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
+                ),
+              ),
+            );
+          },
+        ),
+        SizedBox(width: isTablet ? 8 : 6),
+        _buildEnhancedActionButton(
+          context,
+          isTablet,
+          icon: Icons.settings_rounded,
+          onTap: () {
                       Navigator.push(
                         context,
                         PageTransition(
                           type: PageTransitionType.rightToLeft,
                           child: SettingsHome(),
-
-                          // VisitorSettingsView(),
                         ),
                       );
                     },
-                    icon: Icon(
-                      Symbols.settings_rounded,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-                pageBody: Column(
-                  children: [
-                    Container(
-                      margin: EdgeInsets.only(
-                        top: 0,
-                        bottom: 12,
+        ),
+        SizedBox(width: isTablet ? 20 : 16),
+      ],
+    );
+  }
+
+  // Enhanced Action Button with distinct styling
+  Widget _buildEnhancedActionButton(
+    BuildContext context,
+    bool isTablet, {
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: isTablet ? 12 : 8,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: isTablet ? 6 : 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            // Add haptic feedback
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: EdgeInsets.all(isTablet ? 14 : 12),
+            child: Icon(
+              icon,
+              color: const Color(0xff57636C),
+              size: isTablet ? 24 : 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Enhanced Shortcuts with better layout
+  Widget _buildEnhancedShortcuts(BuildContext context, bool isTablet) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 16 : 12,
+        vertical: isTablet ? 8 : 6,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          DashboardShortcut(
-                            icon: Symbols.deskphone_rounded,
+          _buildEnhancedShortcut(
+            context,
+            isTablet,
+            icon: Icons.phone_rounded,
                             title: 'Intercom',
+            isPremium: true,
+            isClickable: false, // Made non-clickable
                             onTap: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => MemberList()));
-                            },
-                            isPremium: true,
-                            isVisible: true,
-                          ),
-                          DashboardShortcut(
-                            icon: Symbols.package_rounded,
+              // Removed navigation - now non-clickable
+            },
+          ),
+          _buildEnhancedShortcut(
+            context,
+            isTablet,
+            icon: Icons.inventory_2_rounded,
                             title: 'Parcel',
-                            isPremium: false,
-                            isVisible: true,
                             hasNotification: hasPendingParcels,
-                            // ✅ New parameter
                             onTap: () async {
-                              setState(() => hasPendingParcels =
-                                  false); // ✅ Remove badge on tap
+              setState(() => hasPendingParcels = false);
                               Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => ParcelList(),
-                                ),
+                MaterialPageRoute(builder: (context) => ParcelList()),
                               );
                             },
                           ),
-                          DashboardShortcut(
-                            icon: Symbols.qr_code_scanner_rounded,
+          _buildEnhancedShortcut(
+            context,
+            isTablet,
+            icon: Icons.qr_code_scanner_rounded,
                             title: 'Scan',
-                            isPremium: false,
-                            isVisible: true,
                             onTap: () async {
                               final scannedResult = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => QRScannerScreen(
-                                          status: 1,
-                                        )),
+                  builder: (context) => QRScannerScreen(status: 1),
+                ),
                               );
 
                               if (scannedResult != null) {
-                                myFluttertoast(
-                                  msg: "Scanned QR: $scannedResult",
-                                  backgroundColor: Colors.green,
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Container(
+                      padding: EdgeInsets.symmetric(vertical: isTablet ? 8 : 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(isTablet ? 8 : 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.qr_code_rounded,
+                              color: Colors.white,
+                              size: isTablet ? 24 : 20,
+                            ),
+                          ),
+                          SizedBox(width: isTablet ? 16 : 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'QR Code Scanned',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: isTablet ? 16 : 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  scannedResult,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: isTablet ? 14 : 12,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    backgroundColor: Colors.green.shade400,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    margin: EdgeInsets.all(isTablet ? 20 : 16),
+                    duration: const Duration(seconds: 3),
+                  ),
                                 );
                               }
                             },
                           ),
                           if (_visitorCardNumber == true)
-                            DashboardShortcut(
-                              icon: Symbols.badge,
+            _buildEnhancedShortcut(
+              context,
+              isTablet,
+              icon: Icons.badge_rounded,
                               title: 'Cards',
                               onTap: () {
                                 Navigator.push(
@@ -430,267 +601,670 @@ class _GateDashboardViewState extends State<GateDashboardView>
                                   ),
                                 );
                               },
-                              isPremium: false,
-                              isVisible: false,
-                            ),
-                        ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced Shortcut Widget with micro-interactions
+  Widget _buildEnhancedShortcut(
+    BuildContext context,
+    bool isTablet, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isPremium = false,
+    bool hasNotification = false,
+    bool isClickable = true, // New parameter to control clickability
+  }) {
+    return Container(
+      width: isTablet ? 100 : 80,
+      child: Column(
+        children: [
+          // Enhanced icon container with visitor details styling
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: isTablet ? 72 : 60,
+            height: isTablet ? 72 : 60,
+            decoration: BoxDecoration(
+              color: isClickable
+                  ? const Color(0xffF44336).withOpacity(0.1)
+                  : Colors.grey.shade200.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: isClickable
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        onTap();
+                      }
+                    : null, // Only allow tap if clickable
+                child: Stack(
+                  children: [
+                    // Enhanced main icon
+                    Center(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          icon,
+                          color: isClickable
+                              ? const Color(0xffF44336)
+                              : Colors.grey.shade500,
+                          size: isTablet ? 32 : 26,
+                        ),
                       ),
                     ),
 
-                    DashboardBlocks(
-                        inBook: successState.inBook,
-                        outBook: successState.outBook,
-                        bloc: gateDashboardBloc),
+                    // Premium badge
+                    if (isPremium)
+                      Positioned(
+                        top: isTablet ? 4 : 2,
+                        right: isTablet ? 4 : 2,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isTablet ? 6 : 4,
+                            vertical: isTablet ? 3 : 2,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isClickable
+                                  ? [Colors.purple, Colors.blue]
+                                  : [
+                                      Colors.grey.shade400,
+                                      Colors.grey.shade500
+                                    ],
+                            ),
+                            borderRadius:
+                                BorderRadius.circular(isTablet ? 8 : 6),
+                          ),
+                          child: Text(
+                            'PRO',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isTablet ? 10 : 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
 
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          _createRoute(),
-                        );
+                    // Notification badge
+                    if (hasNotification)
+                      Positioned(
+                        top: isTablet ? 8 : 6,
+                        right: isTablet ? 8 : 6,
+                        child: Container(
+                          width: isTablet ? 12 : 10,
+                          height: isTablet ? 12 : 10,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          SizedBox(height: isTablet ? 12 : 8),
+
+          // Enhanced title
+          Text(
+            title,
+            style: TextStyle(
+              color:
+                  isClickable ? const Color(0xff212427) : Colors.grey.shade600,
+              fontSize: isTablet ? 14 : 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced Visitor Input Section - Guest Form Style
+  Widget _buildEnhancedVisitorInput(BuildContext context, bool isTablet) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: isTablet ? 8 : 4),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.push(context, _createRoute());
                       },
                       child: Container(
-                        margin: EdgeInsets.symmetric(vertical: 2),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              height: 10,
-                            ),
+            children: [
+              // Form Header Section
+              Container(
+                padding: EdgeInsets.all(isTablet ? 24 : 20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(isTablet ? 14 : 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.person_add_rounded,
+                        color: const Color(0xffF44336),
+                        size: isTablet ? 28 : 24,
+                      ),
+                    ),
+                    SizedBox(width: isTablet ? 20 : 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                             Text(
                               'Enter Visitor Details',
                               style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                              fontSize: isTablet ? 20 : 18,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xff212427),
                             ),
+                          ),
+                          SizedBox(height: isTablet ? 6 : 4),
+                          Text(
+                            'Tap to enter mobile number or visitor ID',
+                            style: TextStyle(
+                              fontSize: isTablet ? 16 : 14,
+                              color: const Color(0xff57636C),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Enhanced arrow icon
                             Container(
-                              margin: EdgeInsets.only(top: 5, bottom: 8),
-                              height: 60,
+                      padding: EdgeInsets.all(isTablet ? 10 : 8),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(20),
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: const Color(0xffF44336),
+                        size: isTablet ? 18 : 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Input Preview Section
+              Container(
+                margin: EdgeInsets.fromLTRB(
+                  isTablet ? 24 : 20,
+                  0,
+                  isTablet ? 24 : 20,
+                  isTablet ? 24 : 20,
+                ),
+                padding: EdgeInsets.all(isTablet ? 20 : 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xffF44336).withOpacity(0.02),
+                  borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                ),
-                              ),
-                              child: ListTile(
-                                title: Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: DefaultTextStyle(
+                    color: const Color(0xffF44336).withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Input type icon
+                    Container(
+                      padding: EdgeInsets.all(isTablet ? 10 : 8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xffF44336).withOpacity(0.1),
+                            const Color(0xffD32F2F).withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xffF44336).withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.edit_rounded,
+                        color: const Color(0xffF44336),
+                        size: isTablet ? 20 : 18,
+                      ),
+                    ),
+
+                    SizedBox(width: isTablet ? 16 : 12),
+
+                    // Animated input examples
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Examples:',
                                     style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimary,
+                              fontSize: isTablet ? 14 : 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xff57636C),
+                            ),
+                          ),
+                          SizedBox(height: isTablet ? 6 : 4),
+                          DefaultTextStyle(
+                            style: TextStyle(
+                              color: const Color(0xff212427),
                                       fontWeight: FontWeight.w500,
-                                      fontSize: 18,
+                              fontSize: isTablet ? 18 : 16,
+                              letterSpacing: 0.3,
                                     ),
                                     child: AnimatedTextKit(
                                       repeatForever: true,
                                       animatedTexts: [
                                         TyperAnimatedText(
                                           '9912345678',
+                                  speed: const Duration(milliseconds: 100),
                                         ),
-                                        TyperAnimatedText('G-39070'),
+                                TyperAnimatedText(
+                                  'G-39070',
+                                  speed: const Duration(milliseconds: 100),
+                                ),
                                       ],
                                       onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          _createRoute(),
-                                        );
+                                HapticFeedback.lightImpact();
+                                Navigator.push(context, _createRoute());
                                       },
                                     ),
                                   ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
-                    // buildExpansionTile(context, cardVisitors, isLoading)
+
+                    // Microphone icon (visual only)
+                    Container(
+                      padding: EdgeInsets.all(isTablet ? 8 : 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.mic,
+                        color: const Color(0xffF44336),
+                        size: isTablet ? 18 : 16,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            );
-          default:
-            return Container();
-        }
-      },
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget buildExpansionTile(
-      BuildContext context, List<VisitorLog> cardVisitors, bool isLoading) {
-    return ExpansionTile(
-      title: Text(
-        'Visitors with Card Numbers',
-        style: Theme.of(context).textTheme.bodyLarge,
-      ),
-      subtitle: Text(
-        'Tap to view details',
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
-      children: [
-        if (isLoading)
-          const Center(child: CircularProgressIndicator())
-        else if (cardVisitors.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'No visitors with card numbers found.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          )
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: cardVisitors.length,
-            itemBuilder: (context, index) {
-              final visitor = cardVisitors[index];
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Material(
-                  borderRadius: BorderRadius.circular(16),
-                  color: const Color(0xFFF5F7F8),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    splashColor: const Color(0xFFDCEDF5),
-                    onTap: () {
-                      // Handle tap event
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+  // Enhanced Loading State with Gate Animation
+  Widget _buildEnhancedLoader(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        automaticallyImplyLeading: false,
+        toolbarHeight: isTablet ? 80 : 70,
+        title: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  'Visitor: ${visitor.visitor?.name ?? "Unknown"}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: Colors.black,
-                                      ),
-                                ),
-                                const SizedBox(height: 4),
-                                if (visitor.visitor_card_number == null)
-                                  SizedBox(
-                                    height: 2,
-                                    width: 100,
-                                    child: LinearProgressIndicator(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                      backgroundColor:
-                                          Theme.of(context).colorScheme.surface,
-                                    ),
-                                  )
-                                else
-                                  RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: 'Card: ',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyLarge
-                                              ?.copyWith(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                        ),
-                                        TextSpan(
-                                          text: visitor.visitor_card_number,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyLarge
-                                              ?.copyWith(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.w600,
+            // Enhanced gate icon matching dashboard
+            Container(
+              padding: EdgeInsets.all(isTablet ? 8 : 6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xffF44336),
+                    const Color(0xffD32F2F),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xffF44336).withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.sensor_door_rounded,
+                color: Colors.white,
+                size: isTablet ? 20 : 16,
+              ),
+            ),
+            SizedBox(width: isTablet ? 12 : 10),
+            // Gate name with animation
+            Hero(
+              tag: 'gate_dashboard_loading',
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 300),
+                style: TextStyle(
+                  color: const Color(0xff212427),
+                  fontSize: isTablet ? 24 : 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+                child: Text(
+                  selectedGateName
+                          ?.split(' ')
+                          .map((word) => word.isNotEmpty
+                              ? word[0].toUpperCase() +
+                                  word.substring(1).toLowerCase()
+                              : '')
+                          .join(' ') ??
+                      'Loading...',
+                ),
                                               ),
                                         ),
                                       ],
                                     ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(isTablet ? 40 : 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Enhanced loading container with gate animation
+              Container(
+                padding: EdgeInsets.all(isTablet ? 40 : 32),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                                   ),
                               ],
                             ),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () async {
-                              // Perform the checkout
-                              try {
-                                final response = await context
-                                    .read<GatekeeperDashboardBloc>()
-                                    .visitorLogUsecase
-                                    .checkOut(visitor);
+                child: Column(
+                  children: [
+                    // Custom Gate Animation
+                    SizedBox(
+                      width: isTablet ? 120 : 100,
+                      height: isTablet ? 120 : 100,
+                      child: _GateLoadingAnimation(isTablet: isTablet),
+                    ),
 
-                                if (response) {
-                                  myFluttertoast(
-                                      msg: "Visitor checked out successfully!");
-                                  context
-                                      .read<GatekeeperDashboardBloc>()
-                                      .add(GatekeeperDashboardInitialEvent());
-                                } else {
-                                  myFluttertoast(
-                                    msg: 'Failed to check out visitor.',
-                                    backgroundColor: Colors.red,
-                                  );
-                                }
-                              } catch (e) {
-                                myFluttertoast(
-                                  msg: 'Error: $e',
-                                  backgroundColor: Colors.red,
-                                );
-                              }
-                            },
-                            child: Text(
-                              'Checkout',
+                    SizedBox(height: isTablet ? 32 : 24),
+
+                    // Enhanced loading text
+                    Text(
+                      'Loading Dashboard',
+                      style: TextStyle(
+                        color: const Color(0xff212427),
+                        fontSize: isTablet ? 24 : 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+
+                    SizedBox(height: isTablet ? 12 : 8),
+
+                    Text(
+                      'Please wait while we prepare your gate dashboard',
                               style: TextStyle(
-                                color: Colors.white,
+                        color: const Color(0xff57636C),
+                        fontSize: isTablet ? 16 : 14,
                                 fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
                               ),
-                            ),
+                      textAlign: TextAlign.center,
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-              );
-            },
+            ],
           ),
-      ],
+        ),
+      ),
     );
   }
 }
 
+// Custom Gate Loading Animation Widget
+class _GateLoadingAnimation extends StatefulWidget {
+  final bool isTablet;
+
+  const _GateLoadingAnimation({required this.isTablet});
+
+  @override
+  _GateLoadingAnimationState createState() => _GateLoadingAnimationState();
+}
+
+class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _gateAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    // Gate opening/closing animation
+    _gateAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+
+    // Icon rotation animation
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start repeating animation
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: widget.isTablet ? 120 : 100,
+          height: widget.isTablet ? 120 : 100,
+          decoration: BoxDecoration(
+            color: const Color(0xffF44336).withOpacity(0.05),
+            borderRadius: BorderRadius.circular(widget.isTablet ? 20 : 16),
+          ),
+          child: Stack(
+          children: [
+              // Left gate door
+              Positioned(
+                left: 0,
+                top: widget.isTablet ? 20 : 16,
+                bottom: widget.isTablet ? 20 : 16,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: (widget.isTablet ? 40 : 32) -
+                      (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
+              decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xffF44336),
+                        const Color(0xffD32F2F),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(widget.isTablet ? 8 : 6),
+                      bottomLeft: Radius.circular(widget.isTablet ? 8 : 6),
+                      topRight: Radius.circular(widget.isTablet ? 4 : 3),
+                      bottomRight: Radius.circular(widget.isTablet ? 4 : 3),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Right gate door
+              Positioned(
+                right: 0,
+                top: widget.isTablet ? 20 : 16,
+                bottom: widget.isTablet ? 20 : 16,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: (widget.isTablet ? 40 : 32) -
+                      (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xffF44336),
+                        const Color(0xffD32F2F),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(widget.isTablet ? 8 : 6),
+                      bottomRight: Radius.circular(widget.isTablet ? 8 : 6),
+                      topLeft: Radius.circular(widget.isTablet ? 4 : 3),
+                      bottomLeft: Radius.circular(widget.isTablet ? 4 : 3),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Center gate icon
+              Center(
+                child: Transform.rotate(
+                  angle: _rotationAnimation.value * 2 * 3.14159,
+                  child: Container(
+                    padding: EdgeInsets.all(widget.isTablet ? 12 : 10),
+                    decoration: BoxDecoration(
+                              color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(widget.isTablet ? 12 : 10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: widget.isTablet ? 8 : 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                        ),
+                        child: Icon(
+                      Icons.sensor_door_rounded,
+                      color: const Color(0xffF44336),
+                      size: widget.isTablet ? 32 : 24,
+                    ),
+                      ),
+              ),
+            ),
+
+              // Loading dots indicator
+              Positioned(
+                bottom: widget.isTablet ? 8 : 6,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (index) {
+                    return AnimatedContainer(
+                      duration: Duration(milliseconds: 300 + (index * 100)),
+                      margin: EdgeInsets.symmetric(
+                          horizontal: widget.isTablet ? 3 : 2),
+                      width: widget.isTablet ? 8 : 6,
+                      height: widget.isTablet ? 8 : 6,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(
+                          0.3 +
+                              ((_controller.value + (index * 0.3)) % 1.0) * 0.7,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Enhanced Route Animation
 Route _createRoute() {
   return PageRouteBuilder(
     pageBuilder: (context, animation, secondaryAnimation) => IdInputView(),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       const begin = Offset(0.0, 1.0);
       const end = Offset.zero;
-      const curve = Curves.ease;
+      const curve = Curves.easeInOutCubic;
 
       var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
       var offsetAnimation = animation.drive(tween);
@@ -698,107 +1272,20 @@ Route _createRoute() {
       var scaleTween = Tween(begin: 0.8, end: 1.0);
       var scaleAnimation = animation.drive(scaleTween);
 
+      var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+      );
+
       return SlideTransition(
         position: offsetAnimation,
         child: ScaleTransition(
           scale: scaleAnimation,
-          child: child,
+          child: FadeTransition(
+            opacity: fadeAnimation,
+            child: child,
+          ),
         ),
       );
     },
   );
 }
-
-class DashboardShortcut extends StatelessWidget {
-  const DashboardShortcut({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-    required this.isPremium,
-    required this.isVisible,
-    this.hasNotification = false,
-    super.key,
-  });
-
-  final String title;
-  final IconData icon;
-  final Function onTap;
-  final bool isPremium;
-  final bool isVisible;
-  final bool hasNotification;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        onTap();
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 5, vertical: 15),
-        width: MediaQuery.of(context).size.width * 0.2,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Container(
-              padding: EdgeInsets.all(12),
-              margin: EdgeInsets.only(bottom: 5),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.grey.shade300,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: badges.Badge(
-                position: badges.BadgePosition.topEnd(top: -8, end: -8),
-                showBadge: hasNotification, // ✅ Show red dot for notifications
-                badgeStyle: badges.BadgeStyle(
-                  shape: badges.BadgeShape.circle,
-                  badgeColor: Colors.red,
-                  padding: EdgeInsets.all(5),
-                ),
-                child: isPremium
-                    ? badges.Badge(
-                        position:
-                            badges.BadgePosition.topEnd(top: -18, end: -18),
-                        badgeStyle: badges.BadgeStyle(
-                          shape: badges.BadgeShape.square,
-                          borderRadius: BorderRadius.circular(5),
-                          padding: EdgeInsets.all(2),
-                          badgeGradient: badges.BadgeGradient.linear(
-                            colors: [Colors.purple, Colors.blue],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        badgeContent: Text(
-                          'PRO',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        child: Icon(
-                          icon,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          size: 24,
-                        ),
-                      )
-                    : Icon(
-                        icon,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        size: 24,
-                      ),
-              ),
-            ),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Add necessary import

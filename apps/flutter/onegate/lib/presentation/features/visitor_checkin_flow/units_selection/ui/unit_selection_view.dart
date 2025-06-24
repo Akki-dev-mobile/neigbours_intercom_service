@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -105,6 +106,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   bool? _membersApproval;
   late Future<void> _initializeFuture;
   bool _isLoading = false;
+  bool _isConfirming = false;
 
   @override
   void initState() {
@@ -406,74 +408,108 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 1,
-                    ),
-                  ],
-                ),
+              // Enhanced Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Selected Members',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF44336).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.people,
+                            color: Color(0xffF44336),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Selected Members',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 22,
+                                  ),
+                        ),
+                      ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon:
+                          const Icon(Icons.close, size: 28, color: Colors.red),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
-              // Members List
-              // Members List
+              Divider(
+                  thickness: 1,
+                  height: 1,
+                  color: Colors.black.withOpacity(0.1)),
+              // Enhanced Members List
               Expanded(
                 child: ValueListenableBuilder<Set<String>>(
                   valueListenable: _selectedMembersNotifier,
                   builder: (context, selectedMembers, _) {
                     return ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(24),
                       itemCount: selectedMembers.length,
                       itemBuilder: (context, index) {
                         final member = selectedMembers.elementAt(index);
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
+                          margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            border: Border.all(
-                                color: const Color.fromARGB(255, 0, 0, 0)),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                              horizontal: 20,
+                              vertical: 12,
                             ),
                             leading: CircleAvatar(
-                              backgroundColor: Colors.grey[200],
+                              radius: 24,
+                              backgroundColor:
+                                  const Color(0xffF44336).withOpacity(0.1),
                               child: const Icon(
                                 Icons.person,
-                                color: Colors.black,
+                                color: Color(0xffF44336),
+                                size: 28,
                               ),
                             ),
                             title: Text(
                               member,
-                              style: Theme.of(context).textTheme.titleMedium,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
                             ),
                             trailing: IconButton(
                               icon: const Icon(
@@ -497,27 +533,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   },
                 ),
               ),
-              // Bottom Buttons
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 1,
-                      offset: const Offset(0, -1),
-                    ),
-                  ],
-                ),
+              // Enhanced Bottom Buttons
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                 child: Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.black),
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                              color: Color(0xffF44336), width: 1),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -532,8 +557,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         child: const Text(
                           'Clear All',
                           style: TextStyle(
-                            color: Colors.black,
+                            color: Color(0xffF44336),
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
                       ),
@@ -542,22 +568,47 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          backgroundColor: null,
+                          elevation: 0,
+                        ).copyWith(
+                          backgroundColor:
+                              MaterialStateProperty.resolveWith<Color?>(
+                                  (states) {
+                            return null;
+                          }),
+                          foregroundColor:
+                              MaterialStateProperty.all<Color>(Colors.white),
                         ),
-                        onPressed: () {
-                          _handleSelectionSubmit(selectedMembers);
-                        },
-                        child: Text(
-                          selectedMemberSelectionLoading
-                              ? "Loading..."
-                              : 'Confirm',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                        onPressed: selectedMembers.isEmpty || _isConfirming
+                            ? null
+                            : () => _handleSelectionSubmit(selectedMembers),
+                        child: Ink(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.black,
+                                Colors.grey,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                          child: Container(
+                            alignment: Alignment.center,
+                            constraints: const BoxConstraints(minHeight: 48),
+                            child: Text(
+                              'Confirm',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -614,10 +665,42 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Members data refreshed successfully'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.refresh_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Text(
+                'Members data refreshed successfully',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.blue.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 3000),
+        elevation: 8,
       ),
     );
   }
@@ -828,7 +911,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ),
         ),
         subtitle: Text(
-          "${memberDetails.length} Member(s)",
+          memberDetails.length == 1
+              ? '1 member'
+              : '${memberDetails.length} members',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         collapsedIconColor: Theme.of(context).colorScheme.onSurface,
@@ -1007,12 +1092,52 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
+
     log("widget.selfcheckinFlow ${widget.selfcheckinFlow}");
     return WillPopScope(
       onWillPop: () async {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'visitor recording terminated',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(milliseconds: 2500),
+            elevation: 8,
+          ),
+        );
         if (widget.searchedVisitor != null) {
           Navigator.pop(context);
-          return false; // Prevent default back navigation.
         } else {
           widget.selfcheckinFlow
               ? Navigator.pushAndRemoveUntil(
@@ -1026,460 +1151,29 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       builder: (context) => const GateDashboardView()),
                   (Route<dynamic> route) => false,
                 );
-          return false; // Prevent default back navigation.
         }
+        return false; // Prevent default back navigation.
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Select"),
-        ),
+        backgroundColor: const Color(0xffF5F5F5),
+        appBar: _buildEnhancedAppBar(context, isTablet),
         body: SafeArea(
           child: DefaultTabController(
             length: 2,
             child: Column(
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 50,
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: TabBar(
-                            indicator: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            labelColor: Colors.white,
-                            unselectedLabelColor: Colors.black,
-                            dividerColor: Colors.transparent,
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            tabs: [
-                              Tab(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  child: const Text(
-                                    'Select Units/Members',
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                              Tab(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  child: const Text(
-                                    'Society Office',
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Enhanced Tab Bar Section
+                _buildEnhancedTabBar(context, isTablet),
+
+                // Enhanced Content Section
                 Expanded(
                   child: TabBarView(
                     children: [
                       // First Tab - Select Units/Members
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Column(
-                                children: [
-                                  // Search and refresh row
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 0.0, horizontal: 10),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildSearchField(context),
-                                        ),
-                                        Container(
-                                          margin:
-                                              const EdgeInsets.only(left: 8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: IconButton(
-                                            icon: _isLoading
-                                                ? const SizedBox(
-                                                    width: 20,
-                                                    height: 20,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      color: Colors.white,
-                                                      strokeWidth: 2,
-                                                    ),
-                                                  )
-                                                : const Icon(Icons.refresh,
-                                                    color: Colors.white),
-                                            tooltip: 'Refresh members data',
-                                            onPressed: _isLoading
-                                                ? null
-                                                : _refreshData,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Building list section
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10),
-                                    child: _buildBuildingsList(),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 40.0),
-                                      child: _buildMemberList(context),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              // Selected Members Bottom Sheet
-                              Positioned(
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                child: ValueListenableBuilder<Set<String>>(
-                                  valueListenable: _selectedMembersNotifier,
-                                  builder: (context, selectedMember, _) {
-                                    if (selectedMember.isEmpty) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Builder(
-                                      builder: (context) {
-                                        if (DefaultTabController.of(context)
-                                                .index !=
-                                            0) {
-                                          return const SizedBox.shrink();
-                                        }
-                                        return Container(
-                                          color: Colors.black,
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Material(
-                                                elevation: 8,
-                                                color: Colors.black,
-                                                child: InkWell(
-                                                  onTap: () =>
-                                                      _showSelectedMembersBottomSheet(
-                                                          selectedMember),
-                                                  child: Padding(
-                                                    padding: EdgeInsets.only(
-                                                      left: 20,
-                                                      right: 20,
-                                                      top: 16,
-                                                      bottom: MediaQuery.of(
-                                                                      context)
-                                                                  .viewInsets
-                                                                  .bottom >
-                                                              0
-                                                          ? MediaQuery.of(
-                                                                  context)
-                                                              .viewInsets
-                                                              .bottom
-                                                          : 16 +
-                                                              MediaQuery.of(
-                                                                      context)
-                                                                  .padding
-                                                                  .bottom,
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        Row(
-                                                          children: [
-                                                            const Icon(
-                                                                Icons.people,
-                                                                color: Colors
-                                                                    .white),
-                                                            const SizedBox(
-                                                                width: 8),
-                                                            SizedBox(
-                                                              width: MediaQuery.of(
-                                                                          context)
-                                                                      .size
-                                                                      .width *
-                                                                  0.48,
-                                                              child: Text(
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
-                                                                selectedMember
-                                                                            .length >
-                                                                        1
-                                                                    ? '${selectedMember.length} Selected'
-                                                                    : selectedMember
-                                                                        .first,
-                                                                style: Theme.of(
-                                                                        context)
-                                                                    .textTheme
-                                                                    .titleLarge
-                                                                    ?.copyWith(
-                                                                        color: Colors
-                                                                            .white),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        ElevatedButton.icon(
-                                                          style: ButtonStyle(
-                                                            foregroundColor:
-                                                                WidgetStateProperty
-                                                                    .all<Color>(
-                                                              const Color(
-                                                                  0xFF7D7C7C),
-                                                            ),
-                                                            backgroundColor:
-                                                                WidgetStateProperty
-                                                                    .all<Color>(
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .surface,
-                                                            ),
-                                                            elevation:
-                                                                WidgetStateProperty
-                                                                    .resolveWith<
-                                                                        double>(
-                                                              (Set<WidgetState>
-                                                                      states) =>
-                                                                  states.contains(
-                                                                          WidgetState
-                                                                              .pressed)
-                                                                      ? 8
-                                                                      : 0,
-                                                            ),
-                                                            shape: WidgetStateProperty
-                                                                .all<
-                                                                    RoundedRectangleBorder>(
-                                                              RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            15),
-                                                              ),
-                                                            ),
-                                                            padding:
-                                                                WidgetStateProperty
-                                                                    .all<
-                                                                        EdgeInsetsGeometry>(
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                horizontal: 20,
-                                                                vertical: 10,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          onPressed: () =>
-                                                              _showSelectedMembersBottomSheet(
-                                                                  selectedMember),
-                                                          label: Text(
-                                                            "view",
-                                                            style: Theme.of(
-                                                                    context)
-                                                                .textTheme
-                                                                .bodyLarge!
-                                                                .copyWith(
-                                                                  color: Theme.of(
-                                                                          context)
-                                                                      .colorScheme
-                                                                      .onSurface,
-                                                                ),
-                                                          ),
-                                                          icon: const Icon(
-                                                            Icons
-                                                                .keyboard_arrow_up,
-                                                            color: Colors.black,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
+                      _buildUnitsSelectionTab(context, isTablet),
 
                       // Second Tab - Society Office
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.business,
-                              size: 64,
-                              color: Colors.black,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Society Office',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32,
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: () async {
-                                try {
-                                  setState(() {
-                                    _isLoading = true; // Show loading state
-                                  });
-
-                                  // Create building assignment
-                                  final buildingAssignment = BuildingAssignment(
-                                    id: null,
-                                    visitor_id: widget.visitor.id,
-                                    visitor_log_id: null,
-                                    company_id: int.parse(companyId.toString()),
-                                    building_id: 0,
-                                    unit_id: ["0001"],
-                                  );
-
-                                  // Create visitor log data
-                                  final visitorLogData = VisitorLog(
-                                    visitor_id: widget.visitor.id ?? 0,
-                                    visitor_purpose_category_id:
-                                        widget.purposeCategoryId == null
-                                            ? 1
-                                            : int.parse(widget.purposeCategoryId
-                                                .toString()),
-                                    visitor_purpose_sub_category_id:
-                                        widget.selectedSubCategoryId != null
-                                            ? int.parse(widget
-                                                .selectedSubCategoryId
-                                                .toString())
-                                            : null,
-                                    visitor_count: widget.guestCount ?? 0,
-                                    visitor: widget.visitor,
-                                    visitor_purpose_Category_name:
-                                        widget.purposeCategory.categoryName,
-                                    visitor_check_in:
-                                        DateTime.parse(formattedInTime),
-                                    visitor_card_number: widget.visitorNumber,
-                                    visitor_coming_from: widget.comingFrom,
-                                    visitor_building_assignment: [
-                                      buildingAssignment
-                                    ],
-                                    visitor_card_id: null,
-                                    carNumber: widget.carNumber,
-                                    company_id: int.parse(companyId.toString()),
-                                    is_checked_out: false,
-                                  );
-
-                                  // Save society office details to preferences
-                                  final prefs =
-                                      await SharedPreferences.getInstance();
-                                  final societyOfficeMemberDetails = [
-                                    {
-                                      "name": "Society Office",
-                                      "unit_name": "Cyberone",
-                                      "unit_id": 0001,
-                                      "member_ids": 0,
-                                      "building_unit": "0001"
-                                    }
-                                  ];
-
-                                  await prefs.setString(
-                                    'rows',
-                                    json.encode(societyOfficeMemberDetails),
-                                  );
-
-                                  // Perform check-in
-                                  await remoteDataSource.checkIn(
-                                      visitorLogData, true);
-
-                                  // Show success message
-                                  myFluttertoast(
-                                      msg: "Visitor checked in successfully");
-                                  // Navigate to dashboard
-                                  if (mounted) {
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const GateDashboardView(),
-                                      ),
-                                      (route) => false,
-                                    );
-                                  }
-                                } catch (e) {
-                                  log('Error during check-in: $e');
-                                  if (mounted) {
-                                    myFluttertoast(
-                                      msg:
-                                          "Error during check-in. Please try again.",
-                                      backgroundColor: Colors.red,
-                                    );
-                                  }
-                                } finally {
-                                  if (mounted) {
-                                    setState(() {
-                                      _isLoading = false;
-                                    });
-                                  }
-                                }
-                              },
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Tap to Check-in',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildSocietyOfficeTab(context, isTablet),
                     ],
                   ),
                 ),
@@ -1491,11 +1185,575 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
+  PreferredSizeWidget _buildEnhancedAppBar(
+      BuildContext context, bool isTablet) {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      leading: Container(
+        margin: EdgeInsets.all(isTablet ? 12 : 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              spreadRadius: 0,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: const Color(0xff57636C),
+            size: isTablet ? 20 : 18,
+          ),
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'visitor recording terminated',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.red.shade600,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: const EdgeInsets.all(16),
+                duration: const Duration(milliseconds: 2500),
+                elevation: 8,
+              ),
+            );
+            if (widget.searchedVisitor != null) {
+              Navigator.pop(context);
+            } else {
+              widget.selfcheckinFlow
+                  ? Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const SelfHomeView()),
+                      (Route<dynamic> route) => false,
+                    )
+                  : Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const GateDashboardView()),
+                      (Route<dynamic> route) => false,
+                    );
+            }
+          },
+        ),
+      ),
+      title: Text(
+        "Select",
+        style: TextStyle(
+          color: const Color(0xff212427),
+          fontSize: isTablet ? 24 : 20,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      centerTitle: false,
+      actions: [
+        Container(
+          margin: EdgeInsets.only(right: isTablet ? 16 : 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.grey.shade200,
+              width: 1,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: _isLoading ? null : _refreshData,
+              child: Padding(
+                padding: EdgeInsets.all(isTablet ? 10 : 8),
+                child: _isLoading
+                    ? SizedBox(
+                        width: isTablet ? 22 : 18,
+                        height: isTablet ? 22 : 18,
+                        child: const CircularProgressIndicator(
+                          color: Colors.black,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Icon(
+                        Icons.refresh,
+                        color: Colors.black,
+                        size: isTablet ? 22 : 18,
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnhancedTabBar(BuildContext context, bool isTablet) {
+    return Container(
+      margin: EdgeInsets.all(isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            spreadRadius: 0,
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: const Color(0xffF44336).withOpacity(0.1),
+            spreadRadius: 0,
+            blurRadius: 40,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Container(
+        height: isTablet ? 60 : 56,
+        padding: const EdgeInsets.all(4),
+        child: TabBar(
+          indicator: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xffF44336),
+                Color(0xffD32F2F),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xffF44336).withOpacity(0.3),
+                spreadRadius: 0,
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          labelColor: Colors.white,
+          unselectedLabelColor: const Color(0xff57636C),
+          dividerColor: Colors.transparent,
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelStyle: TextStyle(
+            fontSize: isTablet ? 16 : 14,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: TextStyle(
+            fontSize: isTablet ? 16 : 14,
+            fontWeight: FontWeight.w500,
+          ),
+          tabs: [
+            Tab(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
+                child: const Text(
+                  'Select Units/Members',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            Tab(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
+                child: const Text(
+                  'Society Office',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnitsSelectionTab(BuildContext context, bool isTablet) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Column(
+              children: [
+                // Enhanced Search Section
+                _buildEnhancedSearchSection(context, isTablet),
+
+                // Enhanced Building Selection
+                _buildEnhancedBuildingSelection(context, isTablet),
+
+                // Enhanced Member List
+                Expanded(
+                  child: Container(
+                    margin:
+                        EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
+                    child: _buildEnhancedMemberList(context, isTablet),
+                  ),
+                ),
+              ],
+            ),
+
+            // Enhanced Selected Members Bottom Bar
+            _buildEnhancedBottomSelectionBar(context, isTablet),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSocietyOfficeTab(BuildContext context, bool isTablet) {
+    return Container(
+      margin: EdgeInsets.all(isTablet ? 20 : 16),
+      child: Center(
+        child: Container(
+          padding: EdgeInsets.all(isTablet ? 40 : 32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: const Color(0xffF44336).withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: isTablet ? 80 : 60,
+                height: isTablet ? 80 : 60,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xffF44336),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xffF44336).withOpacity(0.08),
+                      spreadRadius: 0,
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.business,
+                  color: const Color(0xffF44336),
+                  size: isTablet ? 32 : 24,
+                ),
+              ),
+              SizedBox(height: isTablet ? 24 : 20),
+              Text(
+                "Society Office",
+                style: TextStyle(
+                  fontSize: isTablet ? 24 : 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xff212427),
+                ),
+              ),
+              SizedBox(height: isTablet ? 12 : 8),
+              Text(
+                "Check-in directly with society office for administrative purposes",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isTablet ? 14 : 12,
+                  color: Colors.grey[600],
+                  height: 1.4,
+                ),
+              ),
+              SizedBox(height: isTablet ? 32 : 24),
+
+              // Enhanced Check-in Button
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.black,
+                      Colors.grey,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      spreadRadius: 0,
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: _isLoading ? null : _handleSocietyOfficeCheckIn,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 32 : 24,
+                        vertical: isTablet ? 20 : 16,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isLoading) ...[
+                            SizedBox(
+                              width: isTablet ? 24 : 20,
+                              height: isTablet ? 24 : 20,
+                              child: const CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            SizedBox(width: isTablet ? 16 : 12),
+                            Text(
+                              "Checking in...",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isTablet ? 18 : 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ] else ...[
+                            Container(
+                              width: isTablet ? 24 : 20,
+                              height: isTablet ? 24 : 20,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.check_circle_outline,
+                                color: Colors.white,
+                                size: isTablet ? 16 : 14,
+                              ),
+                            ),
+                            SizedBox(width: isTablet ? 16 : 12),
+                            Text(
+                              "Tap to Check-in",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isTablet ? 18 : 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              if (_isLoading) ...[
+                SizedBox(height: isTablet ? 20 : 16),
+                Text(
+                  "Please wait while we process your check-in",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: isTablet ? 12 : 10,
+                    color: Colors.grey[500],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleSocietyOfficeCheckIn() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Create building assignment for society office
+      final buildingAssignment = BuildingAssignment(
+        id: null,
+        visitor_id: widget.visitor.id,
+        visitor_log_id: null,
+        company_id: int.parse(companyId.toString()),
+        building_id: 0,
+        unit_id: ["0001"],
+      );
+
+      // Create visitor log data for society office
+      final visitorLogData = VisitorLog(
+        visitor_id: widget.visitor.id ?? 0,
+        visitor_purpose_category_id: widget.purposeCategoryId == null
+            ? 1
+            : int.parse(widget.purposeCategoryId.toString()),
+        visitor_purpose_sub_category_id: widget.selectedSubCategoryId != null
+            ? int.parse(widget.selectedSubCategoryId.toString())
+            : null,
+        visitor_count: widget.guestCount ?? 0,
+        visitor: widget.visitor,
+        visitor_purpose_Category_name: widget.purposeCategory.categoryName,
+        visitor_check_in: DateTime.parse(formattedInTime),
+        visitor_card_number: widget.visitorNumber,
+        visitor_coming_from: widget.comingFrom,
+        visitor_building_assignment: [buildingAssignment],
+        visitor_card_id: null,
+        carNumber: widget.carNumber,
+        company_id: int.parse(companyId.toString()),
+        is_checked_out: false,
+      );
+
+      // Save society office details to preferences
+      final prefs = await SharedPreferences.getInstance();
+      final societyOfficeMemberDetails = [
+        {
+          "name": "Society Office",
+          "unit_name": "Cyberone",
+          "unit_id": 0001,
+          "member_ids": 0,
+          "building_unit": "0001"
+        }
+      ];
+
+      await prefs.setString(
+        'rows',
+        json.encode(societyOfficeMemberDetails),
+      );
+
+      // Perform check-in
+      await remoteDataSource.checkIn(visitorLogData, true);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'Visitor checked in successfully',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(milliseconds: 3000),
+          elevation: 8,
+        ),
+      );
+
+      // Navigate to dashboard
+      if (mounted) {
+        widget.selfcheckinFlow
+            ? Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const SelfHomeView()),
+                (Route<dynamic> route) => false,
+              )
+            : Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const GateDashboardView()),
+                (Route<dynamic> route) => false,
+              );
+      }
+    } catch (e) {
+      log('Error during society office check-in: $e');
+      if (mounted) {
+        myFluttertoast(
+          msg: "Error during check-in. Please try again.",
+          backgroundColor: Colors.red,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   // Selection Submission Methods
   Future<void> _handleSelectionSubmit(Set<String> selectedMembers) async {
-    selectedMemberSelectionLoading = true;
+    if (_isConfirming) return;
+    setState(() {
+      _isConfirming = true;
+    });
     await deleteImage();
-    Navigator.pop(context);
     log("Handling selection submit...");
     await saveMemberAndUnitToPrefs(selectedMembers, selectedUnits);
 
@@ -1515,11 +1773,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     } catch (e) {
       log("❌ Error in _handleSelectionSubmit: $e");
       _showErrorSnackbar("Error processing selection");
+      setState(() {
+        _isConfirming = false;
+      });
     }
-    Future.delayed(const Duration(seconds: 1), () {
-      selectedMemberSelectionLoading = false;
-      setState(() {});
-    });
   }
 
   Future<void> _handleDirectApproval(VisitorLog visitorLogData) async {
@@ -1599,7 +1856,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  void _showErrorSnackBar(String message) {
+  void _showErrorSnackbar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1609,7 +1866,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     );
   }
 
-  void _showSuccessSnackBar(String message) {
+  void _showSuccessSnackbar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1855,10 +2112,638 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     }
   }
 
-  void _showErrorSnackbar(String message) {
-    myFluttertoast(
-      msg: message,
-      backgroundColor: Colors.red,
+  bool _isButtonDisabled = false;
+
+  bool statusallowed = false;
+
+  Widget _buildEnhancedSearchSection(BuildContext context, bool isTablet) {
+    return Container(
+      margin: EdgeInsets.all(isTablet ? 20 : 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    spreadRadius: 0,
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: TextFormField(
+                controller: _searchController,
+                style: TextStyle(
+                  fontSize: isTablet ? 16 : 14,
+                  color: const Color(0xff212427),
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search Members (type at least 3 characters)',
+                  hintStyle: TextStyle(
+                    fontSize: isTablet ? 16 : 14,
+                    color: const Color(0xff57636C),
+                  ),
+                  prefixIcon: Container(
+                    margin: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF44336).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.search,
+                      color: const Color(0xffF44336),
+                      size: isTablet ? 20 : 18,
+                    ),
+                  ),
+                  suffixIcon: _isSearching
+                      ? Container(
+                          width: 24,
+                          height: 24,
+                          margin: const EdgeInsets.all(16),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xffF44336)),
+                          ),
+                        )
+                      : _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Color(0xff57636C),
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filteredMembersNotifier.value = _allMembers;
+                              },
+                            )
+                          : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 20 : 16,
+                    vertical: isTablet ? 20 : 16,
+                  ),
+                ),
+                onChanged: (query) {
+                  if (query.trim().length >= 3) {
+                    _debouncedSearchMembers(query.trim());
+                  } else {
+                    _filteredMembersNotifier.value = _allMembers;
+                  }
+                },
+                cursorColor: Colors.black,
+              ),
+            ),
+          ),
+          // HIDE the refresh icon/button here (was previously after the search field)
+          // ... existing code ...
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedBuildingSelection(BuildContext context, bool isTablet) {
+    if (_buildingNames.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: isTablet ? 12 : 8),
+            child: Text(
+              "Select Building",
+              style: TextStyle(
+                fontSize: isTablet ? 16 : 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xff212427),
+              ),
+            ),
+          ),
+          Container(
+            height: isTablet ? 56 : 48,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _buildingNames.length,
+              itemBuilder: (context, index) {
+                final buildingName = _buildingNames[index];
+                final isSelected = buildingName == _selectedBuildingName;
+
+                return Container(
+                  margin: EdgeInsets.only(right: isTablet ? 12 : 8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    decoration: BoxDecoration(
+                      color:
+                          isSelected ? const Color(0xffFDEAEA) : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xffF44336).withOpacity(0.25)
+                            : Colors.grey.shade300,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.shade50.withOpacity(0.25),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _handleBuildingSelection(buildingName),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isTablet ? 20 : 16,
+                            vertical: isTablet ? 16 : 12,
+                          ),
+                          child: Text(
+                            buildingName,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? const Color(0xffF44336)
+                                  : Colors.black,
+                              fontSize: isTablet ? 14 : 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          SizedBox(height: isTablet ? 16 : 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedMemberList(BuildContext context, bool isTablet) {
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _selectedMembersNotifier,
+      builder: (context, selectedMembers, child) {
+        return ValueListenableBuilder<List<dynamic>>(
+          valueListenable: _filteredMembersNotifier,
+          builder: (context, filteredMembers, child) {
+            if (_isLoading) {
+              return const LoaderView(
+                title: "Loading Members",
+                subtitle: "Please wait while we fetch member information",
+              );
+            }
+
+            if (_isSearching) {
+              return const LoaderView(
+                title: "Searching Members",
+                subtitle: "Finding members matching your search criteria",
+              );
+            }
+
+            if (filteredMembers.isEmpty) {
+              return _buildEnhancedEmptyState(context, isTablet);
+            }
+
+            return _buildEnhancedMemberListView(
+                filteredMembers, selectedMembers, isTablet);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEnhancedEmptyState(BuildContext context, bool isTablet) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        top: isTablet ? 40 : 32,
+        bottom: MediaQuery.of(context).viewInsets.bottom + (isTablet ? 40 : 32),
+        left: isTablet ? 40 : 32,
+        right: isTablet ? 40 : 32,
+      ),
+      child: Center(
+        child: Container(
+          padding: EdgeInsets.all(isTablet ? 40 : 32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: isTablet ? 80 : 60,
+                height: isTablet ? 80 : 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xffF44336).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.groups_outlined,
+                  color: const Color(0xffF44336),
+                  size: isTablet ? 32 : 24,
+                ),
+              ),
+              SizedBox(height: isTablet ? 24 : 20),
+              Text(
+                'No Members Found',
+                style: TextStyle(
+                  fontSize: isTablet ? 20 : 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xff212427),
+                ),
+              ),
+              SizedBox(height: isTablet ? 12 : 8),
+              Text(
+                'Type at least 3 characters to search members by their name or flat number',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isTablet ? 14 : 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedMemberListView(List<dynamic> filteredMembers,
+      Set<String> selectedMembers, bool isTablet) {
+    return ListView.builder(
+      padding: EdgeInsets.only(
+        bottom: isTablet ? 140 : 120,
+        top: isTablet ? 8 : 4,
+      ),
+      itemCount: filteredMembers.length,
+      itemBuilder: (context, index) => _buildEnhancedMemberTile(
+          filteredMembers[index], selectedMembers, isTablet),
+    );
+  }
+
+  Widget _buildEnhancedMemberTile(
+      dynamic member, Set<String> selectedMembers, bool isTablet) {
+    final memberDetails = member['rows'] as List<dynamic>? ?? [];
+    final unitFlatNumber = member['unit_flat_number']?.toString() ?? 'N/A';
+    final buildingUnit = member['building_unit']?.toString() ?? 'N/A';
+    final socBuildingName = member['soc_building_name']?.toString() ?? '';
+
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 16 : 12),
+      child: Material(
+        elevation: 0,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        // Remove any border from Material
+        // No border property set
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            dividerColor: Colors.transparent, // Remove all dividers
+          ),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.all(isTablet ? 20 : 16),
+            childrenPadding: EdgeInsets.zero,
+            backgroundColor: Colors.transparent, // Remove background color
+            collapsedBackgroundColor: Colors.transparent, // Remove collapsed bg
+            // No border property set
+            leading: Container(
+              width: isTablet ? 48 : 40,
+              height: isTablet ? 48 : 40,
+              decoration: BoxDecoration(
+                color: const Color(0xffF44336).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.location_city,
+                color: const Color(0xffF44336),
+                size: isTablet ? 24 : 20,
+              ),
+            ),
+            title: Text(
+              '$socBuildingName - $unitFlatNumber',
+              style: TextStyle(
+                fontSize: isTablet ? 16 : 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xff212427),
+              ),
+            ),
+            subtitle: Text(
+              memberDetails.length == 1
+                  ? '1 member'
+                  : '${memberDetails.length} members',
+              style: TextStyle(
+                fontSize: isTablet ? 14 : 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            iconColor: const Color(0xffF44336),
+            collapsedIconColor: const Color(0xff57636C),
+            children: memberDetails.isEmpty
+                ? [
+                    Container(
+                      padding: EdgeInsets.all(isTablet ? 20 : 16),
+                      child: Text(
+                        'No members available',
+                        style: TextStyle(
+                          fontSize: isTablet ? 14 : 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    )
+                  ]
+                : _buildEnhancedMemberDetailsList(
+                    memberDetails, member, isTablet),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildEnhancedMemberDetailsList(
+      List<dynamic> memberDetails, dynamic member, bool isTablet) {
+    return [
+      Divider(
+        color: Colors.grey.withOpacity(0.2),
+        thickness: 1,
+        height: isTablet ? 8 : 6,
+        indent: isTablet ? 20 : 16,
+        endIndent: isTablet ? 20 : 16,
+      ),
+      ListView.builder(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: memberDetails.length,
+        itemBuilder: (context, index) => _buildEnhancedMemberDetailsItem(
+            memberDetails[index], member, isTablet),
+      ),
+    ];
+  }
+
+  Widget _buildEnhancedMemberDetailsItem(
+      dynamic detail, dynamic member, bool isTablet) {
+    final firstName = detail['member_first_name']?.toString() ?? 'N/A';
+    final lastName = detail['member_last_name']?.toString() ?? '';
+    final memberName = "$firstName $lastName";
+    final userId = detail['user_id']?.toString() ?? '';
+    final unitId = member['fk_unit_id'] ?? 0;
+    final memberId = detail['member_id'] ?? 0;
+    final buildingUnit = member['building_unit']?.toString() ?? 'N/A';
+    final memberMobileNo =
+        detail['member_mobile_number']?.toString().trim() ?? '';
+    final isSelected = _selectedMembersNotifier.value.contains(memberName);
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+          horizontal: isTablet ? 20 : 16, vertical: isTablet ? 8 : 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            _handleMemberSelection(
+              memberName,
+              userId,
+              memberId,
+              buildingUnit,
+              unitId,
+              memberMobileNo,
+            );
+          },
+          child: Container(
+            padding: EdgeInsets.all(isTablet ? 16 : 12),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xffF44336).withOpacity(0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: isSelected
+                  ? Border.all(color: const Color(0xffF44336).withOpacity(0.3))
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: isTablet ? 40 : 32,
+                  height: isTablet ? 40 : 32,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xffF44336)
+                        : Colors.grey.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.person,
+                    color: isSelected ? Colors.white : Colors.grey[600],
+                    size: isTablet ? 20 : 16,
+                  ),
+                ),
+                SizedBox(width: isTablet ? 16 : 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        memberName,
+                        style: TextStyle(
+                          fontSize: isTablet ? 16 : 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                        ),
+                      ),
+                      if (memberMobileNo.isNotEmpty) ...[
+                        SizedBox(height: isTablet ? 4 : 2),
+                        Text(
+                          "Mobile: " +
+                              (memberMobileNo.length > 4
+                                  ? memberMobileNo.substring(
+                                          0, memberMobileNo.length - 4) +
+                                      'X' * 4
+                                  : 'X' * memberMobileNo.length),
+                          style: TextStyle(
+                            fontSize: isTablet ? 12 : 10,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  width: isTablet ? 32 : 24,
+                  height: isTablet ? 32 : 24,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.green
+                        : Colors.grey.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isSelected ? Icons.check : Icons.add,
+                    color: isSelected ? Colors.white : Colors.grey[600],
+                    size: isTablet ? 16 : 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedBottomSelectionBar(BuildContext context, bool isTablet) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: ValueListenableBuilder<Set<String>>(
+        valueListenable: _selectedMembersNotifier,
+        builder: (context, selectedMembers, _) {
+          if (selectedMembers.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          return Builder(
+            builder: (context) {
+              if (DefaultTabController.of(context).index != 0) {
+                return const SizedBox.shrink();
+              }
+
+              return Container(
+                margin: EdgeInsets.all(isTablet ? 20 : 16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xffF44336),
+                      Color(0xffD32F2F),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xffF44336).withOpacity(0.3),
+                      spreadRadius: 0,
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () =>
+                        _showSelectedMembersBottomSheet(selectedMembers),
+                    child: Padding(
+                      padding: EdgeInsets.all(isTablet ? 20 : 16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: isTablet ? 48 : 40,
+                            height: isTablet ? 48 : 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.people,
+                              color: Colors.white,
+                              size: isTablet ? 24 : 20,
+                            ),
+                          ),
+                          SizedBox(width: isTablet ? 16 : 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  selectedMembers.length > 1
+                                      ? '${selectedMembers.length} Members Selected'
+                                      : selectedMembers.first,
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 16 : 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: isTablet ? 4 : 2),
+                                Text(
+                                  "Tap to view details",
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 12 : 10,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 32 : 24,
+                                  vertical: isTablet ? 16 : 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(32),
+                              ),
+                            ),
+                            onPressed: selectedMembers.isEmpty || _isConfirming
+                                ? null
+                                : () => _handleSelectionSubmit(selectedMembers),
+                            child: const Text(
+                              'Confirm',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -1893,8 +2778,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
     return VisitorLog(
       visitor_id: int.parse(widget.visitor.id.toString()),
-      visitor_purpose_category_id: widget.purposeCategory.categoryId ??
-          int.parse(widget.purposeCategoryId.toString()),
+      visitor_purpose_category_id: widget.purposeCategoryId == null
+          ? 1
+          : int.parse(widget.purposeCategoryId.toString()),
       visitor_purpose_Category_name: widget.purposeCategory.categoryName,
       purpose_sub_category_name:
           widget.purposeCategory.subCategories?.first.subCategoryName,
@@ -1910,10 +2796,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       carNumber: widget.carNumber,
       visitor_building_assignment: buildingAssignments,
       is_checked_out: false,
+      visitor: widget.visitor,
     );
   }
 
-// Helper method to retrieve the saved member details
   Future<List<Map<String, dynamic>>> getSavedMemberDetails() async {
     final prefs = await SharedPreferences.getInstance();
     final String? memberDetailsJson = prefs.getString('rows');
@@ -1962,7 +2848,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     log("Member mobile numbers from selection $mobileNumbers");
 
     return {
-      "self_check_in": widget.selfcheckinFlow.toString() ?? "false",
+      "self_check_in": widget.selfcheckinFlow.toString(),
       'company_id': companyId.toString(),
       'name': widget.guestname,
       'mobile': widget.mobileNumber,
@@ -1990,10 +2876,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       "file": widget.visitor.visitor_image ?? ""
     };
   }
-
-  bool _isButtonDisabled = false;
-
-  bool statusallowed = false;
 }
 
 class _LoadingIndicator extends StatelessWidget {

@@ -61,6 +61,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   TextEditingController? _guestCountController;
   TextEditingController? _visitorNumberController;
   TextEditingController? _carNumberController;
+
+  // Focus nodes for field highlighting
+  FocusNode? _guestNameFocusNode;
+  FocusNode? _guestComingFromFocusNode;
+  FocusNode? _visitorNumberFocusNode;
+  FocusNode? _carNumberFocusNode;
+
   int selectedCompanyIndex = -1;
   List<CameraDescription>? cachedCameras;
   bool _speechEnabled = false;
@@ -78,8 +85,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   @override
   void initState() {
     super.initState();
+    _initializeFocusNodes();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initializeControllers();
+      // Auto-select first delivery company if available
+      _autoSelectFirstDeliveryCompany();
+      // Auto-select first vendor category if available
+      _autoSelectFirstVendorCategory();
       // Use setState if any UI updates are required after initialization
       setState(() {});
     });
@@ -87,6 +99,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _initializeBloc();
     _loadInitialData();
     _initializeCameras();
+  }
+
+  void _initializeFocusNodes() {
+    _guestNameFocusNode = FocusNode();
+    _guestComingFromFocusNode = FocusNode();
+    _visitorNumberFocusNode = FocusNode();
+    _carNumberFocusNode = FocusNode();
   }
 
   void _initSpeech() async {
@@ -268,7 +287,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             "Image saved as: ${localImage.path.split('/').last}"); // Only prints filename
         return localImage;
       } else {
-        print("No image captured");
+        _showEnhancedErrorToast(
+          'Camera Capture Cancelled',
+          'Image capture was cancelled by the user',
+          Icons.camera_alt_outlined,
+        );
         return null;
       }
     } catch (e) {
@@ -359,16 +382,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Check if purpose is VENDOR
     if (widget.selectedValue?.categoryName == 'VENDOR') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showErrorSnackBar('Please enter vendor name');
+        _showEnhancedErrorToast(
+            'Vendor Name Required',
+            'Please enter the vendor\'s name to continue',
+            Icons.business_outlined,
+            focusNode: _guestNameFocusNode);
         return false;
       }
-      // if ((_guestComingFromController?.text ?? "").isEmpty &&
-      //     _visitorAddress == true) {
-      //   _showErrorSnackBar('Please enter coming from');
-      //   return false;
-      // }
       if (selectedCompanyIndex == -1) {
-        _showErrorSnackBar('Please select a vendor category');
+        _showEnhancedErrorToast(
+            'Category Selection Required',
+            'Please select a vendor category to proceed',
+            Icons.category_outlined);
         return false;
       }
     }
@@ -376,11 +401,19 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Check if purpose is CABS
     else if (widget.selectedValue?.categoryName == 'CABS') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showErrorSnackBar('Please enter cab driver name');
+        _showEnhancedErrorToast(
+            'Cab Driver Name Required',
+            'Please enter the cab driver\'s name to continue',
+            Icons.person_outline,
+            focusNode: _guestNameFocusNode);
         return false;
       }
       if ((_carNumberController?.text ?? "").isEmpty) {
-        _showErrorSnackBar('Please enter cab number');
+        _showEnhancedErrorToast(
+            'Cab Number Required',
+            'Please enter the vehicle registration number',
+            Icons.directions_car_outlined,
+            focusNode: _carNumberFocusNode);
         return false;
       }
     }
@@ -388,11 +421,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Check if purpose is DELIVERY
     else if (widget.selectedValue?.categoryName == 'DELIVERY') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showErrorSnackBar('Please enter delivery person name');
+        _showEnhancedErrorToast(
+            'Delivery Person Required',
+            'Please enter the delivery person\'s name to continue',
+            Icons.person_outline,
+            focusNode: _guestNameFocusNode);
         return false;
       }
       if (selectedCompanyIndex == -1) {
-        _showErrorSnackBar('Please select a delivery company');
+        _showEnhancedErrorToast(
+            'Company Selection Required',
+            'Please select a delivery company to proceed',
+            Icons.local_shipping_outlined);
         return false;
       }
     }
@@ -400,17 +440,47 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Check if purpose is GUEST
     else if (widget.selectedValue?.categoryName == 'GUEST') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showErrorSnackBar('Please enter guest name');
+        _showEnhancedErrorToast('Guest Name Required',
+            'Please enter the guest\'s name to continue', Icons.person_outline,
+            focusNode: _guestNameFocusNode);
         return false;
       }
       if ((_guestComingFromController?.text ?? "").isEmpty &&
           _visitorAddress == true) {
-        _showErrorSnackBar('Please enter coming from');
+        _showEnhancedErrorToast(
+            'Coming From Required',
+            'Please enter where the guest is coming from',
+            Icons.location_on_outlined,
+            focusNode: _guestComingFromFocusNode);
         return false;
       }
       if ((_visitorNumberController?.text ?? "").isEmpty &&
           _visitorCardNumber == true) {
-        _showErrorSnackBar('Please enter card number');
+        _showEnhancedErrorToast('Card Number Required',
+            'Please enter the visitor card number', Icons.credit_card_outlined,
+            focusNode: _visitorNumberFocusNode);
+        return false;
+      }
+    }
+
+    // Check if purpose is STAFF or MEMBER STAFF
+    else if (widget.selectedValue?.categoryName == 'STAFF' ||
+        widget.selectedValue?.categoryName == 'MEMBER STAFF') {
+      if ((_guestNameController?.text ?? "").isEmpty) {
+        _showEnhancedErrorToast(
+            'Staff Name Required',
+            'Please enter the staff member\'s name to continue',
+            Icons.badge_outlined,
+            focusNode: _guestNameFocusNode);
+        return false;
+      }
+      if ((_guestComingFromController?.text ?? "").isEmpty &&
+          _visitorAddress == true) {
+        _showEnhancedErrorToast(
+            'Coming From Required',
+            'Please enter where the staff member is coming from',
+            Icons.location_on_outlined,
+            focusNode: _guestComingFromFocusNode);
         return false;
       }
     }
@@ -420,6 +490,121 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   void _showErrorSnackBar(String message) {
     myFluttertoast(msg: message, backgroundColor: Colors.red);
+  }
+
+  void _showEnhancedErrorToast(String title, String message, IconData icon,
+      {FocusNode? focusNode}) {
+    // Highlight the field if focus node is provided
+    if (focusNode != null) {
+      _highlightField(focusNode);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color(0xffF44336),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+        elevation: 8,
+      ),
+    );
+  }
+
+  void _highlightField(FocusNode focusNode) {
+    // Request focus to highlight the field
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        focusNode.requestFocus();
+        // Remove focus after a short delay to show the highlight effect
+        Future.delayed(const Duration(milliseconds: 2000), () {
+          if (mounted) {
+            focusNode.unfocus();
+          }
+        });
+      }
+    });
+  }
+
+  void _autoSelectFirstDeliveryCompany() {
+    final effectivePurpose = widget.selectedValue ??
+        (_globalSelectedPurposes.isNotEmpty
+            ? _globalSelectedPurposes.first
+            : null);
+
+    if (effectivePurpose?.categoryName == 'DELIVERY') {
+      final subCategories = effectivePurpose?.subCategories;
+      if (subCategories != null && subCategories.isNotEmpty) {
+        setState(() {
+          selectedCompanyIndex = 0;
+          selectedSubCategoryId = subCategories.first.subCategoryId?.toString();
+        });
+      }
+    }
+  }
+
+  void _autoSelectFirstVendorCategory() {
+    final effectivePurpose = widget.selectedValue ??
+        (_globalSelectedPurposes.isNotEmpty
+            ? _globalSelectedPurposes.first
+            : null);
+
+    if (effectivePurpose?.categoryName == 'VENDOR') {
+      final subCategories = effectivePurpose?.subCategories;
+      if (subCategories != null && subCategories.isNotEmpty) {
+        setState(() {
+          selectedCompanyIndex = 0;
+          selectedSubCategoryId = subCategories.first.subCategoryId?.toString();
+        });
+      }
+    }
   }
 
   @override
@@ -505,9 +690,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               visitor: state.visitor,
               operation: "update_visitor",
             ));
-          } else {
-            _showErrorSnackBar("Camera capture was canceled.");
           }
+          // Note: Camera cancellation toast is already handled in _captureImageFromCamera method
         }
       },
       builder: (context, state) {
@@ -519,12 +703,48 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           isScrollable: true,
           pageTitle: 'Purpose Entry - ${effectivePurpose.categoryName}',
           pageBody: _buildPurposeForm(effectivePurpose),
-          floatingActionButton: CustomLargeBtn(
-            onPressed: _handleSubmit,
-            isText: !_isSubmitting,
-            text: 'Next',
-            widgetChild: const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          floatingActionButton: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            width: MediaQuery.of(context).size.width * 0.85,
+            height: 60,
+            child: ElevatedButton(
+              style: ButtonStyle(
+                backgroundColor:
+                    WidgetStateProperty.all<Color>(Colors.transparent),
+                elevation: WidgetStateProperty.all<double>(0),
+                shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+              ),
+              onPressed: _handleSubmit,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff212427), Color(0xff57636C)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Center(
+                  child: _isSubmitting
+                      ? const CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
+                      : const Text(
+                          'Next',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            wordSpacing: 1.2,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                ),
+              ),
             ),
           ),
         );
@@ -570,26 +790,263 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CustomForm.textField(
-              "Staff Name",
-              hintText: 'Staff Name',
-              textCapitalization: TextCapitalization.words,
-              textController: _guestNameController,
-              titleColor: Theme.of(context).colorScheme.onSurface,
-              hintColor: Theme.of(context).colorScheme.onPrimary,
-              suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
+            // Enhanced Staff Form - Single Card with All Fields
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Form Header Section
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF44336).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.badge,
+                            color: Color(0xffF44336),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Staff Information',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff212427),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Please fill in all the staff details',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xff57636C),
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Staff Name Field
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: const TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Staff Name',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xff212427),
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' *',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xffF44336),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _guestNameController,
+                          focusNode: _guestNameFocusNode,
+                          textCapitalization: TextCapitalization.words,
+                          cursorColor: Colors.black,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff212427),
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Enter staff name',
+                            hintStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff57636C),
+                            ),
+                            filled: true,
+                            fillColor:
+                                const Color(0xffF44336).withOpacity(0.02),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: const Color(0xffF44336).withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: const Color(0xffF44336).withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Color(0xffF44336),
+                                width: 2,
+                              ),
+                            ),
+                            suffixIcon: Container(
+                              margin: const EdgeInsets.all(8),
+                              child: CircleAvatar(
+                                backgroundColor:
+                                    const Color(0xffF44336).withOpacity(0.1),
+                                radius: 20,
+                                child: IconButton(
+                                  onPressed: () => _handleMicPress('guestName'),
+                                  icon: const Icon(
+                                    Icons.mic,
+                                    size: 20,
+                                    color: Color(0xffF44336),
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Coming From Field
+                  Container(
+                    padding:
+                        const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Coming From',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff212427),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _guestComingFromController,
+                          focusNode: _guestComingFromFocusNode,
+                          textCapitalization: TextCapitalization.words,
+                          cursorColor: Colors.black,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff212427),
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Enter coming from location',
+                            hintStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xff57636C),
+                            ),
+                            filled: true,
+                            fillColor:
+                                const Color(0xffF44336).withOpacity(0.02),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: const Color(0xffF44336).withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: const Color(0xffF44336).withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Color(0xffF44336),
+                                width: 2,
+                              ),
+                            ),
+                            suffixIcon: Container(
+                              margin: const EdgeInsets.all(8),
+                              child: CircleAvatar(
+                                backgroundColor:
+                                    const Color(0xffF44336).withOpacity(0.1),
+                                radius: 20,
+                                child: IconButton(
+                                  onPressed: () =>
+                                      _handleMicPress('guestComingFrom'),
+                                  icon: const Icon(
+                                    Icons.mic,
+                                    size: 20,
+                                    color: Color(0xffF44336),
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            // if (_visitorAddress == true)
-            CustomForm.textField(
-              "Coming From",
-              hintText: 'Enter Coming From',
-              textCapitalization: TextCapitalization.words,
-              textController: _guestComingFromController,
-              titleColor: Theme.of(context).colorScheme.onSurface,
-              hintColor: Theme.of(context).colorScheme.onPrimary,
-              suffixIcon:
-                  _buildMicButton(() => _handleMicPress('guestComingFrom')),
-            ),
+
+            // Bottom spacing
+            const SizedBox(height: 120),
           ],
         );
       },
@@ -598,26 +1055,277 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
   Widget _buildCabsForm() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CustomForm.textField(
-          "Cab Driver Name",
-          hintText: 'Enter Name',
-          textController: _guestNameController,
-          textCapitalization: TextCapitalization.words,
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
+        // Enhanced Cabs Form - Single Card with All Fields
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Form Header Section
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.local_taxi,
+                        color: Color(0xffF44336),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Cab Information',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff212427),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Please fill in all the cab details',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xff57636C),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Cab Driver Name Field
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: const TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Cab Driver Name',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff212427),
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xffF44336),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _guestNameController,
+                      focusNode: _guestNameFocusNode,
+                      textCapitalization: TextCapitalization.words,
+                      cursorColor: Colors.black,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff212427),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter cab driver name',
+                        hintStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff57636C),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xffF44336).withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xffF44336),
+                            width: 2,
+                          ),
+                        ),
+                        suffixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          child: CircleAvatar(
+                            backgroundColor:
+                                const Color(0xffF44336).withOpacity(0.1),
+                            radius: 20,
+                            child: IconButton(
+                              onPressed: () => _handleMicPress('guestName'),
+                              icon: const Icon(
+                                Icons.mic,
+                                size: 20,
+                                color: Color(0xffF44336),
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Cab Number Field
+              Container(
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: const TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Cab Number',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff212427),
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xffF44336),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _carNumberController,
+                      focusNode: _carNumberFocusNode,
+                      textCapitalization: TextCapitalization.characters,
+                      maxLength: 10,
+                      cursorColor: Colors.black,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff212427),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'MH 12 AB 1234',
+                        hintStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff57636C),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xffF44336).withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xffF44336),
+                            width: 2,
+                          ),
+                        ),
+                        counterText: '', // Hide character counter
+                        suffixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          child: CircleAvatar(
+                            backgroundColor:
+                                const Color(0xffF44336).withOpacity(0.1),
+                            radius: 20,
+                            child: IconButton(
+                              onPressed: () => _handleMicPress('cabnumber'),
+                              icon: const Icon(
+                                Icons.mic,
+                                size: 20,
+                                color: Color(0xffF44336),
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        CustomForm.textField(
-          "Cab Number",
-          hintText: 'MH 12 AB 1234',
-          textController: _carNumberController,
-          length: 10,
-          textCapitalization: TextCapitalization.characters,
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('cabnumber')),
-        ),
+
+        // Bottom spacing
+        const SizedBox(height: 120),
       ],
     );
   }
@@ -628,389 +1336,1149 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       return const Center(child: Text("No delivery companies available."));
     }
 
+    // Reorder subcategories to put "Others" at the end
+    final reorderedSubCategories = <SubCategory>[];
+    SubCategory? othersCategory;
+
+    // First, add all non-"Others" categories
+    for (final subCategory in subCategories) {
+      if (subCategory.subCategoryName?.toLowerCase().contains('others') ==
+              true ||
+          subCategory.subCategoryName?.toLowerCase().contains('other') ==
+              true) {
+        othersCategory = subCategory;
+      } else {
+        reorderedSubCategories.add(subCategory);
+      }
+    }
+
+    // Then add "Others" at the end if it exists
+    if (othersCategory != null) {
+      reorderedSubCategories.add(othersCategory);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Enhanced Delivery Person Name Field Card
         Container(
-          margin: const EdgeInsets.symmetric(vertical: 16),
-          child: CustomForm.textField(
-            "Delivery Person Name",
-            hintText: 'Enter delivery person name',
-            textController: _guestNameController,
-            textCapitalization: TextCapitalization.words,
-            titleColor: Theme.of(context).colorScheme.onSurface,
-            hintColor: Theme.of(context).colorScheme.onPrimary,
-            suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
-          ),
-        ),
-
-        // Company Selection Header
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Text(
-            'Select Delivery Company',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-          ),
-        ),
-        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
                 blurRadius: 10,
-                offset: const Offset(0, 2),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.8,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-            ),
-            itemCount: subCategories.length,
-            itemBuilder: (context, index) {
-              final subCategory = subCategories[index];
-              final isSelected = index == selectedCompanyIndex;
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedCompanyIndex = index;
-                    selectedSubCategoryId =
-                        subCategory.subCategoryId?.toString();
-                    log("Selected Index: $index");
-                    log("Selected SubCategoryId: $selectedSubCategoryId");
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFFFEBE6) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected
-                          ? const Color(0xffC08261)
-                          : Colors.grey.shade300,
-                      width: isSelected ? 2 : 1,
+          child: Column(
+            children: [
+              // Header Section with Icon and Title
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        color: Color(0xffF44336),
+                        size: 24,
+                      ),
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xffC08261).withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 10),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: CachedNetworkImage(
-                                    height: 60,
-                                    width: 60,
-                                    fit: BoxFit.contain,
-                                    imageUrl: subCategory.image ?? '',
-                                    placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(
-                                      Icons.error_outline,
-                                      color: Colors.red,
-                                      size: 30,
-                                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: const TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Delivery Person Name',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff212427),
                                   ),
                                 ),
-                              ),
+                                TextSpan(
+                                  text: ' *',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xffF44336),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Enter the name of the delivery person',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xff57636C),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-                              // Company Name
-                              // Padding(
-                              //   padding:
-                              //       const EdgeInsets.symmetric(horizontal: 4),
-                              //   child: Text(
-                              //     subCategory.subCategoryName ?? '',
-                              //     textAlign: TextAlign.center,
-                              //     style: TextStyle(
-                              //       // fontSize: 12,
-                              //       fontSize: 6,
-                              //       fontWeight: isSelected
-                              //           ? FontWeight.bold
-                              //           : FontWeight.normal,
-                              //       color: isSelected
-                              //           ? const Color(0xffC08261)
-                              //           : Theme.of(context)
-                              //               .colorScheme
-                              //               .onSurface,
-                              //     ),
-                              //   ),
-                              // ),
-                            ],
+              // Input Field Section
+              Container(
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                child: TextFormField(
+                  controller: _guestNameController,
+                  focusNode: _guestNameFocusNode,
+                  textCapitalization: TextCapitalization.words,
+                  cursorColor: Colors.black,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff212427),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter delivery person name',
+                    hintStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff57636C),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xffF44336).withOpacity(0.02),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xffF44336).withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xffF44336).withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xffF44336),
+                        width: 2,
+                      ),
+                    ),
+                    suffixIcon: Container(
+                      margin: const EdgeInsets.all(8),
+                      child: CircleAvatar(
+                        backgroundColor:
+                            const Color(0xffF44336).withOpacity(0.1),
+                        radius: 20,
+                        child: IconButton(
+                          onPressed: () => _handleMicPress('guestName'),
+                          icon: const Icon(
+                            Icons.mic,
+                            size: 20,
+                            color: Color(0xffF44336),
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Enhanced Company Selection Header
+        Container(
+          margin: const EdgeInsets.only(top: 8, bottom: 20),
+          child: Row(
+            children: [
+              // Delivery Icon (matching delivery person name icon style)
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xffF44336).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.local_shipping,
+                  color: Color(0xffF44336),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Select Delivery Company',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xff212427),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Enhanced Company Selection Grid
+        GridView.builder(
+          padding: const EdgeInsets.all(20),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 0.85,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+          ),
+          itemCount: reorderedSubCategories.length,
+          itemBuilder: (context, index) {
+            final subCategory = reorderedSubCategories[index];
+            final isSelected = index == selectedCompanyIndex;
+
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() {
+                  selectedCompanyIndex = index;
+                  selectedSubCategoryId = subCategory.subCategoryId?.toString();
+                  log("Selected Index: $index");
+                  log("Selected SubCategoryId: $selectedSubCategoryId");
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xffF44336)
+                        : Colors.grey.withOpacity(0.2),
+                    width: isSelected ? 2 : 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Enhanced Company Logo Container
+                    Container(
+                      width: 60,
+                      height: 60,
+                      padding: const EdgeInsets.all(4),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: subCategory.image ?? '',
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xffF44336),
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.local_shipping,
+                            color: Color(0xffF44336),
+                            size: 32,
                           ),
                         ),
                       ),
+                    ),
 
-                      // Selection Indicator
-                      if (isSelected)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Color(0xffC08261),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                          ),
+                    const SizedBox(height: 8),
+
+                    // Enhanced Company Name
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        subCategory.subCategoryName ?? '',
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected
+                              ? const Color(0xffF44336)
+                              : const Color(0xff212427),
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+
+                    // Selection Indicator
+                    if (isSelected)
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        child: const Icon(
+                          Icons.check_circle,
+                          color: Color(0xffF44336),
+                          size: 16,
+                        ),
+                      ),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
-        const SizedBox(
-          height: 150,
-        )
+
+        // Bottom spacing
+        const SizedBox(height: 120),
       ],
     );
   }
 
   Widget _buildVendorForm(PurposeCategory1 purpose) {
     final subCategories = purpose.subCategories;
-
     if (subCategories == null || subCategories.isEmpty) {
       return const Center(child: Text("No vendor categories available."));
+    }
+
+    // Reorder subcategories to put "Others" at the end
+    final reorderedSubCategories = <SubCategory>[];
+    SubCategory? othersCategory;
+
+    // First, add all non-"Others" categories
+    for (final subCategory in subCategories) {
+      if (subCategory.subCategoryName?.toLowerCase().contains('others') ==
+              true ||
+          subCategory.subCategoryName?.toLowerCase().contains('other') ==
+              true) {
+        othersCategory = subCategory;
+      } else {
+        reorderedSubCategories.add(subCategory);
+      }
+    }
+
+    // Then add "Others" at the end if it exists
+    if (othersCategory != null) {
+      reorderedSubCategories.add(othersCategory);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Enhanced Vendor Name Field Card
         Container(
-          margin: const EdgeInsets.symmetric(vertical: 5),
-          child: CustomForm.textField(
-            "Vendor Name",
-            hintText: 'Enter vendor name',
-            textController: _guestNameController,
-            textCapitalization: TextCapitalization.words,
-            titleColor: Theme.of(context).colorScheme.onSurface,
-            hintColor: Theme.of(context).colorScheme.onPrimary,
-            suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(
-            'Select Vendor Category',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-          ),
-        ),
-        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
                 blurRadius: 10,
-                offset: const Offset(0, 2),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: GridView.builder(
-            padding: const EdgeInsets.all(0),
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 1,
-              mainAxisSpacing: 18,
-              crossAxisSpacing: 18,
-            ),
-            itemCount: subCategories.length,
-            itemBuilder: (context, index) {
-              final subCategory = subCategories[index];
-              final isSelected = index == selectedCompanyIndex;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedCompanyIndex = index;
-                    selectedSubCategoryId =
-                        subCategory.subCategoryId.toString();
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFFFEBE6) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected
-                          ? const Color(0xffC08261)
-                          : Colors.grey.shade300,
-                      width: isSelected ? 2 : 1,
+          child: Column(
+            children: [
+              // Header Section with Icon and Title
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.business,
+                        color: Color(0xffF44336),
+                        size: 24,
+                      ),
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xffC08261).withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 0, vertical: 0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: CachedNetworkImage(
-                                    height: 60,
-                                    width: 60,
-                                    fit: BoxFit.contain,
-                                    imageUrl: subCategory.image ?? '',
-                                    placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(
-                                      Icons.business,
-                                      color: Color(0xffC08261),
-                                      size: 30,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                child: Text(
-                                  subCategory.subCategoryName ?? '',
-                                  textAlign: TextAlign.center,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: const TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Vendor Name',
                                   style: TextStyle(
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? const Color(0xffC08261)
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff212427),
                                   ),
                                 ),
+                                TextSpan(
+                                  text: ' *',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xffF44336),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Enter the name of the vendor',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xff57636C),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Input Field Section
+              Container(
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                child: TextFormField(
+                  controller: _guestNameController,
+                  focusNode: _guestNameFocusNode,
+                  textCapitalization: TextCapitalization.words,
+                  cursorColor: Colors.black,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff212427),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter vendor name',
+                    hintStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff57636C),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xffF44336).withOpacity(0.02),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xffF44336).withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xffF44336).withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xffF44336),
+                        width: 2,
+                      ),
+                    ),
+                    suffixIcon: Container(
+                      margin: const EdgeInsets.all(8),
+                      child: CircleAvatar(
+                        backgroundColor:
+                            const Color(0xffF44336).withOpacity(0.1),
+                        radius: 20,
+                        child: IconButton(
+                          onPressed: () => _handleMicPress('guestName'),
+                          icon: const Icon(
+                            Icons.mic,
+                            size: 20,
+                            color: Color(0xffF44336),
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Enhanced Vendor Category Selection Header
+        Container(
+          margin: const EdgeInsets.only(top: 8, bottom: 20),
+          child: Row(
+            children: [
+              // Vendor Icon (matching vendor name icon style)
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xffF44336).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.category,
+                  color: Color(0xffF44336),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Select Vendor Category',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xff212427),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Enhanced Vendor Category Selection Grid
+        GridView.builder(
+          padding: const EdgeInsets.all(20),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 0.85,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+          ),
+          itemCount: reorderedSubCategories.length,
+          itemBuilder: (context, index) {
+            final subCategory = reorderedSubCategories[index];
+            final isSelected = index == selectedCompanyIndex;
+
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() {
+                  selectedCompanyIndex = index;
+                  selectedSubCategoryId = subCategory.subCategoryId?.toString();
+                  log("Selected Index: $index");
+                  log("Selected SubCategoryId: $selectedSubCategoryId");
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xffF44336)
+                        : Colors.grey.withOpacity(0.2),
+                    width: isSelected ? 2 : 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Enhanced Vendor Category Logo Container
+                    Container(
+                      width: 60,
+                      height: 60,
+                      padding: const EdgeInsets.all(4),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: subCategory.image ?? '',
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xffF44336),
                               ),
-                            ],
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.business,
+                            color: Color(0xffF44336),
+                            size: 32,
                           ),
                         ),
                       ),
-                      if (isSelected)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Color(0xffC08261),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                          ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Enhanced Vendor Category Name
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        subCategory.subCategoryName ?? '',
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected
+                              ? const Color(0xffF44336)
+                              : const Color(0xff212427),
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+
+                    // Selection Indicator
+                    if (isSelected)
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        child: const Icon(
+                          Icons.check_circle,
+                          color: Color(0xffF44336),
+                          size: 16,
+                        ),
+                      ),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
+
+        // Bottom spacing
+        const SizedBox(height: 120),
       ],
     );
   }
 
   Widget _buildGuestForm() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CustomForm.textField(
-          "Guest Name",
-          hintText: 'Enter Name',
-          textCapitalization: TextCapitalization.words,
-          textController: _guestNameController,
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('guestName')),
-        ),
-        // if (_visitorAddress == true)
-        CustomForm.textField(
-          "Coming From",
-          hintText: 'Enter Coming From',
-          textCapitalization: TextCapitalization.words,
-          textController: _guestComingFromController,
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onPrimary,
-          suffixIcon: _buildMicButton(() => _handleMicPress('guestComingFrom')),
-        ),
-        if (_visitorCardNumber == true)
-          CustomForm.textField(
-            "Enter your ID",
-            hintText: 'Request from Security',
-            keyboardType: TextInputType.number,
-            length: 4,
-            textController: _visitorNumberController,
-            titleColor: Theme.of(context).colorScheme.onSurface,
-            hintColor: Theme.of(context).colorScheme.onPrimary,
-            validator: _validateVisitorId,
-            prefixIcon: _buildVisitorIdPrefix(),
+        // Enhanced Guest Form - Single Card with All Fields
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        _buildGuestCountField(),
-        const SizedBox(height: 150),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Form Header Section
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        color: Color(0xffF44336),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Guest Information',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xff212427),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Please fill in all the guest details',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xff57636C),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Guest Name Field
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: const TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Guest Name',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff212427),
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xffF44336),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _guestNameController,
+                      focusNode: _guestNameFocusNode,
+                      textCapitalization: TextCapitalization.words,
+                      cursorColor: Colors.black,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff212427),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter guest name',
+                        hintStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff57636C),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xffF44336).withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xffF44336),
+                            width: 2,
+                          ),
+                        ),
+                        suffixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          child: CircleAvatar(
+                            backgroundColor:
+                                const Color(0xffF44336).withOpacity(0.1),
+                            radius: 20,
+                            child: IconButton(
+                              onPressed: () => _handleMicPress('guestName'),
+                              icon: const Icon(
+                                Icons.mic,
+                                size: 20,
+                                color: Color(0xffF44336),
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Coming From Field
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'Coming From',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff212427),
+                            ),
+                          ),
+                          if (_visitorAddress == true)
+                            const TextSpan(
+                              text: ' *',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xffF44336),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _guestComingFromController,
+                      focusNode: _guestComingFromFocusNode,
+                      textCapitalization: TextCapitalization.words,
+                      cursorColor: Colors.black,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff212427),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter coming from location',
+                        hintStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff57636C),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xffF44336).withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xffF44336),
+                            width: 2,
+                          ),
+                        ),
+                        suffixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          child: CircleAvatar(
+                            backgroundColor:
+                                const Color(0xffF44336).withOpacity(0.1),
+                            radius: 20,
+                            child: IconButton(
+                              onPressed: () =>
+                                  _handleMicPress('guestComingFrom'),
+                              icon: const Icon(
+                                Icons.mic,
+                                size: 20,
+                                color: Color(0xffF44336),
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Visitor ID Field (if enabled)
+              if (_visitorCardNumber == true) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Visitor ID',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xff212427),
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' *',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xffF44336),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _visitorNumberController,
+                        focusNode: _visitorNumberFocusNode,
+                        keyboardType: TextInputType.number,
+                        maxLength: 4,
+                        cursorColor: Colors.black,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff212427),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Enter visitor id',
+                          hintStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff57636C),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xffF44336).withOpacity(0.02),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: const Color(0xffF44336).withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: const Color(0xffF44336).withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xffF44336),
+                              width: 2,
+                            ),
+                          ),
+                          counterText: '', // Hide character counter
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.only(left: 12, right: 8),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xffF44336).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "V",
+                                  style: TextStyle(
+                                    color: Color(0xffF44336),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
+
+              // Guest Count Field
+              Container(
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Guest Count',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff212427),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _guestCountController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 2,
+                      cursorColor: Colors.black,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff212427),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _guestCount = int.tryParse(value) ?? 1;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Guest count',
+                        hintStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff57636C),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xffF44336).withOpacity(0.02),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: const Color(0xffF44336).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xffF44336),
+                            width: 2,
+                          ),
+                        ),
+                        counterText: '', // Hide character counter
+                        suffixIcon: Container(
+                          margin: const EdgeInsets.all(4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: _decrementGuestCount,
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  color: Color(0xffF44336),
+                                  size: 28,
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                              IconButton(
+                                onPressed: _incrementGuestCount,
+                                icon: const Icon(
+                                  Icons.add_circle_outline,
+                                  color: Colors.green,
+                                  size: 28,
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Bottom spacing
+        const SizedBox(height: 120),
       ],
     );
   }
@@ -1018,13 +2486,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   Widget _buildMicButton(Future<void> Function() onPressed) {
     return IconButton(
       onPressed: onPressed,
-      icon: const CircleAvatar(
-        backgroundColor: Color(0xffFFEBE6),
+      icon: CircleAvatar(
+        backgroundColor: const Color(0xffF44336).withOpacity(0.1),
         radius: 20,
-        child: Icon(
+        child: const Icon(
           Ionicons.mic_outline,
           size: 22,
-          color: Colors.black,
+          color: Color(0xffF44336),
         ),
       ),
     );
@@ -1103,6 +2571,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _guestComingFromController?.dispose();
     _guestCountController?.dispose();
     _visitorNumberController?.dispose();
+    _carNumberController?.dispose();
+
+    // Dispose focus nodes
+    _guestNameFocusNode?.dispose();
+    _guestComingFromFocusNode?.dispose();
+    _visitorNumberFocusNode?.dispose();
+    _carNumberFocusNode?.dispose();
+
     super.dispose();
   }
 }
@@ -1288,65 +2764,208 @@ class ListeningDialogState extends State<ListeningDialog>
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              recognizedText,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.white, Color(0xFFF8F9FA)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 30,
+              offset: const Offset(0, 15),
             ),
-            const SizedBox(height: 20),
-            AnimatedBuilder(
-              animation: _animation,
-              builder: (context, child) => Transform.scale(
-                scale: _animation.value,
-                child: IconButton(
-                  icon: Icon(
-                    _isListening ? Icons.mic : Icons.mic_none,
-                    size: 50,
-                    color: Colors.red,
-                  ),
-                  onPressed: _isListening ? _stopListening : _startListening,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                if (_hasRecognizedText) // Only show retry when we have recognized text
-                  ElevatedButton.icon(
-                    onPressed: _retryListening,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ElevatedButton(
-                  onPressed: () {
-                    _stopListening();
-                    if (_hasRecognizedText) {
-                      Navigator.of(context).pop(recognizedText);
-                    } else {
-                      Navigator.of(context).pop(null);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _hasRecognizedText ? Colors.green : Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(_hasRecognizedText ? 'Done' : 'Cancel'),
-                ),
-              ],
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xffF44336).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.hearing,
+                  size: 32,
+                  color: Color(0xffF44336),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Title
+              const Text(
+                'Voice Recognition',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff212427),
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 12),
+
+              // Recognized text with enhanced styling
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: const Color(0xffF44336).withOpacity(0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  recognizedText,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: _hasRecognizedText
+                        ? const Color(0xff212427)
+                        : const Color(0xff57636C),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 4,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Enhanced microphone button
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: _isListening
+                      ? const LinearGradient(
+                          colors: [Color(0xffF44336), Color(0xffD32F2F)],
+                        )
+                      : null,
+                  color: _isListening
+                      ? null
+                      : const Color(0xffF44336).withOpacity(0.1),
+                  boxShadow: _isListening
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xffF44336).withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) => Transform.scale(
+                    scale: _isListening ? _animation.value : 1.0,
+                    child: IconButton(
+                      icon: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        size: 40,
+                        color: _isListening
+                            ? Colors.white
+                            : const Color(0xffF44336),
+                      ),
+                      onPressed:
+                          _isListening ? _stopListening : _startListening,
+                      padding: const EdgeInsets.all(20),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Enhanced action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  if (_hasRecognizedText)
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: _retryListening,
+                          icon: const Icon(Icons.refresh,
+                              size: 20, color: Color(0xffF44336)),
+                          label: const Text('Retry'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xffF44336),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: const Color(0xffF44336).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.only(left: _hasRecognizedText ? 8 : 0),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _stopListening();
+                          if (_hasRecognizedText) {
+                            Navigator.of(context).pop(recognizedText);
+                          } else {
+                            Navigator.of(context).pop(null);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _hasRecognizedText
+                              ? const Color(0xffF44336)
+                              : const Color(0xff57636C),
+                          foregroundColor: Colors.white,
+                          elevation: 4,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          _hasRecognizedText ? 'Done' : 'Cancel',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1370,6 +2989,7 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
   late CameraController _cameraController;
   late CameraDescription _currentCamera;
   XFile? _capturedImage;
+  bool _isCapturing = false; // Prevent multiple captures
 
   @override
   void initState() {
@@ -1389,7 +3009,6 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
   }
 
   Future<void> _lockCameraToPortrait() async {
-    // Always lock the camera orientation to portraitUp
     if (_cameraController.value.isInitialized) {
       await _cameraController
           .lockCaptureOrientation(DeviceOrientation.portraitUp);
@@ -1412,7 +3031,7 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
       final CameraController newController = CameraController(
         newCamera,
         ResolutionPreset.high,
-        enableAudio: false, // Disable audio if not needed
+        enableAudio: false,
       );
 
       await newController.initialize();
@@ -1430,6 +3049,13 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+    final double previewMargin = isTablet ? 24 : 8;
+    final double previewRadius = isTablet ? 32 : 20;
+    final double previewBorder = 3;
+    final double previewShadow = 32;
+    final double previewAspectRatio = 3 / 4; // Portrait aspect ratio
+    final double controlsHeight = isTablet ? 120 : 90;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -1444,122 +3070,170 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
       ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (_capturedImage == null)
-            _cameraController.value.isInitialized
-                ? ClipRRect(
-                    child: Transform.scale(
-                      scale: 1.0,
-                      child: AspectRatio(
-                        aspectRatio: _cameraController.value.aspectRatio,
-                        child: CameraPreview(_cameraController),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: previewAspectRatio,
+                  child: Container(
+                    margin: EdgeInsets.all(previewMargin),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(previewRadius),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: previewShadow,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.25),
+                        width: previewBorder,
                       ),
                     ),
-                  )
-                : const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  )
-          else
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.black,
-                image: DecorationImage(
-                  image: FileImage(File(_capturedImage!.path)),
-                  fit: BoxFit.contain,
+                    clipBehavior: Clip.antiAlias,
+                    child: _capturedImage == null
+                        ? (_cameraController.value.isInitialized
+                            ? CameraPreview(_cameraController)
+                            : const Center(
+                                child: CircularProgressIndicator(
+                                    color: Colors.white)))
+                        : Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.file(
+                                File(_capturedImage!.path),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
+                              // Overlay for preview enhancement
+                              Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Container(
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [
+                                        Colors.black.withOpacity(0.5),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ),
-          // Camera controls overlay
-          if (_capturedImage == null)
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.3),
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.5),
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-          if (_capturedImage == null)
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildControlButton(
-                      onPressed: _switchCamera,
-                      icon: Icons.flip_camera_ios_rounded,
-                      size: 30,
-                    ),
-                    GestureDetector(
-                      onTap: () async {
-                        try {
-                          final image = await _cameraController.takePicture();
-                          setState(() => _capturedImage = image);
-                        } catch (e) {
-                          print('Error capturing image: $e');
-                        }
-                      },
-                      child: Container(
-                        height: 80,
-                        width: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 4),
-                          color: Colors.white24,
+            // Controls
+            Padding(
+              padding: EdgeInsets.only(bottom: isTablet ? 32 : 16, top: 8),
+              child: _capturedImage == null
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildControlButton(
+                          onPressed: _switchCamera,
+                          icon: Icons.flip_camera_ios_rounded,
+                          size: isTablet ? 40 : 30,
                         ),
-                        child: Center(
-                          child: Container(
-                            height: 60,
-                            width: 60,
-                            decoration: const BoxDecoration(
+                        GestureDetector(
+                          onTap: _isCapturing
+                              ? null
+                              : () async {
+                                  setState(() => _isCapturing = true);
+                                  try {
+                                    final image =
+                                        await _cameraController.takePicture();
+                                    setState(() {
+                                      _capturedImage = image;
+                                      _isCapturing = false;
+                                    });
+                                  } catch (e) {
+                                    print('Error capturing image: $e');
+                                    setState(() => _isCapturing = false);
+                                  }
+                                },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: controlsHeight,
+                            width: controlsHeight,
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white,
+                              border: Border.all(
+                                color:
+                                    _isCapturing ? Colors.grey : Colors.white,
+                                width: 4,
+                              ),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white,
+                                  Colors.grey[200]!,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.2),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Container(
+                                height: controlsHeight * 0.7,
+                                width: controlsHeight * 0.7,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.black.withOpacity(0.1),
+                                      Colors.white,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        SizedBox(width: isTablet ? 40 : 30),
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildActionButton(
+                          onPressed: () =>
+                              setState(() => _capturedImage = null),
+                          icon: Icons.close,
+                          label: 'Retake',
+                          color: Colors.red,
+                          isTablet: isTablet,
+                        ),
+                        _buildActionButton(
+                          onPressed: () =>
+                              Navigator.pop(context, _capturedImage),
+                          icon: Icons.check,
+                          label: 'Use Photo',
+                          color: Colors.green,
+                          isTablet: isTablet,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 30), // Balance the layout
-                  ],
-                ),
-              ),
-            )
-          else
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildActionButton(
-                    onPressed: () => setState(() => _capturedImage = null),
-                    icon: Icons.close,
-                    label: 'Retake',
-                    color: Colors.red,
-                  ),
-                  _buildActionButton(
-                    onPressed: () => Navigator.pop(context, _capturedImage),
-                    icon: Icons.check,
-                    label: 'Use Photo',
-                    color: Colors.green,
-                  ),
-                ],
-              ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1570,12 +3244,19 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
     double size = 24,
   }) {
     return Container(
-      height: 50,
-      width: 50,
+      height: size + 20,
+      width: size + 20,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.black26,
         border: Border.all(color: Colors.white54, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: IconButton(
         onPressed: onPressed,
@@ -1590,6 +3271,7 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
     required IconData icon,
     required String label,
     required Color color,
+    required bool isTablet,
   }) {
     return GestureDetector(
       onTap: onPressed,
@@ -1597,21 +3279,28 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            height: 60,
-            width: 60,
+            height: isTablet ? 80 : 60,
+            width: isTablet ? 80 : 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.2),
+              color: color.withOpacity(0.15),
               border: Border.all(color: color, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Icon(icon, color: color, size: 30),
+            child: Icon(icon, color: color, size: isTablet ? 40 : 30),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: isTablet ? 18 : 14,
               fontWeight: FontWeight.w500,
             ),
           ),

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
@@ -22,214 +23,328 @@ class DashboardBlocks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isTablet ? 8 : 4,
+        vertical: isTablet ? 16 : 12,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Container(
-        //   margin: EdgeInsets.symmetric(horizontal: 8),
-        //   width: MediaQuery.of(context).size.width,
-        //   height: MediaQuery.of(context).size.height * 0.1,
-        //   child: Material(
-        //     borderRadius: BorderRadius.circular(20),
-        //     color: Color(0xfff5f7f8),
-        //     child: InkWell(
-        //       borderRadius: BorderRadius.circular(20),
-        //       splashColor: Color.fromARGB(255, 220, 237, 245),
-        //       autofocus: true,
-        //       onTap: () {
-        //         bloc is GatekeeperDashboardBloc
-        //             ? bloc.add(GDVisitorsInButtonPressedEvent())
-        //             : bloc.add(ADVisitorsInButtonPressedEvent());
-        //       },
-        //       child: Padding(
-        //         padding: EdgeInsets.symmetric(
-        //           horizontal: MediaQuery.of(context).size.height * 0.02,
-        //         ),
-        //         child: Row(
-        //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //           children: [
-        //             Column(
-        //               mainAxisAlignment: MainAxisAlignment.center,
-        //               children: [
-        //                 const Text(
-        //                   '50',
-        //                   textAlign: TextAlign.center,
-        //                   style: TextStyle(
-        //                     fontSize: 24,
-        //                     fontWeight: FontWeight.bold,
-        //                   ),
-        //                 ),
-        //                 Text(
-        //                   'Cards',
-        //                   textAlign: TextAlign.center,
-        //                   style: Theme.of(context).textTheme.labelMedium,
-        //                 ),
-        //               ],
-        //             ),
-        //             Container(
-        //               decoration: BoxDecoration(
-        //                 color: Colors.grey.shade100,
-        //                 borderRadius: BorderRadius.circular(20),
-        //               ),
-        //               child: Lottie.asset(
-        //                 'assets/json/idcard.json',
-        //                 width: 100,
-        //                 height: 100,
-        //                 fit: BoxFit.cover,
-        //               ),
-        //             ),
-        //           ],
-        //         ),
-        //       ),
-        //     ),
-        //   ),
-        // ),
-        // SizedBox(
-        //   height: 10,
-        // ),
-        Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          height: MediaQuery.of(context).size.height * 0.300,
-          width: MediaQuery.of(context).size.width,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          // Enhanced In-Out Card
+          _buildEnhancedInOutCard(context, isTablet),
+
+          SizedBox(width: isTablet ? 16 : 12),
+
+          // Enhanced Visitor Cards Column
+          Expanded(
+            child: Column(
             children: [
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.32,
+                _buildEnhancedVisitorInCard(context, isTablet),
+                SizedBox(height: isTablet ? 16 : 12),
+                _buildEnhancedVisitorOutCard(context, isTablet),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced In-Out Card with modern styling
+  Widget _buildEnhancedInOutCard(BuildContext context, bool isTablet) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: isTablet ? 160 : 120,
+      height: isTablet ? 280 : 240,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xffF2D8A5),
+            const Color(0xffE6C578),
+            const Color(0xffF2D8A5),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: isTablet ? 20 : 15,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: const Color(0xffF2D8A5).withOpacity(0.4),
+            blurRadius: isTablet ? 10 : 8,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
                 child: Material(
-                  color: const Color(0xffF2D8A5),
-                  borderRadius: BorderRadius.circular(20),
+        color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    splashColor: const Color.fromARGB(255, 255, 226, 172),
-                    autofocus: true,
-                    // onTap: () {
-                    //   bloc is GatekeeperDashboardBloc
-                    //       ? bloc.add(GDInAndOutButtonPressedEvent())
-                    //       : bloc.add(ADInAndOutButtonPressedEvent());
-                    //   bloc.add(GDInAndOutButtonPressedEvent());
-                    // },
+          borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
                     onTap: () {
+            HapticFeedback.lightImpact();
                       if (bloc is GatekeeperDashboardBloc) {
                         bloc.add(GDInAndOutButtonPressedEvent());
                       } else if (bloc is AdminDashboardBloc) {
                         bloc.add(ADInAndOutButtonPressedEvent());
                       }
                     },
+          child: Padding(
+            padding: EdgeInsets.all(isTablet ? 20 : 16),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
+                // Enhanced icon container with better shadows
                         Container(
-                          padding: const EdgeInsets.all(2),
-                          margin: const EdgeInsets.only(top: 10),
+                  padding: EdgeInsets.all(isTablet ? 16 : 12),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: isTablet ? 12 : 8,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xffF2D8A5).withOpacity(0.3),
+                        blurRadius: isTablet ? 6 : 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                           ),
                           child: CachedNetworkImage(
-                            maxHeightDiskCache: 10,
-                            height: 55,
-                            width: 55,
+                    height: isTablet ? 64 : 48,
+                    width: isTablet ? 64 : 48,
                             fit: BoxFit.contain,
                             imageUrl:
                                 'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
-                            placeholder: (context, url) =>
-                                const CircularProgressIndicator(),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.error,
-                              color: Colors.red,
+                    placeholder: (context, url) => Container(
+                      height: isTablet ? 64 : 48,
+                      width: isTablet ? 64 : 48,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: SizedBox(
+                          width: isTablet ? 24 : 20,
+                          height: isTablet ? 24 : 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              const Color(0xffF2D8A5),
                             ),
-                            fadeOutDuration: const Duration(seconds: 1),
-                            fadeInDuration: const Duration(seconds: 3),
                           ),
                         ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: isTablet ? 64 : 48,
+                      width: isTablet ? 64 : 48,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.book_rounded,
+                        color: const Color(0xffF2D8A5),
+                        size: isTablet ? 32 : 24,
+                      ),
+                          ),
+                        ),
+                ),
+
+                // Enhanced title
                         Text(
                           'In-Out',
-                          style: Theme.of(context).textTheme.displayMedium,
+                  style: TextStyle(
+                    color: const Color(0xff212427),
+                    fontSize: isTablet ? 20 : 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
                         ),
-                        Text(
-                          "${(outBook ?? 0) + (inBook ?? 0)}", // Handle null values with default 0
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.displayMedium,
+                ),
+
+                // Enhanced count
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 16 : 12,
+                    vertical: isTablet ? 8 : 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.5),
+                      width: 1,
                         ),
-                        // Text(
-                        //   'Book',
-                        //   textAlign: TextAlign.center,
-                        //   style: Theme.of(context).textTheme.labelMedium,
-                        // ),
-                      ],
+                  ),
+                  child: Text(
+                    "${(outBook ?? 0) + (inBook ?? 0)}",
+                    style: TextStyle(
+                      color: const Color(0xff212427),
+                      fontSize: isTablet ? 28 : 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.50,
-                    height: MediaQuery.of(context).size.height * 0.14,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Enhanced Visitor-In Card with modern styling
+  Widget _buildEnhancedVisitorInCard(BuildContext context, bool isTablet) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: isTablet ? 130 : 110,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xffCAF1D1),
+            const Color(0xffA8E6C1),
+            const Color(0xffCAF1D1),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: isTablet ? 15 : 10,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: const Color(0xffCAF1D1).withOpacity(0.5),
+            blurRadius: isTablet ? 8 : 6,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
                     child: Material(
-                      borderRadius: BorderRadius.circular(20),
-                      color: const Color(0xffCAF1D1),
+        color: Colors.transparent,
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        splashColor: const Color.fromARGB(255, 98, 255, 127),
-                        autofocus: true,
+          borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
                         onTap: () {
+            HapticFeedback.lightImpact();
                           bloc is GatekeeperDashboardBloc
                               ? bloc.add(GDVisitorsInButtonPressedEvent())
                               : bloc.add(ADVisitorsInButtonPressedEvent());
                         },
                         child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal:
-                                MediaQuery.of(context).size.height * 0.02,
-                          ),
+            padding: EdgeInsets.all(isTablet ? 16 : 12),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
+                // Enhanced content
+                Expanded(
+                  child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                      // Enhanced count
                                   Text(
                                     inBook.toString(),
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .displayMedium,
+                        style: TextStyle(
+                          color: const Color(0xff212427),
+                          fontSize: isTablet ? 32 : 28,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
                                   ),
+                      SizedBox(height: isTablet ? 4 : 2),
+                      // Enhanced label
                                   Text(
                                     'Visitor-In',
-                                    textAlign: TextAlign.center,
-                                    style:
-                                        Theme.of(context).textTheme.labelMedium,
+                        style: TextStyle(
+                          color: const Color(0xff57636C),
+                          fontSize: isTablet ? 16 : 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
                                   ),
                                 ],
                               ),
+                ),
+
+                // Enhanced icon container with better shadows
                               Container(
+                  padding: EdgeInsets.all(isTablet ? 12 : 10),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: isTablet ? 8 : 6,
+                        offset: const Offset(0, 3),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xffCAF1D1).withOpacity(0.3),
+                        blurRadius: isTablet ? 4 : 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                                 ),
                                 child: Transform(
                                   transform: Matrix4.rotationY(math.pi),
                                   alignment: Alignment.center,
                                   child: CachedNetworkImage(
-                                    maxHeightDiskCache: 10,
-                                    height: 55,
-                                    width: 55,
+                      height: isTablet ? 40 : 32,
+                      width: isTablet ? 40 : 32,
                                     fit: BoxFit.contain,
                                     imageUrl:
                                         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
-                                    placeholder: (context, url) =>
-                                        const CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(
-                                      Icons.error,
-                                      color: Colors.red,
-                                    ),
-                                    fadeOutDuration: const Duration(seconds: 1),
-                                    fadeInDuration: const Duration(seconds: 3),
+                      placeholder: (context, url) => Container(
+                        height: isTablet ? 40 : 32,
+                        width: isTablet ? 40 : 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: isTablet ? 16 : 12,
+                            height: isTablet ? 16 : 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                const Color(0xffCAF1D1),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: isTablet ? 40 : 32,
+                        width: isTablet ? 40 : 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.person_add_rounded,
+                          color: const Color(0xffCAF1D1),
+                          size: isTablet ? 24 : 20,
+                        ),
+                      ),
                                   ),
                                 ),
                               ),
@@ -238,83 +353,151 @@ class DashboardBlocks extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.50,
-                    height: MediaQuery.of(context).size.height * 0.14,
+    );
+  }
+
+  // Enhanced Visitor-Out Card with modern styling
+  Widget _buildEnhancedVisitorOutCard(BuildContext context, bool isTablet) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: isTablet ? 130 : 110,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xffFFE5E0),
+            const Color(0xffFFD1CC),
+            const Color(0xffFFE5E0),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: isTablet ? 15 : 10,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: const Color(0xffFFE5E0).withOpacity(0.5),
+            blurRadius: isTablet ? 8 : 6,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
                     child: Material(
-                      borderRadius: BorderRadius.circular(20),
-                      color: const Color(0xffFFE5E0),
+        color: Colors.transparent,
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        splashColor: const Color.fromARGB(255, 237, 131, 109),
-                        autofocus: true,
+          borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
                         onTap: () {
+            HapticFeedback.lightImpact();
                           bloc is GatekeeperDashboardBloc
                               ? bloc.add(GDVisitorsOutButtonPressedEvent())
                               : bloc.add(ADVisitorsOutButtonPressedEvent());
                         },
                         child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal:
-                                MediaQuery.of(context).size.height * 0.02,
-                          ),
+            padding: EdgeInsets.all(isTablet ? 16 : 12),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
+                // Enhanced content
+                Expanded(
+                  child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                      // Enhanced count
                                   Text(
                                     outBook.toString(),
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .displayMedium,
+                        style: TextStyle(
+                          color: const Color(0xff212427),
+                          fontSize: isTablet ? 32 : 28,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
                                   ),
+                      SizedBox(height: isTablet ? 4 : 2),
+                      // Enhanced label
                                   Text(
                                     'Visitor-Out',
-                                    textAlign: TextAlign.center,
-                                    style:
-                                        Theme.of(context).textTheme.labelMedium,
+                        style: TextStyle(
+                          color: const Color(0xff57636C),
+                          fontSize: isTablet ? 16 : 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
                                   ),
                                 ],
                               ),
+                ),
+
+                // Enhanced icon container with better shadows
                               Container(
+                  padding: EdgeInsets.all(isTablet ? 12 : 10),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: isTablet ? 8 : 6,
+                        offset: const Offset(0, 3),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xffFFE5E0).withOpacity(0.3),
+                        blurRadius: isTablet ? 4 : 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                                 ),
                                 child: CachedNetworkImage(
-                                  maxHeightDiskCache: 10,
-                                  height: 55,
-                                  width: 55,
+                    height: isTablet ? 40 : 32,
+                    width: isTablet ? 40 : 32,
                                   fit: BoxFit.contain,
                                   imageUrl:
                                       'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
-                                  placeholder: (context, url) =>
-                                      const CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(
-                                    Icons.error,
-                                    color: Colors.red,
-                                  ),
-                                  fadeOutDuration: const Duration(seconds: 1),
-                                  fadeInDuration: const Duration(seconds: 3),
-                                ),
-                              ),
-                            ],
+                    placeholder: (context, url) => Container(
+                      height: isTablet ? 40 : 32,
+                      width: isTablet ? 40 : 32,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Center(
+                        child: SizedBox(
+                          width: isTablet ? 16 : 12,
+                          height: isTablet ? 16 : 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              const Color(0xffFFE5E0),
+                            ),
                           ),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: isTablet ? 40 : 32,
+                      width: isTablet ? 40 : 32,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.person_remove_rounded,
+                        color: const Color(0xffFFE5E0),
+                        size: isTablet ? 24 : 20,
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

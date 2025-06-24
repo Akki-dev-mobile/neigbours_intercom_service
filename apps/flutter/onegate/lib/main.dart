@@ -154,19 +154,23 @@ void main() async {
   // Initialize Hive first with all adapters
   await _initializeHive();
 
-  // Initialize NetworkLogManager for debug logging early
-  await NetworkLogManager().initialize();
-
-  // Initialize Crash Reporting, Analytics, and Comprehensive Monitoring
-  await CrashReporterService().initialize();
-  await AnalyticsService().initialize();
-  await ComprehensiveMonitoringService.instance.initialize();
-
-  // Initialize PostHog Error Tracking
-  await PostHogErrorTrackingService.instance.initialize();
-
-  // Send a test error to verify PostHog Error Tracking (only in debug mode)
+  // Initialize NetworkLogManager for debug logging early (DEBUG ONLY)
   if (kDebugMode) {
+    await NetworkLogManager().initialize();
+  }
+
+  // Initialize Crash Reporting, Analytics, and Comprehensive Monitoring (DEBUG ONLY)
+  if (kDebugMode) {
+    await CrashReporterService().initialize();
+    await AnalyticsService().initialize();
+    await ComprehensiveMonitoringService.instance.initialize();
+  }
+
+  // Initialize PostHog Error Tracking (DEBUG ONLY)
+  if (kDebugMode) {
+    await PostHogErrorTrackingService.instance.initialize();
+
+    // Send a test error to verify PostHog Error Tracking (only in debug mode)
     await _sendTestErrorToPostHog();
   }
 
@@ -229,18 +233,18 @@ void main() async {
     log('❌ Error initializing Session Management Coordinator: $e');
   }
 
-  // Initialize NetworkLogManager and add interceptor to Dio
-  final networkLogManager = NetworkLogManager();
-  await networkLogManager.initialize();
-
-  // Set the gate ID for network logs
-  await networkLogManager.updateGateId('MAIN_GATE');
-
-  // Add network logger interceptor to the Dio instance
-  final dio = GetIt.I<Dio>();
-  networkLogManager.addInterceptorToDio(dio);
-
+  // Initialize NetworkLogManager and add interceptor to Dio (DEBUG ONLY)
   if (kDebugMode) {
+    final networkLogManager = NetworkLogManager();
+    await networkLogManager.initialize();
+
+    // Set the gate ID for network logs
+    await networkLogManager.updateGateId('MAIN_GATE');
+
+    // Add network logger interceptor to the Dio instance
+    final dio = GetIt.I<Dio>();
+    networkLogManager.addInterceptorToDio(dio);
+
     print('NetworkLogManager initialized and interceptor added to Dio');
   }
 

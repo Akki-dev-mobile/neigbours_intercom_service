@@ -983,11 +983,7 @@ class RemoteDataSource {
 
       // Handle successful response
       if (response.statusCode == 200) {
-        myFluttertoast(
-          msg: "Visitor logs exported successfully!",
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
+        // Toast message will be shown from the UI layer instead
         log("Export Logs Response: ${response.data}");
       } else {
         _handleErrorResponse();
@@ -1525,13 +1521,13 @@ class RemoteDataSource {
         _handleErrorResponse();
 
         // log("❌ Failed to verify passcode. Status Code: ${response.statusCode}, Response: ${response.data}");
-        Fluttertoast.showToast(
-          msg: "Not a valid passcode!",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
+        // Fluttertoast.showToast(
+        //   msg: "Not a valid passcode!",
+        //   toastLength: Toast.LENGTH_SHORT,
+        //   gravity: ToastGravity.BOTTOM,
+        //   backgroundColor: Colors.red,
+        //   textColor: Colors.white,
+        // );
         throw Exception('Failed to verify passcode');
       }
     } catch (e, stackTrace) {
@@ -1540,13 +1536,13 @@ class RemoteDataSource {
       log("❌ Error verifying passcode: $e");
       log("StackTrace: $stackTrace");
 
-      Fluttertoast.showToast(
-        msg: "Not a valid passcode!",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+      // Fluttertoast.showToast(
+      //   msg: "Not a valid passcode!",
+      //   toastLength: Toast.LENGTH_SHORT,
+      //   gravity: ToastGravity.BOTTOM,
+      //   backgroundColor: Colors.red,
+      //   textColor: Colors.white,
+      // );
 
       throw Exception('Failed to verify passcode');
     }

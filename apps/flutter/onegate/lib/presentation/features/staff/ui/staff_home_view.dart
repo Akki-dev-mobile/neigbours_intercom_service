@@ -27,6 +27,15 @@ class _StaffScreenState extends State<StaffScreen> {
   void initState() {
     super.initState();
     _initializeSocietyId();
+    _searchController.addListener(() {
+      setState(() {}); // Rebuild UI when search text changes
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeSocietyId() async {
@@ -57,40 +66,45 @@ class _StaffScreenState extends State<StaffScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MyScrollView(
-      isScrollable: true,
-      pageTitle: "Staff",
-      pageBody: Column(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Staff"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Column(
         children: [
-          CustomForm.textField(
-            "Search Staff",
-            textController: _searchController,
-            suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () => _clearSearch(),
-                  )
-                : const SizedBox.shrink(),
-            onChanged: (query) => _filterStaffList(query),
-            titleColor: Colors.black,
-            hintColor: Colors.grey,
-            hintText: 'Enter Staff Name',
+          // Fixed search field at top
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 24 : 16,
+              vertical: isTablet ? 16 : 12,
+            ),
+            child: _buildEnhancedSearchField(context, isTablet),
           ),
-          const SizedBox(height: 10),
+          // Scrollable content
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isTablet ? 24 : 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
           FutureBuilder<List<StaffModel>>(
             future: _staffFuture,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 200.0),
-                    child: CircularProgressIndicator(
-                      color: Colors.red,
-                    ),
-                  ),
-                );
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return _buildEnhancedLoader(context, isTablet);
               } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                          return _buildErrorWidget(
+                              context, isTablet, snapshot.error.toString());
               } else if (snapshot.hasData) {
                 final freshData = snapshot.data!;
 
@@ -110,7 +124,12 @@ class _StaffScreenState extends State<StaffScreen> {
               }
             },
           ),
-          const SizedBox(height: 100),
+                    SizedBox(height: isTablet ? 120 : 100),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
       // floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -146,26 +165,420 @@ class _StaffScreenState extends State<StaffScreen> {
     );
   }
 
-  /// **🛑 No Staff Available Widget**
-  Widget _buildNoStaffWidget() {
-    return const Center(
+  // Enhanced section header
+  Widget _buildEnhancedSectionHeader({
+    required BuildContext context,
+    required bool isTablet,
+    required String title,
+    required IconData icon,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.red.shade300.withOpacity(0.08),
+            Colors.red.shade400.withOpacity(0.15),
+            Colors.red.shade300.withOpacity(0.08),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.red.shade300.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(isTablet ? 12 : 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.red.shade300,
+                  Colors.red.shade400,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: isTablet ? 28 : 24,
+            ),
+          ),
+          SizedBox(width: isTablet ? 16 : 14),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xff212427),
+                    fontSize: isTablet ? 22 : 20,
+                    letterSpacing: 0.3,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced search field
+  Widget _buildEnhancedSearchField(BuildContext context, bool isTablet) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (query) => _filterStaffList(query),
+        decoration: InputDecoration(
+          hintText: 'Search staff by name, category, or phone...',
+          hintStyle: TextStyle(
+            color: Colors.grey.shade500,
+            fontSize: isTablet ? 16 : 14,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: Colors.red.shade400,
+            size: isTablet ? 22 : 20,
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    color: Colors.grey.shade600,
+                  ),
+                  onPressed: () => _clearSearch(),
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 20 : 16,
+            vertical: isTablet ? 16 : 14,
+          ),
+        ),
+        style: TextStyle(
+          fontSize: isTablet ? 16 : 14,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xff212427),
+        ),
+      ),
+    );
+  }
+
+  // Enhanced loader widget
+  Widget _buildEnhancedLoader(BuildContext context, bool isTablet) {
+    return Center(
       child: Padding(
-        padding: EdgeInsets.only(top: 150.0),
+        padding: EdgeInsets.only(top: isTablet ? 120 : 100),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.group_off, // No Staff Icon
-              size: 100,
-              color: Colors.grey,
+            // Enhanced loading container
+            Container(
+              padding: EdgeInsets.all(isTablet ? 32 : 24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.red.shade50,
+                    Colors.red.shade100.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.red.shade200.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: isTablet ? 60 : 48,
+                    height: isTablet ? 60 : 48,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 4,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.red.shade400),
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 24 : 20),
+                  Text(
+                    'Loading Staff...',
+                    style: TextStyle(
+                      color: const Color(0xff212427),
+                      fontSize: isTablet ? 18 : 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 8 : 6),
+                  Text(
+                    'Please wait while we fetch the staff list',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: isTablet ? 14 : 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Enhanced error widget
+  Widget _buildErrorWidget(BuildContext context, bool isTablet, String error) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: isTablet ? 100 : 80),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Enhanced error icon container
+            Container(
+              padding: EdgeInsets.all(isTablet ? 40 : 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.red.shade50,
+                    Colors.red.shade100.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(
+                  color: Colors.red.shade200.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: isTablet ? 80 : 64,
+                color: Colors.red.shade400,
+              ),
+            ),
+            SizedBox(height: isTablet ? 32 : 24),
+
+            // Enhanced title
+            Text(
+              'Unable to Load Staff',
+              style: TextStyle(
+                color: const Color(0xff212427),
+                fontSize: isTablet ? 24 : 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+            SizedBox(height: isTablet ? 12 : 8),
+
+            // Enhanced subtitle
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
+              child: Text(
+                'There was an error loading the staff list. Please check your connection and try again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: isTablet ? 16 : 14,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            SizedBox(height: isTablet ? 40 : 32),
+
+            // Enhanced retry button
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xff212427),
+                    Color(0xff57636C),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  // Retry loading staff list
+                  _initializeSocietyId();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 32 : 24,
+                    vertical: isTablet ? 16 : 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  'Try Again',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// **🛑 Enhanced No Staff Available Widget**
+  Widget _buildNoStaffWidget() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: isTablet ? 100 : 80),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Enhanced icon container
+            Container(
+              padding: EdgeInsets.all(isTablet ? 40 : 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.red.shade50,
+                    Colors.red.shade100.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(
+                  color: Colors.red.shade200.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.groups_outlined,
+                size: isTablet ? 80 : 64,
+                color: Colors.red.shade300,
+              ),
+            ),
+            SizedBox(height: isTablet ? 32 : 24),
+
+            // Enhanced title
             Text(
               'No Staff Available',
               style: TextStyle(
-                color: Colors.grey,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                color: const Color(0xff212427),
+                fontSize: isTablet ? 24 : 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+            SizedBox(height: isTablet ? 12 : 8),
+
+            // Enhanced subtitle
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
+              child: Text(
+                'There are currently no staff members registered in the system.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: isTablet ? 16 : 14,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            SizedBox(height: isTablet ? 40 : 32),
+
+            // Enhanced action button (optional)
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xff212427),
+                    Color(0xff57636C),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  // Refresh staff list
+                  _initializeSocietyId();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 32 : 24,
+                    vertical: isTablet ? 16 : 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  'Refresh',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                ),
               ),
             ),
           ],

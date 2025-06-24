@@ -31,6 +31,9 @@ class VisitorDetailsScreen2 extends StatefulWidget {
 
 class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
   late ScrollController _scrollController;
+  double _imageHeight = 160.0; // Initial circular height
+  final double _maxImageHeight = 300.0; // Maximum expanded height
+  bool _isExpanded = false;
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -52,12 +55,29 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
   }
 
   void _handleScroll() {
-    // Empty method to handle scroll events
-    // We keep this to maintain the listener structure
+    final double offset = _scrollController.offset;
+    setState(() {
+      if (offset < 0) {
+        // Expanding
+        _imageHeight = _maxImageHeight;
+        _isExpanded = true;
+      } else if (offset > 50) {
+        // Collapsing
+        _imageHeight = 160.0;
+        _isExpanded = false;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
     return MyScrollView(
       pageBody: CustomScrollView(
         shrinkWrap: true,
@@ -71,212 +91,235 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        // Open full-screen view when tapped
                         _showFullImage(context, widget.visitorLog.visitorImage);
                       },
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.white,
+                      child: Padding(
+                        padding: EdgeInsets.all(isTablet ? 8 : 6),
                         child: CircleAvatar(
-                          radius: 100,
-                          backgroundImage: widget
-                                  .visitorLog.visitorImage.isNotEmpty
-                              ? NetworkImage(widget.visitorLog
-                                  .visitorImage) // Show visitor's image
-                              : const NetworkImage(
-                                  "https://cdn.pixabay.com/photo/2022/06/05/07/04/person-7243410_1280.png"), // Default image
+                          radius: isTablet ? 80 : 60,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: isTablet ? 100 : 80,
+                            backgroundImage: widget
+                                    .visitorLog.visitorImage.isNotEmpty
+                                ? NetworkImage(widget.visitorLog.visitorImage)
+                                : const NetworkImage(
+                                    "https://cdn.pixabay.com/photo/2022/06/05/07/04/person-7243410_1280.png"),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.visitorLog.visitorName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                        ),
-                      ),
-                      if (widget.visitorLog.visitorCount != null)
-                        _buildChip(
-                          "${widget.visitorLog.visitorCount} visitor${widget.visitorLog.visitorCount == 1 ? '' : 's'}",
-                          Icons.people,
-                          const Color(0xffFFB080),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // _buildChip(
-                  //   widget.visitorLog.purpose_sub_category_name ??
-                  //       widget.visitorLog.visitor_purpose_Category_name ??
-                  //       "",
-                  //   Icons.category_rounded,
-                  //   const Color(0xffFFEBE6),
-                  // ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xffFFEBE6),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Text(
-                      _capitalizeFirstLetter(
-                          widget.visitorLog.purposeSubCategoryName ??
-                              widget.visitorLog.purposeCategoryName ??
-                              ""),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSection(
-                    title: "Contact Information",
-                    children: [
-                      _buildInfoTile(
-                        icon: Icons.phone,
-                        title: "Phone Number",
-                        subtitle: widget.visitorLog.visitorMobile,
-                        iconColor: Colors.green,
-                        trailing: _buildCallButton(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSection(
-                    title: "Visit Details",
-                    children: [
-                      _buildInfoTile(
-                        icon: Icons.apartment,
-                        title: "Visiting Unit",
-                        subtitle: widget.visitorLog.unitDetails.building_unit ==
-                                "0001"
-                            ? "Society Office"
-                            : (widget.visitorLog.unitDetails.building_unit !=
-                                        null &&
-                                    widget.visitorLog.unitDetails
-                                            .building_unit !=
-                                        "")
-                                ? widget.visitorLog.unitDetails.building_unit
-                                    .toString()
-                                : "N/A",
-                        iconColor: const Color.fromARGB(255, 225, 181, 154),
-                      ),
-                      if (widget.visitorLog.inGate.isNotEmpty)
-                        _buildInfoTile(
-                          icon: Icons.meeting_room,
-                          title: "In-Gate",
-                          subtitle: widget.visitorLog.inGate,
-                          iconColor: const Color.fromARGB(255, 225, 181, 154),
-                        ),
-                      // if (widget.visitorLog.visitor_coming_from != null)
-                      if (widget.visitorLog.purposeSubCategoryName
-                                  ?.toLowerCase() ==
-                              "DELIVERY" ||
-                          widget.visitorLog.purposeSubCategoryName
-                                      ?.toLowerCase() ==
-                                  "CABS" &&
-                              widget.visitorLog.visitorComingFrom != null)
-                        _buildInfoTile(
-                          icon: Icons.location_on,
-                          title: "Coming From",
-                          subtitle:
-                              widget.visitorLog.visitorComingFrom.toString(),
-                          iconColor: const Color.fromARGB(255, 225, 181, 154),
-                        ),
-
-                      // if (widget.visitorLog. != null ||
-                      //     widget.visitorLog.carNumber != null)
-                      //   _buildInfoTile(
-                      //     icon: widget.visitorLog.visitor_card_number != null
-                      //         ? Icons.badge
-                      //         : Icons.directions_car,
-                      //     // Use car icon if carNumber is present
-                      //     title: widget.visitorLog.visitor_card_number != null
-                      //         ? "Card Number"
-                      //         : "Car Number",
-                      //     // Change title accordingly
-                      //     subtitle: widget.visitorLog.visitor_card_number
-                      //         ?.toString() ??
-                      //         widget.visitorLog.carNumber?.toString() ??
-                      //         'N/A',
-                      //     // Show available value
-                      //     iconColor:
-                      //     widget.visitorLog.visitor_card_number != null
-                      //         ? const Color.fromARGB(255, 225, 181, 154)
-                      //         : Color.fromARGB(255, 225, 181, 154),
-                      //   ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Show timeline or buttons based on visitor status and source
-                  if (!widget.isFromMissedApprovalScreen ||
-                      widget.visitorLog.allowStatus.toLowerCase() ==
-                          "allowed" ||
-                      widget.visitorLog.allowStatus.toLowerCase() ==
-                          "always_allowed" ||
-                      widget.visitorLog.allowStatus.toLowerCase() ==
-                          "allowed_by_gatekeeper")
-                    _buildSection(
-                      title: "Visitor Timeline",
-                      children:
-                          // Call the _buildTimeline method to generate the timeline items
-                          _buildTimeline(),
-                    )
-                  else if (widget.isFromMissedApprovalScreen &&
-                      widget.visitorLog.allowStatus.toLowerCase() == "pending")
-                    _buildSection(
-                      title: "Actions",
+              SizedBox(height: isTablet ? 24 : 16),
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 12),
+                color: Colors.transparent,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.check_circle, size: 16),
-                              label: const Text('Allow by Gatekeeper'),
-                              onPressed: () => _allowByGatekeeper(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side:
-                                        const BorderSide(color: Colors.black)),
-                              ),
-                            ),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.refresh, size: 16),
-                              label: const Text('Retry'),
-                              onPressed: () => _retryPermission(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                        Expanded(
+                          child: Text(
+                            widget.visitorLog.visitorName,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xff212427),
+                                  fontSize: isTablet ? 28 : 22,
                                 ),
-                              ),
-                            ),
-                          ],
+                          ),
+                        ),
+                        if (widget.visitorLog.visitorCount != null)
+                          _buildChip(
+                            "${widget.visitorLog.visitorCount} visitor${widget.visitorLog.visitorCount == 1 ? '' : 's'}",
+                            Icons.people,
+                            const Color(0xffFFB080),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: isTablet ? 12 : 8),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 12 : 8,
+                          vertical: isTablet ? 6 : 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffFFEBE6),
+                        borderRadius: BorderRadius.circular(isTablet ? 15 : 10),
+                      ),
+                      child: Text(
+                        _capitalizeFirstLetter(
+                            widget.visitorLog.purposeSubCategoryName ??
+                                widget.visitorLog.purposeCategoryName ??
+                                ""),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(fontSize: isTablet ? 16 : 13),
+                      ),
+                    ),
+                    SizedBox(height: isTablet ? 20 : 16),
+                    _buildBorderedSection(
+                      context,
+                      isTablet,
+                      title: "Contact Information",
+                      children: [
+                        _buildInfoTile(
+                          icon: Icons.phone,
+                          title: "Phone Number",
+                          subtitle: widget.visitorLog.visitorMobile,
+                          iconColor:
+                              const Color(0xff43A047), // Green (Scan icon)
+                          iconBg:
+                              const Color(0xffE8F5E9), // Light green background
+                          trailing: _buildCallButton(),
                         ),
                       ],
                     ),
-                ],
+                    SizedBox(height: isTablet ? 20 : 16),
+                    _buildBorderedSection(
+                      context,
+                      isTablet,
+                      title: "Visit Details",
+                      children: [
+                        _buildInfoTile(
+                          icon: Icons.apartment,
+                          title: "Visiting Unit",
+                          subtitle: widget
+                                      .visitorLog.unitDetails.building_unit ==
+                                  "0001"
+                              ? "Society Office"
+                              : (widget.visitorLog.unitDetails.building_unit !=
+                                          null &&
+                                      widget.visitorLog.unitDetails
+                                              .building_unit !=
+                                          "")
+                                  ? widget.visitorLog.unitDetails.building_unit
+                                      .toString()
+                                  : "N/A",
+                          iconColor: const Color(0xffF44336), // Red
+                          iconBg:
+                              const Color(0xffFFEBEE), // Light red background
+                        ),
+                        if (widget.visitorLog.inGate.isNotEmpty)
+                          _buildInfoTile(
+                            icon: Icons.meeting_room,
+                            title: "In-Gate",
+                            subtitle: widget.visitorLog.inGate,
+                            iconColor: const Color(0xffF44336), // Red
+                            iconBg:
+                                const Color(0xffFFEBEE), // Light red background
+                          ),
+                        if (widget.visitorLog.purposeSubCategoryName
+                                    ?.toLowerCase() ==
+                                "delivery" ||
+                            widget.visitorLog.purposeSubCategoryName
+                                        ?.toLowerCase() ==
+                                    "cabs" &&
+                                widget.visitorLog.visitorComingFrom != null)
+                          _buildInfoTile(
+                            icon: Icons.location_on,
+                            title: "Coming From",
+                            subtitle:
+                                widget.visitorLog.visitorComingFrom.toString(),
+                            iconColor: const Color(0xffF44336), // Red
+                            iconBg:
+                                const Color(0xffFFEBEE), // Light red background
+                          ),
+                        if (widget.visitorLog.visitorCardNumber != null &&
+                            widget.visitorLog.visitorCardNumber!.isNotEmpty)
+                          _buildInfoTile(
+                            icon: Icons.badge,
+                            title: "Card Number",
+                            subtitle:
+                                widget.visitorLog.visitorCardNumber ?? 'N/A',
+                            iconColor: Colors.white, // White icon for contrast
+                            iconBg:
+                                const Color(0xffF44336), // Solid red background
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: isTablet ? 20 : 16),
+                    if (!widget.isFromMissedApprovalScreen ||
+                        widget.visitorLog.allowStatus.toLowerCase() ==
+                            "allowed" ||
+                        widget.visitorLog.allowStatus.toLowerCase() ==
+                            "always_allowed" ||
+                        widget.visitorLog.allowStatus.toLowerCase() ==
+                            "allowed_by_gatekeeper")
+                      _buildBorderedSection(
+                        context,
+                        isTablet,
+                        title: "Visitor Timeline",
+                        children: _buildTimeline(),
+                      )
+                    else if (widget.isFromMissedApprovalScreen &&
+                        widget.visitorLog.allowStatus.toLowerCase() ==
+                            "pending")
+                      _buildBorderedSection(
+                        context,
+                        isTablet,
+                        title: "Actions",
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.check_circle,
+                                    size: 16, color: Colors.black),
+                                label: const Text('Allow by Gatekeeper'),
+                                onPressed: () => _allowByGatekeeper(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: const BorderSide(color: Colors.black),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: [
+                                      Colors.black,
+                                      Color(0xFF6E6E6E),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.refresh, size: 16),
+                                  label: const Text('Retry'),
+                                  onPressed: () => _retryPermission(),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    shadowColor: Colors.transparent,
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ]),
           ),
@@ -290,20 +333,55 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
 
     showDialog(
       context: context,
+      barrierColor: Colors.black.withOpacity(0.85),
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          child: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.cover,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Stack(
+            children: [
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.white.withOpacity(0.9),
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Color(0xffF44336)),
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'Close',
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -468,30 +546,33 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     );
   }
 
-  Widget _buildSection(
+  Widget _buildBorderedSection(BuildContext context, bool isTablet,
       {required String title, required List<Widget> children}) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...children,
-          ],
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 20 : 14),
+      padding: EdgeInsets.all(isTablet ? 18 : 12),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1.2,
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xff212427),
+                  fontSize: isTablet ? 20 : 16,
+                ),
+          ),
+          SizedBox(height: isTablet ? 12 : 8),
+          ...children,
+        ],
       ),
     );
   }
@@ -501,6 +582,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     required String title,
     required String subtitle,
     required Color iconColor,
+    required Color iconBg,
     Widget? trailing,
   }) {
     return Padding(
@@ -510,7 +592,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withAlpha(26), // 0.1 * 255 = ~26
+              color: iconBg,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: iconColor),
@@ -690,9 +772,63 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
-    myFluttertoast(
-      msg: message,
-      backgroundColor: isError ? Colors.red : Colors.green,
+    final icon =
+        isError ? Icons.error_outline_rounded : Icons.check_circle_rounded;
+    final bgColor = isError ? const Color(0xffF44336) : const Color(0xff43A047);
+    final title = isError ? 'Error' : 'Success';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.95),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: bgColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 3000),
+        elevation: 10,
+      ),
     );
   }
 }

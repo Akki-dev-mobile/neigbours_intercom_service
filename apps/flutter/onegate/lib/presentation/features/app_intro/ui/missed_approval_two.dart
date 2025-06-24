@@ -471,85 +471,255 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
               onPressed: () async {
                 showDialog(
                   context: context,
+                  barrierDismissible: false,
                   builder: (BuildContext context) {
-                    return AlertDialog(
-                      shape: RoundedRectangleBorder(
+                    final isTablet = MediaQuery.of(context).size.width > 600;
+
+                    return Dialog(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      child: Container(
+                        width: isTablet ? 400 : double.infinity,
+                        margin:
+                            EdgeInsets.symmetric(horizontal: isTablet ? 0 : 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              spreadRadius: 2,
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(isTablet ? 32 : 24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Enhanced header with gradient background
+                              Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 24 : 20,
+                                  vertical: isTablet ? 20 : 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      const Color(0xffF44336).withOpacity(0.08),
+                                      const Color(0xffff5722).withOpacity(0.03),
+                                    ],
+                                  ),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      title: const Row(
+                                child: Row(
                         children: [
-                          Icon(Icons.warning_amber_rounded, color: Colors.red),
-                          SizedBox(width: 8),
+                                    Container(
+                                      padding:
+                                          EdgeInsets.all(isTablet ? 16 : 14),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            const Color(0xffF44336),
+                                            const Color(0xffD32F2F),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xffF44336)
+                                                .withOpacity(0.3),
+                                            spreadRadius: 1,
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        Icons.logout_rounded,
+                                        color: Colors.white,
+                                        size: isTablet ? 32 : 28,
+                                      ),
+                                    ),
+                                    SizedBox(width: isTablet ? 20 : 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
                           Text(
                             'Confirm Logout',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                                              fontSize: isTablet ? 24 : 20,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xff212427),
+                                            ),
+                                          ),
+                                          SizedBox(height: isTablet ? 6 : 4),
+                                          Text(
+                                            'Security confirmation required',
+                                            style: TextStyle(
+                                              fontSize: isTablet ? 14 : 13,
+                                              color: const Color(0xff57636C),
+                                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: isTablet ? 28 : 24),
+                              // Enhanced content section
+                              Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.all(isTablet ? 20 : 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                                    Text(
                             'Are you sure you want to logout?',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'This action cannot be undone.',
+                                      style: TextStyle(
+                                        fontSize: isTablet ? 18 : 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xff212427),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    SizedBox(height: isTablet ? 12 : 10),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding:
+                                              EdgeInsets.all(isTablet ? 8 : 6),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.orange.withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            Icons.info_outline_rounded,
+                                            color: Colors.orange.shade600,
+                                            size: isTablet ? 18 : 16,
+                                          ),
+                                        ),
+                                        SizedBox(width: isTablet ? 12 : 10),
+                                        Expanded(
+                                          child: Text(
+                                            'You will need to sign in again to access your account.',
                             style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                                              fontSize: isTablet ? 15 : 14,
+                                              color: const Color(0xff57636C),
+                                              height: 1.3,
+                                            ),
                             ),
                           ),
                         ],
                       ),
-                      actions: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            elevation: 0,
-                            side: BorderSide(color: Colors.grey[300]!),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: isTablet ? 32 : 28),
+                              // Enhanced action buttons
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: isTablet ? 56 : 52,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                          width: 1,
                             ),
                           ),
+                                      child: TextButton(
                           onPressed: () {
-                            Navigator.of(context).pop(); // Close the dialog
-                          },
-                          child: const Text(
+                                          Navigator.of(context).pop();
+                                        },
+                                        style: TextButton.styleFrom(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                        ),
+                                        child: Text(
                             'Cancel',
                             style: TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w500,
+                                            color: const Color(0xff212427),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: isTablet ? 16 : 15,
                             ),
                           ),
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
+                                    ),
+                                  ),
+                                  SizedBox(width: isTablet ? 16 : 12),
+                                  Expanded(
+                                    child: Container(
+                                      height: isTablet ? 56 : 52,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.centerLeft,
+                                          end: Alignment.centerRight,
+                                          colors: [
+                                            const Color(0xffF44336),
+                                            const Color(0xffD32F2F),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xffF44336)
+                                                .withOpacity(0.4),
+                                            spreadRadius: 1,
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: TextButton(
                           onPressed: () async {
                             logout(context);
                           },
-                          child: const Text(
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                        ),
+                                        child: Text(
                             'Logout',
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: isTablet ? 16 : 15,
+                                          ),
+                                        ),
                             ),
                           ),
                         ),
                       ],
-                      actionsPadding: const EdgeInsets.all(16),
-                      actionsAlignment: MainAxisAlignment.end,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   },
                 );

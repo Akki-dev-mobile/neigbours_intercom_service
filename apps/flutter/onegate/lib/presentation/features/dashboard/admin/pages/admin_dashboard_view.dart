@@ -16,7 +16,6 @@ import 'package:page_transition/page_transition.dart';
 import 'package:common_widgets/loading_view.dart';
 
 import '../../commons/ui/dashboard_commons.dart';
-import '../../gatekeeper/pages/gatekeeper_dashboard_view.dart';
 
 class AdminDashboardView extends StatefulWidget {
   const AdminDashboardView({super.key});
@@ -30,13 +29,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
   final AdminDashboardBloc adminDashboardBloc = AdminDashboardBloc(
       AdminDashboardUseCase(
         AdminDashboardRepositoryImpl(
-          RemoteDataSource(
-
-          ),
+          RemoteDataSource(),
         ),
       ),
-      VisitorLogUsecase(VisitorLogRepositoryImpl( RemoteDataSource(
-     ))));
+      VisitorLogUsecase(VisitorLogRepositoryImpl(RemoteDataSource())));
 
   @override
   void initState() {
@@ -151,33 +147,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        DashboardShortcut(
-                          icon: Symbols.looks_one_rounded,
-                          title: 'onesociety',
-                          onTap: () {},
-                          isPremium: true,
-                          isVisible: true,
+                    // Placeholder for admin shortcuts - can be enhanced later
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      margin: EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
                         ),
-                        DashboardShortcut(
-                          icon: Symbols.package_rounded,
-                          title: 'Parcel',
-                          isPremium: false,
-                          isVisible: true,
-                          onTap: () {},
+                      child: Text(
+                        'Admin Dashboard Shortcuts (To be enhanced)',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
                         ),
-                        DashboardShortcut(
-                          isPremium: false,
-                          isVisible: false,
-                          icon: Symbols.badge_rounded,
-                          title: 'Staff',
-                          onTap: () {
-                            setState(() {});
-                          },
-                        ),
-                      ],
                     ),
                     DashboardBlocks(
                         inBook: (state as AdminDashboardSuccessState).inBook,

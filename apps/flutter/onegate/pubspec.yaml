@@ -138,6 +138,9 @@ dev_dependencies:
   coverage: ^1.6.0
   # Note: devtools_extensions is for creating custom DevTools extensions
   # Flutter DevTools is available by default with Flutter SDK
+  
+  # MCP Toolkit - only available in debug mode for AI agent integration
+  mcp_toolkit: ^0.1.2
 
 dependency_overrides:
   speech_to_text: ^7.0.0
