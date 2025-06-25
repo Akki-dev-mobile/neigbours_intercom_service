@@ -316,6 +316,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   Future<void> _handleSubmit() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
     log("_remoteDataSource.createVisitor");
     widget.searchedVisitor?.name = _guestNameController?.text;
     widget.searchedVisitor?.mobile = widget.searchedVisitor?.mobile != ""
@@ -334,12 +336,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     ));
     // }
 
-    if (_isSubmitting) return;
-
     if (!_validateForm()) return;
 
     if (!mounted) return;
-    setState(() => _isSubmitting = true);
 
     if (widget.selectedValue?.categoryName == 'DELIVERY' &&
         selectedCompanyIndex == -1) {
@@ -707,44 +706,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             width: MediaQuery.of(context).size.width * 0.85,
             height: 60,
-            child: ElevatedButton(
-              style: ButtonStyle(
-                backgroundColor:
-                    WidgetStateProperty.all<Color>(Colors.transparent),
-                elevation: WidgetStateProperty.all<double>(0),
-                shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-              ),
-              onPressed: _handleSubmit,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xff212427), Color(0xff57636C)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Center(
-                  child: _isSubmitting
-                      ? const CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        )
-                      : const Text(
-                          'Next',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            wordSpacing: 1.2,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                ),
-              ),
+            child: CustomLargeBtn(
+              text: 'Next',
+              onPressed: _isSubmitting ? null : _handleSubmit,
+              isLoading: _isSubmitting,
+              useBlackToGreyGradient: true,
             ),
           ),
         );

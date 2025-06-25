@@ -1014,6 +1014,7 @@ class _AddStaffState extends State<AddStaff> {
                                       : null,
                                 ),
                                 onChanged: filterMembers,
+                                cursorColor: Colors.black,
                               ),
                             ),
                             const SizedBox(height: 8),
