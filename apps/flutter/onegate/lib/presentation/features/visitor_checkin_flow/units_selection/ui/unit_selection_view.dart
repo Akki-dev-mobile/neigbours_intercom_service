@@ -7,6 +7,7 @@ import 'package:common_widgets/loading_view.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
@@ -28,6 +29,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import "package:intl/intl.dart";
 import '../../../self_entry/self_home_view.dart';
 import '../../../self_entry/ui/self_profile_view.dart';
+import '../widgets/selectmember_bottomsheet.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final int? from;
@@ -551,227 +553,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Enhanced Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: const Color(0xffF44336).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.people,
-                            color: Color(0xffF44336),
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Selected Members',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 22,
-                                  ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon:
-                          const Icon(Icons.close, size: 28, color: Colors.red),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Divider(
-                  thickness: 1,
-                  height: 1,
-                  color: Colors.black.withOpacity(0.1)),
-              // Enhanced Members List
-              Expanded(
-                child: ValueListenableBuilder<Set<String>>(
-                  valueListenable: _selectedMembersNotifier,
-                  builder: (context, selectedMembers, _) {
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(24),
-                      itemCount: selectedMembers.length,
-                      itemBuilder: (context, index) {
-                        final member = selectedMembers.elementAt(index);
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            leading: CircleAvatar(
-                              radius: 24,
-                              backgroundColor:
-                                  const Color(0xffF44336).withOpacity(0.1),
-                              child: const Icon(
-                                Icons.person,
-                                color: Color(0xffF44336),
-                                size: 28,
-                              ),
-                            ),
-                            title: Text(
-                              member,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.red,
-                              ),
-                              onPressed: () {
-                                final updatedMembers = Set<String>.from(
-                                    _selectedMembersNotifier.value);
-                                updatedMembers.remove(member);
-                                _selectedMembersNotifier.value = updatedMembers;
-                                if (updatedMembers.isEmpty) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              // Enhanced Bottom Buttons
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: Builder(
-                  builder: (context) {
-                    final bool isTablet =
-                        MediaQuery.of(context).size.width > 768;
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                  color: Color(0xffF44336), width: 1),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _selectedMembersNotifier.value = {};
-                              });
-                              Navigator.pop(context);
-                            },
-                            child: const Text(
-                              'Clear All',
-                              style: TextStyle(
-                                color: Color(0xffF44336),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF212427), Color(0xFF57636C)],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                              borderRadius: BorderRadius.circular(32),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black87.withOpacity(0.25),
-                                  blurRadius: 32,
-                                  offset: Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: isTablet ? 32 : 24,
-                                    vertical: isTablet ? 16 : 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(32),
-                                ),
-                                elevation: 32,
-                                shadowColor: Colors.transparent,
-                              ),
-                              onPressed: selectedMembers.isEmpty ||
-                                      _isConfirming
-                                  ? null
-                                  : () =>
-                                      _handleSelectionSubmit(selectedMembers),
-                              child: const Text(
-                                'Confirm',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+        return SelectedMembersBottomSheet(
+          selectedMembers: selectedMembers,
+          selectedMembersNotifier: _selectedMembersNotifier,
+          onClearAll: () {
+            setState(() {
+              _selectedMembersNotifier.value = {};
+            });
+          },
+          onConfirm: () => _handleSelectionSubmit(selectedMembers),
+          isLoading: _isConfirming,
         );
       },
     );
@@ -3043,31 +2834,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   ),
                                 ],
                               ),
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: isTablet ? 32 : 24,
-                                      vertical: isTablet ? 16 : 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(32),
-                                  ),
-                                  elevation: 32,
-                                  shadowColor: Colors.transparent,
-                                ),
+                              child: CustomLargeBtn(
+                                text: 'Confirm',
                                 onPressed: selectedMembers.isEmpty ||
                                         _isConfirming
                                     ? null
                                     : () =>
                                         _handleSelectionSubmit(selectedMembers),
-                                child: const Text(
-                                  'Confirm',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
+                                isLoading: _isConfirming,
+                                useBlackToGreyGradient: true,
                               ),
                             ),
                           ),

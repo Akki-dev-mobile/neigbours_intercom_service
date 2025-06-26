@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 
 class SelectedMembersBottomSheet extends StatelessWidget {
   final Set<String> selectedMembers;
   final ValueNotifier<Set<String>> selectedMembersNotifier;
   final VoidCallback onClearAll;
   final VoidCallback onConfirm;
+  final bool isLoading;
 
   const SelectedMembersBottomSheet({
     Key? key,
@@ -12,6 +14,7 @@ class SelectedMembersBottomSheet extends StatelessWidget {
     required this.selectedMembersNotifier,
     required this.onClearAll,
     required this.onConfirm,
+    this.isLoading = false,
   }) : super(key: key);
 
   @override
@@ -146,24 +149,35 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xff212427), Color(0xff57636C)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                       ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onConfirm();
-                    },
-                    child: const Text(
-                      'Confirm',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: CustomLargeBtn(
+                      text: 'Confirm',
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onConfirm();
+                      },
+                      isLoading: isLoading,
+                      useBlackToGreyGradient: true,
                     ),
                   ),
                 ),

@@ -1032,8 +1032,26 @@ class RemoteDataSource {
   /// 4. Falls back to cached values if the gates API call fails
   ///
   /// Returns a Map with 'gateName' and 'gateType' keys
-  Future<Map<String, String>> fetchAndUpdateGateInfo(String context) async {
-    debugPrint("🚪 Fetching updated gate information for $context");
+
+  // In-memory cache for gate information
+  Future<Map<String, String>>? _gateInfoFuture;
+  DateTime? _cacheTimestamp;
+
+  Future<Map<String, String>> fetchAndUpdateGateInfo(String context) {
+    if (_gateInfoFuture != null &&
+        _cacheTimestamp != null &&
+        DateTime.now().difference(_cacheTimestamp!).inMinutes < 1) {
+      debugPrint("🚪 Using cached gate information future for $context");
+      return _gateInfoFuture!;
+    }
+
+    debugPrint("🚪 Fetching new gate information for $context");
+    _gateInfoFuture = _fetchAndUpdateGateInfoInternal(context);
+    return _gateInfoFuture!;
+  }
+
+  Future<Map<String, String>> _fetchAndUpdateGateInfoInternal(
+      String context) async {
     String selectedGateName = 'Default Gate';
     String selectedGateType = 'both';
 
@@ -1289,6 +1307,10 @@ class RemoteDataSource {
     debugPrint("🎯 Returning gateName: '$selectedGateName'");
     debugPrint("🎯 Returning gateType: '$selectedGateType'");
     debugPrint("🎯 Expected in visitor logs: gate names like 'Gate 777'");
+
+    // If API succeeds, update cache before returning
+    _cacheTimestamp = DateTime.now();
+    debugPrint("✅ Gate information cached for $context");
 
     return {
       'gateName': selectedGateName,

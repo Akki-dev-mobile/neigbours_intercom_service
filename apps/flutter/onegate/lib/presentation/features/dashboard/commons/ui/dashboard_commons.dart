@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DashboardBlocks extends StatelessWidget {
   final int? inBook;
@@ -32,7 +33,7 @@ class DashboardBlocks extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
+        children: [
           // Enhanced In-Out Card
           _buildEnhancedInOutCard(context, isTablet),
 
@@ -41,7 +42,7 @@ class DashboardBlocks extends StatelessWidget {
           // Enhanced Visitor Cards Column
           Expanded(
             child: Column(
-            children: [
+              children: [
                 _buildEnhancedVisitorInCard(context, isTablet),
                 SizedBox(height: isTablet ? 16 : 12),
                 _buildEnhancedVisitorOutCard(context, isTablet),
@@ -86,28 +87,28 @@ class DashboardBlocks extends StatelessWidget {
           ),
         ],
       ),
-                child: Material(
+      child: Material(
         color: Colors.transparent,
-                  child: InkWell(
+        child: InkWell(
           borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
-                    onTap: () {
+          onTap: () {
             HapticFeedback.lightImpact();
-                      if (bloc is GatekeeperDashboardBloc) {
-                        bloc.add(GDInAndOutButtonPressedEvent());
-                      } else if (bloc is AdminDashboardBloc) {
-                        bloc.add(ADInAndOutButtonPressedEvent());
-                      }
-                    },
+            if (bloc is GatekeeperDashboardBloc) {
+              bloc.add(GDInAndOutButtonPressedEvent());
+            } else if (bloc is AdminDashboardBloc) {
+              bloc.add(ADInAndOutButtonPressedEvent());
+            }
+          },
           child: Padding(
             padding: EdgeInsets.all(isTablet ? 20 : 16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
                 // Enhanced icon container with better shadows
-                        Container(
+                Container(
                   padding: EdgeInsets.all(isTablet ? 16 : 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
                     boxShadow: [
                       BoxShadow(
@@ -121,13 +122,13 @@ class DashboardBlocks extends StatelessWidget {
                         offset: const Offset(0, 2),
                       ),
                     ],
-                          ),
-                          child: CachedNetworkImage(
+                  ),
+                  child: CachedNetworkImage(
                     height: isTablet ? 64 : 48,
                     width: isTablet ? 64 : 48,
-                            fit: BoxFit.contain,
-                            imageUrl:
-                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
+                    fit: BoxFit.contain,
+                    imageUrl:
+                        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
                     placeholder: (context, url) => Container(
                       height: isTablet ? 64 : 48,
                       width: isTablet ? 64 : 48,
@@ -160,19 +161,19 @@ class DashboardBlocks extends StatelessWidget {
                         color: const Color(0xffF2D8A5),
                         size: isTablet ? 32 : 24,
                       ),
-                          ),
-                        ),
+                    ),
+                  ),
                 ),
 
                 // Enhanced title
-                        Text(
-                          'In-Out',
+                Text(
+                  'In-Out',
                   style: TextStyle(
                     color: const Color(0xff212427),
                     fontSize: isTablet ? 20 : 18,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
-                        ),
+                  ),
                 ),
 
                 // Enhanced count
@@ -187,7 +188,7 @@ class DashboardBlocks extends StatelessWidget {
                     border: Border.all(
                       color: Colors.white.withOpacity(0.5),
                       width: 1,
-                        ),
+                    ),
                   ),
                   child: Text(
                     "${(outBook ?? 0) + (inBook ?? 0)}",
@@ -239,55 +240,55 @@ class DashboardBlocks extends StatelessWidget {
           ),
         ],
       ),
-                    child: Material(
+      child: Material(
         color: Colors.transparent,
-                      child: InkWell(
+        child: InkWell(
           borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-                        onTap: () {
+          onTap: () {
             HapticFeedback.lightImpact();
-                          bloc is GatekeeperDashboardBloc
-                              ? bloc.add(GDVisitorsInButtonPressedEvent())
-                              : bloc.add(ADVisitorsInButtonPressedEvent());
-                        },
-                        child: Padding(
+            bloc is GatekeeperDashboardBloc
+                ? bloc.add(GDVisitorsInButtonPressedEvent())
+                : bloc.add(ADVisitorsInButtonPressedEvent());
+          },
+          child: Padding(
             padding: EdgeInsets.all(isTablet ? 16 : 12),
-                          child: Row(
-                            children: [
+            child: Row(
+              children: [
                 // Enhanced content
                 Expanded(
                   child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                    children: [
                       // Enhanced count
-                                  Text(
-                                    inBook.toString(),
+                      Text(
+                        inBook.toString(),
                         style: TextStyle(
                           color: const Color(0xff212427),
                           fontSize: isTablet ? 32 : 28,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,
                         ),
-                                  ),
+                      ),
                       SizedBox(height: isTablet ? 4 : 2),
                       // Enhanced label
-                                  Text(
-                                    'Visitor-In',
+                      Text(
+                        'Visitor-In',
                         style: TextStyle(
                           color: const Color(0xff57636C),
                           fontSize: isTablet ? 16 : 14,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.2,
                         ),
-                                  ),
-                                ],
-                              ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 // Enhanced icon container with better shadows
-                              Container(
+                Container(
                   padding: EdgeInsets.all(isTablet ? 12 : 10),
-                                decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
                     boxShadow: [
@@ -302,16 +303,16 @@ class DashboardBlocks extends StatelessWidget {
                         offset: const Offset(0, 1),
                       ),
                     ],
-                                ),
-                                child: Transform(
-                                  transform: Matrix4.rotationY(math.pi),
-                                  alignment: Alignment.center,
-                                  child: CachedNetworkImage(
+                  ),
+                  child: Transform(
+                    transform: Matrix4.rotationY(math.pi),
+                    alignment: Alignment.center,
+                    child: CachedNetworkImage(
                       height: isTablet ? 40 : 32,
                       width: isTablet ? 40 : 32,
-                                    fit: BoxFit.contain,
-                                    imageUrl:
-                                        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
+                      fit: BoxFit.contain,
+                      imageUrl:
+                          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
                       placeholder: (context, url) => Container(
                         height: isTablet ? 40 : 32,
                         width: isTablet ? 40 : 32,
@@ -345,14 +346,14 @@ class DashboardBlocks extends StatelessWidget {
                           size: isTablet ? 24 : 20,
                         ),
                       ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -388,55 +389,55 @@ class DashboardBlocks extends StatelessWidget {
           ),
         ],
       ),
-                    child: Material(
+      child: Material(
         color: Colors.transparent,
-                      child: InkWell(
+        child: InkWell(
           borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-                        onTap: () {
+          onTap: () {
             HapticFeedback.lightImpact();
-                          bloc is GatekeeperDashboardBloc
-                              ? bloc.add(GDVisitorsOutButtonPressedEvent())
-                              : bloc.add(ADVisitorsOutButtonPressedEvent());
-                        },
-                        child: Padding(
+            bloc is GatekeeperDashboardBloc
+                ? bloc.add(GDVisitorsOutButtonPressedEvent())
+                : bloc.add(ADVisitorsOutButtonPressedEvent());
+          },
+          child: Padding(
             padding: EdgeInsets.all(isTablet ? 16 : 12),
-                          child: Row(
-                            children: [
+            child: Row(
+              children: [
                 // Enhanced content
                 Expanded(
                   child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                    children: [
                       // Enhanced count
-                                  Text(
-                                    outBook.toString(),
+                      Text(
+                        outBook.toString(),
                         style: TextStyle(
                           color: const Color(0xff212427),
                           fontSize: isTablet ? 32 : 28,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,
                         ),
-                                  ),
+                      ),
                       SizedBox(height: isTablet ? 4 : 2),
                       // Enhanced label
-                                  Text(
-                                    'Visitor-Out',
+                      Text(
+                        'Visitor-Out',
                         style: TextStyle(
                           color: const Color(0xff57636C),
                           fontSize: isTablet ? 16 : 14,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.2,
                         ),
-                                  ),
-                                ],
-                              ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 // Enhanced icon container with better shadows
-                              Container(
+                Container(
                   padding: EdgeInsets.all(isTablet ? 12 : 10),
-                                decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
                     boxShadow: [
@@ -451,13 +452,13 @@ class DashboardBlocks extends StatelessWidget {
                         offset: const Offset(0, 1),
                       ),
                     ],
-                                ),
-                                child: CachedNetworkImage(
+                  ),
+                  child: CachedNetworkImage(
                     height: isTablet ? 40 : 32,
                     width: isTablet ? 40 : 32,
-                                  fit: BoxFit.contain,
-                                  imageUrl:
-                                      'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
+                    fit: BoxFit.contain,
+                    imageUrl:
+                        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
                     placeholder: (context, url) => Container(
                       height: isTablet ? 40 : 32,
                       width: isTablet ? 40 : 32,
@@ -489,13 +490,70 @@ class DashboardBlocks extends StatelessWidget {
                         Icons.person_remove_rounded,
                         color: const Color(0xffFFE5E0),
                         size: isTablet ? 24 : 20,
-                        ),
                       ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class DashboardBlocksSkeleton extends StatelessWidget {
+  const DashboardBlocksSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        margin: EdgeInsets.symmetric(
+          horizontal: isTablet ? 8 : 4,
+          vertical: isTablet ? 16 : 12,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Skeleton for In-Out Card
+            Container(
+              width: isTablet ? 160 : 120,
+              height: isTablet ? 280 : 240,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
+              ),
+            ),
+            SizedBox(width: isTablet ? 16 : 12),
+            // Skeleton for Visitor Cards
+            Expanded(
+              child: Column(
+                children: [
+                  Container(
+                    height: isTablet ? 132 : 114,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 16 : 12),
+                  Container(
+                    height: isTablet ? 132 : 114,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
                     ),
                   ),
                 ],
               ),
-          ),
+            ),
+          ],
         ),
       ),
     );

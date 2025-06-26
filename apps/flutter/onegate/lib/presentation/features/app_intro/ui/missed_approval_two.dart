@@ -5,10 +5,12 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:common_widgets/loading_view.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
@@ -314,51 +316,6 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
   Timer? _timeUpdateTimer;
   bool _isRefreshing = false;
 
-  Future<void> logout(BuildContext context) async {
-    try {
-      log("Attempting enhanced logout...");
-      // Logout using enhanced AuthService with Keycloak end session
-      final authService = GetIt.instance<AuthService>();
-      final logoutResult = await authService.logout(clearAllPreferences: true);
-
-      if (logoutResult.success) {
-        log("✅ Enhanced logout completed successfully");
-        if (!logoutResult.keycloakEndSessionResult) {
-          log("⚠️ Keycloak end session failed, but local session cleared");
-        }
-      } else {
-        log("⚠️ Logout completed with issues: ${logoutResult.getIssues()}");
-      }
-
-      if (mounted && context.mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MyAppLogin()),
-          (route) => false,
-        );
-      }
-    } catch (e, st) {
-      log("Logout failed: $e\n$st");
-
-      // Fallback to quick logout if enhanced logout fails
-      try {
-        final authService = GetIt.instance<AuthService>();
-        await authService.quickLogout();
-        log("✅ Quick logout completed as fallback");
-
-        if (mounted && context.mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const MyAppLogin()),
-            (route) => false,
-          );
-        }
-      } catch (fallbackError) {
-        log("❌ Fallback logout also failed: $fallbackError");
-      }
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -444,24 +401,61 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isTablet = MediaQuery.of(context).size.width > 600;
+
     return PopScope(
       canPop: false,
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          title: Row(
             children: [
-              Text(
-                widget.towerName,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xffF44336), Color(0xffD32F2F)],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xffF44336).withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.phone_missed_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              // Text(
-              //   widget.towerName,
-              //   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              //         color: Colors.black,
-              //       ),
-              // ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Missed Approvals',
+                    style: TextStyle(
+                      color: const Color(0xff212427),
+                      fontSize: isTablet ? 22 : 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  Text(
+                    widget.towerName,
+                    style: TextStyle(
+                      color: const Color(0xff212427),
+                      fontSize: isTablet ? 14 : 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
           actions: [
@@ -473,253 +467,103 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                   context: context,
                   barrierDismissible: false,
                   builder: (BuildContext context) {
-                    final isTablet = MediaQuery.of(context).size.width > 600;
-
-                    return Dialog(
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      child: Container(
-                        width: isTablet ? 400 : double.infinity,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: isTablet ? 0 : 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              spreadRadius: 2,
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      title: const Text(
+                        'Confirm Logout',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      content: const Text(
+                        'Are you sure you want to logout?',
+                      ),
+                      actions: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                style: TextButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: BorderSide(
+                                      color: Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: const Color(0xff212427),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: isTablet ? 16 : 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: isTablet ? 16 : 12),
+                            Expanded(
+                              child: Container(
+                                height: isTablet ? 56 : 52,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: [
+                                      Color(0xffF44336),
+                                      Color(0xffD32F2F),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xffF44336)
+                                          .withOpacity(0.4),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: TextButton(
+                                  onPressed: () async {
+                                    final authService = GetIt.I<AuthService>();
+                                    await authService.logout();
+                                    if (mounted) {
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const MyAppLogin(),
+                                        ),
+                                        (route) => false,
+                                      );
+                                    }
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Logout',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: isTablet ? 16 : 15,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        child: Padding(
-                          padding: EdgeInsets.all(isTablet ? 32 : 24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Enhanced header with gradient background
-                              Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 24 : 20,
-                                  vertical: isTablet ? 20 : 16,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      const Color(0xffF44336).withOpacity(0.08),
-                                      const Color(0xffff5722).withOpacity(0.03),
-                                    ],
-                                  ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                                child: Row(
-                        children: [
-                                    Container(
-                                      padding:
-                                          EdgeInsets.all(isTablet ? 16 : 14),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            const Color(0xffF44336),
-                                            const Color(0xffD32F2F),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xffF44336)
-                                                .withOpacity(0.3),
-                                            spreadRadius: 1,
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        Icons.logout_rounded,
-                                        color: Colors.white,
-                                        size: isTablet ? 32 : 28,
-                                      ),
-                                    ),
-                                    SizedBox(width: isTablet ? 20 : 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                          Text(
-                            'Confirm Logout',
-                            style: TextStyle(
-                                              fontSize: isTablet ? 24 : 20,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xff212427),
-                                            ),
-                                          ),
-                                          SizedBox(height: isTablet ? 6 : 4),
-                                          Text(
-                                            'Security confirmation required',
-                                            style: TextStyle(
-                                              fontSize: isTablet ? 14 : 13,
-                                              color: const Color(0xff57636C),
-                                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: isTablet ? 28 : 24),
-                              // Enhanced content section
-                              Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.all(isTablet ? 20 : 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                                    Text(
-                            'Are you sure you want to logout?',
-                                      style: TextStyle(
-                                        fontSize: isTablet ? 18 : 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xff212427),
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                    SizedBox(height: isTablet ? 12 : 10),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding:
-                                              EdgeInsets.all(isTablet ? 8 : 6),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Colors.orange.withOpacity(0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Icon(
-                                            Icons.info_outline_rounded,
-                                            color: Colors.orange.shade600,
-                                            size: isTablet ? 18 : 16,
-                                          ),
-                                        ),
-                                        SizedBox(width: isTablet ? 12 : 10),
-                                        Expanded(
-                                          child: Text(
-                                            'You will need to sign in again to access your account.',
-                            style: TextStyle(
-                                              fontSize: isTablet ? 15 : 14,
-                                              color: const Color(0xff57636C),
-                                              height: 1.3,
-                                            ),
-                            ),
-                          ),
-                        ],
-                      ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: isTablet ? 32 : 28),
-                              // Enhanced action buttons
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: isTablet ? 56 : 52,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade100,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: Colors.grey.shade300,
-                                          width: 1,
-                            ),
-                          ),
-                                      child: TextButton(
-                          onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                        style: TextButton.styleFrom(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                          ),
-                                        ),
-                                        child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                                            color: const Color(0xff212427),
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: isTablet ? 16 : 15,
-                            ),
-                          ),
-                        ),
-                                    ),
-                                  ),
-                                  SizedBox(width: isTablet ? 16 : 12),
-                                  Expanded(
-                                    child: Container(
-                                      height: isTablet ? 56 : 52,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.centerLeft,
-                                          end: Alignment.centerRight,
-                                          colors: [
-                                            const Color(0xffF44336),
-                                            const Color(0xffD32F2F),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xffF44336)
-                                                .withOpacity(0.4),
-                                            spreadRadius: 1,
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: TextButton(
-                          onPressed: () async {
-                            logout(context);
-                          },
-                                        style: TextButton.styleFrom(
-                                          backgroundColor: Colors.transparent,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                          ),
-                                        ),
-                                        child: Text(
-                            'Logout',
-                            style: TextStyle(
-                              color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: isTablet ? 16 : 15,
-                                          ),
-                                        ),
-                            ),
-                          ),
-                        ),
                       ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     );
                   },
                 );
@@ -747,10 +591,9 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting &&
                         !_isRefreshing) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.black,
-                        ),
+                      return const LoaderView(
+                        title: "Loading Missed Approvals",
+                        subtitle: "Please wait while we fetch the data",
                       );
                     }
 
@@ -786,7 +629,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                             ),
                             const SizedBox(height: 16),
                             const Text(
-                              'No Visitors Found',
+                              'No missed approvals',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -808,7 +651,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                     return ApprovalsList(
                       approvals: snapshot.data!,
                       searchQuery: _searchQuery,
-                      towerName: widget.towerName, // ✅ Pass the tower name
+                      towerName: widget.towerName,
                     );
                   },
                 ),
@@ -821,36 +664,37 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
   }
 }
 
-// Modified ApprovalsList with Search
+// Modified ApprovalsList with Search and Tower Filter
 class ApprovalsList extends StatelessWidget {
   final List<VisitorInfo> approvals;
   final String searchQuery;
-  final String towerName; // ✅ Add this
+  final String towerName;
 
   const ApprovalsList({
     Key? key,
     required this.approvals,
     required this.searchQuery,
-    required this.towerName, // ✅ Add this
+    required this.towerName,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Apply search filter
-// Apply tower + search filter
-    final filteredApprovals = approvals.where((visitor) {
+    // Apply search and tower filter
+    List<VisitorInfo> filteredApprovals = approvals.where((visitor) {
       final query = searchQuery.toLowerCase();
       final matchesSearch = visitor.visitorName.toLowerCase().contains(query) ||
           visitor.memberInfo.name.toLowerCase().contains(query) ||
           visitor.inGate.toLowerCase().contains(query);
 
-// ✅ Match tower with building_unit instead of in_gate
-      final matchesTower = visitor.unitDetails.building_unit!
-          .toLowerCase()
-          .contains(towerName.toLowerCase());
+      // Match tower with building_unit
+      final matchesTower = visitor.unitDetails.building_unit != null &&
+          visitor.unitDetails.building_unit!
+              .toLowerCase()
+              .startsWith(towerName.toLowerCase());
 
       return matchesSearch && matchesTower;
     }).toList();
+
     // Group approvals by date
     final Map<String, List<VisitorInfo>> groupedByDate = {};
 
@@ -868,26 +712,26 @@ class ApprovalsList extends StatelessWidget {
     final groupedList = groupedByDate.entries.toList()
       ..sort((a, b) => b.key.compareTo(a.key));
 
-    if (groupedList.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.person_off_outlined,
-            size: 48,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withAlpha(153), // ~0.6 opacity
-          ),
-          Text(
-            searchQuery.isNotEmpty
-                ? "No results found for '$searchQuery'"
-                : "No approvals found",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ],
+    if (filteredApprovals.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_off_outlined,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              searchQuery.isNotEmpty
+                  ? "No results found for '$searchQuery'"
+                  : "No approvals found for ${towerName}",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       );
     }
 
@@ -901,25 +745,31 @@ class ApprovalsList extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Date Chip as Header
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 0.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Center(
-                child: Chip(
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    side: BorderSide.none, // No border
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF44336).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  label: Text(
+                  child: Text(
                     DateFormat('dd MMM, yyyy').format(
                       DateTime.parse(dateKey),
                     ),
-                    style: Theme.of(context).textTheme.labelSmall,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: const Color(0xffF44336),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),
+
+            // Approvals List for this Date
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -935,23 +785,6 @@ class ApprovalsList extends StatelessWidget {
         );
       },
     );
-  }
-
-  Future<void> logout(BuildContext context) async {
-    log("User logged out. Navigating to login screen.");
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clear all stored preferences
-
-    // Store context in local variable to avoid BuildContext across async gaps
-    final currentContext = context;
-
-    // Check if the widget is still mounted before navigating
-    if (currentContext.mounted) {
-      await Navigator.pushReplacement(
-        currentContext,
-        MaterialPageRoute(builder: (context) => const MyAppLogin()),
-      );
-    }
   }
 }
 

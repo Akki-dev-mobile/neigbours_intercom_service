@@ -1,7 +1,7 @@
 part of 'admin_dashboard_bloc.dart';
 
 @immutable
-class AdminDashboardState {}
+abstract class AdminDashboardState {}
 
 abstract class AdminDashboardActionState extends AdminDashboardState {}
 
@@ -9,7 +9,13 @@ class AdminDashboardInitial extends AdminDashboardState {}
 
 class NavigateToSettingsState extends AdminDashboardActionState {}
 
-class AdminDashboardLoadingState extends AdminDashboardActionState {}
+class AdminDashboardLoadingState extends AdminDashboardState {}
+
+class AdminDashboardErrorState extends AdminDashboardState {
+  final String error;
+
+  AdminDashboardErrorState({required this.error});
+}
 
 class AdminDashboardSuccessState extends AdminDashboardState {
   final int? inBook;
