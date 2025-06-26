@@ -231,6 +231,101 @@ class OneGateApiService {
     }
   }
 
+  /// Get visitor logs with counts using V2 API
+  /// Returns visitor logs with pagination and count information
+  Future<Map<String, dynamic>> getVisitorLogsV2({
+    int currentPage = 1,
+    int perPage = 20,
+    String? status,
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? inGate,
+  }) async {
+    await _ensureInitialized();
+
+    try {
+      final societyId = await _gateStorage.getSocietyId();
+      if (societyId == null) {
+        throw Exception('Society ID not found');
+      }
+
+      final now = DateTime.now();
+      final defaultDate =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+      final queryParams = <String, dynamic>{
+        'company_id': societyId,
+        'current_page': currentPage,
+        'per_page': perPage,
+        'from_date': fromDate != null
+            ? "${fromDate.year}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}"
+            : defaultDate,
+        'to_date': toDate != null
+            ? "${toDate.year}-${toDate.month.toString().padLeft(2, '0')}-${toDate.day.toString().padLeft(2, '0')}"
+            : defaultDate,
+      };
+
+      if (inGate != null) queryParams['in_gate'] = inGate;
+      if (status != null) queryParams['status'] = status;
+
+      final response = await _apiClient.get(
+        ApiUrls.visitorGetLogV2,
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ Visitor logs V2 fetched successfully");
+        final responseData = response.data;
+
+        // Extract counts for easy access
+        final counts = {
+          'total': responseData['total'] ?? 0,
+          'checked_in_count': responseData['checked_in_count'] ?? 0,
+          'checked_out_count': responseData['checked_out_count'] ?? 0,
+        };
+
+        log("📊 V2 API Counts - Total: ${counts['total']}, In: ${counts['checked_in_count']}, Out: ${counts['checked_out_count']}");
+
+        return responseData;
+      } else {
+        throw Exception(
+            'Failed to fetch visitor logs V2: ${response.statusCode}');
+      }
+    } catch (e) {
+      log("❌ Error fetching visitor logs V2: $e");
+      rethrow;
+    }
+  }
+
+  /// Get visitor counts only using V2 API
+  /// Returns just the count information without the data
+  Future<Map<String, int>> getVisitorCounts({
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? inGate,
+  }) async {
+    await _ensureInitialized();
+
+    try {
+      final result = await getVisitorLogsV2(
+        currentPage: 1,
+        perPage: 1, // We only need counts, not data
+        fromDate: fromDate,
+        toDate: toDate,
+        inGate: inGate,
+      );
+
+      return {
+        'total': result['total'] ?? 0, // In-out count
+        'visitor_in': result['checked_in_count'] ?? 0, // Visitor-in count
+        'visitor_out': result['checked_out_count'] ?? 0, // Visitor-out count
+      };
+    } catch (e) {
+      log("❌ Error fetching visitor counts: $e");
+      rethrow;
+    }
+  }
+
   /// Update visitor status
   Future<bool> updateVisitorStatus(String visitorLogId, String status,
       {String? remarks}) async {

@@ -201,7 +201,7 @@ class _ParcelListState extends State<ParcelList> {
                   backgroundImage: parcel['visitor_image'] != null &&
                           parcel['visitor_image'].toString().isNotEmpty
                       ? NetworkImage(parcel['visitor_image'])
-                      : NetworkImage(
+                      : const NetworkImage(
                           'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
                   child: parcel['visitor_image'] == null ||
                           parcel['visitor_image'].toString().isEmpty
@@ -608,10 +608,7 @@ class _ParcelListState extends State<ParcelList> {
               child: BlocBuilder<ParcelBloc, ParcelState>(
                 builder: (context, state) {
                   if (state is ParcelLoading) {
-                    return const LoaderView(
-                      title: "Loading Parcels",
-                      subtitle: "Please wait while we fetch the data",
-                    );
+                    return const LoaderView();
                   } else if (state is ParcelLoaded) {
                     return Stack(
                       children: [

@@ -11,8 +11,16 @@ class VisitorLogLoadingState extends VisitorLogState {}
 
 class VisitorLogSuccessState extends VisitorLogState {
   final List<VisitorLog>? visitorLogs;
+  final int? currentPage;
+  final int? lastPage;
+  final bool? hasMoreData;
 
-  VisitorLogSuccessState(this.visitorLogs);
+  VisitorLogSuccessState(
+    this.visitorLogs, {
+    this.currentPage,
+    this.lastPage,
+    this.hasMoreData,
+  });
 }
 
 class VisitorCheckInLogSuccessState extends VisitorLogActionState {}
@@ -24,6 +32,8 @@ class VisitorLogErrorState extends VisitorLogActionState {
 
   VisitorLogErrorState(this.message);
 }
+
+class VisitorLogLoadingMoreState extends VisitorLogState {}
 
 class VisitorLogCheckOutSuccessState extends VisitorLogActionState {
   final bool? isCheckOut;

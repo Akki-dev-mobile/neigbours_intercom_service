@@ -495,10 +495,10 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Text(
+            const Text(
               'Missed Approvals',
               style: TextStyle(
-                color: const Color(0xff212427),
+                color: Color(0xff212427),
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.3,
@@ -538,9 +538,9 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.all(12),
-                  child: Icon(
+                  child: const Icon(
                     Icons.refresh,
-                    color: const Color(0xff57636C),
+                    color: Color(0xff57636C),
                     size: 20,
                   ),
                 ),
@@ -563,10 +563,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting &&
                       !_isRefreshing) {
-                    return const LoaderView(
-                      title: "Loading Missed Approvals",
-                      subtitle: "Please wait while we fetch the data",
-                    );
+                    return const LoaderView();
                   }
 
                   if (snapshot.hasError) {
@@ -1175,7 +1172,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
                       backgroundImage: widget
                               .visitorInfo.visitorImage.isNotEmpty
                           ? NetworkImage(widget.visitorInfo.visitorImage)
-                          : NetworkImage(
+                          : const NetworkImage(
                               'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
                       child: widget.visitorInfo.visitorImage.isEmpty
                           ? Text(

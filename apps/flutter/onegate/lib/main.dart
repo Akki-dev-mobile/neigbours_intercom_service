@@ -5,6 +5,7 @@ import 'dart:developer';
 import 'package:alarm/alarm.dart';
 // No background task dependencies needed
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_preview/device_preview.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
+import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProvider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
@@ -264,58 +266,70 @@ void main() async {
   await ThemeManager.initializeWithAppId(appId);
 
   runApp(
-    ScreenUtilInit(
-      fontSizeResolver: (num size, ScreenUtil _) => 0.5,
-      enableScaleText: () => true,
-      designSize: const Size(360, 690),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (_, child) => MultiProvider(
-        providers: [
-          ChangeNotifierProvider<PurposeProvider>(
-            create: (_) => PurposeProvider(),
-          ),
-          ChangeNotifierProvider<VisitorLogsProvider>(
-            create: (_) => VisitorLogsProvider(),
-          ),
-          ChangeNotifierProvider<VisitorSettingsProvider>(
-            create: (_) => VisitorSettingsProvider(),
-          ),
-          ChangeNotifierProvider<LoginProvider>(
-            create: (_) => LoginProvider(authService: GetIt.I<AuthService>()),
-          ),
-          ChangeNotifierProvider<GateProvider>(
-            create: (_) => GateProvider(),
-          ),
-          ChangeNotifierProvider(create: (_) => InternetCheckProvider()),
-          ChangeNotifierProvider<CameraSettingsProvider>(
-            create: (_) => CameraSettingsProvider(),
-          ),
-          ChangeNotifierProvider<VisitorApprovalTimeProvider>(
-            create: (_) => VisitorApprovalTimeProvider(),
-          ),
-          ChangeNotifierProvider(create: (context) => TimerService()),
-        ],
-        child: MultiBlocProvider(
+    DevicePreview(
+      enabled: kDebugMode, // Enable device preview only in debug mode
+      builder: (context) => ScreenUtilInit(
+        fontSizeResolver: (num size, ScreenUtil _) => 0.5,
+        enableScaleText: () => true,
+        designSize: const Size(360, 690),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (_, child) => MultiProvider(
           providers: [
-            BlocProvider(create: (context) => ParcelBloc(RemoteDataSource())),
-            BlocProvider(
-                create: (context) =>
-                    LicensePlateBloc(LicensePlateRepository())),
-            BlocProvider<GatekeeperDashboardBloc>(
-              create: (context) => GatekeeperDashboardBloc(
-                VisitorUsecase(
-                  VisitorRepoImpl(RemoteDataSource()), // Pass dependencies
-                ),
-                VisitorLogUsecase(
-                  VisitorLogRepositoryImpl(
-                    RemoteDataSource(),
+            ChangeNotifierProvider<PurposeProvider>(
+              create: (_) => PurposeProvider(),
+            ),
+            ChangeNotifierProvider<VisitorLogsProvider>(
+              create: (_) => VisitorLogsProvider(),
+            ),
+            ChangeNotifierProvider<VisitorSettingsProvider>(
+              create: (_) => VisitorSettingsProvider(),
+            ),
+            ChangeNotifierProvider<LoginProvider>(
+              create: (_) => LoginProvider(authService: GetIt.I<AuthService>()),
+            ),
+            ChangeNotifierProvider<GateProvider>(
+              create: (_) => GateProvider(),
+            ),
+            ChangeNotifierProvider(create: (_) => InternetCheckProvider()),
+            ChangeNotifierProvider<CameraSettingsProvider>(
+              create: (_) => CameraSettingsProvider(),
+            ),
+            ChangeNotifierProvider<VisitorApprovalTimeProvider>(
+              create: (_) => VisitorApprovalTimeProvider(),
+            ),
+            ChangeNotifierProvider(create: (context) => TimerService()),
+          ],
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (context) => ParcelBloc(RemoteDataSource())),
+              BlocProvider(
+                  create: (context) =>
+                      LicensePlateBloc(LicensePlateRepository())),
+              BlocProvider<GatekeeperDashboardBloc>(
+                create: (context) => GatekeeperDashboardBloc(
+                  VisitorUsecase(
+                    VisitorRepoImpl(RemoteDataSource()), // Pass dependencies
+                  ),
+                  VisitorLogUsecase(
+                    VisitorLogRepositoryImpl(
+                      RemoteDataSource(),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-          child: const MyApp(),
+              BlocProvider<VisitorLogBloc>(
+                create: (context) => VisitorLogBloc(
+                  VisitorLogUsecase(
+                    VisitorLogRepositoryImpl(
+                      RemoteDataSource(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            child: const MyApp(),
+          ),
         ),
       ),
     ),
@@ -509,6 +523,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Widget app = MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
+      // Configure device preview settings
+      useInheritedMediaQuery: true,
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
       theme: ThemeManager.lightTheme.copyWith(
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: <TargetPlatform, PageTransitionsBuilder>{

@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:developer';
+import 'dart:async';
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
@@ -47,86 +48,165 @@ class VisitorLogView extends StatefulWidget {
   State<VisitorLogView> createState() => _VisitorLogViewState();
 }
 
-class _VisitorLogViewState extends State<VisitorLogView> {
-  late String selectedId;
-  String? _searchText = "";
-  var selectedGateName;
-  late FocusNode _searchFocusNode;
-  String? selectedBuilding = "All Buildings";
-
-  List<String> options = ['All', 'Today', 'This Week', 'This Month', 'Custom'];
-  final gateStorage = GateStorage();
-  final remoteDataSource = RemoteDataSource();
-  var societyId;
+class _VisitorLogViewState extends State<VisitorLogView>
+    with TickerProviderStateMixin {
+  late VisitorLogBloc _visitorLogBloc;
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _searchFocusNode = FocusNode();
+  String? _searchText = '';
+  String? selectedBuilding = 'All Buildings';
+  String? selectedGateName;
+  int? societyId;
+  final GateStorage gateStorage = GateStorage();
+  String _currentSection = 'ALL'; // Track current section
 
-  final VisitorLogBloc _visitorLogBloc = VisitorLogBloc(
-    VisitorLogUsecase(
-      VisitorLogRepositoryImpl(
-        RemoteDataSource(),
-      ),
-    ),
-  );
+  // Add missing variables to fix compilation errors
+  String? selectedId;
+  final RemoteDataSource remoteDataSource = RemoteDataSource();
+
+  // Add timer for debounced search
+  Timer? _searchTimer;
+
+  // Keep track of last successful data to show during search loading
+  List<VisitorLog>? _lastVisitorLogs;
+  final bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
-    selectedId = widget.id;
-
-    switch (widget.id) {
-      case "In Out Book":
-        _visitorLogBloc.add(FetchVisitorLogEvent(
-          Utils.getCurrentTime(),
-          currentPage: 1,
-          perPage: 20,
-        ));
-        break;
-      case "Visitor In":
-        _visitorLogBloc.add(FetchCheckInLogEvent(
-          Utils.getCurrentTime(),
-          currentPage: 1,
-          perPage: 20,
-        ));
-        break;
-      case "Cards":
-        _visitorLogBloc.add(FetchCheckOutLogEvent(
-          Utils.getCurrentTime(),
-          currentPage: 1,
-          perPage: 20,
-        ));
-        break;
-
-      case "Visitor Out":
-        _visitorLogBloc.add(FetchCheckOutLogEvent(Utils.getCurrentTime()));
-        break;
-    }
-    _initializeSocietyId();
+    _visitorLogBloc = BlocProvider.of<VisitorLogBloc>(context);
     getSelectedGate();
-    _searchFocusNode = FocusNode();
-    // _scrollController.addListener(() {
-    //   if (_scrollController.position.pixels >=
-    //           _scrollController.position.maxScrollExtent - 200 &&
-    //       _visitorLogBloc.state is! VisitorLogLoadingMoreState) {
-    //     final currentState = _visitorLogBloc.state;
-    //     if (currentState is VisitorLogSuccessState) {
-    //       _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
-    //         currentState.currentPage! + 1, // Pass next page
-    //         40, // Number of items per page
-    //       ));
-    //     }
-    //   }
-    // });
+    _initializeSocietyId();
+    _initializeLogs();
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
+        // Load more data when reaching the bottom
+        final currentState = _visitorLogBloc.state;
+        if (currentState is VisitorLogSuccessState &&
+            currentState.hasMoreData!) {
+          final nextPage = currentState.currentPage! + 1;
+
+          // Determine filter type based on current section
+          String filterType = "all";
+          if (_currentSection == 'CHECK_IN') {
+            filterType = "check_in";
+          } else if (_currentSection == 'CHECK_OUT') {
+            filterType = "check_out";
+          }
+
+          debugPrint(
+              "🔍 [SCROLL] Loading more data for page $nextPage with filter: $filterType");
+          debugPrint(
+              "🔍 [SCROLL] Filter type: $filterType, Section: $_currentSection");
+
+          _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
+            nextPage,
+            per_page, // Use the per_page variable (10)
+            filterType: filterType,
+          ));
+        } else {
+          debugPrint("📄 [UI] No more data to load - hasMoreData is false");
+        }
+      } else {
+        final currentState = _visitorLogBloc.state;
+        debugPrint(
+            "📄 [UI] State is not VisitorLogSuccessState: ${currentState.runtimeType}");
+      }
+    });
     // _storeTodayLogsCount(context);
   }
 
-  int current_page = 5;
-  final int per_page = 20;
+  int current_page = 1;
+  final int per_page = 10;
+
+  // Add the missing _initializeLogs method
+  void _initializeLogs() {
+    debugPrint(
+        "🎯 [UI] VisitorLogView initState called with widget.id: '${widget.id}'");
+
+    switch (widget.id) {
+      case "In Out Book":
+        debugPrint("🎯 [UI] Triggering FetchVisitorLogEvent for In Out Book");
+        _currentSection = "ALL";
+        _visitorLogBloc.add(FetchVisitorLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: 10,
+        ));
+        break;
+      case "Visitor In":
+        debugPrint("🎯 [UI] Triggering FetchCheckInLogEvent for Visitor In");
+        _currentSection = "CHECK_IN";
+        _visitorLogBloc.add(FetchCheckInLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: 10,
+        ));
+        break;
+      case "Cards":
+        debugPrint("🎯 [UI] Triggering FetchCheckOutLogEvent for Cards");
+        _currentSection = "CHECK_OUT";
+        _visitorLogBloc.add(FetchCheckOutLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: 10,
+        ));
+        break;
+      case "Visitor Out":
+        debugPrint("🎯 [UI] Triggering FetchCheckOutLogEvent for Visitor Out");
+        _currentSection = "CHECK_OUT";
+        _visitorLogBloc.add(FetchCheckOutLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: 10,
+        ));
+        break;
+    }
+  }
 
   @override
   void dispose() {
     _searchFocusNode.dispose();
-
+    _searchTimer?.cancel(); // Cancel search timer
     super.dispose();
+  }
+
+  // Add method to trigger search with debouncing
+  void _triggerSearch(String query) {
+    // Cancel any existing timer
+    _searchTimer?.cancel();
+
+    // Set a new timer for debounced search
+    _searchTimer = Timer(Duration(milliseconds: 500), () {
+      debugPrint("🔍 [SEARCH] Triggering search for: '$query'");
+
+      // Trigger the appropriate BLoC event based on current section
+      if (_currentSection == 'CHECK_IN') {
+        _visitorLogBloc.add(FetchCheckInLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: per_page,
+          searchQuery: query.isNotEmpty ? query : null,
+        ));
+      } else if (_currentSection == 'CHECK_OUT') {
+        _visitorLogBloc.add(FetchCheckOutLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: per_page,
+          searchQuery: query.isNotEmpty ? query : null,
+        ));
+      } else {
+        // Default to all visitor logs
+        _visitorLogBloc.add(FetchVisitorLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: per_page,
+          searchQuery: query.isNotEmpty ? query : null,
+        ));
+      }
+    });
   }
 
   Future<void> getSelectedGate() async {
@@ -137,7 +217,8 @@ class _VisitorLogViewState extends State<VisitorLogView> {
   }
 
   Future<void> _initializeSocietyId() async {
-    societyId = await gateStorage.getSocietyId();
+    final societyIdStr = await gateStorage.getSocietyId();
+    societyId = int.tryParse(societyIdStr ?? '0');
     log('Society ID: $societyId');
   }
 
@@ -149,7 +230,16 @@ class _VisitorLogViewState extends State<VisitorLogView> {
     return BlocConsumer<VisitorLogBloc, VisitorLogState>(
       bloc: _visitorLogBloc,
       listenWhen: (previous, current) => current is VisitorLogActionState,
-      buildWhen: (previous, current) => current is! VisitorLogActionState,
+      buildWhen: (previous, current) {
+        // Don't rebuild on loading state if we're searching and have previous data
+        if (current is VisitorLogLoadingState &&
+            _searchText!.isNotEmpty &&
+            _lastVisitorLogs != null) {
+          return false;
+        }
+        return current is! VisitorLogActionState &&
+            current is! VisitorLogLoadingMoreState;
+      },
       listener: (context, state) {
         switch (state.runtimeType) {
           case VisitorLogCheckOutSuccessState:
@@ -177,8 +267,18 @@ class _VisitorLogViewState extends State<VisitorLogView> {
         switch (state.runtimeType) {
           case VisitorLogLoadingState:
             return LoaderView();
+
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
+            debugPrint("🎯 [UI BUILD] VisitorLogSuccessState received:");
+            debugPrint(
+                "🎯 [UI BUILD] - visitorLogs count: ${successState.visitorLogs?.length}");
+            debugPrint(
+                "🎯 [UI BUILD] - currentPage: ${successState.currentPage}");
+            debugPrint(
+                "🎯 [UI BUILD] - hasMoreData: ${successState.hasMoreData}");
+            debugPrint("🎯 [UI BUILD] - widget.id: ${widget.id}");
+
             final visitorLogs = (successState.visitorLogs ?? []).where((log) {
               if (widget.id == "Cards") {
                 return log.visitor_card_number != null &&
@@ -186,6 +286,9 @@ class _VisitorLogViewState extends State<VisitorLogView> {
               }
               return true; // Show all logs for other cases
             }).toList();
+
+            // Store the visitor logs for future use during search loading
+            _lastVisitorLogs = visitorLogs;
             List<VisitorLog> uniqueVisitorLogs = [];
             Set<String> checkInTimes = {};
 
@@ -400,11 +503,81 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                             textCapitalization: TextCapitalization.words,
                             textInputAction: TextInputAction.search,
                             onFieldSubmitted: (value) {
-                              log(value);
+                              log("🔍 [SEARCH] Searching for: '$value'");
+                              // Trigger immediate search on submit
+                              switch (widget.id) {
+                                case "Visitor In":
+                                  _visitorLogBloc.add(FetchCheckInLogEvent(
+                                    DateTime.now(),
+                                    currentPage: 1,
+                                    perPage: 10,
+                                    searchQuery:
+                                        value.isNotEmpty ? value : null,
+                                  ));
+                                  break;
+                                case "Visitor Out":
+                                case "Cards":
+                                  _visitorLogBloc.add(FetchCheckOutLogEvent(
+                                    DateTime.now(),
+                                    currentPage: 1,
+                                    perPage: 10,
+                                    searchQuery:
+                                        value.isNotEmpty ? value : null,
+                                  ));
+                                  break;
+                                default:
+                                  _visitorLogBloc.add(FetchVisitorLogEvent(
+                                    DateTime.now(),
+                                    currentPage: 1,
+                                    perPage: 10,
+                                    searchQuery:
+                                        value.isNotEmpty ? value : null,
+                                  ));
+                              }
                             },
                             onChanged: (value) {
                               setState(() {
                                 _searchText = value;
+                              });
+
+                              // Cancel any existing timer
+                              _searchTimer?.cancel();
+
+                              // Start new timer for debounced search (500ms delay)
+                              _searchTimer =
+                                  Timer(const Duration(milliseconds: 500), () {
+                                log("🔍 [SEARCH] Text changed, searching for: '$value'");
+
+                                final searchQuery =
+                                    value.isNotEmpty ? value : null;
+
+                                switch (widget.id) {
+                                  case "Visitor In":
+                                    _visitorLogBloc.add(FetchCheckInLogEvent(
+                                      DateTime.now(),
+                                      currentPage: 1,
+                                      perPage: 10,
+                                      searchQuery: searchQuery,
+                                    ));
+                                    break;
+                                  case "Visitor Out":
+                                  case "Cards":
+                                    _visitorLogBloc.add(FetchCheckOutLogEvent(
+                                      DateTime.now(),
+                                      currentPage: 1,
+                                      perPage: 10,
+                                      searchQuery: searchQuery,
+                                    ));
+                                    break;
+                                  default:
+                                    _visitorLogBloc.add(FetchVisitorLogEvent(
+                                      DateTime.now(),
+                                      currentPage: 1,
+                                      perPage: 10,
+                                      searchQuery: searchQuery,
+                                    ));
+                                    break;
+                                }
                               });
                             },
                             prefixIcon: Padding(
@@ -416,7 +589,56 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: IconButton(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    // Trigger search when search icon is pressed
+                                    log("🔍 [SEARCH] Search button pressed with: '$_searchText'");
+
+                                    // Create new instance to avoid BLoC issues
+                                    final visitorLogBloc = VisitorLogBloc(
+                                      VisitorLogUsecase(
+                                        VisitorLogRepositoryImpl(
+                                          RemoteDataSource(),
+                                        ),
+                                      ),
+                                    );
+
+                                    switch (widget.id) {
+                                      case "Visitor In":
+                                        visitorLogBloc.add(FetchCheckInLogEvent(
+                                          DateTime.now(),
+                                          currentPage: 1,
+                                          perPage: 10,
+                                          searchQuery:
+                                              _searchText?.isNotEmpty == true
+                                                  ? _searchText
+                                                  : null,
+                                        ));
+                                        break;
+                                      case "Visitor Out":
+                                      case "Cards":
+                                        visitorLogBloc
+                                            .add(FetchCheckOutLogEvent(
+                                          DateTime.now(),
+                                          currentPage: 1,
+                                          perPage: 10,
+                                          searchQuery:
+                                              _searchText?.isNotEmpty == true
+                                                  ? _searchText
+                                                  : null,
+                                        ));
+                                        break;
+                                      default:
+                                        visitorLogBloc.add(FetchVisitorLogEvent(
+                                          DateTime.now(),
+                                          currentPage: 1,
+                                          perPage: 10,
+                                          searchQuery:
+                                              _searchText?.isNotEmpty == true
+                                                  ? _searchText
+                                                  : null,
+                                        ));
+                                    }
+                                  },
                                   icon: const Icon(
                                     Ionicons.search_outline,
                                     color: Color(0xffF44336),
@@ -463,6 +685,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                         _buildEnhancedEmptyVisitorsState(),
                       Expanded(
                         child: ListView.builder(
+                          controller: _scrollController,
                           padding: EdgeInsets.only(bottom: 100),
                           physics: BouncingScrollPhysics(),
                           shrinkWrap: true,
@@ -928,17 +1151,17 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                                           fontSize: 16,
                                                         ),
                                                         dayOverlayColor:
-                                                            MaterialStateProperty
+                                                            WidgetStateProperty
                                                                 .resolveWith(
                                                                     (states) {
                                                           if (states.contains(
-                                                              MaterialState
+                                                              WidgetState
                                                                   .selected)) {
                                                             return const Color(
                                                                 0xffF44336);
                                                           }
                                                           if (states.contains(
-                                                              MaterialState
+                                                              WidgetState
                                                                   .hovered)) {
                                                             return const Color(
                                                                     0xffF44336)
@@ -1201,17 +1424,17 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                                                           fontSize: 16,
                                                         ),
                                                         dayOverlayColor:
-                                                            MaterialStateProperty
+                                                            WidgetStateProperty
                                                                 .resolveWith(
                                                                     (states) {
                                                           if (states.contains(
-                                                              MaterialState
+                                                              WidgetState
                                                                   .selected)) {
                                                             return const Color(
                                                                 0xffF44336);
                                                           }
                                                           if (states.contains(
-                                                              MaterialState
+                                                              WidgetState
                                                                   .hovered)) {
                                                             return const Color(
                                                                     0xffF44336)
@@ -1980,7 +2203,7 @@ class _VisitorLogViewState extends State<VisitorLogView> {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           setState(() {
-                            widget.id = selectedId;
+                            widget.id = selectedId ?? widget.id;
                           });
                           Navigator.pop(context);
                           Navigator.pushReplacement(

@@ -515,10 +515,10 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                       const Color(0xffff5722).withOpacity(0.03),
                                     ],
                                   ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                                 child: Row(
-                        children: [
+                                  children: [
                                     Container(
                                       padding:
                                           EdgeInsets.all(isTablet ? 16 : 14),
@@ -554,9 +554,9 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                          Text(
-                            'Confirm Logout',
-                            style: TextStyle(
+                                          Text(
+                                            'Confirm Logout',
+                                            style: TextStyle(
                                               fontSize: isTablet ? 24 : 20,
                                               fontWeight: FontWeight.w700,
                                               color: const Color(0xff212427),
@@ -569,10 +569,10 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                               fontSize: isTablet ? 14 : 13,
                                               color: const Color(0xff57636C),
                                               fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -587,10 +587,10 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                            'Are you sure you want to logout?',
+                                      'Are you sure you want to logout?',
                                       style: TextStyle(
                                         fontSize: isTablet ? 18 : 16,
                                         fontWeight: FontWeight.w600,
@@ -620,15 +620,15 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                         Expanded(
                                           child: Text(
                                             'You will need to sign in again to access your account.',
-                            style: TextStyle(
+                                            style: TextStyle(
                                               fontSize: isTablet ? 15 : 14,
                                               color: const Color(0xff57636C),
                                               height: 1.3,
                                             ),
-                            ),
-                          ),
-                        ],
-                      ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
@@ -645,10 +645,10 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                         border: Border.all(
                                           color: Colors.grey.shade300,
                                           width: 1,
-                            ),
-                          ),
+                                        ),
+                                      ),
                                       child: TextButton(
-                          onPressed: () {
+                                        onPressed: () {
                                           Navigator.of(context).pop();
                                         },
                                         style: TextButton.styleFrom(
@@ -658,14 +658,14 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                           ),
                                         ),
                                         child: Text(
-                            'Cancel',
-                            style: TextStyle(
+                                          'Cancel',
+                                          style: TextStyle(
                                             color: const Color(0xff212427),
                                             fontWeight: FontWeight.w600,
                                             fontSize: isTablet ? 16 : 15,
-                            ),
-                          ),
-                        ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   SizedBox(width: isTablet ? 16 : 12),
@@ -693,9 +693,9 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                         ],
                                       ),
                                       child: TextButton(
-                          onPressed: () async {
-                            logout(context);
-                          },
+                                        onPressed: () async {
+                                          logout(context);
+                                        },
                                         style: TextButton.styleFrom(
                                           backgroundColor: Colors.transparent,
                                           shape: RoundedRectangleBorder(
@@ -704,17 +704,17 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                           ),
                                         ),
                                         child: Text(
-                            'Logout',
-                            style: TextStyle(
-                              color: Colors.white,
+                                          'Logout',
+                                          style: TextStyle(
+                                            color: Colors.white,
                                             fontWeight: FontWeight.w600,
                                             fontSize: isTablet ? 16 : 15,
                                           ),
                                         ),
-                            ),
-                          ),
-                        ),
-                      ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),

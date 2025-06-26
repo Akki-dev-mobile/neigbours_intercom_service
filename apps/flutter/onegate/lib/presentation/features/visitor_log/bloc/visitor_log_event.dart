@@ -7,31 +7,39 @@ class FetchCheckInLogEvent extends VisitorLogEvent {
   final DateTime date;
   final int currentPage;
   final int perPage;
+  final String? searchQuery;
 
-  FetchCheckInLogEvent(this.date, {this.currentPage = 1, this.perPage = 20});
+  FetchCheckInLogEvent(this.date,
+      {this.currentPage = 1, this.perPage = 10, this.searchQuery});
 }
 
 class FetchCheckOutLogEvent extends VisitorLogEvent {
   final DateTime date;
   final int currentPage;
   final int perPage;
+  final String? searchQuery;
 
-  FetchCheckOutLogEvent(this.date, {this.currentPage = 1, this.perPage = 20});
+  FetchCheckOutLogEvent(this.date,
+      {this.currentPage = 1, this.perPage = 10, this.searchQuery});
 }
 
 class FetchVisitorLogEvent extends VisitorLogEvent {
   final DateTime date;
   final int currentPage;
   final int perPage;
+  final String? searchQuery;
 
-  FetchVisitorLogEvent(this.date, {this.currentPage = 1, this.perPage = 20});
+  FetchVisitorLogEvent(this.date,
+      {this.currentPage = 1, this.perPage = 10, this.searchQuery});
 }
 
 class LoadMoreVisitorLogsEvent extends VisitorLogEvent {
   final int currentPage;
   final int perPage;
+  final String filterType; // "all", "check_in", "check_out"
 
-  LoadMoreVisitorLogsEvent(this.currentPage, this.perPage);
+  LoadMoreVisitorLogsEvent(this.currentPage, this.perPage,
+      {this.filterType = "all"});
 }
 
 class CheckOutEvent extends VisitorLogEvent {

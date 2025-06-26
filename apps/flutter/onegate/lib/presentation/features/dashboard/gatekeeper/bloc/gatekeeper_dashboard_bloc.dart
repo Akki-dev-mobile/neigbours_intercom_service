@@ -90,38 +90,25 @@ class GatekeeperDashboardBloc
       final companyId = await gateStorage.getSocietyId();
       final today = DateTime.now();
 
-      final List<VisitorLog>? allCheckedInVisitors =
-          await visitorLogUsecase.fetchCheckInVisitorLog(
-              int.parse(companyId.toString()), today.toString());
-      final List<VisitorLog> todaysCheckedInVisitors =
-          allCheckedInVisitors?.where((visitor) {
-                final DateTime checkInDate = DateTime.parse(visitor
-                    .visitor_check_in
-                    .toString()); // Replace 'timestamp' with actual field
-                return checkInDate.year == today.year &&
-                    checkInDate.month == today.month &&
-                    checkInDate.day == today.day;
-              }).toList() ??
-              [];
-      final int inBook = todaysCheckedInVisitors.length;
+      // Use V2 API to get counts instead of calling both individual methods
+      // This avoids the conflict where both fetchCheckInLogs and fetchCheckOutLogs
+      // are called simultaneously, causing only checked-out visitors to be shown
+      final counts = await visitorLogUsecase.getVisitorCounts(
+          int.parse(companyId.toString()), today.toString());
 
-      final List<VisitorLog>? allCheckedOutVisitors = await visitorLogUsecase
-          .fetchCheckOutLogs(int.parse(companyId.toString()), today.toString());
-      final List<VisitorLog> todaysCheckedOutVisitors =
-          allCheckedOutVisitors?.where((visitor) {
-                final DateTime checkOutDate = DateTime.parse(visitor
-                    .visitor_check_out
-                    .toString()); // Replace 'timestamp' with actual field
-                return checkOutDate.year == today.year &&
-                    checkOutDate.month == today.month &&
-                    checkOutDate.day == today.day;
-              }).toList() ??
-              [];
-      final int outBook = todaysCheckedOutVisitors.length;
+      final int inBook = counts['visitor_in'] ?? 0; // Checked-in visitors count
+      final int outBook =
+          counts['visitor_out'] ?? 0; // Checked-out visitors count
 
       emit(GatekeeperDashboardSuccessState(inBook: inBook, outBook: outBook));
     } catch (e) {
-      emit(GatekeeperDashboardErrorState(message: e.toString()));
+      // Log the error but still show dashboard with default counts
+      print('⚠️ Error fetching visitor counts: $e');
+      print('🔄 Showing dashboard with default counts');
+
+      // Show dashboard with zeros instead of error state
+      // This ensures the dashboard loads even if visitor counts fail
+      emit(GatekeeperDashboardSuccessState(inBook: 0, outBook: 0));
     }
   }
 
@@ -180,32 +167,15 @@ class GatekeeperDashboardBloc
       final companyId = await gateStorage.getSocietyId();
       final today = DateTime.now();
 
-      final List<VisitorLog>? allCheckedInVisitors =
-          await visitorLogUsecase.fetchCheckInVisitorLog(
-              int.parse(companyId.toString()), today.toString());
-      final List<VisitorLog> todaysCheckedInVisitors =
-          allCheckedInVisitors?.where((visitor) {
-                final DateTime checkInDate =
-                    DateTime.parse(visitor.visitor_check_in.toString());
-                return checkInDate.year == today.year &&
-                    checkInDate.month == today.month &&
-                    checkInDate.day == today.day;
-              }).toList() ??
-              [];
-      final int inBook = todaysCheckedInVisitors.length;
+      // Use V2 API to get counts instead of calling both individual methods
+      // This avoids the conflict where both fetchCheckInLogs and fetchCheckOutLogs
+      // are called simultaneously, causing only checked-out visitors to be shown
+      final counts = await visitorLogUsecase.getVisitorCounts(
+          int.parse(companyId.toString()), today.toString());
 
-      final List<VisitorLog>? allCheckedOutVisitors = await visitorLogUsecase
-          .fetchCheckOutLogs(int.parse(companyId.toString()), today.toString());
-      final List<VisitorLog> todaysCheckedOutVisitors =
-          allCheckedOutVisitors?.where((visitor) {
-                final DateTime checkOutDate =
-                    DateTime.parse(visitor.visitor_check_out.toString());
-                return checkOutDate.year == today.year &&
-                    checkOutDate.month == today.month &&
-                    checkOutDate.day == today.day;
-              }).toList() ??
-              [];
-      final int outBook = todaysCheckedOutVisitors.length;
+      final int inBook = counts['visitor_in'] ?? 0; // Checked-in visitors count
+      final int outBook =
+          counts['visitor_out'] ?? 0; // Checked-out visitors count
 
       emit(GatekeeperDashboardSuccessState(inBook: inBook, outBook: outBook));
     } catch (e) {

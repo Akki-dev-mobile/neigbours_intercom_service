@@ -14,6 +14,7 @@ import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor_log_response.dart';
 import 'package:flutter_onegate/domain/exceptions/visitor_exceptions.dart';
 import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
@@ -1008,16 +1009,250 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<VisitorLog>> fetchCheckInLogs() async {
-    return _fetchVisitorLogs(onlyCheckout: false);
+  Future<List<VisitorLog>> fetchCheckInLogs({
+    int currentPage = 1,
+    int perPage = 10,
+    String? searchQuery,
+  }) async {
+    debugPrint(
+        "🔍 [FETCH] fetchCheckInLogs() called - will use onlyCheckout: false, page: $currentPage, perPage: $perPage, search: '${searchQuery ?? 'none'}'");
+    return _fetchVisitorLogs(
+      onlyCheckout: false,
+      currentPage: currentPage,
+      perPage: perPage,
+      searchQuery: searchQuery,
+    );
   }
 
-  Future<List<VisitorLog>> fetchAllLogs() async {
-    return _fetchVisitorLogs();
+  Future<List<VisitorLog>> fetchAllLogs({
+    int currentPage = 1,
+    int perPage = 10,
+    String? searchQuery,
+  }) async {
+    debugPrint(
+        "🔍 [FETCH] fetchAllLogs() called - will NOT pass onlyCheckout parameter (shows all visitors), page: $currentPage, perPage: $perPage, search: '${searchQuery ?? 'none'}'");
+    return _fetchVisitorLogs(
+      currentPage: currentPage,
+      perPage: perPage,
+      searchQuery: searchQuery,
+    );
   }
 
-  Future<List<VisitorLog>> fetchCheckOutLogs() async {
-    return _fetchVisitorLogs(onlyCheckout: true);
+  Future<List<VisitorLog>> fetchCheckOutLogs({
+    int currentPage = 1,
+    int perPage = 10,
+    String? searchQuery,
+  }) async {
+    debugPrint(
+        "🚨 [FETCH] fetchCheckOutLogs() called - will use onlyCheckout: true, page: $currentPage, perPage: $perPage, search: '${searchQuery ?? 'none'}'");
+    debugPrint("🚨 [FETCH] This will only show checked-out visitors!");
+    return _fetchVisitorLogs(
+      onlyCheckout: true,
+      currentPage: currentPage,
+      perPage: perPage,
+      searchQuery: searchQuery,
+    );
+  }
+
+  /// Fetch visitor counts using V2 API
+  /// Returns counts for In-Out, Visitor-In, and Visitor-Out
+  Future<Map<String, int>> fetchVisitorCounts({
+    String? fromDate,
+    String? toDate,
+  }) async {
+    try {
+      // Step 1: Fetch gate information
+      final gateInfo = await fetchAndUpdateGateInfo('visitor counts');
+      final selectedGateName = gateInfo['gateName']!;
+
+      debugPrint("🎯 VISITOR COUNTS V2 - Using gate: '$selectedGateName'");
+
+      // Step 2: Get company ID
+      final resolvedCompanyId = await gateStorage.getSocietyId();
+
+      final String defaultDate =
+          DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      // Build query parameters for GET request
+      final queryParams = <String, String>{
+        'company_id': resolvedCompanyId.toString(),
+        'in_gate': selectedGateName,
+        'from_date': fromDate ?? defaultDate,
+        'to_date': toDate ?? defaultDate,
+        'per_page': '1', // We only need counts, not data
+        'current_page': '1',
+      };
+
+      // Build URL with query parameters
+      final uri = Uri.parse(ApiUrls.visitorGetLogV2).replace(
+        queryParameters: queryParams,
+      );
+
+      debugPrint("🌐 Fetching visitor counts V2 from: $uri");
+
+      final accessToken = await _getAccessToken();
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': accessToken != null ? 'Bearer $accessToken' : '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        // Log the raw response for debugging
+        debugPrint("🔍 Raw API Response: $responseData");
+        debugPrint("🔍 Response Type: ${responseData.runtimeType}");
+
+        // Try to parse safely without throwing type errors
+        Map<String, int> counts;
+        try {
+          // Attempt to use VisitorLogResponse for consistency, but with error handling
+          final visitorLogResponse = VisitorLogResponse.fromJson(responseData);
+
+          counts = <String, int>{
+            'total': visitorLogResponse.total,
+            'visitor_in': visitorLogResponse.checkedInCount,
+            'visitor_out': visitorLogResponse.checkedOutCount,
+          };
+        } catch (parseError) {
+          debugPrint("⚠️ VisitorLogResponse parsing failed: $parseError");
+          debugPrint("🔄 Falling back to direct field extraction...");
+
+          // Fallback: Count visitors manually from the response data
+          counts = _countVisitorsFromResponse(responseData);
+        }
+
+        log("📊 VISITOR COUNTS FETCHED:");
+        log("📈 Total (In-Out): ${counts['total']}");
+        log("📥 Visitor-In: ${counts['visitor_in']}");
+        log("📤 Visitor-Out: ${counts['visitor_out']}");
+
+        return counts;
+      } else {
+        _handleErrorResponse();
+        throw Exception(
+            'Failed to fetch visitor counts V2: ${response.statusCode}, ${response.body}');
+      }
+    } catch (e) {
+      log('❌ Error fetching visitor counts: $e');
+
+      // Return default counts instead of failing completely
+      log('🔄 Returning default visitor counts due to error');
+      return <String, int>{
+        'total': 0,
+        'visitor_in': 0,
+        'visitor_out': 0,
+      };
+    }
+  }
+
+  /// Helper method to safely extract integer values from API response
+  int _extractIntSafely(Map<String, dynamic> data, String key) {
+    try {
+      final value = data[key];
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      if (value is double) return value.toInt();
+      return 0;
+    } catch (e) {
+      debugPrint("⚠️ Error extracting $key: $e");
+      return 0;
+    }
+  }
+
+  /// Helper method to count visitors from the API response data
+  Map<String, int> _countVisitorsFromResponse(
+      Map<String, dynamic> responseData) {
+    try {
+      debugPrint("🔍 Counting visitors from response data...");
+
+      // Navigate to the visitors array: response.data.data
+      final data = responseData['data'];
+      if (data == null) {
+        debugPrint("⚠️ No 'data' field in response");
+        return {'total': 0, 'visitor_in': 0, 'visitor_out': 0};
+      }
+
+      final visitors = data['data'];
+      if (visitors == null || visitors is! List) {
+        debugPrint("⚠️ No visitors array found in response data");
+        return {'total': 0, 'visitor_in': 0, 'visitor_out': 0};
+      }
+
+      debugPrint("🔍 Found ${visitors.length} visitors to count");
+
+      int totalCount = visitors.length;
+      int checkedInCount = 0;
+      int checkedOutCount = 0;
+
+      // Count visitors by their check-in/check-out status
+      for (final visitor in visitors) {
+        if (visitor is Map<String, dynamic>) {
+          final isCheckedOut = visitor['is_checked_out'] ?? false;
+          if (isCheckedOut == true || isCheckedOut == 'true') {
+            checkedOutCount++;
+          } else {
+            checkedInCount++;
+          }
+
+          // Log each visitor for debugging
+          debugPrint(
+              "🔍 Visitor: ${visitor['name']} - Checked out: $isCheckedOut");
+        }
+      }
+
+      debugPrint("📊 Manual count results:");
+      debugPrint("📈 Total visitors: $totalCount");
+      debugPrint("📥 Checked-in visitors: $checkedInCount");
+      debugPrint("📤 Checked-out visitors: $checkedOutCount");
+
+      return {
+        'total': totalCount,
+        'visitor_in': checkedInCount,
+        'visitor_out': checkedOutCount,
+      };
+    } catch (e) {
+      debugPrint("❌ Error counting visitors from response: $e");
+      return {'total': 0, 'visitor_in': 0, 'visitor_out': 0};
+    }
+  }
+
+  /// Helper method to extract visitor data directly from API response when parsing fails
+  List<dynamic> _extractVisitorDataFromResponse(
+      Map<String, dynamic> responseData) {
+    try {
+      debugPrint("🔍 Extracting visitor data from response...");
+
+      // Navigate to the visitors array: response.data.data
+      final data = responseData['data'];
+      if (data == null) {
+        debugPrint("⚠️ No 'data' field in response");
+        return [];
+      }
+
+      final visitors = data['data'];
+      if (visitors == null || visitors is! List) {
+        debugPrint("⚠️ No visitors array found in response data");
+        return [];
+      }
+
+      debugPrint(
+          "✅ Successfully extracted ${visitors.length} visitors from response");
+
+      // Log the first visitor for debugging
+      if (visitors.isNotEmpty) {
+        debugPrint("🔍 First visitor: ${visitors[0]}");
+      }
+
+      return visitors;
+    } catch (e) {
+      debugPrint("❌ Error extracting visitor data from response: $e");
+      return [];
+    }
   }
 
   /// Helper method to fetch and update gate information from API before making visitor-related calls
@@ -1296,7 +1531,16 @@ class RemoteDataSource {
     };
   }
 
-  Future<List<VisitorLog>> _fetchVisitorLogs({bool? onlyCheckout}) async {
+  Future<List<VisitorLog>> _fetchVisitorLogs({
+    bool? onlyCheckout,
+    int currentPage = 1,
+    int perPage = 10,
+    String? searchQuery,
+  }) async {
+    debugPrint(
+        "🚀 [VISITOR_LOGS] _fetchVisitorLogs() called with onlyCheckout: $onlyCheckout");
+    debugPrint("🚀 [VISITOR_LOGS] Starting visitor logs API call...");
+
     try {
       // Step 1: Fetch and update gate information using helper method
       final gateInfo = await fetchAndUpdateGateInfo('visitor logs');
@@ -1304,55 +1548,144 @@ class RemoteDataSource {
       final selectedGateType = gateInfo['gateType']!;
 
       debugPrint(
-          "🎯 VISITOR LOGS - Using gate info: Name='$selectedGateName', Type='$selectedGateType'");
+          "🎯 VISITOR LOGS V2 - Using gate info: Name='$selectedGateName', Type='$selectedGateType'");
 
       // Step 2: Get company ID (keep existing logic)
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
+      // Use current date for visitor logs
+      final now = DateTime.now();
       final String formattedDate =
-          DateFormat('yyyy-MM-dd').format(DateTime.now());
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
-      final requestBody = <String, dynamic>{
+      debugPrint("📅 Using current date for visitor logs:");
+      debugPrint("   Current date: $now");
+      debugPrint("   Formatted: $formattedDate");
+
+      // Build query parameters for GET request
+      final queryParams = <String, String>{
+        'company_id': resolvedCompanyId.toString(),
+        'in_gate': selectedGateName,
         'from_date': formattedDate,
         'to_date': formattedDate,
-        'company_id': int.parse(resolvedCompanyId.toString()),
-        'in_gate': selectedGateName,
-        'gate_type': selectedGateType, // Include gate type in the request
+        'per_page': perPage.toString(),
+        'current_page': currentPage.toString(),
       };
 
+      // Add onlyCheckout parameter if provided
       if (onlyCheckout != null) {
-        requestBody['only_checkout'] = onlyCheckout;
+        debugPrint("🔍 [PARAM] onlyCheckout parameter: $onlyCheckout");
+        // API expects boolean values: true or false
+        queryParams['only_checkout'] = onlyCheckout.toString();
+        debugPrint(
+            "🔍 [PARAM] only_checkout query param set to: '${queryParams['only_checkout']}'");
+        debugPrint(
+            "🔍 [PARAM] queryParams['only_checkout'] type: ${queryParams['only_checkout'].runtimeType}");
+        debugPrint(
+            "🔍 [PARAM] queryParams['only_checkout'] value: '${queryParams['only_checkout']}'");
+      } else {
+        debugPrint(
+            "🔍 [PARAM] onlyCheckout parameter is null - not adding to query params");
       }
 
-      debugPrint("🔍 Step 3: VISITOR LOGS REQUEST BODY:");
-      debugPrint("📦 in_gate parameter: '${requestBody['in_gate']}'");
-      debugPrint("📦 gate_type parameter: '${requestBody['gate_type']}'");
-      debugPrint("📦 company_id parameter: '${requestBody['company_id']}'");
-      debugPrint("📦 Complete request body: $requestBody");
-      debugPrint(
-          "⚠️ NOTE: Check if the in_gate value matches the gate names in the returned visitor logs!");
+      // Debug: Log the actual date being used
+      debugPrint("🗓️ ACTUAL DATE: Current time: ${DateTime.now()}");
+      debugPrint("🗓️ FORMATTED DATE: $formattedDate");
 
+      debugPrint("🔍 Step 3: VISITOR LOGS V2 QUERY PARAMS:");
+      debugPrint("📦 company_id: '${queryParams['company_id']}'");
+      debugPrint("📦 in_gate: '${queryParams['in_gate']}'");
+      debugPrint("📦 from_date: '${queryParams['from_date']}'");
+      debugPrint("📦 to_date: '${queryParams['to_date']}'");
+      debugPrint("📦 per_page: '${queryParams['per_page']}'");
+      debugPrint("📦 current_page: '${queryParams['current_page']}'");
+
+      // Build URL manually to preserve boolean values
+      final baseUrl = ApiUrls.visitorGetLogV2;
+      var urlWithParams =
+          '$baseUrl?company_id=$resolvedCompanyId&in_gate=${Uri.encodeComponent(selectedGateName)}&from_date=$formattedDate&to_date=$formattedDate&per_page=$perPage&current_page=$currentPage';
+
+      // Add onlyCheckout parameter as boolean string if provided (API expects "true"/"false")
+      if (onlyCheckout != null) {
+        final onlyCheckoutValue = onlyCheckout.toString();
+        urlWithParams += '&only_checkout=$onlyCheckoutValue';
+        debugPrint(
+            "🔍 [URL] Added only_checkout parameter as boolean string: '$onlyCheckoutValue' (from boolean: $onlyCheckout)");
+      }
+
+      // Add search parameter if provided
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        urlWithParams += '&search=${Uri.encodeComponent(searchQuery)}';
+        debugPrint("🔍 [URL] Added search parameter: '$searchQuery'");
+      }
+
+      final uri = Uri.parse(urlWithParams);
+
+      debugPrint("🌐 Fetching visitor logs V2 from: $uri");
+      debugPrint("🔍 [URL] Full URI: $uri");
+      debugPrint("🔍 [URL] Query parameters in URI: ${uri.queryParameters}");
       debugPrint(
-          "Fetching visitor logs with updated gate params: ${requestBody.toString()}");
+          "🔍 [URL] only_checkout in URI: '${uri.queryParameters['only_checkout']}'");
+      debugPrint("🚀 [VISITOR_LOGS] Making HTTP GET request...");
 
       final accessToken = await _getAccessToken();
-      final response = await http.post(
-        Uri.parse(ApiUrls.visitorGetLog),
+      final response = await http.get(
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': accessToken != null ? 'Bearer $accessToken' : '',
         },
-        body: jsonEncode(requestBody),
       );
 
+      debugPrint(
+          "🚀 [VISITOR_LOGS] HTTP response received with status: ${response.statusCode}");
+      debugPrint(
+          "🚀 [VISITOR_LOGS] Response body length: ${response.body.length}");
+
       if (response.statusCode == 200) {
+        debugPrint(
+            "✅ [VISITOR_LOGS] API call successful - parsing response...");
         final responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['data']['data'] ?? [];
-        log("data--$data");
+
+        debugPrint(
+            "🔍 [VISITOR_LOGS] Raw response data keys: ${responseData.keys.toList()}");
+        debugPrint(
+            "🔍 [VISITOR_LOGS] Raw response data: ${responseData.toString().substring(0, 500)}...");
+
+        // Parse the v2 response with counts - with fallback handling
+        List<dynamic> data;
+        try {
+          debugPrint(
+              "🔄 [VISITOR_LOGS] Attempting VisitorLogResponse.fromJson...");
+          final visitorLogResponse = VisitorLogResponse.fromJson(responseData);
+
+          // Log the counts for monitoring
+          log("📊 VISITOR LOGS V2 COUNTS:");
+          log("📈 Total (In-Out): ${visitorLogResponse.inOutCount}");
+          log("📥 Visitor-In: ${visitorLogResponse.visitorInCount}");
+          log("📤 Visitor-Out: ${visitorLogResponse.visitorOutCount}");
+          log("📄 Current Page: ${visitorLogResponse.currentPage}/${visitorLogResponse.lastPage}");
+
+          data = visitorLogResponse.data;
+          debugPrint(
+              "✅ [VISITOR_LOGS] VisitorLogResponse parsing successful - data count: ${data.length}");
+        } catch (parseError) {
+          debugPrint(
+              "⚠️ [VISITOR_LOGS] VisitorLogResponse parsing failed: $parseError");
+          debugPrint(
+              "🔄 [VISITOR_LOGS] Falling back to direct data extraction...");
+
+          // Fallback: Extract data directly from response
+          data = _extractVisitorDataFromResponse(responseData);
+          debugPrint(
+              "🔄 [VISITOR_LOGS] Fallback extraction complete - data count: ${data.length}");
+        }
+
+        log("📋 Data count: ${data.length}");
 
         // Log gate names found in visitor logs for comparison
         if (data.isNotEmpty) {
-          log("🔍 GATE NAMES IN RETURNED VISITOR LOGS:");
+          log("🔍 GATE NAMES IN RETURNED VISITOR LOGS V2:");
           for (int i = 0; i < data.length && i < 5; i++) {
             // Log first 5 entries
             final item = data[i];
@@ -1361,9 +1694,13 @@ class RemoteDataSource {
               log("🔍 Visitor log $i in_gate: '$inGate'");
             }
           }
+        } else {
+          debugPrint("⚠️ [VISITOR_LOGS] No visitor data found in response!");
         }
 
         // Map API response to VisitorLog objects
+        debugPrint(
+            "🔄 [VISITOR_LOGS] Mapping ${data.length} items to VisitorLog objects...");
         final visitorLogs = data.map((item) => _mapToVisitorLog(item)).toList();
 
         // Apply client-side sorting fallback to address API ordering issues
@@ -1376,13 +1713,19 @@ class RemoteDataSource {
         log("📊 Visitor logs sorting applied: ${stats['total_logs']} logs, "
             "${stats['logs_with_check_in']} with check-in times");
 
+        debugPrint(
+            "✅ [VISITOR_LOGS] _fetchVisitorLogs completed successfully - returning ${sortedLogs.length} logs");
         return sortedLogs;
       } else {
+        debugPrint(
+            "❌ [VISITOR_LOGS] API call failed with status ${response.statusCode}");
+        debugPrint("❌ [VISITOR_LOGS] Error response: ${response.body}");
         _handleErrorResponse();
         throw Exception(
-            'Failed to fetch visitor logs: ${response.statusCode}, ${response.body}');
+            'Failed to fetch visitor logs V2: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
+      debugPrint("💥 [VISITOR_LOGS] Exception in _fetchVisitorLogs: $e");
       rethrow;
     }
   }
@@ -1960,15 +2303,19 @@ class RemoteDataSource {
 
       final String baseUrl = '${ApiUrls.gateBaseUrl}/visitor/approvals/';
       final DateTime now = DateTime.now();
-      final String formattedDate =
+      // Changed: Fetch approvals from the last 7 days instead of just today
+      final DateTime sevenDaysAgo = now.subtract(const Duration(days: 7));
+      final String fromDate =
+          "${sevenDaysAgo.year}-${sevenDaysAgo.month.toString().padLeft(2, '0')}-${sevenDaysAgo.day.toString().padLeft(2, '0')}";
+      final String toDate =
           "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
       // Construct Request Body
       final Map<String, dynamic> requestBody = {
         "company_id": resolvedCompanyId,
         "in_gate": selectedGateName,
-        "from_date": formattedDate,
-        "to_date": formattedDate,
+        "from_date": fromDate,
+        "to_date": toDate,
         "is_secondary": isSecondary ?? false,
       };
 
@@ -1983,6 +2330,7 @@ class RemoteDataSource {
       log("📦 to_date parameter: '${requestBody['to_date']}'");
       log("📦 Complete request body: ${jsonEncode(requestBody)}");
       log("🌐 Sending approvals request with updated gate context to: $baseUrl");
+      log("📅 Date range: ${requestBody['from_date']} to ${requestBody['to_date']} (7 days)");
 
       // Try to refresh token before making the request
       String? accessToken;

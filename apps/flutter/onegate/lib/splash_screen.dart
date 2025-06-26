@@ -95,7 +95,7 @@ class _SplashViewState extends State<SplashView>
         },
       );
       log('✅ Core services initialized successfully');
-      } catch (e) {
+    } catch (e) {
       log('⚠️ Service initialization failed: $e');
       // Continue anyway - we can still check stored credentials
       rethrow;
@@ -168,10 +168,10 @@ class _SplashViewState extends State<SplashView>
 
     try {
       log('🔄 Navigating to login screen...');
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MyAppLogin()),
-    );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MyAppLogin()),
+      );
       log('✅ Successfully navigated to login screen');
     } catch (e) {
       log('💥 Failed to navigate to login: $e');
@@ -208,72 +208,67 @@ class _SplashViewState extends State<SplashView>
   }
 
   Future<void> _performRoleBasedNavigation(String? role) async {
-      final prefs = await SharedPreferences.getInstance();
-      bool hasNavigatedToGateSettings =
-          prefs.getBool('hasNavigatedToGateSettings') ?? false;
+    final prefs = await SharedPreferences.getInstance();
+    bool hasNavigatedToGateSettings =
+        prefs.getBool('hasNavigatedToGateSettings') ?? false;
 
-      final selectedGateName = prefs.getString('selected_gate') ?? '';
-      final cleanedGateName = selectedGateName.toLowerCase();
+    final selectedGateName = prefs.getString('selected_gate') ?? '';
+    final cleanedGateName = selectedGateName.toLowerCase();
 
-      Widget? destination;
+    Widget? destination;
 
-      if (role == 'admin') {
+    if (role == 'admin') {
       log('📊 Admin role detected - navigating to admin dashboard');
-        destination = const AdminDashboardView();
-      } else if (role == 'gatekeeper') {
+      destination = const AdminDashboardView();
+    } else if (role == 'gatekeeper') {
       log('🚪 Gatekeeper role detected');
-        if (cleanedGateName.contains("tower")) {
-          String formattedTowerName = "TOWER NO ";
+      if (cleanedGateName.contains("tower")) {
+        String formattedTowerName = "TOWER NO ";
         RegExp regExp =
             RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
-          var match = regExp.firstMatch(cleanedGateName);
+        var match = regExp.firstMatch(cleanedGateName);
 
-          if (match != null && match.group(1) != null) {
-            formattedTowerName += match.group(1)!.padLeft(2, '0');
-          } else {
-            formattedTowerName = selectedGateName.toUpperCase();
-          }
+        if (match != null && match.group(1) != null) {
+          formattedTowerName += match.group(1)!.padLeft(2, '0');
+        } else {
+          formattedTowerName = selectedGateName.toUpperCase();
+        }
 
-          await prefs.setString('selected_gate', formattedTowerName);
+        await prefs.setString('selected_gate', formattedTowerName);
 
-          destination = MissedApprovalsScreen2(
-            remoteDataSource: RemoteDataSource(),
-            towerName: formattedTowerName,
-          );
+        destination = MissedApprovalsScreen2(
+          remoteDataSource: RemoteDataSource(),
+          towerName: formattedTowerName,
+        );
 
         log('🏢 Auto-navigating to tower: $formattedTowerName');
-        } else {
-          // If not tower, check if already went to visitor settings
-          if (!hasNavigatedToGateSettings) {
+      } else {
+        // If not tower, check if already went to visitor settings
+        if (!hasNavigatedToGateSettings) {
           log('⚙️ First time gatekeeper - navigating to visitor settings');
-            destination = VisitorSettingsView(comingfrom: true);
-            await prefs.setBool('hasNavigatedToGateSettings', true);
-          } else {
+          destination = VisitorSettingsView(comingfrom: true);
+          await prefs.setBool('hasNavigatedToGateSettings', true);
+        } else {
           log('🏠 Returning gatekeeper - navigating to gate dashboard');
-            destination = const GateDashboardView();
+          destination = const GateDashboardView();
         }
       }
     } else {
       log('❓ Unknown or null role: $role - defaulting to login');
       _navigateToLogin();
       return;
-      }
+    }
 
-      if (destination != null) {
-      log('🚀 Navigating to $role -> ${destination.runtimeType}');
-      if (mounted) {
-          await Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => destination!),
-          );
-        log('✅ Navigation to ${destination.runtimeType} completed successfully');
-      } else {
-        log('❌ Context no longer mounted during navigation');
-        // Context became unmounted, but we can't do much here
-      }
+    log('🚀 Navigating to $role -> ${destination.runtimeType}');
+    if (mounted) {
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => destination!),
+      );
+      log('✅ Navigation to ${destination.runtimeType} completed successfully');
     } else {
-      log('❌ No destination determined for role: $role');
-      _navigateToLogin();
+      log('❌ Context no longer mounted during navigation');
+      // Context became unmounted, but we can't do much here
     }
   }
 
@@ -328,7 +323,7 @@ class _SplashViewState extends State<SplashView>
             ),
             const SizedBox(height: 40),
             // Gate Loading Animation
-            _SplashGateLoader(),
+            const _SplashGateLoader(),
           ],
         ),
       ),

@@ -576,12 +576,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           elevation: 0,
                         ).copyWith(
                           backgroundColor:
-                              MaterialStateProperty.resolveWith<Color?>(
-                                  (states) {
+                              WidgetStateProperty.resolveWith<Color?>((states) {
                             return null;
                           }),
                           foregroundColor:
-                              MaterialStateProperty.all<Color>(Colors.white),
+                              WidgetStateProperty.all<Color>(Colors.white),
                         ),
                         onPressed: selectedMembers.isEmpty || _isConfirming
                             ? null
@@ -601,9 +600,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           child: Container(
                             alignment: Alignment.center,
                             constraints: const BoxConstraints(minHeight: 48),
-                            child: Text(
+                            child: const Text(
                               'Confirm',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -2232,7 +2231,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ),
             ),
           ),
-          Container(
+          SizedBox(
             height: isTablet ? 56 : 48,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
@@ -2307,17 +2306,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           valueListenable: _filteredMembersNotifier,
           builder: (context, filteredMembers, child) {
             if (_isLoading) {
-              return const LoaderView(
-                title: "Loading Members",
-                subtitle: "Please wait while we fetch member information",
-              );
+              return const LoaderView();
             }
 
             if (_isSearching) {
-              return const LoaderView(
-                title: "Searching Members",
-                subtitle: "Finding members matching your search criteria",
-              );
+              return const LoaderView();
             }
 
             if (filteredMembers.isEmpty) {
@@ -2582,12 +2575,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       if (memberMobileNo.isNotEmpty) ...[
                         SizedBox(height: isTablet ? 4 : 2),
                         Text(
-                          "Mobile: " +
-                              (memberMobileNo.length > 4
-                                  ? memberMobileNo.substring(
-                                          0, memberMobileNo.length - 4) +
-                                      'X' * 4
-                                  : 'X' * memberMobileNo.length),
+                          "Mobile: ${memberMobileNo.length > 4 ? memberMobileNo.substring(0, memberMobileNo.length - 4) + 'X' * 4 : 'X' * memberMobileNo.length}",
                           style: TextStyle(
                             fontSize: isTablet ? 12 : 10,
                             color: Colors.grey[600],
