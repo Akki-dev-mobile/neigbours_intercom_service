@@ -2293,22 +2293,25 @@ class RemoteDataSource {
     try {
       // Step 1: Fetch and update gate information using helper method
       final gateInfo = await fetchAndUpdateGateInfo('approvals');
-      final selectedGateName = gateInfo['gateName']!;
-      // Note: selectedGateType is fetched and saved but not used in approvals API
+      final rawGateName = gateInfo['gateName']!;
 
-      log("🎯 APPROVALS - Using gate info: Name='$selectedGateName'");
+      // Format gate name to ensure consistent "TOWER NO XX" format
+      final selectedGateName = _formatGateName(rawGateName);
+      // Note: Gate name is dynamically fetched and formatted to match API requirements
+
+      log("🎯 APPROVALS - Raw gate name: '$rawGateName'");
+      log("🎯 APPROVALS - Formatted gate name: '$selectedGateName'");
 
       // Step 2: Get company ID (keep existing logic)
       final resolvedCompanyId = await gateStorage.getSocietyId();
 
       final String baseUrl = '${ApiUrls.gateBaseUrl}/visitor/approvals/';
       final DateTime now = DateTime.now();
-      // Changed: Fetch approvals from the last 7 days instead of just today
-      final DateTime sevenDaysAgo = now.subtract(const Duration(days: 7));
-      final String fromDate =
-          "${sevenDaysAgo.year}-${sevenDaysAgo.month.toString().padLeft(2, '0')}-${sevenDaysAgo.day.toString().padLeft(2, '0')}";
-      final String toDate =
+      // Updated: Use current date for both from_date and to_date
+      final String currentDate =
           "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      final String fromDate = currentDate;
+      final String toDate = currentDate;
 
       // Construct Request Body
       final Map<String, dynamic> requestBody = {
@@ -2316,7 +2319,7 @@ class RemoteDataSource {
         "in_gate": selectedGateName,
         "from_date": fromDate,
         "to_date": toDate,
-        "is_secondary": isSecondary ?? false,
+        "is_secondary": isSecondary ?? true,
       };
 
       if (logID != null) {
@@ -2330,7 +2333,7 @@ class RemoteDataSource {
       log("📦 to_date parameter: '${requestBody['to_date']}'");
       log("📦 Complete request body: ${jsonEncode(requestBody)}");
       log("🌐 Sending approvals request with updated gate context to: $baseUrl");
-      log("📅 Date range: ${requestBody['from_date']} to ${requestBody['to_date']} (7 days)");
+      log("📅 Date range: ${requestBody['from_date']} to ${requestBody['to_date']} (current date)");
 
       // Try to refresh token before making the request
       String? accessToken;
@@ -2501,6 +2504,44 @@ class RemoteDataSource {
       return int.tryParse(value) ?? 0;
     }
     return 0;
+  }
+
+  // Helper method to format gate name to ensure consistent "TOWER NO XX" format
+  String _formatGateName(String rawGateName) {
+    if (rawGateName.isEmpty) return "TOWER NO 01";
+
+    // Convert to uppercase and clean up
+    String formatted = rawGateName.toUpperCase().trim();
+
+    // Handle different possible formats and normalize them
+    // Examples: "Gate 777" -> "TOWER NO 777", "tower no 01" -> "TOWER NO 01"
+
+    // If it already contains "TOWER NO", just clean it up
+    if (formatted.contains("TOWER NO")) {
+      // Clean up extra spaces
+      formatted = formatted.replaceAll(RegExp(r'\s+'), ' ');
+      return formatted;
+    }
+
+    // If it contains "GATE" followed by a number, convert to "TOWER NO"
+    if (formatted.contains("GATE")) {
+      // Extract number from patterns like "GATE 777", "GATE777", etc.
+      final numberMatch = RegExp(r'(\d+)').firstMatch(formatted);
+      if (numberMatch != null) {
+        final number = numberMatch.group(1)!;
+        return "TOWER NO ${number.padLeft(2, '0')}";
+      }
+    }
+
+    // If it's just a number, assume it's the tower number
+    final numberMatch = RegExp(r'^(\d+)$').firstMatch(formatted);
+    if (numberMatch != null) {
+      final number = numberMatch.group(1)!;
+      return "TOWER NO ${number.padLeft(2, '0')}";
+    }
+
+    // Default fallback
+    return "TOWER NO 01";
   }
 
   /// Send visitor logs
