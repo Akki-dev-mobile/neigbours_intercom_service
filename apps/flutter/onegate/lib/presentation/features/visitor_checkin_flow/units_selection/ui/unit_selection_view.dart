@@ -2816,21 +2816,27 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: Container(
+                              height: 45,
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
                                   colors: [
-                                    Color(0xFF212427),
-                                    Color(0xFF57636C)
+                                    Color(0xff212427),
+                                    Color(0xff57636C)
                                   ],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 ),
-                                borderRadius: BorderRadius.circular(32),
+                                borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black87.withOpacity(0.25),
-                                    blurRadius: 32,
-                                    offset: Offset(0, 8),
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
