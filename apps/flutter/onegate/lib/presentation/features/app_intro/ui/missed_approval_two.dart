@@ -1295,75 +1295,147 @@ class VisitorInfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Card(
-        elevation: 2,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ListTile(
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => VisitorDetailsScreen2(
-                              visitorLog: visitorInfo,
-                              isFromMissedApprovalScreen: true,
-                            )));
-              },
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 2,
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VisitorDetailsScreen2(
+                visitorLog: visitorInfo,
+                isFromMissedApprovalScreen: true,
               ),
-              leading: CircleAvatar(
-                backgroundImage: visitorInfo.visitorImage.isNotEmpty
-                    ? NetworkImage(visitorInfo.visitorImage)
-                    : const NetworkImage(
-                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                child: visitorInfo.visitorImage.isEmpty
-                    ? Text(
-                        visitorInfo.visitorImage.isNotEmpty
-                            ? visitorInfo.visitorName[0]
-                            : 'G',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      )
-                    : null,
-              ),
-              title: Text(
-                visitorInfo.visitorName,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              subtitle: Row(
-                children: [
-                  Icon(
-                    _getPurposeIcon(visitorInfo.purposeSubCategoryName ??
-                        visitorInfo.purposeCategoryName),
-                    size: 18, // Reduced size for alignment
-                    color: Colors.grey[600], // Greyish color
+            ),
+          );
+        },
+        child: Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                vertical: 4.0), // Reduced for more compact card
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
                   ),
-                  const SizedBox(width: 6), // Spacing between icon and text
-                  Text(
-                    "${_capitalizeFirstLetter(visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? "")} - ${visitorInfo.unitDetails.building_unit}",
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontSize: 14, // Ensures text size consistency
-                          color: Colors.grey[600], // Greyish color
+                  leading: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 26,
+                      backgroundImage: visitorInfo.visitorImage.isNotEmpty
+                          ? NetworkImage(visitorInfo.visitorImage)
+                          : const NetworkImage(
+                              'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                      child: visitorInfo.visitorImage.isEmpty
+                          ? Text(
+                              visitorInfo.visitorName.isNotEmpty
+                                  ? visitorInfo.visitorName[0].toUpperCase()
+                                  : 'G',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xffF44336),
+                                  ),
+                            )
+                          : null,
+                    ),
+                  ),
+                  title: Text(
+                    visitorInfo.visitorName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                          fontSize: 16,
+                          letterSpacing: 0.1,
                         ),
                   ),
-                ],
-              ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffF44336).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color:
+                                      const Color(0xffF44336).withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                _getPurposeIcon(
+                                    visitorInfo.purposeSubCategoryName ??
+                                        visitorInfo.purposeCategoryName),
+                                color: const Color(0xffF44336),
+                                size: 15,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Flexible(
+                              child: Text(
+                                "${_capitalizeFirstLetter(visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? "N/A")} - ${visitorInfo.unitDetails.building_unit ?? 'N/A'}",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      fontSize: 14,
+                                      color: const Color(0xff57636C),
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.2,
+                                      height: 1.4,
+                                    ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Divider(
+                  indent: 20,
+                  endIndent: 20,
+                  height: 16,
+                  thickness: 1,
+                  color: Colors.grey.shade200,
+                ),
+                Container(
+                  padding: const EdgeInsets.only(
+                      bottom: 8.0, top: 6, left: 12, right: 12),
+                  child: TimerActionSection(
+                    visitorInfo: visitorInfo,
+                    visitorLogId: visitorInfo.visitorLogId ?? 0,
+                    onRetry: onRetry,
+                    isLoading: isLoading,
+                  ),
+                ),
+              ],
             ),
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              color: Colors.grey[200],
-            ),
-            TimerActionSection(
-              visitorInfo: visitorInfo,
-              visitorLogId: visitorInfo.visitorLogId ?? 0,
-              onRetry: onRetry,
-              isLoading: isLoading,
-            ),
-          ],
+          ),
         ),
       ),
     );

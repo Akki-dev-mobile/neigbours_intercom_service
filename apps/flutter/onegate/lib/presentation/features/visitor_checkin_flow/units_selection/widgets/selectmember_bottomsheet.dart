@@ -172,7 +172,7 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                       ],
                     ),
                     child: CustomLargeBtn(
-                      text: isLoading ? 'Confirming...' : 'Confirm',
+                      text: 'Confirm',
                       onPressed: isLoading
                           ? null
                           : () {
@@ -180,6 +180,9 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                               onConfirm();
                             },
                       disabled: isLoading,
+                      isLoading: isLoading,
+                      useBlackToGreyGradient: true,
+                      width: MediaQuery.of(context).size.width * 0.35,
                     ),
                   ),
                 ),

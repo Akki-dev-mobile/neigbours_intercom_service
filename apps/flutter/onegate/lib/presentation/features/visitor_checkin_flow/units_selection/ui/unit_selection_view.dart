@@ -2830,8 +2830,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                 ],
                               ),
                               child: CustomLargeBtn(
-                                text:
-                                    _isConfirming ? 'Confirming...' : 'Confirm',
+                                text: 'Confirm',
                                 onPressed: selectedMembers.isEmpty ||
                                         _isConfirming
                                     ? null
@@ -2839,6 +2838,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                         _handleSelectionSubmit(selectedMembers),
                                 disabled:
                                     selectedMembers.isEmpty || _isConfirming,
+                                isLoading: _isConfirming,
+                                useBlackToGreyGradient: true,
+                                width: MediaQuery.of(context).size.width * 0.75,
                               ),
                             ),
                           ),

@@ -939,10 +939,11 @@ class _ParcelListState extends State<ParcelList> {
         isScrollable: false,
         hasBackButton: true,
         backButtonPressed: () {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const GateDashboardView()));
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => GateDashboardView()),
+            (Route<dynamic> route) => false,
+          );
         },
         pageTitle: 'Parcels',
         pageBody: Column(

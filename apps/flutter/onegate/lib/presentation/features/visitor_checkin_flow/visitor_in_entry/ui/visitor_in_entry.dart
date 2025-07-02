@@ -753,6 +753,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               text: _isSubmitting ? 'Submitting...' : 'Next',
               onPressed: _isSubmitting ? null : _handleSubmit,
               disabled: _isSubmitting,
+              useBlackToGreyGradient: true,
             ),
           ),
         );

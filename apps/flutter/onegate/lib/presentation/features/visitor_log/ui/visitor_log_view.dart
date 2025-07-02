@@ -71,6 +71,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
   List<VisitorLog>? _lastVisitorLogs;
   final bool _isSearching = false;
 
+  // Track loading more state for pagination
+  bool _isLoadingMore = false;
+
   @override
   void initState() {
     super.initState();
@@ -229,7 +232,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
     return BlocConsumer<VisitorLogBloc, VisitorLogState>(
       bloc: _visitorLogBloc,
-      listenWhen: (previous, current) => current is VisitorLogActionState,
+      listenWhen: (previous, current) =>
+          current is VisitorLogActionState ||
+          current is VisitorLogLoadingMoreState,
       buildWhen: (previous, current) {
         // Don't rebuild on loading state if we're searching and have previous data
         if (current is VisitorLogLoadingState &&
@@ -242,6 +247,18 @@ class _VisitorLogViewState extends State<VisitorLogView>
       },
       listener: (context, state) {
         switch (state.runtimeType) {
+          case VisitorLogLoadingMoreState:
+            setState(() {
+              _isLoadingMore = true;
+            });
+            debugPrint("🔄 [PAGINATION] Started loading more data");
+            break;
+          case VisitorLogSuccessState:
+            setState(() {
+              _isLoadingMore = false;
+            });
+            debugPrint("✅ [PAGINATION] Finished loading more data");
+            break;
           case VisitorLogCheckOutSuccessState:
             final successState = state as VisitorLogCheckOutSuccessState;
             if (successState.isCheckOut!) {
@@ -414,8 +431,16 @@ class _VisitorLogViewState extends State<VisitorLogView>
                 return false;
               },
               child: MyScrollView(
-                // isScrollable: false,
-                hasBackButton: false,
+                isScrollable: false,
+                hasBackButton: true,
+                backButtonPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => GateDashboardView()),
+                    (Route<dynamic> route) => false,
+                  );
+                },
                 pageTitleWidget: Hero(
                   tag: 'page_title',
                   child: Text(
@@ -689,8 +714,14 @@ class _VisitorLogViewState extends State<VisitorLogView>
                           padding: EdgeInsets.only(bottom: 100),
                           physics: BouncingScrollPhysics(),
                           shrinkWrap: true,
-                          itemCount: groupedLogsList.length,
+                          itemCount:
+                              groupedLogsList.length + (_isLoadingMore ? 1 : 0),
                           itemBuilder: (context, index) {
+                            // Show loading indicator at the bottom when loading more
+                            if (index == groupedLogsList.length &&
+                                _isLoadingMore) {
+                              return _buildPaginationLoadingIndicator();
+                            }
                             final dateKey = groupedLogsList[index].key;
                             final logsForDate = groupedLogsList[index].value;
 
@@ -765,6 +796,57 @@ class _VisitorLogViewState extends State<VisitorLogView>
   }
 
   bool isLoading = false;
+
+  // Build pagination loading indicator widget
+  Widget _buildPaginationLoadingIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      const Color(0xffF44336),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Loading more visitors...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: const Color(0xff57636C),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _showExportBottomSheet(
       BuildContext context, List<VisitorLog> visitorLogs) async {

@@ -469,7 +469,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
         automaticallyImplyLeading: false,
         toolbarHeight: 70,
         title: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
