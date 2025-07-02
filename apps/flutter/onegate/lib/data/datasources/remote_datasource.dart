@@ -513,9 +513,9 @@ class RemoteDataSource {
 
           // Only store coming from if it's not empty
           if (comingFrom.isNotEmpty) {
-          await gateStorage.setComingFrom(comingFrom);
-          final myComingFrom = await gateStorage.getComingFrom();
-          log("comingFrom pref $myComingFrom");
+            await gateStorage.setComingFrom(comingFrom);
+            final myComingFrom = await gateStorage.getComingFrom();
+            log("comingFrom pref $myComingFrom");
           } else {
             // Clear any existing coming from value
             await gateStorage.setComingFrom("");
@@ -1461,8 +1461,8 @@ class RemoteDataSource {
 
       // Add onlyCheckout parameter if provided
       if (onlyCheckout != null) {
-        // Try sending as string '1' or '0' since other formats aren't working
-        queryParams['only_checkout'] = onlyCheckout ? '1' : '0';
+        // Send explicit boolean strings expected by the backend ('true' or 'false')
+        queryParams['only_checkout'] = onlyCheckout.toString();
         debugPrint(
             "🔍 [DEBUG] onlyCheckout value type: ${queryParams['only_checkout'].runtimeType}");
         debugPrint(
@@ -1501,7 +1501,7 @@ class RemoteDataSource {
       debugPrint("🚀 [REQUEST] Complete request details:");
       debugPrint("🚀 [REQUEST] URL: $uri");
       debugPrint("🚀 [REQUEST] Method: GET");
-      debugPrint("�� [REQUEST] Headers: ${{
+      debugPrint("🚀 [REQUEST] Headers: ${{
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ${accessToken?.substring(0, 20) ?? ''}...'
       }}");
