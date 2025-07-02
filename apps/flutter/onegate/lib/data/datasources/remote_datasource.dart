@@ -512,9 +512,9 @@ class RemoteDataSource {
 
           // Only store coming from if it's not empty
           if (comingFrom.isNotEmpty) {
-            await gateStorage.setComingFrom(comingFrom);
-            final myComingFrom = await gateStorage.getComingFrom();
-            log("comingFrom pref $myComingFrom");
+          await gateStorage.setComingFrom(comingFrom);
+          final myComingFrom = await gateStorage.getComingFrom();
+          log("comingFrom pref $myComingFrom");
           } else {
             // Clear any existing coming from value
             await gateStorage.setComingFrom("");

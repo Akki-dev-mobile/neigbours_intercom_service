@@ -46,25 +46,25 @@ class VisitorInEntryBloc
     Emitter<VisitorInEntryState> emit,
   ) async {
     try {
-      final visitor = Visitor(
-        name: event.guestName!,
-        mobile: event.mobile,
-        visitor_image: "",
-        isStaff: event.searchedVisitor?.isStaff, // Preserve isStaff property
-      );
+    final visitor = Visitor(
+      name: event.guestName!,
+      mobile: event.mobile,
+      visitor_image: "",
+      isStaff: event.searchedVisitor?.isStaff, // Preserve isStaff property
+    );
 
-      if (event.searchedVisitor == null ||
-          event.searchedVisitor!.visitor_image?.isEmpty == true) {
-        emit(VIENavigateToCameraState(
-          event.searchedVisitor ?? visitor,
-          event.purposeCategory,
-          event.searchedVisitor == null ? 'new_visitor' : 'update_image',
-        ));
-      } else {
-        emit(VIENavigateToUnitSelectionState(
-          event.searchedVisitor!,
-          event.purposeCategory,
-        ));
+    if (event.searchedVisitor == null ||
+        event.searchedVisitor!.visitor_image?.isEmpty == true) {
+      emit(VIENavigateToCameraState(
+        event.searchedVisitor ?? visitor,
+        event.purposeCategory,
+        event.searchedVisitor == null ? 'new_visitor' : 'update_image',
+      ));
+    } else {
+      emit(VIENavigateToUnitSelectionState(
+        event.searchedVisitor!,
+        event.purposeCategory,
+      ));
       }
     } catch (error) {
       emit(VisitorInEntryErrorState(message: error.toString()));
