@@ -1017,7 +1017,7 @@ class RemoteDataSource {
     debugPrint(
         "🔍 [FETCH] fetchCheckInLogs() called - will use onlyCheckout: false, page: $currentPage, perPage: $perPage, search: '${searchQuery ?? 'none'}'");
     return _fetchVisitorLogs(
-      onlyCheckout: false,
+      onlyCheckout: false, // Explicitly set to false for Visitor-In
       currentPage: currentPage,
       perPage: perPage,
       searchQuery: searchQuery,
@@ -1047,7 +1047,7 @@ class RemoteDataSource {
         "🚨 [FETCH] fetchCheckOutLogs() called - will use onlyCheckout: true, page: $currentPage, perPage: $perPage, search: '${searchQuery ?? 'none'}'");
     debugPrint("🚨 [FETCH] This will only show checked-out visitors!");
     return _fetchVisitorLogs(
-      onlyCheckout: true,
+      onlyCheckout: true, // Explicitly set to true for Visitor-Out
       currentPage: currentPage,
       perPage: perPage,
       searchQuery: searchQuery,
@@ -1149,7 +1149,7 @@ class RemoteDataSource {
     }
   }
 
-  /// Helper method to safely extract integer values from API response
+  /// Helper method to safely extract integer values from API response data
   int _extractIntSafely(Map<String, dynamic> data, String key) {
     try {
       final value = data[key];
@@ -1563,7 +1563,7 @@ class RemoteDataSource {
       debugPrint("   Formatted: $formattedDate");
 
       // Build query parameters for GET request
-      final queryParams = <String, String>{
+      Map<String, String> queryParams = {
         'company_id': resolvedCompanyId.toString(),
         'in_gate': selectedGateName,
         'from_date': formattedDate,
@@ -1574,61 +1574,31 @@ class RemoteDataSource {
 
       // Add onlyCheckout parameter if provided
       if (onlyCheckout != null) {
-        debugPrint("🔍 [PARAM] onlyCheckout parameter: $onlyCheckout");
-        // API expects boolean values: true or false
-        queryParams['only_checkout'] = onlyCheckout.toString();
+        // Try sending as string '1' or '0' since other formats aren't working
+        queryParams['only_checkout'] = onlyCheckout ? '1' : '0';
         debugPrint(
-            "🔍 [PARAM] only_checkout query param set to: '${queryParams['only_checkout']}'");
+            "🔍 [DEBUG] onlyCheckout value type: ${queryParams['only_checkout'].runtimeType}");
         debugPrint(
-            "🔍 [PARAM] queryParams['only_checkout'] type: ${queryParams['only_checkout'].runtimeType}");
-        debugPrint(
-            "🔍 [PARAM] queryParams['only_checkout'] value: '${queryParams['only_checkout']}'");
-      } else {
-        debugPrint(
-            "🔍 [PARAM] onlyCheckout parameter is null - not adding to query params");
+            "🔍 [DEBUG] onlyCheckout value: ${queryParams['only_checkout']}");
       }
 
-      // Debug: Log the actual date being used
-      debugPrint("🗓️ ACTUAL DATE: Current time: ${DateTime.now()}");
-      debugPrint("🗓️ FORMATTED DATE: $formattedDate");
-
-      debugPrint("🔍 Step 3: VISITOR LOGS V2 QUERY PARAMS:");
-      debugPrint("📦 company_id: '${queryParams['company_id']}'");
-      debugPrint("📦 in_gate: '${queryParams['in_gate']}'");
-      debugPrint("📦 from_date: '${queryParams['from_date']}'");
-      debugPrint("📦 to_date: '${queryParams['to_date']}'");
-      debugPrint("📦 per_page: '${queryParams['per_page']}'");
-      debugPrint("📦 current_page: '${queryParams['current_page']}'");
-
-      // Build URL manually to preserve boolean values
-      final baseUrl = ApiUrls.visitorGetLogV2;
-      var urlWithParams =
-          '$baseUrl?company_id=$resolvedCompanyId&in_gate=${Uri.encodeComponent(selectedGateName)}&from_date=$formattedDate&to_date=$formattedDate&per_page=$perPage&current_page=$currentPage';
-
-      // Add onlyCheckout parameter as boolean string if provided (API expects "true"/"false")
-      if (onlyCheckout != null) {
-        final onlyCheckoutValue = onlyCheckout.toString();
-        urlWithParams += '&only_checkout=$onlyCheckoutValue';
-        debugPrint(
-            "🔍 [URL] Added only_checkout parameter as boolean string: '$onlyCheckoutValue' (from boolean: $onlyCheckout)");
-      }
-
-      // Add search parameter if provided
+      // Add search query if provided
       if (searchQuery != null && searchQuery.isNotEmpty) {
-        urlWithParams += '&search=${Uri.encodeComponent(searchQuery)}';
-        debugPrint("🔍 [URL] Added search parameter: '$searchQuery'");
+        queryParams['search'] = searchQuery;
       }
 
-      final uri = Uri.parse(urlWithParams);
+      debugPrint("🔍 [PARAMS] Query parameters: $queryParams");
 
-      debugPrint("🌐 Fetching visitor logs V2 from: $uri");
-      debugPrint("🔍 [URL] Full URI: $uri");
-      debugPrint("🔍 [URL] Query parameters in URI: ${uri.queryParameters}");
-      debugPrint(
-          "🔍 [URL] only_checkout in URI: '${uri.queryParameters['only_checkout']}'");
-      debugPrint("🚀 [VISITOR_LOGS] Making HTTP GET request...");
+      // Build the URL with query parameters
+      final uri = Uri.parse(ApiUrls.visitorGetLogV2)
+          .replace(queryParameters: queryParams);
+      debugPrint("🔍 [DEBUG] Final URI: $uri");
+      debugPrint("🔍 [DEBUG] Raw query parameters: ${uri.queryParameters}");
 
+      // Get access token
       final accessToken = await _getAccessToken();
+
+      // Make the API request
       final response = await http.get(
         uri,
         headers: {
@@ -1641,86 +1611,32 @@ class RemoteDataSource {
           "🚀 [VISITOR_LOGS] HTTP response received with status: ${response.statusCode}");
       debugPrint(
           "🚀 [VISITOR_LOGS] Response body length: ${response.body.length}");
+      debugPrint("🚀 [REQUEST] Complete request details:");
+      debugPrint("🚀 [REQUEST] URL: $uri");
+      debugPrint("🚀 [REQUEST] Method: GET");
+      debugPrint("�� [REQUEST] Headers: ${{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${accessToken?.substring(0, 20) ?? ''}...'
+      }}");
+      debugPrint("🚀 [REQUEST] Query parameters: $queryParams");
 
       if (response.statusCode == 200) {
-        debugPrint(
-            "✅ [VISITOR_LOGS] API call successful - parsing response...");
         final responseData = jsonDecode(response.body);
+        debugPrint("🔍 Raw API Response: $responseData");
+        debugPrint("🔍 Response Type: ${responseData.runtimeType}");
 
-        debugPrint(
-            "🔍 [VISITOR_LOGS] Raw response data keys: ${responseData.keys.toList()}");
-        debugPrint(
-            "🔍 [VISITOR_LOGS] Raw response data: ${responseData.toString().substring(0, 500)}...");
-
-        // Parse the v2 response with counts - with fallback handling
-        List<dynamic> data;
-        try {
-          debugPrint(
-              "🔄 [VISITOR_LOGS] Attempting VisitorLogResponse.fromJson...");
-          final visitorLogResponse = VisitorLogResponse.fromJson(responseData);
-
-          // Log the counts for monitoring
-          log("📊 VISITOR LOGS V2 COUNTS:");
-          log("📈 Total (In-Out): ${visitorLogResponse.inOutCount}");
-          log("📥 Visitor-In: ${visitorLogResponse.visitorInCount}");
-          log("📤 Visitor-Out: ${visitorLogResponse.visitorOutCount}");
-          log("📄 Current Page: ${visitorLogResponse.currentPage}/${visitorLogResponse.lastPage}");
-
-          data = visitorLogResponse.data;
-          debugPrint(
-              "✅ [VISITOR_LOGS] VisitorLogResponse parsing successful - data count: ${data.length}");
-        } catch (parseError) {
-          debugPrint(
-              "⚠️ [VISITOR_LOGS] VisitorLogResponse parsing failed: $parseError");
-          debugPrint(
-              "🔄 [VISITOR_LOGS] Falling back to direct data extraction...");
-
-          // Fallback: Extract data directly from response
-          data = _extractVisitorDataFromResponse(responseData);
-          debugPrint(
-              "🔄 [VISITOR_LOGS] Fallback extraction complete - data count: ${data.length}");
-        }
-
-        log("📋 Data count: ${data.length}");
-
-        // Log gate names found in visitor logs for comparison
-        if (data.isNotEmpty) {
-          log("🔍 GATE NAMES IN RETURNED VISITOR LOGS V2:");
-          for (int i = 0; i < data.length && i < 5; i++) {
-            // Log first 5 entries
-            final item = data[i];
-            if (item is Map<String, dynamic>) {
-              final inGate = item['in_gate'];
-              log("🔍 Visitor log $i in_gate: '$inGate'");
-            }
-          }
+        if (responseData['success'] == true && responseData['data'] != null) {
+          final data = responseData['data']['data'] as List;
+          final visitorLogs =
+              data.map((item) => _mapToVisitorLog(item)).toList();
+          return visitorLogs;
         } else {
-          debugPrint("⚠️ [VISITOR_LOGS] No visitor data found in response!");
+          throw Exception('Invalid response format');
         }
-
-        // Map API response to VisitorLog objects
-        debugPrint(
-            "🔄 [VISITOR_LOGS] Mapping ${data.length} items to VisitorLog objects...");
-        final visitorLogs = data.map((item) => _mapToVisitorLog(item)).toList();
-
-        // Apply client-side sorting fallback to address API ordering issues
-        // This ensures visitors are displayed in chronological order (newest first)
-        // with secondary alphabetical sorting when check-in times are identical
-        final sortedLogs = VisitorSortingUtility.sortVisitorLogs(visitorLogs);
-
-        // Log sorting statistics for monitoring
-        final stats = VisitorSortingUtility.getSortingStatistics(sortedLogs);
-        log("📊 Visitor logs sorting applied: ${stats['total_logs']} logs, "
-            "${stats['logs_with_check_in']} with check-in times");
-
-        debugPrint(
-            "✅ [VISITOR_LOGS] _fetchVisitorLogs completed successfully - returning ${sortedLogs.length} logs");
-        return sortedLogs;
       } else {
         debugPrint(
             "❌ [VISITOR_LOGS] API call failed with status ${response.statusCode}");
         debugPrint("❌ [VISITOR_LOGS] Error response: ${response.body}");
-        _handleErrorResponse();
         throw Exception(
             'Failed to fetch visitor logs V2: ${response.statusCode}, ${response.body}');
       }
