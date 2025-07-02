@@ -12,6 +12,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/auth_service/centralized_logout_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
@@ -652,7 +653,22 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                                       ),
                                       child: TextButton(
                                         onPressed: () async {
-                                          logout(context);
+                                          try {
+                                            final authService =
+                                                GetIt.I<AuthService>();
+                                            await authService.logout();
+                                            if (context.mounted) {
+                                              Navigator.pushReplacement(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      const MyAppLogin(),
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            log('Error during logout: $e');
+                                          }
                                         },
                                         style: TextButton.styleFrom(
                                           backgroundColor: Colors.transparent,
@@ -705,10 +721,7 @@ class _MissedApprovalsScreen2State extends State<MissedApprovalsScreen2> {
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting &&
                         !_isRefreshing) {
-                      return const LoaderView(
-                        title: "Loading Missed Approvals",
-                        subtitle: "Please wait while we fetch the data",
-                      );
+                      return const LoaderView();
                     }
 
                     if (snapshot.hasError) {

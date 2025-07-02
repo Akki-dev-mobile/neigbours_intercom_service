@@ -168,9 +168,8 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                         Container(
                           margin: const EdgeInsets.symmetric(horizontal: 20),
                           child: CustomLargeBtn(
-                            text: 'Next',
-                            isLoading: isProcessing,
-                            useBlackToGreyGradient: true,
+                            text: isProcessing ? 'Processing...' : 'Next',
+                            disabled: isProcessing,
                             onPressed: isProcessing
                                 ? null
                                 : () async {

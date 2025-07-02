@@ -77,8 +77,8 @@ class _EditStaffState extends State<EditStaff> {
   late int _staffId = 0;
   bool _isLoading = true;
   StaffModel? _staffData;
-  String _profileImageUrl = '';
-  String _idProofImageUrl = '';
+  final String _profileImageUrl = '';
+  final String _idProofImageUrl = '';
 
   @override
   void initState() {
@@ -292,7 +292,7 @@ class _EditStaffState extends State<EditStaff> {
               surface: Theme.of(context).colorScheme.surface,
               onSurface: Theme.of(context).colorScheme.onSurface,
             ),
-            dialogBackgroundColor: Colors.white,
+            dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child!,
         );
@@ -312,7 +312,7 @@ class _EditStaffState extends State<EditStaff> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirm Upload'),
+          title: const Text('Confirm Upload'),
           content: const Text('Do you want to upload the selected images?'),
           actions: <Widget>[
             TextButton(
@@ -342,7 +342,7 @@ class _EditStaffState extends State<EditStaff> {
 
   Future<void> _uploadImages(File profileImage, File idProofImage) async {
     try {
-      final int companyId = 1;
+      const int companyId = 1;
       final profileImageResponse =
           await _remoteDataSource.uploadStaffImages(profileImage, companyId);
       final idProofImageResponse =
@@ -470,7 +470,7 @@ class _EditStaffState extends State<EditStaff> {
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) =>
-                    StaffScreen(), // Replace with your list view screen widget
+                    const StaffScreen(), // Replace with your list view screen widget
               ),
               (route) => false,
             );
@@ -484,13 +484,13 @@ class _EditStaffState extends State<EditStaff> {
                 }
               });
               return AlertDialog(
-                title: Container(
+                title: SizedBox(
                   height: MediaQuery.of(context).size.height * 0.1,
                   width: MediaQuery.of(context).size.width * 0.2,
                   child: Image.network(
                       'https://uxwing.com/wp-content/themes/uxwing/download/editing-user-action/tick-mark-user-color-icon.png'),
                 ),
-                content: Text('Staff updated successfully'),
+                content: const Text('Staff updated successfully'),
               );
             },
           );
@@ -616,7 +616,7 @@ class _EditStaffState extends State<EditStaff> {
 
   Future<String?> _uploadSingleImage(File imageFile) async {
     try {
-      final int companyId = 1;
+      const int companyId = 1;
       final response =
           await _remoteDataSource.uploadStaffImages(imageFile, companyId);
       if (response != null) {
@@ -710,7 +710,6 @@ class _EditStaffState extends State<EditStaff> {
                     }
                     return null;
                   },
-                  cursorColor: Colors.black,
                 ),
 
                 // Gender
@@ -722,7 +721,7 @@ class _EditStaffState extends State<EditStaff> {
                   focusNode: _mobileFocusNode,
                   textController: _phoneController,
                   hintText: "0123456789",
-                  titleColor: Theme.of(context).colorScheme.onBackground,
+                  titleColor: Theme.of(context).colorScheme.onSurface,
                   hintColor: Theme.of(context).colorScheme.onPrimary,
                   prefixIcon: CountryCodePicker(
                     initialSelection: selectedCountryCodeSE,
@@ -730,28 +729,26 @@ class _EditStaffState extends State<EditStaff> {
                     showFlagMain: true,
                     showFlagDialog: true,
                     boxDecoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.background,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
-                    barrierColor: Theme.of(context)
-                        .colorScheme
-                        .background
-                        .withOpacity(0.5),
+                    barrierColor:
+                        Theme.of(context).colorScheme.surface.withOpacity(0.5),
                     closeIcon: Icon(
                       Icons.close,
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     searchDecoration: InputDecoration(
                       prefixIcon: Icon(
                         Icons.search,
-                        color: Theme.of(context).colorScheme.onBackground,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       hintText: 'Search',
                       hintStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onBackground,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     textStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 18,
                     ),
                     onChanged: (countryCode) {
@@ -785,7 +782,6 @@ class _EditStaffState extends State<EditStaff> {
                     }
                     return null;
                   },
-                  cursorColor: Colors.black,
                 ),
 
                 // Email
@@ -802,7 +798,6 @@ class _EditStaffState extends State<EditStaff> {
                     }
                     return null;
                   },
-                  cursorColor: Colors.black,
                 ),
 
                 // DOB
@@ -829,7 +824,6 @@ class _EditStaffState extends State<EditStaff> {
                     onPressed: _selectDateOfBirth,
                     icon: const Icon(Icons.calendar_today),
                   ),
-                  cursorColor: Colors.black,
                 ),
 
                 // Category
@@ -944,7 +938,6 @@ class _EditStaffState extends State<EditStaff> {
                     onPressed: () => _openCamera(isIdProof: true),
                     icon: const Icon(Icons.camera_alt),
                   ),
-                  cursorColor: Colors.black,
                 ),
 
                 // Address
@@ -961,7 +954,6 @@ class _EditStaffState extends State<EditStaff> {
                     }
                     return null;
                   },
-                  cursorColor: Colors.black,
                 ),
 
                 const SizedBox(height: 30),

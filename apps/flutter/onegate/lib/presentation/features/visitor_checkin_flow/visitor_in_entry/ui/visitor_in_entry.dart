@@ -750,10 +750,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             width: MediaQuery.of(context).size.width * 0.85,
             height: 60,
             child: CustomLargeBtn(
-              text: 'Next',
+              text: _isSubmitting ? 'Submitting...' : 'Next',
               onPressed: _isSubmitting ? null : _handleSubmit,
-              isLoading: _isSubmitting,
-              useBlackToGreyGradient: true,
+              disabled: _isSubmitting,
             ),
           ),
         );
@@ -839,11 +838,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Expanded(
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Staff Information',
                                 style: TextStyle(
                                   fontSize: 18,
@@ -851,8 +850,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                                   color: Color(0xff212427),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              const Text(
+                              SizedBox(height: 4),
+                              Text(
                                 'Please fill in all the staff details',
                                 style: TextStyle(
                                   fontSize: 14,
@@ -1106,11 +1105,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Cab Information',
                             style: TextStyle(
                               fontSize: 18,
@@ -1118,8 +1117,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               color: Color(0xff212427),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
+                          SizedBox(height: 4),
+                          Text(
                             'Please fill in all the cab details',
                             style: TextStyle(
                               fontSize: 14,
@@ -1541,13 +1540,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Select Delivery Company',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xff212427),
+                    color: Color(0xff212427),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -1561,7 +1560,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           padding: const EdgeInsets.all(20),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             childAspectRatio: 0.85,
             mainAxisSpacing: 12,
@@ -1877,13 +1876,13 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Select Vendor Category',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xff212427),
+                    color: Color(0xff212427),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -1897,7 +1896,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           padding: const EdgeInsets.all(20),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             childAspectRatio: 0.85,
             mainAxisSpacing: 12,
@@ -2055,11 +2054,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Guest Information',
                             style: TextStyle(
                               fontSize: 18,
@@ -2067,8 +2066,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               color: Color(0xff212427),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
+                          SizedBox(height: 4),
+                          Text(
                             'Please fill in all the guest details',
                             style: TextStyle(
                               fontSize: 14,
@@ -3062,9 +3061,9 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
     final isTablet = MediaQuery.of(context).size.width > 600;
     final double previewMargin = isTablet ? 24 : 8;
     final double previewRadius = isTablet ? 32 : 20;
-    final double previewBorder = 3;
-    final double previewShadow = 32;
-    final double previewAspectRatio = 3 / 4;
+    const double previewBorder = 3;
+    const double previewShadow = 32;
+    const double previewAspectRatio = 3 / 4;
     final double controlsHeight = isTablet ? 120 : 90;
     return WillPopScope(
       onWillPop: () async => false, // Prevent back button

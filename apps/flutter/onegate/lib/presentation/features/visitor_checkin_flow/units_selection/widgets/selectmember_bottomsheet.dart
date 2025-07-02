@@ -172,13 +172,14 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                       ],
                     ),
                     child: CustomLargeBtn(
-                      text: 'Confirm',
-                      onPressed: () {
-                        Navigator.pop(context);
-                        onConfirm();
-                      },
-                      isLoading: isLoading,
-                      useBlackToGreyGradient: true,
+                      text: isLoading ? 'Confirming...' : 'Confirm',
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              onConfirm();
+                            },
+                      disabled: isLoading,
                     ),
                   ),
                 ),
