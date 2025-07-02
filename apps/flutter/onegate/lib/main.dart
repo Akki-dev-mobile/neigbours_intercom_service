@@ -70,9 +70,37 @@ import 'presentation/features/missed_approval/missed_approval_screen.dart';
 import 'debug/error_tracking_test.dart';
 // Error tracking imports
 import 'services/error_tracking/posthog_error_tracking_service.dart';
+// Analytics imports
+// import 'package:flutter_clarity/flutter_clarity.dart';  // Commented out due to API compatibility issues
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 late GateConfig appGateConfig;
+
+/// Microsoft Clarity Analytics
+/// Note: Currently disabled due to Flutter package API compatibility issues
+/// Project ID s1bnm5i1um is ready to be used when a compatible package is found
+/// This will work in BOTH debug and release modes for production analytics
+Future<void> _initializeClarityAnalytics() async {
+  try {
+    log('🔍 Microsoft Clarity Analytics: Package integration pending');
+    log('📊 Project ID ready: s1bnm5i1um');
+    log('💡 Awaiting compatible Flutter Clarity package for full integration');
+
+    // When package is available, this will track:
+    // - Real visitor check-in flows in production
+    // - User interactions with gate selection
+    // - Performance bottlenecks in visitor management
+    // - Mobile app usage patterns
+
+    if (kDebugMode) {
+      log('🧪 Running in DEBUG mode - will show detailed logs');
+    } else {
+      log('🚀 Running in RELEASE mode - production analytics ready');
+    }
+  } catch (e) {
+    log('❌ Failed to initialize Microsoft Clarity Analytics: $e');
+  }
+}
 
 /// Send a test error to PostHog for verification (debug mode only)
 Future<void> _sendTestErrorToPostHog() async {
@@ -175,6 +203,11 @@ void main() async {
     // Send a test error to verify PostHog Error Tracking (only in debug mode)
     await _sendTestErrorToPostHog();
   }
+
+  // Initialize Microsoft Clarity Analytics (ALL MODES)
+  // Note: Unlike other debug services, Clarity should work in production
+  // to track real user behavior and provide valuable insights
+  await _initializeClarityAnalytics();
 
   // Configure AppAuth to allow insecure connections
   await CustomAppAuth.configureAppAuth();

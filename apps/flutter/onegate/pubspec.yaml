@@ -116,6 +116,8 @@ dependencies:
   # No background task dependencies needed
   # Sentry for comprehensive error tracking and performance monitoring
   sentry_flutter: ^7.18.0
+  # Flutter Clarity for user behavior analytics and session recording
+  # flutter_clarity: ^1.0.0+3  # Commented out due to API compatibility issues
 
 dev_dependencies:
   flutter_test:

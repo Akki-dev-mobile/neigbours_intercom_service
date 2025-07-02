@@ -942,6 +942,7 @@ class RemoteDataSource {
       final queryParams = <String, String>{
         'company_id': resolvedCompanyId.toString(),
         'in_gate': selectedGateName,
+        'gate_type': gateInfo['gateType']!,
         'from_date': fromDate ?? defaultDate,
         'to_date': toDate ?? defaultDate,
         'per_page': '1', // We only need counts, not data
@@ -1453,6 +1454,7 @@ class RemoteDataSource {
       Map<String, String> queryParams = {
         'company_id': resolvedCompanyId.toString(),
         'in_gate': selectedGateName,
+        'gate_type': selectedGateType,
         'from_date': formattedDate,
         'to_date': formattedDate,
         'per_page': perPage.toString(),
