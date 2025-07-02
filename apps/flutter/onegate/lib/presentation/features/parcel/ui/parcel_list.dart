@@ -491,20 +491,7 @@ class _ParcelListState extends State<ParcelList> {
     }
 
     if (filteredParcels.isEmpty) {
-      return Column(
-        children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.2,
-          ),
-          const Center(
-            child: Icon(
-              Symbols.package_2,
-              size: 90,
-            ),
-          ),
-          const Center(child: Text('No parcels found.')),
-        ],
-      );
+      return _buildEnhancedNoResultsState(context, searchQuery);
     }
 
     // Group parcels by date
@@ -581,6 +568,369 @@ class _ParcelListState extends State<ParcelList> {
     );
   }
 
+  Widget _buildEnhancedNoResultsState(
+      BuildContext context, String searchQuery) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: isTablet ? 80 : 60),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Enhanced icon container (staff style)
+            Container(
+              padding: EdgeInsets.all(isTablet ? 32 : 24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.red.shade50,
+                    Colors.red.shade100.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(
+                  color: Colors.red.shade200.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                searchQuery.isEmpty
+                    ? Symbols.package_2
+                    : Icons.search_off_rounded,
+                size: isTablet ? 64 : 48,
+                color: Colors.red.shade300,
+              ),
+            ),
+            SizedBox(height: isTablet ? 24 : 20),
+
+            // Enhanced title (staff style)
+            Text(
+              searchQuery.isEmpty ? 'No Parcels Available' : 'No Parcel Found',
+              style: TextStyle(
+                color: const Color(0xff212427),
+                fontSize: isTablet ? 20 : 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+            SizedBox(height: isTablet ? 8 : 6),
+
+            // Enhanced subtitle (staff style)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 50 : 32),
+              child: Text(
+                searchQuery.isEmpty
+                    ? 'There are currently no parcels registered in the system.'
+                    : 'No parcels match your search criteria. Try adjusting your search terms.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: isTablet ? 14 : 12,
+                  height: 1.4,
+                ),
+              ),
+            ),
+
+            // Clear search button for search results (staff style)
+            if (searchQuery.isNotEmpty) ...[
+              SizedBox(height: isTablet ? 32 : 24),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Color(0xff212427),
+                      Color(0xff57636C),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _searchQuery = '';
+                      _searchController.clear();
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 32 : 24,
+                      vertical: isTablet ? 16 : 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.clear_all,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    'Clear Search',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: isTablet ? 16 : 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedEmptyState(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: isTablet ? 100 : 80),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Enhanced icon container (staff style)
+            Container(
+              padding: EdgeInsets.all(isTablet ? 40 : 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.red.shade50,
+                    Colors.red.shade100.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(
+                  color: Colors.red.shade200.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Symbols.package_2,
+                size: isTablet ? 80 : 64,
+                color: Colors.red.shade300,
+              ),
+            ),
+            SizedBox(height: isTablet ? 32 : 24),
+
+            // Enhanced title (staff style)
+            Text(
+              'No Parcels Available',
+              style: TextStyle(
+                color: const Color(0xff212427),
+                fontSize: isTablet ? 24 : 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+            SizedBox(height: isTablet ? 12 : 8),
+
+            // Enhanced subtitle (staff style)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
+              child: Text(
+                'There are currently no parcels registered in the system.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: isTablet ? 16 : 14,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            SizedBox(height: isTablet ? 40 : 32),
+
+            // Enhanced refresh button (staff style)
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xff212427),
+                    Color(0xff57636C),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  // Refresh parcel list
+                  context.read<ParcelBloc>().add(FetchParcels());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 32 : 24,
+                    vertical: isTablet ? 16 : 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  'Refresh',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedErrorState(BuildContext context, String errorMessage) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: isTablet ? 100 : 80),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Enhanced icon container (staff style)
+            Container(
+              padding: EdgeInsets.all(isTablet ? 40 : 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.red.shade50,
+                    Colors.red.shade100.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(
+                  color: Colors.red.shade200.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: isTablet ? 80 : 64,
+                color: Colors.red.shade300,
+              ),
+            ),
+            SizedBox(height: isTablet ? 32 : 24),
+
+            // Enhanced title (staff style)
+            Text(
+              'Something went wrong',
+              style: TextStyle(
+                color: const Color(0xff212427),
+                fontSize: isTablet ? 24 : 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+            SizedBox(height: isTablet ? 12 : 8),
+
+            // Enhanced subtitle (staff style)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
+              child: Text(
+                'There was an error loading the parcel list. Please check your connection and try again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: isTablet ? 16 : 14,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            SizedBox(height: isTablet ? 40 : 32),
+
+            // Enhanced retry button (staff style)
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xff212427),
+                    Color(0xff57636C),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  // Retry loading parcel list
+                  context.read<ParcelBloc>().add(FetchParcels());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 32 : 24,
+                    vertical: isTablet ? 16 : 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  'Try Again',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -616,14 +966,9 @@ class _ParcelListState extends State<ParcelList> {
                       ],
                     );
                   } else if (state is ParcelError) {
-                    return Center(child: Text('Error: ${state.message}'));
+                    return _buildEnhancedErrorState(context, state.message);
                   } else {
-                    return const Column(
-                      children: [
-                        Icon(Symbols.package_2),
-                        Center(child: Text('No parcels found.')),
-                      ],
-                    );
+                    return _buildEnhancedEmptyState(context);
                   }
                 },
               ),

@@ -914,7 +914,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                             onPressed: () => Navigator.pop(context),
                             icon: const Icon(
                               Icons.close_rounded,
-                              color: Color(0xff57636C),
+                              color: Color(
+                                  0xffF44336), // Changed from Color(0xff57636C) to red
                               size: 20,
                             ),
                           ),
@@ -3064,444 +3065,253 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           onPressed: () {
                             showDialog(
                               context: context,
-                              barrierDismissible: true,
-                              builder: (BuildContext context) {
+                              builder: (context) {
+                                final isTablet =
+                                    MediaQuery.of(context).size.width > 768;
                                 return Dialog(
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  elevation: 0,
-                                  backgroundColor: Colors.transparent,
                                   child: Container(
-                                    padding: const EdgeInsets.all(0),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 10),
-                                        ),
-                                      ],
+                                    width: isTablet ? 500 : double.infinity,
+                                    constraints: BoxConstraints(
+                                      maxWidth: isTablet
+                                          ? 500
+                                          : MediaQuery.of(context).size.width *
+                                              0.9,
+                                      maxHeight:
+                                          MediaQuery.of(context).size.height *
+                                              0.8,
                                     ),
+                                    padding: EdgeInsets.all(isTablet ? 32 : 24),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        // Enhanced Header
+                                        Text(
+                                          'Confirm Checkout',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge
+                                              ?.copyWith(
+                                                fontSize: isTablet ? 24 : 20,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xff212427),
+                                              ),
+                                        ),
+                                        SizedBox(height: isTablet ? 24 : 20),
                                         Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.all(24),
+                                          padding: EdgeInsets.all(
+                                              isTablet ? 16 : 12),
                                           decoration: BoxDecoration(
-                                            color: const Color(
-                                                0xffFFEBEE), // OneGate's light red
+                                            color: Colors.amber[50],
                                             borderRadius:
-                                                const BorderRadius.only(
-                                              topLeft: Radius.circular(20),
-                                              topRight: Radius.circular(20),
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Colors.amber[100]!,
+                                              width: 1,
                                             ),
                                           ),
-                                          child: Column(
+                                          child: Row(
                                             children: [
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.all(12),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white
-                                                      .withOpacity(0.9),
-                                                  borderRadius:
-                                                      BorderRadius.circular(50),
-                                                ),
-                                                child: const Icon(
-                                                  Icons.logout_rounded,
-                                                  color: Color(0xffF44336),
-                                                  size: 32,
-                                                ),
+                                              Icon(
+                                                Icons.info_outline_rounded,
+                                                color: Colors.amber[700],
+                                                size: isTablet ? 24 : 20,
                                               ),
-                                              const SizedBox(height: 16),
-                                              Text(
-                                                'Confirm Checkout',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .headlineSmall
-                                                    ?.copyWith(
-                                                      color: const Color(
-                                                          0xff212427),
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      fontSize: 22,
-                                                      letterSpacing: 0.2,
-                                                    ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'Visitor Departure Confirmation',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium
-                                                    ?.copyWith(
-                                                      color: const Color(
-                                                          0xff57636C),
-                                                      fontSize: 14,
-                                                      letterSpacing: 0.3,
-                                                    ),
+                                              SizedBox(
+                                                  width: isTablet ? 16 : 12),
+                                              Expanded(
+                                                child: Text(
+                                                  'This action will permanently record the checkout time and cannot be undone.',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color:
+                                                            Colors.amber[800],
+                                                        fontSize:
+                                                            isTablet ? 15 : 13,
+                                                        height: 1.4,
+                                                      ),
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ),
-
-                                        // Enhanced Content
-                                        Padding(
-                                          padding: const EdgeInsets.all(24),
-                                          child: Column(
-                                            children: [
-                                              // Visitor info card
-                                              Container(
-                                                width: double.infinity,
-                                                padding:
-                                                    const EdgeInsets.all(20),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey[50],
-                                                  borderRadius:
-                                                      BorderRadius.circular(16),
-                                                  border: Border.all(
-                                                    color: Colors.grey[200]!,
+                                        SizedBox(height: isTablet ? 32 : 28),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: OutlinedButton(
+                                                style: OutlinedButton.styleFrom(
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical:
+                                                        isTablet ? 16 : 14,
+                                                  ),
+                                                  side: const BorderSide(
+                                                    color: Color(0xff57636C),
                                                     width: 1,
                                                   ),
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(8),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: const Color(
-                                                                    0xffF44336)
-                                                                .withOpacity(
-                                                                    0.1),
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        10),
-                                                          ),
-                                                          child: const Icon(
-                                                            Icons
-                                                                .person_outline_rounded,
-                                                            color: Color(
-                                                                0xffF44336),
-                                                            size: 20,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 12),
-                                                        Expanded(
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              Text(
-                                                                widget
-                                                                        .visitorLog
-                                                                        .visitor
-                                                                        ?.name ??
-                                                                    'Visitor',
-                                                                style: Theme.of(
-                                                                        context)
-                                                                    .textTheme
-                                                                    .titleMedium
-                                                                    ?.copyWith(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w600,
-                                                                      color: const Color(
-                                                                          0xff212427),
-                                                                      fontSize:
-                                                                          16,
-                                                                    ),
-                                                              ),
-                                                              const SizedBox(
-                                                                  height: 2),
-                                                              Text(
-                                                                'Ready for departure',
-                                                                style: Theme.of(
-                                                                        context)
-                                                                    .textTheme
-                                                                    .bodySmall
-                                                                    ?.copyWith(
-                                                                      color: const Color(
-                                                                          0xff57636C),
-                                                                      fontSize:
-                                                                          13,
-                                                                    ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-
-                                              const SizedBox(height: 20),
-
-                                              // Warning message
-                                              Container(
-                                                width: double.infinity,
-                                                padding:
-                                                    const EdgeInsets.all(16),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.amber[50],
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  border: Border.all(
-                                                    color: Colors.amber[200]!,
-                                                    width: 1,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
                                                   ),
                                                 ),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons
-                                                          .info_outline_rounded,
-                                                      color: Colors.amber[700],
-                                                      size: 20,
-                                                    ),
-                                                    const SizedBox(width: 12),
-                                                    Expanded(
-                                                      child: Text(
-                                                        'This action will permanently record the checkout time and cannot be undone.',
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .bodySmall
-                                                            ?.copyWith(
-                                                              color: Colors
-                                                                  .amber[800],
-                                                              fontSize: 13,
-                                                              height: 1.4,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  ],
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
+                                                child: Text(
+                                                  'Cancel',
+                                                  style: TextStyle(
+                                                    color:
+                                                        const Color(0xff57636C),
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize:
+                                                        isTablet ? 16 : 14,
+                                                  ),
                                                 ),
                                               ),
-
-                                              const SizedBox(height: 28),
-
-                                              // Enhanced Action Buttons
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: ElevatedButton(
-                                                      style: ElevatedButton
-                                                          .styleFrom(
-                                                        backgroundColor:
-                                                            Colors.white,
-                                                        foregroundColor:
-                                                            const Color(
-                                                                0xff57636C),
-                                                        elevation: 0,
-                                                        shadowColor:
-                                                            Colors.transparent,
-                                                        side: BorderSide(
-                                                          color:
-                                                              Colors.grey[300]!,
-                                                          width: 1.5,
-                                                        ),
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                        ),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                          vertical: 16,
-                                                          horizontal: 24,
-                                                        ),
+                                            ),
+                                            SizedBox(width: isTablet ? 16 : 12),
+                                            Expanded(
+                                              child: StatefulBuilder(
+                                                builder: (context, setState) {
+                                                  bool isCheckingOut = false;
+                                                  return ElevatedButton(
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          const Color(
+                                                              0xffF44336),
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      elevation: 0,
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        vertical:
+                                                            isTablet ? 16 : 14,
                                                       ),
-                                                      onPressed: () {
-                                                        Navigator.of(context)
-                                                            .pop();
-                                                      },
-                                                      child: Text(
-                                                        'Cancel',
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .titleSmall
-                                                            ?.copyWith(
-                                                              color: const Color(
-                                                                  0xff57636C),
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 15,
-                                                              letterSpacing:
-                                                                  0.3,
-                                                            ),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
                                                       ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  Expanded(
-                                                    child: StatefulBuilder(
-                                                      builder:
-                                                          (context, setState) {
-                                                        bool isCheckingOut =
-                                                            false;
-                                                        return ElevatedButton(
-                                                          style: ElevatedButton
-                                                              .styleFrom(
-                                                            backgroundColor:
-                                                                const Color(
-                                                                    0xffF44336),
-                                                            foregroundColor:
-                                                                Colors.white,
-                                                            elevation: 0,
-                                                            shadowColor: Colors
-                                                                .transparent,
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
-                                                            ),
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                              vertical: 16,
-                                                              horizontal: 24,
-                                                            ),
-                                                          ),
-                                                          onPressed:
-                                                              isCheckingOut
-                                                                  ? null
-                                                                  : () async {
-                                                                      setState(() =>
-                                                                          isCheckingOut =
-                                                                              true);
-                                                                      await Future.delayed(const Duration(
-                                                                          milliseconds:
-                                                                              800)); // Simulate async checkout
-                                                                      Navigator.of(
-                                                                              context)
-                                                                          .pop();
-                                                                      widget
-                                                                          .onCheckOut();
-                                                                      ScaffoldMessenger.of(
-                                                                              context)
-                                                                          .showSnackBar(
-                                                                        SnackBar(
-                                                                          content:
-                                                                              Row(
-                                                                            children: [
-                                                                              Container(
-                                                                                padding: const EdgeInsets.all(8),
-                                                                                decoration: BoxDecoration(
-                                                                                  color: Colors.white.withOpacity(0.2),
-                                                                                  borderRadius: BorderRadius.circular(8),
-                                                                                ),
-                                                                                child: const Icon(
-                                                                                  Icons.check_circle_outline_rounded,
-                                                                                  color: Colors.white,
-                                                                                  size: 24,
-                                                                                ),
-                                                                              ),
-                                                                              const SizedBox(width: 16),
-                                                                              Expanded(
-                                                                                child: Text(
-                                                                                  'Visitor checked out successfully',
-                                                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                                                        color: Colors.white,
-                                                                                        fontWeight: FontWeight.bold,
-                                                                                      ),
-                                                                                ),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                          backgroundColor:
-                                                                              const Color(0xff43A047),
-                                                                          behavior:
-                                                                              SnackBarBehavior.floating,
-                                                                          shape:
-                                                                              RoundedRectangleBorder(
-                                                                            borderRadius:
-                                                                                BorderRadius.circular(12),
-                                                                          ),
-                                                                          margin:
-                                                                              EdgeInsets.all(16),
-                                                                          duration:
-                                                                              const Duration(milliseconds: 3000),
-                                                                          elevation:
-                                                                              8,
-                                                                        ),
-                                                                      );
-                                                                    },
-                                                          child: isCheckingOut
-                                                              ? const SizedBox(
-                                                                  width: 22,
-                                                                  height: 22,
-                                                                  child:
-                                                                      CircularProgressIndicator(
-                                                                    valueColor: AlwaysStoppedAnimation<
-                                                                            Color>(
-                                                                        Colors
-                                                                            .white),
-                                                                    strokeWidth:
-                                                                        2.5,
-                                                                  ),
-                                                                )
-                                                              : Row(
-                                                                  mainAxisAlignment:
-                                                                      MainAxisAlignment
-                                                                          .center,
+                                                    onPressed: isCheckingOut
+                                                        ? null
+                                                        : () async {
+                                                            setState(() =>
+                                                                isCheckingOut =
+                                                                    true);
+                                                            await Future.delayed(
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        800));
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop();
+                                                            widget.onCheckOut();
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                              SnackBar(
+                                                                content: Row(
                                                                   children: [
-                                                                    const Icon(
-                                                                      Icons
-                                                                          .logout_rounded,
-                                                                      size: 18,
-                                                                      color: Colors
-                                                                          .white,
+                                                                    Container(
+                                                                      padding:
+                                                                          const EdgeInsets
+                                                                              .all(
+                                                                              8),
+                                                                      decoration:
+                                                                          BoxDecoration(
+                                                                        color: Colors
+                                                                            .white
+                                                                            .withOpacity(0.2),
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(8),
+                                                                      ),
+                                                                      child:
+                                                                          const Icon(
+                                                                        Icons
+                                                                            .check_circle_rounded,
+                                                                        color: Colors
+                                                                            .white,
+                                                                        size:
+                                                                            20,
+                                                                      ),
                                                                     ),
                                                                     const SizedBox(
                                                                         width:
-                                                                            8),
-                                                                    Text(
-                                                                      'Checkout',
-                                                                      style: Theme.of(
-                                                                              context)
-                                                                          .textTheme
-                                                                          .titleSmall
-                                                                          ?.copyWith(
+                                                                            12),
+                                                                    const Expanded(
+                                                                      child:
+                                                                          Text(
+                                                                        'Visitor checked out successfully',
+                                                                        style: TextStyle(
                                                                             color:
-                                                                                Colors.white,
-                                                                            fontWeight:
-                                                                                FontWeight.w600,
-                                                                            fontSize:
-                                                                                15,
-                                                                            letterSpacing:
-                                                                                0.3,
-                                                                          ),
+                                                                                Colors.white),
+                                                                      ),
                                                                     ),
                                                                   ],
                                                                 ),
-                                                        );
-                                                      },
-                                                    ),
-                                                  ),
-                                                ],
+                                                                backgroundColor:
+                                                                    Colors
+                                                                        .green,
+                                                                behavior:
+                                                                    SnackBarBehavior
+                                                                        .floating,
+                                                                margin:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        16),
+                                                                duration: const Duration(
+                                                                    milliseconds:
+                                                                        3000),
+                                                                elevation: 8,
+                                                              ),
+                                                            );
+                                                          },
+                                                    child: isCheckingOut
+                                                        ? SizedBox(
+                                                            width: isTablet
+                                                                ? 24
+                                                                : 22,
+                                                            height: isTablet
+                                                                ? 24
+                                                                : 22,
+                                                            child:
+                                                                const CircularProgressIndicator(
+                                                              valueColor:
+                                                                  AlwaysStoppedAnimation<
+                                                                          Color>(
+                                                                      Colors
+                                                                          .white),
+                                                              strokeWidth: 2.5,
+                                                            ),
+                                                          )
+                                                        : Text(
+                                                            'Confirm',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: isTablet
+                                                                  ? 16
+                                                                  : 14,
+                                                              letterSpacing:
+                                                                  0.3,
+                                                            ),
+                                                          ),
+                                                  );
+                                                },
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),

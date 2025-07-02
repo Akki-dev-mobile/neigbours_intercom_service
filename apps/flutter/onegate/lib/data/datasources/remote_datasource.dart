@@ -424,105 +424,6 @@ class RemoteDataSource {
   }
 
   /// Search for a visitor
-  // Future<Visitor?> searchVisitor(String mobileNumber) async {
-  //   try {
-  //     final String? companyId = await gateStorage.getSocietyId();
-  //     if (companyId == null) {
-  //       throw Exception("Company ID not found. Please select a company.");
-  //     }
-
-  //     final apiUrl =
-  //         '${ApiUrls.visitorEntry}?mobile_number=$mobileNumber&company_id=$companyId';
-
-  //     log("API Request: $apiUrl");
-  //     log("Bearer ${keycloakWrapper.accessToken}");
-
-  //     final response = await _getDio().get(
-  //       apiUrl,
-  //       options: Options(
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //           'Authorization': keycloakWrapper.accessToken != null
-  //               ? 'Bearer ${keycloakWrapper.accessToken}'
-  //               : 'sdad',
-  //         },
-  //       ),
-  //     );
-  //     final List<dynamic> data = response.data['data'] ?? [];
-
-  //     if (data.isNotEmpty) {
-  //       log("$data");
-
-  //       final prefs = await SharedPreferences.getInstance();
-
-  //       // Separate visitor and staff entries
-  //       Map<String, dynamic>? visitorData;
-  //       Map<String, dynamic>? staffData;
-
-  //       for (var item in data) {
-  //         if (item == null) continue; // ✅ Skip nulls
-
-  //         final Map<String, dynamic> map = Map<String, dynamic>.from(item);
-
-  //         if (map.containsKey('category') &&
-  //             (map['category']?.toString().toUpperCase() == 'SECURITY' ||
-  //                 map['category']?.toString().toUpperCase() == 'STAFF')) {
-  //           staffData = map;
-  //         } else {
-  //           visitorData = map;
-  //         }
-  //       }
-
-  //       // Store visitor info if found
-  //       if (visitorData != null) {
-  //         log("Visitor data fetched: $visitorData");
-
-  //         final comingFrom = visitorData['coming_from'] as String;
-  //         log("comingFrom $comingFrom");
-  //         await gateStorage.setComingFrom(
-  //           comingFrom,
-  //         );
-  //         final myComingFrom = await gateStorage.getComingFrom();
-
-  //         log("comingFrom pref $myComingFrom");
-  //         // Store the coming_from value in SharedPreferences
-  //         // final prefs = await SharedPreferences.getInstance();
-  //         // await prefs.setString('visitor_coming_from', comingFrom);
-
-  //         GateStorage().saveImage(
-  //           visitorData['visitor_image'] as String? ?? "",
-  //         );
-  //         log("vis data stored in shared pref coming_from $comingFrom, image ${visitorData['visitor_image']}");
-
-  //         final visitorId = visitorData['id']?.toString() ?? "";
-  //         await prefs.setString('search_visitor_id', visitorId);
-  //       }
-
-  //       // Store staff info if found
-  //       // if (staffData != null) {
-  //       //   final staffJson = jsonEncode(staffData);
-  //       //   await prefs.setString('search_staff_info', staffJson);
-  //       //   log("Staff info stored in SharedPreferences.");
-  //       // }
-
-  //       if (visitorData != null) {
-  //         // Create visitor from JSON and set isStaff property
-  //         Visitor visitor = Visitor.fromJson(visitorData);
-
-  //         // Set isStaff based on whether a staff entry was found
-  //         visitor.isStaff = visitor.isStaff;
-
-  //         return visitor;
-  //       } else {
-  //         log("No visitor found in the response data.");
-  //       }
-  //     }
-  //   } catch (e) {
-  //     log("Error searching visitor: $e");
-  //   }
-
-  //   return null;
-  // }
   Future<Visitor?> searchVisitor(String mobileNumber) async {
     try {
       final String? companyId = await gateStorage.getSocietyId();
@@ -610,9 +511,15 @@ class RemoteDataSource {
 
           log("comingFrom $comingFrom");
 
+          // Only store coming from if it's not empty
+          if (comingFrom.isNotEmpty) {
           await gateStorage.setComingFrom(comingFrom);
           final myComingFrom = await gateStorage.getComingFrom();
           log("comingFrom pref $myComingFrom");
+          } else {
+            // Clear any existing coming from value
+            await gateStorage.setComingFrom("");
+          }
 
           GateStorage().saveImage(
             visitorData['visitor_image'] as String? ?? "",
@@ -620,6 +527,9 @@ class RemoteDataSource {
 
           final visitorId = visitorData['id']?.toString() ?? "";
           await prefs.setString('search_visitor_id', visitorId);
+        } else {
+          // Clear any existing coming from value if no visitor data found
+          await gateStorage.setComingFrom("");
         }
 
         if (visitorData != null) {
@@ -629,6 +539,9 @@ class RemoteDataSource {
         } else {
           log("No visitor found in the response data.");
         }
+      } else {
+        // Clear any existing coming from value if no data found
+        await gateStorage.setComingFrom("");
       }
     } on DioException catch (e) {
       log("🚨 DioException searching visitor: ${e.response?.statusCode}");
@@ -659,10 +572,17 @@ class RemoteDataSource {
         }
       }
 
+      // Clear any existing coming from value on error
+      await gateStorage.setComingFrom("");
+
       // Re-throw the original exception for other cases
       rethrow;
     } catch (e) {
       log("Error searching visitor: $e");
+
+      // Clear any existing coming from value on error
+      await gateStorage.setComingFrom("");
+
       rethrow;
     }
 
@@ -790,61 +710,6 @@ class RemoteDataSource {
       return null;
     }
   }
-
-  // /// Create a visitor
-  // Future<Visitor?> createVisitor(Visitor visitor) async {
-  //   log("createVisitor called");
-  //
-  //   try {
-  //     final uploadImageUrl = await GateStorage().getImage();
-  //     final prefs = await SharedPreferences.getInstance();
-  //     final name = prefs.getString('visitorName') ?? "";
-  //
-  //     final requestBody = {
-  //       "name": visitor.name?.isEmpty == true ? name : visitor.name,
-  //       "mobile_number": visitor.mobile.toString(),
-  //       "visitor_image": uploadImageUrl,
-  //       "company_id": 26,
-  //     };
-  //
-  //     final response =
-  //         await Dio().post(ApiUrls.visitorEntry, data: requestBody);
-  //     final status = response.statusCode;
-  //     final body = response.data;
-  //
-  //     log("HTTP ${status.toString()} → $body");
-  //
-  //     if (status == 200 && body['success'] == true && body['data'] != null) {
-  //       final data = body['data'];
-  //       final visitorId = (data['visitor_id'] ?? data['id']) as int;
-  //       final visitorName = data['name'] ?? "Unknown";
-  //       final visitorMobile = data['mobile'] ?? "";
-  //       final visitorImage = data['visitor_image'] ?? "";
-  //
-  //       await prefs.setString('visitorId', visitorId.toString());
-  //       GlobalStorage.visitorId = visitorId.toString();
-  //
-  //       return Visitor(
-  //         id: visitorId,
-  //         name: visitorName,
-  //         mobile: visitorMobile,
-  //         visitor_image: visitorImage,
-  //         isStaff: data.containsKey("category"),
-  //       );
-  //     }
-  //
-  //     // FAILURE PATH
-  //     final errorMessage = body['message'] ?? "Unknown error";
-  //     log("❌ Visitor creation failed: $errorMessage");
-  //     return null;
-  //   } on DioError catch (dioErr) {
-  //     log("❌ DioError: ${dioErr.response?.statusCode} → ${dioErr.response?.data}");
-  //     return null;
-  //   } catch (error) {
-  //     log("❌ Unexpected error creating visitor: $error");
-  //     return null;
-  //   }
-  // }
 
   Future<List<VisitorLog>?> fetchCardNumbers() async {
     try {
@@ -1267,8 +1132,26 @@ class RemoteDataSource {
   /// 4. Falls back to cached values if the gates API call fails
   ///
   /// Returns a Map with 'gateName' and 'gateType' keys
-  Future<Map<String, String>> fetchAndUpdateGateInfo(String context) async {
-    debugPrint("🚪 Fetching updated gate information for $context");
+
+  // In-memory cache for gate information
+  Future<Map<String, String>>? _gateInfoFuture;
+  DateTime? _cacheTimestamp;
+
+  Future<Map<String, String>> fetchAndUpdateGateInfo(String context) {
+    if (_gateInfoFuture != null &&
+        _cacheTimestamp != null &&
+        DateTime.now().difference(_cacheTimestamp!).inMinutes < 1) {
+      debugPrint("🚪 Using cached gate information future for $context");
+      return _gateInfoFuture!;
+    }
+
+    debugPrint("🚪 Fetching new gate information for $context");
+    _gateInfoFuture = _fetchAndUpdateGateInfoInternal(context);
+    return _gateInfoFuture!;
+  }
+
+  Future<Map<String, String>> _fetchAndUpdateGateInfoInternal(
+      String context) async {
     String selectedGateName = 'Default Gate';
     String selectedGateType = 'both';
 
@@ -1524,6 +1407,10 @@ class RemoteDataSource {
     debugPrint("🎯 Returning gateName: '$selectedGateName'");
     debugPrint("🎯 Returning gateType: '$selectedGateType'");
     debugPrint("🎯 Expected in visitor logs: gate names like 'Gate 777'");
+
+    // If API succeeds, update cache before returning
+    _cacheTimestamp = DateTime.now();
+    debugPrint("✅ Gate information cached for $context");
 
     return {
       'gateName': selectedGateName,

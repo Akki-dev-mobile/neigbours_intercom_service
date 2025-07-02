@@ -29,6 +29,7 @@ import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../self_entry/self_home_view.dart';
 import 'settings_gate.dart';
@@ -110,7 +111,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -170,11 +171,11 @@ class _SettingsHomeState extends State<SettingsHome> {
                         // Simple label section
                         Expanded(
                           child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Select Camera',
+                            children: [
+                              Text(
+                                'Select Camera',
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineSmall
@@ -208,11 +209,11 @@ class _SettingsHomeState extends State<SettingsHome> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: ListView.builder(
-                    shrinkWrap: true,
+                        shrinkWrap: true,
                         padding: const EdgeInsets.only(top: 16),
-                    itemCount: _cameraItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _cameraItems[index];
+                        itemCount: _cameraItems.length,
+                        itemBuilder: (context, index) {
+                          final item = _cameraItems[index];
                           final isSelected = _tempCameraValue == item.value;
                           return Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -275,7 +276,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                          item.label,
+                                              item.label,
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .titleMedium
@@ -335,9 +336,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 ),
                               ),
                             ),
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
                     ),
                   ),
 
@@ -368,7 +369,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
-                        ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -487,7 +488,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 ),
                                 elevation: 0,
                                 shadowColor: Colors.transparent,
-                  ),
+                              ),
                               child: const Text(
                                 'Confirm',
                                 style: TextStyle(
@@ -537,7 +538,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                     Colors.white,
                     Colors.red.shade50.withOpacity(0.3),
                   ],
-              ),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -595,12 +596,12 @@ class _SettingsHomeState extends State<SettingsHome> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                  ListView.builder(
+                        ListView.builder(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                    shrinkWrap: true,
-                    itemCount: _languageItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _languageItems[index];
+                          shrinkWrap: true,
+                          itemCount: _languageItems.length,
+                          itemBuilder: (context, index) {
+                            final item = _languageItems[index];
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               decoration: BoxDecoration(
@@ -616,10 +617,10 @@ class _SettingsHomeState extends State<SettingsHome> {
                               child: RadioListTile<String>(
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 8),
-                        fillColor: WidgetStateProperty.all(
+                                fillColor: WidgetStateProperty.all(
                                     Colors.red.shade400),
-                        title: Text(
-                          item.label,
+                                title: Text(
+                                  item.label,
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -631,18 +632,18 @@ class _SettingsHomeState extends State<SettingsHome> {
                                             ? Colors.red.shade400
                                             : Colors.grey.shade700,
                                       ),
-                        ),
-                        value: item.value,
+                                ),
+                                value: item.value,
                                 groupValue: _languageValue,
-                        onChanged: (value) {
-                          setState(() {
-                            _languageValue = value!;
-                          });
-                        },
+                                onChanged: (value) {
+                                  setState(() {
+                                    _languageValue = value!;
+                                  });
+                                },
                               ),
-                      );
-                    },
-                  ),
+                            );
+                          },
+                        ),
                         const SizedBox(height: 20),
                         Container(
                           width: double.infinity,
@@ -666,12 +667,12 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                    onPressed: () {
-                      setState(() {
-                        _languageValue = _languageValue;
-                      });
-                      Navigator.pop(context);
-                    },
+                            onPressed: () {
+                              setState(() {
+                                _languageValue = _languageValue;
+                              });
+                              Navigator.pop(context);
+                            },
                             child: const Text(
                               'Confirm',
                               style: TextStyle(
@@ -681,7 +682,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ),
                             ),
                           ),
-                  ),
+                        ),
                         const SizedBox(height: 50.0),
                       ],
                     ),
@@ -719,7 +720,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -779,11 +780,11 @@ class _SettingsHomeState extends State<SettingsHome> {
                         // Simple label section
                         Expanded(
                           child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Select Approval Time',
+                            children: [
+                              Text(
+                                'Select Approval Time',
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineSmall
@@ -817,11 +818,11 @@ class _SettingsHomeState extends State<SettingsHome> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: ListView.builder(
-                    shrinkWrap: true,
+                        shrinkWrap: true,
                         padding: const EdgeInsets.only(top: 16),
-                    itemCount: _visitorApprovalTimeItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _visitorApprovalTimeItems[index];
+                        itemCount: _visitorApprovalTimeItems.length,
+                        itemBuilder: (context, index) {
+                          final item = _visitorApprovalTimeItems[index];
                           final isSelected =
                               tempSelectedValue == int.parse(item.value);
                           return Container(
@@ -830,10 +831,10 @@ class _SettingsHomeState extends State<SettingsHome> {
                               color: Colors.transparent,
                               child: InkWell(
                                 onTap: () {
-                          setState(() {
+                                  setState(() {
                                     tempSelectedValue = int.parse(item.value);
-                          });
-                        },
+                                  });
+                                },
                                 borderRadius: BorderRadius.circular(16),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
@@ -941,9 +942,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 ),
                               ),
                             ),
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
                     ),
                   ),
 
@@ -996,9 +997,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ],
                             ),
                             child: ElevatedButton(
-                    onPressed: () {
-                      context
-                          .read<VisitorApprovalTimeProvider>()
+                              onPressed: () {
+                                context
+                                    .read<VisitorApprovalTimeProvider>()
                                     .setApprovalTime(tempSelectedValue);
                                 Navigator.of(context).pop();
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1007,7 +1008,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 16,
                                         vertical: 12,
-                  ),
+                                      ),
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
                                           colors: [
@@ -1141,7 +1142,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                     Colors.white,
                     Colors.red.shade50.withOpacity(0.3),
                   ],
-              ),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1199,12 +1200,12 @@ class _SettingsHomeState extends State<SettingsHome> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                  ListView.builder(
+                        ListView.builder(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                    shrinkWrap: true,
-                    itemCount: _dataStorageItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _dataStorageItems[index];
+                          shrinkWrap: true,
+                          itemCount: _dataStorageItems.length,
+                          itemBuilder: (context, index) {
+                            final item = _dataStorageItems[index];
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               decoration: BoxDecoration(
@@ -1221,10 +1222,10 @@ class _SettingsHomeState extends State<SettingsHome> {
                               child: RadioListTile<String>(
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 8),
-                        fillColor: WidgetStateProperty.all(
+                                fillColor: WidgetStateProperty.all(
                                     Colors.red.shade400),
-                        title: Text(
-                          item.label,
+                                title: Text(
+                                  item.label,
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -1237,18 +1238,18 @@ class _SettingsHomeState extends State<SettingsHome> {
                                             ? Colors.red.shade400
                                             : Colors.grey.shade700,
                                       ),
-                        ),
-                        value: item.value,
+                                ),
+                                value: item.value,
                                 groupValue: _dataStorageValue,
-                        onChanged: (value) {
-                          setState(() {
-                            _dataStorageValue = value!;
-                          });
-                        },
+                                onChanged: (value) {
+                                  setState(() {
+                                    _dataStorageValue = value!;
+                                  });
+                                },
                               ),
-                      );
-                    },
-                  ),
+                            );
+                          },
+                        ),
                         const SizedBox(height: 20),
                         Container(
                           width: double.infinity,
@@ -1272,12 +1273,12 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                    onPressed: () {
-                      setState(() {
-                        _dataStorageValue = _dataStorageValue;
-                      });
-                      Navigator.pop(context);
-                    },
+                            onPressed: () {
+                              setState(() {
+                                _dataStorageValue = _dataStorageValue;
+                              });
+                              Navigator.pop(context);
+                            },
                             child: const Text(
                               'Confirm',
                               style: TextStyle(
@@ -1287,7 +1288,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ),
                             ),
                           ),
-                  ),
+                        ),
                         const SizedBox(height: 50.0),
                       ],
                     ),
@@ -1528,15 +1529,18 @@ class _SettingsHomeState extends State<SettingsHome> {
                   context: context,
                   barrierDismissible: false,
                   builder: (BuildContext context) {
-                    final isTablet = MediaQuery.of(context).size.width > 600;
+                    final isTablet = MediaQuery.of(context).size.width > 768;
+                    final screenSize = MediaQuery.of(context).size;
 
                     return Dialog(
                       backgroundColor: Colors.transparent,
                       elevation: 0,
                       child: Container(
-                        width: isTablet ? 400 : double.infinity,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: isTablet ? 0 : 20),
+                        width: isTablet ? 500 : double.infinity,
+                        constraints: BoxConstraints(
+                          maxWidth: isTablet ? 500 : screenSize.width * 0.9,
+                          maxHeight: screenSize.height * 0.8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(24),
@@ -1549,232 +1553,195 @@ class _SettingsHomeState extends State<SettingsHome> {
                             ),
                           ],
                         ),
-                        child: Padding(
-                          padding: EdgeInsets.all(isTablet ? 32 : 24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Enhanced header with gradient background
-                              Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 24 : 20,
-                                  vertical: isTablet ? 20 : 16,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Enhanced Header
+                            Container(
+                              padding: EdgeInsets.all(isTablet ? 28 : 24),
+                              decoration: const BoxDecoration(
+                                color: Color(0xffFFEBEE),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(24),
+                                  topRight: Radius.circular(24),
                                 ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      const Color(0xffF44336).withOpacity(0.08),
-                                      const Color(0xffff5722).withOpacity(0.03),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(isTablet ? 14 : 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(50),
+                                    ),
+                                    child: Icon(
+                                      Icons.logout_rounded,
+                                      color: const Color(0xffF44336),
+                                      size: isTablet ? 36 : 32,
+                                    ),
+                                  ),
+                                  SizedBox(width: isTablet ? 20 : 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Confirm Logout',
+                                          style: TextStyle(
+                                            fontSize: isTablet ? 24 : 20,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xff212427),
+                                          ),
+                                        ),
+                                        SizedBox(height: isTablet ? 6 : 4),
+                                        Text(
+                                          'Security confirmation required',
+                                          style: TextStyle(
+                                            fontSize: isTablet ? 14 : 13,
+                                            color: const Color(0xff57636C),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Enhanced content section
+                            Padding(
+                              padding: EdgeInsets.all(isTablet ? 28 : 24),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.all(isTablet ? 20 : 16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.grey.shade200,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Are you sure you want to logout?',
+                                          style: TextStyle(
+                                            fontSize: isTablet ? 18 : 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xff212427),
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                        SizedBox(height: isTablet ? 12 : 8),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xffFF9800)
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: const Icon(
+                                                Icons.info_outline,
+                                                color: Color(0xffFF9800),
+                                                size: 16,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'You will need to sign in again to access your account.',
+                                                style: TextStyle(
+                                                  fontSize: isTablet ? 15 : 13,
+                                                  color:
+                                                      const Color(0xff57636C),
+                                                  height: 1.4,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: isTablet ? 28 : 24),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          style: OutlinedButton.styleFrom(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: isTablet ? 16 : 14,
+                                            ),
+                                            side: const BorderSide(
+                                              color: Color(0xff57636C),
+                                              width: 1,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: Text(
+                                            'Cancel',
+                                            style: TextStyle(
+                                              color: const Color(0xff57636C),
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: isTablet ? 16 : 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: isTablet ? 16 : 12),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color(0xffF44336),
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: isTablet ? 16 : 14,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          onPressed: () async {
+                                            // Close dialog first
+                                            Navigator.pop(context);
+                                            // Then immediately logout and navigate
+                                            await logout(context);
+                                          },
+                                          child: Text(
+                                            'Logout',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: isTablet ? 16 : 14,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding:
-                                          EdgeInsets.all(isTablet ? 16 : 14),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            const Color(0xffF44336),
-                                            const Color(0xffF44336)
-                                                .withOpacity(0.8),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xffF44336)
-                                                .withOpacity(0.3),
-                                            spreadRadius: 1,
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        Ionicons.log_out_outline,
-                                        color: Colors.white,
-                                        size: isTablet ? 32 : 28,
-                                      ),
-                                    ),
-                                    SizedBox(width: isTablet ? 20 : 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                          Text(
-                            'Confirm Logout',
-                            style: TextStyle(
-                                              fontSize: isTablet ? 24 : 20,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xff212427),
-                                            ),
-                                          ),
-                                          SizedBox(height: isTablet ? 6 : 4),
-                                          Text(
-                                            'Security confirmation required',
-                                            style: TextStyle(
-                                              fontSize: isTablet ? 14 : 13,
-                                              color: const Color(0xff57636C),
-                                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                                    ),
-                                  ],
-                                ),
+                                ],
                               ),
-                              SizedBox(height: isTablet ? 28 : 24),
-                              // Enhanced content section
-                              Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.all(isTablet ? 20 : 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Are you sure you want to logout?',
-                                      style: TextStyle(
-                                        fontSize: isTablet ? 18 : 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xff212427),
-                                        height: 1.4,
-                                      ),
-                          ),
-                                    SizedBox(height: isTablet ? 12 : 10),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding:
-                                              EdgeInsets.all(isTablet ? 8 : 6),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Colors.orange.withOpacity(0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Icon(
-                                            Ionicons.information_circle_outline,
-                                            color: Colors.orange.shade600,
-                                            size: isTablet ? 18 : 16,
-                                          ),
-                                        ),
-                                        SizedBox(width: isTablet ? 12 : 10),
-                                        Expanded(
-                                          child: Text(
-                                            'You will need to sign in again to access your account.',
-                            style: TextStyle(
-                                              fontSize: isTablet ? 15 : 14,
-                                              color: const Color(0xff57636C),
-                                              height: 1.3,
-                                            ),
                             ),
-                          ),
-                        ],
-                      ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: isTablet ? 32 : 28),
-                              // Enhanced action buttons
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: isTablet ? 56 : 52,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade100,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: Colors.grey.shade300,
-                                          width: 1,
-                            ),
-                          ),
-                                      child: TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                                        style: TextButton.styleFrom(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                          ),
-                                        ),
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                                            color: const Color(0xff212427),
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: isTablet ? 16 : 15,
-                            ),
-                          ),
-                        ),
-                                    ),
-                                  ),
-                                  SizedBox(width: isTablet ? 16 : 12),
-                                  Expanded(
-                                    child: Container(
-                                      height: isTablet ? 56 : 52,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.centerLeft,
-                                          end: Alignment.centerRight,
-                                          colors: [
-                                            const Color(0xffF44336),
-                                            const Color(0xffF44336)
-                                                .withOpacity(0.8),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xffF44336)
-                                                .withOpacity(0.4),
-                                            spreadRadius: 1,
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: TextButton(
-                          onPressed: () {
-                            logout(context);
-                          },
-                                        style: TextButton.styleFrom(
-                                          backgroundColor: Colors.transparent,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                          ),
-                                        ),
-                          child: Text(
-                            'Logout',
-                            style: TextStyle(
-                              color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: isTablet ? 16 : 15,
-                                          ),
-                                        ),
-                            ),
-                          ),
-                        ),
-                      ],
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
                     );
@@ -1792,122 +1759,82 @@ class _SettingsHomeState extends State<SettingsHome> {
 
   Future<void> logout(BuildContext context) async {
     try {
-      log("🚪 Settings Screen - Starting centralized logout process...");
+      log("🚪 Settings Screen - Starting immediate logout process...");
 
-      // Show logout success toast before navigation
+      // Step 1: IMMEDIATELY clear all authentication tokens and data BEFORE navigation
+      // This prevents any background authentication checks from detecting user as still logged in
+      await _immediatelyNullifyAuthentication();
+
+      // Step 2: Immediately navigate to login page to prevent getting stuck
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xffFF9800),
-                    Color(0xffF57C00),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xffFF9800).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.logout_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Logged Out Successfully',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'You have been securely logged out of the application',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-            margin: const EdgeInsets.all(16),
-          ),
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MyAppLogin()),
+          (route) => false,
         );
+        log("✅ Navigated to login page immediately after token clearing");
       }
 
-      // Small delay to show the toast before navigation
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Use centralized logout service for consistent behavior
-      await CentralizedLogoutService.performLogoutWithNavigation(
-        context: context,
-        source: 'Settings Screen',
-        showNotifications: true,
-        onComplete: () {
-          log("✅ Settings Screen logout completed successfully");
-        },
-      );
+      // Step 3: Perform complete cleanup in background (after navigation)
+      try {
+        await CentralizedLogoutService.performCompleteLogout(
+          source: 'Settings Screen',
+          showNotifications:
+              false, // Don't show notifications since we've already navigated
+        );
+        log("✅ Background logout cleanup completed");
+      } catch (cleanupError) {
+        log("⚠️ Background cleanup had issues: $cleanupError");
+        // Continue anyway since we've already cleared tokens and navigated to login
+      }
     } catch (e, st) {
       log("❌ Settings Screen logout failed: $e\n$st");
 
-      // Show error feedback to user
+      // Fallback: Ensure we still navigate to login even if there are errors
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout failed. Please try again.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        try {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const MyAppLogin()),
+            (route) => false,
+          );
+          log("✅ Fallback navigation to login completed");
+        } catch (navError) {
+          log("❌ Even fallback navigation failed: $navError");
+        }
       }
+    }
+  }
 
-      // Fallback: Try to navigate to login anyway
-      try {
-        await CentralizedLogoutService.navigateToLogin(
-          context,
-          source: 'Settings Screen (fallback)',
-        );
-      } catch (navError) {
-        log("❌ Fallback navigation also failed: $navError");
-      }
+  /// Immediately clear all authentication data to prevent background checks from detecting user as authenticated
+  Future<void> _immediatelyNullifyAuthentication() async {
+    try {
+      log("🔧 Immediately nullifying authentication state...");
+
+      final gateStorage = GateStorage();
+      final prefs = await SharedPreferences.getInstance();
+
+      // Immediately clear all authentication tokens
+      await gateStorage.clearTokens();
+
+      // Clear critical authentication keys from SharedPreferences immediately
+      await prefs.remove('access_token');
+      await prefs.remove('refresh_token');
+      await prefs.remove('id_token');
+      await prefs.remove('user_id');
+      await prefs.remove('role');
+      await prefs.remove('session_timestamp');
+
+      // Clear secure storage tokens immediately
+      const FlutterSecureStorage secureStorage = FlutterSecureStorage();
+      await secureStorage.delete(key: 'access_token_secure');
+      await secureStorage.delete(key: 'refresh_token_secure');
+      await secureStorage.delete(key: 'id_token_secure');
+
+      log("✅ Authentication state immediately nullified");
+    } catch (e) {
+      log("❌ Error nullifying authentication: $e");
+      // Continue anyway to ensure navigation happens
     }
   }
 
@@ -2047,20 +1974,20 @@ class PrimarySettingsTile extends StatelessWidget {
                   ),
                   child: Center(
                     child: leadingIcon ??
-          Icon(
-            icon,
+                        Icon(
+                          icon,
                           size: isTablet ? 28 : 24,
                           color: Colors.red.shade400,
                         ),
                   ),
-          ),
+                ),
                 SizedBox(width: isTablet ? 16 : 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-        title,
+                        title,
                         style: titleStyle ??
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
@@ -2068,13 +1995,13 @@ class PrimarySettingsTile extends StatelessWidget {
                                   fontSize: isTablet ? 18 : 16,
                                   letterSpacing: 0.2,
                                 ),
-      ),
+                      ),
                       if (subtitle != null || subtitleWidget != null) ...[
                         SizedBox(height: isTablet ? 6 : 4),
                         subtitleWidget ??
-          Text(
-            subtitle ?? '',
-            style: subtitleStyle ??
+                            Text(
+                              subtitle ?? '',
+                              style: subtitleStyle ??
                                   Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -2082,8 +2009,8 @@ class PrimarySettingsTile extends StatelessWidget {
                                         color: Colors.grey.shade600,
                                         fontSize: isTablet ? 15 : 14,
                                         height: 1.3,
-                              ),
-                    ),
+                                      ),
+                            ),
                       ],
                     ],
                   ),

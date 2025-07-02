@@ -14,6 +14,7 @@ import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:common_widgets/loading_view.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../commons/ui/dashboard_commons.dart';
 
@@ -108,70 +109,66 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
         }
       },
       builder: (context, state) {
-        switch (state.runtimeType) {
-          case AdminDashboardLoadingState:
-            return LoaderView();
-          case AdminDashboardSuccessState:
-            return WillPopScope(
-              onWillPop: () async {
-                return false;
-              },
-              child: MyScrollView(
-                hasBackButton: false,
-                pageTitle: 'onegate',
-                actions: [
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(
-                      Symbols.notifications,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.rightToLeft,
-                          child: SettingsHome(),
-                        ),
-                      );
-                    },
-                    icon: Icon(
-                      Symbols.settings,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-                pageBody: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Placeholder for admin shortcuts - can be enhanced later
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      margin: EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                        ),
-                      child: Text(
-                        'Admin Dashboard Shortcuts (To be enhanced)',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                        ),
-                    ),
-                    DashboardBlocks(
-                        inBook: (state as AdminDashboardSuccessState).inBook,
-                        outBook: (state).outBook,
-                        bloc: adminDashboardBloc),
-                  ],
+        return WillPopScope(
+          onWillPop: () async {
+            return false;
+          },
+          child: MyScrollView(
+            hasBackButton: false,
+            pageTitle: 'onegate',
+            actions: [
+              IconButton(
+                onPressed: () {},
+                icon: Icon(
+                  Symbols.notifications,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-            );
-          default:
-            return Container();
-        }
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    PageTransition(
+                      type: PageTransitionType.rightToLeft,
+                      child: SettingsHome(),
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Symbols.settings,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+            pageBody: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Placeholder for admin shortcuts - can be enhanced later
+                Container(
+                  padding: EdgeInsets.all(16),
+                  margin: EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Admin Dashboard Shortcuts (To be enhanced)',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                if (state is AdminDashboardSuccessState)
+                  DashboardBlocks(
+                      inBook: (state).inBook,
+                      outBook: (state).outBook,
+                      bloc: adminDashboardBloc)
+                else
+                  const DashboardBlocksSkeleton(),
+              ],
+            ),
+          ),
+        );
       },
     );
   }

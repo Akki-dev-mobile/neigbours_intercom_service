@@ -17,7 +17,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     with TickerProviderStateMixin {
   final ObservatoryDashboardService _observatoryService =
       ObservatoryDashboardService();
-  
+
   late TabController _tabController;
   bool _isLoading = true;
   bool _isInitialized = false;
@@ -44,7 +44,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     try {
       await _observatoryService.initialize();
       await _loadData();
-      
+
       setState(() {
         _isInitialized = true;
         _isLoading = false;
@@ -143,7 +143,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                     SizedBox(height: isTablet ? 24 : 16),
                     _buildTabBar(isTablet),
                     SizedBox(height: isTablet ? 24 : 16),
-                    _buildTabContent(isTablet),
+                    Expanded(child: _buildTabContent(isTablet)),
                   ],
                 ),
     );
@@ -175,10 +175,10 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
-              Ionicons.warning_outline,
+                Ionicons.warning_outline,
                 size: isTablet ? 72 : 64,
-              color: Colors.orange,
-            ),
+                color: Colors.orange,
+              ),
             ),
             SizedBox(height: isTablet ? 24 : 16),
             Text(
@@ -187,7 +187,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                     fontWeight: FontWeight.w700,
                     color: const Color(0xff212427),
                     fontSize: isTablet ? 24 : 22,
-            ),
+                  ),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: isTablet ? 12 : 8),
@@ -224,7 +224,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                 ],
               ),
               child: ElevatedButton(
-              onPressed: _initializeObservatory,
+                onPressed: _initializeObservatory,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
@@ -250,7 +250,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
 
   Widget _buildStatusCard(bool isTablet) {
     final isCollecting = _observatoryService.isCollectingMetrics;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -364,18 +364,57 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
   }
 
   Widget _buildTabContent(bool isTablet) {
-    return SizedBox(
-      height: 600,
-      child: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildRealTimeTab(),
-          _buildAnalyticsTab(),
-          _buildPlatformsTab(),
-          _buildConfigTab(),
-        ],
-      ),
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildRealtimeMetrics(isTablet),
+        _buildAllMetrics(isTablet),
+        _buildConfiguration(isTablet),
+        _buildAdvanced(isTablet),
+      ],
     );
+  }
+
+  Widget _buildRealtimeMetrics(bool isTablet) {
+    return ListView.builder(
+      itemCount: _realtimeMetrics.length,
+      itemBuilder: (context, index) {
+        final metric = _realtimeMetrics[index];
+        return ListTile(
+          title: Text(metric['name']),
+          subtitle: Text(metric['value'].toString()),
+        );
+      },
+    );
+  }
+
+  Widget _buildAllMetrics(bool isTablet) {
+    return ListView.builder(
+      itemCount: _allMetrics.length,
+      itemBuilder: (context, index) {
+        final metric = _allMetrics[index];
+        return ListTile(
+          title: Text(metric['name']),
+          subtitle: Text(metric['value'].toString()),
+        );
+      },
+    );
+  }
+
+  Widget _buildConfiguration(bool isTablet) {
+    return ListView(
+      children: _configuration.entries.map((entry) {
+        return ListTile(
+          title: Text(entry.key),
+          subtitle: Text(entry.value.toString()),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildAdvanced(bool isTablet) {
+    return const Center(
+        child: Text("Advanced monitoring tools can be added here."));
   }
 
   Widget _buildRealTimeTab() {
@@ -395,7 +434,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
   Widget _buildMetricsOverview() {
     final latestMetrics =
         _realtimeMetrics.isNotEmpty ? _realtimeMetrics.first : null;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -582,7 +621,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
 
   Widget _buildMetricListItem(Map<String, dynamic> metric) {
     final timestamp = DateTime.tryParse(metric['timestamp']?.toString() ?? '');
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -759,12 +798,12 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
 
     final eventSpots = <FlSpot>[];
     final crashSpots = <FlSpot>[];
-    
+
     for (int i = 0; i < _allMetrics.length && i < 50; i++) {
       final metric = _allMetrics[i];
       final events = metric['analytics_metrics']?['totalEvents'] ?? 0;
       final crashes = metric['crash_metrics']?['totalCrashes'] ?? 0;
-      
+
       eventSpots.add(FlSpot(i.toDouble(), events.toDouble()));
       crashSpots.add(FlSpot(i.toDouble(), crashes.toDouble()));
     }
@@ -870,7 +909,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     final timestamp = DateTime.tryParse(metric['timestamp']?.toString() ?? '');
     final events = metric['analytics_metrics']?['totalEvents'] ?? 0;
     final crashes = metric['crash_metrics']?['totalCrashes'] ?? 0;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(

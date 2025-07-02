@@ -7,6 +7,7 @@ import 'package:common_widgets/loading_view.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
@@ -28,6 +29,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import "package:intl/intl.dart";
 import '../../../self_entry/self_home_view.dart';
 import '../../../self_entry/ui/self_profile_view.dart';
+import '../widgets/selectmember_bottomsheet.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final int? from;
@@ -309,10 +311,161 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     // Cancel previous timer if it exists
     _debounceTimer?.cancel();
 
-    // Set a new timer
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      _searchMembersFromApi(query);
-    });
+    // Reset searching state
+    if (mounted) {
+      setState(() {
+        _isSearching = false;
+      });
+    }
+
+    // Always perform local search first for immediate results
+    _performLocalSearch(query);
+
+    // Skip API search for now to avoid performance issues
+    // Only use local search which is much faster and more reliable
+  }
+
+  void _performLocalSearch(String query) {
+    try {
+      if (query.trim().isEmpty) {
+        _filteredMembersNotifier.value = _allMembers;
+        return;
+      }
+
+      if (query.isNotEmpty) {
+        final searchQuery = query.toLowerCase().trim();
+
+        // Use a more efficient search approach
+        final results = <dynamic>[];
+
+        for (final member in _allMembers) {
+          if (_matchesMemberLocally(member, searchQuery)) {
+            results.add(member);
+          }
+
+          // Limit results for performance (max 30 results)
+          if (results.length >= 30) break;
+        }
+
+        // Simple sorting - exact unit matches first, then alphabetical
+        results.sort((a, b) {
+          final unitA = a['unit_flat_number']?.toString().toLowerCase() ?? '';
+          final unitB = b['unit_flat_number']?.toString().toLowerCase() ?? '';
+
+          // Exact unit matches first
+          if (unitA.startsWith(searchQuery) && !unitB.startsWith(searchQuery))
+            return -1;
+          if (unitB.startsWith(searchQuery) && !unitA.startsWith(searchQuery))
+            return 1;
+
+          // Then alphabetical by unit
+          return unitA.compareTo(unitB);
+        });
+
+        _filteredMembersNotifier.value = results;
+      } else {
+        _filteredMembersNotifier.value = _allMembers;
+      }
+    } catch (e) {
+      // If search fails, show all members
+      _filteredMembersNotifier.value = _allMembers;
+    }
+  }
+
+  bool _matchesMemberLocally(dynamic member, String searchQuery) {
+    try {
+      // Apply building filter if a building is selected
+      if (_selectedBuildingName != null && _selectedBuildingName!.isNotEmpty) {
+        final socBuildingName = member['soc_building_name']?.toString() ?? '';
+        if (socBuildingName != _selectedBuildingName) {
+          return false;
+        }
+      }
+
+      // Fast unit number check first (most common search)
+      final unitFlatNumber =
+          member['unit_flat_number']?.toString().toLowerCase() ?? '';
+      if (unitFlatNumber.contains(searchQuery)) {
+        return true;
+      }
+
+      // Then building check
+      final buildingUnit =
+          member['building_unit']?.toString().toLowerCase() ?? '';
+      if (buildingUnit.contains(searchQuery)) {
+        return true;
+      }
+
+      // Name check - simplified for performance
+      final memberDetails = (member['rows'] as List<dynamic>?) ?? [];
+      for (final detail in memberDetails) {
+        final firstName =
+            detail['member_first_name']?.toString().toLowerCase() ?? '';
+        final lastName =
+            detail['member_last_name']?.toString().toLowerCase() ?? '';
+
+        if (firstName.contains(searchQuery) || lastName.contains(searchQuery)) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  int _calculateLocalRelevanceScore(dynamic member, String searchQuery) {
+    int score = 0;
+
+    final unitFlatNumber =
+        member['unit_flat_number']?.toString().toLowerCase() ?? '';
+    final buildingUnit =
+        member['building_unit']?.toString().toLowerCase() ?? '';
+    final socBuildingName =
+        member['soc_building_name']?.toString().toLowerCase() ?? '';
+
+    // Unit number gets highest priority
+    if (unitFlatNumber == searchQuery)
+      score += 100;
+    else if (unitFlatNumber.startsWith(searchQuery))
+      score += 80;
+    else if (unitFlatNumber.contains(searchQuery)) score += 40;
+
+    // Building unit matches
+    if (buildingUnit == searchQuery)
+      score += 60;
+    else if (buildingUnit.startsWith(searchQuery))
+      score += 40;
+    else if (buildingUnit.contains(searchQuery)) score += 20;
+
+    // Building name matches
+    if (socBuildingName == searchQuery)
+      score += 50;
+    else if (socBuildingName.startsWith(searchQuery))
+      score += 30;
+    else if (socBuildingName.contains(searchQuery)) score += 15;
+
+    // Name matches (check both member_details and rows)
+    final memberDetails = (member['member_details'] as List<dynamic>?) ??
+        (member['rows'] as List<dynamic>?) ??
+        [];
+    for (final detail in memberDetails) {
+      final firstName =
+          detail['member_first_name']?.toString().toLowerCase() ?? '';
+      final lastName =
+          detail['member_last_name']?.toString().toLowerCase() ?? '';
+      final fullName = '$firstName $lastName'.trim();
+
+      if (fullName.startsWith(searchQuery))
+        score += 70;
+      else if (firstName.startsWith(searchQuery) ||
+          lastName.startsWith(searchQuery))
+        score += 50;
+      else if (fullName.contains(searchQuery)) score += 30;
+    }
+
+    return score;
   }
 
   Future<void> _searchMembersFromApi(String query) async {
@@ -400,223 +553,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Enhanced Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: const Color(0xffF44336).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.people,
-                            color: Color(0xffF44336),
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Selected Members',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 22,
-                                  ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon:
-                          const Icon(Icons.close, size: 28, color: Colors.red),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Divider(
-                  thickness: 1,
-                  height: 1,
-                  color: Colors.black.withOpacity(0.1)),
-              // Enhanced Members List
-              Expanded(
-                child: ValueListenableBuilder<Set<String>>(
-                  valueListenable: _selectedMembersNotifier,
-                  builder: (context, selectedMembers, _) {
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(24),
-                      itemCount: selectedMembers.length,
-                      itemBuilder: (context, index) {
-                        final member = selectedMembers.elementAt(index);
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            leading: CircleAvatar(
-                              radius: 24,
-                              backgroundColor:
-                                  const Color(0xffF44336).withOpacity(0.1),
-                              child: const Icon(
-                                Icons.person,
-                                color: Color(0xffF44336),
-                                size: 28,
-                              ),
-                            ),
-                            title: Text(
-                              member,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.red,
-                              ),
-                              onPressed: () {
-                                final updatedMembers = Set<String>.from(
-                                    _selectedMembersNotifier.value);
-                                updatedMembers.remove(member);
-                                _selectedMembersNotifier.value = updatedMembers;
-                                if (updatedMembers.isEmpty) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              // Enhanced Bottom Buttons
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                              color: Color(0xffF44336), width: 1),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _selectedMembersNotifier.value = {};
-                          });
-                          Navigator.pop(context);
-                        },
-                        child: const Text(
-                          'Clear All',
-                          style: TextStyle(
-                            color: Color(0xffF44336),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: null,
-                          elevation: 0,
-                        ).copyWith(
-                          backgroundColor:
-                              WidgetStateProperty.resolveWith<Color?>((states) {
-                            return null;
-                          }),
-                          foregroundColor:
-                              WidgetStateProperty.all<Color>(Colors.white),
-                        ),
-                        onPressed: selectedMembers.isEmpty || _isConfirming
-                            ? null
-                            : () => _handleSelectionSubmit(selectedMembers),
-                        child: Ink(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.black,
-                                Colors.grey,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                          ),
-                          child: Container(
-                            alignment: Alignment.center,
-                            constraints: const BoxConstraints(minHeight: 48),
-                            child: const Text(
-                              'Confirm',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        return SelectedMembersBottomSheet(
+          selectedMembers: selectedMembers,
+          selectedMembersNotifier: _selectedMembersNotifier,
+          onClearAll: () {
+            setState(() {
+              _selectedMembersNotifier.value = {};
+            });
+          },
+          onConfirm: () => _handleSelectionSubmit(selectedMembers),
+          isLoading: _isConfirming,
         );
       },
     );
@@ -1091,7 +1037,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
+    final bool isTablet = MediaQuery.of(context).size.width > 768;
 
     log("widget.selfcheckinFlow ${widget.selfcheckinFlow}");
     return WillPopScope(
@@ -2141,7 +2087,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   color: const Color(0xff212427),
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Search Members (type at least 3 characters)',
+                  hintText: 'Search by name, unit number, or building...',
                   hintStyle: TextStyle(
                     fontSize: isTablet ? 16 : 14,
                     color: const Color(0xff57636C),
@@ -2178,6 +2124,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               onPressed: () {
                                 _searchController.clear();
                                 _filteredMembersNotifier.value = _allMembers;
+                                // Cancel any pending search operations
+                                _debounceTimer?.cancel();
+                                setState(() {
+                                  _isSearching = false;
+                                });
                               },
                             )
                           : null,
@@ -2193,7 +2144,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   ),
                 ),
                 onChanged: (query) {
-                  if (query.trim().length >= 3) {
+                  if (query.trim().isNotEmpty) {
                     _debouncedSearchMembers(query.trim());
                   } else {
                     _filteredMembersNotifier.value = _allMembers;
@@ -2203,8 +2154,61 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ),
             ),
           ),
-          // HIDE the refresh icon/button here (was previously after the search field)
-          // ... existing code ...
+          // Search results info with better feedback
+          if (_searchController.text.isNotEmpty)
+            Container(
+              margin: EdgeInsets.only(left: isTablet ? 12 : 8),
+              child: ValueListenableBuilder<List<dynamic>>(
+                valueListenable: _filteredMembersNotifier,
+                builder: (context, filteredMembers, _) {
+                  final memberCount =
+                      filteredMembers.fold<int>(0, (count, member) {
+                    final memberDetails =
+                        member['rows'] as List<dynamic>? ?? [];
+                    return count + memberDetails.length;
+                  });
+
+                  return Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 12 : 8,
+                      vertical: isTablet ? 8 : 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF44336).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xffF44336).withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          filteredMembers.isEmpty
+                              ? Icons.search_off
+                              : Icons.people,
+                          size: isTablet ? 16 : 14,
+                          color: const Color(0xffF44336),
+                        ),
+                        SizedBox(width: isTablet ? 6 : 4),
+                        Text(
+                          filteredMembers.isEmpty
+                              ? 'No results'
+                              : memberCount == 1
+                                  ? '1 member'
+                                  : '$memberCount members',
+                          style: TextStyle(
+                            fontSize: isTablet ? 14 : 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xffF44336),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -2391,6 +2395,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Widget _buildEnhancedMemberListView(List<dynamic> filteredMembers,
       Set<String> selectedMembers, bool isTablet) {
+    // Show no results state when search is active but no results found
+    if (filteredMembers.isEmpty && _searchController.text.trim().isNotEmpty) {
+      return _buildNoResultsState(isTablet);
+    }
+
     return ListView.builder(
       padding: EdgeInsets.only(
         bottom: isTablet ? 140 : 120,
@@ -2399,6 +2408,100 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       itemCount: filteredMembers.length,
       itemBuilder: (context, index) => _buildEnhancedMemberTile(
           filteredMembers[index], selectedMembers, isTablet),
+    );
+  }
+
+  Widget _buildNoResultsState(bool isTablet) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 40 : 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: isTablet ? 80 : 64,
+              height: isTablet ? 80 : 64,
+              decoration: BoxDecoration(
+                color: const Color(0xffF44336).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.search_off,
+                size: isTablet ? 40 : 32,
+                color: const Color(0xffF44336),
+              ),
+            ),
+            SizedBox(height: isTablet ? 24 : 16),
+            Text(
+              'No members found',
+              style: TextStyle(
+                fontSize: isTablet ? 20 : 18,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xff212427),
+              ),
+            ),
+            SizedBox(height: isTablet ? 12 : 8),
+            Text(
+              'Try searching with different keywords:\n• Member name (first or last)\n• Unit number\n• Building name',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isTablet ? 16 : 14,
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: isTablet ? 24 : 16),
+            TextButton.icon(
+              onPressed: () {
+                _searchController.clear();
+                _filteredMembersNotifier.value = _allMembers;
+                _debounceTimer?.cancel();
+                setState(() {
+                  _isSearching = false;
+                });
+              },
+              icon: const Icon(Icons.clear_all),
+              label: const Text('Clear Search'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xffF44336),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 24 : 16,
+                  vertical: isTablet ? 12 : 8,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchingState(bool isTablet) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 40 : 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: isTablet ? 48 : 32,
+              height: isTablet ? 48 : 32,
+              child: const CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF44336)),
+              ),
+            ),
+            SizedBox(height: isTablet ? 24 : 16),
+            Text(
+              'Searching members...',
+              style: TextStyle(
+                fontSize: isTablet ? 16 : 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -2700,25 +2803,41 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 32 : 24,
-                                  vertical: isTablet ? 16 : 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(32),
+                          Expanded(
+                            child: Container(
+                              height: 45,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xff212427),
+                                    Color(0xff57636C)
+                                  ],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ),
-                            onPressed: selectedMembers.isEmpty || _isConfirming
-                                ? null
-                                : () => _handleSelectionSubmit(selectedMembers),
-                            child: const Text(
-                              'Confirm',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                              child: CustomLargeBtn(
+                                text: 'Confirm',
+                                onPressed: selectedMembers.isEmpty ||
+                                        _isConfirming
+                                    ? null
+                                    : () =>
+                                        _handleSelectionSubmit(selectedMembers),
+                                isLoading: _isConfirming,
+                                useBlackToGreyGradient: true,
                               ),
                             ),
                           ),

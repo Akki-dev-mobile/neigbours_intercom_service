@@ -37,3 +37,13 @@ class VIECameraButtonPressedEvent extends VisitorInEntryEvent {
     this.operation,
   });
 }
+
+class VIEValidationErrorEvent extends VisitorInEntryEvent {
+  final String message;
+  final String field;
+
+  VIEValidationErrorEvent({
+    required this.message,
+    required this.field,
+  });
+}

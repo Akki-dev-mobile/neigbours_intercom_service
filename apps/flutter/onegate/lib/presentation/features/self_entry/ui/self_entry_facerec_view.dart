@@ -169,21 +169,28 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                           margin: const EdgeInsets.symmetric(horizontal: 20),
                           child: CustomLargeBtn(
                             text: 'Next',
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => VisitorsInEntry(
-                                    selfcheckinFlow: true,
-                                    comingfrom: comingfrom,
-                                    searchedVisitor: visitor,
-                                    selectedValue: globalSelectedPurposes[
-                                        selectedImageIndex ?? 0],
-                                    mobile: visitorData['mobile'],
-                                  ),
-                                ),
-                              );
-                            },
+                            isLoading: isProcessing,
+                            useBlackToGreyGradient: true,
+                            onPressed: isProcessing
+                                ? null
+                                : () async {
+                                    if (isProcessing) return;
+                                    setState(() => isProcessing = true);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => VisitorsInEntry(
+                                          selfcheckinFlow: true,
+                                          comingfrom: comingfrom,
+                                          searchedVisitor: visitor,
+                                          selectedValue: globalSelectedPurposes[
+                                              selectedImageIndex ?? 0],
+                                          mobile: visitorData['mobile'],
+                                        ),
+                                      ),
+                                    );
+                                    setState(() => isProcessing = false);
+                                  },
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -484,6 +491,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
   }
 
   bool loading = false;
+  bool isProcessing = false;
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;

@@ -85,14 +85,14 @@ class _EditStaffState extends State<EditStaff> {
     super.initState();
     _mobileFocusNode = FocusNode();
     _staffId = int.parse(widget.staffId);
-    
+
     // Initialize controllers with empty values
     _nameController = TextEditingController();
     _emailController = TextEditingController();
     _phoneController = TextEditingController();
     _idNumberController = TextEditingController();
     _addressController = TextEditingController();
-    
+
     // Fetch staff data
     _fetchStaffData();
     _fetchCategories();
@@ -105,14 +105,14 @@ class _EditStaffState extends State<EditStaff> {
         final staffData = StaffModel.fromJson(response['data']);
         setState(() {
           _staffData = staffData;
-          
+
           // Update controllers with fetched data
           _nameController.text = staffData.name;
           // _emailController.text = staffData.staff ?? '';
           _phoneController.text = staffData.staffContactNumber;
           // _idNumberController.text = staffData. ?? '';
           // _addressController.text = staffData.address ?? '';
-          
+
           // Update other fields
           _dob = staffData.staffDob;
           _selectedDate = DateTime.tryParse(staffData.staffDob);
@@ -121,11 +121,11 @@ class _EditStaffState extends State<EditStaff> {
           _selectedQualification = staffData.staffQualification;
           _selectedIdProof = staffData.staffBadgeNumber ?? 'Aadhar Card';
           // selectedCountryCodeSE = staffData. ?? 'IN';
-          
+
           // // Store image URLs
           // _profileImageUrl = staffData.profileImageUrl ?? '';
           // _idProofImageUrl = staffData.idProofImageUrl ?? '';
-          
+
           _isLoading = false;
         });
       }
@@ -461,8 +461,7 @@ class _EditStaffState extends State<EditStaff> {
 
       log('Updating staff data: $staffData');
 
-      final response =
-          await _remoteDataSource.editStaff(_staffId, staffData);
+      final response = await _remoteDataSource.editStaff(_staffId, staffData);
 
       if (mounted) {
         if (response != null) {
@@ -618,7 +617,8 @@ class _EditStaffState extends State<EditStaff> {
   Future<String?> _uploadSingleImage(File imageFile) async {
     try {
       final int companyId = 1;
-      final response = await _remoteDataSource.uploadStaffImages(imageFile, companyId);
+      final response =
+          await _remoteDataSource.uploadStaffImages(imageFile, companyId);
       if (response != null) {
         return response['url'];
       }
@@ -641,7 +641,7 @@ class _EditStaffState extends State<EditStaff> {
         ),
       );
     }
-    
+
     return MyScrollView(
       pageTitle: "Edit Staff",
       pageBody: Column(
@@ -710,6 +710,7 @@ class _EditStaffState extends State<EditStaff> {
                     }
                     return null;
                   },
+                  cursorColor: Colors.black,
                 ),
 
                 // Gender
@@ -784,6 +785,7 @@ class _EditStaffState extends State<EditStaff> {
                     }
                     return null;
                   },
+                  cursorColor: Colors.black,
                 ),
 
                 // Email
@@ -800,6 +802,7 @@ class _EditStaffState extends State<EditStaff> {
                     }
                     return null;
                   },
+                  cursorColor: Colors.black,
                 ),
 
                 // DOB
@@ -826,6 +829,7 @@ class _EditStaffState extends State<EditStaff> {
                     onPressed: _selectDateOfBirth,
                     icon: const Icon(Icons.calendar_today),
                   ),
+                  cursorColor: Colors.black,
                 ),
 
                 // Category
@@ -923,7 +927,8 @@ class _EditStaffState extends State<EditStaff> {
                         }
                         break;
                       case 'Voter ID':
-                        if (input.length < 10 || !RegExp(r'^[A-Za-z\d]+$').hasMatch(input)) {
+                        if (input.length < 10 ||
+                            !RegExp(r'^[A-Za-z\d]+$').hasMatch(input)) {
                           return 'Please enter a valid Voter ID';
                         }
                         break;
@@ -939,6 +944,7 @@ class _EditStaffState extends State<EditStaff> {
                     onPressed: () => _openCamera(isIdProof: true),
                     icon: const Icon(Icons.camera_alt),
                   ),
+                  cursorColor: Colors.black,
                 ),
 
                 // Address
@@ -955,6 +961,7 @@ class _EditStaffState extends State<EditStaff> {
                     }
                     return null;
                   },
+                  cursorColor: Colors.black,
                 ),
 
                 const SizedBox(height: 30),

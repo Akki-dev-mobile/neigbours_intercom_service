@@ -28,12 +28,24 @@ class VisitorInEntryBloc
         super(VisitorInEntryInitial()) {
     on<VIEGuestFormSubmitButtonPressedEvent>(_handleGuestFormSubmit);
     on<VIECameraButtonPressedEvent>(_handleCameraButton);
+    on<VIEValidationErrorEvent>(_handleValidationError);
+  }
+
+  void _handleValidationError(
+    VIEValidationErrorEvent event,
+    Emitter<VisitorInEntryState> emit,
+  ) {
+    emit(VisitorInEntryValidationErrorState(
+      message: event.message,
+      field: event.field,
+    ));
   }
 
   Future<void> _handleGuestFormSubmit(
     VIEGuestFormSubmitButtonPressedEvent event,
     Emitter<VisitorInEntryState> emit,
   ) async {
+    try {
     final visitor = Visitor(
       name: event.guestName!,
       mobile: event.mobile,
@@ -53,6 +65,9 @@ class VisitorInEntryBloc
         event.searchedVisitor!,
         event.purposeCategory,
       ));
+      }
+    } catch (error) {
+      emit(VisitorInEntryErrorState(message: error.toString()));
     }
   }
 

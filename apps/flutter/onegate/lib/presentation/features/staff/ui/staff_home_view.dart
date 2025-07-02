@@ -96,34 +96,34 @@ class _StaffScreenState extends State<StaffScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-          FutureBuilder<List<StaffModel>>(
-            future: _staffFuture,
-            builder: (context, snapshot) {
+                    FutureBuilder<List<StaffModel>>(
+                      future: _staffFuture,
+                      builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return _buildEnhancedLoader(context, isTablet);
-              } else if (snapshot.hasError) {
+                        } else if (snapshot.hasError) {
                           return _buildErrorWidget(
                               context, isTablet, snapshot.error.toString());
-              } else if (snapshot.hasData) {
-                final freshData = snapshot.data!;
+                        } else if (snapshot.hasData) {
+                          final freshData = snapshot.data!;
 
-                if (_staffListFull.isEmpty) {
-                  _staffListFull = freshData;
-                  _filteredStaffList = List.from(_staffListFull);
-                }
+                          if (_staffListFull.isEmpty) {
+                            _staffListFull = freshData;
+                            _filteredStaffList = List.from(_staffListFull);
+                          }
 
-                if (_filteredStaffList.isEmpty) {
-                  return _buildNoStaffWidget();
-                }
+                          if (_filteredStaffList.isEmpty) {
+                            return _buildNoStaffWidget();
+                          }
 
-                // Show the filtered staff list
-                return StaffListWidget(staffList: _filteredStaffList);
-              } else {
-                return _buildNoStaffWidget();
-              }
-            },
-          ),
+                          // Show the filtered staff list
+                          return StaffListWidget(staffList: _filteredStaffList);
+                        } else {
+                          return _buildNoStaffWidget();
+                        }
+                      },
+                    ),
                     SizedBox(height: isTablet ? 120 : 100),
                   ],
                 ),
@@ -251,6 +251,7 @@ class _StaffScreenState extends State<StaffScreen> {
       child: TextField(
         controller: _searchController,
         onChanged: (query) => _filterStaffList(query),
+        cursorColor: Colors.black,
         decoration: InputDecoration(
           hintText: 'Search staff by name, category, or phone...',
           hintStyle: TextStyle(
@@ -294,52 +295,52 @@ class _StaffScreenState extends State<StaffScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Enhanced loading container
+            // Enhanced loading container with gate animation
             Container(
-              padding: EdgeInsets.all(isTablet ? 32 : 24),
+              padding: EdgeInsets.all(isTablet ? 40 : 32),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.red.shade50,
-                    Colors.red.shade100.withOpacity(0.3),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.red.shade200.withOpacity(0.3),
-                  width: 2,
-                ),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
                   SizedBox(
-                    width: isTablet ? 60 : 48,
-                    height: isTablet ? 60 : 48,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 4,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.red.shade400),
-                    ),
+                    width: isTablet ? 120 : 100,
+                    height: isTablet ? 120 : 100,
+                    child: _GateLoadingAnimation(isTablet: isTablet),
                   ),
-                  SizedBox(height: isTablet ? 24 : 20),
+                  SizedBox(height: isTablet ? 32 : 24),
                   Text(
-                    'Loading Staff...',
+                    'Loading Staff',
                     style: TextStyle(
                       color: const Color(0xff212427),
-                      fontSize: isTablet ? 18 : 16,
-                      fontWeight: FontWeight.w600,
+                      fontSize: isTablet ? 24 : 20,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 0.3,
                     ),
                   ),
-                  SizedBox(height: isTablet ? 8 : 6),
+                  SizedBox(height: isTablet ? 12 : 8),
                   Text(
                     'Please wait while we fetch the staff list',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: isTablet ? 14 : 12,
+                      color: const Color(0xff57636C),
+                      fontSize: isTablet ? 16 : 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -584,6 +585,169 @@ class _StaffScreenState extends State<StaffScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// --- Insert the dashboard loader animation widget ---
+class _GateLoadingAnimation extends StatefulWidget {
+  final bool isTablet;
+  const _GateLoadingAnimation({required this.isTablet});
+  @override
+  _GateLoadingAnimationState createState() => _GateLoadingAnimationState();
+}
+
+class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _gateAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    _gateAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: widget.isTablet ? 120 : 100,
+          height: widget.isTablet ? 120 : 100,
+          decoration: BoxDecoration(
+            color: const Color(0xffF44336).withOpacity(0.05),
+            borderRadius: BorderRadius.circular(widget.isTablet ? 20 : 16),
+          ),
+          child: Stack(
+            children: [
+              // Left gate door
+              Positioned(
+                left: 0,
+                top: widget.isTablet ? 20 : 16,
+                bottom: widget.isTablet ? 20 : 16,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: (widget.isTablet ? 40 : 32) -
+                      (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xffF44336),
+                        const Color(0xffD32F2F),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(widget.isTablet ? 8 : 6),
+                      bottomLeft: Radius.circular(widget.isTablet ? 8 : 6),
+                      topRight: Radius.circular(widget.isTablet ? 4 : 3),
+                      bottomRight: Radius.circular(widget.isTablet ? 4 : 3),
+                    ),
+                  ),
+                ),
+              ),
+              // Right gate door
+              Positioned(
+                right: 0,
+                top: widget.isTablet ? 20 : 16,
+                bottom: widget.isTablet ? 20 : 16,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: (widget.isTablet ? 40 : 32) -
+                      (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xffF44336),
+                        const Color(0xffD32F2F),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(widget.isTablet ? 8 : 6),
+                      bottomRight: Radius.circular(widget.isTablet ? 8 : 6),
+                      topLeft: Radius.circular(widget.isTablet ? 4 : 3),
+                      bottomLeft: Radius.circular(widget.isTablet ? 4 : 3),
+                    ),
+                  ),
+                ),
+              ),
+              // Center gate icon
+              Center(
+                child: Transform.rotate(
+                  angle: _rotationAnimation.value * 2 * 3.14159,
+                  child: Container(
+                    padding: EdgeInsets.all(widget.isTablet ? 12 : 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(widget.isTablet ? 12 : 10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: widget.isTablet ? 8 : 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.sensor_door_rounded,
+                      color: const Color(0xffF44336),
+                      size: widget.isTablet ? 32 : 24,
+                    ),
+                  ),
+                ),
+              ),
+              // Loading dots indicator
+              Positioned(
+                bottom: widget.isTablet ? 8 : 6,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (index) {
+                    return AnimatedContainer(
+                      duration: Duration(milliseconds: 300 + (index * 100)),
+                      margin: EdgeInsets.symmetric(
+                          horizontal: widget.isTablet ? 3 : 2),
+                      width: widget.isTablet ? 8 : 6,
+                      height: widget.isTablet ? 8 : 6,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(
+                          0.3 +
+                              ((_controller.value + (index * 0.3)) % 1.0) * 0.7,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

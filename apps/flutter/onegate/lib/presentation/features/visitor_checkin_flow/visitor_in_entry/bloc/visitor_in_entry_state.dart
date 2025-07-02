@@ -1,4 +1,5 @@
 part of 'visitor_in_entry_bloc.dart';
+
 // States
 @immutable
 abstract class VisitorInEntryState {}
@@ -11,6 +12,14 @@ class VisitorInEntryErrorState extends VisitorInEntryState {
   final String message;
 
   VisitorInEntryErrorState({required this.message});
+}
+
+class VisitorInEntryValidationErrorState extends VisitorInEntryState {
+  final String message;
+  final String field;
+
+  VisitorInEntryValidationErrorState(
+      {required this.message, required this.field});
 }
 
 abstract class VisitorInEntryActionState extends VisitorInEntryState {}

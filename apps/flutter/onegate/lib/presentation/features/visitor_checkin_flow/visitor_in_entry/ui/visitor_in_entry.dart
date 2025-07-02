@@ -134,12 +134,21 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     _guestNameController = TextEditingController(
       text: widget.searchedVisitor?.name ?? "",
     );
+
+    // Only set coming from value if we have a searched visitor
+    // This ensures the field is cleared for new visitors
     _guestComingFromController = TextEditingController(
-      text: comingFrom ?? widget.comingfrom,
+      text: widget.searchedVisitor != null
+          ? (comingFrom ?? widget.comingfrom)
+          : "",
     );
 
-    // Update coming from with value from gateStorage
-    _guestComingFromController!.text = await gateStorage.getComingFrom() ?? "";
+    // Update coming from with value from gateStorage only if we have a searched visitor
+    if (widget.searchedVisitor != null) {
+      _guestComingFromController!.text =
+          await gateStorage.getComingFrom() ?? "";
+    }
+
     _guestCountController = TextEditingController(
       text: '1',
     );
@@ -316,6 +325,15 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   Future<void> _handleSubmit() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    // Validate form first before any API calls
+    if (!_validateForm()) {
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
     log("_remoteDataSource.createVisitor");
     widget.searchedVisitor?.name = _guestNameController?.text;
     widget.searchedVisitor?.mobile = widget.searchedVisitor?.mobile != ""
@@ -334,12 +352,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     ));
     // }
 
-    if (_isSubmitting) return;
-
-    if (!_validateForm()) return;
-
-    if (!mounted) return;
-    setState(() => _isSubmitting = true);
+    if (!mounted) {
+      return;
+    }
 
     if (widget.selectedValue?.categoryName == 'DELIVERY' &&
         selectedCompanyIndex == -1) {
@@ -371,7 +386,6 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       await Future.delayed(const Duration(seconds: 2));
     } catch (e) {
       _showErrorSnackBar('An error occurred: ${e.toString()}');
-    } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
@@ -382,18 +396,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Check if purpose is VENDOR
     if (widget.selectedValue?.categoryName == 'VENDOR') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showEnhancedErrorToast(
-            'Vendor Name Required',
-            'Please enter the vendor\'s name to continue',
-            Icons.business_outlined,
-            focusNode: _guestNameFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter the vendor\'s name to continue',
+          field: 'Vendor Name Required',
+        ));
         return false;
       }
       if (selectedCompanyIndex == -1) {
-        _showEnhancedErrorToast(
-            'Category Selection Required',
-            'Please select a vendor category to proceed',
-            Icons.category_outlined);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please select a vendor category to proceed',
+          field: 'Category Selection Required',
+        ));
         return false;
       }
     }
@@ -401,19 +414,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Check if purpose is CABS
     else if (widget.selectedValue?.categoryName == 'CABS') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showEnhancedErrorToast(
-            'Cab Driver Name Required',
-            'Please enter the cab driver\'s name to continue',
-            Icons.person_outline,
-            focusNode: _guestNameFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter the cab driver\'s name to continue',
+          field: 'Cab Driver Name Required',
+        ));
         return false;
       }
       if ((_carNumberController?.text ?? "").isEmpty) {
-        _showEnhancedErrorToast(
-            'Cab Number Required',
-            'Please enter the vehicle registration number',
-            Icons.directions_car_outlined,
-            focusNode: _carNumberFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter the vehicle registration number',
+          field: 'Cab Number Required',
+        ));
         return false;
       }
     }
@@ -421,18 +432,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Check if purpose is DELIVERY
     else if (widget.selectedValue?.categoryName == 'DELIVERY') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showEnhancedErrorToast(
-            'Delivery Person Required',
-            'Please enter the delivery person\'s name to continue',
-            Icons.person_outline,
-            focusNode: _guestNameFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter the delivery person\'s name to continue',
+          field: 'Delivery Person Required',
+        ));
         return false;
       }
       if (selectedCompanyIndex == -1) {
-        _showEnhancedErrorToast(
-            'Company Selection Required',
-            'Please select a delivery company to proceed',
-            Icons.local_shipping_outlined);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please select a delivery company to proceed',
+          field: 'Company Selection Required',
+        ));
         return false;
       }
     }
@@ -440,25 +450,26 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     // Check if purpose is GUEST
     else if (widget.selectedValue?.categoryName == 'GUEST') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showEnhancedErrorToast('Guest Name Required',
-            'Please enter the guest\'s name to continue', Icons.person_outline,
-            focusNode: _guestNameFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter the guest\'s name to continue',
+          field: 'Guest Name Required',
+        ));
         return false;
       }
       if ((_guestComingFromController?.text ?? "").isEmpty &&
           _visitorAddress == true) {
-        _showEnhancedErrorToast(
-            'Coming From Required',
-            'Please enter where the guest is coming from',
-            Icons.location_on_outlined,
-            focusNode: _guestComingFromFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter where the guest is coming from',
+          field: 'Coming From Required',
+        ));
         return false;
       }
       if ((_visitorNumberController?.text ?? "").isEmpty &&
           _visitorCardNumber == true) {
-        _showEnhancedErrorToast('Card Number Required',
-            'Please enter the visitor card number', Icons.credit_card_outlined,
-            focusNode: _visitorNumberFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter the visitor card number',
+          field: 'Card Number Required',
+        ));
         return false;
       }
     }
@@ -467,20 +478,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     else if (widget.selectedValue?.categoryName == 'STAFF' ||
         widget.selectedValue?.categoryName == 'MEMBER STAFF') {
       if ((_guestNameController?.text ?? "").isEmpty) {
-        _showEnhancedErrorToast(
-            'Staff Name Required',
-            'Please enter the staff member\'s name to continue',
-            Icons.badge_outlined,
-            focusNode: _guestNameFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter the staff member\'s name to continue',
+          field: 'Staff Name Required',
+        ));
         return false;
       }
       if ((_guestComingFromController?.text ?? "").isEmpty &&
           _visitorAddress == true) {
-        _showEnhancedErrorToast(
-            'Coming From Required',
-            'Please enter where the staff member is coming from',
-            Icons.location_on_outlined,
-            focusNode: _guestComingFromFocusNode);
+        _bloc.add(VIEValidationErrorEvent(
+          message: 'Please enter where the staff member is coming from',
+          field: 'Coming From Required',
+        ));
         return false;
       }
     }
@@ -501,50 +510,47 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 24,
-                ),
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      message,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         backgroundColor: const Color(0xffF44336),
         behavior: SnackBarBehavior.floating,
@@ -559,18 +565,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   void _highlightField(FocusNode focusNode) {
-    // Request focus to highlight the field
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        focusNode.requestFocus();
-        // Remove focus after a short delay to show the highlight effect
-        Future.delayed(const Duration(milliseconds: 2000), () {
-          if (mounted) {
-            focusNode.unfocus();
-          }
-        });
-      }
-    });
+    focusNode.requestFocus();
   }
 
   void _autoSelectFirstDeliveryCompany() {
@@ -620,11 +615,58 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     return BlocConsumer<VisitorInEntryBloc, VisitorInEntryState>(
       bloc: _bloc,
-      listenWhen: (previous, current) => current is VisitorInEntryActionState,
-      buildWhen: (previous, current) => current is! VisitorInEntryActionState,
+      listenWhen: (previous, current) =>
+          current is VisitorInEntryActionState ||
+          current is VisitorInEntryErrorState ||
+          current is VisitorInEntryValidationErrorState,
+      buildWhen: (previous, current) =>
+          current is! VisitorInEntryActionState &&
+          current is! VisitorInEntryErrorState &&
+          current is! VisitorInEntryValidationErrorState,
       listener: (context, state) async {
         if (state is VisitorInEntryErrorState) {
           _showErrorSnackBar(state.message);
+          setState(() => _isSubmitting = false);
+        } else if (state is VisitorInEntryValidationErrorState) {
+          // Get the appropriate focus node based on the field
+          FocusNode? focusNode;
+          IconData icon = Icons.error_outline;
+
+          switch (state.field.toLowerCase()) {
+            case 'vendor name required':
+            case 'cab driver name required':
+            case 'delivery person required':
+            case 'guest name required':
+            case 'staff name required':
+              focusNode = _guestNameFocusNode;
+              icon = Icons.person_outline;
+              break;
+            case 'coming from required':
+              focusNode = _guestComingFromFocusNode;
+              icon = Icons.location_on_outlined;
+              break;
+            case 'card number required':
+              focusNode = _visitorNumberFocusNode;
+              icon = Icons.credit_card_outlined;
+              break;
+            case 'cab number required':
+              focusNode = _carNumberFocusNode;
+              icon = Icons.directions_car_outlined;
+              break;
+            case 'category selection required':
+              icon = Icons.category_outlined;
+              break;
+            case 'company selection required':
+              icon = Icons.local_shipping_outlined;
+              break;
+          }
+
+          _showEnhancedErrorToast(
+            state.field,
+            state.message,
+            icon,
+            focusNode: focusNode,
+          );
           setState(() => _isSubmitting = false);
         } else if (state is VIENavigateToUnitSelectionState) {
           final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -707,44 +749,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             width: MediaQuery.of(context).size.width * 0.85,
             height: 60,
-            child: ElevatedButton(
-              style: ButtonStyle(
-                backgroundColor:
-                    WidgetStateProperty.all<Color>(Colors.transparent),
-                elevation: WidgetStateProperty.all<double>(0),
-                shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-              ),
-              onPressed: _handleSubmit,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xff212427), Color(0xff57636C)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Center(
-                  child: _isSubmitting
-                      ? const CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        )
-                      : const Text(
-                          'Next',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            wordSpacing: 1.2,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                ),
-              ),
+            child: CustomLargeBtn(
+              text: 'Next',
+              onPressed: _isSubmitting ? null : _handleSubmit,
+              isLoading: _isSubmitting,
+              useBlackToGreyGradient: true,
             ),
           ),
         );
@@ -2530,9 +2539,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             onPressed: _decrementGuestCount,
             icon: const Icon(
               Ionicons.remove_circle_outline,
-              color: Colors.red,
+              color: Color(0xffF44336),
               size: 32,
             ),
+            padding: EdgeInsets.zero,
           ),
           IconButton(
             onPressed: _incrementGuestCount,
@@ -2541,6 +2551,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               size: 32,
               color: Colors.green,
             ),
+            padding: EdgeInsets.zero,
           ),
         ],
       ),
@@ -2989,21 +3000,20 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
   late CameraController _cameraController;
   late CameraDescription _currentCamera;
   XFile? _capturedImage;
-  bool _isCapturing = false; // Prevent multiple captures
+  bool _isCapturing = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance
-        .addObserver(this); // Add observer for lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
     _currentCamera = widget.cameraController.description;
     _cameraController = widget.cameraController;
-    _lockCameraToPortrait(); // Lock camera to portrait mode
+    _lockCameraToPortrait();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // Remove observer
+    WidgetsBinding.instance.removeObserver(this);
     _cameraController.dispose();
     super.dispose();
   }
@@ -3054,185 +3064,137 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
     final double previewRadius = isTablet ? 32 : 20;
     final double previewBorder = 3;
     final double previewShadow = 32;
-    final double previewAspectRatio = 3 / 4; // Portrait aspect ratio
+    final double previewAspectRatio = 3 / 4;
     final double controlsHeight = isTablet ? 120 : 90;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+    return WillPopScope(
+      onWillPop: () async => false, // Prevent back button
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false, // Hide back button
+          title: const Text(
+            'Take Photo',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
         ),
-        title: const Text(
-          'Take Photo',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: previewAspectRatio,
-                  child: Container(
-                    margin: EdgeInsets.all(previewMargin),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(previewRadius),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
-                          blurRadius: previewShadow,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.25),
-                        width: previewBorder,
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: _capturedImage == null
-                        ? (_cameraController.value.isInitialized
-                            ? CameraPreview(_cameraController)
-                            : const Center(
-                                child: CircularProgressIndicator(
-                                    color: Colors.white)))
-                        : Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.file(
-                                File(_capturedImage!.path),
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                              ),
-                              // Overlay for preview enhancement
-                              Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Container(
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        Colors.black.withOpacity(0.5),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: previewAspectRatio,
+                    child: Container(
+                      margin: EdgeInsets.all(previewMargin),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(previewRadius),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: previewShadow,
+                            offset: const Offset(0, 12),
                           ),
+                        ],
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.25),
+                          width: previewBorder,
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: _capturedImage == null
+                          ? CameraPreview(_cameraController)
+                          : Image.file(
+                              File(_capturedImage!.path),
+                              fit: BoxFit.cover,
+                            ),
+                    ),
                   ),
                 ),
               ),
-            ),
-            // Controls
-            Padding(
-              padding: EdgeInsets.only(bottom: isTablet ? 32 : 16, top: 8),
-              child: _capturedImage == null
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildControlButton(
-                          onPressed: _switchCamera,
-                          icon: Icons.flip_camera_ios_rounded,
-                          size: isTablet ? 40 : 30,
-                        ),
-                        GestureDetector(
-                          onTap: _isCapturing
-                              ? null
-                              : () async {
-                                  setState(() => _isCapturing = true);
-                                  try {
-                                    final image =
-                                        await _cameraController.takePicture();
-                                    setState(() {
-                                      _capturedImage = image;
-                                      _isCapturing = false;
-                                    });
-                                  } catch (e) {
-                                    print('Error capturing image: $e');
-                                    setState(() => _isCapturing = false);
-                                  }
-                                },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            height: controlsHeight,
-                            width: controlsHeight,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color:
-                                    _isCapturing ? Colors.grey : Colors.white,
-                                width: 4,
-                              ),
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.white,
-                                  Colors.grey[200]!,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.white.withOpacity(0.2),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
+              Padding(
+                padding: EdgeInsets.only(bottom: isTablet ? 32 : 16, top: 8),
+                child: _capturedImage == null
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildControlButton(
+                            onPressed: _switchCamera,
+                            icon: Icons.flip_camera_ios_rounded,
+                            size: isTablet ? 40 : 30,
+                          ),
+                          GestureDetector(
+                            onTap: _isCapturing
+                                ? null
+                                : () async {
+                                    setState(() => _isCapturing = true);
+                                    try {
+                                      final image =
+                                          await _cameraController.takePicture();
+                                      setState(() {
+                                        _capturedImage = image;
+                                        _isCapturing = false;
+                                      });
+                                    } catch (e) {
+                                      print('Error capturing image: $e');
+                                      setState(() => _isCapturing = false);
+                                    }
+                                  },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              height: controlsHeight,
+                              width: controlsHeight,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color:
+                                      _isCapturing ? Colors.grey : Colors.white,
+                                  width: 4,
                                 ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Container(
-                                height: controlsHeight * 0.7,
-                                width: controlsHeight * 0.7,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.black.withOpacity(0.1),
-                                      Colors.white,
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.white,
+                                    Colors.grey[200]!,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.2),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
                           ),
-                        ),
-                        SizedBox(width: isTablet ? 40 : 30),
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildActionButton(
-                          onPressed: () =>
-                              setState(() => _capturedImage = null),
-                          icon: Icons.close,
-                          label: 'Retake',
-                          color: Colors.red,
-                          isTablet: isTablet,
-                        ),
-                        _buildActionButton(
-                          onPressed: () =>
-                              Navigator.pop(context, _capturedImage),
-                          icon: Icons.check,
-                          label: 'Use Photo',
-                          color: Colors.green,
-                          isTablet: isTablet,
-                        ),
-                      ],
-                    ),
-            ),
-          ],
+                          SizedBox(width: isTablet ? 40 : 30),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildControlButton(
+                            onPressed: () {
+                              setState(() => _capturedImage = null);
+                            },
+                            icon: Icons.refresh,
+                            size: isTablet ? 40 : 30,
+                          ),
+                          _buildControlButton(
+                            onPressed: () {
+                              Navigator.pop(context, _capturedImage);
+                            },
+                            icon: Icons.check,
+                            size: isTablet ? 40 : 30,
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3262,49 +3224,6 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
         onPressed: onPressed,
         icon: Icon(icon, color: Colors.white, size: size),
         padding: EdgeInsets.zero,
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required bool isTablet,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            height: isTablet ? 80 : 60,
-            width: isTablet ? 80 : 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withOpacity(0.15),
-              border: Border.all(color: color, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: color, size: isTablet ? 40 : 30),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: isTablet ? 18 : 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
   }

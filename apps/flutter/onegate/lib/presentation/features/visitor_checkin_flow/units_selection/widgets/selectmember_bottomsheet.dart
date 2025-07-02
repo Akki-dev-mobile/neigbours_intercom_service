@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 
 class SelectedMembersBottomSheet extends StatelessWidget {
   final Set<String> selectedMembers;
   final ValueNotifier<Set<String>> selectedMembersNotifier;
   final VoidCallback onClearAll;
   final VoidCallback onConfirm;
+  final bool isLoading;
 
   const SelectedMembersBottomSheet({
     Key? key,
@@ -12,6 +14,7 @@ class SelectedMembersBottomSheet extends StatelessWidget {
     required this.selectedMembersNotifier,
     required this.onClearAll,
     required this.onConfirm,
+    this.isLoading = false,
   }) : super(key: key);
 
   @override
@@ -107,7 +110,7 @@ class SelectedMembersBottomSheet extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
               boxShadow: [
@@ -126,7 +129,7 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       side: const BorderSide(color: Colors.black),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -144,26 +147,38 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    height: 45,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xff212427), Color(0xff57636C)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                       ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onConfirm();
-                    },
-                    child: const Text(
-                      'Confirm',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: CustomLargeBtn(
+                      text: 'Confirm',
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onConfirm();
+                      },
+                      isLoading: isLoading,
+                      useBlackToGreyGradient: true,
                     ),
                   ),
                 ),

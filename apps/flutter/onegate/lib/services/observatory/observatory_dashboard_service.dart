@@ -90,48 +90,41 @@ class ObservatoryDashboardService {
       // Load environment variables
       await dotenv.load(fileName: ".env");
 
-      // Initialize PostHog - commented out due to API inconsistency
-      // PostHog is initialized in PostHogErrorTrackingService instead
-      // await Posthog.init(
-      //   apiKey: dotenv.env['POSTHOG_API_KEY'] ?? '',
-      //   host: dotenv.env['POSTHOG_HOST'] ?? 'https://app.posthog.com',
-      // );
-
       // Initialize all monitoring services
-      await SentryMonitoringService.instance.initialize();
-      await HyperDxLoggingService.instance.initialize();
-      await SkyWalkingTracingService.instance.initialize();
-      await HighlightSessionService.instance.initialize();
+      SentryMonitoringService.instance.initialize();
+      HyperDxLoggingService.instance.initialize();
+      SkyWalkingTracingService.instance.initialize();
+      HighlightSessionService.instance.initialize();
 
       // Initialize monitoring backends
-      await _initializeMonitoringBackends();
+      _initializeMonitoringBackends();
 
       // Initialize service instances
       _crashService = CrashReporterService();
-      await _crashService!.initialize();
+      _crashService!.initialize();
 
       _analyticsService = AnalyticsService();
-      await _analyticsService!.initialize();
+      _analyticsService!.initialize();
 
       _healthService = DataHealthService();
-      await _healthService!.initialize();
+      _healthService!.initialize();
 
       _networkLogService = NetworkLogService();
-      await _networkLogService!.init();
+      _networkLogService!.init();
 
       _notificationService = CustomNotificationService();
-      await _notificationService!.initialize();
+      _notificationService!.initialize();
 
       // Load configuration
       await _loadConfiguration();
 
       // Initialize WebSocket connections if enabled
       if (_observatoryConfig['enableRealTimeMetrics'] == true) {
-        await _initializeWebSocketConnections();
+        _initializeWebSocketConnections();
       }
 
       // Start periodic data collection
-      await _startPeriodicDataCollection();
+      _startPeriodicDataCollection();
 
       _isInitialized = true;
       dev.log('Observatory Dashboard Service initialized successfully');
