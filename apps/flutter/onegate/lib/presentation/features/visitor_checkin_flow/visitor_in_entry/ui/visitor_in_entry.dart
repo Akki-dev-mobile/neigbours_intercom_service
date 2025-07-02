@@ -750,9 +750,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             width: MediaQuery.of(context).size.width * 0.85,
             height: 60,
             child: CustomLargeBtn(
-              text: _isSubmitting ? 'Submitting...' : 'Next',
+              text: 'Next',
               onPressed: _isSubmitting ? null : _handleSubmit,
-              disabled: _isSubmitting,
+              isLoading: _isSubmitting,
               useBlackToGreyGradient: true,
             ),
           ),
