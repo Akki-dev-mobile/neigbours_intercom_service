@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -113,213 +114,279 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                 ),
               ),
               SizedBox(height: isTablet ? 24 : 16),
-              Container(
-                margin: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 12),
-                color: Colors.transparent,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Stack(
+                children: [
+                  Container(
+                    margin:
+                        EdgeInsets.symmetric(horizontal: isTablet ? 24 : 12),
+                    color: Colors.transparent,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.visitorLog.visitorName,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xff212427),
+                                      fontSize: isTablet ? 28 : 22,
+                                    ),
+                              ),
+                            ),
+                            if (widget.visitorLog.visitorCount != null)
+                              _buildChip(
+                                "${widget.visitorLog.visitorCount} visitor${widget.visitorLog.visitorCount == 1 ? '' : 's'}",
+                                Icons.people,
+                                const Color(0xffFFB080),
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: isTablet ? 12 : 8),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: isTablet ? 12 : 8,
+                              vertical: isTablet ? 6 : 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffFFEBE6),
+                            borderRadius:
+                                BorderRadius.circular(isTablet ? 15 : 10),
+                          ),
                           child: Text(
-                            widget.visitorLog.visitorName,
+                            _capitalizeFirstLetter(
+                                widget.visitorLog.purposeSubCategoryName ??
+                                    widget.visitorLog.purposeCategoryName ??
+                                    ""),
                             style: Theme.of(context)
                                 .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xff212427),
-                                  fontSize: isTablet ? 28 : 22,
-                                ),
+                                .bodySmall
+                                ?.copyWith(fontSize: isTablet ? 16 : 13),
                           ),
                         ),
-                        if (widget.visitorLog.visitorCount != null)
-                          _buildChip(
-                            "${widget.visitorLog.visitorCount} visitor${widget.visitorLog.visitorCount == 1 ? '' : 's'}",
-                            Icons.people,
-                            const Color(0xffFFB080),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: isTablet ? 12 : 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: isTablet ? 12 : 8,
-                          vertical: isTablet ? 6 : 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffFFEBE6),
-                        borderRadius: BorderRadius.circular(isTablet ? 15 : 10),
-                      ),
-                      child: Text(
-                        _capitalizeFirstLetter(
-                            widget.visitorLog.purposeSubCategoryName ??
-                                widget.visitorLog.purposeCategoryName ??
-                                ""),
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(fontSize: isTablet ? 16 : 13),
-                      ),
-                    ),
-                    SizedBox(height: isTablet ? 20 : 16),
-                    _buildBorderedSection(
-                      context,
-                      isTablet,
-                      title: "Contact Information",
-                      children: [
-                        _buildInfoTile(
-                          icon: Icons.phone,
-                          title: "Phone Number",
-                          subtitle: widget.visitorLog.visitorMobile,
-                          iconColor:
-                              const Color(0xff43A047), // Green (Scan icon)
-                          iconBg:
-                              const Color(0xffE8F5E9), // Light green background
-                          trailing: _buildCallButton(),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        _buildBorderedSection(
+                          context,
+                          isTablet,
+                          title: "Contact Information",
+                          children: [
+                            _buildInfoTile(
+                              icon: Icons.phone,
+                              title: "Phone Number",
+                              subtitle: widget.visitorLog.visitorMobile,
+                              iconColor:
+                                  const Color(0xff43A047), // Green (Scan icon)
+                              iconBg: const Color(
+                                  0xffE8F5E9), // Light green background
+                              trailing: _buildCallButton(),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    SizedBox(height: isTablet ? 20 : 16),
-                    _buildBorderedSection(
-                      context,
-                      isTablet,
-                      title: "Visit Details",
-                      children: [
-                        _buildInfoTile(
-                          icon: Icons.apartment,
-                          title: "Visiting Unit",
-                          subtitle: widget
-                                      .visitorLog.unitDetails.building_unit ==
-                                  "0001"
-                              ? "Society Office"
-                              : (widget.visitorLog.unitDetails.building_unit !=
-                                          null &&
-                                      widget.visitorLog.unitDetails
-                                              .building_unit !=
-                                          "")
-                                  ? widget.visitorLog.unitDetails.building_unit
-                                      .toString()
-                                  : "N/A",
-                          iconColor: const Color(0xffF44336), // Red
-                          iconBg:
-                              const Color(0xffFFEBEE), // Light red background
-                        ),
-                        if (widget.visitorLog.inGate.isNotEmpty)
-                          _buildInfoTile(
-                            icon: Icons.meeting_room,
-                            title: "In-Gate",
-                            subtitle: widget.visitorLog.inGate,
-                            iconColor: const Color(0xffF44336), // Red
-                            iconBg:
-                                const Color(0xffFFEBEE), // Light red background
-                          ),
-                        if (widget.visitorLog.purposeSubCategoryName
-                                    ?.toLowerCase() ==
-                                "delivery" ||
-                            widget.visitorLog.purposeSubCategoryName
-                                        ?.toLowerCase() ==
-                                    "cabs" &&
-                                widget.visitorLog.visitorComingFrom != null)
-                          _buildInfoTile(
-                            icon: Icons.location_on,
-                            title: "Coming From",
-                            subtitle:
-                                widget.visitorLog.visitorComingFrom.toString(),
-                            iconColor: const Color(0xffF44336), // Red
-                            iconBg:
-                                const Color(0xffFFEBEE), // Light red background
-                          ),
-                        if (widget.visitorLog.visitorCardNumber != null &&
-                            widget.visitorLog.visitorCardNumber!.isNotEmpty)
-                          _buildInfoTile(
-                            icon: Icons.badge,
-                            title: "Card Number",
-                            subtitle:
-                                widget.visitorLog.visitorCardNumber ?? 'N/A',
-                            iconColor: Colors.white, // White icon for contrast
-                            iconBg:
-                                const Color(0xffF44336), // Solid red background
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: isTablet ? 20 : 16),
-                    if (!widget.isFromMissedApprovalScreen ||
-                        widget.visitorLog.allowStatus.toLowerCase() ==
-                            "allowed" ||
-                        widget.visitorLog.allowStatus.toLowerCase() ==
-                            "always_allowed" ||
-                        widget.visitorLog.allowStatus.toLowerCase() ==
-                            "allowed_by_gatekeeper")
-                      _buildBorderedSection(
-                        context,
-                        isTablet,
-                        title: "Visitor Timeline",
-                        children: _buildTimeline(),
-                      )
-                    else if (widget.isFromMissedApprovalScreen &&
-                        widget.visitorLog.allowStatus.toLowerCase() ==
-                            "pending")
-                      _buildBorderedSection(
-                        context,
-                        isTablet,
-                        title: "Actions",
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              ElevatedButton.icon(
-                                icon: const Icon(Icons.check_circle,
-                                    size: 16, color: Colors.black),
-                                label: const Text('Allow by Gatekeeper'),
-                                onPressed: () => _allowByGatekeeper(),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.black,
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side: const BorderSide(color: Colors.black),
-                                  ),
-                                ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        _buildBorderedSection(
+                          context,
+                          isTablet,
+                          title: "Visit Details",
+                          children: [
+                            _buildInfoTile(
+                              icon: Icons.apartment,
+                              title: "Visiting Unit",
+                              subtitle:
+                                  widget.visitorLog.unitDetails.building_unit ==
+                                          "0001"
+                                      ? "Society Office"
+                                      : (widget.visitorLog.unitDetails
+                                                      .building_unit !=
+                                                  null &&
+                                              widget.visitorLog.unitDetails
+                                                      .building_unit !=
+                                                  "")
+                                          ? widget.visitorLog.unitDetails
+                                              .building_unit
+                                              .toString()
+                                          : "N/A",
+                              iconColor: const Color(0xffF44336), // Red
+                              iconBg: const Color(
+                                  0xffFFEBEE), // Light red background
+                            ),
+                            if (widget.visitorLog.inGate.isNotEmpty)
+                              _buildInfoTile(
+                                icon: Icons.meeting_room,
+                                title: "In-Gate",
+                                subtitle: widget.visitorLog.inGate,
+                                iconColor: const Color(0xffF44336), // Red
+                                iconBg: const Color(
+                                    0xffFFEBEE), // Light red background
                               ),
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                    colors: [
-                                      Colors.black,
-                                      Color(0xFF6E6E6E),
-                                    ],
+                            if (widget.visitorLog.purposeSubCategoryName
+                                        ?.toLowerCase() ==
+                                    "delivery" ||
+                                widget.visitorLog.purposeSubCategoryName
+                                            ?.toLowerCase() ==
+                                        "cabs" &&
+                                    widget.visitorLog.visitorComingFrom != null)
+                              _buildInfoTile(
+                                icon: Icons.location_on,
+                                title: "Coming From",
+                                subtitle: widget.visitorLog.visitorComingFrom
+                                    .toString(),
+                                iconColor: const Color(0xffF44336), // Red
+                                iconBg: const Color(
+                                    0xffFFEBEE), // Light red background
+                              ),
+                            if (widget.visitorLog.visitorCardNumber != null &&
+                                widget.visitorLog.visitorCardNumber!.isNotEmpty)
+                              _buildInfoTile(
+                                icon: Icons.badge,
+                                title: "Card Number",
+                                subtitle: widget.visitorLog.visitorCardNumber ??
+                                    'N/A',
+                                iconColor:
+                                    Colors.white, // White icon for contrast
+                                iconBg: const Color(
+                                    0xffF44336), // Solid red background
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        if (!widget.isFromMissedApprovalScreen ||
+                            widget.visitorLog.allowStatus.toLowerCase() ==
+                                "allowed" ||
+                            widget.visitorLog.allowStatus.toLowerCase() ==
+                                "always_allowed" ||
+                            widget.visitorLog.allowStatus.toLowerCase() ==
+                                "allowed_by_gatekeeper")
+                          _buildBorderedSection(
+                            context,
+                            isTablet,
+                            title: "Visitor Timeline",
+                            children: _buildTimeline(),
+                          )
+                        else if (widget.isFromMissedApprovalScreen &&
+                            widget.visitorLog.allowStatus.toLowerCase() ==
+                                "pending")
+                          _buildBorderedSection(
+                            context,
+                            isTablet,
+                            title: "Actions",
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.check_circle,
+                                        size: 16, color: Colors.black),
+                                    label: Text(AppLocalizations.of(context)!
+                                        .allowByGatekeeper),
+                                    onPressed: () => _allowByGatekeeper(),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.black,
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        side: const BorderSide(
+                                            color: Colors.black),
+                                      ),
+                                    ),
                                   ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.refresh, size: 16),
-                                  label: const Text('Retry'),
-                                  onPressed: () => _retryPermission(),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    foregroundColor: Colors.white,
-                                    shadowColor: Colors.transparent,
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 12),
-                                    shape: RoundedRectangleBorder(
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                        colors: [
+                                          Colors.black,
+                                          Color(0xFF6E6E6E),
+                                        ],
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    elevation: 0,
+                                    child: ElevatedButton.icon(
+                                      icon: const Icon(Icons.refresh, size: 16),
+                                      label: Text(
+                                          AppLocalizations.of(context)!.retry),
+                                      onPressed: () => _retryPermission(),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        foregroundColor: Colors.white,
+                                        shadowColor: Colors.transparent,
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        elevation: 0,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
+                      ],
+                    ),
+                  ),
+                  // Positioned Pre-approved Badge for top right corner
+                  if (widget.visitorLog.additionalDetails != null &&
+                      widget.visitorLog.additionalDetails!['invited_guest'] ==
+                          true)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xff2196F3),
+                              const Color(0xff1976D2),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xff2196F3).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.how_to_reg,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Pre-approved",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             ]),
           ),
@@ -431,11 +498,26 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     );
 
     // Add Approved By
+    String approvedByText;
+    // Check if this is an invited guest from additional_details
+    bool isInvitedGuest = false;
+    if (widget.visitorLog.additionalDetails != null) {
+      final invitedGuest =
+          widget.visitorLog.additionalDetails!['invited_guest'] as bool?;
+      isInvitedGuest = invitedGuest == true;
+    }
+
+    if (isInvitedGuest) {
+      approvedByText = "Guest pre-approved by member";
+    } else if (widget.unitList == "0001") {
+      approvedByText = "Pre approved Staff";
+    } else {
+      approvedByText = _getFormattedAllowStatus(widget.visitorLog.allowStatus);
+    }
+
     addTimelineItem(
       label: "Approved By",
-      description: widget.unitList == "0001"
-          ? "Pre approved Staff"
-          : _getFormattedAllowStatus(widget.visitorLog.allowStatus),
+      description: approvedByText,
       icon: Icons.person,
       color: Colors.brown,
       index: currentIndex++,
@@ -649,7 +731,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
   Widget _buildCallButton() {
     return ElevatedButton.icon(
       icon: const Icon(Icons.call, size: 16),
-      label: const Text('Call'),
+      label: Text(AppLocalizations.of(context)!.call),
       onPressed: () => _makePhoneCall(widget.visitorLog.visitorMobile),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.green,

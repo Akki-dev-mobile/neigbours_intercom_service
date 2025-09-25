@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:convert' show json;
 import 'dart:developer';
 
 import 'package:alarm/alarm.dart';
 // No background task dependencies needed
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -12,7 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_onegate/approval_Status.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/services/language/language_provider.dart';
 import 'package:flutter_onegate/common/internet_check_provider.dart';
 import 'package:flutter_onegate/config/gate_config.dart' show GateConfig;
 import 'package:flutter_onegate/config/gateconfig_holder.dart'
@@ -23,6 +23,8 @@ import 'package:flutter_onegate/presentation/features/license_plate_detection/bl
 import 'package:flutter_onegate/splash_screen.dart';
 import 'package:flutter_onegate/utils/network_log/network_log_manager.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_overlay.dart';
+import 'package:flutter_onegate/utils/route_tracker.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_onegate/services/notifications/models/notification_models.dart';
 import 'package:flutter_onegate/utils/network_log/models/network_log.dart';
@@ -309,6 +311,10 @@ void main() async {
         splitScreenMode: true,
         builder: (_, child) => MultiProvider(
           providers: [
+            // Language provider for multilingual support
+            ChangeNotifierProvider<LanguageProvider>(
+              create: (_) => LanguageProvider()..initialize(),
+            ),
             ChangeNotifierProvider<PurposeProvider>(
               create: (_) => PurposeProvider(),
             ),
@@ -528,12 +534,175 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final internetProvider = context.watch<InternetCheckProvider>();
     final hasInternet = internetProvider.hasInternet;
 
+    // Handle internet restoration with proper route redirection
+    void _handleInternetRestoration() async {
+      final wasExpressEntry = await RouteTracker.wasExpressEntryRoute();
+      final lastRoute = await RouteTracker.getLastRoute();
+
+      // Debug logging
+      print(
+          '🔍 [DEBUG] Internet restoration - wasExpressEntry: $wasExpressEntry');
+      print('🔍 [DEBUG] Internet restoration - lastRoute: $lastRoute');
+
+      if (wasExpressEntry) {
+        // User was on express entry flow, redirect back to express entry dashboard
+        print(
+            '🔍 [DEBUG] Redirecting to SelfHomeView (Express Entry Dashboard)');
+
+        // Add a small delay to ensure smooth transition
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Ensure we have a valid context before navigating
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => const SelfHomeView(),
+            ),
+            (route) => false,
+          );
+          // Clear the saved route after successful navigation
+          await RouteTracker.clearSavedRoute();
+        } else {
+          print('🔍 [DEBUG] Context not available for navigation, retrying...');
+          // Retry after a longer delay if context is not available
+          await Future.delayed(const Duration(milliseconds: 1000));
+          final retryContext = navigatorKey.currentContext;
+          if (retryContext != null && retryContext.mounted) {
+            Navigator.of(retryContext).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (_) => const SelfHomeView(),
+              ),
+              (route) => false,
+            );
+            await RouteTracker.clearSavedRoute();
+          }
+        }
+      } else {
+        // User was on gatekeeper dashboard or other routes, redirect to login
+        print('🔍 [DEBUG] Redirecting to MyAppLogin (Gatekeeper/Other)');
+
+        // Add a small delay to ensure smooth transition
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Ensure we have a valid context before navigating
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => const MyAppLogin(),
+            ),
+            (route) => false,
+          );
+          // Clear the saved route after successful navigation
+          await RouteTracker.clearSavedRoute();
+        } else {
+          print('🔍 [DEBUG] Context not available for navigation, retrying...');
+          // Retry after a longer delay if context is not available
+          await Future.delayed(const Duration(milliseconds: 1000));
+          final retryContext = navigatorKey.currentContext;
+          if (retryContext != null && retryContext.mounted) {
+            Navigator.of(retryContext).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (_) => const MyAppLogin(),
+              ),
+              (route) => false,
+            );
+            await RouteTracker.clearSavedRoute();
+          }
+        }
+      }
+    }
+
+    // Save current route information before internet loss
+    void _saveCurrentRouteInfo() async {
+      final currentRoute =
+          ModalRoute.of(navigatorKey.currentContext!)?.settings.name;
+
+      // Check if current route is express entry related
+      bool isExpressEntry = false;
+      if (currentRoute != null) {
+        // Check if the current route contains express entry related paths
+        isExpressEntry = currentRoute.contains('SelfHomeView') ||
+            currentRoute.contains('self_entry') ||
+            currentRoute.contains('SelfEntryView') ||
+            currentRoute.contains('SelfEntryFacerecView') ||
+            currentRoute.contains('RequestPermissionPage2') ||
+            currentRoute.contains('qr_scanner_self') ||
+            currentRoute.contains('passcode_entry_view') ||
+            currentRoute.contains('visitor_in_entry') ||
+            currentRoute.contains('unit_selection_view') ||
+            currentRoute.contains('visitor_checkin_flow') ||
+            currentRoute.contains('VisitorsInEntry') ||
+            currentRoute.contains('PasscodeEntryView') ||
+            currentRoute.contains('QRScannerSelf') ||
+            currentRoute.contains('UnitSelectionView') ||
+            currentRoute.contains('RequestPermissionPage') ||
+            currentRoute.contains('visitor_in_screens');
+      }
+
+      // Additional check: if no specific route name, check if we're in express entry context
+      if (!isExpressEntry) {
+        // Check if the current widget context suggests express entry flow
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          // Check if we're in a widget that's part of express entry flow
+          final widget = context.widget;
+          final widgetType = widget.runtimeType.toString();
+          isExpressEntry = widgetType.contains('SelfHomeView') ||
+              widgetType.contains('SelfEntryView') ||
+              widgetType.contains('SelfEntryFacerecView') ||
+              widgetType.contains('RequestPermissionPage2') ||
+              widgetType.contains('QRScannerSelf') ||
+              widgetType.contains('PasscodeEntryView') ||
+              widgetType.contains('VisitorsInEntry') ||
+              widgetType.contains('UnitSelectionView') ||
+              widgetType.contains('RequestPermissionPage') ||
+              widgetType.contains('VisitorInEntry') ||
+              widgetType.contains('VisitorCheckinFlow') ||
+              widgetType.contains('SelfEntry') ||
+              widgetType.contains('ExpressEntry');
+        }
+      }
+
+      // Final fallback: Check if we're in any express entry related context
+      if (!isExpressEntry) {
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          // Check the widget tree for express entry indicators
+          final widget = context.widget;
+          final widgetString = widget.toString().toLowerCase();
+          isExpressEntry = widgetString.contains('self') &&
+              (widgetString.contains('entry') ||
+                  widgetString.contains('checkin') ||
+                  widgetString.contains('visitor') ||
+                  widgetString.contains('qr') ||
+                  widgetString.contains('passcode'));
+        }
+      }
+
+      // Debug logging
+      print('🔍 [DEBUG] Saving route info - currentRoute: $currentRoute');
+      print('🔍 [DEBUG] Saving route info - isExpressEntry: $isExpressEntry');
+      print(
+          '🔍 [DEBUG] Saving route info - widgetType: ${navigatorKey.currentContext?.widget.runtimeType}');
+
+      // Save the route information
+      await RouteTracker.saveCurrentRoute(
+        currentRoute ?? 'unknown',
+        isExpressEntry: isExpressEntry,
+      );
+    }
+
     // If connectivity has changed, schedule a navigation update.
     if (prevHasInternet != hasInternet) {
       prevHasInternet = hasInternet;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // When internet is lost, replace the current route with NoInternetScreen.
+        // When internet is lost, save current route and replace with NoInternetScreen.
         if (!hasInternet) {
+          // Save the current route information before showing no internet page
+          _saveCurrentRouteInfo();
+
           Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (_) => ErrorNoInternetPage(),
@@ -541,24 +710,44 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             (route) => false,
           );
         } else {
-          // When internet is restored, return to the main login screen.
-          Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => const MyAppLogin(),
-            ),
-            (route) => false,
-          );
+          // When internet is restored, check where user was before and redirect appropriately
+          _handleInternetRestoration();
         }
       });
     }
 
     // Use NetworkLogOverlay in debug mode, otherwise just return the app
+    final languageProvider = context.watch<LanguageProvider>();
     Widget app = MaterialApp(
+      key: ValueKey(
+          'app_${languageProvider.currentLanguageCode}_${languageProvider.rebuildKey}'),
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       // Configure device preview settings
       useInheritedMediaQuery: true,
-      locale: DevicePreview.locale(context),
+      // Localization configuration
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'), // English
+        Locale('hi'), // Hindi
+        Locale('mr'), // Marathi
+      ],
+      locale: languageProvider.currentLocale,
+      localeResolutionCallback: (locale, supportedLocales) {
+        // Check if the current device locale is supported
+        for (var supportedLocale in supportedLocales) {
+          if (locale?.languageCode == supportedLocale.languageCode) {
+            return supportedLocale;
+          }
+        }
+        // If the device locale is not supported, return English as default
+        return const Locale('en');
+      },
       builder: DevicePreview.appBuilder,
       theme: ThemeManager.lightTheme.copyWith(
         pageTransitionsTheme: const PageTransitionsTheme(
@@ -568,13 +757,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           },
         ),
       ),
-      // Add debug routes in debug mode
-      routes: kDebugMode
-          ? {
-              '/error-tracking-test': (context) =>
-                  const ErrorTrackingTestWidget(),
-            }
-          : {},
+      // Add routes
+      routes: {
+        if (kDebugMode)
+          '/error-tracking-test': (context) => const ErrorTrackingTestWidget(),
+        '/self-entry': (context) => const SelfHomeView(),
+      },
       home: WillPopScope(
         onWillPop: () async {
           final currentContext = navigatorKey.currentContext;
@@ -605,29 +793,31 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.exit_to_app, color: Colors.red),
-              SizedBox(width: 8),
+              const Icon(Icons.exit_to_app, color: Colors.red),
+              const SizedBox(width: 8),
               Text(
-                'Exit App',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                AppLocalizations.of(context).exitApp,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
-          content: const Text(
-            'Are you sure you want to exit the app?',
-            style: TextStyle(fontSize: 16),
+          content: Text(
+            AppLocalizations.of(context).exitAppConfirmation,
+            style: const TextStyle(fontSize: 16),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child:
-                  const Text('Cancel', style: TextStyle(color: Colors.black)),
+              child: Text(AppLocalizations.of(context).cancel,
+                  style: const TextStyle(color: Colors.black)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Exit', style: TextStyle(color: Colors.red)),
+              child: Text(AppLocalizations.of(context).exitApp,
+                  style: const TextStyle(color: Colors.red)),
             ),
           ],
         );

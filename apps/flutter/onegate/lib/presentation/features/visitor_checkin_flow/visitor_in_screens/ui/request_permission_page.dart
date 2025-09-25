@@ -24,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 enum RequestType {
   approved,
@@ -44,6 +45,8 @@ class RequestPermissionPage extends StatefulWidget {
   List<String>? unitList;
   final String? request;
   final bool? selfcheckinFlow;
+  final bool?
+      isGatekeeperQRPasscodeEntry; // New parameter to distinguish Gatekeeper QR/Passcode entry
 
   RequestPermissionPage(
       {Key? key,
@@ -53,7 +56,8 @@ class RequestPermissionPage extends StatefulWidget {
       this.logID,
       this.visitorLog,
       this.unitList,
-      this.selfcheckinFlow})
+      this.selfcheckinFlow,
+      this.isGatekeeperQRPasscodeEntry})
       : super(key: key);
 
   @override
@@ -87,19 +91,20 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json',
     RequestType.uploading:
         'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/uploading_animation.json',
-    // Add this line
   };
 
-  static const Map<RequestType, String> _requestMessages = {
-    RequestType.approved: "Visitor approved",
-    RequestType.rejected: "Visitor rejected",
-    RequestType.leaveAtGate: "Leave at gate",
-    RequestType.notRecheable: "Member not reachable !!",
-    RequestType.request: "Request permission from member",
-    RequestType.allowByGatekeeper: "Visitor approved",
-    RequestType.waiting: "Initializing request...",
-    RequestType.uploading: "Uploading image...",
-  };
+  Map<RequestType, String> _getRequestMessages(BuildContext context) => {
+        RequestType.approved: AppLocalizations.of(context)!.visitorApproved,
+        RequestType.rejected: AppLocalizations.of(context)!.visitorRejected,
+        RequestType.leaveAtGate: AppLocalizations.of(context)!.leaveAtGate,
+        RequestType.notRecheable:
+            AppLocalizations.of(context)!.memberNotReachable,
+        RequestType.request: AppLocalizations.of(context)!.requestPermission,
+        RequestType.allowByGatekeeper:
+            AppLocalizations.of(context)!.visitorApproved,
+        RequestType.waiting: AppLocalizations.of(context)!.initializingRequest,
+        RequestType.uploading: AppLocalizations.of(context)!.uploadingImage,
+      };
 
   static const Map<RequestType, Color> _requestMessagesColor = {
     RequestType.approved: Colors.green,
@@ -230,10 +235,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Member not reachable',
-                            style: TextStyle(
+                            AppLocalizations.of(context)!.memberNotReachable,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
@@ -367,6 +372,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    // Initialize trybuttontext with localized value
+    trybuttontext = l10n.tryAgain;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -393,9 +402,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
               ),
             ),
           ),
-          title: const Text(
-            'Request',
-            style: TextStyle(
+          title: Text(
+            AppLocalizations.of(context)!.request,
+            style: const TextStyle(
               color: Color(0xff212427),
               fontWeight: FontWeight.bold,
               fontSize: 20,
@@ -651,7 +660,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                 ? Colors.red.shade100
                 : Colors.black45,
             child: Text(
-              _requestMessages[requestType] ?? "",
+              _getRequestMessages(context)[requestType] ?? "",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 24,
@@ -792,8 +801,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             color: Colors.white,
             size: 24,
           ),
-          label: const Text(
-            "Capture Photo",
+          label: Text(
+            AppLocalizations.of(context)!.capturePhoto,
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -1222,7 +1231,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             child: TextButton(
               onPressed: () async {
                 setState(() {
-                  trybuttontext = "Trying...";
+                  trybuttontext = AppLocalizations.of(context)!.trying;
                 });
                 await _handleTryAgain();
               },
@@ -1275,6 +1284,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             builder: (context) => RequestPermissionPage2(
               visitor: widget.visitor,
               visitorLog: widget.visitorLog,
+              selfcheckinFlow: widget.selfcheckinFlow,
+              isGatekeeperQRPasscodeEntry: false, // This is mobile entry flow
             ),
           ),
           (Route<dynamic> route) => false, // This removes all previous routes
@@ -1339,7 +1350,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     }
 
     setState(() {
-      trybuttontext = "Trying...";
+      trybuttontext = AppLocalizations.of(context)!.trying;
       _requestType = RequestType.waiting;
       _isTimeElapsed = false; // Reset the time elapsed flag
       _stateStreamController
@@ -1368,7 +1379,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     await _sendNotificationViaSocket();
 
     setState(() {
-      trybuttontext = "Try Again";
+      trybuttontext = AppLocalizations.of(context)!.tryAgain;
     });
   }
 
@@ -1933,9 +1944,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             borderRadius: BorderRadius.circular(32),
           ),
         ),
-        child: const Text(
-          "Finish",
-          style: TextStyle(
+        child: Text(
+          AppLocalizations.of(context)!.finish,
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.white,

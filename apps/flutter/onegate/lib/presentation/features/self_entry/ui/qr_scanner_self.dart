@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -5,12 +6,13 @@ import 'dart:io';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
-import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -20,6 +22,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/route_tracker.dart';
 
 import '../../../../data/datasources/gate_storage.dart';
 
@@ -27,9 +31,15 @@ class QRScannerScreen extends StatefulWidget {
   final String? companyId;
   final int? status;
   final bool self_checkin;
+  final bool?
+      isGatekeeperQRPasscodeEntry; // New parameter to distinguish Gatekeeper QR/Passcode entry
 
   const QRScannerScreen(
-      {Key? key, this.companyId, this.status, this.self_checkin = false})
+      {Key? key,
+      this.companyId,
+      this.status,
+      this.self_checkin = false,
+      this.isGatekeeperQRPasscodeEntry})
       : super(key: key);
 
   @override
@@ -60,10 +70,21 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   // Data source for API calls
   final RemoteDataSource remoteDataSource = RemoteDataSource();
 
+  // Track that user is in express entry flow
+  Future<void> _trackExpressEntryRoute() async {
+    if (widget.self_checkin) {
+      await RouteTracker.saveCurrentRoute(
+        'QRScannerScreen',
+        isExpressEntry: true,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _checkCameraPermission();
+    _trackExpressEntryRoute();
 
     // Setup animation for scanning line
     _animationController = AnimationController(
@@ -165,10 +186,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         }
 
         final result = await remoteDataSource.verifyPasscode(
-          isStaff: isStaff,
           companyId: widget.companyId ?? "",
-          mobile: mobile,
-          id: id,
           passcode: passcode,
         );
         if (isStaff == true) {
@@ -196,6 +214,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 visitor: visitor,
                 visitorLog: visitorLog,
                 request: 'allowByGatekeeper',
+                selfcheckinFlow: widget.self_checkin,
+                isGatekeeperQRPasscodeEntry: widget.isGatekeeperQRPasscodeEntry,
               ),
             ),
           );
@@ -221,6 +241,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             visitor_purpose_category_id: 1,
             visitor_count: 1,
             company_id: visitorData['company_id'],
+            initiated_from: "qr_code_scan", // Mark as QR code scan entry
           );
 
           setState(() {
@@ -233,64 +254,24 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           // Short delay to show success animation
           await Future.delayed(const Duration(milliseconds: 800));
 
-          if (visitorData['passcode'] == null ||
-              visitorData['passcode'].toString().isEmpty) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UnitSelectionView(
-                  null,
-                  purposeCategory:
-                      PurposeCategory1(categoryId: 1, categoryName: "Guest"),
-                  guestname: name ?? "",
-                  mobileNumber: mobile ?? visitor.mobile!,
-                  visitor: visitor,
-                  selfcheckinFlow: widget.self_checkin,
-                ),
+          // Always redirect to purpose entry page with autopopulated guest data
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VisitorsInEntry(
+                selfcheckinFlow: widget.self_checkin,
+                comingfrom: visitorData['coming_from'],
+                searchedVisitor: visitor,
+                selectedValue:
+                    PurposeCategory1(categoryId: 1, categoryName: "Guest"),
+                mobile: mobile ?? visitor.mobile!,
+                guestname: name ?? visitor.name ?? "",
+                isFromQRScan: true, // Flag to indicate this is from QR scan
+                visitorLog: visitorLog,
+                isGatekeeperQRPasscodeEntry: widget.isGatekeeperQRPasscodeEntry,
               ),
-            );
-          } else {
-            await _requestCameraPermissionAndCapture(
-                mobile ?? "", visitorData['visitor_id'].toString());
-
-            await showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) {
-                return Dialog(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  child: const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(width: 16),
-                        Text("Preparing visitor access..."),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-
-// Dismiss the dialog
-            Navigator.of(context).pop();
-
-            await Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionPage2(
-                  status: widget.status,
-                  visitor: visitor,
-                  visitorLog: visitorLog,
-                  request: 'allowByGatekeeper',
-                  logID: visitorData['id'].toString(),
-                ),
-              ),
-            );
-          }
+            ),
+          );
         } else {
           throw Exception("Invalid verification data received.");
         }
@@ -470,15 +451,15 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             Icon(Icons.camera_alt_outlined,
                 size: 80, color: Colors.grey.shade300),
             const SizedBox(height: 24),
-            const Text(
-              'Camera Permission Required',
+            Text(
+              AppLocalizations.of(context)!.cameraPermissionRequired,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
-                'We need camera access to scan QR codes',
+                AppLocalizations.of(context)!.needCameraAccessForQR,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
               ),
@@ -495,7 +476,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 elevation: 0,
               ),
               onPressed: _checkCameraPermission,
-              child: const Text('Grant Access', style: TextStyle(fontSize: 16)),
+              child: Text(AppLocalizations.of(context)!.grantAccess,
+                  style: TextStyle(fontSize: 16)),
             ),
           ],
         ),
@@ -718,55 +700,179 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           ),
         ),
 
-        // Loading Overlay
+        // Enhanced Loading Overlay
         if (_isVerifying)
           Container(
-            color: Colors.black.withOpacity(0.6),
+            color: const Color(0xFF212427)
+                .withOpacity(0.9), // OneGate primary text color
             child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      Colors.grey.shade50,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 20,
+                      color: const Color(0xFF212427)
+                          .withOpacity(0.3), // OneGate primary text color
+                      blurRadius: 30,
                       spreadRadius: 5,
+                      offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.8),
+                      blurRadius: 20,
+                      spreadRadius: -5,
+                      offset: const Offset(0, -5),
                     ),
                   ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).primaryColor),
-                        strokeWidth: 4,
+                    // Enhanced QR Code Icon with Animation
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFFF44336), // OneGate primary red
+                            const Color(0xFFff5722), // OneGate accent color
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF44336)
+                                .withOpacity(0.4), // OneGate primary red
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Animated QR Code Icon
+                          TweenAnimationBuilder<double>(
+                            duration: const Duration(milliseconds: 1500),
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            builder: (context, value, child) {
+                              return Transform.scale(
+                                scale: 0.8 + (0.2 * value),
+                                child: Opacity(
+                                  opacity: 0.7 + (0.3 * value),
+                                  child: Icon(
+                                    Icons.qr_code_scanner_rounded,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          // Rotating Progress Ring
+                          SizedBox(
+                            width: 70,
+                            height: 70,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white.withOpacity(0.8),
+                              ),
+                              strokeWidth: 3,
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Verifying QR Code...',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(height: 28),
+
+                    // Enhanced Title with Typography
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xFFF44336), // OneGate primary red
+                          const Color(0xFFff5722), // OneGate accent color
+                        ],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'Verifying QR Code',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: 200,
+
+                    const SizedBox(height: 12),
+
+                    // Enhanced Subtitle with Better Styling
+                    Container(
+                      width: 240,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FA), // Light background
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFE9ECEF), // Light border
+                          width: 1,
+                        ),
+                      ),
                       child: Text(
                         'Please wait while we process the information',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: const Color(
+                              0xFF57636C), // OneGate secondary text color
                           fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
                         ),
                       ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Animated Progress Dots
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(3, (index) {
+                        return TweenAnimationBuilder<double>(
+                          duration: Duration(milliseconds: 600 + (index * 200)),
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          builder: (context, value, child) {
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF44336).withOpacity(
+                                  0.3 + (0.7 * value),
+                                ), // OneGate primary red
+                                shape: BoxShape.circle,
+                              ),
+                            );
+                          },
+                        );
+                      }),
                     ),
                   ],
                 ),
@@ -905,6 +1011,90 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     if (_isDialogOpen) return; // Prevent duplicate pop-ups
     _isDialogOpen = true;
 
+    // Use enhanced toast design from gatekeeper app
+    _showEnhancedErrorToast(
+      title: "Verification Failed",
+      message:
+          "The QR code could not be verified. It may be invalid or expired.",
+      icon: Icons.error_outline,
+    );
+
+    // Reset dialog flag after a delay
+    Future.delayed(const Duration(seconds: 4), () {
+      _isDialogOpen = false;
+    });
+  }
+
+  /// Enhanced error toast with gatekeeper app design
+  void _showEnhancedErrorToast({
+    required String title,
+    required String message,
+    IconData? icon,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon ?? Icons.error_outline,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color(0xffF44336),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+        elevation: 8,
+      ),
+    );
+
+    // Add haptic feedback for error
+    HapticFeedback.heavyImpact();
+  }
+
+  /// Legacy error dialog method (kept for reference but not used)
+  void _showLegacyErrorDialog() {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -976,127 +1166,299 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   }
 
   void _showHelpDialog() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Text(
-                  'How to Scan QR Codes',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+            // Enhanced drag handle
+            const SizedBox(height: 12),
+            Container(
+              width: 50,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Enhanced header with gradient background
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xffFF9800).withOpacity(0.08),
+                    const Color(0xffFF5722).withOpacity(0.03),
+                  ],
+                ),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Compact icon section
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFF9800).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xffFF9800).withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: Color(0xffFF9800),
+                      size: 24,
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  // Simple label section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'How to Scan QR Codes',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xff212427),
+                                fontSize: isTablet ? 22 : 20,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Follow these simple steps for successful QR code scanning',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xff57636C),
+                                    fontSize: isTablet ? 15 : 14,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Enhanced content area
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Column(
+                    children: [
+                      // Help items with enhanced styling
+                      _buildEnhancedHelpItem(
+                        context: context,
+                        isTablet: isTablet,
+                        icon: Icons.center_focus_strong,
+                        title: 'Position the QR code',
+                        description:
+                            'Center the QR code within the scanning frame for optimal recognition.',
+                        color: const Color(0xff4CAF50),
+                      ),
+                      SizedBox(height: isTablet ? 20 : 16),
+                      _buildEnhancedHelpItem(
+                        context: context,
+                        isTablet: isTablet,
+                        icon: Icons.light_mode,
+                        title: 'Ensure good lighting',
+                        description:
+                            'Make sure the QR code is well-lit and clearly visible for better scanning.',
+                        color: const Color(0xff2196F3),
+                      ),
+                      SizedBox(height: isTablet ? 20 : 16),
+                      _buildEnhancedHelpItem(
+                        context: context,
+                        isTablet: isTablet,
+                        icon: Icons.flash_on,
+                        title: 'Use flash if needed',
+                        description:
+                            'Toggle the flash in dark environments for improved scanning results.',
+                        color: const Color(0xffFF9800),
+                      ),
+                      SizedBox(height: isTablet ? 20 : 16),
+                      _buildEnhancedHelpItem(
+                        context: context,
+                        isTablet: isTablet,
+                        icon: Icons.front_hand,
+                        title: 'Hold steady',
+                        description:
+                            'Keep your phone steady while scanning for the best possible results.',
+                        color: const Color(0xff9C27B0),
+                      ),
+                      SizedBox(height: isTablet ? 32 : 24),
+
+                      // Enhanced Got it button
+                      Container(
+                        width: double.infinity,
+                        height: isTablet ? 52 : 48,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xFF212427), // Black
+                              Color(0xFF57636C), // Grey
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF212427).withOpacity(0.3),
+                              spreadRadius: 1,
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Got it',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isTablet ? 18 : 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Add extra padding at bottom
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _helpItem(
-              icon: Icons.center_focus_strong,
-              title: 'Position the QR code',
-              description: 'Center the QR code within the scanning frame.',
-            ),
-            const SizedBox(height: 20),
-            _helpItem(
-              icon: Icons.light_mode,
-              title: 'Ensure good lighting',
-              description:
-                  'Make sure the QR code is well-lit and clearly visible.',
-            ),
-            const SizedBox(height: 20),
-            _helpItem(
-              icon: Icons.flash_on,
-              title: 'Use flash if needed',
-              description:
-                  'Toggle the flash in dark environments for better scanning.',
-            ),
-            const SizedBox(height: 20),
-            _helpItem(
-              icon: Icons.front_hand,
-              title: 'Hold steady',
-              description:
-                  'Keep your phone steady while scanning for best results.',
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)),
-                minimumSize: const Size(double.infinity, 56),
-                elevation: 0,
-              ),
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Got it',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
-            const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
 
-  Widget _helpItem({
+  Widget _buildEnhancedHelpItem({
+    required BuildContext context,
+    required bool isTablet,
     required IconData icon,
     required String title,
     required String description,
+    required Color color,
   }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.black, size: 24),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontSize: 14,
-                ),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-      ],
+        ],
+      ),
+      child: Row(
+        children: [
+          // Enhanced icon section
+          Container(
+            width: isTablet ? 56 : 48,
+            height: isTablet ? 56 : 48,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: isTablet ? 28 : 24,
+            ),
+          ),
+          SizedBox(width: isTablet ? 20 : 16),
+          // Enhanced content section
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: isTablet ? 18 : 16,
+                    color: const Color(0xff212427),
+                  ),
+                ),
+                SizedBox(height: isTablet ? 8 : 6),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: const Color(0xff57636C),
+                    fontSize: isTablet ? 15 : 14,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

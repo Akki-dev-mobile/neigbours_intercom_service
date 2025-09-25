@@ -29,6 +29,7 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpo
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ionicons/ionicons.dart';
@@ -52,7 +53,7 @@ class IdInputView extends StatefulWidget {
 late FocusNode _focusNode;
 
 int _currentIndex = 0;
-List<String> _labels = ['Mobile', 'Pass Code'];
+// Labels will be localized in build method
 String? selectedPassAlpha = 'A';
 String selectedCountryCode = 'IN';
 final isoCode = selectedCountryCode;
@@ -212,8 +213,10 @@ class _IdInputViewState extends State<IdInputView> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            RequestPermissionPage2(visitor: searchedVisitor!)),
+                        builder: (context) => RequestPermissionPage2(
+                            visitor: searchedVisitor!,
+                            selfcheckinFlow: false,
+                            isGatekeeperQRPasscodeEntry: false)),
                   );
                 } else {
                   showModalBottomSheet(
@@ -378,16 +381,16 @@ class _IdInputViewState extends State<IdInputView> {
                   ),
                 ),
                 child: Form(
-                key: mobileControllerFormKey,
-                child: MyScrollView(
-                  pageTitle: _currentIndex == 0
-                      ? 'Enter Mobile Number'
-                      : 'Enter Passcode',
+                  key: mobileControllerFormKey,
+                  child: MyScrollView(
+                    pageTitle: _currentIndex == 0
+                        ? AppLocalizations.of(context)!.enterMobileNumber
+                        : AppLocalizations.of(context)!.enterPasscode,
                     pageBody: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           // Enhanced Toggle Switch Card
                           Container(
                             margin: const EdgeInsets.only(bottom: 24),
@@ -415,17 +418,17 @@ class _IdInputViewState extends State<IdInputView> {
                                   Expanded(
                                     child: GestureDetector(
                                       onTap: () {
-                            setState(() {
+                                        setState(() {
                                           _currentIndex = 0;
-                            });
-                              _clearVisitorData();
-                              mobileController.clear();
+                                        });
+                                        _clearVisitorData();
+                                        mobileController.clear();
                                         WidgetsBinding.instance
                                             .addPostFrameCallback((_) {
                                           FocusScope.of(context)
                                               .requestFocus(_focusNode);
                                         });
-                              log("🧹 Visitor data cleared when switching to Mobile tab");
+                                        log("🧹 Visitor data cleared when switching to Mobile tab");
                                       },
                                       child: AnimatedContainer(
                                         duration:
@@ -460,7 +463,8 @@ class _IdInputViewState extends State<IdInputView> {
                                         ),
                                         child: Center(
                                           child: Text(
-                                            _labels[0],
+                                            AppLocalizations.of(context)!
+                                                .mobileTab,
                                             style: TextStyle(
                                               fontSize: 16.0,
                                               fontWeight: FontWeight.w500,
@@ -514,7 +518,8 @@ class _IdInputViewState extends State<IdInputView> {
                                         ),
                                         child: Center(
                                           child: Text(
-                                            _labels[1],
+                                            AppLocalizations.of(context)!
+                                                .passCodeTab,
                                             style: TextStyle(
                                               fontSize: 16.0,
                                               fontWeight: FontWeight.w500,
@@ -536,10 +541,10 @@ class _IdInputViewState extends State<IdInputView> {
                           Padding(
                             padding: const EdgeInsets.all(0.0),
                             child: _currentIndex == 0
-                          ? Column(
+                                ? Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
-                              children: [
+                                    children: [
                                       // Enhanced Mobile Number Field Card
                                       Container(
                                         margin: const EdgeInsets.symmetric(
@@ -596,13 +601,14 @@ class _IdInputViewState extends State<IdInputView> {
                                                               .start,
                                                       children: [
                                                         RichText(
-                                                          text: const TextSpan(
+                                                          text: TextSpan(
                                                             children: [
                                                               TextSpan(
-                                                                text:
-                                                                    'Visitor Mobile Number',
+                                                                text: AppLocalizations.of(
+                                                                        context)!
+                                                                    .visitorMobileNumber,
                                                                 style:
-                                                                    TextStyle(
+                                                                    const TextStyle(
                                                                   fontSize: 16,
                                                                   fontWeight:
                                                                       FontWeight
@@ -611,7 +617,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                                       0xff212427),
                                                                 ),
                                                               ),
-                                                              TextSpan(
+                                                              const TextSpan(
                                                                 text: ' *',
                                                                 style:
                                                                     TextStyle(
@@ -628,9 +634,12 @@ class _IdInputViewState extends State<IdInputView> {
                                                         ),
                                                         const SizedBox(
                                                             height: 4),
-                                                        const Text(
-                                                          'Enter the visitor mobile number',
-                                                          style: TextStyle(
+                                                        Text(
+                                                          AppLocalizations.of(
+                                                                  context)!
+                                                              .enterTheVisitorMobileNumber,
+                                                          style:
+                                                              const TextStyle(
                                                             fontSize: 14,
                                                             color: Color(
                                                                 0xff57636C),
@@ -653,7 +662,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                   bottom: 20),
                                               child: TextFormField(
                                                 controller: mobileController,
-                                  focusNode: _focusNode,
+                                                focusNode: _focusNode,
                                                 maxLength: 10,
                                                 keyboardType:
                                                     TextInputType.number,
@@ -670,7 +679,9 @@ class _IdInputViewState extends State<IdInputView> {
                                                 validator: (value) {
                                                   if (value == null ||
                                                       value.isEmpty) {
-                                                    return 'Mobile number is required';
+                                                    return AppLocalizations.of(
+                                                            context)!
+                                                        .mobileNumberIsRequired;
                                                   } else if (value.length !=
                                                       10) {
                                                     return 'Please enter a 10-digit number';
@@ -681,31 +692,31 @@ class _IdInputViewState extends State<IdInputView> {
                                                   }
                                                   return null;
                                                 },
-                                  onChanged: (value) {
-                                    // Reset hideNextButton when user starts typing
+                                                onChanged: (value) {
+                                                  // Reset hideNextButton when user starts typing
                                                   if (value.length < 10 &&
                                                       hideNextButton) {
-                                      setState(() {
-                                        hideNextButton = false;
-                                        print(
-                                            "🔄 UI: hideNextButton reset to FALSE - user typing");
-                                      });
-                                    }
+                                                    setState(() {
+                                                      hideNextButton = false;
+                                                      print(
+                                                          "🔄 UI: hideNextButton reset to FALSE - user typing");
+                                                    });
+                                                  }
 
-                                    if (value.length == 10 &&
-                                        !isMobileApiLoading) {
-                                      setState(() {
-                                        isMobileApiLoading = true;
-                                        print(
-                                            "🔄 UI: Starting API call - isMobileApiLoading set to TRUE");
-                                      });
-                                      gateDashboardBloc.add(
-                                        GDOnMobileNumberEnteredEvent(
+                                                  if (value.length == 10 &&
+                                                      !isMobileApiLoading) {
+                                                    setState(() {
+                                                      isMobileApiLoading = true;
+                                                      print(
+                                                          "🔄 UI: Starting API call - isMobileApiLoading set to TRUE");
+                                                    });
+                                                    gateDashboardBloc.add(
+                                                      GDOnMobileNumberEnteredEvent(
                                                           mobileController
                                                               .text),
-                                      );
-                                    }
-                                  },
+                                                    );
+                                                  }
+                                                },
                                                 decoration: InputDecoration(
                                                   hintText: '0123456789',
                                                   hintStyle: const TextStyle(
@@ -1022,7 +1033,9 @@ class _IdInputViewState extends State<IdInputView> {
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      'Validating mobile number...',
+                                                      AppLocalizations.of(
+                                                              context)!
+                                                          .validatingMobileNumber,
                                                       style: TextStyle(
                                                         fontSize: 14,
                                                         fontWeight:
@@ -1063,12 +1076,12 @@ class _IdInputViewState extends State<IdInputView> {
                                           ),
                                         ),
                                       ],
-                              ],
-                            )
-                          : Column(
+                                    ],
+                                  )
+                                : Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
-                              children: [
+                                    children: [
                                       // Enhanced Passcode Field Card
                                       Container(
                                         margin: const EdgeInsets.symmetric(
@@ -1181,7 +1194,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                   right: 20,
                                                   bottom: 20),
                                               child: Form(
-                                  key: passcodeControllerFormKey,
+                                                key: passcodeControllerFormKey,
                                                 child: TextFormField(
                                                   controller:
                                                       passcodeController,
@@ -1197,18 +1210,18 @@ class _IdInputViewState extends State<IdInputView> {
                                                     fontWeight: FontWeight.w500,
                                                     color: Color(0xff212427),
                                                   ),
-                                    validator: (value) {
+                                                  validator: (value) {
                                                     if (value == null ||
                                                         value.isEmpty) {
-                                        return 'Passcode is required';
+                                                      return 'Passcode is required';
                                                     } else if (value.length !=
                                                         6) {
-                                        return 'Please enter a 6-digit passcode';
-                                      }
-                                      return null;
-                                    },
+                                                      return 'Please enter a 6-digit passcode';
+                                                    }
+                                                    return null;
+                                                  },
                                                   decoration: InputDecoration(
-                                    hintText: '123456',
+                                                    hintText: '123456',
                                                     hintStyle: const TextStyle(
                                                       fontSize: 16,
                                                       fontWeight:
@@ -1275,9 +1288,9 @@ class _IdInputViewState extends State<IdInputView> {
                                                               isPasscodeVerifying
                                                                   ? null
                                                                   : () async {
-                                        if (passcodeControllerFormKey
-                                            .currentState!
-                                            .validate()) {
+                                                                      if (passcodeControllerFormKey
+                                                                          .currentState!
+                                                                          .validate()) {
                                                                         // Trigger passcode verification
                                                                         setState(
                                                                             () {
@@ -1326,28 +1339,28 @@ class _IdInputViewState extends State<IdInputView> {
                                                       ),
                                                     ),
                                                   ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                            ),
-                    ],
+                                      ),
+                                    ],
                                   ),
                           ),
                         ],
                       ),
-                  ),
-                  floatingActionButton: () {
-                    final shouldHideButton =
-                        (isMobileApiLoading || hideNextButton);
-                    print("🔍 UI: FloatingActionButton condition check:");
-                    print("   - isMobileApiLoading: $isMobileApiLoading");
-                    print("   - hideNextButton: $hideNextButton");
-                    print("   - shouldHideButton: $shouldHideButton");
+                    ),
+                    floatingActionButton: () {
+                      final shouldHideButton =
+                          (isMobileApiLoading || hideNextButton);
+                      print("🔍 UI: FloatingActionButton condition check:");
+                      print("   - isMobileApiLoading: $isMobileApiLoading");
+                      print("   - hideNextButton: $hideNextButton");
+                      print("   - shouldHideButton: $shouldHideButton");
 
-                    return shouldHideButton
-                        ? null // Hide Next button during mobile number validation or API errors
+                      return shouldHideButton
+                          ? null // Hide Next button during mobile number validation or API errors
                           : Container(
                               margin: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 16),
@@ -1400,8 +1413,8 @@ class _IdInputViewState extends State<IdInputView> {
                                   ),
                                 ),
                               ),
-                          );
-                  }(),
+                            );
+                    }(),
                     floatingActionButtonLocation:
                         FloatingActionButtonLocation.centerDocked,
                   ),
@@ -1617,7 +1630,9 @@ class _IdInputViewState extends State<IdInputView> {
                     visitor: Visitor(
                         name: visitorData['name'],
                         mobile: visitorData['mobile'],
-                        visitor_image: response))));
+                        visitor_image: response),
+                    selfcheckinFlow: false,
+                    isGatekeeperQRPasscodeEntry: true)));
       }
     } catch (e) {
       print("❌ Error uploading image: $e");
@@ -1890,7 +1905,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
       if (jsonString != null) {
         final jsonList = jsonDecode(jsonString) as List<dynamic>;
         final loadedPurposes =
-              jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
+            jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
 
         setState(() {
           globalSelectedPurposes = _reorderPurposeCategories(loadedPurposes);
@@ -1940,7 +1955,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
   void purposeSelectionBottomSheet() async {
     FocusScope.of(context).unfocus();
     if (selectedImageIndex == null) {
-      myFluttertoast(msg: "please select purpose", backgroundColor: Colors.red);
+      myFluttertoast(
+          msg: AppLocalizations.of(context)!.pleaseSelectPurpose,
+          backgroundColor: Colors.red);
       return;
     }
 
@@ -1970,37 +1987,6 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
       );
     }
   }
-
-  // Future<void> _loadSelectedPurposesToGlobal() async {
-  //   try {
-  //     final prefs = await SharedPreferences.getInstance();
-  //     final jsonString = prefs.getString('selected_purposes');
-  //
-  //     if (jsonString != null) {
-  //       final jsonList = jsonDecode(jsonString) as List<dynamic>;
-  //       final loadedPurposes =
-  //           jsonList.map((json) => PurposeCategory1.fromJson(json)).toList();
-  //
-  //       final staffIndex = loadedPurposes.indexWhere(
-  //         (purpose) => purpose.categoryName.toUpperCase() == 'STAFF',
-  //       );
-  //
-  //       setState(() {
-  //         globalSelectedPurposes = loadedPurposes;
-  //         if (staffIndex != -1) {
-  //           selectedImageIndex = staffIndex;
-  //           isStaffAutoSelected = true; // 🔒 Lock selection
-  //         }
-  //       });
-  //
-  //       print("Global selected purposes loaded: $globalSelectedPurposes");
-  //     } else {
-  //       print("No selected purposes found in SharedPreferences.");
-  //     }
-  //   } catch (e) {
-  //     print("Failed to load selected purposes into global variable: $e");
-  //   }
-  // }
 
   void selectImage(int index) {
     setState(() {
@@ -2075,9 +2061,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                     size: 20,
                   ),
                 ),
-          Expanded(
+                Expanded(
                   child: Text(
-                    'Select Purpose of Visit',
+                    AppLocalizations.of(context)!.selectPurposeOfVisit,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -2127,37 +2113,37 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: globalSelectedPurposes.isEmpty
-                ? GridView.builder(
-                    shrinkWrap: true,
+              child: globalSelectedPurposes.isEmpty
+                  ? GridView.builder(
+                      shrinkWrap: true,
                       physics: const BouncingScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
                         childAspectRatio: 0.85,
-                    ),
+                      ),
                       itemCount:
                           _reorderPurposeCategories(widget.purposeCategories)
-                        .length,
-                    itemBuilder: (context, index) {
+                              .length,
+                      itemBuilder: (context, index) {
                         final reorderedPurposes =
                             _reorderPurposeCategories(widget.purposeCategories);
                         final purpose = reorderedPurposes[index];
                         final isSelected = selectedImageIndex == index;
 
-                      return GestureDetector(
+                        return GestureDetector(
                           onTap: () {
                             selectImage(index);
                             HapticFeedback.lightImpact();
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                              decoration: BoxDecoration(
+                            decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
+                              border: Border.all(
                                 color: isSelected
                                     ? const Color(0xffF44336)
                                     : Colors.grey.withOpacity(0.2),
@@ -2172,10 +2158,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   offset: const Offset(0, 4),
                                 ),
                               ],
-                              ),
-                              child: Column(
+                            ),
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
+                              children: [
                                 // Enhanced Image Container
                                 Container(
                                   width: 50,
@@ -2183,10 +2169,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                    child: ClipRRect(
+                                  child: ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
-                                      child: CachedNetworkImage(
-                                        imageUrl: purpose.image ?? "",
+                                    child: CachedNetworkImage(
+                                      imageUrl: purpose.image ?? "",
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) => Container(
                                         decoration: BoxDecoration(
@@ -2203,7 +2189,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                           ),
                                         ),
                                       ),
-                                        errorWidget: (context, url, error) =>
+                                      errorWidget: (context, url, error) =>
                                           Container(
                                         decoration: BoxDecoration(
                                           color: const Color(0xffF44336)
@@ -2213,24 +2199,24 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                           Icons.image_not_supported,
                                           color: Color(0xffF44336),
                                           size: 24,
+                                        ),
                                       ),
                                     ),
-                                  ),
                                   ),
                                 ),
 
                                 const SizedBox(height: 8),
 
                                 // Enhanced Text
-                                  Padding(
+                                Padding(
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: 8),
-                                      child: Text(
-                                        purpose.categoryName,
+                                  child: Text(
+                                    purpose.categoryName,
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: isSelected
                                           ? FontWeight.w600
@@ -2238,54 +2224,54 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                       color: isSelected
                                           ? const Color(0xffF44336)
                                           : const Color(0xff212427),
-                                        ),
-                                      ),
                                     ),
+                                  ),
+                                ),
 
                                 // Selection Indicator
                                 if (isSelected)
                                   Container(
                                     margin: const EdgeInsets.only(top: 4),
-                                child: Icon(
+                                    child: Icon(
                                       Icons.check_circle,
                                       color: const Color(0xffF44336),
                                       size: 16,
-                                ),
-                              ),
-                          ],
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ),
-                      );
-                    },
-                  )
-                : GridView.builder(
-                    shrinkWrap: true,
+                          ),
+                        );
+                      },
+                    )
+                  : GridView.builder(
+                      shrinkWrap: true,
                       physics: const BouncingScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
                         childAspectRatio: 0.85,
-                    ),
-                    itemCount: globalSelectedPurposes.length,
-                    itemBuilder: (context, index) {
-                      final purpose = globalSelectedPurposes[index];
+                      ),
+                      itemCount: globalSelectedPurposes.length,
+                      itemBuilder: (context, index) {
+                        final purpose = globalSelectedPurposes[index];
                         final isSelected = selectedImageIndex == index;
 
-                      return GestureDetector(
-                        onTap: () {
-                          if (!isStaffAutoSelected) {
-                            selectImage(index);
+                        return GestureDetector(
+                          onTap: () {
+                            if (!isStaffAutoSelected) {
+                              selectImage(index);
                               HapticFeedback.lightImpact();
                             }
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                              decoration: BoxDecoration(
+                            decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
+                              border: Border.all(
                                 color: isSelected
                                     ? const Color(0xffF44336)
                                     : Colors.grey.withOpacity(0.2),
@@ -2300,10 +2286,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   offset: const Offset(0, 4),
                                 ),
                               ],
-                              ),
-                              child: Column(
+                            ),
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
+                              children: [
                                 // Enhanced Image Container
                                 Container(
                                   width: 50,
@@ -2311,10 +2297,10 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                    child: ClipRRect(
+                                  child: ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
-                                      child: CachedNetworkImage(
-                                        imageUrl: purpose.image ?? "",
+                                    child: CachedNetworkImage(
+                                      imageUrl: purpose.image ?? "",
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) => Container(
                                         decoration: BoxDecoration(
@@ -2331,7 +2317,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                           ),
                                         ),
                                       ),
-                                        errorWidget: (context, url, error) =>
+                                      errorWidget: (context, url, error) =>
                                           Container(
                                         decoration: BoxDecoration(
                                           color: const Color(0xffF44336)
@@ -2341,24 +2327,24 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                           Icons.image_not_supported,
                                           color: Color(0xffF44336),
                                           size: 24,
+                                        ),
                                       ),
                                     ),
-                                  ),
                                   ),
                                 ),
 
                                 const SizedBox(height: 8),
 
                                 // Enhanced Text
-                                  Padding(
+                                Padding(
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: 8),
-                                      child: Text(
-                                        purpose.categoryName,
+                                  child: Text(
+                                    purpose.categoryName,
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: isSelected
                                           ? FontWeight.w600
@@ -2366,27 +2352,27 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                       color: isSelected
                                           ? const Color(0xffF44336)
                                           : const Color(0xff212427),
-                                        ),
-                                      ),
                                     ),
+                                  ),
+                                ),
 
                                 // Selection Indicator
                                 if (isSelected)
                                   Container(
                                     margin: const EdgeInsets.only(top: 4),
-                                child: Icon(
+                                    child: Icon(
                                       Icons.check_circle,
                                       color: const Color(0xffF44336),
                                       size: 16,
-                                ),
-                              ),
-                          ],
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ),
 
           // Enhanced Action Button
@@ -2429,7 +2415,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap:
-                  selectPurposeLoading ? null : purposeSelectionBottomSheet,
+                      selectPurposeLoading ? null : purposeSelectionBottomSheet,
                   child: Center(
                     child: Text(
                       selectPurposeLoading ? 'Processing...' : 'Select Purpose',

@@ -28,8 +28,9 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import "package:intl/intl.dart";
 import '../../../self_entry/self_home_view.dart';
-import '../../../self_entry/ui/self_profile_view.dart';
+import 'package:flutter_onegate/utils/route_tracker.dart';
 import '../widgets/selectmember_bottomsheet.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final int? from;
@@ -104,11 +105,21 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   List<String> selectedBuildingUnits = [];
   String formattedInTime =
       DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-  String? approvalStatus = "Waiting for approval...";
+  String? approvalStatus;
   bool? _membersApproval;
   late Future<void> _initializeFuture;
   bool _isLoading = false;
   bool _isConfirming = false;
+
+  // Track that user is in express entry flow
+  Future<void> _trackExpressEntryRoute() async {
+    if (widget.selfcheckinFlow) {
+      await RouteTracker.saveCurrentRoute(
+        'UnitSelectionView',
+        isExpressEntry: true,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -117,8 +128,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     _fetchCompanyId();
     _loadVisitorSettings();
     _initializeSocketConnection();
+    _trackExpressEntryRoute();
     log("$selectedUnits here is this");
     _isLoading = true; // Set loading state before fetching members
+
+    // Initialize approval status after context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        approvalStatus = AppLocalizations.of(context).waitingForApproval;
+      }
+    });
 
     // Initialize members with caching
     _initializeMembers(forceRefresh: false).then((_) {
@@ -694,10 +713,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   // UI Methods
   Widget _buildSearchField(BuildContext context) {
     return CustomForm.textField(
-      'Search Members',
+      AppLocalizations.of(context).searchMembers,
       titleColor: Theme.of(context).colorScheme.onSurface,
       hintColor: Theme.of(context).colorScheme.onSurface.withAlpha(128),
-      hintText: 'Search Members (type at least 3 characters)',
+      hintText: AppLocalizations.of(context).searchMembersHint,
       textController: _searchController,
       onChanged: (query) {
         if (query.trim().length >= 3) {
@@ -748,7 +767,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Loading members...',
+                      AppLocalizations.of(context).loadingMembers,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -769,7 +788,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Searching members...',
+                      AppLocalizations.of(context).searchingMembers,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -803,7 +822,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No Members Found.\nType at least 3 characters to search members by their name or flat',
+            AppLocalizations.of(context).noMembersFound,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -863,7 +882,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         ),
         collapsedIconColor: Theme.of(context).colorScheme.onSurface,
         children: memberDetails.isEmpty
-            ? [const Text('No members available')]
+            ? [Text(AppLocalizations.of(context)!.noMembersAvailable)]
             : _buildMemberDetailsList(memberDetails, member),
       ),
     );
@@ -1216,7 +1235,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         ),
       ),
       title: Text(
-        "Select",
+        AppLocalizations.of(context)!.select,
         style: TextStyle(
           color: const Color(0xff212427),
           fontSize: isTablet ? 24 : 20,
@@ -1331,8 +1350,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             Tab(
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
-                child: const Text(
-                  'Select Units/Members',
+                child: Text(
+                  AppLocalizations.of(context)!.selectUnit,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -1340,8 +1359,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             Tab(
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
-                child: const Text(
-                  'Society Office',
+                child: Text(
+                  AppLocalizations.of(context)!.societyOffice,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -1439,7 +1458,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ),
               SizedBox(height: isTablet ? 24 : 20),
               Text(
-                "Society Office",
+                AppLocalizations.of(context)!.societyOffice,
                 style: TextStyle(
                   fontSize: isTablet ? 24 : 20,
                   fontWeight: FontWeight.w700,
@@ -1527,7 +1546,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             ),
                             SizedBox(width: isTablet ? 16 : 12),
                             Text(
-                              "Tap to Check-in",
+                              AppLocalizations.of(context)!.tapToViewDetails,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: isTablet ? 18 : 16,
@@ -1597,6 +1616,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         carNumber: widget.carNumber,
         company_id: int.parse(companyId.toString()),
         is_checked_out: false,
+        initiated_from:
+            widget.selfcheckinFlow ? "self_entry" : "gatekeeper", // Mark source
       );
 
       // Save society office details to preferences
@@ -1706,7 +1727,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final visitorLogData = await _prepareVisitorLogData();
 
       if (selectedMembers.length == 1) {
-        if (_membersApproval == true) {
+        // For express entry, member approval is always required (checked at entry point)
+        // For gatekeeper flow, check the setting
+        if (widget.selfcheckinFlow || _membersApproval == true) {
           await _handleSingleMemberFlow(visitorLogData);
         } else {
           await _handleDirectApproval(visitorLogData);
@@ -1726,39 +1749,28 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<void> _handleDirectApproval(VisitorLog visitorLogData) async {
     try {
-      // if (!_isCheckedIn) {
       await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
-      //   _isCheckedIn = true;
-      // }
-      widget.selfcheckinFlow
-          ? Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelfProfileView(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
 
-                  // status: 0,
-                  // visitor: widget.visitor,
-                  // unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  // logID: logID,
-                ),
-              ),
-            )
-          : await _allowByGatekeeper(visitorLogData);
-      await Navigator.push(
+      // For express entry flow, this should not happen as member approval is always required
+      // This is only for gatekeeper flow when member approval is disabled
+      if (!widget.selfcheckinFlow) {
+        await _allowByGatekeeper(visitorLogData);
+      }
+
+      Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => RequestPermissionPage2(
-                  // status: 0,
-                  visitor: widget.visitor,
-                  visitorLog: visitorLogData,
-                )),
+          builder: (context) => RequestPermissionPage2(
+            visitor: widget.visitor,
+            visitorLog: visitorLogData,
+            selfcheckinFlow: widget.selfcheckinFlow,
+            isGatekeeperQRPasscodeEntry: false, // This is mobile entry flow
+          ),
+        ),
       );
     } catch (e) {
       log("❌ Error in _handleDirectApproval: $e");
-      _showErrorSnackbar("Error during gatekeeper approval.");
+      _showErrorSnackbar("Error during approval process.");
     }
   }
 
@@ -1874,66 +1886,42 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
     final prefs = await SharedPreferences.getInstance();
     final logID = prefs.getString("visitor_log");
     if (message == "Visitor is always_allowed") {
-      widget.selfcheckinFlow
-          ? Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelfProfileView(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-
-                  // status: 0,
-                  // visitor: widget.visitor,
-                  // unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  // logID: logID,
-                ),
-              ),
-            )
-          : Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionPage2(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  logID: logID,
-                ),
-              ),
-            );
+      // For both express entry and gatekeeper flow, show success screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage2(
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            logID: logID,
+            selfcheckinFlow: widget.selfcheckinFlow,
+            isGatekeeperQRPasscodeEntry: false, // This is mobile entry flow
+          ),
+        ),
+      );
     } else {
       final prefs = await SharedPreferences.getInstance();
       final logID = prefs.getString("visitor_log");
       log("selfcheckinFlow: ${widget.selfcheckinFlow}");
       visitorLogData.visitor?.mobile = widget.visitor.mobile;
-      widget.selfcheckinFlow
-          ? Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelfProfileView(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
 
-                  // status: 0,
-                  // visitor: widget.visitor,
-                  // unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  // logID: logID,
-                ),
-              ),
-            )
-          : Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionPage(
-                  userId: selectedUserIds.first,
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                  logID: logID,
-                ),
-              ),
-            );
+      // For express entry, use the existing approval screen (RequestPermissionPage)
+      // For gatekeeper flow, continue using existing flow
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage(
+            userId: selectedUserIds.first,
+            visitor: widget.visitor,
+            unitList: selectedBuildingUnits,
+            visitorLog: visitorLogData,
+            logID: logID,
+            selfcheckinFlow: widget.selfcheckinFlow,
+            isGatekeeperQRPasscodeEntry: false, // This is mobile entry flow
+          ),
+        ),
+      );
     }
   }
 
@@ -1944,25 +1932,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         _isCheckedIn = true;
       }
 
-      widget.selfcheckinFlow
-          ? Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelfProfileView(
-                  visitor: widget.visitor,
-                  unitList: selectedBuildingUnits,
-                  visitorLog: visitorLogData,
-                ),
-              ),
-            )
-          : await Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => RequestPermissionPage2(
-                        visitor: widget.visitor,
-                        visitorLog: visitorLogData,
-                      )),
-            );
+      // For multi-member flow, both express entry and gatekeeper show success screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RequestPermissionPage2(
+            visitor: widget.visitor,
+            visitorLog: visitorLogData,
+            selfcheckinFlow: widget.selfcheckinFlow,
+            isGatekeeperQRPasscodeEntry: false, // This is mobile entry flow
+          ),
+        ),
+      );
     } catch (e) {
       log("❌ Error in _handleMultiMemberFlow: $e");
       _showErrorSnackbar("Error processing multi-member check-in.");
@@ -2010,7 +1991,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                               await _handleApprovedDialogButton(
                                   context, data, setState, onSuccess);
                             },
-                            text: "Continue",
+                            text: AppLocalizations.of(context).continueAction,
                             disabled: _isButtonDisabled,
                           ),
                   ],
@@ -2379,7 +2360,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ),
               SizedBox(height: isTablet ? 12 : 8),
               Text(
-                'Type at least 3 characters to search members by their name or flat number',
+                AppLocalizations.of(context).searchMembersHint,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: isTablet ? 14 : 12,
@@ -2461,7 +2442,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 });
               },
               icon: const Icon(Icons.clear_all),
-              label: const Text('Clear Search'),
+              label: Text(AppLocalizations.of(context)!.clearSearch),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xffF44336),
                 padding: EdgeInsets.symmetric(
@@ -2907,7 +2888,25 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       visitor_building_assignment: buildingAssignments,
       is_checked_out: false,
       visitor: widget.visitor,
+      initiated_from: await _getInitiatedFromValue(), // Mark source
     );
+  }
+
+  Future<String> _getInitiatedFromValue() async {
+    if (!widget.selfcheckinFlow) {
+      return "gatekeeper";
+    }
+
+    // Check if entry came from passcode
+    final prefs = await SharedPreferences.getInstance();
+    final entryMethod = prefs.getString('entry_method');
+    if (entryMethod == 'passcode_entry') {
+      // Clear the flag after use
+      await prefs.remove('entry_method');
+      return "passcode_entry";
+    }
+
+    return "self_entry";
   }
 
   Future<List<Map<String, dynamic>>> getSavedMemberDetails() async {

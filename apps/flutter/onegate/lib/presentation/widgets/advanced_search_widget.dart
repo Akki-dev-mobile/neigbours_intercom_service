@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/services/search/meilisearch_service.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 /// Advanced search widget with Meilisearch integration
 class AdvancedSearchWidget extends StatefulWidget {
@@ -12,7 +13,7 @@ class AdvancedSearchWidget extends StatefulWidget {
   final Map<String, dynamic>? filters;
   final bool showFilters;
   final bool showSuggestions;
-  
+
   const AdvancedSearchWidget({
     Key? key,
     required this.hintText,
@@ -32,26 +33,26 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final MeilisearchService _meilisearchService = MeilisearchService();
-  
+
   Timer? _debounceTimer;
   List<String> _suggestions = [];
   bool _isSearching = false;
   bool _showSuggestions = false;
-  
+
   // Filter controllers
   String? _selectedBuilding;
   String? _selectedMemberStatus;
   bool? _approvedFilter;
   bool? _isStaffFilter;
   DateTimeRange? _dateRange;
-  
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _searchFocusNode.addListener(_onFocusChanged);
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -59,11 +60,11 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
     _debounceTimer?.cancel();
     super.dispose();
   }
-  
+
   void _onSearchChanged() {
     final query = _searchController.text.trim();
     widget.onQueryChanged?.call(query);
-    
+
     if (query.isEmpty) {
       setState(() {
         _suggestions.clear();
@@ -72,7 +73,7 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
       widget.onSearchResults([]);
       return;
     }
-    
+
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       _performSearch(query);
@@ -81,23 +82,25 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
       }
     });
   }
-  
+
   void _onFocusChanged() {
-    if (_searchFocusNode.hasFocus && _searchController.text.isNotEmpty && widget.showSuggestions) {
+    if (_searchFocusNode.hasFocus &&
+        _searchController.text.isNotEmpty &&
+        widget.showSuggestions) {
       setState(() => _showSuggestions = true);
     } else {
       setState(() => _showSuggestions = false);
     }
   }
-  
+
   Future<void> _performSearch(String query) async {
     if (query.length < 2) return;
-    
+
     setState(() => _isSearching = true);
-    
+
     try {
       List<Map<String, dynamic>> results = [];
-      
+
       switch (widget.searchType) {
         case SearchType.residents:
           results = await _meilisearchService.searchResidents(
@@ -116,7 +119,7 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
           );
           break;
       }
-      
+
       widget.onSearchResults(results);
     } catch (e) {
       debugPrint('Search error: $e');
@@ -125,16 +128,18 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
       setState(() => _isSearching = false);
     }
   }
-  
+
   Future<void> _getSuggestions(String query) async {
     if (query.length < 2) return;
-    
+
     try {
       final suggestions = await _meilisearchService.getSearchSuggestions(
         query,
-        index: widget.searchType == SearchType.residents ? 'residents' : 'visitors',
+        index: widget.searchType == SearchType.residents
+            ? 'residents'
+            : 'visitors',
       );
-      
+
       setState(() {
         _suggestions = suggestions.take(5).toList();
         _showSuggestions = _searchFocusNode.hasFocus && suggestions.isNotEmpty;
@@ -143,7 +148,7 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
       debugPrint('Suggestions error: $e');
     }
   }
-  
+
   void _selectSuggestion(String suggestion) {
     _searchController.text = suggestion;
     _searchController.selection = TextSelection.fromPosition(
@@ -152,7 +157,7 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
     setState(() => _showSuggestions = false);
     _performSearch(suggestion);
   }
-  
+
   void _clearSearch() {
     _searchController.clear();
     setState(() {
@@ -161,17 +166,17 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
     });
     widget.onSearchResults([]);
   }
-  
+
   void _showFilterDialog() {
     showDialog(
       context: context,
       builder: (context) => _buildFilterDialog(),
     );
   }
-  
+
   Widget _buildFilterDialog() {
     return AlertDialog(
-      title: const Text('Search Filters'),
+      title: Text(AppLocalizations.of(context)!.searchFilters),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -196,80 +201,92 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
             _clearFilters();
             Navigator.of(context).pop();
           },
-          child: const Text('Clear'),
+          child: Text(AppLocalizations.of(context)!.clearFilters),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(AppLocalizations.of(context)!.cancel),
         ),
         ElevatedButton(
           onPressed: () {
             Navigator.of(context).pop();
             _performSearch(_searchController.text);
           },
-          child: const Text('Apply'),
+          child: Text(AppLocalizations.of(context)!.apply),
         ),
       ],
     );
   }
-  
+
   Widget _buildBuildingFilter() {
     return DropdownButtonFormField<String>(
       value: _selectedBuilding,
-      decoration: const InputDecoration(
-        labelText: 'Building',
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context)!.building,
+        border: const OutlineInputBorder(),
       ),
       items: [
-        const DropdownMenuItem(value: null, child: Text('All Buildings')),
+        DropdownMenuItem(
+            value: null,
+            child: Text(AppLocalizations.of(context)!.allBuildings)),
         // Add actual building options here
-        const DropdownMenuItem(value: 'Tower A', child: Text('Tower A')),
-        const DropdownMenuItem(value: 'Tower B', child: Text('Tower B')),
+        DropdownMenuItem(
+            value: 'Tower A',
+            child: Text(AppLocalizations.of(context)!.towerA)),
+        DropdownMenuItem(
+            value: 'Tower B',
+            child: Text(AppLocalizations.of(context)!.towerB)),
       ],
       onChanged: (value) => setState(() => _selectedBuilding = value),
     );
   }
-  
+
   Widget _buildMemberStatusFilter() {
     return DropdownButtonFormField<String>(
       value: _selectedMemberStatus,
-      decoration: const InputDecoration(
-        labelText: 'Member Status',
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context)!.memberStatus,
+        border: const OutlineInputBorder(),
       ),
       items: [
-        const DropdownMenuItem(value: null, child: Text('All Statuses')),
-        const DropdownMenuItem(value: 'Active', child: Text('Active')),
-        const DropdownMenuItem(value: 'Inactive', child: Text('Inactive')),
+        DropdownMenuItem(
+            value: null,
+            child: Text(AppLocalizations.of(context)!.allStatuses)),
+        DropdownMenuItem(
+            value: 'Active', child: Text(AppLocalizations.of(context)!.active)),
+        DropdownMenuItem(
+            value: 'Inactive',
+            child: Text(AppLocalizations.of(context)!.inactive)),
       ],
       onChanged: (value) => setState(() => _selectedMemberStatus = value),
     );
   }
-  
+
   Widget _buildApprovedFilter() {
     return CheckboxListTile(
-      title: const Text('Approved Members Only'),
+      title: Text(AppLocalizations.of(context)!.approvedMembersOnly),
       value: _approvedFilter ?? false,
       tristate: true,
       onChanged: (value) => setState(() => _approvedFilter = value),
     );
   }
-  
+
   Widget _buildStaffFilter() {
     return CheckboxListTile(
-      title: const Text('Staff Only'),
+      title: Text(AppLocalizations.of(context)!.staffOnly),
       value: _isStaffFilter ?? false,
       tristate: true,
       onChanged: (value) => setState(() => _isStaffFilter = value),
     );
   }
-  
+
   Widget _buildDateRangeFilter() {
     return ListTile(
-      title: const Text('Date Range'),
+      title: Text(AppLocalizations.of(context)!.dateRange),
       subtitle: _dateRange != null
-          ? Text('${_dateRange!.start.toString().split(' ')[0]} - ${_dateRange!.end.toString().split(' ')[0]}')
-          : const Text('All dates'),
+          ? Text(
+              '${_dateRange!.start.toString().split(' ')[0]} - ${_dateRange!.end.toString().split(' ')[0]}')
+          : Text(AppLocalizations.of(context)!.allDates),
       trailing: const Icon(Icons.date_range),
       onTap: () async {
         final range = await showDateRangePicker(
@@ -284,7 +301,7 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
       },
     );
   }
-  
+
   void _clearFilters() {
     setState(() {
       _selectedBuilding = null;
@@ -294,7 +311,7 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
       _dateRange = null;
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -376,13 +393,13 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
       ],
     );
   }
-  
+
   bool _hasActiveFilters() {
     return _selectedBuilding != null ||
-           _selectedMemberStatus != null ||
-           _approvedFilter != null ||
-           _isStaffFilter != null ||
-           _dateRange != null;
+        _selectedMemberStatus != null ||
+        _approvedFilter != null ||
+        _isStaffFilter != null ||
+        _dateRange != null;
   }
 }
 

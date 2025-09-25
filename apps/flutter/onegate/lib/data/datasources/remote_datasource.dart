@@ -738,12 +738,27 @@ class RemoteDataSource {
 
       // Prepare the payload
       final Map<String, dynamic> data = visitorLog.toJson();
+
+      // Override datetime formatting to match API expectations (YYYY-MM-DD HH:MM:SS)
       data['visitor_check_in'] =
           _formatDateTime(visitorLog.visitor_check_in ?? DateTime.now());
 
       if (visitorLog.visitor_check_out != null) {
         data['visitor_check_out'] =
             _formatDateTime(visitorLog.visitor_check_out!);
+      } else {
+        data['visitor_check_out'] = null; // Explicitly set to null for API
+      }
+
+      // Ensure visitor_card_number has a default value if null
+      if (data['visitor_card_number'] == null ||
+          data['visitor_card_number'] == '') {
+        data['visitor_card_number'] = 'V0'; // Default value as per API spec
+      }
+
+      // Ensure vehicle_number is empty string if null
+      if (data['vehicle_number'] == null) {
+        data['vehicle_number'] = '';
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -764,6 +779,17 @@ class RemoteDataSource {
         "is_always_allowed": statusallowed
       });
 
+      // Enhanced logging for debugging
+      log("=== VISITOR LOG API DEBUG ===");
+      log("API URL: $apiUrl");
+      log("Initiated From: ${data['initiated_from']}");
+      log("Visitor ID: ${data['visitor_id']}");
+      log("Purpose Category ID: ${data['visitor_purpose_category_id']}");
+      log("Check-in Time: ${data['visitor_check_in']}");
+      log("Company ID: ${data['company_id']}");
+      log("Member Details Count: ${memberDetails.length}");
+      log("Final Payload: ${json.encode(data)}");
+
       // Make the POST request
       final Response response = await dio.post(
         apiUrl,
@@ -776,7 +802,7 @@ class RemoteDataSource {
           },
         ),
       );
-      log("Final Payload: $data");
+      log("VisitorLog Response Status: ${response.statusCode}");
       log("VisitorLog Response: ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -791,6 +817,14 @@ class RemoteDataSource {
             response.data["data"]["visitor_log_id"].toString(),
           );
           print("this is ${responseData['data']}");
+
+          // Trigger PATCH API for self entry visitors to sync with Gatekeeper dashboard
+          if (visitorLog.initiated_from == "self_entry" &&
+              visitorLog.visitor_id != null) {
+            log("Triggering PATCH API for self entry visitor log sync using visitor_id: ${visitorLog.visitor_id}");
+            await _updateVisitorLogForSelfEntry(
+                visitorLog.visitor_id.toString());
+          }
 
           // await  gateStorage.clearStorage();åß
           return visitorLogResult;
@@ -1566,8 +1600,36 @@ class RemoteDataSource {
     String? initiatedFrom;
     final additionalDetails = item['additional_details'];
 
+    // Debug logging for initiated_from field
+    print(
+        '🔍 [DEBUG] _mapToVisitorLog - additional_details: $additionalDetails');
+    print('🔍 [DEBUG] _mapToVisitorLog - item keys: ${item.keys.toList()}');
+
     if (additionalDetails is Map<String, dynamic>) {
-      initiatedFrom = additionalDetails['initiated_from'] as String?;
+      // Check for invited_guest field first
+      final invitedGuest = additionalDetails['invited_guest'] as bool?;
+      print('🔍 [DEBUG] _mapToVisitorLog - invited_guest: $invitedGuest');
+
+      if (invitedGuest == true) {
+        initiatedFrom = "invited_guest";
+        print(
+            '🔍 [DEBUG] _mapToVisitorLog - Set initiated_from to invited_guest');
+      } else {
+        // Fallback to original initiated_from field
+        initiatedFrom = additionalDetails['initiated_from'] as String?;
+        print(
+            '🔍 [DEBUG] _mapToVisitorLog - initiated_from from additional_details: $initiatedFrom');
+      }
+    } else {
+      print(
+          '🔍 [DEBUG] _mapToVisitorLog - additional_details is not a Map or is null');
+    }
+
+    // Fallback: Check for direct initiated_from field in the main item
+    if (initiatedFrom == null && item['initiated_from'] != null) {
+      initiatedFrom = item['initiated_from'] as String?;
+      print(
+          '🔍 [DEBUG] _mapToVisitorLog - initiated_from from direct field: $initiatedFrom');
     }
 
     // Safely parsing the check-in and check-out times
@@ -1608,6 +1670,12 @@ class RemoteDataSource {
           : null,
     );
 
+    // Debug logging for final VisitorLog
+    print(
+        '🔍 [DEBUG] _mapToVisitorLog - Final VisitorLog initiated_from: ${visitorLog.initiated_from}');
+    print(
+        '🔍 [DEBUG] _mapToVisitorLog - Visitor name: ${visitorLog.visitor?.name}');
+
     return visitorLog;
   }
 
@@ -1638,13 +1706,9 @@ class RemoteDataSource {
           prefs.getString('selected_gate') ?? 'Default Gate';
       final resolvedCompanyId = await gateStorage.getSocietyId();
       final Map<String, dynamic> requestData = {
-        "company_id": resolvedCompanyId,
+        "company_id": int.parse(resolvedCompanyId ?? "412"),
         "in_gate": selectedGateName,
-        if (isStaff == false) "passcode": passcode,
-        "mobile": mobile,
-        //if (isStaff == false)
-        "pass_id": id,
-        if (isStaff == true) "is_staff": isStaff,
+        "passcode": passcode,
       };
 
       log("🔍 Sending request to verify passcode: $requestData");
@@ -1987,6 +2051,86 @@ class RemoteDataSource {
 
   String _formatDateTime(DateTime dateTime) {
     return DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime);
+  }
+
+  /// Update visitor log for self entry visitors to sync with Gatekeeper dashboard
+  /// Uses visitor_id in the PATCH endpoint with allow_status payload
+  Future<void> _updateVisitorLogForSelfEntry(String visitorId,
+      {int retryCount = 0}) async {
+    try {
+      log("=== VISITOR LOG PATCH API DEBUG ===");
+      log("Visitor ID: $visitorId");
+      log("Retry Count: $retryCount");
+
+      final Dio dio = Dio();
+      final String apiUrl =
+          '${ApiUrls.gateBaseUrl}/visitor/visitorLog/$visitorId';
+
+      log("PATCH API URL: $apiUrl");
+
+      // Prepare payload with allow_status as per API specification
+      final Map<String, dynamic> patchData = {
+        "allow_status": "allowed_by_gatekeeper"
+      };
+
+      log("PATCH Payload: ${json.encode(patchData)}");
+
+      // Make the PATCH request using visitor_id
+      final Response response = await dio.patch(
+        apiUrl,
+        data: patchData,
+        options: Options(
+          headers: {
+            'user-agent': 'Dart/3.9 (dart:io)',
+            'content-type': 'application/json',
+            'accept-encoding': 'gzip',
+            'authorization':
+                'Bearer ${await _getAccessToken() ?? "accessToken"}',
+            'host': 'gateapi.cubeone.in',
+          },
+        ),
+      );
+
+      log("PATCH Response Status: ${response.statusCode}");
+      log("PATCH Response: ${response.data}");
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        log("✅ Self Entry visitor log PATCH successful - visitor_id: $visitorId");
+        log("✅ Visitor status updated to 'allowed_by_gatekeeper'");
+      } else {
+        log("❌ PATCH API returned unexpected status: ${response.statusCode}");
+        throw Exception("PATCH API failed with status: ${response.statusCode}");
+      }
+    } on DioException catch (e) {
+      log("❌ Dio Error in PATCH API: ${e.message}");
+      if (e.response != null) {
+        log("PATCH Error Response: ${e.response?.data}");
+        log("PATCH Error Status: ${e.response?.statusCode}");
+      }
+
+      // Retry once if this is the first attempt
+      if (retryCount == 0) {
+        log("🔄 Retrying PATCH API with visitor_id: $visitorId (attempt 2/2)");
+        await Future.delayed(
+            const Duration(seconds: 1)); // Brief delay before retry
+        await _updateVisitorLogForSelfEntry(visitorId, retryCount: 1);
+      } else {
+        log("❌ PATCH API failed after retry. Continuing with flow to not block user experience.");
+      }
+    } catch (e, stackTrace) {
+      log("❌ Unexpected error in PATCH API: $e");
+      log("Stack trace: $stackTrace");
+
+      // Retry once if this is the first attempt
+      if (retryCount == 0) {
+        log("🔄 Retrying PATCH API after unexpected error with visitor_id: $visitorId (attempt 2/2)");
+        await Future.delayed(
+            const Duration(seconds: 1)); // Brief delay before retry
+        await _updateVisitorLogForSelfEntry(visitorId, retryCount: 1);
+      } else {
+        log("❌ PATCH API failed after retry due to unexpected error. Continuing with flow to not block user experience.");
+      }
+    }
   }
 
   /// Verify OTP for a mobile number

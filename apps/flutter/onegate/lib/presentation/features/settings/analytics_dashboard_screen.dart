@@ -4,6 +4,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/crash_reporting/analytics_service.dart';
 import 'package:flutter_onegate/services/crash_reporting/models/crash_models.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 /// Screen for viewing analytics data and user behavior metrics
 class AnalyticsDashboardScreen extends StatefulWidget {
@@ -17,12 +18,12 @@ class AnalyticsDashboardScreen extends StatefulWidget {
 class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
     with SingleTickerProviderStateMixin {
   final AnalyticsService _analyticsService = AnalyticsService();
-  
+
   late TabController _tabController;
   bool _isLoading = true;
   Map<String, dynamic> _statistics = {};
   List<AnalyticsEvent> _recentEvents = [];
-  
+
   @override
   void initState() {
     super.initState();
@@ -38,11 +39,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
 
   Future<void> _loadAnalyticsData() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final stats = _analyticsService.getAnalyticsStatistics();
       final events = _analyticsService.getEvents(limit: 50);
-      
+
       setState(() {
         _statistics = stats;
         _recentEvents = events;
@@ -71,7 +72,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          'Analytics Dashboard',
+          AppLocalizations.of(context)!.analyticsDashboard,
           style: TextStyle(
             color: const Color(0xff212427),
             fontWeight: FontWeight.w700,
@@ -102,19 +103,19 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
           tabs: [
             Tab(
               icon: Icon(Ionicons.stats_chart, size: isTablet ? 22 : 20),
-              text: 'Overview',
+              text: AppLocalizations.of(context)!.overview,
             ),
             Tab(
               icon: Icon(Ionicons.person, size: isTablet ? 22 : 20),
-              text: 'User Behavior',
+              text: AppLocalizations.of(context)!.userBehavior,
             ),
             Tab(
               icon: Icon(Ionicons.speedometer, size: isTablet ? 22 : 20),
-              text: 'Performance',
+              text: AppLocalizations.of(context)!.performance,
             ),
             Tab(
               icon: Icon(Ionicons.list, size: isTablet ? 22 : 20),
-              text: 'Events',
+              text: AppLocalizations.of(context)!.events,
             ),
           ],
         ),
@@ -161,7 +162,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             ),
             SizedBox(height: isTablet ? 24 : 20),
             Text(
-              'Loading analytics data...',
+              AppLocalizations.of(context)!.loadingAnalyticsData,
               style: TextStyle(
                 color: const Color(0xff57636C),
                 fontSize: isTablet ? 18 : 16,
@@ -294,7 +295,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   Widget _buildSessionInfoCard(bool isTablet) {
     final currentSessionId = _statistics['currentSessionId'];
     final sessionStartTime = _statistics['sessionStartTime'];
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -334,7 +335,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   Widget _buildEventCategoriesCard(bool isTablet) {
     final categoryCounts =
         _statistics['categoryCounts'] as Map<String, int>? ?? {};
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -653,7 +654,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
 
   Widget _buildApiPerformanceCard(List<AnalyticsEvent> events, bool isTablet) {
     final apiEvents = events.where((e) => e.eventName == 'api_call').toList();
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -702,8 +703,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                             color:
                                 (event.parameters['is_successful'] as bool? ??
                                         false)
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.red.withOpacity(0.1),
+                                    ? Colors.green.withOpacity(0.1)
+                                    : Colors.red.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -713,8 +714,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                               color:
                                   (event.parameters['is_successful'] as bool? ??
                                           false)
-                                  ? Colors.green
-                                  : Colors.red,
+                                      ? Colors.green
+                                      : Colors.red,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

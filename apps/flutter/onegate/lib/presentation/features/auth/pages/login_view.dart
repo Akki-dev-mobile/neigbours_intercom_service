@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class LoginScreen extends StatelessWidget {
   @override
@@ -13,14 +14,14 @@ class LoginScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("Login",
+                Text(AppLocalizations.of(context).login,
                     style: Theme.of(context).textTheme.headlineMedium),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: provider.isLoading ? null : () => provider.login(),
                   child: provider.isLoading
                       ? CircularProgressIndicator()
-                      : Text("Login"),
+                      : Text(AppLocalizations.of(context).login),
                 ),
                 if (provider.error != null)
                   Padding(

@@ -20,6 +20,8 @@ import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_l
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
@@ -54,7 +56,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
   final ScrollController _scrollController = ScrollController();
   final FocusNode _searchFocusNode = FocusNode();
   String? _searchText = '';
-  String? selectedBuilding = 'All Buildings';
+  String? selectedBuilding;
   String? selectedGateName;
   int? societyId;
   final GateStorage gateStorage = GateStorage();
@@ -74,6 +76,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
   // Track loading more state for pagination
   bool _isLoadingMore = false;
 
+  int current_page = 1;
+  final int per_page = 10;
+
   @override
   void initState() {
     super.initState();
@@ -81,6 +86,15 @@ class _VisitorLogViewState extends State<VisitorLogView>
     getSelectedGate();
     _initializeSocietyId();
     _initializeLogs();
+
+    // Initialize selectedBuilding after context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          selectedBuilding = context.l10n?.allBuildings ?? "All Buildings";
+        });
+      }
+    });
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
@@ -100,38 +114,31 @@ class _VisitorLogViewState extends State<VisitorLogView>
           }
 
           debugPrint(
-              "🔍 [SCROLL] Loading more data for page $nextPage with filter: $filterType");
-          debugPrint(
-              "🔍 [SCROLL] Filter type: $filterType, Section: $_currentSection");
+              "Loading more data for page $nextPage with filter: $filterType");
+          debugPrint("Filter type: $filterType, Section: $_currentSection");
 
           _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
             nextPage,
-            per_page, // Use the per_page variable (10)
+            per_page,
             filterType: filterType,
           ));
         } else {
-          debugPrint("📄 [UI] No more data to load - hasMoreData is false");
+          debugPrint("${context.l10n?.noMoreData ?? 'No more data'}");
         }
       } else {
         final currentState = _visitorLogBloc.state;
         debugPrint(
-            "📄 [UI] State is not VisitorLogSuccessState: ${currentState.runtimeType}");
+            "State is not VisitorLogSuccessState: ${currentState.runtimeType}");
       }
     });
-    // _storeTodayLogsCount(context);
   }
 
-  int current_page = 1;
-  final int per_page = 10;
-
-  // Add the missing _initializeLogs method
   void _initializeLogs() {
-    debugPrint(
-        "🎯 [UI] VisitorLogView initState called with widget.id: '${widget.id}'");
+    debugPrint("VisitorLogView initialized with ID: '${widget.id}'");
 
     switch (widget.id) {
       case "In Out Book":
-        debugPrint("🎯 [UI] Triggering FetchVisitorLogEvent for In Out Book");
+        debugPrint("Triggering FetchVisitorLogEvent for In Out Book");
         _currentSection = "ALL";
         _visitorLogBloc.add(FetchVisitorLogEvent(
           DateTime.now(),
@@ -140,7 +147,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
         ));
         break;
       case "Visitor In":
-        debugPrint("🎯 [UI] Triggering FetchCheckInLogEvent for Visitor In");
+        debugPrint("Triggering FetchCheckInLogEvent for Visitor In");
         _currentSection = "CHECK_IN";
         _visitorLogBloc.add(FetchCheckInLogEvent(
           DateTime.now(),
@@ -149,7 +156,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
         ));
         break;
       case "Cards":
-        debugPrint("🎯 [UI] Triggering FetchCheckOutLogEvent for Cards");
+        debugPrint("Triggering FetchCheckOutLogEvent for Cards");
         _currentSection = "CHECK_OUT";
         _visitorLogBloc.add(FetchCheckOutLogEvent(
           DateTime.now(),
@@ -158,7 +165,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
         ));
         break;
       case "Visitor Out":
-        debugPrint("🎯 [UI] Triggering FetchCheckOutLogEvent for Visitor Out");
+        debugPrint("Triggering FetchCheckOutLogEvent for Visitor Out");
         _currentSection = "CHECK_OUT";
         _visitorLogBloc.add(FetchCheckOutLogEvent(
           DateTime.now(),
@@ -183,7 +190,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
     // Set a new timer for debounced search
     _searchTimer = Timer(Duration(milliseconds: 500), () {
-      debugPrint("🔍 [SEARCH] Triggering search for: '$query'");
+      debugPrint(
+          "${context.l10n?.triggeringSearchFor ?? 'Triggering search for'}: '$query'"); // Localized
 
       // Trigger the appropriate BLoC event based on current section
       if (_currentSection == 'CHECK_IN') {
@@ -201,7 +209,6 @@ class _VisitorLogViewState extends State<VisitorLogView>
           searchQuery: query.isNotEmpty ? query : null,
         ));
       } else {
-        // Default to all visitor logs
         _visitorLogBloc.add(FetchVisitorLogEvent(
           DateTime.now(),
           currentPage: 1,
@@ -210,6 +217,44 @@ class _VisitorLogViewState extends State<VisitorLogView>
         ));
       }
     });
+  }
+
+  // Add method for handling search text changes
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchText = value;
+    });
+    _triggerSearch(value);
+  }
+
+  // Add method for loading initial data
+  void _loadInitialData() {
+    debugPrint("Loading initial data for: ${widget.id}");
+
+    switch (widget.id) {
+      case "In Out Book":
+        _visitorLogBloc.add(FetchVisitorLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: 10,
+        ));
+        break;
+      case "Visitor In":
+        _visitorLogBloc.add(FetchCheckInLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: 10,
+        ));
+        break;
+      case "Cards":
+      case "Visitor Out":
+        _visitorLogBloc.add(FetchCheckOutLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: 10,
+        ));
+        break;
+    }
   }
 
   Future<void> getSelectedGate() async {
@@ -263,8 +308,10 @@ class _VisitorLogViewState extends State<VisitorLogView>
             final successState = state as VisitorLogCheckOutSuccessState;
             if (successState.isCheckOut!) {
               _showEnhancedSuccessToast(
-                title: 'Check-Out Successful',
-                message: 'User has been checked out successfully',
+                title:
+                    context.l10n?.checkOutSuccessful ?? "Check-Out Successful",
+                message: context.l10n?.visitorCheckedOut ??
+                    "Visitor has been checked out successfully",
                 icon: Icons.logout_rounded,
               );
               _visitorLogBloc.add(FetchVisitorLogEvent(DateTime.now()));
@@ -273,8 +320,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
           case VisitorCheckInLogSuccessState:
             _visitorLogBloc.add(FetchCheckInLogEvent(Utils.getCurrentTime()));
             _showEnhancedSuccessToast(
-              title: 'Check-Out Successful',
-              message: 'Visitor has been checked out successfully',
+              title: context.l10n.checkOutSuccessful,
+              message: context.l10n.visitorCheckedOut,
               icon: Icons.logout_rounded,
             );
             break;
@@ -343,7 +390,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
             // Filter by selected building if not "All Buildings"
             if (selectedBuilding != null &&
-                selectedBuilding != "All Buildings") {
+                selectedBuilding != context.l10n.allBuildings) {
               filteredVisitors = filteredVisitors.where((log) {
                 if (log.visitor_building_assignment != null &&
                     log.visitor_building_assignment!.isNotEmpty &&
@@ -444,7 +491,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                 pageTitleWidget: Hero(
                   tag: 'page_title',
                   child: Text(
-                    widget.id,
+                    _getLocalizedVisitorLogTitle(context, widget.id),
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
@@ -494,9 +541,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  const Text(
-                                    "Export",
-                                    style: TextStyle(
+                                  Text(
+                                    context.l10n.export,
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
@@ -524,7 +571,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                             focusNode: _searchFocusNode,
                             titleColor: Theme.of(context).colorScheme.onSurface,
                             hintColor: Theme.of(context).colorScheme.onSurface,
-                            hintText: 'Search Visitor',
+                            hintText: context.l10n.searchVisitor,
                             textCapitalization: TextCapitalization.words,
                             textInputAction: TextInputAction.search,
                             onFieldSubmitted: (value) {
@@ -833,7 +880,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Loading more visitors...',
+                  context.l10n.loadingMoreVisitors,
                   style: TextStyle(
                     fontSize: 14,
                     color: const Color(0xff57636C),
@@ -960,7 +1007,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Export Visitor Logs',
+                                context.l10n.exportVisitorLogs,
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineSmall
@@ -972,7 +1019,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Download logs for specified date range',
+                                context.l10n.downloadLogsForDateRange,
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -1025,7 +1072,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                   padding:
                                       const EdgeInsets.only(left: 4, bottom: 8),
                                   child: Text(
-                                    'Email Address',
+                                    context.l10n.emailAddress,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -1053,7 +1100,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                       color: Colors.black87,
                                     ),
                                     decoration: InputDecoration(
-                                      hintText: "Enter email for export",
+                                      hintText:
+                                          context.l10n.enterEmailForExport,
                                       hintStyle: TextStyle(
                                         color: Colors.grey[400],
                                         fontSize: 16,
@@ -1083,10 +1131,11 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                     ),
                                     validator: (value) {
                                       if (value!.isEmpty) {
-                                        return 'Please enter email';
+                                        return context.l10n.pleaseEnterEmail;
                                       }
                                       if (!value.contains('@')) {
-                                        return 'Please enter a valid email';
+                                        return context
+                                            .l10n.pleaseEnterValidEmail;
                                       }
                                       return null;
                                     },
@@ -1105,7 +1154,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                   padding:
                                       const EdgeInsets.only(left: 4, bottom: 8),
                                   child: Text(
-                                    'Date Range',
+                                    context.l10n.dateRange,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -1119,7 +1168,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                 FormField<DateTime>(
                                   validator: (value) {
                                     if (startDate == null) {
-                                      return "Please select a start date";
+                                      return context.l10n.pleaseSelectStartDate;
                                     }
                                     return null;
                                   },
@@ -1192,7 +1241,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                         ),
                                                       ),
                                                       dialogTheme:
-                                                          const DialogTheme(
+                                                          const DialogThemeData(
                                                         backgroundColor:
                                                             Colors.white,
                                                         elevation: 12,
@@ -1316,7 +1365,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                               .start,
                                                       children: [
                                                         Text(
-                                                          'From Date',
+                                                          context.l10n.fromDate,
                                                           style: TextStyle(
                                                             fontSize: 14,
                                                             fontWeight:
@@ -1334,7 +1383,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                                       'MMM dd, yyyy')
                                                                   .format(
                                                                       startDate!)
-                                                              : 'Select start date',
+                                                              : context.l10n
+                                                                  .selectStartDate,
                                                           style: TextStyle(
                                                             fontSize: 16,
                                                             fontWeight:
@@ -1387,11 +1437,12 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                 FormField<DateTime>(
                                   validator: (value) {
                                     if (endDate == null) {
-                                      return "Please select an end date";
+                                      return context.l10n.pleaseSelectEndDate;
                                     }
                                     if (startDate != null &&
                                         endDate!.isBefore(startDate!)) {
-                                      return "End date cannot be earlier than start date";
+                                      return context
+                                          .l10n.endDateCannotBeEarlier;
                                     }
                                     return null;
                                   },
@@ -1465,7 +1516,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                         ),
                                                       ),
                                                       dialogTheme:
-                                                          const DialogTheme(
+                                                          const DialogThemeData(
                                                         backgroundColor:
                                                             Colors.white,
                                                         elevation: 12,
@@ -1584,7 +1635,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                               .start,
                                                       children: [
                                                         Text(
-                                                          'To Date',
+                                                          context.l10n.toDate,
                                                           style: TextStyle(
                                                             fontSize: 14,
                                                             fontWeight:
@@ -1602,7 +1653,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                                       'MMM dd, yyyy')
                                                                   .format(
                                                                       endDate!)
-                                                              : 'Select end date',
+                                                              : context.l10n
+                                                                  .selectEndDate,
                                                           style: TextStyle(
                                                             fontSize: 16,
                                                             fontWeight:
@@ -1823,7 +1875,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), // Close dialog
-              child: const Text("OK"),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         );
@@ -2380,61 +2432,106 @@ class _VisitorLogViewState extends State<VisitorLogView>
   void _showEnhancedSuccessToast({
     required String title,
     required String message,
-    IconData? icon,
+    required IconData icon,
   }) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          padding:
+              EdgeInsets.symmetric(vertical: isTablet ? 12 : 10, horizontal: 4),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(isTablet ? 12 : 10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.3),
+                      Colors.white.withOpacity(0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Icon(
-                  icon ?? Icons.check_circle_rounded,
+                  icon,
                   color: Colors.white,
-                  size: 24,
+                  size: isTablet ? 28 : 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: isTablet ? 16 : 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.white,
+                          size: isTablet ? 18 : 16,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isTablet ? 16 : 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       message,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.95),
+                        fontSize: isTablet ? 14 : 12,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white,
+                  size: isTablet ? 16 : 14,
                 ),
               ),
             ],
           ),
         ),
-        backgroundColor: Colors.green.shade600,
+        backgroundColor: Color(0xFF2E7D32), // Rich green color
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
         ),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(milliseconds: 3000),
+        margin: EdgeInsets.all(isTablet ? 20 : 16),
+        duration: const Duration(seconds: 4),
         elevation: 8,
       ),
     );
@@ -2854,6 +2951,21 @@ class _VisitorLogViewState extends State<VisitorLogView>
       ),
     );
   }
+
+  String _getLocalizedVisitorLogTitle(BuildContext context, String id) {
+    switch (id) {
+      case 'In Out Book':
+        return context.l10n.visitorLogTitleInOutBook;
+      case 'Visitor In':
+        return context.l10n.visitorLogTitleVisitorIn;
+      case 'Visitor Out':
+        return context.l10n.visitorLogTitleVisitorOut;
+      case 'Cards':
+        return context.l10n.visitorLogTitleCards;
+      default:
+        return context.l10n.visitorLogTitleDefault;
+    }
+  }
 }
 
 class VisitorLogItem extends StatefulWidget {
@@ -2899,381 +3011,417 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
           .map((unit) => unit.toString())
           .join(', ');
     }
+
+    // Debug logging for initiated_from field
+    if (widget.visitorLog.initiated_from != null) {
+      print(
+          '🔍 [DEBUG] VisitorLogItem - initiated_from: ${widget.visitorLog.initiated_from}');
+      print(
+          '🔍 [DEBUG] VisitorLogItem - visitor name: ${widget.visitorLog.visitor?.name}');
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: Colors.grey.shade300,
-            width: 1,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ListTile(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VisitorDetailsScreen(
-                      image: widget.visitorLog.visitor!.visitor_image,
-                      unitList: unitList,
-                      visitorLog: widget.visitorLog,
-                    ),
-                  ),
-                );
-              },
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 8,
+      child: Stack(
+        children: [
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1,
               ),
-              leading: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: Colors.grey.shade200,
-                    width: 2,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VisitorDetailsScreen(
+                          image: widget.visitorLog.visitor!.visitor_image,
+                          unitList: unitList,
+                          visitorLog: widget.visitorLog,
+                        ),
+                      ),
+                    );
+                  },
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
                   ),
-                ),
-                child: CircleAvatar(
-                  radius: 26,
-                  backgroundImage: widget
-                              .visitorLog.visitor!.visitor_image!.isNotEmpty &&
-                          widget.visitorLog.visitor!.visitor_image != null
-                      ? NetworkImage(
-                          widget.visitorLog.visitor!.visitor_image ?? "")
-                      : NetworkImage(
-                          'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                  child: widget.visitorLog.visitor!.visitor_image!.isEmpty
-                      ? Text(
-                          widget.visitorLog.visitor!.name!.isNotEmpty
-                              ? widget.visitorLog.visitor!.name![0]
-                              : 'G',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                  leading: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 26,
+                      backgroundImage: widget.visitorLog.visitor!.visitor_image!
+                                  .isNotEmpty &&
+                              widget.visitorLog.visitor!.visitor_image != null
+                          ? NetworkImage(
+                              widget.visitorLog.visitor!.visitor_image ?? "")
+                          : NetworkImage(
+                              'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                      child: widget.visitorLog.visitor!.visitor_image!.isEmpty
+                          ? Text(
+                              widget.visitorLog.visitor!.name!.isNotEmpty
+                                  ? widget.visitorLog.visitor!.name![0]
+                                  : 'G',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: const Color(0xffF44336),
                                   ),
-                        )
-                      : null,
-                ),
-              ),
-              title: Text(
-                widget.visitorLog.visitor!.name ?? 'Visitor Name',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xff212427),
-                      fontSize: 16,
-                      letterSpacing: 0.1,
+                            )
+                          : null,
                     ),
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                  ),
+                  title: Text(
+                    widget.visitorLog.visitor!.name ?? 'Visitor Name',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                          fontSize: 16,
+                          letterSpacing: 0.1,
+                        ),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffF44336).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color:
+                                      const Color(0xffF44336).withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                _getPurposeIcon(widget
+                                    .visitorLog.visitor_purpose_Category_name),
+                                color: const Color(0xffF44336),
+                                size: 15,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Flexible(
+                              child: Text(
+                                "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name?.toString() ?? "N/A")} ${_getUnitText()}",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      fontSize: 14,
+                                      color: const Color(0xff57636C),
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.2,
+                                      height: 1.4,
+                                    ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Divider(
+                  indent: 20,
+                  endIndent: 20,
+                  height: 24,
+                  thickness: 1,
+                  color: Colors.grey.shade200,
+                ),
+                Container(
+                  padding: const EdgeInsets.only(
+                      bottom: 16.0, top: 12, left: 20, right: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Tooltip(
+                        message: widget.visitorLog.visitor_check_in != null
+                            ? DateFormat('dd-MM-yyyy hh:mm a')
+                                .format(widget.visitorLog.visitor_check_in!)
+                            : "No check-in time",
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xffF44336).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: const Color(0xffF44336).withOpacity(0.2),
+                              color: Colors.green.shade200,
                               width: 1,
                             ),
                           ),
-                          child: Icon(
-                            _getPurposeIcon(widget
-                                .visitorLog.visitor_purpose_Category_name),
-                            color: const Color(0xffF44336),
-                            size: 15,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Flexible(
-                          child: Text(
-                            "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name?.toString() ?? "N/A")} ${_getUnitText()}",
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  fontSize: 14,
-                                  color: const Color(0xff57636C),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.2,
-                                  height: 1.4,
-                                ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        )
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Divider(
-              indent: 20,
-              endIndent: 20,
-              height: 24,
-              thickness: 1,
-              color: Colors.grey.shade200,
-            ),
-            Container(
-              padding: const EdgeInsets.only(
-                  bottom: 16.0, top: 12, left: 20, right: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Tooltip(
-                    message: widget.visitorLog.visitor_check_in != null
-                        ? DateFormat('dd-MM-yyyy hh:mm a')
-                            .format(widget.visitorLog.visitor_check_in!)
-                        : "No check-in time",
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.green.shade200,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Symbols.directions_walk_rounded,
-                            color: Colors.green.shade600,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            widget.visitorLog.visitor_check_in != null
-                                ? Utils.convertDateTimeFormat(
-                                    widget.visitorLog.visitor_check_in!)
-                                : "N/A",
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Symbols.directions_walk_rounded,
+                                color: Colors.green.shade600,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                widget.visitorLog.visitor_check_in != null
+                                    ? Utils.convertDateTimeFormat(
+                                        widget.visitorLog.visitor_check_in!)
+                                    : "N/A",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: Colors.green.shade700,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                       letterSpacing: 0.3,
                                     ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                  widget.visitorLog.visitor_card_number != null
-                      ? Container(
+                      // Self Entry Badge for other self entry methods
+                      if (widget.visitorLog.initiated_from == "self_entry")
+                        Container(
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(
-                            vertical: 2,
-                            horizontal: 10,
+                            horizontal: 8,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: const [
-                                Color.fromRGBO(255, 236, 158, 0.8),
-                                Color.fromRGBO(255, 190, 168, 0.8),
+                              colors: [
+                                const Color(0xff4CAF50).withOpacity(0.1),
+                                const Color(0xff2E7D32).withOpacity(0.1),
                               ],
-                              begin: Alignment.topRight,
-                              end: Alignment.bottomLeft,
                             ),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Color.fromRGBO(255, 190, 168, 1),
+                              color: const Color(0xff4CAF50),
+                              width: 1,
                             ),
                           ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              widget.visitorLog.visitor_card_number != null
-                                  ? Lottie.asset(
-                                      'assets/json/idcard.json',
-                                      width: 30,
-                                      height: 30,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Icon(
-                                      Symbols.car_tag_rounded,
-                                      size: 30,
-                                      // color: Colors.red, // Optional color for the icon
-                                    ),
-                              const SizedBox(width: 5),
+                              Icon(
+                                Icons.smartphone,
+                                color: const Color(0xff4CAF50),
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
                               Text(
-                                widget.visitorLog.visitor_card_number != null
-                                    ? widget.visitorLog.visitor_card_number!
-                                    : 'N/A',
+                                "Self Entry",
                                 style: Theme.of(context)
                                     .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 14,
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: const Color(0xff4CAF50),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                      letterSpacing: 0.2,
                                     ),
                               ),
                             ],
                           ),
-                        )
-                      : Spacer(),
-                  (widget.visitorLog.visitor_check_out.toString().isEmpty ||
-                          widget.visitorLog.visitor_check_out.toString() ==
-                              'null')
-                      ? ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xffF44336),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                          ),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                final isTablet =
-                                    MediaQuery.of(context).size.width > 768;
-                                return Dialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                        ),
+                      widget.visitorLog.visitor_card_number != null
+                          ? Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2,
+                                horizontal: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: const [
+                                    Color.fromRGBO(255, 236, 158, 0.8),
+                                    Color.fromRGBO(255, 190, 168, 0.8),
+                                  ],
+                                  begin: Alignment.topRight,
+                                  end: Alignment.bottomLeft,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Color.fromRGBO(255, 190, 168, 1),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  widget.visitorLog.visitor_card_number != null
+                                      ? Lottie.asset(
+                                          'assets/json/idcard.json',
+                                          width: 30,
+                                          height: 30,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Icon(
+                                          Symbols.car_tag_rounded,
+                                          size: 30,
+                                          // color: Colors.red, // Optional color for the icon
+                                        ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    widget.visitorLog.visitor_card_number !=
+                                            null
+                                        ? widget.visitorLog.visitor_card_number!
+                                        : 'N/A',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 14,
+                                        ),
                                   ),
-                                  child: Container(
-                                    width: isTablet ? 500 : double.infinity,
-                                    constraints: BoxConstraints(
-                                      maxWidth: isTablet
-                                          ? 500
-                                          : MediaQuery.of(context).size.width *
-                                              0.9,
-                                      maxHeight:
-                                          MediaQuery.of(context).size.height *
+                                ],
+                              ),
+                            )
+                          : Spacer(),
+                      (widget.visitorLog.visitor_check_out.toString().isEmpty ||
+                              widget.visitorLog.visitor_check_out.toString() ==
+                                  'null')
+                          ? ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xffF44336),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                              ),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    final isTablet =
+                                        MediaQuery.of(context).size.width > 768;
+                                    return Dialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Container(
+                                        width: isTablet ? 500 : double.infinity,
+                                        constraints: BoxConstraints(
+                                          maxWidth: isTablet
+                                              ? 500
+                                              : MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.9,
+                                          maxHeight: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
                                               0.8,
-                                    ),
-                                    padding: EdgeInsets.all(isTablet ? 32 : 24),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Confirm Checkout',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge
-                                              ?.copyWith(
-                                                fontSize: isTablet ? 24 : 20,
-                                                fontWeight: FontWeight.w700,
-                                                color: const Color(0xff212427),
-                                              ),
                                         ),
-                                        SizedBox(height: isTablet ? 24 : 20),
-                                        Container(
-                                          padding: EdgeInsets.all(
-                                              isTablet ? 16 : 12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.amber[50],
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Colors.amber[100]!,
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.info_outline_rounded,
-                                                color: Colors.amber[700],
-                                                size: isTablet ? 24 : 20,
-                                              ),
-                                              SizedBox(
-                                                  width: isTablet ? 16 : 12),
-                                              Expanded(
-                                                child: Text(
-                                                  'This action will permanently record the checkout time and cannot be undone.',
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color:
-                                                            Colors.amber[800],
-                                                        fontSize:
-                                                            isTablet ? 15 : 13,
-                                                        height: 1.4,
-                                                      ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        SizedBox(height: isTablet ? 32 : 28),
-                                        Row(
+                                        padding:
+                                            EdgeInsets.all(isTablet ? 32 : 24),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Expanded(
-                                              child: OutlinedButton(
-                                                style: OutlinedButton.styleFrom(
-                                                  padding: EdgeInsets.symmetric(
-                                                    vertical:
-                                                        isTablet ? 16 : 14,
-                                                  ),
-                                                  side: const BorderSide(
-                                                    color: Color(0xff57636C),
-                                                    width: 1,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            10),
-                                                  ),
-                                                ),
-                                                onPressed: () =>
-                                                    Navigator.pop(context),
-                                                child: Text(
-                                                  'Cancel',
-                                                  style: TextStyle(
-                                                    color:
-                                                        const Color(0xff57636C),
-                                                    fontWeight: FontWeight.w600,
+                                            Text(
+                                              'Confirm Checkout',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleLarge
+                                                  ?.copyWith(
                                                     fontSize:
-                                                        isTablet ? 16 : 14,
+                                                        isTablet ? 24 : 20,
+                                                    fontWeight: FontWeight.w700,
+                                                    color:
+                                                        const Color(0xff212427),
                                                   ),
+                                            ),
+                                            SizedBox(
+                                                height: isTablet ? 24 : 20),
+                                            Container(
+                                              padding: EdgeInsets.all(
+                                                  isTablet ? 16 : 12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber[50],
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: Colors.amber[100]!,
+                                                  width: 1,
                                                 ),
                                               ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.info_outline_rounded,
+                                                    color: Colors.amber[700],
+                                                    size: isTablet ? 24 : 20,
+                                                  ),
+                                                  SizedBox(
+                                                      width:
+                                                          isTablet ? 16 : 12),
+                                                  Expanded(
+                                                    child: Text(
+                                                      'This action will permanently record the checkout time and cannot be undone.',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            color: Colors
+                                                                .amber[800],
+                                                            fontSize: isTablet
+                                                                ? 15
+                                                                : 13,
+                                                            height: 1.4,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                            SizedBox(width: isTablet ? 16 : 12),
-                                            Expanded(
-                                              child: StatefulBuilder(
-                                                builder: (context, setState) {
-                                                  bool isCheckingOut = false;
-                                                  return ElevatedButton(
-                                                    style: ElevatedButton
+                                            SizedBox(
+                                                height: isTablet ? 32 : 28),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: OutlinedButton(
+                                                    style: OutlinedButton
                                                         .styleFrom(
-                                                      backgroundColor:
-                                                          const Color(
-                                                              0xffF44336),
-                                                      foregroundColor:
-                                                          Colors.white,
-                                                      elevation: 0,
                                                       padding:
                                                           EdgeInsets.symmetric(
                                                         vertical:
                                                             isTablet ? 16 : 14,
+                                                      ),
+                                                      side: const BorderSide(
+                                                        color:
+                                                            Color(0xff57636C),
+                                                        width: 1,
                                                       ),
                                                       shape:
                                                           RoundedRectangleBorder(
@@ -3282,190 +3430,295 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                                 .circular(10),
                                                       ),
                                                     ),
-                                                    onPressed: isCheckingOut
-                                                        ? null
-                                                        : () async {
-                                                            setState(() =>
-                                                                isCheckingOut =
-                                                                    true);
-                                                            await Future.delayed(
-                                                                const Duration(
-                                                                    milliseconds:
-                                                                        800));
-                                                            Navigator.of(
-                                                                    context)
-                                                                .pop();
-                                                            widget.onCheckOut();
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                              SnackBar(
-                                                                content: Row(
-                                                                  children: [
-                                                                    Container(
-                                                                      padding:
-                                                                          const EdgeInsets
+                                                    onPressed: () =>
+                                                        Navigator.pop(context),
+                                                    child: Text(
+                                                      'Cancel',
+                                                      style: TextStyle(
+                                                        color: const Color(
+                                                            0xff57636C),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize:
+                                                            isTablet ? 16 : 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                    width: isTablet ? 16 : 12),
+                                                Expanded(
+                                                  child: StatefulBuilder(
+                                                    builder:
+                                                        (context, setState) {
+                                                      bool isCheckingOut =
+                                                          false;
+                                                      return ElevatedButton(
+                                                        style: ElevatedButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              const Color(
+                                                                  0xffF44336),
+                                                          foregroundColor:
+                                                              Colors.white,
+                                                          elevation: 0,
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                            vertical: isTablet
+                                                                ? 16
+                                                                : 14,
+                                                          ),
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        10),
+                                                          ),
+                                                        ),
+                                                        onPressed: isCheckingOut
+                                                            ? null
+                                                            : () async {
+                                                                setState(() =>
+                                                                    isCheckingOut =
+                                                                        true);
+                                                                await Future.delayed(
+                                                                    const Duration(
+                                                                        milliseconds:
+                                                                            800));
+                                                                Navigator.of(
+                                                                        context)
+                                                                    .pop();
+                                                                widget
+                                                                    .onCheckOut();
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
+                                                                  SnackBar(
+                                                                    content:
+                                                                        Row(
+                                                                      children: [
+                                                                        Container(
+                                                                          padding: const EdgeInsets
                                                                               .all(
                                                                               8),
-                                                                      decoration:
-                                                                          BoxDecoration(
-                                                                        color: Colors
-                                                                            .white
-                                                                            .withOpacity(0.2),
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(8),
-                                                                      ),
-                                                                      child:
-                                                                          const Icon(
-                                                                        Icons
-                                                                            .check_circle_rounded,
-                                                                        color: Colors
-                                                                            .white,
-                                                                        size:
-                                                                            20,
-                                                                      ),
-                                                                    ),
-                                                                    const SizedBox(
-                                                                        width:
-                                                                            12),
-                                                                    const Expanded(
-                                                                      child:
-                                                                          Text(
-                                                                        'Visitor checked out successfully',
-                                                                        style: TextStyle(
+                                                                          decoration:
+                                                                              BoxDecoration(
                                                                             color:
-                                                                                Colors.white),
-                                                                      ),
+                                                                                Colors.white.withOpacity(0.2),
+                                                                            borderRadius:
+                                                                                BorderRadius.circular(8),
+                                                                          ),
+                                                                          child:
+                                                                              const Icon(
+                                                                            Icons.check_circle_rounded,
+                                                                            color:
+                                                                                Colors.white,
+                                                                            size:
+                                                                                20,
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            width:
+                                                                                12),
+                                                                        const Expanded(
+                                                                          child:
+                                                                              Text(
+                                                                            'Visitor checked out successfully',
+                                                                            style:
+                                                                                TextStyle(color: Colors.white),
+                                                                          ),
+                                                                        ),
+                                                                      ],
                                                                     ),
-                                                                  ],
-                                                                ),
-                                                                backgroundColor:
-                                                                    Colors
-                                                                        .green,
-                                                                behavior:
-                                                                    SnackBarBehavior
-                                                                        .floating,
-                                                                margin:
-                                                                    const EdgeInsets
-                                                                        .all(
-                                                                        16),
-                                                                duration: const Duration(
-                                                                    milliseconds:
-                                                                        3000),
-                                                                elevation: 8,
-                                                              ),
-                                                            );
-                                                          },
-                                                    child: isCheckingOut
-                                                        ? SizedBox(
-                                                            width: isTablet
-                                                                ? 24
-                                                                : 22,
-                                                            height: isTablet
-                                                                ? 24
-                                                                : 22,
-                                                            child:
-                                                                const CircularProgressIndicator(
-                                                              valueColor:
-                                                                  AlwaysStoppedAnimation<
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .green,
+                                                                    behavior:
+                                                                        SnackBarBehavior
+                                                                            .floating,
+                                                                    margin:
+                                                                        const EdgeInsets
+                                                                            .all(
+                                                                            16),
+                                                                    duration: const Duration(
+                                                                        milliseconds:
+                                                                            3000),
+                                                                    elevation:
+                                                                        8,
+                                                                  ),
+                                                                );
+                                                              },
+                                                        child: isCheckingOut
+                                                            ? SizedBox(
+                                                                width: isTablet
+                                                                    ? 24
+                                                                    : 22,
+                                                                height: isTablet
+                                                                    ? 24
+                                                                    : 22,
+                                                                child:
+                                                                    const CircularProgressIndicator(
+                                                                  valueColor: AlwaysStoppedAnimation<
                                                                           Color>(
                                                                       Colors
                                                                           .white),
-                                                              strokeWidth: 2.5,
-                                                            ),
-                                                          )
-                                                        : Text(
-                                                            'Confirm',
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.white,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: isTablet
-                                                                  ? 16
-                                                                  : 14,
-                                                              letterSpacing:
-                                                                  0.3,
-                                                            ),
-                                                          ),
-                                                  );
-                                                },
-                                              ),
+                                                                  strokeWidth:
+                                                                      2.5,
+                                                                ),
+                                                              )
+                                                            : Text(
+                                                                'Confirm',
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize:
+                                                                      isTablet
+                                                                          ? 16
+                                                                          : 14,
+                                                                  letterSpacing:
+                                                                      0.3,
+                                                                ),
+                                                              ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),
-                                      ],
-                                    ),
-                                  ),
+                                      ),
+                                    );
+                                  },
                                 );
                               },
-                            );
-                          },
-                          child: Text(
-                            'Checkout',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                  letterSpacing: 0.5,
+                              child: Text(
+                                'Checkout',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                      letterSpacing: 0.5,
+                                    ),
+                              ),
+                            )
+                          : Tooltip(
+                              message:
+                                  widget.visitorLog.visitor_check_out != null
+                                      ? DateFormat('dd-MM-yyyy hh:mm a').format(
+                                          widget.visitorLog.visitor_check_out!)
+                                      : "No check-out time",
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                          ),
-                        )
-                      : Tooltip(
-                          message: widget.visitorLog.visitor_check_out != null
-                              ? DateFormat('dd-MM-yyyy hh:mm a')
-                                  .format(widget.visitorLog.visitor_check_out!)
-                              : "No check-out time",
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xffF44336).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: const Color(0xffF44336).withOpacity(0.3),
-                                width: 1,
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color(0xffF44336).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xffF44336)
+                                        .withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Symbols.directions_walk_rounded,
+                                      color: const Color(0xffF44336),
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      widget.visitorLog.visitor_check_out !=
+                                              null
+                                          ? Utils.convertDateTimeFormat(widget
+                                              .visitorLog.visitor_check_out!)
+                                          : "N/A",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: const Color(0xffF44336),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                            letterSpacing: 0.3,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Symbols.directions_walk_rounded,
-                                  color: const Color(0xffF44336),
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  widget.visitorLog.visitor_check_out != null
-                                      ? Utils.convertDateTimeFormat(
-                                          widget.visitorLog.visitor_check_out!)
-                                      : "N/A",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: const Color(0xffF44336),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                        letterSpacing: 0.3,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Positioned Pre-approved Badge for top right corner
+          if (widget.visitorLog.initiated_from == "invited_guest" ||
+              widget.visitorLog.initiated_from == "qr_code_scan" ||
+              widget.visitorLog.initiated_from == "passcode_entry")
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xff2196F3),
+                      const Color(0xff1976D2),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xff2196F3).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.how_to_reg,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Pre-approved",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -1,17 +1,15 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gate_bu.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../../../generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/route_tracker.dart';
 
 enum RequestType {
   allowByGatekeeper,
@@ -25,6 +23,8 @@ class RequestPermissionPage2 extends StatefulWidget {
   final String? request;
   int? status;
   final bool? selfcheckinFlow;
+  final bool?
+      isGatekeeperQRPasscodeEntry; // New parameter to distinguish Gatekeeper QR/Passcode entry
 
   RequestPermissionPage2(
       {Key? key,
@@ -34,7 +34,8 @@ class RequestPermissionPage2 extends StatefulWidget {
       this.visitorLog,
       this.unitList,
       this.status,
-      this.selfcheckinFlow})
+      this.selfcheckinFlow,
+      this.isGatekeeperQRPasscodeEntry})
       : super(key: key);
 
   @override
@@ -45,18 +46,40 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   final bool _isUploading = false;
   final double _uploadProgress = 0;
   bool? self;
-  static const Map<RequestType, String> lottieAnimations = {
+  // Different Lottie animations for Express Entry vs Gatekeeper flows
+  static const Map<RequestType, String> expressEntryLottieAnimations = {
     RequestType.allowByGatekeeper:
-        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z',
+        'https://assets.lottiefiles.com/packages/lf20_jcikwtux.json', // Pre-approval animation
   };
 
-  String requestMessages(RequestType type) {
+  static const Map<RequestType, String> gatekeeperLottieAnimations = {
+    RequestType.allowByGatekeeper:
+        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z', // Original gatekeeper animation
+  };
+
+  String requestMessages(BuildContext context, RequestType type) {
+    final l10n = AppLocalizations.of(context)!;
     return {
-          RequestType.allowByGatekeeper: self == true
-              ? "Visitor is Self Check In"
-              : "Visitor is allowed by gatekeeper",
+          RequestType.allowByGatekeeper: _shouldUseExpressEntryText()
+              ? l10n
+                  .visitorIsAllowedByGatekeeper // Express Entry or Gatekeeper QR/Passcode: "Visitor is pre-approved by member"
+              : l10n
+                  .visitorIsAllowedByGatekeeperOriginal, // Gatekeeper Mobile: "Visitor is allowed by gatekeeper" (original text)
         }[type] ??
-        "Unknown request type";
+        l10n.unknownRequestType;
+  }
+
+  // Helper method to determine if we should use Express Entry text and animation
+  bool _shouldUseExpressEntryText() {
+    // Express Entry flow
+    if (self == true) return true;
+
+    // Gatekeeper QR/Passcode entry flow
+    if (self == false && widget.isGatekeeperQRPasscodeEntry == true)
+      return true;
+
+    // Gatekeeper Mobile entry flow (default)
+    return false;
   }
 
   static const Map<RequestType, Color> _requestMessagesColor = {
@@ -67,10 +90,241 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   void initState() {
     super.initState();
     self = widget.selfcheckinFlow;
+    _trackExpressEntryRoute();
+  }
+
+  // Track that user is in express entry flow
+  Future<void> _trackExpressEntryRoute() async {
+    if (widget.selfcheckinFlow == true) {
+      await RouteTracker.saveCurrentRoute(
+        'RequestPermissionPage2',
+        isExpressEntry: true,
+      );
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible:
+          false, // Dialog cannot be dismissed by tapping outside
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Success Icon with OneGate theme
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xff4CAF50),
+                          const Color(0xff2E7D32),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xff4CAF50).withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Colors.white,
+                      size: 60,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Title with OneGate typography
+                  Text(
+                    'Success!',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          const Color(0xff212427), // OneGate primary text color
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Subtitle
+                  Text(
+                    'Your visit has been processed',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color:
+                          const Color(0xff57636C), // OneGate muted text color
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Message container with OneGate styling
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFFEBE6)
+                          .withOpacity(0.3), // OneGate primary container color
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xffF44336)
+                            .withOpacity(0.1), // OneGate red color
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildMessageRow(
+                            '✅ Your visitor entry has been successfully recorded.'),
+                        const SizedBox(height: 16),
+                        _buildMessageRow(
+                            '🏷️ Please ask the receptionist to assign an access card for you.'),
+                        const SizedBox(height: 16),
+                        _buildMessageRow(
+                            '🚪 This will allow easy access to the lift and your designated floor.'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // OK Button with OneGate theme
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xff212427), // OneGate primary text color
+                          Color(0xff57636C), // OneGate muted text color
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close dialog
+                        // Navigate based on flow type
+                        if (self == true) {
+                          // Express Entry flow - navigate to express entry dashboard
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SelfHomeView(),
+                            ),
+                            (Route<dynamic> route) => false,
+                          );
+                        } else {
+                          // Gatekeeper flow - navigate to gatekeeper dashboard
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const GateDashboardView(),
+                            ),
+                            (Route<dynamic> route) => false,
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMessageRow(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.5,
+              color: const Color(0xff212427), // OneGate primary text color
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     const requestType = RequestType.allowByGatekeeper;
     log(widget.status.toString());
     return LoadingOverlay(
@@ -89,19 +343,21 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
               padding: const EdgeInsets.only(left: 8.0),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () => widget.selfcheckinFlow == true
-                    ? Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SelfHomeView(),
-                        ),
-                      )
-                    : Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const GateDashboardView(),
-                        ),
+                onTap: () {
+                  if (self == true) {
+                    // Express Entry flow - show success dialog
+                    _showSuccessDialog();
+                  } else {
+                    // Gatekeeper flow (both mobile and QR/Passcode) - navigate directly without dialog
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GateDashboardView(),
                       ),
+                      (Route<dynamic> route) => false,
+                    );
+                  }
+                },
                 child: Container(
                   decoration: BoxDecoration(
                     color: const Color(0xffF44336).withOpacity(0.1),
@@ -113,9 +369,9 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                 ),
               ),
             ),
-            title: const Text(
-              'Request',
-              style: TextStyle(
+            title: Text(
+              l10n.request,
+              style: const TextStyle(
                 color: Color(0xff212427),
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -183,25 +439,26 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                         ],
                       ),
                       child: TextButton.icon(
-                        onPressed: () => widget.selfcheckinFlow == true
-                            ? Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SelfHomeView(),
-                                ),
-                              )
-                            : Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const GateDashboardView(),
-                                ),
+                        onPressed: () {
+                          if (self == true) {
+                            // Express Entry flow - show success dialog
+                            _showSuccessDialog();
+                          } else {
+                            // Gatekeeper flow (both mobile and QR/Passcode) - navigate directly without dialog
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const GateDashboardView(),
                               ),
+                              (Route<dynamic> route) => false,
+                            );
+                          }
+                        },
                         icon: const Icon(Icons.check_circle_outline,
                             color: Colors.white, size: 24),
-                        label: const Text(
-                          "Finish",
-                          style: TextStyle(
+                        label: Text(
+                          l10n.finish,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -288,9 +545,10 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                 ),
                 const SizedBox(height: 10),
                 _buildDetailRow(
+                  context: context,
                   icon: Icons.phone_outlined,
                   iconColor: Colors.green,
-                  label: "Mobile",
+                  label: AppLocalizations.of(context)!.mobile,
                   value: widget.visitor.mobile ?? "",
                 ),
                 const SizedBox(height: 10),
@@ -299,24 +557,26 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                   Column(
                     children: [
                       _buildDetailRow(
+                        context: context,
                         icon: Icons.location_on_outlined,
                         iconColor: Colors.orange,
-                        label: "Coming From",
+                        label: AppLocalizations.of(context)!.comingFrom,
                         value: widget.visitorLog?.visitor_coming_from ??
-                            "Not specified",
+                            AppLocalizations.of(context)!.notSpecified,
                       ),
                       const SizedBox(height: 10),
                     ],
                   ),
                 _buildDetailRow(
+                  context: context,
                   icon: _getPurposeIcon(
                       widget.visitorLog?.visitor_purpose_Category_name),
                   iconColor: Colors.orange,
-                  label: "Purpose",
+                  label: AppLocalizations.of(context)!.purpose,
                   value: widget.visitor.isStaff == true
-                      ? "Staff"
+                      ? AppLocalizations.of(context)!.staff
                       : widget.visitorLog?.visitor_purpose_Category_name ??
-                          "Not specified",
+                          AppLocalizations.of(context)!.notSpecified,
                 ),
               ],
             ),
@@ -327,6 +587,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   }
 
   Widget _buildDetailRow({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String label,
@@ -374,7 +635,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
           child: SizedBox(
             height: 250,
             child: Lottie.network(
-              lottieAnimations[requestType] ?? "",
+              _getLottieAnimationUrl(requestType),
               fit: BoxFit.contain,
             ),
           ),
@@ -385,7 +646,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
             baseColor: _requestMessagesColor[requestType]!,
             highlightColor: Colors.black45,
             child: Text(
-              requestMessages(requestType) ?? "",
+              requestMessages(context, requestType) ?? "",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,
@@ -397,6 +658,17 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
         ),
       ],
     );
+  }
+
+  String _getLottieAnimationUrl(RequestType requestType) {
+    // Use different animations based on flow type
+    if (_shouldUseExpressEntryText()) {
+      // Express Entry flow or Gatekeeper QR/Passcode - use pre-approval animation
+      return expressEntryLottieAnimations[requestType] ?? "";
+    } else {
+      // Gatekeeper Mobile flow - use original gatekeeper animation
+      return gatekeeperLottieAnimations[requestType] ?? "";
+    }
   }
 
   IconData _getPurposeIcon(String? category) {
@@ -427,6 +699,7 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Stack(
       children: [
         child,
@@ -446,7 +719,7 @@ class LoadingOverlay extends StatelessWidget {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     Text(
-                      'Uploading... ${(progress * 100).toStringAsFixed(0)}%',
+                      "${l10n.uploading} ${(progress * 100).toStringAsFixed(0)}%",
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

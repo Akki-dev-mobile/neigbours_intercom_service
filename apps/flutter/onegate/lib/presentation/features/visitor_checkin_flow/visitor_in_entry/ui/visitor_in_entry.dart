@@ -26,9 +26,12 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visit
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/route_tracker.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
 import '../bloc/visitor_in_entry_bloc.dart';
@@ -38,8 +41,12 @@ class VisitorsInEntry extends StatefulWidget {
   final PurposeCategory1? selectedValue;
   final Visitor? searchedVisitor;
   final bool selfcheckinFlow;
-
   final String mobile;
+  final String? guestname;
+  final bool isFromQRScan;
+  final VisitorLog? visitorLog;
+  final bool?
+      isGatekeeperQRPasscodeEntry; // New parameter to distinguish Gatekeeper QR/Passcode entry
 
   VisitorsInEntry({
     Key? key,
@@ -48,6 +55,10 @@ class VisitorsInEntry extends StatefulWidget {
     this.comingfrom,
     this.selfcheckinFlow = false,
     required this.mobile,
+    this.guestname,
+    this.isFromQRScan = false,
+    this.visitorLog,
+    this.isGatekeeperQRPasscodeEntry,
   }) : super(key: key);
 
   @override
@@ -82,10 +93,21 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   final RemoteDataSource remoteDataSource = RemoteDataSource();
   String? selectedSubCategoryId;
 
+  // Track that user is in express entry flow
+  Future<void> _trackExpressEntryRoute() async {
+    if (widget.selfcheckinFlow) {
+      await RouteTracker.saveCurrentRoute(
+        'VisitorsInEntry',
+        isExpressEntry: true,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _initializeFocusNodes();
+    _trackExpressEntryRoute();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initializeControllers();
       // Auto-select first delivery company if available
@@ -131,20 +153,28 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     log("visitor_coming_from removed from SharedPreferences");
 
     // Initialize controllers with the fetched data
-    _guestNameController = TextEditingController(
-      text: widget.searchedVisitor?.name ?? "",
-    );
+    // If coming from QR scan, use the provided guestname, otherwise use searched visitor name
+    String guestName = "";
+    if (widget.isFromQRScan && widget.guestname != null) {
+      guestName = widget.guestname!;
+    } else {
+      guestName = widget.searchedVisitor?.name ?? "";
+    }
 
-    // Only set coming from value if we have a searched visitor
-    // This ensures the field is cleared for new visitors
-    _guestComingFromController = TextEditingController(
-      text: widget.searchedVisitor != null
-          ? (comingFrom ?? widget.comingfrom)
-          : "",
-    );
+    _guestNameController = TextEditingController(text: guestName);
+
+    // Set coming from value based on source
+    String comingFromValue = "";
+    if (widget.isFromQRScan && widget.visitorLog?.visitor_coming_from != null) {
+      comingFromValue = widget.visitorLog!.visitor_coming_from!;
+    } else if (widget.searchedVisitor != null) {
+      comingFromValue = comingFrom ?? widget.comingfrom ?? "";
+    }
+
+    _guestComingFromController = TextEditingController(text: comingFromValue);
 
     // Update coming from with value from gateStorage only if we have a searched visitor
-    if (widget.searchedVisitor != null) {
+    if (widget.searchedVisitor != null && !widget.isFromQRScan) {
       _guestComingFromController!.text =
           await gateStorage.getComingFrom() ?? "";
     }
@@ -248,32 +278,89 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     CameraController? cameraController;
 
     try {
+      // Check camera permission first
+      final cameraPermission = await Permission.camera.status;
+      if (cameraPermission.isDenied) {
+        final permissionResult = await Permission.camera.request();
+        if (permissionResult.isDenied || permissionResult.isPermanentlyDenied) {
+          _showEnhancedErrorToast(
+            'Camera Permission Required',
+            'Please enable camera permission in settings to take photos',
+            Icons.camera_alt_outlined,
+          );
+          return null;
+        }
+      }
+
       final cameraProvider =
           Provider.of<CameraSettingsProvider>(context, listen: false);
       final selectedCameraValue = cameraProvider.selectedCameraValue;
 
       // Fetch available cameras
       final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        _showEnhancedErrorToast(
+          'Camera Not Available',
+          'No cameras found on this device',
+          Icons.camera_alt_outlined,
+        );
+        return null;
+      }
+
       late CameraDescription selectedCamera;
 
       // Select the appropriate camera
       if (selectedCameraValue == 'front') {
-        selectedCamera = cameras.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.front,
-          orElse: () => throw Exception('Front camera not available'),
-        );
+        try {
+          selectedCamera = cameras.firstWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.front,
+          );
+        } catch (e) {
+          // Fallback to back camera if front camera not available
+          selectedCamera = cameras.firstWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.back,
+            orElse: () => cameras.first,
+          );
+          _showEnhancedErrorToast(
+            'Front Camera Unavailable',
+            'Using back camera instead',
+            Icons.camera_alt_outlined,
+          );
+        }
       } else {
-        selectedCamera = cameras.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.back,
-          orElse: () => throw Exception('Back camera not available'),
-        );
+        try {
+          selectedCamera = cameras.firstWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.back,
+          );
+        } catch (e) {
+          // Fallback to front camera if back camera not available
+          selectedCamera = cameras.firstWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.front,
+            orElse: () => cameras.first,
+          );
+          _showEnhancedErrorToast(
+            'Back Camera Unavailable',
+            'Using front camera instead',
+            Icons.camera_alt_outlined,
+          );
+        }
       }
 
       cameraController = CameraController(
         selectedCamera,
         ResolutionPreset.high,
+        enableAudio: false,
       );
-      await cameraController.initialize();
+
+      // Initialize camera with timeout
+      await cameraController.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Camera initialization timeout');
+        },
+      );
+
+      if (!mounted) return null;
 
       final XFile? image = await Navigator.push<XFile?>(
         context,
@@ -296,18 +383,42 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             "Image saved as: ${localImage.path.split('/').last}"); // Only prints filename
         return localImage;
       } else {
-        _showEnhancedErrorToast(
-          'Camera Capture Cancelled',
-          'Image capture was cancelled by the user',
-          Icons.camera_alt_outlined,
-        );
+        // User cancelled - this is normal, no need for error toast
+        print('Camera capture was cancelled by user');
         return null;
       }
     } catch (e) {
       print('Error capturing image: $e');
+
+      // Show appropriate error message based on error type
+      String errorTitle = 'Camera Error';
+      String errorMessage = 'Failed to capture image';
+
+      if (e.toString().contains('timeout')) {
+        errorTitle = 'Camera Initialization Failed';
+        errorMessage = 'Camera took too long to initialize. Please try again.';
+      } else if (e.toString().contains('Permission')) {
+        errorTitle = 'Permission Error';
+        errorMessage = 'Camera permission is required to take photos';
+      } else if (e.toString().contains('not available')) {
+        errorTitle = 'Camera Unavailable';
+        errorMessage = 'The selected camera is not available on this device';
+      } else {
+        errorMessage = 'An unexpected error occurred: ${e.toString()}';
+      }
+
+      _showEnhancedErrorToast(
+        errorTitle,
+        errorMessage,
+        Icons.error_outline,
+      );
       return null;
     } finally {
-      await cameraController?.dispose();
+      try {
+        await cameraController?.dispose();
+      } catch (e) {
+        print('Error disposing camera controller: $e');
+      }
     }
   }
 
@@ -397,7 +508,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     if (widget.selectedValue?.categoryName == 'VENDOR') {
       if ((_guestNameController?.text ?? "").isEmpty) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter the vendor\'s name to continue',
+          message: AppLocalizations.of(context).enterVendorName,
           field: 'Vendor Name Required',
         ));
         return false;
@@ -415,7 +526,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     else if (widget.selectedValue?.categoryName == 'CABS') {
       if ((_guestNameController?.text ?? "").isEmpty) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter the cab driver\'s name to continue',
+          message: AppLocalizations.of(context).enterCabDriverName,
           field: 'Cab Driver Name Required',
         ));
         return false;
@@ -433,7 +544,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     else if (widget.selectedValue?.categoryName == 'DELIVERY') {
       if ((_guestNameController?.text ?? "").isEmpty) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter the delivery person\'s name to continue',
+          message: AppLocalizations.of(context).enterDeliveryPersonName,
           field: 'Delivery Person Required',
         ));
         return false;
@@ -451,7 +562,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     else if (widget.selectedValue?.categoryName == 'GUEST') {
       if ((_guestNameController?.text ?? "").isEmpty) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter the guest\'s name to continue',
+          message: AppLocalizations.of(context).enterGuestName,
           field: 'Guest Name Required',
         ));
         return false;
@@ -479,7 +590,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         widget.selectedValue?.categoryName == 'MEMBER STAFF') {
       if ((_guestNameController?.text ?? "").isEmpty) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter the staff member\'s name to continue',
+          message: AppLocalizations.of(context).enterStaffName,
           field: 'Staff Name Required',
         ));
         return false;
@@ -610,7 +721,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             : null);
 
     if (effectivePurpose == null) {
-      return const Center(child: Text("No purpose selected or available."));
+      return Center(
+          child: Text(AppLocalizations.of(context)!.noPurposeSelected));
     }
 
     return BlocConsumer<VisitorInEntryBloc, VisitorInEntryState>(
@@ -688,42 +800,52 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
             await _updateVisitor(updatedVisitor);
           }
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UnitSelectionView(
-                widget.searchedVisitor,
-                visitor: state.visitor,
-                selfcheckinFlow: widget.selfcheckinFlow,
-                visitorId: widget.searchedVisitor?.id,
-                guestname: _guestNameController?.text ?? "",
-                mobileNumber: widget.mobile,
-                purposeCategory: state.purposeCategory,
-                purposeCategoryId:
-                    widget.selectedValue?.categoryId.toString() ??
-                        selectedCompanyIndex.toString(),
-                selectedSubCategoryId: selectedSubCategoryId,
-                comingFrom: _guestComingFromController?.text,
-                carNumber: _carNumberController?.text,
-                guestCount: _guestCount,
-                visitorNumber: _visitorNumberController?.text.isNotEmpty == true
-                    ? "V${_visitorNumberController!.text}"
-                    : (_visitorNumberController?.text.isEmpty == true
-                        ? null
-                        : _visitorNumberController?.text),
+          // If coming from QR scan, navigate to camera screen instead of unit selection
+          if (widget.isFromQRScan) {
+            // Trigger camera navigation by dispatching the camera event
+            _bloc.add(VIENavigateToCameraEvent(
+              purposeCategory: state.purposeCategory,
+              visitor: state.visitor,
+            ));
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UnitSelectionView(
+                  widget.searchedVisitor,
+                  visitor: state.visitor,
+                  selfcheckinFlow: widget.selfcheckinFlow,
+                  visitorId: widget.searchedVisitor?.id,
+                  guestname: _guestNameController?.text ?? "",
+                  mobileNumber: widget.mobile,
+                  purposeCategory: state.purposeCategory,
+                  purposeCategoryId:
+                      widget.selectedValue?.categoryId.toString() ??
+                          selectedCompanyIndex.toString(),
+                  selectedSubCategoryId: selectedSubCategoryId,
+                  comingFrom: _guestComingFromController?.text,
+                  carNumber: _carNumberController?.text,
+                  guestCount: _guestCount,
+                  visitorNumber:
+                      _visitorNumberController?.text.isNotEmpty == true
+                          ? "V${_visitorNumberController!.text}"
+                          : (_visitorNumberController?.text.isEmpty == true
+                              ? null
+                              : _visitorNumberController?.text),
+                ),
               ),
-            ),
-          );
+            );
+          }
 
           setState(() => _isSubmitting = false);
         } else if (state is VIENavigateToCameraState) {
           // Ensure camera state navigation is handled correctly
           final imageFile = await _captureImageFromCamera(context);
-          final SharedPreferences prefs =
-              await SharedPreferences.getInstance(); // Get SharedPreferences
 
           if (imageFile != null) {
             // Dispatch the camera button pressed event
+            final SharedPreferences prefs =
+                await SharedPreferences.getInstance();
             var visitorId = prefs.getString('visitorId');
             state.visitor.id = int.parse(visitorId ?? "");
             _bloc.add(VIECameraButtonPressedEvent(
@@ -731,9 +853,34 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               imageFile: imageFile,
               visitor: state.visitor,
               operation: "update_visitor",
+              isFromQRScan: widget.isFromQRScan,
+              visitorLog: widget.visitorLog,
             ));
+          } else {
+            // Camera capture failed or was cancelled
+            // Error messages are already handled in _captureImageFromCamera method
+            // Reset the submitting state to allow user to try again
+            if (mounted) {
+              setState(() => _isSubmitting = false);
+            }
           }
-          // Note: Camera cancellation toast is already handled in _captureImageFromCamera method
+        } else if (state is VIENavigateToRequestScreenState) {
+          // Navigate to request screen after photo capture for QR scan flow
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RequestPermissionPage2(
+                status: widget.selfcheckinFlow ? 1 : 0,
+                visitor: state.visitor,
+                visitorLog: state.visitorLog,
+                request: 'allowByGatekeeper',
+                logID: state.visitorLog.visitor?.id.toString(),
+                selfcheckinFlow: widget.selfcheckinFlow,
+                isGatekeeperQRPasscodeEntry:
+                    widget.isGatekeeperQRPasscodeEntry ?? false,
+              ),
+            ),
+          );
         }
       },
       builder: (context, state) {
@@ -743,14 +890,15 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
         return MyScrollView(
           isScrollable: true,
-          pageTitle: 'Purpose Entry - ${effectivePurpose.categoryName}',
+          pageTitle:
+              '${AppLocalizations.of(context)!.purposeEntry} - ${effectivePurpose.categoryName}',
           pageBody: _buildPurposeForm(effectivePurpose),
           floatingActionButton: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             width: MediaQuery.of(context).size.width * 0.85,
             height: 60,
             child: CustomLargeBtn(
-              text: 'Next',
+              text: AppLocalizations.of(context)!.next,
               onPressed: _isSubmitting ? null : _handleSubmit,
               isLoading: _isSubmitting,
               useBlackToGreyGradient: true,
@@ -776,7 +924,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       case 'MEMBER STAFF':
         return _buildStaffForm();
       default:
-        return const Center(child: Text('Unknown Purpose'));
+        return Center(
+            child: Text(AppLocalizations.of(context)!.unknownPurpose));
     }
   }
 
@@ -839,22 +988,23 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Staff Information',
-                                style: TextStyle(
+                                AppLocalizations.of(context)!.staffInformation,
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xff212427),
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'Please fill in all the staff details',
-                                style: TextStyle(
+                                AppLocalizations.of(context)!
+                                    .pleaseFillStaffDetails,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   color: Color(0xff57636C),
                                   fontWeight: FontWeight.w400,
@@ -874,17 +1024,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         RichText(
-                          text: const TextSpan(
+                          text: TextSpan(
                             children: [
                               TextSpan(
-                                text: 'Staff Name',
-                                style: TextStyle(
+                                text: AppLocalizations.of(context)!.staffName,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xff212427),
                                 ),
                               ),
-                              TextSpan(
+                              const TextSpan(
                                 text: ' *',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -907,7 +1057,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             color: Color(0xff212427),
                           ),
                           decoration: InputDecoration(
-                            hintText: 'Enter staff name',
+                            hintText:
+                                AppLocalizations.of(context)!.enterStaffName,
                             hintStyle: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w400,
@@ -973,9 +1124,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Coming From',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.comingFrom,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Color(0xff212427),
@@ -993,7 +1144,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             color: Color(0xff212427),
                           ),
                           decoration: InputDecoration(
-                            hintText: 'Enter coming from location',
+                            hintText: AppLocalizations.of(context)!
+                                .enterComingFromLocation,
                             hintStyle: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w400,
@@ -1106,22 +1258,22 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Cab Information',
-                            style: TextStyle(
+                            AppLocalizations.of(context)!.cabInformation,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: Color(0xff212427),
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            'Please fill in all the cab details',
-                            style: TextStyle(
+                            AppLocalizations.of(context)!.pleaseFillCabDetails,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xff57636C),
                               fontWeight: FontWeight.w400,
@@ -1141,17 +1293,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     RichText(
-                      text: const TextSpan(
+                      text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Cab Driver Name',
-                            style: TextStyle(
+                            text: AppLocalizations.of(context)!.cabDriverName,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Color(0xff212427),
                             ),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text: ' *',
                             style: TextStyle(
                               fontSize: 16,
@@ -1174,7 +1326,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         color: Color(0xff212427),
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Enter cab driver name',
+                        hintText:
+                            AppLocalizations.of(context)!.enterCabDriverName,
                         hintStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -1239,17 +1392,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     RichText(
-                      text: const TextSpan(
+                      text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Cab Number',
-                            style: TextStyle(
+                            text: AppLocalizations.of(context)!.cabNumber,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Color(0xff212427),
                             ),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text: ' *',
                             style: TextStyle(
                               fontSize: 16,
@@ -1413,17 +1566,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           RichText(
-                            text: const TextSpan(
+                            text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: 'Delivery Person Name',
-                                  style: TextStyle(
+                                  text: AppLocalizations.of(context)!
+                                      .deliveryPersonName,
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: Color(0xff212427),
                                   ),
                                 ),
-                                TextSpan(
+                                const TextSpan(
                                   text: ' *',
                                   style: TextStyle(
                                     fontSize: 16,
@@ -1435,9 +1589,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            'Enter the name of the delivery person',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!
+                                .enterNameOfDeliveryPerson,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xff57636C),
                               fontWeight: FontWeight.w400,
@@ -1464,7 +1619,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     color: Color(0xff212427),
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Enter delivery person name',
+                    hintText:
+                        AppLocalizations.of(context)!.enterDeliveryPersonName,
                     hintStyle: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
@@ -1541,10 +1697,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Select Delivery Company',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.selectDeliveryCompany,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: Color(0xff212427),
@@ -1749,17 +1905,18 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           RichText(
-                            text: const TextSpan(
+                            text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: 'Vendor Name',
-                                  style: TextStyle(
+                                  text:
+                                      AppLocalizations.of(context)!.vendorName,
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: Color(0xff212427),
                                   ),
                                 ),
-                                TextSpan(
+                                const TextSpan(
                                   text: ' *',
                                   style: TextStyle(
                                     fontSize: 16,
@@ -1771,9 +1928,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            'Enter the name of the vendor',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.enterNameOfVendor,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xff57636C),
                               fontWeight: FontWeight.w400,
@@ -1800,7 +1957,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     color: Color(0xff212427),
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Enter vendor name',
+                    hintText: AppLocalizations.of(context)!.enterVendorName,
                     hintStyle: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
@@ -1877,10 +2034,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Select Vendor Category',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.selectVendorCategory,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: Color(0xff212427),
@@ -2055,22 +2212,23 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Guest Information',
-                            style: TextStyle(
+                            AppLocalizations.of(context)!.guestInformation,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: Color(0xff212427),
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            'Please fill in all the guest details',
-                            style: TextStyle(
+                            AppLocalizations.of(context)!
+                                .pleaseFillGuestDetails,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xff57636C),
                               fontWeight: FontWeight.w400,
@@ -2090,17 +2248,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     RichText(
-                      text: const TextSpan(
+                      text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Guest Name',
-                            style: TextStyle(
+                            text: AppLocalizations.of(context)!.guestName,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Color(0xff212427),
                             ),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text: ' *',
                             style: TextStyle(
                               fontSize: 16,
@@ -2123,7 +2281,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         color: Color(0xff212427),
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Enter guest name',
+                        hintText: AppLocalizations.of(context)!.enterGuestName,
                         hintStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -2190,9 +2348,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     RichText(
                       text: TextSpan(
                         children: [
-                          const TextSpan(
-                            text: 'Coming From',
-                            style: TextStyle(
+                          TextSpan(
+                            text: AppLocalizations.of(context)!.comingFrom,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Color(0xff212427),
@@ -2222,7 +2380,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         color: Color(0xff212427),
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Enter coming from location',
+                        hintText: AppLocalizations.of(context)!
+                            .enterComingFromLocation,
                         hintStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -2288,17 +2447,17 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       RichText(
-                        text: const TextSpan(
+                        text: TextSpan(
                           children: [
                             TextSpan(
-                              text: 'Visitor ID',
-                              style: TextStyle(
+                              text: AppLocalizations.of(context)!.visitorId,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xff212427),
                               ),
                             ),
-                            TextSpan(
+                            const TextSpan(
                               text: ' *',
                               style: TextStyle(
                                 fontSize: 16,
@@ -2322,7 +2481,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           color: Color(0xff212427),
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Enter visitor id',
+                          hintText:
+                              AppLocalizations.of(context)!.enterVisitorId,
                           hintStyle: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
@@ -2520,10 +2680,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   Widget _buildGuestCountField() {
+    final l10n = AppLocalizations.of(context)!;
     return CustomForm.textField(
-      "Guest Count",
+      l10n.guestCount,
       textController: _guestCountController,
-      hintText: 'Guest Count',
+      hintText: l10n.guestCount,
       keyboardType: TextInputType.number,
       titleColor: Theme.of(context).colorScheme.onSurface,
       hintColor: Theme.of(context).colorScheme.onPrimary,
@@ -2923,7 +3084,7 @@ class ListeningDialogState extends State<ListeningDialog>
                           onPressed: _retryListening,
                           icon: const Icon(Icons.refresh,
                               size: 20, color: Color(0xffF44336)),
-                          label: const Text('Retry'),
+                          label: Text(AppLocalizations.of(context)!.retry),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xffF44336),

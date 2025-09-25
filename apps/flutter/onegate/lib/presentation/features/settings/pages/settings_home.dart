@@ -25,6 +25,9 @@ import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/centralized_logout_service.dart';
 import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
+import 'package:flutter_onegate/services/language/language_provider.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:get_it/get_it.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
@@ -66,13 +69,25 @@ class _SettingsHomeState extends State<SettingsHome> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     selectedGateObj = _preferenceUtils.getSelectedGate();
     _preferenceUtils.getTooglevalue();
     getSelectedGate();
     getCameraValue();
+    _initializeLanguage();
     _initializeRole();
+  }
+
+  void _initializeLanguage() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final languageProvider =
+            Provider.of<LanguageProvider>(context, listen: false);
+        setState(() {
+          _languageValue = languageProvider.currentLanguageName;
+        });
+      }
+    });
   }
 
   void _enableKioskMode() async {
@@ -175,7 +190,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Select Camera',
+                                AppLocalizations.of(context).selectCamera,
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineSmall
@@ -187,7 +202,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Choose camera preference',
+                                AppLocalizations.of(context)!
+                                    .chooseCameraPreference,
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -290,8 +306,12 @@ class _SettingsHomeState extends State<SettingsHome> {
                                             const SizedBox(height: 4),
                                             Text(
                                               item.value == 'front'
-                                                  ? 'Use front-facing camera'
-                                                  : 'Use rear-facing camera',
+                                                  ? AppLocalizations.of(
+                                                          context)!
+                                                      .useFrontFacingCamera
+                                                  : AppLocalizations.of(
+                                                          context)!
+                                                      .useRearFacingCamera,
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
@@ -441,24 +461,26 @@ class _SettingsHomeState extends State<SettingsHome> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          const Expanded(
+                                          Expanded(
                                             child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  'Success!',
-                                                  style: TextStyle(
+                                                  AppLocalizations.of(context)!
+                                                      .success,
+                                                  style: const TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.w700,
                                                   ),
                                                 ),
-                                                SizedBox(height: 2),
+                                                const SizedBox(height: 2),
                                                 Text(
-                                                  'Camera setting updated successfully',
-                                                  style: TextStyle(
+                                                  AppLocalizations.of(context)!
+                                                      .cameraSettingUpdatedSuccessfully,
+                                                  style: const TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.w400,
@@ -512,10 +534,14 @@ class _SettingsHomeState extends State<SettingsHome> {
   }
 
   void _showLanguageSettings(BuildContext context) async {
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
+    String tempSelectedLanguageCode = languageProvider.currentLanguageCode;
+
     showModalBottomSheet(
       isScrollControlled: true,
       useSafeArea: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -524,166 +550,321 @@ class _SettingsHomeState extends State<SettingsHome> {
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
+          builder: (BuildContext context, StateSetter setModalState) {
+            final localizations = AppLocalizations.of(context);
             return Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white,
-                    Colors.red.shade50.withOpacity(0.3),
-                  ],
-                ),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Enhanced header
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.red.shade300,
-                          Colors.red.shade400,
+                          const Color(0xffF44336).withOpacity(0.08),
+                          const Color(0xffff5722).withOpacity(0.03),
                         ],
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
                       ),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: const Color(0xffF44336).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xffF44336).withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.language_rounded,
-                            color: Colors.white,
+                            color: Color(0xffF44336),
                             size: 24,
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
-                          child: Text(
-                            'Select Language',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                            ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                localizations?.selectLanguage ??
+                                    'Select Language',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xff212427),
+                                      fontSize: 20,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Choose your preferred language',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xff57636C),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ListView.builder(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shrinkWrap: true,
-                          itemCount: _languageItems.length,
-                          itemBuilder: (context, index) {
-                            final item = _languageItems[index];
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _languageValue == item.value
-                                      ? Colors.red.shade300
-                                      : Colors.grey.shade300,
-                                  width: _languageValue == item.value ? 2 : 1,
-                                ),
-                              ),
-                              child: RadioListTile<String>(
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                fillColor: WidgetStateProperty.all(
-                                    Colors.red.shade400),
-                                title: Text(
-                                  item.label,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        fontWeight: _languageValue == item.value
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
-                                        color: _languageValue == item.value
-                                            ? Colors.red.shade400
-                                            : Colors.grey.shade700,
-                                      ),
-                                ),
-                                value: item.value,
-                                groupValue: _languageValue,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _languageValue = value!;
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.only(top: 16),
+                        itemCount: languageProvider.supportedLanguages.length,
+                        itemBuilder: (context, index) {
+                          final language =
+                              languageProvider.supportedLanguages[index];
+                          final isSelected =
+                              tempSelectedLanguageCode == language['code'];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setModalState(() {
+                                    tempSelectedLanguageCode =
+                                        language['code']!;
                                   });
                                 },
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xffF44336)
+                                          : Colors.grey[200]!,
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              language['name']!,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xff212427),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              language['nativeName']!,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Color(0xff57636C),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? const Color(0xffF44336)
+                                              : Colors.transparent,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? const Color(0xffF44336)
+                                                : const Color(0xff57636C),
+                                            width: 2,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: isSelected
+                                            ? const Icon(
+                                                Icons.check,
+                                                size: 16,
+                                                color: Colors.white,
+                                              )
+                                            : null,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          width: double.infinity,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                Colors.red.shade400,
-                                Colors.red.shade500,
-                              ],
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xffF44336),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                side: const BorderSide(
+                                  color: Color(0xffF44336),
+                                  width: 1,
+                                ),
                               ),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _languageValue = _languageValue;
-                              });
-                              Navigator.pop(context);
-                            },
+                            onPressed: () => Navigator.of(context).pop(),
                             child: const Text(
-                              'Confirm',
+                              'Cancel',
                               style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
                                 fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 50.0),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Color(0xFF212427), // Black
+                                  Color(0xFF57636C), // Grey
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                if (tempSelectedLanguageCode !=
+                                    languageProvider.currentLanguageCode) {
+                                  final shouldChange = await languageProvider
+                                      .showLanguageChangeDialog(
+                                          context, tempSelectedLanguageCode);
+                                  if (shouldChange) {
+                                    try {
+                                      await languageProvider.changeLanguage(
+                                          tempSelectedLanguageCode);
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)
+                                                      ?.languageChanged ??
+                                                  'Language changed successfully',
+                                            ),
+                                            backgroundColor: Colors.green,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                        setState(() {
+                                          _languageValue = languageProvider
+                                              .currentLanguageName;
+                                        });
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                'Error changing language: $e'),
+                                            backgroundColor: Colors.red,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              child: Text(
+                                localizations?.confirm ?? 'Confirm',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1323,7 +1504,7 @@ class _SettingsHomeState extends State<SettingsHome> {
           (route) => false,
         );
       },
-      pageTitle: "Settings",
+      pageTitle: AppLocalizations.of(context)!.settings,
       pageBody: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: isTablet ? 24 : 16,
@@ -1337,15 +1518,15 @@ class _SettingsHomeState extends State<SettingsHome> {
             _buildEnhancedSectionHeader(
               context: context,
               isTablet: isTablet,
-              title: 'Gate Settings',
+              title: AppLocalizations.of(context)!.gateSettings,
               icon: Icons.settings_rounded,
             ),
             SizedBox(height: isTablet ? 16 : 12),
             // if (role == "admin" || role == "master")
             PrimarySettingsTile(
               icon: Ionicons.people_outline,
-              title: 'Staffs',
-              subtitle: 'View your society staffs',
+              title: "Staff",
+              subtitle: "View your society staff",
               onTap: () {
                 Navigator.push(
                   context,
@@ -1359,9 +1540,9 @@ class _SettingsHomeState extends State<SettingsHome> {
             if (role == "admin" || role == "master")
               PrimarySettingsTile(
                 icon: Ionicons.grid_outline,
-                title: 'Gate Settings',
-                subtitle:
-                    'Current Preference: ${selectedGateName ?? "Not Selected Gate"}',
+                title: AppLocalizations.of(context)!.gateSettings,
+                subtitle: AppLocalizations.of(context)!
+                    .currentPreference(selectedGateName ?? "Not Selected Gate"),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1374,8 +1555,8 @@ class _SettingsHomeState extends State<SettingsHome> {
             if (role == "admin" || role == "master")
               PrimarySettingsTile(
                 icon: Ionicons.person_outline,
-                title: 'Visitors and Vehicles Settings',
-                subtitle: 'All visitors will be auto approved',
+                title: AppLocalizations.of(context)!.visitorSettings,
+                subtitle: "Mark mandatory fields for visitors",
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1385,12 +1566,12 @@ class _SettingsHomeState extends State<SettingsHome> {
                   );
                 },
               ),
-            // Visitor Settings (for Admin and Master only)
+
             // if (role == "admin" || role == "master")
             PrimarySettingsTile(
               icon: Ionicons.people_outline,
-              title: 'Visitors Settings',
-              subtitle: 'Mark mandatory fields for visitors',
+              title: AppLocalizations.of(context)!.visitorSettings,
+              subtitle: "Mark mandatory fields for visitors",
               onTap: () {
                 Navigator.push(
                   context,
@@ -1400,37 +1581,22 @@ class _SettingsHomeState extends State<SettingsHome> {
                 );
               },
             ),
-            // if (role == "admin" || role == "master")
 
             PrimarySettingsTile(
               icon: Ionicons.time_outline,
-              title: 'Visitor Approval Time',
-              subtitle:
-                  'Current Preference: ${context.watch<VisitorApprovalTimeProvider>().approvalTime} seconds',
+              title: AppLocalizations.of(context)!.visitorApprovalTime,
+              subtitle: AppLocalizations.of(context)!.currentPreference(
+                  "${context.watch<VisitorApprovalTimeProvider>().approvalTime} seconds"),
               onTap: () {
                 _showVisitorApprovalTime(context);
               },
             ),
 
-            if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-                icon: Ionicons.alarm_outline,
-                title: 'Configure Duty Alarms',
-                subtitle: 'Enable/Disable Duty Alarms',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ConfigureDutyAlarms(),
-                    ),
-                  );
-                },
-              ),
             SizedBox(height: isTablet ? 32 : 24),
             _buildEnhancedSectionHeader(
               context: context,
               isTablet: isTablet,
-              title: 'Application Settings',
+              title: AppLocalizations.of(context)!.applicationSettings,
               icon: Icons.apps_rounded,
             ),
             SizedBox(height: isTablet ? 16 : 12),
@@ -1439,8 +1605,8 @@ class _SettingsHomeState extends State<SettingsHome> {
               if (role == "admin" || role == "master" || role == "gatekeeper")
                 PrimarySettingsTile(
                   icon: Ionicons.pulse_outline,
-                  title: 'Data Observability',
-                  subtitle: 'Monitor system health, search & notifications',
+                  title: "Data Observability",
+                  subtitle: "Monitor system health, search & notifications",
                   onTap: () {
                     Navigator.push(
                       context,
@@ -1454,71 +1620,38 @@ class _SettingsHomeState extends State<SettingsHome> {
             // Camera Settings (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,
-              title: 'Camera Settings',
-              subtitle:
-                  "Current Preference: ${context.watch<CameraSettingsProvider>().selectedCameraValue ?? "Not Selected Camera"}",
+              title: "Camera Settings",
+              subtitle: AppLocalizations.of(context)!.currentPreference(
+                  context.watch<CameraSettingsProvider>().selectedCameraValue ??
+                      "Not Selected Camera"),
               onTap: () {
                 _showCameraSettings(context);
               },
             ),
-            if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-                icon: Ionicons.file_tray_full_outline,
-                title: 'Data Storage',
-                subtitle:
-                    'Current Preference: ${_dataStorageValue ?? "6 Months"}',
-                onTap: () {
-                  _showDataStorage(context);
-                },
-              ),
-            if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-                icon: Ionicons.options_outline,
-                title: 'Configure Permissions',
-                subtitle: 'All Approved',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AppPermissions(),
-                    ),
-                  );
-                },
-              ),
-            // Self Entry Settings (for all roles)
-            // PrimarySettingsTile(
-            //   icon: Ionicons.options_outline,
-            //   title: 'Self Entry Settings',
-            //   subtitle: 'Enable/Disable Self Entry',
-            //   onTap: () {
-            //     _preferenceUtils.setIsSelfTapIn(true);
-            //     _enableKioskMode();
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //         builder: (context) => SelfHomeView(),
-            //       ),
-            //     );
-            //   },
-            // ),
-            if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-                icon: Ionicons.shield_half_outline,
-                title: 'Change Password',
-                subtitle: 'Change your password',
-                onTap: () {
-                  // Add password change logic here
-                },
-              ),
-            if (role == "admin" || role == "master")
-              PrimarySettingsTile(
-                icon: Ionicons.language_outline,
-                title: 'Change Language',
-                subtitle: 'Current Preference: ${_languageValue ?? "English"}',
-                onTap: () {
-                  _showLanguageSettings(context);
-                },
-              ),
+            // Language settings available for all users
+            PrimarySettingsTile(
+              icon: Ionicons.language_outline,
+              title: AppLocalizations.of(context)!.language,
+              subtitle: AppLocalizations.of(context)!.currentPreference(
+                  context.watch<LanguageProvider>().currentLanguageName),
+              onTap: () {
+                _showLanguageSettings(context);
+              },
+            ),
+            // Express Entry (enable from settings)
+            PrimarySettingsTile(
+              icon: Ionicons.person_outline,
+              title: 'Express Entry',
+              subtitle: 'Open express check-in options',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SelfHomeView(),
+                  ),
+                );
+              },
+            ),
             // Logout (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.log_out_outline,
@@ -1587,7 +1720,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Confirm Logout',
+                                          context.l10n?.confirmLogout ??
+                                              'Confirm Logout',
                                           style: TextStyle(
                                             fontSize: isTablet ? 24 : 20,
                                             fontWeight: FontWeight.w700,
@@ -1596,7 +1730,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                                         ),
                                         SizedBox(height: isTablet ? 6 : 4),
                                         Text(
-                                          'Security confirmation required',
+                                          context.l10n
+                                                  ?.securityConfirmationRequired ??
+                                              'Security confirmation required',
                                           style: TextStyle(
                                             fontSize: isTablet ? 14 : 13,
                                             color: const Color(0xff57636C),
@@ -1631,7 +1767,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Are you sure you want to logout?',
+                                          context.l10n?.logoutMessage ??
+                                              'Are you sure you want to logout?',
                                           style: TextStyle(
                                             fontSize: isTablet ? 18 : 16,
                                             fontWeight: FontWeight.w600,
@@ -1659,7 +1796,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
-                                                'You will need to sign in again to access your account.',
+                                                context.l10n
+                                                        ?.logoutDescription ??
+                                                    'You will need to sign in again to access your account.',
                                                 style: TextStyle(
                                                   fontSize: isTablet ? 15 : 13,
                                                   color:
@@ -1694,7 +1833,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                           onPressed: () =>
                                               Navigator.pop(context),
                                           child: Text(
-                                            'Cancel',
+                                            context.l10n?.cancel ?? 'Cancel',
                                             style: TextStyle(
                                               color: const Color(0xff57636C),
                                               fontWeight: FontWeight.w600,

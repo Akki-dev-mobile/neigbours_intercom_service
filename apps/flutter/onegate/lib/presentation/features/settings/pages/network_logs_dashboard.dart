@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class NetworkLogsDashboard extends StatefulWidget {
   final String serverUrl;
@@ -69,12 +70,12 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Network Logs Dashboard'),
+        title: Text(AppLocalizations.of(context)!.networkLogsDashboard),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _fetchLogs,
-            tooltip: 'Refresh Logs',
+            tooltip: AppLocalizations.of(context)!.refreshLogs,
           ),
         ],
       ),
@@ -101,7 +102,7 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
             ),
             const SizedBox(height: 16),
             Text(
-              'Error',
+              AppLocalizations.of(context)!.error,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
@@ -116,7 +117,7 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _fetchLogs,
-              child: const Text('Retry'),
+              child: Text(AppLocalizations.of(context)!.retry),
             ),
           ],
         ),
@@ -124,8 +125,8 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
     }
 
     if (_logs.isEmpty) {
-      return const Center(
-        child: Text('No network logs available'),
+      return Center(
+        child: Text(AppLocalizations.of(context)!.noNetworkLogs),
       );
     }
 
@@ -146,7 +147,8 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
     final method = log['method'] ?? 'GET';
     final url = log['url'] ?? '';
     final timestamp = log['timestamp'] != null
-        ? DateFormat('MMM dd, HH:mm:ss').format(DateTime.parse(log['timestamp']))
+        ? DateFormat('MMM dd, HH:mm:ss')
+            .format(DateTime.parse(log['timestamp']))
         : 'Unknown';
     final duration = log['duration'] != null ? '${log['duration']}ms' : 'N/A';
     final hasError = log['error'] != null;
@@ -176,8 +178,8 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusColor,
                       borderRadius: BorderRadius.circular(4),
@@ -192,8 +194,8 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.grey[800],
                       borderRadius: BorderRadius.circular(4),
@@ -267,7 +269,8 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
               mainAxisSize: MainAxisSize.min,
               children: [
                 AppBar(
-                  title: Text('${log['method']} ${log['url']?.split('/').last ?? ''}'),
+                  title: Text(
+                      '${log['method']} ${log['url']?.split('/').last ?? ''}'),
                   automaticallyImplyLeading: false,
                   actions: [
                     IconButton(

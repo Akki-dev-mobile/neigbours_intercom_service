@@ -34,11 +34,13 @@ import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_log
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/network_log/dio_provider.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../../generated/l10n/app_localizations.dart';
 
 import '../../../app_intro/ui/keyclock_login.dart';
 import '../../../parcel/ui/parcel_list.dart';
@@ -151,8 +153,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
       // Show a loading indicator
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Fetching data to generate network logs...')),
+          SnackBar(content: Text(context.l10n.fetchingDataForNetworkLogs)),
         );
       }
 
@@ -202,30 +203,16 @@ class _GateDashboardViewState extends State<GateDashboardView>
       listener: (context, state) async {
         switch (state.runtimeType) {
           case GDInAndOutButtonPressedState:
-            log('In and Out button pressed');
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) => VisitorLogView(
-            //       id: 'In Out Book',
-            //       logList: const [
-            //         "In Out Book",
-            //         "Visitor In",
-            //         "Visitor Out",
-            //       ],
-            //     ),
-            //   ),
-            // );
             await Navigator.push(
               context,
               PageTransition(
                 type: PageTransitionType.leftToRight,
                 child: VisitorLogView(
-                  id: 'In Out Book',
-                  logList: const [
-                    "In Out Book",
-                    "Visitor In",
-                    "Visitor Out",
+                  id: AppLocalizations.of(context)!.inOutBook,
+                  logList: [
+                    AppLocalizations.of(context)!.inOutBook,
+                    AppLocalizations.of(context)!.visitorIn,
+                    AppLocalizations.of(context)!.visitorOut,
                   ],
                 ),
               ),
@@ -237,11 +224,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
               PageTransition(
                 type: PageTransitionType.topToBottom,
                 child: VisitorLogView(
-                  id: 'Visitor In',
-                  logList: const [
-                    "In Out Book",
-                    "Visitor In",
-                    "Visitor Out",
+                  id: AppLocalizations.of(context)!.visitorIn,
+                  logList: [
+                    AppLocalizations.of(context)!.inOutBook,
+                    AppLocalizations.of(context)!.visitorIn,
+                    AppLocalizations.of(context)!.visitorOut,
                   ],
                 ),
               ),
@@ -253,11 +240,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
               PageTransition(
                 type: PageTransitionType.rightToLeft,
                 child: VisitorLogView(
-                  id: 'Visitor Out',
-                  logList: const [
-                    "In Out Book",
-                    "Visitor In",
-                    "Visitor Out",
+                  id: AppLocalizations.of(context)!.visitorOut,
+                  logList: [
+                    AppLocalizations.of(context)!.inOutBook,
+                    AppLocalizations.of(context)!.visitorIn,
+                    AppLocalizations.of(context)!.visitorOut,
                   ],
                 ),
               ),
@@ -365,7 +352,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
           SizedBox(width: isTablet ? 12 : 10),
           // Enhanced gate name with animation
           Hero(
-                    tag: 'gate_dashboard',
+            tag: 'gate_dashboard',
             child: AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 300),
               style: TextStyle(
@@ -374,15 +361,15 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.3,
               ),
-                    child: Text(
-                      selectedGateName
-                          .toString()
-                          .split(' ')
-                          .map((word) => word.isNotEmpty
-                              ? word[0].toUpperCase() +
-                                  word.substring(1).toLowerCase()
-                              : '')
-                          .join(' '),
+              child: Text(
+                selectedGateName
+                    .toString()
+                    .split(' ')
+                    .map((word) => word.isNotEmpty
+                        ? word[0].toUpperCase() +
+                            word.substring(1).toLowerCase()
+                        : '')
+                    .join(' '),
               ),
             ),
           ),
@@ -394,11 +381,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
           isTablet,
           icon: Icons.phone_missed_rounded,
           onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => MissedApprovalsScreen(
-                                    remoteDataSource: _remoteDataSource,
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MissedApprovalsScreen(
+                  remoteDataSource: _remoteDataSource,
                 ),
               ),
             );
@@ -410,14 +397,14 @@ class _GateDashboardViewState extends State<GateDashboardView>
           isTablet,
           icon: Icons.settings_rounded,
           onTap: () {
-                      Navigator.push(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.rightToLeft,
-                          child: SettingsHome(),
-                        ),
-                      );
-                    },
+            Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: SettingsHome(),
+              ),
+            );
+          },
         ),
         SizedBox(width: isTablet ? 20 : 16),
       ],
@@ -477,18 +464,18 @@ class _GateDashboardViewState extends State<GateDashboardView>
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 16 : 12,
         vertical: isTablet ? 8 : 6,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
           _buildEnhancedShortcut(
             context,
             isTablet,
             icon: Icons.phone_rounded,
-                            title: 'Intercom',
+            title: context.l10n.intercom,
             isPremium: true,
             isClickable: false, // Made non-clickable
-                            onTap: () {
+            onTap: () {
               // Removed navigation - now non-clickable
             },
           ),
@@ -496,111 +483,155 @@ class _GateDashboardViewState extends State<GateDashboardView>
             context,
             isTablet,
             icon: Icons.inventory_2_rounded,
-                            title: 'Parcel',
-                            hasNotification: hasPendingParcels,
-                            onTap: () async {
+            title: context.l10n.parcel,
+            hasNotification: hasPendingParcels,
+            onTap: () async {
               setState(() => hasPendingParcels = false);
-                              Navigator.of(context).push(
+              Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => ParcelList()),
-                              );
-                            },
-                          ),
+              );
+            },
+          ),
           _buildEnhancedShortcut(
             context,
             isTablet,
             icon: Icons.qr_code_scanner_rounded,
-                            title: 'Scan',
-                            onTap: () async {
-                              final scannedResult = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                  builder: (context) => QRScannerScreen(status: 1),
+            title: context.l10n.scan,
+            onTap: () async {
+              final scannedResult = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRScannerScreen(
+                    status: 1,
+                    isGatekeeperQRPasscodeEntry: true,
+                  ),
                 ),
-                              );
+              );
 
-                              if (scannedResult != null) {
+              if (scannedResult != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Container(
-                      padding: EdgeInsets.symmetric(vertical: isTablet ? 8 : 6),
+                      padding: EdgeInsets.symmetric(
+                          vertical: isTablet ? 12 : 10, horizontal: 4),
                       child: Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.all(isTablet ? 8 : 6),
+                            padding: EdgeInsets.all(isTablet ? 12 : 10),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.3),
+                                  Colors.white.withOpacity(0.1),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Icon(
-                              Icons.qr_code_rounded,
+                              Icons.qr_code_scanner_rounded,
                               color: Colors.white,
-                              size: isTablet ? 24 : 20,
+                              size: isTablet ? 28 : 24,
                             ),
                           ),
-                          SizedBox(width: isTablet ? 16 : 12),
+                          SizedBox(width: isTablet ? 16 : 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  'QR Code Scanned',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: isTablet ? 16 : 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      color: Colors.white,
+                                      size: isTablet ? 18 : 16,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      "QR Code Verified",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: isTablet ? 16 : 14,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                SizedBox(height: 4),
                                 Text(
                                   scannedResult,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withOpacity(0.95),
                                     fontSize: isTablet ? 14 : 12,
-                                    fontWeight: FontWeight.w400,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.2,
                                   ),
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
                           ),
+                          Container(
+                            padding: EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Colors.white,
+                              size: isTablet ? 16 : 14,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    backgroundColor: Colors.green.shade400,
+                    backgroundColor: Color(0xFF2E7D32), // Rich green color
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     margin: EdgeInsets.all(isTablet ? 20 : 16),
-                    duration: const Duration(seconds: 3),
+                    duration: const Duration(seconds: 4),
+                    elevation: 8,
                   ),
-                                );
-                              }
-                            },
-                          ),
-                          if (_visitorCardNumber == true)
+                );
+              }
+            },
+          ),
+          if (_visitorCardNumber == true)
             _buildEnhancedShortcut(
               context,
               isTablet,
               icon: Icons.badge_rounded,
-                              title: 'Cards',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  PageTransition(
-                                    type: PageTransitionType.leftToRight,
-                                    child: VisitorLogView(
-                                      id: 'Cards',
-                                      logList: const [
-                                        "In Out Book",
-                                        "Visitor In",
-                                        "Visitor Out",
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
+              title: context.l10n.cards,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  PageTransition(
+                    type: PageTransitionType.leftToRight,
+                    child: VisitorLogView(
+                      id: 'Cards',
+                      logList: const [
+                        "In Out Book",
+                        "Visitor In",
+                        "Visitor Out",
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
         ],
       ),
@@ -745,8 +776,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
         onTap: () {
           HapticFeedback.lightImpact();
           Navigator.push(context, _createRoute());
-                      },
-                      child: Container(
+        },
+        child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -762,9 +793,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 offset: const Offset(0, 4),
               ),
             ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Form Header Section
               Container(
@@ -788,9 +819,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                            Text(
-                              'Enter Visitor Details',
-                              style: TextStyle(
+                          Text(
+                            context.l10n.enterVisitorDetails,
+                            style: TextStyle(
                               fontSize: isTablet ? 20 : 18,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xff212427),
@@ -798,7 +829,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                           ),
                           SizedBox(height: isTablet ? 6 : 4),
                           Text(
-                            'Tap to enter mobile number or visitor ID',
+                            context.l10n.tapToEnterMobileOrId,
                             style: TextStyle(
                               fontSize: isTablet ? 16 : 14,
                               color: const Color(0xff57636C),
@@ -809,9 +840,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       ),
                     ),
                     // Enhanced arrow icon
-                            Container(
+                    Container(
                       padding: EdgeInsets.all(isTablet ? 10 : 8),
-                              decoration: BoxDecoration(
+                      decoration: BoxDecoration(
                         color: const Color(0xffF44336).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -837,7 +868,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 decoration: BoxDecoration(
                   color: const Color(0xffF44336).withOpacity(0.02),
                   borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
+                  border: Border.all(
                     color: const Color(0xffF44336).withOpacity(0.1),
                     width: 1,
                   ),
@@ -877,8 +908,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Examples:',
-                                    style: TextStyle(
+                            context.l10n.examples,
+                            style: TextStyle(
                               fontSize: isTablet ? 14 : 12,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xff57636C),
@@ -888,28 +919,28 @@ class _GateDashboardViewState extends State<GateDashboardView>
                           DefaultTextStyle(
                             style: TextStyle(
                               color: const Color(0xff212427),
-                                      fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w500,
                               fontSize: isTablet ? 18 : 16,
                               letterSpacing: 0.3,
-                                    ),
-                                    child: AnimatedTextKit(
-                                      repeatForever: true,
-                                      animatedTexts: [
-                                        TyperAnimatedText(
-                                          '9912345678',
+                            ),
+                            child: AnimatedTextKit(
+                              repeatForever: true,
+                              animatedTexts: [
+                                TyperAnimatedText(
+                                  '9912345678',
                                   speed: const Duration(milliseconds: 100),
-                                        ),
+                                ),
                                 TyperAnimatedText(
                                   'G-39070',
                                   speed: const Duration(milliseconds: 100),
                                 ),
-                                      ],
-                                      onTap: () {
+                              ],
+                              onTap: () {
                                 HapticFeedback.lightImpact();
                                 Navigator.push(context, _createRoute());
-                                      },
-                                    ),
-                                  ),
+                              },
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -949,8 +980,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
         automaticallyImplyLeading: false,
         toolbarHeight: isTablet ? 80 : 70,
         title: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
+          mainAxisSize: MainAxisSize.min,
+          children: [
             // Enhanced gate icon matching dashboard
             Container(
               padding: EdgeInsets.all(isTablet ? 8 : 6),
@@ -1000,10 +1031,10 @@ class _GateDashboardViewState extends State<GateDashboardView>
                           .join(' ') ??
                       'Loading...',
                 ),
-                                              ),
-                                        ),
-                                      ],
-                                    ),
+              ),
+            ),
+          ],
+        ),
       ),
       body: Center(
         child: Padding(
@@ -1027,9 +1058,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
                       color: Colors.black.withOpacity(0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
-                                  ),
-                              ],
-                            ),
+                    ),
+                  ],
+                ),
                 child: Column(
                   children: [
                     // Custom Gate Animation
@@ -1043,7 +1074,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
 
                     // Enhanced loading text
                     Text(
-                      'Loading Dashboard',
+                      context.l10n.loadingDashboard,
                       style: TextStyle(
                         color: const Color(0xff212427),
                         fontSize: isTablet ? 24 : 20,
@@ -1055,18 +1086,18 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     SizedBox(height: isTablet ? 12 : 8),
 
                     Text(
-                      'Please wait while we prepare your gate dashboard',
-                              style: TextStyle(
+                      context.l10n.pleaseWaitPreparingDashboard,
+                      style: TextStyle(
                         color: const Color(0xff57636C),
                         fontSize: isTablet ? 16 : 14,
-                                fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
-                              ),
-                      textAlign: TextAlign.center,
-                          ),
-                        ],
                       ),
+                      textAlign: TextAlign.center,
                     ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -1140,7 +1171,7 @@ class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
             borderRadius: BorderRadius.circular(widget.isTablet ? 20 : 16),
           ),
           child: Stack(
-          children: [
+            children: [
               // Left gate door
               Positioned(
                 left: 0,
@@ -1150,7 +1181,7 @@ class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
                   duration: const Duration(milliseconds: 100),
                   width: (widget.isTablet ? 40 : 32) -
                       (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
-              decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1180,8 +1211,8 @@ class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
                       (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
                         const Color(0xffF44336),
                         const Color(0xffD32F2F),
@@ -1204,7 +1235,7 @@ class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
                   child: Container(
                     padding: EdgeInsets.all(widget.isTablet ? 12 : 10),
                     decoration: BoxDecoration(
-                              color: Colors.white,
+                      color: Colors.white,
                       borderRadius:
                           BorderRadius.circular(widget.isTablet ? 12 : 10),
                       boxShadow: [
@@ -1214,15 +1245,15 @@ class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
                           offset: const Offset(0, 2),
                         ),
                       ],
-                        ),
-                        child: Icon(
+                    ),
+                    child: Icon(
                       Icons.sensor_door_rounded,
                       color: const Color(0xffF44336),
                       size: widget.isTablet ? 32 : 24,
                     ),
-                      ),
+                  ),
+                ),
               ),
-            ),
 
               // Loading dots indicator
               Positioned(

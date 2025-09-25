@@ -98,131 +98,196 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                 ),
               ),
               SizedBox(height: isTablet ? 24 : 16),
-              Container(
-                margin: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 12),
-                color: Colors.transparent,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Stack(
+                children: [
+                  Container(
+                    margin:
+                        EdgeInsets.symmetric(horizontal: isTablet ? 24 : 12),
+                    color: Colors.transparent,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.visitorLog.visitor?.name ?? "Guest",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xff212427),
+                                      fontSize: isTablet ? 28 : 22,
+                                    ),
+                              ),
+                            ),
+                            if (widget.visitorLog.visitor_count.toString() !=
+                                '1')
+                              _buildChip(
+                                "${widget.visitorLog.visitor_count} visitors",
+                                Icons.people,
+                                const Color(0xffFFB080),
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: isTablet ? 12 : 8),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: isTablet ? 12 : 8,
+                              vertical: isTablet ? 6 : 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffFFEBE6),
+                            borderRadius:
+                                BorderRadius.circular(isTablet ? 15 : 10),
+                          ),
                           child: Text(
-                            widget.visitorLog.visitor?.name ?? "Guest",
+                            _capitalizeFirstLetter(
+                                widget.visitorLog.purpose_sub_category_name ??
+                                    widget.visitorLog
+                                        .visitor_purpose_Category_name ??
+                                    ""),
                             style: Theme.of(context)
                                 .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xff212427),
-                                  fontSize: isTablet ? 28 : 22,
-                                ),
+                                .bodySmall
+                                ?.copyWith(fontSize: isTablet ? 16 : 13),
                           ),
                         ),
-                        if (widget.visitorLog.visitor_count.toString() != '1')
-                          _buildChip(
-                            "${widget.visitorLog.visitor_count} visitors",
-                            Icons.people,
-                            const Color(0xffFFB080),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: isTablet ? 12 : 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: isTablet ? 12 : 8,
-                          vertical: isTablet ? 6 : 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffFFEBE6),
-                        borderRadius: BorderRadius.circular(isTablet ? 15 : 10),
-                      ),
-                      child: Text(
-                        _capitalizeFirstLetter(widget
-                                .visitorLog.purpose_sub_category_name ??
-                            widget.visitorLog.visitor_purpose_Category_name ??
-                            ""),
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(fontSize: isTablet ? 16 : 13),
-                      ),
-                    ),
-                    SizedBox(height: isTablet ? 20 : 16),
-                    _buildBorderedSection(
-                      context,
-                      isTablet,
-                      title: "Contact Information",
-                      children: [
-                        _buildInfoTile(
-                          icon: Icons.phone,
-                          title: "Phone Number",
-                          subtitle: widget.visitorLog.visitor?.mobile ?? "N/A",
-                          iconColor:
-                              const Color(0xff43A047), // Green (Scan icon)
-                          iconBg:
-                              const Color(0xffE8F5E9), // Light green background
-                          trailing: _buildCallButton(),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        _buildBorderedSection(
+                          context,
+                          isTablet,
+                          title: "Contact Information",
+                          children: [
+                            _buildInfoTile(
+                              icon: Icons.phone,
+                              title: "Phone Number",
+                              subtitle:
+                                  widget.visitorLog.visitor?.mobile ?? "N/A",
+                              iconColor:
+                                  const Color(0xff43A047), // Green (Scan icon)
+                              iconBg: const Color(
+                                  0xffE8F5E9), // Light green background
+                              trailing: _buildCallButton(),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    SizedBox(height: isTablet ? 20 : 16),
-                    _buildBorderedSection(
-                      context,
-                      isTablet,
-                      title: "Visit Details",
-                      children: [
-                        _buildInfoTile(
-                          icon: Icons.apartment,
-                          title: "Visiting Unit",
-                          subtitle: widget.unitList == "0001"
-                              ? "Society Office"
-                              : (widget.unitList != null &&
-                                      widget.unitList != "")
-                                  ? widget.unitList.toString()
-                                  : "N/A",
-                          iconColor: const Color(0xffF44336), // Red
-                          iconBg:
-                              const Color(0xffFFEBEE), // Light red background
-                        ),
-                        if (widget.visitorLog.visitor_purpose_Category_name
-                                    ?.toLowerCase() ==
-                                "DELIVERY" ||
-                            widget.visitorLog.visitor_purpose_Category_name
+                        SizedBox(height: isTablet ? 20 : 16),
+                        _buildBorderedSection(
+                          context,
+                          isTablet,
+                          title: "Visit Details",
+                          children: [
+                            _buildInfoTile(
+                              icon: Icons.apartment,
+                              title: "Visiting Unit",
+                              subtitle: widget.unitList == "0001"
+                                  ? "Society Office"
+                                  : (widget.unitList != null &&
+                                          widget.unitList != "")
+                                      ? widget.unitList.toString()
+                                      : "N/A",
+                              iconColor: const Color(0xffF44336), // Red
+                              iconBg: const Color(
+                                  0xffFFEBEE), // Light red background
+                            ),
+                            if (widget.visitorLog.visitor_purpose_Category_name
                                         ?.toLowerCase() ==
-                                    "CABS" &&
-                                widget.visitorLog.visitor_coming_from != null)
-                          _buildInfoTile(
-                            icon: Icons.location_on,
-                            title: "Coming From",
-                            subtitle: widget.visitorLog.visitor_coming_from
-                                .toString(),
-                            iconColor: const Color(0xffF44336), // Red
-                            iconBg:
-                                const Color(0xffFFEBEE), // Light red background
-                          ),
-                        if (widget.visitorLog.visitor_card_number != null &&
-                            widget.visitorLog.visitor_card_number!.isNotEmpty)
-                          _buildInfoTile(
-                            icon: Icons.badge,
-                            title: "Card Number",
-                            subtitle:
-                                widget.visitorLog.visitor_card_number ?? 'N/A',
-                            iconColor: Colors.white, // White icon for contrast
-                            iconBg:
-                                const Color(0xffF44336), // Solid red background
-                          ),
+                                    "DELIVERY" ||
+                                widget.visitorLog.visitor_purpose_Category_name
+                                            ?.toLowerCase() ==
+                                        "CABS" &&
+                                    widget.visitorLog.visitor_coming_from !=
+                                        null)
+                              _buildInfoTile(
+                                icon: Icons.location_on,
+                                title: "Coming From",
+                                subtitle: widget.visitorLog.visitor_coming_from
+                                    .toString(),
+                                iconColor: const Color(0xffF44336), // Red
+                                iconBg: const Color(
+                                    0xffFFEBEE), // Light red background
+                              ),
+                            if (widget.visitorLog.visitor_card_number != null &&
+                                widget
+                                    .visitorLog.visitor_card_number!.isNotEmpty)
+                              _buildInfoTile(
+                                icon: Icons.badge,
+                                title: "Card Number",
+                                subtitle:
+                                    widget.visitorLog.visitor_card_number ??
+                                        'N/A',
+                                iconColor:
+                                    Colors.white, // White icon for contrast
+                                iconBg: const Color(
+                                    0xffF44336), // Solid red background
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        _buildBorderedSection(
+                          context,
+                          isTablet,
+                          title: "Visitor Timeline",
+                          children: _buildTimeline(),
+                        ),
                       ],
                     ),
-                    SizedBox(height: isTablet ? 20 : 16),
-                    _buildBorderedSection(
-                      context,
-                      isTablet,
-                      title: "Visitor Timeline",
-                      children: _buildTimeline(),
+                  ),
+                  // Positioned Pre-approved Badge for top right corner
+                  if (widget.visitorLog.initiated_from == "invited_guest" ||
+                      widget.visitorLog.initiated_from == "qr_code_scan" ||
+                      widget.visitorLog.initiated_from == "passcode_entry")
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xff2196F3),
+                              const Color(0xff1976D2),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xff2196F3).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.how_to_reg,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Pre-approved",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                ],
               ),
             ]),
           ),
@@ -336,12 +401,18 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     }
 
     // Add Approved By
+    String approvedByText;
+    if (widget.visitorLog.initiated_from == "invited_guest") {
+      approvedByText = "Guest pre-approved by member";
+    } else if (widget.unitList == "0001") {
+      approvedByText = "Pre approved Staff";
+    } else {
+      approvedByText = widget.visitorLog.approved_by ?? "Gatekeeper";
+    }
+
     addTimelineItem(
       label: "Approved By",
-      description: toBeginningOfSentenceCase(widget.unitList == "0001"
-              ? "Pre approved Staff"
-              : (widget.visitorLog.approved_by ?? "Gatekeeper")) ??
-          "N/A",
+      description: toBeginningOfSentenceCase(approvedByText) ?? "N/A",
       icon: Icons.person,
       color: Colors.brown,
       index: currentIndex++,

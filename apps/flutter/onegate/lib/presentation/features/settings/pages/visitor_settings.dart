@@ -12,6 +12,7 @@ import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class VisitorSettingsView extends StatefulWidget {
   bool? comingfrom;
@@ -132,9 +133,9 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Changes Saved Successfully!',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.changesSuccessful,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
@@ -142,7 +143,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Your visitor settings have been updated',
+                      AppLocalizations.of(context)!.changesUpdated,
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 14,
@@ -192,9 +193,9 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Save Failed',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.saveFailed,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
@@ -252,7 +253,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                   vertical: isTablet ? 16 : 8,
                 ),
                 child: Column(
-                children: [
+                  children: [
                     // Enhanced Settings Section
                     _buildEnhancedSettingCard(
                       context: context,
@@ -260,8 +261,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       icon: _getSettingIcon('address'),
                       title: "Visitor's Address",
                       subtitle: "Set visitor's address as mandatory",
-                    switchValue: visitorProvider.visitorsAddress,
-                    onChanged: visitorProvider.updateVisitorsAddress,
+                      switchValue: visitorProvider.visitorsAddress,
+                      onChanged: visitorProvider.updateVisitorsAddress,
                     ),
 
                     SizedBox(height: isTablet ? 16 : 12),
@@ -272,8 +273,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       icon: _getSettingIcon('approval'),
                       title: "Member's Approval",
                       subtitle: "Set member's approval as mandatory",
-                    switchValue: visitorProvider.membersApproval,
-                    onChanged: visitorProvider.updateMembersApproval,
+                      switchValue: visitorProvider.membersApproval,
+                      onChanged: visitorProvider.updateMembersApproval,
                     ),
 
                     SizedBox(height: isTablet ? 16 : 12),
@@ -284,8 +285,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       icon: _getSettingIcon('card'),
                       title: "Visitor Card Number",
                       subtitle: "Set visitor card number as mandatory",
-                    switchValue: visitorProvider.visitorCardNumber,
-                    onChanged: visitorProvider.updateVisitorCardNumber,
+                      switchValue: visitorProvider.visitorCardNumber,
+                      onChanged: visitorProvider.updateVisitorCardNumber,
                     ),
 
                     SizedBox(height: isTablet ? 16 : 12),
@@ -294,19 +295,19 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       context: context,
                       isTablet: isTablet,
                       icon: _getSettingIcon('purpose'),
-                    title: "Visitor's Purpose",
-                    subtitle: "Set visitor's purpose as mandatory",
-                    switchValue: purposeProvider.isPurposeToggleOn,
-                    onChanged: (value) async {
-                      await purposeProvider.setPurposeToggleState(value);
+                      title: "Visitor's Purpose",
+                      subtitle: "Set visitor's purpose as mandatory",
+                      switchValue: purposeProvider.isPurposeToggleOn,
+                      onChanged: (value) async {
+                        await purposeProvider.setPurposeToggleState(value);
 
-                      if (value) {
-                        await purposeProvider.fetchPurposes(remoteDataSource);
-                      } else {
-                        await purposeProvider.clearSavedPurposes();
-                      }
-                    },
-                  ),
+                        if (value) {
+                          await purposeProvider.fetchPurposes(remoteDataSource);
+                        } else {
+                          await purposeProvider.clearSavedPurposes();
+                        }
+                      },
+                    ),
 
                     // Enhanced Visitor Types Grid
                     if (purposeProvider.isPurposeToggleOn) ...[
@@ -338,14 +339,14 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                         });
 
                         try {
-                        await visitorProvider.saveChanges();
+                          await visitorProvider.saveChanges();
 
-                        final selectedPurposes = purposeProvider.purposes!
-                            .where((p) => p.isSelected)
-                            .toList();
+                          final selectedPurposes = purposeProvider.purposes!
+                              .where((p) => p.isSelected)
+                              .toList();
 
-                        await purposeProvider
-                            .saveSelectedPurposes(selectedPurposes);
+                          await purposeProvider
+                              .saveSelectedPurposes(selectedPurposes);
 
                           // Show enhanced success toast
                           _showEnhancedSuccessToast(context);
@@ -354,12 +355,12 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                           await Future.delayed(
                               const Duration(milliseconds: 800));
 
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => GateDashboardView(),
-                          ),
-                        );
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GateDashboardView(),
+                            ),
+                          );
                         } catch (e) {
                           // Show error toast
                           _showEnhancedErrorToast(context);
@@ -371,7 +372,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                           }
                         }
                       },
-                      )
+                    )
                   : null,
             ),
           );
@@ -917,7 +918,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
 
 class _SettingsGateLoader extends StatefulWidget {
   final bool isTablet;
-  
+
   const _SettingsGateLoader({required this.isTablet});
 
   @override
@@ -928,26 +929,26 @@ class _SettingsGateLoaderState extends State<_SettingsGateLoader>
     with TickerProviderStateMixin {
   late AnimationController _gateController;
   late AnimationController _iconController;
-  
+
   late Animation<double> _gateAnimation;
   late Animation<double> _iconAnimation;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Gate animation controller
     _gateController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    
+
     // Icon rotation controller
     _iconController = AnimationController(
       duration: const Duration(seconds: 1),
       vsync: this,
     );
-    
+
     // Gate opening/closing animation
     _gateAnimation = Tween<double>(
       begin: 0.0,
@@ -956,7 +957,7 @@ class _SettingsGateLoaderState extends State<_SettingsGateLoader>
       parent: _gateController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Icon rotation animation
     _iconAnimation = Tween<double>(
       begin: 0.0,
@@ -965,7 +966,7 @@ class _SettingsGateLoaderState extends State<_SettingsGateLoader>
       parent: _iconController,
       curve: Curves.linear,
     ));
-    
+
     // Start animations
     _gateController.repeat(reverse: true);
     _iconController.repeat();
@@ -984,7 +985,7 @@ class _SettingsGateLoaderState extends State<_SettingsGateLoader>
       animation: Listenable.merge([_gateAnimation, _iconAnimation]),
       builder: (context, child) {
         final gateOffset = _gateAnimation.value * (widget.isTablet ? 25 : 20);
-        
+
         return SizedBox(
           width: widget.isTablet ? 120 : 100,
           height: widget.isTablet ? 80 : 70,
@@ -1000,11 +1001,12 @@ class _SettingsGateLoaderState extends State<_SettingsGateLoader>
                   height: widget.isTablet ? 60 : 50,
                   decoration: BoxDecoration(
                     color: const Color(0xffF44336),
-                    borderRadius: BorderRadius.circular(widget.isTablet ? 4 : 3),
+                    borderRadius:
+                        BorderRadius.circular(widget.isTablet ? 4 : 3),
                   ),
                 ),
               ),
-              
+
               // Right gate door
               Positioned(
                 right: (widget.isTablet ? 20 : 15) - gateOffset,
@@ -1014,11 +1016,12 @@ class _SettingsGateLoaderState extends State<_SettingsGateLoader>
                   height: widget.isTablet ? 60 : 50,
                   decoration: BoxDecoration(
                     color: const Color(0xffF44336),
-                    borderRadius: BorderRadius.circular(widget.isTablet ? 4 : 3),
+                    borderRadius:
+                        BorderRadius.circular(widget.isTablet ? 4 : 3),
                   ),
                 ),
               ),
-              
+
               // Center rotating gate icon
               Transform.rotate(
                 angle: _iconAnimation.value * 2 * 3.14159,

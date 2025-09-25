@@ -6,8 +6,6 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,17 +13,19 @@ import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
+import 'package:flutter_onegate/presentation/widgets/custom_numpad.dart';
+import 'package:flutter_onegate/presentation/widgets/enhanced_input_field.dart';
+import 'package:flutter_onegate/presentation/widgets/enhanced_toast.dart';
+import 'package:flutter_onegate/presentation/widgets/enhanced_video_carousel.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import 'package:numpad_layout/numpad.dart';
-import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/route_tracker.dart';
 
 import '../../../../data/datasources/gate_storage.dart';
-import '../../dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 
 class SelfEntryView extends StatefulWidget {
   const SelfEntryView({super.key});
@@ -40,6 +40,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
   int activeStep = 0;
   String code = "";
   String selectedCountryCodeSE = 'IN';
+  String? selectedGateName;
 
   // Create an instance of RemoteDataSource.
   final RemoteDataSource _remoteDataSource = RemoteDataSource();
@@ -53,6 +54,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
   final TextEditingController _purposeController = TextEditingController();
   final TextEditingController _hostController = TextEditingController();
 
+  final FocusNode _mobileFocusNode = FocusNode();
+  final FocusNode _otpFocusNode = FocusNode();
   final FocusNode _nameFocusNode = FocusNode();
   final FocusNode _locationFocusNode = FocusNode();
   final FocusNode _purposeFocusNode = FocusNode();
@@ -61,7 +64,11 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
   late Timer _timer = Timer(Duration.zero, () {});
   int _start = 10;
-  PickedFile? _imageFile;
+
+  // Resend OTP functionality
+  Timer? _resendTimer;
+  int _resendCountdown = 30;
+  bool _canResendOtp = false;
 
   late TabController _tabController;
 
@@ -69,10 +76,114 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
   bool isProcessing = false;
 
+  /// Get the appropriate title based on the current tab
+  String get _currentPageTitle {
+    switch (_tabController.index) {
+      case 0:
+        return 'Enter Mobile Number';
+      case 1:
+        return 'Enter OTP';
+      default:
+        return 'Enter Mobile Number';
+    }
+  }
+
+  /// Start the resend OTP countdown timer
+  void _startResendCountdown() {
+    _canResendOtp = false;
+    _resendCountdown = 30;
+
+    _resendTimer?.cancel();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendCountdown > 0) {
+        setState(() {
+          _resendCountdown--;
+        });
+      } else {
+        setState(() {
+          _canResendOtp = true;
+        });
+        timer.cancel();
+      }
+    });
+  }
+
+  /// Resend OTP to the mobile number
+  Future<void> _resendOtp() async {
+    if (!_canResendOtp) return;
+
+    try {
+      final mobileNumber = _mobileController.text;
+      if (mobileNumber.isNotEmpty) {
+        await selfCheckInOtp(mobileNumber);
+        showEnhancedToast(
+          context,
+          title: "Success",
+          message: "OTP has been resent successfully",
+          backgroundColor: Colors.green,
+          icon: Icons.check_circle_outline,
+        );
+        _startResendCountdown();
+      }
+    } catch (e) {
+      showEnhancedToast(
+        context,
+        title: "Error",
+        message: "Failed to resend OTP. Please try again.",
+        backgroundColor: const Color(0xffF44336),
+        icon: Icons.error_outline,
+      );
+    }
+  }
+
+  // Track that user is in express entry flow
+  Future<void> _trackExpressEntryRoute() async {
+    await RouteTracker.saveCurrentRoute(
+      'SelfEntryView',
+      isExpressEntry: true,
+    );
+  }
+
   @override
   void initState() {
     _tabController = TabController(length: 2, vsync: this);
     super.initState();
+    _getSelectedGate();
+    _trackExpressEntryRoute();
+
+    // Add tab change listener to auto-focus appropriate field and update title
+    _tabController.addListener(() {
+      // Update the UI to reflect the new title
+      setState(() {});
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          if (_tabController.index == 0) {
+            // Mobile number tab
+            FocusScope.of(context).requestFocus(_mobileFocusNode);
+          } else if (_tabController.index == 1) {
+            // OTP tab
+            FocusScope.of(context).requestFocus(_otpFocusNode);
+            // Start resend countdown when OTP tab becomes active
+            _startResendCountdown();
+          }
+        }
+      });
+    });
+
+    // Auto-focus on mobile number input field when page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        FocusScope.of(context).requestFocus(_mobileFocusNode);
+      }
+    });
+  }
+
+  Future<void> _getSelectedGate() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedGateName = prefs.getString('selected_gate');
+    });
   }
 
   void _disableKioskMode() async {
@@ -86,18 +197,26 @@ class _SelfEntryViewState extends State<SelfEntryView>
   @override
   void dispose() {
     _timer.cancel();
+    _resendTimer?.cancel();
     _mobileController.dispose();
     _otpController.dispose();
     _nameController.dispose();
     _locationController.dispose();
     _purposeController.dispose();
     _hostController.dispose();
+    _mobileFocusNode.dispose();
+    _otpFocusNode.dispose();
     _nameFocusNode.dispose();
     _locationFocusNode.dispose();
     _purposeFocusNode.dispose();
     _hostFocusNode.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  // Enhanced video carousel with 4 cyberone videos
+  Widget _buildAdsCarousel(BuildContext context) {
+    return const EnhancedVideoCarousel();
   }
 
   /// Starts a countdown timer.
@@ -134,107 +253,39 @@ class _SelfEntryViewState extends State<SelfEntryView>
           mobile: visitorData['mobile'] ?? '',
           visitor_image: visitorData['visitor_image'],
         );
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true, // Allows for height adjustment
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+
+        // For existing visitors in Express Entry flow, ALWAYS require member approval
+        // Load purposes to get default purpose
+        await loadPurposes();
+
+        // Determine default purpose (first available or fallback to Guest)
+        PurposeCategory1 defaultPurpose;
+        if (globalSelectedPurposes.isNotEmpty) {
+          defaultPurpose = globalSelectedPurposes.first;
+        } else {
+          // Fallback to default Guest purpose
+          defaultPurpose = PurposeCategory1(
+            categoryId: 1,
+            categoryName: "Guest",
+            image: null,
+          );
+        }
+
+        print(
+            "DEBUG: Existing visitor detected in Express Entry flow, proceeding with member approval: ${defaultPurpose.categoryName}");
+
+        // Navigate to visitor information form - approval will be required
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VisitorsInEntry(
+              selfcheckinFlow: true,
+              comingfrom: comingfrom,
+              searchedVisitor: visitor,
+              selectedValue: defaultPurpose,
+              mobile: _mobileController.text,
+            ),
           ),
-          builder: (BuildContext context) {
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                return SizedBox(
-                  height: MediaQuery.of(context).size.height *
-                      0.6, // 60% of screen height
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          title: Text(
-                            'Select Purpose of visit',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          trailing: const Icon(
-                            Icons.close,
-                            color: Colors.red,
-                            size: 28,
-                          ),
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        const SizedBox(height: 10),
-                        // Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
-                        //   name: _nameController.text,
-                        //   mobile: _mobileController.text,
-                        //   visitor_image: _imageFile?.path,
-                        // ));
-
-                        Expanded(
-                          child: globalSelectedPurposes.isEmpty
-                              ? _buildPurposeGrid(setState, context,
-                                  category: "GUEST")
-                              : _buildPurposeGrid(setState, context),
-                        ),
-                        // Next Button
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          child: CustomLargeBtn(
-                            text: isProcessing ? 'Processing...' : 'Next',
-                            disabled: isProcessing,
-                            onPressed: isProcessing
-                                ? null
-                                : () async {
-                                    if (isProcessing) return;
-                                    setState(() => isProcessing = true);
-                                    final societyId =
-                                        await gateStorage.getSocietyId();
-                                    final int? companyId =
-                                        int.tryParse(societyId.toString());
-
-                                    // String? visiImage = await RemoteDataSource()
-                                    //     .uploadFile(File(image!.path),
-                                    //         _mobileController.text, companyId ?? 0);
-
-                                    // log(comingfrom);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => VisitorsInEntry(
-                                          selfcheckinFlow: true,
-                                          comingfrom: comingfrom,
-                                          searchedVisitor: visitor,
-                                          selectedValue: globalSelectedPurposes[
-                                              selectedImageIndex ?? 0],
-                                          mobile: _mobileController.text,
-                                        ),
-                                      ),
-                                    );
-                                    setState(() => isProcessing = false);
-                                  },
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
         );
 
         return;
@@ -243,10 +294,19 @@ class _SelfEntryViewState extends State<SelfEntryView>
       _tabController.animateTo(1);
       _start = 10; // Default timer value
       startTimer();
+
+      // Show OTP success toast only for new visitors (not existing ones)
+      showEnhancedToast(
+        context,
+        title: "Success",
+        message: "OTP sent successfully",
+        backgroundColor: Colors.green,
+        icon: Icons.check_circle_outline,
+      );
     } catch (e) {
       log('Error sending OTP: $e');
       myFluttertoast(
-          msg: "Error sending OTP. Please try again.",
+          msg: AppLocalizations.of(context).errorSendingOTPPleaseTryAgain,
           backgroundColor: Colors.red);
     }
   }
@@ -276,44 +336,364 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
       if (result['message'] == 'Visitor is already verified') {
         final prefs = await SharedPreferences.getInstance();
-
         final visitorId = prefs.getString('visitorId');
         log(visitorId.toString());
 
-        // Navigator.pushReplacement(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (context) => UnitSelectionView(null,
-        //         visitor: Visitor(
-        //           id: int.parse(visitorId ?? ""),
-        //           name: _nameController.text,
-        //           mobile: _mobileController.text,
-        //           visitor_image: _imageFile?.path,
-        //         ),
-        //         guestname: _nameController.text,
-        //         mobileNumber: _mobileController.text,
-        //         purposeCategory: getPurposeCategory1(null),
-        //         comingFrom: _locationController.text,
-        //         carNumber: null,
-        //         guestCount: 1,
-        //         isVerified: result['message'] == "Visitor is already verified"
-        //             ? true
-        //             : false),
-        //   ),
-        // );
-
+        // Visitor is already verified - handle purpose selection with verification flag
+        await _handlePurposeSelection(isVisitorVerified: true);
         return;
       }
-      _captureImageFromCamera();
+      // _captureImageFromCamera(); // Commented out to skip camera capture
 
-      myFluttertoast(msg: "OTP verified successfully!");
-      // _tabController.animateTo(2);
+      // Show success toast message first
+      showEnhancedToast(
+        context,
+        title: "Success",
+        message: AppLocalizations.of(context).otpVerifiedSuccessfully,
+        backgroundColor: Colors.green,
+        icon: Icons.check_circle_outline,
+      );
+
+      // Wait for toast to be visible, then handle purpose selection
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          _handlePurposeSelection(isVisitorVerified: false);
+        }
+      });
     } catch (e) {
       log('Error during OTP verification: $e');
-      myFluttertoast(
-          msg: "OTP verification failed. Please try again.",
-          backgroundColor: Colors.red);
+      showEnhancedToast(
+        context,
+        title: "Error",
+        message: "Incorrect OTP Entered. Please check and try again",
+        backgroundColor: const Color(0xffF44336),
+        icon: Icons.error_outline,
+      );
     }
+  }
+
+  /// Handles purpose selection logic based on enabled purposes and visitor verification status
+  Future<void> _handlePurposeSelection({bool isVisitorVerified = false}) async {
+    print(
+        "DEBUG: _handlePurposeSelection called - isVisitorVerified: $isVisitorVerified");
+
+    // Load purposes for selection
+    await loadPurposes();
+
+    // Check if visitor is already verified with OTP
+    if (isVisitorVerified) {
+      print("DEBUG: Visitor is already verified, skipping purpose selection");
+      await _proceedWithDefaultPurpose();
+      return;
+    }
+
+    // Check number of enabled purposes
+    if (globalSelectedPurposes.isEmpty) {
+      print("DEBUG: No purposes available, using default");
+      await _proceedWithDefaultPurpose();
+      return;
+    }
+
+    if (globalSelectedPurposes.length == 1) {
+      print(
+          "DEBUG: Single purpose enabled (${globalSelectedPurposes.first.categoryName}), auto-assigning");
+      await _proceedWithDefaultPurpose();
+      return;
+    }
+
+    // Multiple purposes enabled and visitor not verified - show bottom sheet
+    print(
+        "DEBUG: Multiple purposes enabled, showing purpose selection bottom sheet");
+    await _showPurposeSelectionBottomSheet();
+  }
+
+  /// Proceeds with the default purpose (single purpose or first available)
+  Future<void> _proceedWithDefaultPurpose() async {
+    print("DEBUG: _proceedWithDefaultPurpose called");
+
+    // Get visitor data
+    final prefs = await SharedPreferences.getInstance();
+    final visitorId = prefs.getString('visitorId');
+
+    // Determine default purpose
+    PurposeCategory1 defaultPurpose;
+    if (globalSelectedPurposes.isNotEmpty) {
+      defaultPurpose = globalSelectedPurposes.first;
+    } else {
+      // Fallback to default Guest purpose
+      defaultPurpose = PurposeCategory1(
+        categoryId: 1,
+        categoryName: "Guest",
+        image: null,
+      );
+    }
+
+    print("DEBUG: Using default purpose: ${defaultPurpose.categoryName}");
+
+    // Create visitor object
+    final visitor = Visitor(
+      id: int.parse(visitorId ?? "0"),
+      name: "",
+      mobile: _mobileController.text,
+      visitor_image: null,
+    );
+
+    // Navigate directly to visitor information page
+    await _navigateToVisitorInformation(visitor, defaultPurpose);
+  }
+
+  /// Navigates to visitor information page with selected purpose
+  Future<void> _navigateToVisitorInformation(
+      Visitor visitor, PurposeCategory1 purpose) async {
+    print(
+        "DEBUG: _navigateToVisitorInformation called with purpose: ${purpose.categoryName}");
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VisitorsInEntry(
+          selfcheckinFlow: true,
+          comingfrom: comingfrom,
+          searchedVisitor: visitor,
+          selectedValue: purpose,
+          mobile: _mobileController.text,
+          isGatekeeperQRPasscodeEntry: false, // This is Express Entry flow
+        ),
+      ),
+    );
+  }
+
+  /// Shows the purpose selection bottom sheet directly after OTP verification
+  /// without requiring camera capture
+  Future<void> _showPurposeSelectionBottomSheet() async {
+    print("DEBUG: _showPurposeSelectionBottomSheet called - OneGate UI");
+
+    // Get visitor data for the bottom sheet
+    final prefs = await SharedPreferences.getInstance();
+    final visitorId = prefs.getString('visitorId');
+
+    // Create visitor object without image (since camera is skipped)
+    final visitor = Visitor(
+      id: int.parse(visitorId ?? "0"),
+      name: "",
+      mobile: _mobileController.text,
+      visitor_image: null, // No image since camera is skipped
+    );
+
+    // Show the purpose selection bottom sheet with OneGate app UI
+    print("DEBUG: Showing OneGate app UI bottom sheet");
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Allows for height adjustment
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white,
+                    Colors.white,
+                    Colors.white,
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -8),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Enhanced Header
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.grey.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Purpose Icon
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF44336).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.assignment,
+                            color: const Color(0xffF44336),
+                            size: 20,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            AppLocalizations.of(context).selectPurposeOfVisit,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xff212427),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        // Enhanced Close Button
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xffF44336), Color(0xffD32F2F)],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xffF44336).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Enhanced Grid Content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: globalSelectedPurposes.isEmpty
+                          ? _buildPurposeGrid(setState, context,
+                              category: "GUEST")
+                          : _buildPurposeGrid(setState, context),
+                    ),
+                  ),
+
+                  // Enhanced Action Button
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.grey.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xff212427), Color(0xff57636C)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: isProcessing
+                              ? null
+                              : () async {
+                                  if (isProcessing) return;
+                                  setState(() => isProcessing = true);
+
+                                  // Get selected purpose
+                                  final selectedPurpose =
+                                      globalSelectedPurposes[
+                                          selectedImageIndex ?? 0];
+
+                                  // Navigate using the new method
+                                  await _navigateToVisitorInformation(
+                                      visitor, selectedPurpose);
+
+                                  setState(() => isProcessing = false);
+                                },
+                          child: Center(
+                            child: Text(
+                              isProcessing ? 'Processing...' : 'Select Purpose',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   List<PurposeCategory1> globalSelectedPurposes = [];
@@ -350,145 +730,125 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
     return GridView.builder(
       shrinkWrap: true,
+      physics: const BouncingScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        mainAxisSpacing: 3,
-        crossAxisSpacing: 3,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.85,
       ),
       itemCount: filteredPurposes.length,
       itemBuilder: (context, index) {
         final purpose = filteredPurposes[index];
+        final isSelected = selectedImageIndex == index;
 
         return GestureDetector(
           onTap: () {
             setState(() {
               selectedImageIndex = index; // Update selection
             });
+            HapticFeedback.lightImpact();
           },
-          child: Stack(
-            children: [
-              Container(
-                height: 250,
-                width: 200,
-                margin: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: selectedImageIndex == index
-                      ? const Color(0x10C08261)
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: selectedImageIndex == index
-                        ? const Color(0xffC08261)
-                        : Colors.grey,
-                    width: selectedImageIndex == index ? 2 : 1,
-                  ),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 7),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: CachedNetworkImage(
-                          maxHeightDiskCache: 90,
-                          maxWidthDiskCache: 90,
-                          height: 60,
-                          width: 60,
-                          fit: BoxFit.cover,
-                          imageUrl: purpose.image ?? "",
-                          placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) => const Icon(
-                            Icons.error,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          purpose.categoryName,
-                          style: TextStyle(
-                            color: selectedImageIndex == index
-                                ? const Color(0xffC08261)
-                                : Theme.of(context).colorScheme.onSurface,
-                            fontWeight: selectedImageIndex == index
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xffF44336)
+                    : Colors.grey.withOpacity(0.2),
+                width: isSelected ? 2 : 1,
               ),
-              if (selectedImageIndex == index)
-                const Positioned(
-                  right: 10,
-                  top: 10,
-                  child: Icon(
-                    size: 20,
-                    Icons.check_circle_outline,
-                    color: Color(0xffC08261),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? const Color(0xffF44336).withOpacity(0.2)
+                      : Colors.black.withOpacity(0.05),
+                  blurRadius: isSelected ? 12 : 6,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Enhanced Image Container
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: purpose.image ?? "",
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF44336).withOpacity(0.1),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xffF44336),
+                            ),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF44336).withOpacity(0.1),
+                        ),
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          color: Color(0xffF44336),
+                          size: 24,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-            ],
+
+                const SizedBox(height: 8),
+
+                // Enhanced Text
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    purpose.categoryName,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected
+                          ? const Color(0xffF44336)
+                          : const Color(0xff212427),
+                    ),
+                  ),
+                ),
+
+                // Selection Indicator
+                if (isSelected)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    child: Icon(
+                      Icons.check_circle,
+                      color: const Color(0xffF44336),
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
     );
-  }
-
-  Future<void> _regImage(String name, File? image) async {
-    if (image == null) return;
-
-    try {
-      final societyid = await GateStorage().getSocietyId();
-
-      final faceRecConfig = await GateStorage().getFaceRecConfig();
-
-      List<String> allowed = faceRecConfig != null
-          ? List<String>.from(faceRecConfig['allowed'] ?? [])
-          : [];
-
-      if (faceRecConfig != null &&
-          faceRecConfig['url'] != null &&
-          faceRecConfig['url'] != "" &&
-          faceRecConfig['allowed'] != null &&
-          societyid != null &&
-          allowed.contains(societyid.toString())) {
-        String url = faceRecConfig['url'] ?? '';
-
-        final uri = Uri.parse('$url/register-face/');
-        final request = http.MultipartRequest('POST', uri)
-          ..fields['name'] = name
-          ..files.add(await http.MultipartFile.fromPath('files', image.path));
-
-        final streamedResponse = await request.send();
-        final response = await http.Response.fromStream(streamedResponse);
-        print(response.body);
-
-        if (response.statusCode == 200) {
-          var jsondata = json.decode(response.body);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(jsondata["message"])),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to upload image: ${response.body}')),
-          );
-        }
-      }
-    } catch (e) {
-      print(e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
   }
 
   Future<File?> getImage() async {
@@ -507,166 +867,6 @@ class _SelfEntryViewState extends State<SelfEntryView>
 
   XFile? image;
 
-  /// Captures an image from the camera.
-  /// After capturing the image, it immediately navigates to the UnitSelectionView,
-  /// passing along the visitor id (if available) in the Visitor object.
-  File? fileimage;
-
-  Future<void> _captureImageFromCamera() async {
-    loadPurposes();
-    final picker = ImagePicker();
-    fileimage = await getImage();
-    try {
-      if (fileimage == null) {
-        image = await picker.pickImage(
-          source: ImageSource.camera,
-          preferredCameraDevice: CameraDevice.front,
-        );
-        if (image == null) return;
-        setState(() {
-          _imageFile = PickedFile(image!.path);
-        });
-      }
-      print(_mobileController.text);
-      _regImage(_mobileController.text, fileimage ?? File(image!.path));
-
-      final prefs = await SharedPreferences.getInstance();
-
-      final visitorId = prefs.getString('visitorId');
-      log(visitorId.toString());
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true, // Allows for height adjustment
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (BuildContext context) {
-          return StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height *
-                    0.6, // 60% of screen height
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ListTile(
-                        title: Text(
-                          'Select Purpose of visit',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                        ),
-                        trailing: const Icon(
-                          Icons.close,
-                          color: Colors.red,
-                          size: 28,
-                        ),
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(height: 10),
-                      // Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
-                      //   name: _nameController.text,
-                      //   mobile: _mobileController.text,
-                      //   visitor_image: _imageFile?.path,
-                      // ));
-
-                      Expanded(
-                        child: globalSelectedPurposes.isEmpty
-                            ? _buildPurposeGrid(setState, context,
-                                category: "GUEST")
-                            : _buildPurposeGrid(setState, context),
-                      ),
-                      // Next Button
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        child: CustomLargeBtn(
-                          text: isProcessing ? 'Processing...' : 'Next',
-                          disabled: isProcessing,
-                          onPressed: isProcessing
-                              ? null
-                              : () async {
-                                  if (isProcessing) return;
-                                  setState(() => isProcessing = true);
-                                  final societyId =
-                                      await gateStorage.getSocietyId();
-                                  final int? companyId =
-                                      int.tryParse(societyId.toString());
-
-                                  String? visiImage = await RemoteDataSource()
-                                      .uploadFile(
-                                          fileimage ?? File(image!.path),
-                                          _mobileController.text,
-                                          companyId ?? 0);
-
-                                  Visitor visitor = Visitor(
-                                    id: int.parse(visitorId ?? "0"),
-                                    name: "",
-                                    mobile: _mobileController.text,
-                                    visitor_image: visiImage,
-                                  );
-                                  // log(comingfrom);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => VisitorsInEntry(
-                                        selfcheckinFlow: true,
-                                        comingfrom: comingfrom,
-                                        searchedVisitor: visitor,
-                                        selectedValue: globalSelectedPurposes[
-                                            selectedImageIndex ?? 0],
-                                        mobile: _mobileController.text,
-                                      ),
-                                    ),
-                                  );
-                                  setState(() => isProcessing = false);
-                                },
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      );
-
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => UnitSelectionView(
-      //       null,
-      //       visitor: Visitor(
-      //         id: int.parse(visitorId ?? ""),
-      //         name: _nameController.text,
-      //         mobile: _mobileController.text,
-      //       ),
-      //       guestname: _nameController.text,
-      //       mobileNumber: _mobileController.text,
-      //       purposeCategory: getPurposeCategory1(null),
-      //       comingFrom: _locationController.text,
-      //       carNumber: null,
-      //       guestCount: 1,
-      //     ),
-      //   ),
-      // );
-    } catch (e) {
-      log('Error capturing image from camera: $e');
-    }
-  }
-
   /// Converts a purpose category string (JSON or numeric ID) into a PurposeCategory1 instance.
   PurposeCategory1 getPurposeCategory1(String? categoryStr) {
     if (categoryStr != null && categoryStr.isNotEmpty) {
@@ -679,7 +879,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
             categoryId: catId, categoryName: "Category $catId");
       }
     }
-    return PurposeCategory1(categoryId: 1, categoryName: "Default Category");
+    return PurposeCategory1(
+        categoryId: 1,
+        categoryName: AppLocalizations.of(context).defaultCategory);
   }
 
   @override
@@ -690,420 +892,564 @@ class _SelfEntryViewState extends State<SelfEntryView>
       child: Scaffold(
         resizeToAvoidBottomInset: true,
         backgroundColor: Colors.white,
-        extendBodyBehindAppBar: true,
-        extendBody: true,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              automaticallyImplyLeading: false,
-              elevation: 0,
-              backgroundColor: Colors.white,
-              expandedHeight: MediaQuery.of(context).size.height * 0.3,
-              title: RichText(
-                text: TextSpan(
-                  text: 'one',
-                  style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red),
-                  children: <TextSpan>[
-                    TextSpan(
-                        text: 'gate', style: TextStyle(color: Colors.black)),
-                  ],
-                ),
-              ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 14.0),
-                  child: Icon(Symbols.qr_code, color: Colors.black),
-                ),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: CarouselSlider(
-                  items: [
-                    SelfEntryAd(
-                      bgImage:
-                          'https://images.unsplash.com/photo-1631195092568-a1030d926fd3?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-                      title: 'onegate',
-                      subTitle:
-                          'Secure your home and manage visitors, connect with society gate and much more',
-                    ),
-                    SelfEntryAd(
-                      bgImage:
-                          'https://images.unsplash.com/photo-1496065187959-7f07b8353c55?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-                      title: 'oneapp',
-                      subTitle: 'The ALL in One App',
-                    ),
-                    SelfEntryAd(
-                      bgImage:
-                          'https://images.unsplash.com/photo-1580041065738-e72023775cdc?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-                      title: 'onesociety',
-                      subTitle:
-                          'Experience the Ease of Community Management with onesociety',
-                    ),
-                  ],
-                  options: CarouselOptions(
-                    height: 400.0,
-                    enlargeCenterPage: true,
-                    autoPlay: true,
-                    autoPlayCurve: Curves.fastOutSlowIn,
-                    enableInfiniteScroll: true,
-                    autoPlayAnimationDuration: Duration(milliseconds: 1000),
-                    viewportFraction: 1,
-                  ),
-                ),
-              ),
-              bottom: PreferredSize(
-                preferredSize: Size.fromHeight(0),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.0),
-                    border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 0.8)),
-                  ),
-                  child: TabBar(
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    unselectedLabelColor: Colors.blue,
-                    labelColor: Colors.black,
-                    controller: _tabController,
-                    tabs: [
-                      Tab(text: '', height: 0),
-                      Tab(text: '', height: 0),
-                      // Tab(text: '', height: 0),
-                      // Tab(text: '', height: 0),
-                    ],
-                  ),
-                ),
-              ),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: const Color(0xff212427),
+              size: MediaQuery.of(context).size.width > 600
+                  ? 28
+                  : 24, // Responsive icon size
             ),
-            SliverToBoxAdapter(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                height: MediaQuery.of(context).size.height * 0.7,
+            onPressed: () {
+              if (_tabController.index == 0) {
+                // On Enter Mobile Number page, go back to previous page in navigation stack
+                Navigator.pop(context);
+              } else {
+                // On Enter OTP page, navigate back to Enter Mobile Number page (tab 0)
+                _tabController.animateTo(0);
+              }
+            },
+          ),
+          title: Text(
+            _currentPageTitle,
+            style: TextStyle(
+              fontSize: MediaQuery.of(context).size.width > 600
+                  ? 24
+                  : 20, // Responsive font size
+              fontWeight: FontWeight.w700,
+              color: const Color(0xff212427),
+              letterSpacing: 0.5,
+            ),
+          ),
+          centerTitle: false,
+        ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Colors.white,
+                Colors.white,
+              ],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Main Content Area
+              Expanded(
                 child: TabBarView(
                   controller: _tabController,
                   physics: NeverScrollableScrollPhysics(),
                   children: [
                     // Tab 1: Mobile Number Entry
-                    Column(
-                      children: [
-                        Form(
-                          child: CustomForm.textField(
-                            titleColor: Theme.of(context).colorScheme.onSurface,
-                            hintColor: Theme.of(context).colorScheme.onPrimary,
-                            "Visitor Mobile Number",
-                            length: 10,
-                            textController: _mobileController,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Mobile number is required';
-                              } else if (value.length != 10) {
-                                return 'Please enter a 10-digit number';
-                              } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                                return 'No spaces or special characters allowed';
-                              }
-                              return null;
-                            },
-                            hintText: '0123456789',
-                            prefixIcon: CountryCodePicker(
-                              initialSelection: 'IN',
-                              favorite: ['IN'],
-                              showFlagMain: true,
-                              showFlagDialog: true,
-                              boxDecoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
+                    SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                          horizontal:
+                              MediaQuery.of(context).size.width > 600 ? 40 : 20,
+                          vertical: MediaQuery.of(context).size.width > 600
+                              ? 32
+                              : 24),
+                      child: Column(
+                        children: [
+                          // Mobile Number Input Section (matching gatekeeper design)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.2),
+                                width: 1,
                               ),
-                              barrierColor: Theme.of(context)
-                                  .colorScheme
-                                  .surface
-                                  .withOpacity(0.5),
-                              closeIcon: Icon(
-                                Icons.close,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              searchDecoration: InputDecoration(
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 4),
                                 ),
-                                hintText: 'Search',
-                                hintStyle: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    style: BorderStyle.solid,
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    style: BorderStyle.solid,
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                              textStyle: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 18,
-                              ),
-                              dialogTextStyle: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onChanged: (CountryCode countryCode) {
-                                setState(() {
-                                  selectedCountryCodeSE = countryCode.code!;
-                                });
-                              },
+                              ],
                             ),
-                            onChanged: (value) {
-                              if (value.length == 10) {
-                                // Optionally, auto-navigate to OTP tab:
-                                // _tabController.animateTo(1);
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Input Label
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      margin: const EdgeInsets.only(right: 12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xffF44336)
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.phone_rounded,
+                                        color: const Color(0xffF44336),
+                                        size: 20,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Enter Mobile Number',
+                                            style: TextStyle(
+                                              fontSize: MediaQuery.of(context)
+                                                          .size
+                                                          .width >
+                                                      600
+                                                  ? 22
+                                                  : 18,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xff212427),
+                                              letterSpacing: 0.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'Enter your mobile number',
+                                            style: TextStyle(
+                                              fontSize: MediaQuery.of(context)
+                                                          .size
+                                                          .width >
+                                                      600
+                                                  ? 16
+                                                  : 14,
+                                              fontWeight: FontWeight.w400,
+                                              color: const Color(0xff6B7280),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // Enhanced input field
+                                EnhancedInputField(
+                                  controller: _mobileController,
+                                  focusNode: _mobileFocusNode,
+                                  isMobileField: true,
+                                  label: AppLocalizations.of(context)
+                                      .visitorMobileNumber,
+                                  hint: '0123456789',
+                                  suppressKeyboard:
+                                      true, // Suppress mobile keyboard
+                                  maxLength: 10,
+                                  prefixWidget: CountryCodePicker(
+                                    initialSelection: 'IN',
+                                    favorite: ['IN', 'US', 'GB', 'CA', 'AU'],
+                                    showFlagMain: true,
+                                    showFlagDialog: true,
+                                    flagWidth: 32,
+                                    dialogSize: const Size(350, 500),
+                                    boxDecoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    barrierColor: Colors.black.withOpacity(0.5),
+                                    closeIcon: const Icon(
+                                      Icons.close,
+                                      color: Color(0xffF44336),
+                                      size: 24,
+                                    ),
+                                    searchDecoration: InputDecoration(
+                                      prefixIcon: Container(
+                                        margin: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              const Color(0xffF44336)
+                                                  .withOpacity(0.1),
+                                              const Color(0xffD32F2F)
+                                                  .withOpacity(0.05),
+                                            ],
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(
+                                          Icons.search,
+                                          color: Color(0xffF44336),
+                                          size: 22,
+                                        ),
+                                      ),
+                                      hintText: 'Search countries...',
+                                      hintStyle: const TextStyle(
+                                        color: Color(0xff57636C),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      filled: true,
+                                      fillColor: const Color(0xffF44336)
+                                          .withOpacity(0.02),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 16,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.2),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xffF44336),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.2),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    textStyle: const TextStyle(
+                                      color: Color(0xff212427),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    dialogTextStyle: const TextStyle(
+                                      color: Color(0xff212427),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    onChanged: (CountryCode countryCode) {
+                                      setState(() {
+                                        selectedCountryCodeSE =
+                                            countryCode.code!;
+                                      });
+                                    },
+                                  ),
+                                  onClear: () {
+                                    setState(() {
+                                      _mobileController.clear();
+                                    });
+                                  },
+                                  isTablet:
+                                      MediaQuery.of(context).size.width > 600,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Ads Carousel
+                          _buildAdsCarousel(context),
+
+                          const SizedBox(height: 24),
+
+                          // Enhanced numpad
+                          EnhancedNumPad(
+                            isTablet: MediaQuery.of(context).size.width > 600,
+                            buttonSize: MediaQuery.of(context).size.width > 600
+                                ? 56
+                                : 48,
+                            onType: (value) {
+                              if (value == '-') {
+                                // Handle backspace
+                                if (_mobileController.text.isNotEmpty) {
+                                  setState(() {
+                                    _mobileController.text =
+                                        _mobileController.text.substring(0,
+                                            _mobileController.text.length - 1);
+                                  });
+                                }
+                              } else if (_mobileController.text.length < 10) {
+                                setState(() {
+                                  _mobileController.text += value;
+                                });
                               }
                             },
-                            inputFormatters: [
-                              LengthLimitingTextInputFormatter(10),
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            isReadOnly: true,
-                            counterText:
-                                _mobileController.text.length.toString(),
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                if (_mobileController.text.isNotEmpty) {
-                                  _mobileController.text =
-                                      _mobileController.text.substring(
-                                          0, _mobileController.text.length - 1);
-                                  setState(() {});
+                            numberStyle: TextStyle(
+                              fontSize: MediaQuery.of(context).size.width > 600
+                                  ? 36
+                                  : 32,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111827),
+                            ),
+                            rightWidget: EnhancedSubmitButton(
+                              onPressed: () async {
+                                final mobileNumber = _mobileController.text;
+                                final fullMobileNumber = '${91}$mobileNumber';
+
+                                final username =
+                                    await _gateStorage.getUsername();
+                                log('Full mobile number: $fullMobileNumber');
+                                log('Full Username: $username');
+
+                                if (mobileNumber.isEmpty) {
+                                  showEnhancedToast(
+                                    context,
+                                    title: "Error",
+                                    message: AppLocalizations.of(context)
+                                        .mobileNumberIsRequired,
+                                    backgroundColor: const Color(0xffF44336),
+                                    icon: Icons.error_outline,
+                                  );
+                                } else if (mobileNumber.length != 10) {
+                                  showEnhancedToast(
+                                    context,
+                                    title: "Error",
+                                    message:
+                                        "Please enter 10 digit mobile number",
+                                    backgroundColor: const Color(0xffF44336),
+                                    icon: Icons.error_outline,
+                                  );
+                                } else if (!RegExp(r'^[0-9]+$')
+                                    .hasMatch(mobileNumber)) {
+                                  showEnhancedToast(
+                                    context,
+                                    title: "Error",
+                                    message: AppLocalizations.of(context)
+                                        .noSpacesOrSpecialCharactersAllowed,
+                                    backgroundColor: const Color(0xffF44336),
+                                    icon: Icons.error_outline,
+                                  );
+                                } else if (username == fullMobileNumber) {
+                                  _disableKioskMode();
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            GateDashboardView()),
+                                  );
+                                } else {
+                                  await selfCheckInOtp(mobileNumber);
+                                  // Only show OTP success toast if visitor is not already verified
+                                  // (existing visitors will be handled in selfCheckInOtp method)
                                 }
                               },
-                              icon: CircleAvatar(
-                                backgroundColor: Color(0xffFFEBE6),
-                                radius: 20,
-                                child: Icon(
-                                  size: 22,
-                                  Symbols.backspace,
-                                  color: Colors.black,
-                                ),
-                              ),
                             ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        NumPad(
-                          highlightColor: Colors.red,
-                          radius: 20,
-                          onType: (value) {
-                            if (_mobileController.text.length < 10) {
-                              _mobileController.text += value;
-                              setState(() {});
-                            }
-                          },
-                          numberStyle: Theme.of(context).textTheme.displayLarge,
-                          rightWidget: IconButton(
-                            icon: const Icon(
-                              Symbols.arrow_right_alt_rounded,
-                              size: 36,
-                              color: Colors.green,
-                            ),
-                            onPressed: () async {
-                              final mobileNumber = _mobileController.text;
-                              final fullMobileNumber = '${91}$mobileNumber';
-
-                              final username = await _gateStorage.getUsername();
-                              log('Full mobile number: $fullMobileNumber');
-                              log('Full Username: $username');
-
-                              if (mobileNumber.isEmpty) {
-                                myFluttertoast(
-                                    msg: 'Mobile number is required',
-                                    backgroundColor: Colors.red);
-                              } else if (mobileNumber.length != 10) {
-                                myFluttertoast(
-                                    msg: 'Please enter a 10-digit number',
-                                    backgroundColor: Colors.red);
-                              } else if (!RegExp(r'^[0-9]+$')
-                                  .hasMatch(mobileNumber)) {
-                                myFluttertoast(
-                                    msg:
-                                        'No spaces or special characters allowed',
-                                    backgroundColor: Colors.red);
-                              } else if (username == fullMobileNumber) {
-                                _disableKioskMode();
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          GateDashboardView()),
-                                );
-                              } else {
-                                selfCheckInOtp(mobileNumber);
-                              }
-                            },
-                          ),
-                        )
-                      ],
+                          )
+                        ],
+                      ),
                     ),
                     // Tab 2: OTP Entry
+                    SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                          horizontal:
+                              MediaQuery.of(context).size.width > 600 ? 40 : 20,
+                          vertical: MediaQuery.of(context).size.width > 600
+                              ? 32
+                              : 24),
+                      child: Column(
+                        children: [
+                          // OTP Input Section (matching gatekeeper design)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.2),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Input Label
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      margin: const EdgeInsets.only(right: 12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xffF44336)
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.security_rounded,
+                                        color: const Color(0xffF44336),
+                                        size: 20,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Enter OTP',
+                                            style: TextStyle(
+                                              fontSize: MediaQuery.of(context)
+                                                          .size
+                                                          .width >
+                                                      600
+                                                  ? 22
+                                                  : 18,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xff212427),
+                                              letterSpacing: 0.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'Enter the OTP received on your phone',
+                                            style: TextStyle(
+                                              fontSize: MediaQuery.of(context)
+                                                          .size
+                                                          .width >
+                                                      600
+                                                  ? 16
+                                                  : 14,
+                                              fontWeight: FontWeight.w400,
+                                              color: const Color(0xff6B7280),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
 
-                    Column(
-                      children: [
-                        CustomForm.textField(
-                          "Enter OTP sent to your mobile number",
-                          titleColor: Theme.of(context).colorScheme.onSurface,
-                          hintColor: Theme.of(context).colorScheme.onPrimary,
-                          textController: _otpController,
-                          length: 6,
-                          hintText: '123456',
-                          inputFormatters: [
-                            LengthLimitingTextInputFormatter(6),
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          isReadOnly: true,
-                          counterText: _start.toString(),
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              if (_otpController.text.isNotEmpty) {
-                                _otpController.text = _otpController.text
-                                    .substring(
-                                        0, _otpController.text.length - 1);
-                                setState(() {});
+                                const SizedBox(height: 12),
+
+                                // Enhanced input field
+                                EnhancedInputField(
+                                  controller: _otpController,
+                                  focusNode: _otpFocusNode,
+                                  isMobileField: false,
+                                  label: AppLocalizations.of(context)
+                                      .enterOTPSentToYourMobileNumber,
+                                  hint: '123456',
+                                  maxLength: 6,
+                                  suppressKeyboard:
+                                      true, // Suppress mobile keyboard
+                                  onClear: () {
+                                    setState(() {
+                                      _otpController.clear();
+                                    });
+                                  },
+                                  isTablet:
+                                      MediaQuery.of(context).size.width > 600,
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                // Resend OTP button inside the card
+                                Center(
+                                  child: TextButton(
+                                    onPressed:
+                                        _canResendOtp ? _resendOtp : null,
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _canResendOtp
+                                          ? 'Resend OTP'
+                                          : 'Resend OTP (${_resendCountdown}s)',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: _canResendOtp
+                                            ? const Color(0xffF44336)
+                                            : const Color(0xff9CA3AF),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Enhanced numpad
+                          EnhancedNumPad(
+                            isTablet: MediaQuery.of(context).size.width > 600,
+                            buttonSize: MediaQuery.of(context).size.width > 600
+                                ? 56
+                                : 48,
+                            onType: (value) {
+                              if (value == '-') {
+                                // Handle backspace
+                                if (_otpController.text.isNotEmpty) {
+                                  setState(() {
+                                    _otpController.text = _otpController.text
+                                        .substring(
+                                            0, _otpController.text.length - 1);
+                                  });
+                                }
+                              } else if (_otpController.text.length < 6) {
+                                setState(() {
+                                  _otpController.text += value;
+                                });
                               }
                             },
-                            icon: CircleAvatar(
-                              backgroundColor: Color(0xffFFEBE6),
-                              radius: 20,
-                              child: Icon(
-                                size: 22,
-                                Symbols.backspace,
-                                color: Colors.black,
-                              ),
+                            numberStyle: TextStyle(
+                              fontSize: MediaQuery.of(context).size.width > 600
+                                  ? 36
+                                  : 32,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111827),
                             ),
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'OTP is required';
-                            } else if (value.length != 6) {
-                              return 'Please enter a 6-digit OTP';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 16),
-                        NumPad(
-                          highlightColor: Colors.red,
-                          radius: 20,
-                          onType: (value) {
-                            if (_otpController.text.length < 6) {
-                              _otpController.text += value;
-                              setState(() {});
-                            }
-                          },
-                          numberStyle: Theme.of(context).textTheme.displayLarge,
-                          rightWidget: IconButton(
-                            icon: const Icon(
-                              Symbols.arrow_right_alt_rounded,
-                              size: 36,
-                              color: Colors.green,
+                            rightWidget: EnhancedSubmitButton(
+                              onPressed: () async {
+                                await verifySelfCheckin(_mobileController.text,
+                                    _otpController.text);
+                                // if (_locationController.text.isNotEmpty) {
+                                // }
+                              },
                             ),
-                            onPressed: () async {
-                              await verifySelfCheckin(
-                                  _mobileController.text, _otpController.text);
-                              // if (_locationController.text.isNotEmpty) {
-                              // }
-                            },
-                          ),
-                        )
-                      ],
+                          )
+                        ],
+                      ),
                     ),
-
-                    // Tab 3: Personal Details Entry
-                    // Padding(
-                    //   padding: const EdgeInsets.all(16.0),
-                    //   child: Column(
-                    //     children: [
-                    //       CustomForm.textField(
-                    //         "Your Name",
-                    //         titleColor: Theme.of(context).colorScheme.onSurface,
-                    //         hintColor: Theme.of(context).colorScheme.onPrimary,
-                    //         textController: _nameController,
-                    //         hintText: 'Name Surname',
-                    //         keyboardType: TextInputType.visiblePassword,
-                    //         validator: (value) {
-                    //           return 'Please enter your name';
-                    //         },
-                    //         suffixIcon: IconButton(
-                    //           onPressed: () {
-                    //             if (_nameController.text.isNotEmpty) {
-                    //               FocusScope.of(context)
-                    //                   .requestFocus(_locationFocusNode);
-                    //             }
-                    //           },
-                    //           icon: CircleAvatar(
-                    //             backgroundColor: Color(0xffFFEBE6),
-                    //             radius: 20,
-                    //             child: Icon(
-                    //               size: 22,
-                    //               Symbols.done,
-                    //               color: Colors.black,
-                    //             ),
-                    //           ),
-                    //         ),
-                    //       ),
-                    //       CustomForm.textField(
-                    //         "Coming From",
-                    //         titleColor: Theme.of(context).colorScheme.onSurface,
-                    //         hintColor: Theme.of(context).colorScheme.onPrimary,
-                    //         textController: _locationController,
-                    //         hintText: 'Mumbai',
-                    //         keyboardType: TextInputType.name,
-                    //         validator: (value) {
-                    //           return 'Location is required';
-                    //         },
-                    //         suffixIcon: IconButton(
-                    //           onPressed: () {},
-                    //           icon: CircleAvatar(
-                    //             backgroundColor: Color(0xffFFEBE6),
-                    //             radius: 20,
-                    //             child: Icon(
-                    //               size: 22,
-                    //               Symbols.done,
-                    //               color: Colors.black,
-                    //             ),
-                    //           ),
-                    //         ),
-                    //       ),
-                    //       SizedBox(height: 32),
-                    //       CustomLargeBtn(
-                    //         onPressed: () {
-                    //           if (_locationController.text.isNotEmpty) {
-                    //             _captureImageFromCamera();
-                    //           }
-                    //         },
-                    //         text: "Next",
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
-                    // // Tab 4: Visit Details & Unit Selection (Not displayed; photo capture navigates immediately)
-                    // Center(
-                    //   child: Text("Processing..."),
-                    // ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

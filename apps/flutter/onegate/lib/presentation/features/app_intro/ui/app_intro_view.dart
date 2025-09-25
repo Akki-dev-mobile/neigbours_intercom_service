@@ -9,31 +9,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../auth/pages/login_view.dart';
-
-final pages = [
-  PageData(
-    icon: Lottie.network(
-      'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/gate222_588a755d7f.json?updated_at=2023-08-23T06:28:50.644Z',
-      height: 300,
-      width: double.infinity,
-    ),
-    title: "Introducing onegate your complete digital guardian",
-    bgColor: Color(0xFFFFEADD),
-    textColor: Color.fromRGBO(66, 66, 66, 1),
-  ),
-  PageData(
-    // icon: Lottie.asset('assets/lottie/gate_intro.json',
-    icon: Lottie.network(
-      'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/gate_intro_01bd37905f.json?updated_at=2023-08-23T06:28:50.934Z',
-      height: 300,
-      width: double.infinity,
-    ),
-    title:
-        "Secure your digital world with onegate,\nthe all-in-one security application.",
-    textColor: Colors.white,
-    bgColor: Color(0xFFFF8989),
-  ),
-];
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class AppIntroView extends StatelessWidget {
   AppIntroView({Key? key}) : super(key: key);
@@ -42,6 +18,30 @@ class AppIntroView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+
+    final pages = [
+      PageData(
+        icon: Lottie.network(
+          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/gate222_588a755d7f.json?updated_at=2023-08-23T06:28:50.644Z',
+          height: 300,
+          width: double.infinity,
+        ),
+        title: AppLocalizations.of(context)!.introducingOnegateBrand,
+        bgColor: Color(0xFFFFEADD),
+        textColor: Color.fromRGBO(66, 66, 66, 1),
+      ),
+      PageData(
+        icon: Lottie.network(
+          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/gate_intro_01bd37905f.json?updated_at=2023-08-23T06:28:50.934Z',
+          height: 300,
+          width: double.infinity,
+        ),
+        title: AppLocalizations.of(context)!.secureDigitalWorld,
+        textColor: Colors.white,
+        bgColor: Color(0xFFFF8989),
+      ),
+    ];
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: ConcentricPageView(

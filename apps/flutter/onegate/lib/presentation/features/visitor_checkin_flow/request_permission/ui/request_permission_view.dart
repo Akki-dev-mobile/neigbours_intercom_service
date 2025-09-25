@@ -13,6 +13,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:lottie/lottie.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class RequestPermissionView extends StatefulWidget {
   final List<MemberUnits>? gridData;
@@ -91,7 +92,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                 Navigator.pop(context);
               },
               hasBackButton: true,
-              pageTitle: 'Permission',
+              pageTitle: AppLocalizations.of(context)!.permission,
               pageBody: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +150,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      'Selected Flat',
+                      AppLocalizations.of(context)!.selectedFlat,
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

@@ -38,3 +38,12 @@ class VIENavigateToCameraState extends VisitorInEntryActionState {
 
   VIENavigateToCameraState(this.visitor, this.purposeCategory, this.operation);
 }
+
+class VIENavigateToRequestScreenState extends VisitorInEntryActionState {
+  final Visitor visitor;
+  final PurposeCategory1 purposeCategory;
+  final VisitorLog visitorLog;
+
+  VIENavigateToRequestScreenState(
+      this.visitor, this.purposeCategory, this.visitorLog);
+}

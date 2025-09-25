@@ -146,7 +146,9 @@ class VisitorLog {
       visitor_purpose_category_id: json['visitor_purpose_category_id'] as int?,
       visitor_purpose_sub_category_id:
           json['visitor_purpose_sub_category_id'] as int?,
-      visitor_building_assignment: (json['unit_details'] as List<dynamic>?)?.isNotEmpty == true
+      visitor_building_assignment: (json['unit_details'] as List<dynamic>?)
+                  ?.isNotEmpty ==
+              true
           ? (json['unit_details'] as List<dynamic>)
               .map((unit) => BuildingAssignment(
                     id: null,

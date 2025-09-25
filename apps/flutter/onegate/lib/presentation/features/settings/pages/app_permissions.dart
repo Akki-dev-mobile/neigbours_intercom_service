@@ -3,6 +3,7 @@
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class AppPermissions extends StatefulWidget {
   const AppPermissions({super.key});
@@ -21,7 +22,7 @@ class _AppPermissionsState extends State<AppPermissions> {
       backButtonPressed: () {
         Navigator.pop(context);
       },
-      pageTitle: 'Gate Settings',
+      pageTitle: AppLocalizations.of(context)!.gateSettings,
       pageBody: Column(
         children: [
           GateSettingListTile(
@@ -31,9 +32,8 @@ class _AppPermissionsState extends State<AppPermissions> {
                 _drawoverotherapps = value;
               });
             },
-            title: "Allow 'onegate' to draw over other apps",
-            subtitle:
-                'This permission is needed to show approval screen when an approval request arrives for a visitor',
+            title: AppLocalizations.of(context)!.allowDrawOverApps,
+            subtitle: AppLocalizations.of(context)!.drawOverAppsDescription,
           ),
           Divider(
             indent: 16,
@@ -46,9 +46,8 @@ class _AppPermissionsState extends State<AppPermissions> {
                 _dndsettings = value;
               });
             },
-            title: "Allow 'onegate' to escape 'Do Not Disturb' mode",
-            subtitle:
-                "This permission is needed to ring the emergency alarm even if your device is in DND mode",
+            title: AppLocalizations.of(context)!.allowEscapeDND,
+            subtitle: AppLocalizations.of(context)!.escapeDNDDescription,
           ),
         ],
       ),

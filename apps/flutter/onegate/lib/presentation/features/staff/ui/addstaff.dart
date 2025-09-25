@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -258,13 +259,13 @@ class _AddStaffState extends State<AddStaff> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Select Image Source'),
+          title: Text(AppLocalizations.of(context)!.selectImageSource),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt),
-                title: const Text('Camera'),
+                title: Text(AppLocalizations.of(context)!.camera),
                 onTap: () {
                   Navigator.pop(context);
                   _openCamera(isIdProof: isIdProof);
@@ -272,7 +273,7 @@ class _AddStaffState extends State<AddStaff> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: const Text('Gallery'),
+                title: Text(AppLocalizations.of(context)!.gallery),
                 onTap: () {
                   Navigator.pop(context);
                   _openGallery(isIdProof: isIdProof);
@@ -369,12 +370,12 @@ class _AddStaffState extends State<AddStaff> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Upload'),
-          content: const Text('Do you want to upload the selected images?'),
+          title: Text(AppLocalizations.of(context)!.confirmUpload),
+          content: Text(AppLocalizations.of(context)!.doYouWantToUpload),
           actions: <Widget>[
             TextButton(
               child: Text(
-                'Cancel',
+                AppLocalizations.of(context)!.cancel,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               onPressed: () {
@@ -383,7 +384,7 @@ class _AddStaffState extends State<AddStaff> {
             ),
             TextButton(
               child: Text(
-                'Confirm',
+                AppLocalizations.of(context)!.confirm,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               onPressed: () async {
@@ -1199,7 +1200,8 @@ class _AddStaffState extends State<AddStaff> {
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.grey.shade700,
                                     ),
-                                    child: const Text('Cancel'),
+                                    child: Text(
+                                        AppLocalizations.of(context)!.cancel),
                                     onPressed: () {
                                       Navigator.of(context).pop();
                                     },
@@ -1270,7 +1272,7 @@ class _AddStaffState extends State<AddStaff> {
                   }
                 },
               ),
-              const Text('Male'),
+              Text(AppLocalizations.of(context)!.male),
               const SizedBox(width: 20),
               Radio<String>(
                 value: 'F',
@@ -1284,7 +1286,7 @@ class _AddStaffState extends State<AddStaff> {
                   }
                 },
               ),
-              const Text('Female'),
+              Text(AppLocalizations.of(context)!.female),
               const SizedBox(width: 20),
               Radio<String>(
                 fillColor: WidgetStateProperty.all(Colors.red),
@@ -1298,7 +1300,7 @@ class _AddStaffState extends State<AddStaff> {
                   }
                 },
               ),
-              const Text('Other'),
+              Text(AppLocalizations.of(context)!.other),
             ],
           ),
         ],

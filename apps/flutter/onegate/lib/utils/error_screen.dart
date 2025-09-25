@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:lottie/lottie.dart';
 
 class ErrorScreen extends StatelessWidget {
@@ -107,14 +108,14 @@ class ErrorScreen extends StatelessWidget {
                       ),
                       minimumSize: const Size(double.infinity, 54),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.refresh_rounded),
-                        SizedBox(width: 12),
+                        const Icon(Icons.refresh_rounded),
+                        const SizedBox(width: 12),
                         Text(
-                          'Try Again',
-                          style: TextStyle(
+                          AppLocalizations.of(context)!.tryAgain,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),

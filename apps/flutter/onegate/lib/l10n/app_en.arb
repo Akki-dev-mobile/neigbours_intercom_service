@@ -1,0 +1,2583 @@
+{
+  "@@locale": "en",
+  "@@last_modified": "2024-01-01T00:00:00.000Z",
+  
+  "appTitle": "OneGate",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "General welcome greeting"
+  },
+  
+  "welcomeToOnegate": "Welcome to onegate",
+  "@welcomeToOnegate": {
+    "description": "Welcome message in splash screen"
+  },
+  
+  "welcomeBack": "Welcome Back!",
+  "@welcomeBack": {
+    "description": "Welcome back message for returning users"
+  },
+  
+  "welcomeUser": "Welcome {userName}! Proceeding to capture your photo.",
+  "@welcomeUser": {
+    "description": "Welcome message with user name",
+    "placeholders": {
+      "userName": {
+        "type": "String",
+        "example": "John"
+      }
+    }
+  },
+  
+  "login": "Login",
+  "@login": {
+    "description": "Login button text"
+  },
+  
+  "logout": "Logout",
+  "@logout": {
+    "description": "Logout button text"
+  },
+  
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings menu item"
+  },
+  
+  "changeLanguage": "Change Language",
+  "@changeLanguage": {
+    "description": "Language selection option in settings"
+  },
+  
+  "selectLanguage": "Select Language",
+  "@selectLanguage": {
+    "description": "Language selection dialog title"
+  },
+  
+  "currentPreference": "Current Preference: {language}",
+  "@currentPreference": {
+    "description": "Shows current language preference",
+    "placeholders": {
+      "language": {
+        "type": "String",
+        "example": "English"
+      }
+    }
+  },
+  
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button text"
+  },
+  
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  
+  "change": "Change",
+  "@change": {
+    "description": "Change button text"
+  },
+  
+  "close": "Close",
+  "@close": {
+    "description": "Close button text"
+  },
+  
+  "save": "Save",
+  "@save": {
+    "description": "Save button text"
+  },
+  
+  "dashboard": "Dashboard",
+  "@dashboard": {
+    "description": "Dashboard screen title"
+  },
+  
+  "visitorManagement": "Visitor Management",
+  "@visitorManagement": {
+    "description": "Visitor management section"
+  },
+  
+  "gatekeeper": "Gatekeeper",
+  "@gatekeeper": {
+    "description": "Gatekeeper role"
+  },
+  
+  "admin": "Admin",
+  "@admin": {
+    "description": "Admin role"
+  },
+  
+  "visitors": "Visitors",
+  "@visitors": {
+    "description": "Visitors section"
+  },
+  
+  "checkin": "Check In",
+  "@checkin": {
+    "description": "Check in action"
+  },
+  
+  "checkout": "Check Out",
+  "@checkout": {
+    "description": "Check out action"
+  },
+  
+  "approval": "Approval",
+  "@approval": {
+    "description": "Approval status"
+  },
+  
+  "approved": "Approved",
+  "@approved": {
+    "description": "Approved status"
+  },
+  
+  "pending": "Pending",
+  "@pending": {
+    "description": "Pending status"
+  },
+  
+  "rejected": "Rejected",
+  "@rejected": {
+    "description": "Rejected status"
+  },
+  
+  "selectCamera": "Select Camera",
+  "@selectCamera": {
+    "description": "Camera selection dialog title"
+  },
+  
+  "frontCamera": "Front Camera",
+  "@frontCamera": {
+    "description": "Front camera option"
+  },
+  
+  "backCamera": "Back Camera",
+  "@backCamera": {
+    "description": "Back camera option"
+  },
+  
+  "cameraPermission": "Camera Permission",
+  "@cameraPermission": {
+    "description": "Camera permission dialog title"
+  },
+  
+  "enableLocationPermissions": "Please enable location permissions in your device settings to use this feature.",
+  "@enableLocationPermissions": {
+    "description": "Location permission request message"
+  },
+  
+  "openSettings": "Open Settings",
+  "@openSettings": {
+    "description": "Open settings button text"
+  },
+  
+  "noInternetConnection": "No internet connection available. Please check your network settings.",
+  "@noInternetConnection": {
+    "description": "No internet connection error message"
+  },
+  
+  "error": "Error",
+  "@error": {
+    "description": "General error label"
+  },
+  
+  "success": "Success",
+  "@success": {
+    "description": "General success label"
+  },
+  
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button text"
+  },
+  
+  "visitorLogTitleInOutBook": "Visitor Log",
+  "@visitorLogTitleInOutBook": {
+    "description": "Title for In Out Book visitor log"
+  },
+  
+  "visitorLogTitleVisitorIn": "Visitor In",
+  "@visitorLogTitleVisitorIn": {
+    "description": "Title for Visitor In log"
+  },
+  
+  "visitorLogTitleVisitorOut": "Visitor Out",
+  "@visitorLogTitleVisitorOut": {
+    "description": "Title for Visitor Out log"
+  },
+  
+  "visitorLogTitleCards": "Visitor Cards",
+  "@visitorLogTitleCards": {
+    "description": "Title for Visitor Cards log"
+  },
+  
+  "visitorLogTitleDefault": "Visitor Log",
+  "@visitorLogTitleDefault": {
+    "description": "Default title for visitor log"
+  },
+  
+  "loadingMoreVisitors": "Loading more visitors...",
+  "@loadingMoreVisitors": {
+    "description": "Loading indicator text for pagination"
+  },
+  
+  "exportVisitorLogs": "Export Visitor Logs",
+  "@exportVisitorLogs": {
+    "description": "Title for export dialog"
+  },
+  
+  "downloadLogsForDateRange": "Download logs for specified date range",
+  "@downloadLogsForDateRange": {
+    "description": "Subtitle for export dialog"
+  },
+  
+  "emailAddress": "Email Address",
+  "@emailAddress": {
+    "description": "Email field label"
+  },
+  
+  "enterEmailForExport": "Enter email for export",
+  "@enterEmailForExport": {
+    "description": "Email field hint text"
+  },
+  
+  "pleaseEnterEmail": "Please enter email",
+  "@pleaseEnterEmail": {
+    "description": "Email validation error"
+  },
+  
+  "pleaseEnterValidEmail": "Please enter a valid email",
+  "@pleaseEnterValidEmail": {
+    "description": "Email format validation error"
+  },
+  
+  "dateRange": "Date Range",
+  "@dateRange": {
+    "description": "Date range section label"
+  },
+  
+  "pleaseSelectStartDate": "Please select a start date",
+  "@pleaseSelectStartDate": {
+    "description": "Start date validation error"
+  },
+  
+  "pleaseSelectEndDate": "Please select an end date",
+  "@pleaseSelectEndDate": {
+    "description": "End date validation error"
+  },
+  
+  "endDateCannotBeEarlier": "End date cannot be earlier than start date",
+  "@endDateCannotBeEarlier": {
+    "description": "End date validation error"
+  },
+  
+  "fromDate": "From Date",
+  "@fromDate": {
+    "description": "Start date label"
+  },
+  
+  "toDate": "To Date",
+  "@toDate": {
+    "description": "End date label"
+  },
+  
+  "selectStartDate": "Select start date",
+  "@selectStartDate": {
+    "description": "Start date picker placeholder"
+  },
+  
+  "selectEndDate": "Select end date",
+  "@selectEndDate": {
+    "description": "End date picker placeholder"
+  },
+  
+  "intercom": "Intercom",
+  "@intercom": {
+    "description": "Intercom button title"
+  },
+  
+  "parcel": "Parcel",
+  "@parcel": {
+    "description": "Parcel button title"
+  },
+  
+  "scan": "Scan",
+  "@scan": {
+    "description": "Scan button title"
+  },
+  
+  "cards": "Cards",
+  "@cards": {
+    "description": "Cards button title"
+  },
+  
+  "qrCodeScanned": "QR Code Scanned",
+  "@qrCodeScanned": {
+    "description": "QR code scan success message"
+  },
+  
+  "enterVisitorDetails": "Enter Visitor Details",
+  "@enterVisitorDetails": {
+    "description": "Enter visitor details section title"
+  },
+  
+  "tapToEnterMobileOrId": "Tap to enter mobile number or visitor ID",
+  "@tapToEnterMobileOrId": {
+    "description": "Instruction text for visitor input"
+  },
+  
+  "examples": "Examples:",
+  "@examples": {
+    "description": "Examples label"
+  },
+  
+  "loadingDashboard": "Loading Dashboard",
+  "@loadingDashboard": {
+    "description": "Loading dashboard title"
+  },
+  
+  "pleaseWaitPreparingDashboard": "Please wait while we prepare your gate dashboard",
+  "@pleaseWaitPreparingDashboard": {
+    "description": "Loading dashboard message"
+  },
+  
+  "fetchingDataForNetworkLogs": "Fetching data to generate network logs...",
+  "@fetchingDataForNetworkLogs": {
+    "description": "Network logs generation message"
+  },
+  
+  "searchMembers": "Search Members",
+  "@searchMembers": {
+    "description": "Search members field label"
+  },
+  
+  "searchMembersHint": "Search Members (type at least 3 characters)",
+  "@searchMembersHint": {
+    "description": "Search members field hint"
+  },
+  
+  "loadingMembers": "Loading members...",
+  "@loadingMembers": {
+    "description": "Loading members message"
+  },
+  
+  "searchingMembers": "Searching members...",
+  "@searchingMembers": {
+    "description": "Searching members message"
+  },
+  
+  "noMembersFound": "No Members Found.\nType at least 3 characters to search members by their name or flat",
+  "@noMembersFound": {
+    "description": "No members found message"
+  },
+  
+  "waitingForApproval": "Waiting for approval...",
+  "@waitingForApproval": {
+    "description": "Waiting for approval status"
+  },
+  
+  "failedToSearchMembers": "Failed to search members",
+  "@failedToSearchMembers": {
+    "description": "Failed to search members error"
+  },
+  
+  "errorSearchingMembers": "Error searching members",
+  "@errorSearchingMembers": {
+    "description": "Error searching members message"
+  },
+  
+  "membersDataRefreshed": "Members data refreshed successfully",
+  "@membersDataRefreshed": {
+    "description": "Members data refresh success message"
+  },
+  
+  "selectUnit": "Select Unit",
+  "@selectUnit": {
+    "description": "Select unit dialog title"
+  },
+  
+  "selectMember": "Select Member",
+  "@selectMember": {
+    "description": "Select member dialog title"
+  },
+  
+  "continueAction": "Continue",
+  "@continueAction": {
+    "description": "Continue button text"
+  },
+  
+  "back": "Back",
+  "@back": {
+    "description": "Back button text"
+  },
+  
+  "next": "Next",
+  "@next": {
+    "description": "Next button text"
+  },
+  
+  "submit": "Submit",
+  "@submit": {
+    "description": "Submit button text"
+  },
+  
+  "done": "Done",
+  "@done": {
+    "description": "Done button text"
+  },
+  
+  "yes": "Yes",
+  "@yes": {
+    "description": "Yes button text"
+  },
+  
+  "no": "No",
+  "@no": {
+    "description": "No button text"
+  },
+  
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button text"
+  },
+  
+  "apply": "Apply",
+  "@apply": {
+    "description": "Apply button text"
+  },
+  
+  "clear": "Clear",
+  "@clear": {
+    "description": "Clear button text"
+  },
+  
+  "reset": "Reset",
+  "@reset": {
+    "description": "Reset button text"
+  },
+  
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Refresh button text"
+  },
+  
+  "search": "Search",
+  "@search": {
+    "description": "Search button text"
+  },
+  
+  "filter": "Filter",
+  "@filter": {
+    "description": "Filter button text"
+  },
+  
+  "sort": "Sort",
+  "@sort": {
+    "description": "Sort button text"
+  },
+  
+  "add": "Add",
+  "@add": {
+    "description": "Add button text"
+  },
+  
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button text"
+  },
+  
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button text"
+  },
+  
+  "view": "View",
+  "@view": {
+    "description": "View button text"
+  },
+  
+  "details": "Details",
+  "@details": {
+    "description": "Details button text"
+  },
+  
+  "name": "Name",
+  "@name": {
+    "description": "Name field label"
+  },
+  
+  "mobileNumber": "Mobile Number",
+  "@mobileNumber": {
+    "description": "Mobile number field label"
+  },
+  
+  "email": "Email",
+  "@email": {
+    "description": "Email field label"
+  },
+  
+  "address": "Address",
+  "@address": {
+    "description": "Address field label"
+  },
+  
+  "building": "Building",
+  "@building": {
+    "description": "Building field label"
+  },
+  
+  "unit": "Unit",
+  "@unit": {
+    "description": "Unit field label"
+  },
+  
+  "floor": "Floor",
+  "@floor": {
+    "description": "Floor field label"
+  },
+  
+  "date": "Date",
+  "@date": {
+    "description": "Date field label"
+  },
+  
+  "time": "Time",
+  "@time": {
+    "description": "Time field label"
+  },
+  
+  "status": "Status",
+  "@status": {
+    "description": "Status field label"
+  },
+  
+  "active": "Active",
+  "@active": {
+    "description": "Active status"
+  },
+  
+  "inactive": "Inactive",
+  "@inactive": {
+    "description": "Inactive status"
+  },
+  
+  "enabled": "Enabled",
+  "@enabled": {
+    "description": "Enabled status"
+  },
+  
+  "disabled": "Disabled",
+  "@disabled": {
+    "description": "Disabled status"
+  },
+  
+  "online": "Online",
+  "@online": {
+    "description": "Online status"
+  },
+  
+  "offline": "Offline",
+  "@offline": {
+    "description": "Offline status"
+  },
+  
+  "connected": "Connected",
+  "@connected": {
+    "description": "Connected status"
+  },
+  
+  "disconnected": "Disconnected",
+  "@disconnected": {
+    "description": "Disconnected status"
+  },
+  
+  "available": "Available",
+  "@available": {
+    "description": "Available status"
+  },
+  
+  "unavailable": "Unavailable",
+  "@unavailable": {
+    "description": "Unavailable status"
+  },
+  
+  "login": "Login",
+  "@login": {
+    "description": "Login button text"
+  },
+  
+  "logout": "Logout",
+  "@logout": {
+    "description": "Logout button text"
+  },
+  
+  "signUp": "Sign Up",
+  "@signUp": {
+    "description": "Sign up button text"
+  },
+  
+  "forgotPassword": "Forgot Password",
+  "@forgotPassword": {
+    "description": "Forgot password button text"
+  },
+  
+  "resetPassword": "Reset Password",
+  "@resetPassword": {
+    "description": "Reset password button text"
+  },
+  
+  "password": "Password",
+  "@password": {
+    "description": "Password field label"
+  },
+  
+  "confirmPassword": "Confirm Password",
+  "@confirmPassword": {
+    "description": "Confirm password field label"
+  },
+  
+  "username": "Username",
+  "@username": {
+    "description": "Username field label"
+  },
+  
+  "adminDashboardShortcuts": "Admin Dashboard Shortcuts (To be enhanced)",
+  "@adminDashboardShortcuts": {
+    "description": "Admin dashboard shortcuts placeholder text"
+  },
+  
+  "gateSelection": "Gate Selection",
+  "@gateSelection": {
+    "description": "Gate selection page title"
+  },
+  
+  "selectYourGate": "Select your gate",
+  "@selectYourGate": {
+    "description": "Select your gate instruction"
+  },
+  
+  "unknownGate": "Unknown Gate",
+  "@unknownGate": {
+    "description": "Unknown gate fallback text"
+  },
+  
+  "enableDisable": "Enable/Disable",
+  "@enableDisable": {
+    "description": "Enable/Disable prefix text"
+  },
+  
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button text"
+  },
+  
+  "gateChangedTo": "Gate Changed to",
+  "@gateChangedTo": {
+    "description": "Gate changed success message prefix"
+  },
+  
+  "noGateSelected": "No gate selected",
+  "@noGateSelected": {
+    "description": "No gate selected error message"
+  },
+  
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings page title"
+  },
+  
+  "selectCamera": "Select Camera",
+  "@selectCamera": {
+    "description": "Select camera settings title"
+  },
+  
+  "language": "Language",
+  "@language": {
+    "description": "Language settings title"
+  },
+  
+  "camera": "Camera",
+  "@camera": {
+    "description": "Camera settings title"
+  },
+  
+  "visitorSettings": "Visitor Settings",
+  "@visitorSettings": {
+    "description": "Title for visitor settings screen"
+  },
+  
+  "appPermissions": "App Permissions",
+  "@appPermissions": {
+    "description": "Title for app permissions screen"
+  },
+  
+  "networkLogs": "Network Logs",
+  "@networkLogs": {
+    "description": "Network logs title"
+  },
+  
+  "dataObservability": "Data Observability",
+  "@dataObservability": {
+    "description": "Data observability title"
+  },
+  
+  "gateSettings": "Gate Settings",
+  "@gateSettings": {
+    "description": "Gate settings label"
+  },
+  
+  "staffManagement": "Staff Management",
+  "@staffManagement": {
+    "description": "Staff management label"
+  },
+  
+  "dutyAlarms": "Duty Alarms",
+  "@dutyAlarms": {
+    "description": "Duty alarms label"
+  },
+  
+  "kioskMode": "Kiosk Mode",
+  "@kioskMode": {
+    "description": "Kiosk mode label"
+  },
+  
+  "newEntry": "New Entry",
+  "@newEntry": {
+    "description": "New entry button text"
+  },
+  
+  "passId": "Pass ID",
+  "@passId": {
+    "description": "Pass ID label"
+  },
+  
+  "mobile": "Mobile",
+  "@mobile": {
+    "description": "Mobile field label"
+  },
+  
+  "comingFrom": "Coming From",
+  "@comingFrom": {
+    "description": "Coming from field label"
+  },
+  
+  "purpose": "Purpose",
+  "@purpose": {
+    "description": "Purpose field label"
+  },
+  
+  "guestName": "Guest Name",
+  "@guestName": {
+    "description": "Guest name field label"
+  },
+  
+  "guestCount": "Guest Count",
+  "@guestCount": {
+    "description": "Guest count field label"
+  },
+  
+  "visitorNumber": "Visitor Number",
+  "@visitorNumber": {
+    "description": "Visitor number field label"
+  },
+  
+  "carNumber": "Car Number",
+  "@carNumber": {
+    "description": "Car number field label"
+  },
+  
+  "vendor": "Vendor",
+  "@vendor": {
+    "description": "Vendor category"
+  },
+  
+  "delivery": "Delivery",
+  "@delivery": {
+    "description": "Delivery category"
+  },
+  
+  "guest": "Guest",
+  "@guest": {
+    "description": "Guest category"
+  },
+  
+  "staff": "Staff",
+  "@staff": {
+    "description": "Staff category"
+  },
+  
+  "cab": "Cab",
+  "@cab": {
+    "description": "Cab category"
+  },
+  
+  "enterVendorName": "Please enter the vendor's name to continue",
+  "@enterVendorName": {
+    "description": "Enter vendor name validation message"
+  },
+  
+  "enterCabDriverName": "Please enter the cab driver's name to continue",
+  "@enterCabDriverName": {
+    "description": "Enter cab driver name validation message"
+  },
+  
+  "enterDeliveryPersonName": "Please enter the delivery person's name to continue",
+  "@enterDeliveryPersonName": {
+    "description": "Enter delivery person name validation message"
+  },
+  
+  "enterGuestName": "Please enter the guest's name to continue",
+  "@enterGuestName": {
+    "description": "Enter guest name validation message"
+  },
+  
+  "enterStaffName": "Please enter the staff member's name to continue",
+  "@enterStaffName": {
+    "description": "Enter staff name validation message"
+  },
+  
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+  
+  "pleaseWait": "Please wait...",
+  "@pleaseWait": {
+    "description": "Please wait message"
+  },
+  
+  "languageChangeConfirmation": "Are you sure you want to change the language to {language}? The app will apply the new language immediately.",
+  "@languageChangeConfirmation": {
+    "description": "Language change confirmation dialog",
+    "placeholders": {
+      "language": {
+        "type": "String",
+        "example": "Hindi"
+      }
+    }
+  },
+  
+  "languageChanged": "Language changed successfully",
+  "@languageChanged": {
+    "description": "Language change success message"
+  },
+  
+  "gateName": "Gate Name",
+  "@gateName": {
+    "description": "Gate name label"
+  },
+  
+  "gateSelection": "Gate Selection",
+  "@gateSelection": {
+    "description": "Gate selection screen title"
+  },
+  
+  "selectGate": "Select Gate",
+  "@selectGate": {
+    "description": "Select gate dialog title"
+  },
+  
+  "visitorSettings": "Visitor Settings",
+  "@visitorSettings": {
+    "description": "Visitor settings menu item"
+  },
+  
+  "networkSettings": "Network Settings",
+  "@networkSettings": {
+    "description": "Network settings menu item"
+  },
+  
+  "profileSettings": "Profile Settings",
+  "@profileSettings": {
+    "description": "Profile settings menu item"
+  },
+  
+  "appSettings": "App Settings",
+  "@appSettings": {
+    "description": "App settings menu item"
+  },
+  
+  "dataStorage": "Data Storage",
+  "@dataStorage": {
+    "description": "Data storage settings"
+  },
+  
+  "cameraSettings": "Camera Settings",
+  "@cameraSettings": {
+    "description": "Camera settings menu item"
+  },
+  
+  "languageSettings": "Language Settings",
+  "@languageSettings": {
+    "description": "Language settings menu item"
+  },
+  
+  "visitorApprovalTime": "Visitor Approval Time",
+  "@visitorApprovalTime": {
+    "description": "Visitor approval time setting"
+  },
+  
+  "choosePreference": "Choose camera preference",
+  "@choosePreference": {
+    "description": "Choose camera preference subtitle"
+  },
+  
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  
+  "hindi": "Hindi",
+  "@hindi": {
+    "description": "Hindi language option"
+  },
+  
+  "marathi": "Marathi",
+  "@marathi": {
+    "description": "Marathi language option"
+  },
+  
+  "authenticating": "Authenticating...",
+  "@authenticating": {
+    "description": "Authentication in progress message"
+  },
+  
+  "authenticationFailed": "Authentication failed",
+  "@authenticationFailed": {
+    "description": "Authentication failed message"
+  },
+  
+  "authenticationSuccess": "Authentication successful",
+  "@authenticationSuccess": {
+    "description": "Authentication success message"
+  },
+  
+  "sessionExpired": "Session Expired",
+  "@sessionExpired": {
+    "description": "Session expired dialog title"
+  },
+  
+  "pleaseLoginAgain": "Please log in again",
+  "@pleaseLoginAgain": {
+    "description": "Please login again message"
+  },
+  
+  "tokenRefreshed": "Token refreshed successfully",
+  "@tokenRefreshed": {
+    "description": "Token refresh success message"
+  },
+  
+  "refreshingToken": "Refreshing token...",
+  "@refreshingToken": {
+    "description": "Token refresh in progress message"
+  },
+  
+  "allBuildings": "All Buildings",
+  "@allBuildings": {
+    "description": "All buildings filter option"
+  },
+  
+  "noMoreData": "No more data to load",
+  "@noMoreData": {
+    "description": "No more data message for pagination"
+  },
+  
+  "stateNotSuccess": "State is not VisitorLogSuccessState",
+  "@stateNotSuccess": {
+    "description": "Debug message for state error"
+  },
+  
+  "visitorLogInitialized": "VisitorLogView initialized with ID",
+  "@visitorLogInitialized": {
+    "description": "Debug message for visitor log initialization"
+  },
+  
+  "triggeringFetchForInOutBook": "Triggering FetchVisitorLogEvent for In Out Book",
+  "@triggeringFetchForInOutBook": {
+    "description": "Debug message for in out book fetch"
+  },
+  
+  "triggeringFetchForVisitorIn": "Triggering FetchCheckInLogEvent for Visitor In",
+  "@triggeringFetchForVisitorIn": {
+    "description": "Debug message for visitor in fetch"
+  },
+  
+  "triggeringFetchForCards": "Triggering FetchCheckOutLogEvent for Cards",
+  "@triggeringFetchForCards": {
+    "description": "Debug message for cards fetch"
+  },
+  
+  "triggeringFetchForVisitorOut": "Triggering FetchCheckOutLogEvent for Visitor Out",
+  "@triggeringFetchForVisitorOut": {
+    "description": "Debug message for visitor out fetch"
+  },
+  
+  "triggeringSearchFor": "Triggering search for",
+  "@triggeringSearchFor": {
+    "description": "Debug message for search trigger"
+  },
+  
+  "search": "Search",
+  "@search": {
+    "description": "Search button text"
+  },
+  
+  "searchVisitor": "Search Visitor",
+  "@searchVisitor": {
+    "description": "Search visitor placeholder"
+  },
+  
+  "export": "Export",
+  "@export": {
+    "description": "Export button text"
+  },
+  
+  "filter": "Filter",
+  "@filter": {
+    "description": "Filter button text"
+  },
+  
+  "noVisitorsFound": "No visitors found",
+  "@noVisitorsFound": {
+    "description": "No visitors found message"
+  },
+  
+  "checkOutSuccessful": "Check-Out Successful",
+  "@checkOutSuccessful": {
+    "description": "Check out success title"
+  },
+  
+  "visitorCheckedOut": "Visitor has been checked out successfully",
+  "@visitorCheckedOut": {
+    "description": "Visitor checked out success message"
+  },
+  
+  "loadingVisitors": "Loading visitors...",
+  "@loadingVisitors": {
+    "description": "Loading visitors message"
+  },
+  
+  "loadingMoreVisitors": "Loading more visitors...",
+  "@loadingMoreVisitors": {
+    "description": "Loading more visitors message"
+  },
+  
+  "visitorCount": "{count} visitors",
+  "@visitorCount": {
+    "description": "Visitor count with number",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  
+  "singleVisitor": "1 visitor",
+  "@singleVisitor": {
+    "description": "Single visitor count"
+  },
+  
+  "todayVisitors": "Today",
+  "@todayVisitors": {
+    "description": "Today visitors section"
+  },
+  
+  "yesterdayVisitors": "Yesterday",
+  "@yesterdayVisitors": {
+    "description": "Yesterday visitors section"
+  },
+  
+  "earlierVisitors": "Earlier",
+  "@earlierVisitors": {
+    "description": "Earlier visitors section"
+  },
+  
+  "checkOutConfirmation": "Are you sure you want to check out this visitor?",
+  "@checkOutConfirmation": {
+    "description": "Check out confirmation dialog"
+  },
+  
+  "visitorDetails": "Visitor Details",
+  "@visitorDetails": {
+    "description": "Visitor details screen title"
+  },
+  
+  "buildingSelection": "Building Selection",
+  "@buildingSelection": {
+    "description": "Building selection dialog title"
+  },
+  
+  "selectBuilding": "Select Building",
+  "@selectBuilding": {
+    "description": "Select building label"
+  },
+  
+  "noMoreVisitors": "No more visitors to load",
+  "@noMoreVisitors": {
+    "description": "No more visitors message"
+  },
+  
+  "errorLoadingVisitors": "Error loading visitors",
+  "@errorLoadingVisitors": {
+    "description": "Error loading visitors message"
+  },
+  
+  "retryLoading": "Retry loading",
+  "@retryLoading": {
+    "description": "Retry loading button text"
+  },
+  
+  "confirmLogout": "Confirm Logout",
+  "@confirmLogout": {
+    "description": "Logout confirmation dialog title"
+  },
+  
+  "logoutMessage": "Are you sure you want to logout?",
+  "@logoutMessage": {
+    "description": "Logout confirmation message"
+  },
+  
+  "logoutDescription": "You will need to sign in again to access your account.",
+  "@logoutDescription": {
+    "description": "Logout description message"
+  },
+  
+  "securityConfirmationRequired": "Security confirmation required",
+  "@securityConfirmationRequired": {
+    "description": "Security confirmation subtitle"
+  },
+  
+  "exitApp": "Exit App",
+  "@exitApp": {
+    "description": "Exit app dialog title"
+  },
+  
+  "exitAppConfirmation": "Are you sure you want to exit the app?",
+  "@exitAppConfirmation": {
+    "description": "Exit app confirmation message"
+  },
+  
+  "yes": "Yes",
+  "@yes": {
+    "description": "Yes button text"
+  },
+  
+  "no": "No",
+  "@no": {
+    "description": "No button text"
+  },
+  
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button text"
+  },
+  
+  "done": "Done",
+  "@done": {
+    "description": "Done button text"
+  },
+  
+  "next": "Next",
+  "@next": {
+    "description": "Next button text"
+  },
+  
+  "previous": "Previous",
+  "@previous": {
+    "description": "Previous button text"
+  },
+  
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip button text"
+  },
+  
+  "continueAction": "Continue",
+  "@continueAction": {
+    "description": "Continue button text"
+  },
+  
+  "tryAgain": "Try Again",
+  "@tryAgain": {
+    "description": "Try again button text"
+  },
+  
+  "@changesSuccessful": {
+    "description": "Success message when changes are saved"
+  },
+  "changesSuccessful": "Changes Saved Successfully!",
+  
+  "@changesUpdated": {
+    "description": "Description for successful changes"
+  },
+  "changesUpdated": "Your visitor settings have been updated",
+  
+  "@saveFailed": {
+    "description": "Error message when save fails"
+  },
+  "saveFailed": "Save Failed",
+
+  "@requestPermission": {
+    "description": "Title for request permission screen"
+  },
+  "requestPermission": "Request Permission",
+  
+  "@request": {
+    "description": "Title for request screen"
+  },
+  "request": "Request",
+  
+  "@permission": {
+    "description": "Permission text"
+  },
+  "permission": "Permission",
+  
+  "@selectedFlat": {
+    "description": "Label for selected flat"
+  },
+  "selectedFlat": "Selected Flat",
+  
+  "@visitorApproved": {
+    "description": "Message when visitor is approved"
+  },
+  "visitorApproved": "Visitor approved",
+  
+  "@visitorRejected": {
+    "description": "Message when visitor is rejected"
+  },
+  "visitorRejected": "Visitor rejected",
+  
+  "@leaveAtGate": {
+    "description": "Message for leave at gate"
+  },
+  "leaveAtGate": "Leave at gate",
+  
+  "@memberNotReachable": {
+    "description": "Message when member is not reachable"
+  },
+  "memberNotReachable": "Member not reachable",
+  
+  "@initializingRequest": {
+    "description": "Message when initializing request"
+  },
+  "initializingRequest": "Initializing request...",
+  
+  "@uploadingImage": {
+    "description": "Message when uploading image"
+  },
+  "uploadingImage": "Uploading image...",
+  
+  "@enterPasscode": {
+    "description": "Title for enter passcode screen"
+  },
+  "enterPasscode": "Enter Passcode",
+  
+  "@visitorPasscode": {
+    "description": "Label for visitor passcode"
+  },
+  "visitorPasscode": "Visitor Passcode",
+  
+  "@enterSixDigitPasscode": {
+    "description": "Description for passcode entry"
+  },
+  "enterSixDigitPasscode": "Enter your 6-digit passcode to continue",
+  
+  "@passcodeRequired": {
+    "description": "Validation message for required passcode"
+  },
+  "passcodeRequired": "Passcode is required",
+  
+  "@enterSixDigitValidation": {
+    "description": "Validation message for 6-digit passcode"
+  },
+  "enterSixDigitValidation": "Please enter a 6-digit passcode",
+
+  "@faceIdRegistration": {
+    "description": "Title for face ID registration screen"
+  },
+  "faceIdRegistration": "Face ID Registration",
+  
+  "@lookStraight": {
+    "description": "Face ID instruction to look straight"
+  },
+  "lookStraight": "Look straight",
+  
+  "@turnHeadLeft": {
+    "description": "Face ID instruction to turn head left"
+  },
+  "turnHeadLeft": "Turn your head slightly left",
+  
+  "@turnHeadRight": {
+    "description": "Face ID instruction to turn head right"
+  },
+  "turnHeadRight": "Turn your head slightly right",
+  
+  "@lookUp": {
+    "description": "Face ID instruction to look up"
+  },
+  "lookUp": "Look up slightly",
+  
+  "@lookDown": {
+    "description": "Face ID instruction to look down"
+  },
+  "lookDown": "Look down slightly",
+  
+  "@tiltHeadLeft": {
+    "description": "Face ID instruction to tilt head left"
+  },
+  "tiltHeadLeft": "Tilt your head left",
+  
+  "@tiltHeadRight": {
+    "description": "Face ID instruction to tilt head right"
+  },
+  "tiltHeadRight": "Tilt your head right",
+  
+  "@smileSlightly": {
+    "description": "Face ID instruction to smile"
+  },
+  "smileSlightly": "Smile slightly",
+  
+  "@blinkEyes": {
+    "description": "Face ID instruction to blink"
+  },
+  "blinkEyes": "Blink your eyes",
+
+  "@allowDrawOverApps": {
+    "description": "Permission to draw over other apps"
+  },
+  "allowDrawOverApps": "Allow 'onegate' to draw over other apps",
+  
+  "@drawOverAppsDescription": {
+    "description": "Description for draw over apps permission"
+  },
+  "drawOverAppsDescription": "This permission is needed to show approval screen when an approval request arrives for a visitor",
+  
+  "@allowEscapeDND": {
+    "description": "Permission to escape Do Not Disturb mode"
+  },
+  "allowEscapeDND": "Allow 'onegate' to escape 'Do Not Disturb' mode",
+  
+  "@escapeDNDDescription": {
+    "description": "Description for escape DND permission"
+  },
+  "escapeDNDDescription": "This permission is needed to ring the emergency alarm even if your device is in DND mode",
+
+  "@networkLogsDashboard": {
+    "description": "Title for network logs dashboard"
+  },
+  "networkLogsDashboard": "Network Logs Dashboard",
+  
+  "@refreshLogs": {
+    "description": "Tooltip for refresh logs button"
+  },
+  "refreshLogs": "Refresh Logs",
+  
+  "@error": {
+    "description": "Error text"
+  },
+  "error": "Error",
+  
+  "@retry": {
+    "description": "Retry button text"
+  },
+  "retry": "Retry",
+  
+  "@noNetworkLogs": {
+    "description": "Message when no network logs available"
+  },
+  "noNetworkLogs": "No network logs available",
+
+  "@dataObservabilitySettings": {
+    "description": "Title for data observability settings"
+  },
+  "dataObservabilitySettings": "Data Observability Settings",
+  
+  "@healthCheckCompleted": {
+    "description": "Message when health check is completed"
+  },
+  "healthCheckCompleted": "Health check completed",
+  
+  "@healthCheckFailed": {
+    "description": "Message when health check fails"
+  },
+  "healthCheckFailed": "Health check failed",
+  
+  "@testNotificationSent": {
+    "description": "Message when test notification is sent successfully"
+  },
+  "testNotificationSent": "Test notification sent successfully",
+  
+  "@testNotificationFailed": {
+    "description": "Message when test notification fails"
+  },
+  "testNotificationFailed": "Failed to send test notification",
+  
+  "@indexSyncCompleted": {
+    "description": "Message when index sync is completed"
+  },
+  "indexSyncCompleted": "Index sync completed successfully",
+  
+  "@indexSyncFailed": {
+    "description": "Message when index sync fails"
+  },
+  "indexSyncFailed": "Index sync failed - check configuration",
+  
+  "@details": {
+    "description": "Details button text"
+  },
+  "details": "Details",
+
+  "@crashReports": {
+    "description": "Title for crash reports screen"
+  },
+  "crashReports": "Crash Reports",
+  
+  "@crashStatistics": {
+    "description": "Title for crash statistics section"
+  },
+  "crashStatistics": "Crash Statistics",
+  
+  "@totalCrashes": {
+    "description": "Label for total crashes count"
+  },
+  "totalCrashes": "Total Crashes",
+  
+  "@fatalCrashes": {
+    "description": "Label for fatal crashes count"
+  },
+  "fatalCrashes": "Fatal Crashes",
+  
+  "@last24h": {
+    "description": "Label for last 24 hours crashes"
+  },
+  "last24h": "Last 24h",
+  
+  "@uniqueErrors": {
+    "description": "Label for unique errors count"
+  },
+  "uniqueErrors": "Unique Errors",
+  
+  "@allCrashes": {
+    "description": "Filter option for all crashes"
+  },
+  "allCrashes": "All Crashes",
+  
+  "@fatalOnly": {
+    "description": "Filter option for fatal crashes only"
+  },
+  "fatalOnly": "Fatal Only",
+  
+  "@nonFatal": {
+    "description": "Filter option for non-fatal crashes"
+  },
+  "nonFatal": "Non-Fatal",
+
+  "@allCrashesLabel": {
+    "description": "Label for all crashes filter option"
+  },
+  "allCrashesLabel": "All Crashes",
+
+  "@fatalOnlyLabel": {
+    "description": "Label for fatal only filter option"
+  },
+  "fatalOnlyLabel": "Fatal Only",
+
+  "@nonFatalLabel": {
+    "description": "Label for non-fatal filter option"
+  },
+  "nonFatalLabel": "Non-Fatal",
+
+  "@last24hLabel": {
+    "description": "Label for last 24 hours filter option"
+  },
+  "last24hLabel": "Last 24h",
+
+  "@noCrashesFoundTitle": {
+    "description": "Title when no crashes are found"
+  },
+  "noCrashesFoundTitle": "No Crashes Found",
+
+  "@noCrashesFoundMessage": {
+    "description": "Message when no crashes are found"
+  },
+  "noCrashesFoundMessage": "Great! No crashes have been reported for the selected filter.",
+
+  "@crashDetailsTitle": {
+    "description": "Title for crash details modal"
+  },
+  "crashDetailsTitle": "Crash Details",
+
+  "@copyCrashDetailsTooltip": {
+    "description": "Tooltip for copy crash details button"
+  },
+  "copyCrashDetailsTooltip": "Copy crash details",
+
+  "@errorTypeLabel": {
+    "description": "Label for error type field"
+  },
+  "errorTypeLabel": "Error Type",
+
+  "@fatalLabel": {
+    "description": "Label for fatal field"
+  },
+  "fatalLabel": "Fatal",
+
+  "@timestampLabel": {
+    "description": "Label for timestamp field"
+  },
+  "timestampLabel": "Timestamp",
+
+  "@appVersionLabel": {
+    "description": "Label for app version field"
+  },
+  "appVersionLabel": "App Version",
+
+  "@platformLabel": {
+    "description": "Label for platform field"
+  },
+  "platformLabel": "Platform",
+
+  "@deviceLabel": {
+    "description": "Label for device field"
+  },
+  "deviceLabel": "Device",
+
+  "@userIdLabel": {
+    "description": "Label for user ID field"
+  },
+  "userIdLabel": "User ID",
+
+  "@gateIdLabel": {
+    "description": "Label for gate ID field"
+  },
+  "gateIdLabel": "Gate ID",
+
+  "@errorMessageLabel": {
+    "description": "Label for error message field"
+  },
+  "errorMessageLabel": "Error Message",
+
+  "@stackTraceLabel": {
+    "description": "Label for stack trace field"
+  },
+  "stackTraceLabel": "Stack Trace",
+
+  "@building": {
+    "description": "Label for building field"
+  },
+  "building": "Building",
+
+  "@memberStatus": {
+    "description": "Label for member status field"
+  },
+  "memberStatus": "Member Status",
+
+  "@allBuildings": {
+    "description": "Dropdown option for all buildings"
+  },
+  "allBuildings": "All Buildings",
+
+  "@towerA": {
+    "description": "Building option Tower A"
+  },
+  "towerA": "Tower A",
+
+  "@towerB": {
+    "description": "Building option Tower B"
+  },
+  "towerB": "Tower B",
+
+  "@allStatuses": {
+    "description": "Dropdown option for all statuses"
+  },
+  "allStatuses": "All Statuses",
+
+  "@active": {
+    "description": "Status option active"
+  },
+  "active": "Active",
+
+  "@inactive": {
+    "description": "Status option inactive"
+  },
+  "inactive": "Inactive",
+
+  "@approvedMembersOnly": {
+    "description": "Filter option for approved members only"
+  },
+  "approvedMembersOnly": "Approved Members Only",
+
+  "@staffOnly": {
+    "description": "Filter option for staff only"
+  },
+  "staffOnly": "Staff Only",
+
+  "@dateRange": {
+    "description": "Label for date range filter"
+  },
+  "dateRange": "Date Range",
+
+  "@allDates": {
+    "description": "Option for all dates"
+  },
+  "allDates": "All dates",
+  
+  "debugReportCopiedToClipboard": "Debug report copied to clipboard",
+  "@debugReportCopiedToClipboard": {
+    "description": "Debug report copied message"
+  },
+
+  "errorSendingOTPPleaseTryAgain": "Error sending OTP. Please try again.",
+  "@errorSendingOTPPleaseTryAgain": {
+    "description": "Error message when OTP sending fails"
+  },
+  
+  "otpVerifiedSuccessfully": "OTP verified successfully!",
+  "@otpVerifiedSuccessfully": {
+    "description": "Success message when OTP is verified"
+  },
+  
+  "otpVerificationFailedPleaseTryAgain": "OTP verification failed. Please try again.",
+  "@otpVerificationFailedPleaseTryAgain": {
+    "description": "Error message when OTP verification fails"
+  },
+  
+  "mobileNumberIsRequired": "Mobile number is required",
+  "@mobileNumberIsRequired": {
+    "description": "Validation message when mobile number is empty"
+  },
+  
+  "noSpacesOrSpecialCharactersAllowed": "No spaces or special characters allowed",
+  "@noSpacesOrSpecialCharactersAllowed": {
+    "description": "Validation message for invalid mobile number format"
+  },
+  
+  "enterOTPSentToYourMobileNumber": "Enter OTP sent to your mobile number",
+  "@enterOTPSentToYourMobileNumber": {
+    "description": "Label for OTP entry field"
+  },
+  
+  "otpIsRequired": "OTP is required",
+  "@otpIsRequired": {
+    "description": "Validation message when OTP is empty"
+  },
+  
+  "pleaseEnter6DigitOTP": "Please enter a 6-digit OTP",
+  "@pleaseEnter6DigitOTP": {
+    "description": "Validation message for incorrect OTP length"
+  },
+
+  "initializingRequest": "Initializing request...",
+  "@initializingRequest": {
+    "description": "Status message when request is being initialized"
+  },
+
+  "uploadingImage": "Uploading image...",
+  "@uploadingImage": {
+    "description": "Status message when image is being uploaded"
+  },
+
+  "allowByGatekeeper": "Allow by Gatekeeper",
+  "@allowByGatekeeper": {
+    "description": "Button text for allow by gatekeeper action"
+  },
+
+  "call": "Call",
+  "@call": {
+    "description": "Call button text"
+  },
+
+  "grantAccess": "Grant Access",
+  "@grantAccess": {
+    "description": "Grant access button text"
+  },
+
+  "noMembersAvailable": "No members available",
+  "@noMembersAvailable": {
+    "description": "Message when no members are found"
+  },
+
+  "clearSearch": "Clear Search",
+  "@clearSearch": {
+    "description": "Clear search button text"
+  },
+
+  "noPurposeSelected": "No purpose selected",
+  "@noPurposeSelected": {
+    "description": "Error message when no purpose is selected"
+  },
+
+  "unknownPurpose": "Unknown purpose",
+  "@unknownPurpose": {
+    "description": "Text for unknown purpose"
+  },
+
+  "analyticsDashboard": "Analytics Dashboard",
+  "@analyticsDashboard": {
+    "description": "Analytics dashboard screen title"
+  },
+
+  "overview": "Overview",
+  "@overview": {
+    "description": "Overview tab text"
+  },
+
+  "userBehavior": "User Behavior",
+  "@userBehavior": {
+    "description": "User behavior tab text"
+  },
+
+  "performance": "Performance",
+  "@performance": {
+    "description": "Performance tab text"
+  },
+
+  "events": "Events",
+  "@events": {
+    "description": "Events tab text"
+  },
+
+  "loadingAnalyticsData": "Loading analytics data...",
+  "@loadingAnalyticsData": {
+    "description": "Loading message for analytics data"
+  },
+
+  "confirmUpload": "Confirm Upload",
+  "@confirmUpload": {
+    "description": "Confirm upload dialog title"
+  },
+
+  "doYouWantToUpload": "Do you want to upload this image?",
+  "@doYouWantToUpload": {
+    "description": "Confirm upload dialog content"
+  },
+
+  "male": "Male",
+  "@male": {
+    "description": "Male gender option"
+  },
+
+  "female": "Female",
+  "@female": {
+    "description": "Female gender option"
+  },
+
+  "other": "Other",
+  "@other": {
+    "description": "Other gender option"
+  },
+
+  "staffUpdatedSuccessfully": "Staff updated successfully",
+  "@staffUpdatedSuccessfully": {
+    "description": "Success message when staff is updated"
+  },
+
+  "selectPurposeOfVisit": "Select Purpose of Visit",
+  "@selectPurposeOfVisit": {
+    "description": "Text for selecting purpose of visit"
+  },
+
+  "visitorMobileNumber": "Visitor Mobile Number",
+  "@visitorMobileNumber": {
+    "description": "Label for visitor mobile number field"
+  },
+
+  "pleaseEnter10DigitNumber": "Please enter 10 digit number",
+  "@pleaseEnter10DigitNumber": {
+    "description": "Validation message for 10 digit mobile number"
+  },
+
+  "enterName": "Enter Name",
+  "@enterName": {
+    "description": "Label for enter name field"
+  },
+
+  "cameraPermissionRequired": "Camera Permission Required",
+  "@cameraPermissionRequired": {
+    "description": "Title for camera permission dialog"
+  },
+
+  "needCameraAccessForQR": "We need camera access to scan QR codes",
+  "@needCameraAccessForQR": {
+    "description": "Message explaining need for camera access"
+  },
+
+  "capturePhoto": "Capture Photo",
+  "@capturePhoto": {
+    "description": "Button text for capturing photo"
+  },
+
+  "changeLanguageConfirmation": "Are you sure you want to change the language to {language}? The app will apply the new language immediately.",
+  "@changeLanguageConfirmation": {
+    "description": "Confirmation message for language change"
+  },
+
+  "change": "Change",
+  "@change": {
+    "description": "Change button text"
+  },
+
+  "passcodeVerifiedSuccessfully": "Passcode verified successfully!",
+  "@passcodeVerifiedSuccessfully": {
+    "description": "Success message when passcode is verified"
+  },
+  
+  "invalidPasscodeTryAgain": "Invalid passcode. Try again.",
+  "@invalidPasscodeTryAgain": {
+    "description": "Error message for invalid passcode"
+  },
+  
+  "errorVerifyingPasscode": "Invalid passcode: failed to verify passcode",
+  "@errorVerifyingPasscode": {
+    "description": "Error message when passcode verification fails"
+  },
+  
+  "parcels": "Parcels",
+  "@parcels": {
+    "description": "Parcels screen title"
+  },
+  
+  "noParcelsFound": "No parcels found.",
+  "@noParcelsFound": {
+    "description": "Message when no parcels are found"
+  },
+  
+  "pleaseSelectPurpose": "Please select purpose",
+  "@pleaseSelectPurpose": {
+    "description": "Error message when no purpose is selected"
+  },
+  
+  "selfEntrySettings": "Self Entry Settings",
+  "@selfEntrySettings": {
+    "description": "Self entry settings menu item"
+  },
+  
+  "enableDisableSelfEntry": "Enable/Disable Self Entry",
+  "@enableDisableSelfEntry": {
+    "description": "Self entry settings subtitle"
+  },
+  
+  "changePassword": "Change Password",
+  "@changePassword": {
+    "description": "Change password menu item"
+  },
+  
+  "changeYourPassword": "Change your password",
+  "@changeYourPassword": {
+    "description": "Change password subtitle"
+  },
+  
+  "currentPreference": "Current Preference: {preference}",
+  "@currentPreference": {
+    "description": "Current preference display text"
+  },
+  
+  "couldNotLaunch": "Could not launch {url}",
+  "@couldNotLaunch": {
+    "description": "Error message when URL cannot be launched"
+  },
+  
+  "screenNavigation": "Screen Navigation",
+  "@screenNavigation": {
+    "description": "Screen navigation analytics title"
+  },
+  
+  "noScreenNavigationRecorded": "No screen navigation recorded yet",
+  "@noScreenNavigationRecorded": {
+    "description": "Message when no screen navigation is recorded"
+  },
+
+  "noParcelsAvailable": "No Parcels Available",
+  "@noParcelsAvailable": {
+    "description": "Title when no parcels are available"
+  },
+
+  "noParcelRegistered": "There are currently no parcels registered in the system.",
+  "@noParcelRegistered": {
+    "description": "Message when no parcels are registered"
+  },
+
+  "somethingWentWrong": "Something went wrong",
+  "@somethingWentWrong": {
+    "description": "Generic error title"
+  },
+
+  "errorLoadingParcelList": "There was an error loading the parcel list. Please check your connection and try again.",
+  "@errorLoadingParcelList": {
+    "description": "Error message when parcel list fails to load"
+  },
+
+  "tryAgain": "Try Again",
+  "@tryAgain": {
+    "description": "Try again button text"
+  },
+
+  "enterMobileNumber": "Enter Mobile Number",
+  "@enterMobileNumber": {
+    "description": "Title for mobile number entry screen"
+  },
+
+  "mobileTab": "Mobile",
+  "@mobileTab": {
+    "description": "Mobile tab label in toggle switch"
+  },
+
+  "passCodeTab": "Pass Code",
+  "@passCodeTab": {
+    "description": "Pass code tab label in toggle switch"
+  },
+
+  "enterTheVisitorMobileNumber": "Enter the visitor mobile number",
+  "@enterTheVisitorMobileNumber": {
+    "description": "Placeholder text for mobile number field"
+  },
+
+  "validatingMobileNumber": "Validating mobile number...",
+  "@validatingMobileNumber": {
+    "description": "Loading message when validating mobile number"
+  },
+
+  "introducingOnegateBrand": "Introducing onegate your complete digital guardian",
+  "@introducingOnegateBrand": {
+    "description": "First intro screen description"
+  },
+
+  "secureDigitalWorld": "Secure your digital world with onegate,\nthe all-in-one security application.",
+  "@secureDigitalWorld": {
+    "description": "Second intro screen description"
+  },
+
+  "searchMembers": "Search Members",
+  "@searchMembers": {
+    "description": "Placeholder text for member search field"
+  },
+
+  "gateSettings": "Gate Settings",
+  "@gateSettings": {
+    "description": "Gate settings menu item"
+  },
+
+  "staffs": "Staffs",
+  "@staffs": {
+    "description": "Staffs menu item"
+  },
+
+  "viewYourSocietyStaffs": "View your society staffs",
+  "@viewYourSocietyStaffs": {
+    "description": "Staffs menu subtitle"
+  },
+
+  "visitorsAndVehiclesSettings": "Visitors and Vehicles Settings",
+  "@visitorsAndVehiclesSettings": {
+    "description": "Visitors and vehicles settings menu item"
+  },
+
+  "allVisitorsWillBeAutoApproved": "All visitors will be auto approved",
+  "@allVisitorsWillBeAutoApproved": {
+    "description": "Auto approval setting subtitle"
+  },
+
+  "visitorsSettings": "Visitors Settings",
+  "@visitorsSettings": {
+    "description": "Visitors settings menu item"
+  },
+
+  "markMandatoryFieldsForVisitors": "Mark mandatory fields for visitors",
+  "@markMandatoryFieldsForVisitors": {
+    "description": "Mandatory fields setting subtitle"
+  },
+
+  "visitorApprovalTime": "Visitor Approval Time",
+  "@visitorApprovalTime": {
+    "description": "Visitor approval time menu item"
+  },
+
+  "configureDutyAlarms": "Configure Duty Alarms",
+  "@configureDutyAlarms": {
+    "description": "Duty alarms menu item"
+  },
+
+  "enableDisableDutyAlarms": "Enable/Disable Duty Alarms",
+  "@enableDisableDutyAlarms": {
+    "description": "Duty alarms menu subtitle"
+  },
+
+  "applicationSettings": "Application Settings",
+  "@applicationSettings": {
+    "description": "Application settings menu item"
+  },
+
+  "dataObservability": "Data Observability",
+  "@dataObservability": {
+    "description": "Data observability menu item"
+  },
+
+  "monitorSystemHealthSearchNotifications": "Monitor system health, search & notifications",
+  "@monitorSystemHealthSearchNotifications": {
+    "description": "Data observability menu subtitle"
+  },
+
+  "cameraSettings": "Camera Settings",
+  "@cameraSettings": {
+    "description": "Camera settings menu item"
+  },
+
+  "dataStorage": "Data Storage",
+  "@dataStorage": {
+    "description": "Data storage menu item"
+  },
+
+  "chooseCameraPreference": "Choose camera preference",
+  "@chooseCameraPreference": {
+    "description": "Camera preference dialog title"
+  },
+
+  "useFrontFacingCamera": "Use front-facing camera",
+  "@useFrontFacingCamera": {
+    "description": "Front camera option"
+  },
+
+  "useRearFacingCamera": "Use rear-facing camera",
+  "@useRearFacingCamera": {
+    "description": "Rear camera option"
+  },
+
+  "cameraSettingUpdatedSuccessfully": "Camera setting updated successfully",
+  "@cameraSettingUpdatedSuccessfully": {
+    "description": "Camera setting update success message"
+  },
+
+  "selectApprovalTime": "Select Approval Time",
+  "@selectApprovalTime": {
+    "description": "Approval time dialog title"
+  },
+
+  "chooseVisitorApprovalDuration": "Choose visitor approval duration",
+  "@chooseVisitorApprovalDuration": {
+    "description": "Approval time dialog subtitle"
+  },
+
+  "approvalTimeoutDuration": "Approval timeout duration",
+  "@approvalTimeoutDuration": {
+    "description": "Approval timeout label"
+  },
+
+  "approvalTimeUpdatedSuccessfully": "Approval time updated successfully",
+  "@approvalTimeUpdatedSuccessfully": {
+    "description": "Approval time update success message"
+  },
+
+  "selectDataStorage": "Select Data Storage",
+  "@selectDataStorage": {
+    "description": "Data storage dialog title"
+  },
+
+  "languageChangedSuccessfully": "Language changed successfully",
+  "@languageChangedSuccessfully": {
+    "description": "Language change success message"
+  },
+
+  "errorChangingLanguage": "Error changing language: {error}",
+  "@errorChangingLanguage": {
+    "description": "Language change error message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+
+  "currentPreferenceGate": "Current Preference: {gateName}",
+  "@currentPreferenceGate": {
+    "description": "Current gate preference display",
+    "placeholders": {
+      "gateName": {
+        "type": "String",
+        "example": "Gate 1"
+      }
+    }
+  },
+
+  "notSelectedGate": "Not Selected Gate",
+  "@notSelectedGate": {
+    "description": "No gate selected text"
+  },
+
+  "currentPreferenceCamera": "Current Preference: {cameraType}",
+  "@currentPreferenceCamera": {
+    "description": "Current camera preference display",
+    "placeholders": {
+      "cameraType": {
+        "type": "String",
+        "example": "Front Camera"
+      }
+    }
+  },
+
+  "notSelectedCamera": "Not Selected Camera",
+  "@notSelectedCamera": {
+    "description": "No camera selected text"
+  },
+
+  "seconds": "seconds",
+  "@seconds": {
+    "description": "Seconds unit label"
+  },
+
+  "visitorIsSelfCheckIn": "Visitor is Self Check In",
+  "@visitorIsSelfCheckIn": {
+    "description": "Self check-in visitor status message"
+  },
+
+  "visitorIsAllowedByGatekeeper": "Visitor is pre-approved by member",
+  "@visitorIsAllowedByGatekeeper": {
+    "description": "Pre-approved visitor status message"
+  },
+
+  "visitorIsAllowedByGatekeeperOriginal": "Visitor is allowed by gatekeeper",
+  "@visitorIsAllowedByGatekeeperOriginal": {
+    "description": "Original gatekeeper approval message"
+  },
+
+  "unknownRequestType": "Unknown request type",
+  "@unknownRequestType": {
+    "description": "Unknown request type fallback message"
+  },
+
+  "request": "Request",
+  "@request": {
+    "description": "Request page title"
+  },
+
+  "finish": "Finish",
+  "@finish": {
+    "description": "Finish button text"
+  },
+
+  "mobile": "Mobile",
+  "@mobile": {
+    "description": "Mobile number field label"
+  },
+
+  "comingFrom": "Coming From",
+  "@comingFrom": {
+    "description": "Coming from field label"
+  },
+
+  "notSpecified": "Not specified",
+  "@notSpecified": {
+    "description": "Not specified placeholder text"
+  },
+
+  "purpose": "Purpose",
+  "@purpose": {
+    "description": "Purpose field label"
+  },
+
+  "staff": "Staff",
+  "@staff": {
+    "description": "Staff purpose type"
+  },
+
+  "tryAgain": "Try Again",
+  "@tryAgain": {
+    "description": "Try again button text"
+  },
+
+  "allowByGatekeeper": "Allow by Gatekeeper",
+  "@allowByGatekeeper": {
+    "description": "Allow by gatekeeper button text"
+  },
+
+  "requestPermission": "Request permission",
+  "@requestPermission": {
+    "description": "Request permission button text"
+  },
+
+  "guestCount": "Guest Count",
+  "@guestCount": {
+    "description": "Guest count field label"
+  },
+
+  "select": "Select",
+  "@select": {
+    "description": "Select button text"
+  },
+
+  "societyOffice": "Society Office",
+  "@societyOffice": {
+    "description": "Society office option"
+  },
+
+  "selectBuilding": "Select Building",
+  "@selectBuilding": {
+    "description": "Select building dialog title"
+  },
+
+  "tapToViewDetails": "Tap to view details",
+  "@tapToViewDetails": {
+    "description": "Tap to view details instruction"
+  },
+
+  "visitorAllowedByGatekeeper": "Visitor Allowed By Gatekeeper",
+  "@visitorAllowedByGatekeeper": {
+    "description": "Visitor allowed by gatekeeper status"
+  },
+
+
+
+  "errorProcessingSelection": "Error processing selection",
+  "@errorProcessingSelection": {
+    "description": "Error processing selection message"
+  },
+
+  "trying": "Trying...",
+  "@trying": {
+    "description": "Trying button text when in progress"
+  },
+
+  "inOutBook": "In Out Book",
+  "@inOutBook": {
+    "description": "In Out Book visitor log type"
+  },
+
+  "visitorIn": "Visitor In",
+  "@visitorIn": {
+    "description": "Visitor In log type"
+  },
+
+  "visitorOut": "Visitor Out",
+  "@visitorOut": {
+    "description": "Visitor Out log type"
+  },
+
+  "defaultCategory": "Default Category",
+  "@defaultCategory": {
+    "description": "Default purpose category name"
+  },
+
+  "locationPermissionRequired": "Location Permission Required",
+  "@locationPermissionRequired": {
+    "description": "Location permission dialog title"
+  },
+
+  "locationPermissionMessage": "Location permissions are required to use this feature. Please enable them in your device settings.",
+  "@locationPermissionMessage": {
+    "description": "Location permission dialog message"
+  },
+
+  "purposeEntry": "Purpose Entry",
+  "@purposeEntry": {
+    "description": "Purpose entry page title"
+  },
+
+  "staffInformation": "Staff Information",
+  "@staffInformation": {
+    "description": "Staff information section title"
+  },
+
+  "pleaseFillStaffDetails": "Please fill in all the staff details",
+  "@pleaseFillStaffDetails": {
+    "description": "Staff form instruction text"
+  },
+
+  "staffName": "Staff Name",
+  "@staffName": {
+    "description": "Staff name field label"
+  },
+
+  "enterStaffName": "Enter staff name",
+  "@enterStaffName": {
+    "description": "Staff name field placeholder"
+  },
+
+  "enterComingFromLocation": "Enter coming from location",
+  "@enterComingFromLocation": {
+    "description": "Coming from location placeholder"
+  },
+
+  "cabInformation": "Cab Information",
+  "@cabInformation": {
+    "description": "Cab information section title"
+  },
+
+  "pleaseFillCabDetails": "Please fill in all the cab details",
+  "@pleaseFillCabDetails": {
+    "description": "Cab form instruction text"
+  },
+
+  "cabDriverName": "Cab Driver Name",
+  "@cabDriverName": {
+    "description": "Cab driver name field label"
+  },
+
+  "enterCabDriverName": "Enter cab driver name",
+  "@enterCabDriverName": {
+    "description": "Cab driver name field placeholder"
+  },
+
+  "cabNumber": "Cab Number",
+  "@cabNumber": {
+    "description": "Cab number field label"
+  },
+
+  "deliveryPersonName": "Delivery Person Name",
+  "@deliveryPersonName": {
+    "description": "Delivery person name field label"
+  },
+
+  "enterNameOfDeliveryPerson": "Enter the name of the delivery person",
+  "@enterNameOfDeliveryPerson": {
+    "description": "Delivery person name instruction"
+  },
+
+  "enterDeliveryPersonName": "Enter delivery person name",
+  "@enterDeliveryPersonName": {
+    "description": "Delivery person name placeholder"
+  },
+
+  "selectDeliveryCompany": "Select Delivery Company",
+  "@selectDeliveryCompany": {
+    "description": "Select delivery company section title"
+  },
+
+  "vendorName": "Vendor Name",
+  "@vendorName": {
+    "description": "Vendor name field label"
+  },
+
+  "enterNameOfVendor": "Enter the name of the vendor",
+  "@enterNameOfVendor": {
+    "description": "Vendor name instruction"
+  },
+
+  "enterVendorName": "Enter vendor name",
+  "@enterVendorName": {
+    "description": "Vendor name placeholder"
+  },
+
+  "selectVendorCategory": "Select Vendor Category",
+  "@selectVendorCategory": {
+    "description": "Select vendor category section title"
+  },
+
+  "guestInformation": "Guest Information",
+  "@guestInformation": {
+    "description": "Guest information section title"
+  },
+
+  "pleaseFillGuestDetails": "Please fill in all the guest details",
+  "@pleaseFillGuestDetails": {
+    "description": "Guest form instruction text"
+  },
+
+  "guestName": "Guest Name",
+  "@guestName": {
+    "description": "Guest name field label"
+  },
+
+  "enterGuestName": "Enter guest name",
+  "@enterGuestName": {
+    "description": "Guest name field placeholder"
+  },
+
+  "visitorId": "Visitor ID",
+  "@visitorId": {
+    "description": "Visitor ID field label"
+  },
+
+  "enterVisitorId": "Enter visitor id",
+  "@enterVisitorId": {
+    "description": "Visitor ID field placeholder"
+  },
+
+  "submit": "Submit",
+  "@submit": {
+    "description": "Submit button text"
+  },
+
+  "allow": "Allow",
+  "@allow": {
+    "description": "Allow button text"
+  },
+
+  "deny": "Deny",
+  "@deny": {
+    "description": "Deny button text"
+  },
+
+  "uploading": "Uploading...",
+  "@uploading": {
+    "description": "Upload progress text"
+  },
+
+  "captureImage": "Capture Image",
+  "@captureImage": {
+    "description": "Capture image button text"
+  },
+
+  "exportLogs": "Export Logs",
+  "@exportLogs": {
+    "description": "Button text for exporting logs"
+  },
+
+  "applyFilter": "Apply Filter",
+  "@applyFilter": {
+    "description": "Button text for applying filters"
+  },
+
+  "contactInformation": "Contact Information",
+  "@contactInformation": {
+    "description": "Section title for contact information"
+  },
+
+  "phoneNumber": "Phone Number",
+  "@phoneNumber": {
+    "description": "Label for phone number field"
+  },
+
+  "visitDetails": "Visit Details",
+  "@visitDetails": {
+    "description": "Section title for visit details"
+  },
+
+  "visitingUnit": "Visiting Unit",
+  "@visitingUnit": {
+    "description": "Label for visiting unit"
+  },
+
+  "societyOffice": "Society Office",
+  "@societyOffice": {
+    "description": "Label for society office"
+  },
+
+  "comingFrom": "Coming From",
+  "@comingFrom": {
+    "description": "Label for coming from field"
+  },
+
+  "cardNumber": "Card Number",
+  "@cardNumber": {
+    "description": "Label for card number"
+  },
+
+  "visitorTimeline": "Visitor Timeline",
+  "@visitorTimeline": {
+    "description": "Section title for visitor timeline"
+  },
+
+  "checkIn": "Check In",
+  "@checkIn": {
+    "description": "Label for check in time"
+  },
+
+  "checkOut": "Check Out",
+  "@checkOut": {
+    "description": "Label for check out time"
+  },
+
+  "approvedBy": "Approved By",
+  "@approvedBy": {
+    "description": "Label for approved by field"
+  },
+
+  "notSpecified": "Not specified",
+  "@notSpecified": {
+    "description": "Text shown when information is not specified"
+  },
+
+  "tryAgain": "Try Again",
+  "@tryAgain": {
+    "description": "Button text for trying again"
+  },
+
+  "requestPermission": "Request Permission",
+  "@requestPermission": {
+    "description": "Button text for requesting permission"
+  },
+
+  "searchHint": "Search",
+  "@searchHint": {
+    "description": "Hint text for search fields"
+  },
+
+  "allBuildings": "All Buildings",
+  "@allBuildings": {
+    "description": "Option to select all buildings"
+  },
+
+  "cards": "Cards",
+  "@cards": {
+    "description": "Label for cards filter"
+  },
+
+  "actions": "Actions",
+  "@actions": {
+    "description": "Section title for actions"
+  },
+
+  "unknownVisitor": "Unknown",
+  "@unknownVisitor": {
+    "description": "Text shown for unknown visitor"
+  },
+
+  "inGate": "In-Gate",
+  "@inGate": {
+    "description": "Label for in-gate field"
+  },
+
+  "purpose": "Purpose",
+  "@purpose": {
+    "description": "Label for purpose field"
+  },
+
+  "selectBuilding": "Select Building",
+  "@selectBuilding": {
+    "description": "Prompt to select a building"
+  },
+
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Button text for refresh action"
+  },
+
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Button text for confirm action"
+  },
+
+  "always": "Always",
+  "@always": {
+    "description": "Text for always option"
+  },
+
+  "alwaysAllowed": "Always Allowed",
+  "@alwaysAllowed": {
+    "description": "Status text for always allowed visitors"
+  },
+
+  "retryIn": "Retry in:",
+  "@retryIn": {
+    "description": "Text shown with countdown timer"
+  },
+
+  "active": "Active",
+  "@active": {
+    "description": "Status text for active items"
+  },
+
+  "inactive": "Inactive",
+  "@inactive": {
+    "description": "Status text for inactive items"
+  }
+} 

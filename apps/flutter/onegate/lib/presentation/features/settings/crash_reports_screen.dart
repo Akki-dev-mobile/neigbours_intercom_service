@@ -5,6 +5,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/crash_reporting/crash_reporter_service.dart';
 import 'package:flutter_onegate/services/crash_reporting/models/crash_models.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 /// Screen for viewing crash reports and error analytics
 class CrashReportsScreen extends StatefulWidget {
@@ -70,7 +71,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-      pageTitle: 'Crash Reports',
+      pageTitle: AppLocalizations.of(context)!.crashReports,
       pageBody: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -98,7 +99,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Crash Statistics',
+                  AppLocalizations.of(context)!.crashStatistics,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -110,7 +111,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
               children: [
                 Expanded(
                   child: _buildStatItem(
-                    'Total Crashes',
+                    AppLocalizations.of(context)!.totalCrashes,
                     '${_statistics['totalCrashes'] ?? 0}',
                     Colors.blue,
                     Ionicons.bug_outline,
@@ -118,7 +119,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                 ),
                 Expanded(
                   child: _buildStatItem(
-                    'Fatal Crashes',
+                    AppLocalizations.of(context)!.fatalCrashes,
                     '${_statistics['fatalCrashes'] ?? 0}',
                     Colors.red,
                     Ionicons.skull_outline,
@@ -131,7 +132,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
               children: [
                 Expanded(
                   child: _buildStatItem(
-                    'Last 24h',
+                    AppLocalizations.of(context)!.last24h,
                     '${_statistics['crashes24h'] ?? 0}',
                     Colors.orange,
                     Ionicons.time_outline,
@@ -139,7 +140,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                 ),
                 Expanded(
                   child: _buildStatItem(
-                    'Unique Errors',
+                    AppLocalizations.of(context)!.uniqueErrors,
                     '${_statistics['uniqueErrors'] ?? 0}',
                     Colors.green,
                     Ionicons.layers_outline,
@@ -153,7 +154,8 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color, IconData icon) {
+  Widget _buildStatItem(
+      String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -188,10 +190,13 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
 
   Widget _buildFilterChips() {
     final filters = [
-      {'key': 'all', 'label': 'All Crashes'},
-      {'key': 'fatal', 'label': 'Fatal Only'},
-      {'key': 'non_fatal', 'label': 'Non-Fatal'},
-      {'key': 'recent', 'label': 'Last 24h'},
+      {'key': 'all', 'label': AppLocalizations.of(context)!.allCrashesLabel},
+      {'key': 'fatal', 'label': AppLocalizations.of(context)!.fatalOnlyLabel},
+      {
+        'key': 'non_fatal',
+        'label': AppLocalizations.of(context)!.nonFatalLabel
+      },
+      {'key': 'recent', 'label': AppLocalizations.of(context)!.last24hLabel},
     ];
 
     return SingleChildScrollView(
@@ -209,7 +214,8 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                   _selectedFilter = filter['key']!;
                 });
               },
-              selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              selectedColor:
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
               checkmarkColor: Theme.of(context).colorScheme.primary,
             ),
           );
@@ -234,12 +240,12 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'No crashes found',
+                AppLocalizations.of(context)!.noCrashesFoundTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                'Your app is running smoothly!',
+                AppLocalizations.of(context)!.noCrashesFoundMessage,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -261,7 +267,9 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: crash.severity.colorHex.startsWith('#')
-              ? Color(int.parse(crash.severity.colorHex.substring(1), radix: 16) + 0xFF000000)
+              ? Color(
+                  int.parse(crash.severity.colorHex.substring(1), radix: 16) +
+                      0xFF000000)
               : Colors.red,
           child: Icon(
             crash.isFatal ? Ionicons.skull : Ionicons.warning,
@@ -328,7 +336,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Crash Details',
+                      AppLocalizations.of(context)!.crashDetailsTitle,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -337,7 +345,8 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                   IconButton(
                     onPressed: () => _copyCrashDetails(crash),
                     icon: Icon(Ionicons.copy_outline),
-                    tooltip: 'Copy crash details',
+                    tooltip:
+                        AppLocalizations.of(context)!.copyCrashDetailsTooltip,
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -350,19 +359,30 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                 child: ListView(
                   controller: scrollController,
                   children: [
-                    _buildDetailRow('Error Type', crash.errorType),
-                    _buildDetailRow('Fatal', crash.isFatal ? 'Yes' : 'No'),
-                    _buildDetailRow('Timestamp', crash.timestamp.toString()),
-                    _buildDetailRow('App Version', crash.appVersion),
-                    _buildDetailRow('Platform', '${crash.platform} ${crash.osVersion}'),
-                    _buildDetailRow('Device', crash.deviceModel),
+                    _buildDetailRow(
+                        AppLocalizations.of(context)!.errorTypeLabel,
+                        crash.errorType),
+                    _buildDetailRow(AppLocalizations.of(context)!.fatalLabel,
+                        crash.isFatal ? 'Yes' : 'No'),
+                    _buildDetailRow(
+                        AppLocalizations.of(context)!.timestampLabel,
+                        crash.timestamp.toString()),
+                    _buildDetailRow(
+                        AppLocalizations.of(context)!.appVersionLabel,
+                        crash.appVersion),
+                    _buildDetailRow(AppLocalizations.of(context)!.platformLabel,
+                        '${crash.platform} ${crash.osVersion}'),
+                    _buildDetailRow(AppLocalizations.of(context)!.deviceLabel,
+                        crash.deviceModel),
                     if (crash.userId != null)
-                      _buildDetailRow('User ID', crash.userId!),
+                      _buildDetailRow(AppLocalizations.of(context)!.userIdLabel,
+                          crash.userId!),
                     if (crash.gateId != null)
-                      _buildDetailRow('Gate ID', crash.gateId!),
+                      _buildDetailRow(AppLocalizations.of(context)!.gateIdLabel,
+                          crash.gateId!),
                     const SizedBox(height: 16),
                     Text(
-                      'Error Message',
+                      AppLocalizations.of(context)!.errorMessageLabel,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -382,7 +402,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Stack Trace',
+                      AppLocalizations.of(context)!.stackTraceLabel,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

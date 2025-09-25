@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../bloc/parcel_state.dart';
 import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
 import 'package:common_widgets/loading_view.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class ParcelList extends StatefulWidget {
   const ParcelList({super.key});
@@ -93,7 +94,7 @@ class _ParcelListState extends State<ParcelList> {
         // Search field
         CustomForm.textField(
           "",
-          hintText: "Search Members",
+          hintText: AppLocalizations.of(context)!.searchMembers,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onSurface,
           focusNode: _searchFocusNode,
@@ -732,7 +733,7 @@ class _ParcelListState extends State<ParcelList> {
 
             // Enhanced title (staff style)
             Text(
-              'No Parcels Available',
+              AppLocalizations.of(context)!.noParcelsAvailable,
               style: TextStyle(
                 color: const Color(0xff212427),
                 fontSize: isTablet ? 24 : 20,
@@ -746,7 +747,7 @@ class _ParcelListState extends State<ParcelList> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
               child: Text(
-                'There are currently no parcels registered in the system.',
+                AppLocalizations.of(context)!.noParcelRegistered,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey.shade600,
@@ -798,7 +799,7 @@ class _ParcelListState extends State<ParcelList> {
                   color: Colors.white,
                 ),
                 label: Text(
-                  'Refresh',
+                  AppLocalizations.of(context)!.refresh,
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -850,7 +851,7 @@ class _ParcelListState extends State<ParcelList> {
 
             // Enhanced title (staff style)
             Text(
-              'Something went wrong',
+              AppLocalizations.of(context)!.somethingWentWrong,
               style: TextStyle(
                 color: const Color(0xff212427),
                 fontSize: isTablet ? 24 : 20,
@@ -864,7 +865,7 @@ class _ParcelListState extends State<ParcelList> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
               child: Text(
-                'There was an error loading the parcel list. Please check your connection and try again.',
+                AppLocalizations.of(context)!.errorLoadingParcelList,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey.shade600,
@@ -916,7 +917,7 @@ class _ParcelListState extends State<ParcelList> {
                   color: Colors.white,
                 ),
                 label: Text(
-                  'Try Again',
+                  AppLocalizations.of(context)!.tryAgain,
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -945,7 +946,7 @@ class _ParcelListState extends State<ParcelList> {
             (Route<dynamic> route) => false,
           );
         },
-        pageTitle: 'Parcels',
+        pageTitle: AppLocalizations.of(context)!.parcels,
         pageBody: Column(
           children: [
             Padding(

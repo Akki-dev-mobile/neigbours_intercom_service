@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 import '../../../../domain/entities/visitor/visitorLog.dart';
 
@@ -97,7 +98,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
             label: Text(
-              'New Entry',
+              AppLocalizations.of(context).newEntry,
               style: Theme.of(context).textTheme.labelMedium,
             ))
       ],
@@ -146,7 +147,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
                     ),
                     RichText(
                       text: TextSpan(
-                        text: 'Pass ID\n',
+                        text: '${AppLocalizations.of(context).passId}\n',
                         style: Theme.of(context).textTheme.labelMedium,
                         children: <TextSpan>[
                           TextSpan(
@@ -176,22 +177,22 @@ class _SelfProfileViewState extends State<SelfProfileView> {
               ),
               SelfProfileTile(
                 icon: Symbols.phone_in_talk_sharp,
-                title: 'Mobile',
+                title: AppLocalizations.of(context).mobile,
                 subtitle: widget.visitor.mobile ?? 'N/A',
               ),
               SelfProfileTile(
                 icon: Symbols.person_pin_circle_sharp,
-                title: 'Coming From',
+                title: AppLocalizations.of(context).comingFrom,
                 subtitle: widget.visitorLog.visitor_coming_from ?? 'N/A',
               ),
               SelfProfileTile(
                 icon: Symbols.near_me_sharp,
-                title: 'Unit',
+                title: AppLocalizations.of(context).unit,
                 subtitle: widget.unitList?.first ?? 'N/A',
               ),
               SelfProfileTile(
                 icon: Symbols.groups_3_sharp,
-                title: 'Purpose',
+                title: AppLocalizations.of(context).purpose,
                 subtitle:
                     widget.visitorLog.visitor_purpose_Category_name ?? 'N/A',
               ),

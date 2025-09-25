@@ -20,6 +20,8 @@ import 'package:http/http.dart' as http;
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/route_tracker.dart';
 
 class SelfEntryFacerecView extends StatefulWidget {
   const SelfEntryFacerecView({super.key});
@@ -75,6 +77,15 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
   void initState() {
     super.initState();
     _pickImage();
+    _trackExpressEntryRoute();
+  }
+
+  // Track that user is in express entry flow
+  Future<void> _trackExpressEntryRoute() async {
+    await RouteTracker.saveCurrentRoute(
+      'SelfEntryFacerecView',
+      isExpressEntry: true,
+    );
   }
 
   Future<void> loadPurposes() async {
@@ -113,112 +124,37 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
           mobile: visitorData['mobile'] ?? '',
           visitor_image: visitorData['visitor_image'],
         );
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true, // Allows for height adjustment
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+
+        // For existing visitors in Express Entry flow, ALWAYS require member approval
+        // Determine default purpose (first available or fallback to Guest)
+        PurposeCategory1 defaultPurpose;
+        if (globalSelectedPurposes.isNotEmpty) {
+          defaultPurpose = globalSelectedPurposes.first;
+        } else {
+          // Fallback to default Guest purpose
+          defaultPurpose = PurposeCategory1(
+            categoryId: 1,
+            categoryName: "Guest",
+            image: null,
+          );
+        }
+
+        print(
+            "DEBUG: Existing visitor detected in Express Entry face recognition flow, proceeding with member approval: ${defaultPurpose.categoryName}");
+
+        // Navigate to visitor information form - approval will be required
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VisitorsInEntry(
+              selfcheckinFlow: true,
+              comingfrom: comingfrom,
+              searchedVisitor: visitor,
+              selectedValue: defaultPurpose,
+              mobile: visitorData['mobile'],
+            ),
           ),
-          builder: (BuildContext context) {
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                return SizedBox(
-                  height: MediaQuery.of(context).size.height *
-                      0.6, // 60% of screen height
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          title: Text(
-                            'Select Purpose of visit',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          trailing: const Icon(
-                            Icons.close,
-                            color: Colors.red,
-                            size: 28,
-                          ),
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        const SizedBox(height: 10),
-
-                        Expanded(
-                          child: globalSelectedPurposes.isEmpty
-                              ? _buildPurposeGrid(setState, context,
-                                  category: "GUEST")
-                              : _buildPurposeGrid(setState, context),
-                        ),
-
-                        // Next Button
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          child: CustomLargeBtn(
-                            text: isProcessing ? 'Processing...' : 'Next',
-                            disabled: isProcessing,
-                            onPressed: isProcessing
-                                ? null
-                                : () async {
-                                    if (isProcessing) return;
-                                    setState(() => isProcessing = true);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => VisitorsInEntry(
-                                          selfcheckinFlow: true,
-                                          comingfrom: comingfrom,
-                                          searchedVisitor: visitor,
-                                          selectedValue: globalSelectedPurposes[
-                                              selectedImageIndex ?? 0],
-                                          mobile: visitorData['mobile'],
-                                        ),
-                                      ),
-                                    );
-                                    setState(() => isProcessing = false);
-                                  },
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
         );
-        // myFluttertoast(
-        //     msg: "Visitor is already verified!", backgroundColor: Colors.red);
-        // Navigator.pushReplacement(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (context) => UnitSelectionView(
-        //       null,
-        //       visitor: visitor,
-        //       guestname: visitor.name ?? '',
-        //       mobileNumber: visitor.mobile ?? '',
-        //       purposeCategory: getPurposeCategory1(null),
-        //       comingFrom: visitorData['coming_from'] ?? '',
-        //       carNumber: null,
-        //       guestCount: 1,
-        //       isVerified: true,
-        //     ),
-        //   ),
-        // );
 
         return;
       }
@@ -237,7 +173,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Enter Name"),
+          title: Text(AppLocalizations.of(context)!.enterName),
           content: TextField(
             autofocus: true,
             onChanged: (value) {
@@ -250,7 +186,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
               },
-              child: const Text("Cancel"),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () {
@@ -259,7 +195,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                   _regImage(name); // Call registration function
                 }
               },
-              child: const Text("Submit"),
+              child: Text(AppLocalizations.of(context)!.submit),
             ),
           ],
         );

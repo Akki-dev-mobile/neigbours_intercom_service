@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
@@ -29,6 +30,7 @@ class VisitorInEntryBloc
     on<VIEGuestFormSubmitButtonPressedEvent>(_handleGuestFormSubmit);
     on<VIECameraButtonPressedEvent>(_handleCameraButton);
     on<VIEValidationErrorEvent>(_handleValidationError);
+    on<VIENavigateToCameraEvent>(_handleNavigateToCamera);
   }
 
   void _handleValidationError(
@@ -41,31 +43,36 @@ class VisitorInEntryBloc
     ));
   }
 
+  void _handleNavigateToCamera(
+    VIENavigateToCameraEvent event,
+    Emitter<VisitorInEntryState> emit,
+  ) {
+    emit(VIENavigateToCameraState(
+      event.visitor,
+      event.purposeCategory,
+      'update_image',
+    ));
+  }
+
   Future<void> _handleGuestFormSubmit(
     VIEGuestFormSubmitButtonPressedEvent event,
     Emitter<VisitorInEntryState> emit,
   ) async {
     try {
-    final visitor = Visitor(
-      name: event.guestName!,
-      mobile: event.mobile,
-      visitor_image: "",
-      isStaff: event.searchedVisitor?.isStaff, // Preserve isStaff property
-    );
+      final visitor = Visitor(
+        name: event.guestName!,
+        mobile: event.mobile,
+        visitor_image: "",
+        isStaff: event.searchedVisitor?.isStaff, // Preserve isStaff property
+      );
 
-    if (event.searchedVisitor == null ||
-        event.searchedVisitor!.visitor_image?.isEmpty == true) {
+      // Always navigate to camera for photo capture after purpose entry
+      // This ensures a current photo is taken for security verification
       emit(VIENavigateToCameraState(
         event.searchedVisitor ?? visitor,
         event.purposeCategory,
         event.searchedVisitor == null ? 'new_visitor' : 'update_image',
       ));
-    } else {
-      emit(VIENavigateToUnitSelectionState(
-        event.searchedVisitor!,
-        event.purposeCategory,
-      ));
-      }
     } catch (error) {
       emit(VisitorInEntryErrorState(message: error.toString()));
     }
@@ -89,8 +96,10 @@ class VisitorInEntryBloc
       if (event.operation == "new_visitor") {
         await _handleNewVisitor(updatedVisitor, event.purposeCategory!, emit);
       } else {
+        // For QR scan flow, we need to pass the visitorLog
         await _handleExistingVisitor(
-            updatedVisitor, event.purposeCategory!, emit);
+            updatedVisitor, event.purposeCategory!, emit,
+            isFromQRScan: event.isFromQRScan, visitorLog: event.visitorLog);
       }
     } catch (error) {
       emit(VisitorInEntryErrorState(message: error.toString()));
@@ -115,14 +124,17 @@ class VisitorInEntryBloc
     emit(VIENavigateToUnitSelectionState(createdVisitor, purposeCategory));
   }
 
-  Future<void> _handleExistingVisitor(
-    Visitor visitor,
-    PurposeCategory1 purposeCategory,
-    Emitter<VisitorInEntryState> emit,
-  ) async {
+  Future<void> _handleExistingVisitor(Visitor visitor,
+      PurposeCategory1 purposeCategory, Emitter<VisitorInEntryState> emit,
+      {bool isFromQRScan = false, VisitorLog? visitorLog}) async {
     final isUpdated = await _visitorUsecase.updateVisitor(visitor);
     if (isUpdated) {
-      emit(VIENavigateToUnitSelectionState(visitor, purposeCategory));
+      if (isFromQRScan && visitorLog != null) {
+        emit(VIENavigateToRequestScreenState(
+            visitor, purposeCategory, visitorLog));
+      } else {
+        emit(VIENavigateToUnitSelectionState(visitor, purposeCategory));
+      }
     } else {
       emit(VisitorInEntryErrorState(message: "Error updating visitor image"));
     }

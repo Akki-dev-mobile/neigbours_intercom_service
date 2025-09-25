@@ -680,7 +680,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       builder: (context, state, child) {
         return Scaffold(
           body: Stack(
-          children: [
+            children: [
               LoginContent(
                 onLoginPressed: _handleLogin,
                 onSignUpPressed: () {
@@ -691,10 +691,10 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
                     ),
                   );
                 },
-            ),
-            if (state.isLoading)
-              const Center(child: CircularProgressIndicator()),
-          ],
+              ),
+              if (state.isLoading)
+                const Center(child: CircularProgressIndicator()),
+            ],
           ),
         );
       },
@@ -744,14 +744,14 @@ class LoginContent extends StatelessWidget {
           padding: EdgeInsets.only(
             top: MediaQuery.of(context).padding.top + 20,
           ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
               // Enhanced Society Gate Illustration
               SizedBox(
                 height: MediaQuery.of(context).size.height * 0.45,
-            width: double.infinity,
+                width: double.infinity,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -906,16 +906,16 @@ class LoginContent extends StatelessWidget {
                           onTap: onLoginPressed,
                           borderRadius: BorderRadius.circular(16),
                           child: Center(
-              child: Text(
+                            child: Text(
                               'Login',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
-              ),
-            ),
-          ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -945,20 +945,20 @@ class LoginContent extends StatelessWidget {
                                 horizontal: 8,
                                 vertical: 4,
                               ),
-              child: Hero(
-                tag: 'signUpHero',
-                child: Text(
-                  'Sign Up',
-                  style: Theme.of(
-                    context,
+                              child: Hero(
+                                tag: 'signUpHero',
+                                child: Text(
+                                  'Sign Up',
+                                  style: Theme.of(
+                                    context,
                                   ).textTheme.bodyMedium?.copyWith(
                                         color: const Color(0xffF44336),
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
+                                      ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -1080,7 +1080,7 @@ class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
                 const SizedBox(width: 16),
 
                 // Simple label section
-          Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -1115,15 +1115,15 @@ class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView.builder(
-              shrinkWrap: true,
+              child: ListView.builder(
+                shrinkWrap: true,
                 padding: const EdgeInsets.only(top: 16),
-              itemCount: widget.societies.length,
-              itemBuilder: (context, index) {
-                final society = widget.societies[index];
-                final societyName =
-                    society['company_name'] ?? 'Unknown Society';
-                final isSelected = selectedIndex == index;
+                itemCount: widget.societies.length,
+                itemBuilder: (context, index) {
+                  final society = widget.societies[index];
+                  final societyName =
+                      society['company_name'] ?? 'Unknown Society';
+                  final isSelected = selectedIndex == index;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -1194,14 +1194,14 @@ class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                      societyName,
+                                      societyName,
                                       style: Theme.of(
                                         context,
                                       ).textTheme.titleMedium?.copyWith(
-                            fontWeight: isSelected
+                                            fontWeight: isSelected
                                                 ? FontWeight.w700
                                                 : FontWeight.w600,
-                            color: isSelected
+                                            color: isSelected
                                                 ? const Color(0xffF44336)
                                                 : const Color(0xff212427),
                                             fontSize: 18,
@@ -1247,11 +1247,11 @@ class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
                           ),
                         ),
                       ),
-                  ),
-                );
-              },
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
           ),
           const SizedBox(height: 20),
         ],
@@ -1374,7 +1374,7 @@ class RoleSelectionSheet extends StatelessWidget {
                 const SizedBox(width: 16),
 
                 // Simple label section
-          Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -1409,12 +1409,12 @@ class RoleSelectionSheet extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView.builder(
-              shrinkWrap: true,
+              child: ListView.builder(
+                shrinkWrap: true,
                 padding: const EdgeInsets.only(top: 16),
-              itemCount: availableRoles.length,
-              itemBuilder: (context, index) {
-                final role = availableRoles[index];
+                itemCount: availableRoles.length,
+                itemBuilder: (context, index) {
+                  final role = availableRoles[index];
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: Material(
@@ -1467,7 +1467,7 @@ class RoleSelectionSheet extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                      _getRoleDisplayName(role),
+                                      _getRoleDisplayName(role),
                                       style: Theme.of(
                                         context,
                                       ).textTheme.titleMedium?.copyWith(
@@ -1510,11 +1510,11 @@ class RoleSelectionSheet extends StatelessWidget {
                           ),
                         ),
                       ),
-                  ),
-                );
-              },
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
           ),
           const SizedBox(height: 20),
         ],
@@ -1686,7 +1686,7 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-              'Select Gate',
+                        'Select Gate',
                         style: Theme.of(
                           context,
                         ).textTheme.headlineSmall?.copyWith(
@@ -1715,41 +1715,41 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView.builder(
-              shrinkWrap: true,
+              child: ListView.builder(
+                shrinkWrap: true,
                 padding: const EdgeInsets.only(top: 16),
-              itemCount: widget.gates.length,
-              itemBuilder: (context, index) {
-                final gate = widget.gates[index];
-                final gateName = gate['gate_name'] ?? 'Unknown Gate';
+                itemCount: widget.gates.length,
+                itemBuilder: (context, index) {
+                  final gate = widget.gates[index];
+                  final gateName = gate['gate_name'] ?? 'Unknown Gate';
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                    onTap: () async {
-                      setState(() {
-                        selectedIndex = index;
-                      });
+                        onTap: () async {
+                          setState(() {
+                            selectedIndex = index;
+                          });
 
-                      try {
-                        final gateProvider = Provider.of<GateProvider>(
-                          context,
-                          listen: false,
-                        );
-                        await gateProvider.selectGate(index);
+                          try {
+                            final gateProvider = Provider.of<GateProvider>(
+                              context,
+                              listen: false,
+                            );
+                            await gateProvider.selectGate(index);
                             widget.onGateSelected(
                               Map<String, dynamic>.from(gate),
                             );
-                      } catch (e) {
-                        if (mounted) {
-                          // ScaffoldMessenger.of(context).showSnackBar(
-                          //   SnackBar(content: Text('Failed to select gate: $e')),
-                          // );
-                        }
-                      }
-                    },
+                          } catch (e) {
+                            if (mounted) {
+                              // ScaffoldMessenger.of(context).showSnackBar(
+                              //   SnackBar(content: Text('Failed to select gate: $e')),
+                              // );
+                            }
+                          }
+                        },
                         borderRadius: BorderRadius.circular(16),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -1837,11 +1837,11 @@ class _GateSelectionSheetState extends State<GateSelectionSheet> {
                           ),
                         ),
                       ),
-                  ),
-                );
-              },
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
           ),
           const SizedBox(height: 20),
         ],

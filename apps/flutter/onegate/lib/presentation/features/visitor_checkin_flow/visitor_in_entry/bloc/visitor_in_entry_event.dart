@@ -29,12 +29,16 @@ class VIECameraButtonPressedEvent extends VisitorInEntryEvent {
   final PurposeCategory1? purposeCategory;
   final File? imageFile;
   final String? operation;
+  final bool isFromQRScan;
+  final VisitorLog? visitorLog;
 
   VIECameraButtonPressedEvent({
     this.visitor,
     this.purposeCategory,
     this.imageFile,
     this.operation,
+    this.isFromQRScan = false,
+    this.visitorLog,
   });
 }
 
@@ -45,5 +49,15 @@ class VIEValidationErrorEvent extends VisitorInEntryEvent {
   VIEValidationErrorEvent({
     required this.message,
     required this.field,
+  });
+}
+
+class VIENavigateToCameraEvent extends VisitorInEntryEvent {
+  final Visitor visitor;
+  final PurposeCategory1 purposeCategory;
+
+  VIENavigateToCameraEvent({
+    required this.visitor,
+    required this.purposeCategory,
   });
 }

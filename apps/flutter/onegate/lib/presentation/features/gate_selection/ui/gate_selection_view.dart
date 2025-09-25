@@ -8,6 +8,7 @@ import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class GateSelectionView extends StatelessWidget {
   const GateSelectionView({Key? key}) : super(key: key);
@@ -22,13 +23,13 @@ class GateSelectionView extends StatelessWidget {
             backButtonPressed: () {
               Navigator.pop(context);
             },
-            pageTitle: 'Gate Selection',
+            pageTitle: AppLocalizations.of(context).gateSelection,
             pageBody: Column(
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    'Select your gate',
+                    AppLocalizations.of(context).selectYourGate,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
@@ -36,9 +37,10 @@ class GateSelectionView extends StatelessWidget {
                   return GateSettingListTile(
                     switchValue: provider.gates[index]['isSelected'],
                     onChanged: (value) => provider.selectGate(index),
-                    title: provider.gates[index]['gate_name'] ?? 'Unknown Gate',
+                    title: provider.gates[index]['gate_name'] ??
+                        AppLocalizations.of(context).unknownGate,
                     subtitle:
-                        'Enable/Disable ${provider.gates[index]['gate_name']}',
+                        '${AppLocalizations.of(context).enableDisable} ${provider.gates[index]['gate_name']}',
                     leadingIcon: Symbols.gate,
                   );
                 }),
@@ -47,7 +49,7 @@ class GateSelectionView extends StatelessWidget {
             floatingActionButton: Padding(
               padding: const EdgeInsets.all(8.0),
               child: CustomLargeBtn(
-                text: 'CONFIRM',
+                text: AppLocalizations.of(context).confirm,
                 onPressed: () async {
                   final selectedGate = provider.selectedGate;
 
@@ -55,10 +57,14 @@ class GateSelectionView extends StatelessWidget {
                     final prefs = await SharedPreferences.getInstance();
 
                     final selectedGate = await prefs.getString('selected_gate');
-myFluttertoast(msg: "Gate Changed to $selectedGate");
+                    myFluttertoast(
+                        msg:
+                            "${AppLocalizations.of(context).gateChangedTo} $selectedGate");
                   } else {
                     print("No gate selected");
-                    myFluttertoast(msg: "No gate selected",backgroundColor: Colors.red);
+                    myFluttertoast(
+                        msg: AppLocalizations.of(context).noGateSelected,
+                        backgroundColor: Colors.red);
                   }
 
                   // Check the role and navigate accordingly

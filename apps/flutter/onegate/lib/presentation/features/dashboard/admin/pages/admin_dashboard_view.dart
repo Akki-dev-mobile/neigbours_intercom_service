@@ -15,6 +15,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 import '../../commons/ui/dashboard_commons.dart';
 
@@ -153,7 +154,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Admin Dashboard Shortcuts (To be enhanced)',
+                    AppLocalizations.of(context).adminDashboardShortcuts,
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),

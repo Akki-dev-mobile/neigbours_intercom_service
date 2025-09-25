@@ -1,0 +1,2020 @@
+{
+  "@@locale": "mr",
+  "@@last_modified": "2024-01-01T00:00:00.000Z",
+  
+  "appTitle": "वनगेट",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  
+  "welcome": "स्वागत",
+  "@welcome": {
+    "description": "General welcome greeting"
+  },
+  
+  "welcomeToOnegate": "वनगेट मध्ये आपले स्वागत आहे",
+  "@welcomeToOnegate": {
+    "description": "Welcome message in splash screen"
+  },
+  
+  "welcomeBack": "परतीवर स्वागत!",
+  "@welcomeBack": {
+    "description": "Welcome back message for returning users"
+  },
+  
+  "welcomeUser": "स्वागत {userName}! आपला फोटो घेण्यासाठी पुढे जात आहोत.",
+  "@welcomeUser": {
+    "description": "Welcome message with user name",
+    "placeholders": {
+      "userName": {
+        "type": "String",
+        "example": "John"
+      }
+    }
+  },
+  
+  "login": "लॉगिन",
+  "@login": {
+    "description": "Login button text"
+  },
+  
+  "logout": "लॉगआउट",
+  "@logout": {
+    "description": "Logout button text"
+  },
+  
+  "settings": "सेटिंग्ज",
+  "@settings": {
+    "description": "Settings menu item"
+  },
+  
+  "changeLanguage": "भाषा बदला",
+  "@changeLanguage": {
+    "description": "Language selection option in settings"
+  },
+  
+  "selectLanguage": "भाषा निवडा",
+  "@selectLanguage": {
+    "description": "Language selection dialog title"
+  },
+  
+  "currentPreference": "सध्याची प्राधान्ये: {language}",
+  "@currentPreference": {
+    "description": "Shows current language preference",
+    "placeholders": {
+      "language": {
+        "type": "String",
+        "example": "English"
+      }
+    }
+  },
+  
+  "confirm": "पुष्टी करा",
+  "@confirm": {
+    "description": "Confirm button text"
+  },
+  
+  "cancel": "रद्द करा",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  
+  "change": "बदला",
+  "@change": {
+    "description": "Change button text"
+  },
+  
+  "close": "बंद करा",
+  "@close": {
+    "description": "Close button text"
+  },
+  
+  "save": "सेव्ह करा",
+  "@save": {
+    "description": "Save button text"
+  },
+  
+  "dashboard": "डॅशबोर्ड",
+  "@dashboard": {
+    "description": "Dashboard screen title"
+  },
+  
+  "visitorManagement": "अभ्यागत व्यवस्थापन",
+  "@visitorManagement": {
+    "description": "Visitor management section"
+  },
+  
+  "gatekeeper": "गेटकीपर",
+  "@gatekeeper": {
+    "description": "Gatekeeper role"
+  },
+  
+  "admin": "प्रशासक",
+  "@admin": {
+    "description": "Admin role"
+  },
+  
+  "visitors": "अभ्यागत",
+  "@visitors": {
+    "description": "Visitors section"
+  },
+  
+  "checkin": "चेक इन",
+  "@checkin": {
+    "description": "Check in action"
+  },
+  
+  "checkout": "चेक आउट",
+  "@checkout": {
+    "description": "Check out action"
+  },
+  
+  "approval": "मंजुरी",
+  "@approval": {
+    "description": "Approval status"
+  },
+  
+  "approved": "मंजूर",
+  "@approved": {
+    "description": "Approved status"
+  },
+  
+  "pending": "प्रलंबित",
+  "@pending": {
+    "description": "Pending status"
+  },
+  
+  "rejected": "नाकारले",
+  "@rejected": {
+    "description": "Rejected status"
+  },
+  
+  "selectCamera": "कॅमेरा निवडा",
+  "@selectCamera": {
+    "description": "Camera selection dialog title"
+  },
+  
+  "frontCamera": "फ्रंट कॅमेरा",
+  "@frontCamera": {
+    "description": "Front camera option"
+  },
+  
+  "backCamera": "बॅक कॅमेरा",
+  "@backCamera": {
+    "description": "Back camera option"
+  },
+  
+  "cameraPermission": "कॅमेरा परवानगी",
+  "@cameraPermission": {
+    "description": "Camera permission dialog title"
+  },
+  
+  "enableLocationPermissions": "कृपया या वैशिष्ट्याचा वापर करण्यासाठी आपल्या डिव्हाइस सेटिंग्जमध्ये स्थान परवानग्या सक्षम करा.",
+  "@enableLocationPermissions": {
+    "description": "Location permission request message"
+  },
+  
+  "openSettings": "सेटिंग्ज उघडा",
+  "@openSettings": {
+    "description": "Open settings button text"
+  },
+  
+  "noInternetConnection": "कोणतेही इंटरनेट कनेक्शन उपलब्ध नाही. कृपया आपली नेटवर्क सेटिंग्ज तपासा.",
+  "@noInternetConnection": {
+    "description": "No internet connection error message"
+  },
+  
+  "error": "त्रुटी",
+  "@error": {
+    "description": "General error label"
+  },
+  
+  "success": "यश",
+  "@success": {
+    "description": "General success label"
+  },
+  
+  "retry": "पुन्हा प्रयत्न करा",
+  "@retry": {
+    "description": "Retry button text"
+  },
+  
+  "visitorLogTitleInOutBook": "अभ्यागत नोंद",
+  "@visitorLogTitleInOutBook": {
+    "description": "Title for In Out Book visitor log"
+  },
+  
+  "visitorLogTitleVisitorIn": "अभ्यागत प्रवेश",
+  "@visitorLogTitleVisitorIn": {
+    "description": "Title for Visitor In log"
+  },
+  
+  "visitorLogTitleVisitorOut": "अभ्यागत निर्गमन",
+  "@visitorLogTitleVisitorOut": {
+    "description": "Title for Visitor Out log"
+  },
+  
+  "visitorLogTitleCards": "अभ्यागत कार्ड्स",
+  "@visitorLogTitleCards": {
+    "description": "Title for Visitor Cards log"
+  },
+  
+  "visitorLogTitleDefault": "अभ्यागत नोंद",
+  "@visitorLogTitleDefault": {
+    "description": "Default title for visitor log"
+  },
+  
+  "loadingMoreVisitors": "अधिक अभ्यागत लोड होत आहेत...",
+  "@loadingMoreVisitors": {
+    "description": "Loading indicator text for pagination"
+  },
+  
+  "exportVisitorLogs": "अभ्यागत नोंदी निर्यात करा",
+  "@exportVisitorLogs": {
+    "description": "Title for export dialog"
+  },
+  
+  "downloadLogsForDateRange": "निर्दिष्ट दिनांक श्रेणीसाठी नोंदी डाउनलोड करा",
+  "@downloadLogsForDateRange": {
+    "description": "Subtitle for export dialog"
+  },
+  
+  "emailAddress": "ईमेल पत्ता",
+  "@emailAddress": {
+    "description": "Email field label"
+  },
+  
+  "enterEmailForExport": "निर्यातासाठी ईमेल प्रविष्ट करा",
+  "@enterEmailForExport": {
+    "description": "Email field hint text"
+  },
+  
+  "pleaseEnterEmail": "कृपया ईमेल प्रविष्ट करा",
+  "@pleaseEnterEmail": {
+    "description": "Email validation error"
+  },
+  
+  "pleaseEnterValidEmail": "कृपया वैध ईमेल प्रविष्ट करा",
+  "@pleaseEnterValidEmail": {
+    "description": "Email format validation error"
+  },
+  
+  "dateRange": "दिनांक श्रेणी",
+  "@dateRange": {
+    "description": "Date range section label"
+  },
+  
+  "pleaseSelectStartDate": "कृपया प्रारंभ दिनांक निवडा",
+  "@pleaseSelectStartDate": {
+    "description": "Start date validation error"
+  },
+  
+  "pleaseSelectEndDate": "कृपया अंत दिनांक निवडा",
+  "@pleaseSelectEndDate": {
+    "description": "End date validation error"
+  },
+  
+  "endDateCannotBeEarlier": "अंत दिनांक प्रारंभ दिनांकापेक्षा आधी असू शकत नाही",
+  "@endDateCannotBeEarlier": {
+    "description": "End date validation error"
+  },
+  
+  "fromDate": "प्रारंभ दिनांक",
+  "@fromDate": {
+    "description": "Start date label"
+  },
+  
+  "toDate": "अंत दिनांक",
+  "@toDate": {
+    "description": "End date label"
+  },
+  
+  "selectStartDate": "प्रारंभ दिनांक निवडा",
+  "@selectStartDate": {
+    "description": "Start date picker placeholder"
+  },
+  
+  "selectEndDate": "अंत दिनांक निवडा",
+  "@selectEndDate": {
+    "description": "End date picker placeholder"
+  },
+  
+  "intercom": "इंटरकॉम",
+  "@intercom": {
+    "description": "Intercom button title"
+  },
+  
+  "parcel": "पार्सल",
+  "@parcel": {
+    "description": "Parcel button title"
+  },
+  
+  "scan": "स्कॅन",
+  "@scan": {
+    "description": "Scan button title"
+  },
+  
+  "cards": "कार्ड्स",
+  "@cards": {
+    "description": "Cards button title"
+  },
+  
+  "qrCodeScanned": "क्यूआर कोड स्कॅन केला",
+  "@qrCodeScanned": {
+    "description": "QR code scan success message"
+  },
+  
+  "enterVisitorDetails": "अभ्यागत तपशील प्रविष्ट करा",
+  "@enterVisitorDetails": {
+    "description": "Enter visitor details section title"
+  },
+  
+  "tapToEnterMobileOrId": "मोबाइल नंबर किंवा अभ्यागत आयडी प्रविष्ट करण्यासाठी टॅप करा",
+  "@tapToEnterMobileOrId": {
+    "description": "Instruction text for visitor input"
+  },
+  
+  "examples": "उदाहरणे:",
+  "@examples": {
+    "description": "Examples label"
+  },
+  
+  "loadingDashboard": "डॅशबोर्ड लोड होत आहे",
+  "@loadingDashboard": {
+    "description": "Loading dashboard title"
+  },
+  
+  "pleaseWaitPreparingDashboard": "कृपया प्रतीक्षा करा जेव्हा आम्ही तुमचे गेट डॅशबोर्ड तयार करतो",
+  "@pleaseWaitPreparingDashboard": {
+    "description": "Loading dashboard message"
+  },
+  
+  "fetchingDataForNetworkLogs": "नेटवर्क लॉग जेनरेट करण्यासाठी डेटा मिळवत आहे...",
+  "@fetchingDataForNetworkLogs": {
+    "description": "Network logs generation message"
+  },
+  
+  "searchMembers": "सदस्य शोधा",
+  "@searchMembers": {
+    "description": "Search members field label"
+  },
+  
+  "searchMembersHint": "सदस्य शोधा (किमान 3 अक्षरे टाइप करा)",
+  "@searchMembersHint": {
+    "description": "Search members field hint"
+  },
+  
+  "loadingMembers": "सदस्य लोड होत आहेत...",
+  "@loadingMembers": {
+    "description": "Loading members message"
+  },
+  
+  "searchingMembers": "सदस्य शोधत आहे...",
+  "@searchingMembers": {
+    "description": "Searching members message"
+  },
+  
+  "noMembersFound": "कोणतेही सदस्य सापडले नाहीत.\nनाव किंवा फ्लॅटद्वारे सदस्य शोधण्यासाठी किमान 3 अक्षरे टाइप करा",
+  "@noMembersFound": {
+    "description": "No members found message"
+  },
+  
+  "waitingForApproval": "मंजुरीची प्रतीक्षा करत आहे...",
+  "@waitingForApproval": {
+    "description": "Waiting for approval status"
+  },
+  
+  "failedToSearchMembers": "सदस्य शोधण्यात अयशस्वी",
+  "@failedToSearchMembers": {
+    "description": "Failed to search members error"
+  },
+  
+  "errorSearchingMembers": "सदस्य शोधण्यात त्रुटी",
+  "@errorSearchingMembers": {
+    "description": "Error searching members message"
+  },
+  
+  "membersDataRefreshed": "सदस्य डेटा यशस्वीरीत्या रिफ्रेश केला गेला",
+  "@membersDataRefreshed": {
+    "description": "Members data refresh success message"
+  },
+  
+  "selectUnit": "युनिट निवडा",
+  "@selectUnit": {
+    "description": "Select unit dialog title"
+  },
+  
+  "selectMember": "सदस्य निवडा",
+  "@selectMember": {
+    "description": "Select member dialog title"
+  },
+  
+  "continueAction": "सुरू ठेवा",
+  "@continueAction": {
+    "description": "Continue button text"
+  },
+  
+  "back": "मागे",
+  "@back": {
+    "description": "Back button text"
+  },
+  
+  "next": "पुढे",
+  "@next": {
+    "description": "Next button text"
+  },
+  
+  "submit": "सबमिट करा",
+  "@submit": {
+    "description": "Submit button text"
+  },
+  
+  "done": "पूर्ण",
+  "@done": {
+    "description": "Done button text"
+  },
+  
+  "yes": "होय",
+  "@yes": {
+    "description": "Yes button text"
+  },
+  
+  "no": "नाही",
+  "@no": {
+    "description": "No button text"
+  },
+  
+  "ok": "ठीक आहे",
+  "@ok": {
+    "description": "OK button text"
+  },
+  
+  "apply": "लागू करा",
+  "@apply": {
+    "description": "Apply button text"
+  },
+  
+  "clear": "साफ करा",
+  "@clear": {
+    "description": "Clear button text"
+  },
+  
+  "reset": "रीसेट करा",
+  "@reset": {
+    "description": "Reset button text"
+  },
+  
+  "refresh": "रिफ्रेश करा",
+  "@refresh": {
+    "description": "Refresh button text"
+  },
+  
+  "search": "शोधा",
+  "@search": {
+    "description": "Search button text"
+  },
+  
+  "filter": "फिल्टर",
+  "@filter": {
+    "description": "Filter button text"
+  },
+  
+  "sort": "क्रमवारी लावा",
+  "@sort": {
+    "description": "Sort button text"
+  },
+  
+  "add": "जोडा",
+  "@add": {
+    "description": "Add button text"
+  },
+  
+  "edit": "संपादित करा",
+  "@edit": {
+    "description": "Edit button text"
+  },
+  
+  "delete": "हटवा",
+  "@delete": {
+    "description": "Delete button text"
+  },
+  
+  "view": "पहा",
+  "@view": {
+    "description": "View button text"
+  },
+  
+  "details": "तपशील",
+  "@details": {
+    "description": "Details button text"
+  },
+  
+  "name": "नाव",
+  "@name": {
+    "description": "Name field label"
+  },
+  
+  "mobileNumber": "मोबाइल नंबर",
+  "@mobileNumber": {
+    "description": "Mobile number field label"
+  },
+  
+  "email": "ईमेल",
+  "@email": {
+    "description": "Email field label"
+  },
+  
+  "address": "पत्ता",
+  "@address": {
+    "description": "Address field label"
+  },
+  
+  "building": "बिल्डिंग",
+  "@building": {
+    "description": "Building field label"
+  },
+  
+  "unit": "युनिट",
+  "@unit": {
+    "description": "Unit field label"
+  },
+  
+  "floor": "मजला",
+  "@floor": {
+    "description": "Floor field label"
+  },
+  
+  "date": "दिनांक",
+  "@date": {
+    "description": "Date field label"
+  },
+  
+  "time": "वेळ",
+  "@time": {
+    "description": "Time field label"
+  },
+  
+  "status": "स्थिती",
+  "@status": {
+    "description": "Status field label"
+  },
+  
+  "active": "सक्रिय",
+  "@active": {
+    "description": "Active status"
+  },
+  
+  "inactive": "निष्क्रिय",
+  "@inactive": {
+    "description": "Inactive status"
+  },
+  
+  "enabled": "सक्षम",
+  "@enabled": {
+    "description": "Enabled status"
+  },
+  
+  "disabled": "अक्षम",
+  "@disabled": {
+    "description": "Disabled status"
+  },
+  
+  "online": "ऑनलाइन",
+  "@online": {
+    "description": "Online status"
+  },
+  
+  "offline": "ऑफलाइन",
+  "@offline": {
+    "description": "Offline status"
+  },
+  
+  "connected": "जोडलेले",
+  "@connected": {
+    "description": "Connected status"
+  },
+  
+  "disconnected": "डिस्कनेक्ट",
+  "@disconnected": {
+    "description": "Disconnected status"
+  },
+  
+  "available": "उपलब्ध",
+  "@available": {
+    "description": "Available status"
+  },
+  
+  "unavailable": "अनुपलब्ध",
+  "@unavailable": {
+    "description": "Unavailable status"
+  },
+  
+  "login": "लॉगिन",
+  "@login": {
+    "description": "Login button text"
+  },
+  
+  "logout": "लॉगआउट",
+  "@logout": {
+    "description": "Logout button text"
+  },
+  
+  "signUp": "साइन अप",
+  "@signUp": {
+    "description": "Sign up button text"
+  },
+  
+  "forgotPassword": "पासवर्ड विसरलात",
+  "@forgotPassword": {
+    "description": "Forgot password button text"
+  },
+  
+  "resetPassword": "पासवर्ड रीसेट करा",
+  "@resetPassword": {
+    "description": "Reset password button text"
+  },
+  
+  "password": "पासवर्ड",
+  "@password": {
+    "description": "Password field label"
+  },
+  
+  "confirmPassword": "पासवर्ड पुष्टी करा",
+  "@confirmPassword": {
+    "description": "Confirm password field label"
+  },
+  
+  "username": "वापरकर्ता नाव",
+  "@username": {
+    "description": "Username field label"
+  },
+  
+  "adminDashboardShortcuts": "प्रशासक डॅशबोर्ड शॉर्टकट (सुधारित केले जाणार)",
+  "@adminDashboardShortcuts": {
+    "description": "Admin dashboard shortcuts placeholder text"
+  },
+  
+  "gateSelection": "गेट निवड",
+  "@gateSelection": {
+    "description": "Gate selection page title"
+  },
+  
+  "selectYourGate": "तुमचे गेट निवडा",
+  "@selectYourGate": {
+    "description": "Select your gate instruction"
+  },
+  
+  "unknownGate": "अज्ञात गेट",
+  "@unknownGate": {
+    "description": "Unknown gate fallback text"
+  },
+  
+  "enableDisable": "सक्षम/अक्षम करा",
+  "@enableDisable": {
+    "description": "Enable/Disable prefix text"
+  },
+  
+  "confirm": "पुष्टी करा",
+  "@confirm": {
+    "description": "Confirm button text"
+  },
+  
+  "gateChangedTo": "गेट बदलले गेले",
+  "@gateChangedTo": {
+    "description": "Gate changed success message prefix"
+  },
+  
+  "noGateSelected": "कोणतेही गेट निवडले नाही",
+  "@noGateSelected": {
+    "description": "No gate selected error message"
+  },
+  
+  "settings": "सेटिंग्स",
+  "@settings": {
+    "description": "Settings page title"
+  },
+  
+  "selectCamera": "कॅमेरा निवडा",
+  "@selectCamera": {
+    "description": "Select camera settings title"
+  },
+  
+  "language": "भाषा",
+  "@language": {
+    "description": "Language settings title"
+  },
+  
+  "camera": "कॅमेरा",
+  "@camera": {
+    "description": "Camera settings title"
+  },
+  
+  "visitorSettings": "पाहुणे सेटिंग्स",
+  "@visitorSettings": {
+    "description": "Visitor settings title"
+  },
+  
+  "appPermissions": "अॅप परवानग्या",
+  "@appPermissions": {
+    "description": "App permissions title"
+  },
+  
+  "networkLogs": "नेटवर्क लॉग",
+  "@networkLogs": {
+    "description": "Network logs title"
+  },
+  
+  "dataObservability": "डेटा निरीक्षण",
+  "@dataObservability": {
+    "description": "Data observability title"
+  },
+  
+  "gateSettings": "गेट सेटिंग्स",
+  "@gateSettings": {
+    "description": "Gate settings title"
+  },
+  
+  "staffManagement": "स्टाफ व्यवस्थापन",
+  "@staffManagement": {
+    "description": "Staff management title"
+  },
+  
+  "dutyAlarms": "ड्यूटी अलार्म",
+  "@dutyAlarms": {
+    "description": "Duty alarms title"
+  },
+  
+  "kioskMode": "कियोस्क मोड",
+  "@kioskMode": {
+    "description": "Kiosk mode title"
+  },
+  
+  "newEntry": "नवीन नोंद",
+  "@newEntry": {
+    "description": "New entry button text"
+  },
+  
+  "passId": "पास आयडी",
+  "@passId": {
+    "description": "Pass ID label"
+  },
+  
+  "mobile": "मोबाइल",
+  "@mobile": {
+    "description": "Mobile field label"
+  },
+  
+  "comingFrom": "कुठून येत आहात",
+  "@comingFrom": {
+    "description": "Coming from field label"
+  },
+  
+  "purpose": "उद्देश",
+  "@purpose": {
+    "description": "Purpose field label"
+  },
+  
+  "guestName": "पाहुण्याचे नाव",
+  "@guestName": {
+    "description": "Guest name field label"
+  },
+  
+  "guestCount": "पाहुण्यांची संख्या",
+  "@guestCount": {
+    "description": "Guest count field label"
+  },
+  
+  "visitorNumber": "पाहुणे संख्या",
+  "@visitorNumber": {
+    "description": "Visitor number field label"
+  },
+  
+  "carNumber": "कार नंबर",
+  "@carNumber": {
+    "description": "Car number field label"
+  },
+  
+  "vendor": "विक्रेता",
+  "@vendor": {
+    "description": "Vendor category"
+  },
+  
+  "delivery": "डिलिव्हरी",
+  "@delivery": {
+    "description": "Delivery category"
+  },
+  
+  "guest": "पाहुणे",
+  "@guest": {
+    "description": "Guest category"
+  },
+  
+  "staff": "स्टाफ",
+  "@staff": {
+    "description": "Staff category"
+  },
+  
+  "cab": "कॅब",
+  "@cab": {
+    "description": "Cab category"
+  },
+  
+  "enterVendorName": "सुरू ठेवण्यासाठी कृपया विक्रेत्याचे नाव प्रविष्ट करा",
+  "@enterVendorName": {
+    "description": "Enter vendor name validation message"
+  },
+  
+  "enterCabDriverName": "सुरू ठेवण्यासाठी कृपया कॅब ड्रायव्हरचे नाव प्रविष्ट करा",
+  "@enterCabDriverName": {
+    "description": "Enter cab driver name validation message"
+  },
+  
+  "enterDeliveryPersonName": "सुरू ठेवण्यासाठी कृपया डिलिव्हरी व्यक्तीचे नाव प्रविष्ट करा",
+  "@enterDeliveryPersonName": {
+    "description": "Enter delivery person name validation message"
+  },
+  
+  "enterGuestName": "सुरू ठेवण्यासाठी कृपया पाहुण्याचे नाव प्रविष्ट करा",
+  "@enterGuestName": {
+    "description": "Enter guest name validation message"
+  },
+  
+  "enterStaffName": "सुरू ठेवण्यासाठी कृपया स्टाफ सदस्याचे नाव प्रविष्ट करा",
+  "@enterStaffName": {
+    "description": "Enter staff name validation message"
+  },
+  
+  "loading": "लोड होत आहे...",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+  
+  "pleaseWait": "कृपया प्रतीक्षा करा...",
+  "@pleaseWait": {
+    "description": "Please wait message"
+  },
+  
+  "languageChangeConfirmation": "तुम्हाला खरोखर भाषा {language} मध्ये बदलायची आहे का? अॅप लगेच नवीन भाषा लागू करेल.",
+  "@languageChangeConfirmation": {
+    "description": "Language change confirmation dialog",
+    "placeholders": {
+      "language": {
+        "type": "String",
+        "example": "Hindi"
+      }
+    }
+  },
+  
+  "languageChanged": "भाषा यशस्वीरित्या बदलली",
+  "@languageChanged": {
+    "description": "Language change success message"
+  },
+  
+  "gateName": "गेटचे नाव",
+  "@gateName": {
+    "description": "Gate name label"
+  },
+  
+  "gateSelection": "गेट निवड",
+  "@gateSelection": {
+    "description": "Gate selection screen title"
+  },
+  
+  "selectGate": "गेट निवडा",
+  "@selectGate": {
+    "description": "Select gate dialog title"
+  },
+  
+  "visitorSettings": "अभ्यागत सेटिंग्ज",
+  "@visitorSettings": {
+    "description": "Visitor settings menu item"
+  },
+  
+  "networkSettings": "नेटवर्क सेटिंग्ज",
+  "@networkSettings": {
+    "description": "Network settings menu item"
+  },
+  
+  "profileSettings": "प्रोफाइल सेटिंग्ज",
+  "@profileSettings": {
+    "description": "Profile settings menu item"
+  },
+  
+  "appSettings": "अॅप सेटिंग्ज",
+  "@appSettings": {
+    "description": "App settings menu item"
+  },
+  
+  "dataStorage": "डेटा स्टोरेज",
+  "@dataStorage": {
+    "description": "Data storage settings"
+  },
+  
+  "cameraSettings": "कॅमेरा सेटिंग्ज",
+  "@cameraSettings": {
+    "description": "Camera settings menu item"
+  },
+  
+  "languageSettings": "भाषा सेटिंग्ज",
+  "@languageSettings": {
+    "description": "Language settings menu item"
+  },
+  
+  "visitorApprovalTime": "अभ्यागत मंजुरी वेळ",
+  "@visitorApprovalTime": {
+    "description": "Visitor approval time setting"
+  },
+  
+  "choosePreference": "कॅमेरा प्राधान्य निवडा",
+  "@choosePreference": {
+    "description": "Choose camera preference subtitle"
+  },
+  
+  "english": "इंग्रजी",
+  "@english": {
+    "description": "English language option"
+  },
+  
+  "hindi": "हिंदी",
+  "@hindi": {
+    "description": "Hindi language option"
+  },
+  
+  "marathi": "मराठी",
+  "@marathi": {
+    "description": "Marathi language option"
+  },
+  
+  "authenticating": "प्रमाणीकरण होत आहे...",
+  "@authenticating": {
+    "description": "Authentication in progress message"
+  },
+  
+  "authenticationFailed": "प्रमाणीकरण अयशस्वी",
+  "@authenticationFailed": {
+    "description": "Authentication failed message"
+  },
+  
+  "authenticationSuccess": "प्रमाणीकरण यशस्वी",
+  "@authenticationSuccess": {
+    "description": "Authentication success message"
+  },
+  
+  "sessionExpired": "सत्र संपले",
+  "@sessionExpired": {
+    "description": "Session expired dialog title"
+  },
+  
+  "pleaseLoginAgain": "कृपया पुन्हा लॉगिन करा",
+  "@pleaseLoginAgain": {
+    "description": "Please login again message"
+  },
+  
+  "tokenRefreshed": "टोकन यशस्वीरित्या रिफ्रेश केले",
+  "@tokenRefreshed": {
+    "description": "Token refresh success message"
+  },
+  
+  "refreshingToken": "टोकन रिफ्रेश होत आहे...",
+  "@refreshingToken": {
+    "description": "Token refresh in progress message"
+  },
+  
+  "allBuildings": "सर्व इमारती",
+  "@allBuildings": {
+    "description": "All buildings filter option"
+  },
+  
+  "noMoreData": "लोड करण्यासाठी आणखी डेटा नाही",
+  "@noMoreData": {
+    "description": "No more data message for pagination"
+  },
+  
+  "stateNotSuccess": "स्थिती यशस्वी नाही",
+  "@stateNotSuccess": {
+    "description": "Debug message for state error"
+  },
+  
+  "visitorLogInitialized": "व्हिजिटर लॉग आयडीसह सुरू",
+  "@visitorLogInitialized": {
+    "description": "Debug message for visitor log initialization"
+  },
+  
+  "triggeringFetchForInOutBook": "इन आउट बुकसाठी फेच ट्रिगर",
+  "@triggeringFetchForInOutBook": {
+    "description": "Debug message for in out book fetch"
+  },
+  
+  "triggeringFetchForVisitorIn": "व्हिजिटर इनसाठी फेच ट्रिगर",
+  "@triggeringFetchForVisitorIn": {
+    "description": "Debug message for visitor in fetch"
+  },
+  
+  "triggeringFetchForCards": "कार्डसाठी फेच ट्रिगर",
+  "@triggeringFetchForCards": {
+    "description": "Debug message for cards fetch"
+  },
+  
+  "triggeringFetchForVisitorOut": "व्हिजिटर आउटसाठी फेच ट्रिगर",
+  "@triggeringFetchForVisitorOut": {
+    "description": "Debug message for visitor out fetch"
+  },
+  
+  "triggeringSearchFor": "साठी शोध ट्रिगर",
+  "@triggeringSearchFor": {
+    "description": "Debug message for search trigger"
+  },
+  
+  "search": "शोधा",
+  "@search": {
+    "description": "Search button text"
+  },
+  
+  "searchVisitor": "अभ्यागत शोधा",
+  "@searchVisitor": {
+    "description": "Search visitor placeholder"
+  },
+  
+  "export": "निर्यात करा",
+  "@export": {
+    "description": "Export button text"
+  },
+  
+  "filter": "फिल्टर",
+  "@filter": {
+    "description": "Filter button text"
+  },
+  
+  "noVisitorsFound": "कोणतेही अभ्यागत सापडले नाहीत",
+  "@noVisitorsFound": {
+    "description": "No visitors found message"
+  },
+  
+  "checkOutSuccessful": "चेक-आउट यशस्वी",
+  "@checkOutSuccessful": {
+    "description": "Check out success title"
+  },
+  
+  "visitorCheckedOut": "अभ्यागत यशस्वीरित्या चेक आउट झाला आहे",
+  "@visitorCheckedOut": {
+    "description": "Visitor checked out success message"
+  },
+  
+  "loadingVisitors": "अभ्यागत लोड होत आहेत...",
+  "@loadingVisitors": {
+    "description": "Loading visitors message"
+  },
+  
+  "loadingMoreVisitors": "अधिक अभ्यागत लोड होत आहेत...",
+  "@loadingMoreVisitors": {
+    "description": "Loading more visitors message"
+  },
+  
+  "visitorCount": "{count} अभ्यागत",
+  "@visitorCount": {
+    "description": "Visitor count with number",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  
+  "singleVisitor": "1 अभ्यागत",
+  "@singleVisitor": {
+    "description": "Single visitor count"
+  },
+  
+  "todayVisitors": "आज",
+  "@todayVisitors": {
+    "description": "Today visitors section"
+  },
+  
+  "yesterdayVisitors": "काल",
+  "@yesterdayVisitors": {
+    "description": "Yesterday visitors section"
+  },
+  
+  "earlierVisitors": "पूर्वी",
+  "@earlierVisitors": {
+    "description": "Earlier visitors section"
+  },
+  
+  "checkOutConfirmation": "तुम्हाला खरोखर या अभ्यागताला चेक आउट करायचे आहे का?",
+  "@checkOutConfirmation": {
+    "description": "Check out confirmation dialog"
+  },
+  
+  "visitorDetails": "अभ्यागत तपशील",
+  "@visitorDetails": {
+    "description": "Visitor details screen title"
+  },
+  
+  "buildingSelection": "इमारत निवड",
+  "@buildingSelection": {
+    "description": "Building selection dialog title"
+  },
+  
+  "selectBuilding": "इमारत निवडा",
+  "@selectBuilding": {
+    "description": "Select building label"
+  },
+  
+  "noMoreVisitors": "लोड करण्यासाठी आणखी अभ्यागत नाहीत",
+  "@noMoreVisitors": {
+    "description": "No more visitors message"
+  },
+  
+  "errorLoadingVisitors": "अभ्यागत लोड करताना त्रुटी",
+  "@errorLoadingVisitors": {
+    "description": "Error loading visitors message"
+  },
+  
+  "retryLoading": "पुन्हा लोड करा",
+  "@retryLoading": {
+    "description": "Retry loading button text"
+  },
+  
+  "confirmLogout": "लॉगआउटची पुष्टी करा",
+  "@confirmLogout": {
+    "description": "Logout confirmation dialog title"
+  },
+  
+  "logoutMessage": "तुम्हाला खरोखर लॉगआउट करायचे आहे का?",
+  "@logoutMessage": {
+    "description": "Logout confirmation message"
+  },
+  
+  "logoutDescription": "तुम्हाला तुमच्या खात्यात प्रवेश करण्यासाठी पुन्हा साइन इन करावे लागेल.",
+  "@logoutDescription": {
+    "description": "Logout description message"
+  },
+  
+  "securityConfirmationRequired": "सुरक्षा पुष्टी आवश्यक",
+  "@securityConfirmationRequired": {
+    "description": "Security confirmation subtitle"
+  },
+  
+  "exitApp": "अॅपमधून बाहेर पडा",
+  "@exitApp": {
+    "description": "Exit app dialog title"
+  },
+  
+  "exitAppConfirmation": "तुम्हाला खरोखर अॅपमधून बाहेर पडायचे आहे का?",
+  "@exitAppConfirmation": {
+    "description": "Exit app confirmation message"
+  },
+  
+  "yes": "होय",
+  "@yes": {
+    "description": "Yes button text"
+  },
+  
+  "no": "नाही",
+  "@no": {
+    "description": "No button text"
+  },
+  
+  "ok": "ठीक आहे",
+  "@ok": {
+    "description": "OK button text"
+  },
+  
+  "done": "पूर्ण",
+  "@done": {
+    "description": "Done button text"
+  },
+  
+  "next": "पुढे",
+  "@next": {
+    "description": "Next button text"
+  },
+  
+  "previous": "मागे",
+  "@previous": {
+    "description": "Previous button text"
+  },
+  
+  "skip": "वगळा",
+  "@skip": {
+    "description": "Skip button text"
+  },
+  
+  "continueAction": "सुरू ठेवा",
+  "@continueAction": {
+    "description": "Continue button text"
+  },
+  
+  "tryAgain": "पुन्हा प्रयत्न करा",
+  "@tryAgain": {
+    "description": "Try again button text"
+  },
+  
+  "refresh": "रिफ्रेश करा",
+  "@refresh": {
+    "description": "Refresh button text"
+  },
+  
+  "changesSuccessful": "बदल यशस्वीरीत्या सेव्ह झाले!",
+  "changesUpdated": "तुमच्या व्हिज़िटर सेटिंग्स अपडेट झाल्या आहेत",
+  "saveFailed": "सेव्ह करणे अपयशी",
+
+  "requestPermission": "परवानगीची विनंती करा",
+  "request": "विनंती",
+  "permission": "परवानगी",
+  "selectedFlat": "निवडलेला फ्लॅट",
+  "visitorApproved": "व्हिज़िटर मंजूर",
+  "visitorRejected": "व्हिज़िटर नाकारले",
+  "leaveAtGate": "गेटवर सोडा",
+  "memberNotReachable": "सदस्यापर्यंत पोहोच नाही",
+  "initializingRequest": "विनंती सुरू करत आहे...",
+  "uploadingImage": "प्रतिमा अपलोड करत आहे...",
+  "enterPasscode": "पासकोड टाका",
+  "visitorPasscode": "व्हिज़िटर पासकोड",
+  "enterSixDigitPasscode": "सुरू ठेवण्यासाठी तुमचा 6-अंकी पासकोड टाका",
+  "passcodeRequired": "पासकोड आवश्यक आहे",
+  "enterSixDigitValidation": "कृपया 6-अंकी पासकोड टाका",
+
+  "faceIdRegistration": "फेस आयडी नोंदणी",
+  "lookStraight": "सरळ पहा",
+  "turnHeadLeft": "तुमचे डोके थोडे डावीकडे फिरवा",
+  "turnHeadRight": "तुमचे डोके थोडे उजवीकडे फिरवा",
+  "lookUp": "थोडे वर पहा",
+  "lookDown": "थोडे खाली पहा",
+  "tiltHeadLeft": "तुमचे डोके डावीकडे झुकवा",
+  "tiltHeadRight": "तुमचे डोके उजवीकडे झुकवा",
+  "smileSlightly": "थोडे हसा",
+  "blinkEyes": "तुमचे डोळे मिचकावा",
+
+  "allowDrawOverApps": "'onegate' ला इतर अॅप्सवर ड्रॉ करण्याची परवानगी द्या",
+  "drawOverAppsDescription": "जेव्हा व्हिज़िटरसाठी परवानगी विनंती येते तेव्हा मंजुरी स्क्रीन दाखवण्यासाठी ही परवानगी आवश्यक आहे",
+  "allowEscapeDND": "'onegate' ला 'डिस्टर्ब करू नका' मोडमधून बाहेर पडण्याची परवानगी द्या",
+  "escapeDNDDescription": "तुमचे डिव्हाइस DND मोडमध्ये असले तरीही आपत्कालीन अलार्म वाजवण्यासाठी ही परवानगी आवश्यक आहे",
+
+  "networkLogsDashboard": "नेटवर्क लॉग्स डॅशबोर्ड",
+  "refreshLogs": "लॉग्स रिफ्रेश करा",
+  "error": "त्रुटी",
+  "retry": "पुन्हा प्रयत्न करा",
+  "noNetworkLogs": "कोणतेही नेटवर्क लॉग्स उपलब्ध नाहीत",
+
+  "dataObservabilitySettings": "डेटा ऑब्झर्व्हेबिलिटी सेटिंग्स",
+  "healthCheckCompleted": "आरोग्य तपासणी पूर्ण",
+  "healthCheckFailed": "आरोग्य तपासणी अपयशी",
+  "testNotificationSent": "टेस्ट नोटिफिकेशन यशस्वीरीत्या पाठवले",
+  "testNotificationFailed": "टेस्ट नोटिफिकेशन पाठवणे अपयशी",
+  "indexSyncCompleted": "इंडेक्स सिंक यशस्वीरीत्या पूर्ण",
+  "indexSyncFailed": "इंडेक्स सिंक अपयशी - कॉन्फिगरेशन तपासा",
+  "details": "तपशील",
+
+  "crashReports": "क्रॅश रिपोर्ट्स",
+  "crashStatistics": "क्रॅश आकडेवारी",
+  "totalCrashes": "एकूण क्रॅश",
+  "fatalCrashes": "घातक क्रॅश",
+  "last24h": "गेले 24 तास",
+  "uniqueErrors": "अनोख्या त्रुटी",
+  "allCrashes": "सर्व क्रॅश",
+  "fatalOnly": "फक्त घातक",
+  "nonFatal": "गैर-घातक",
+
+  "allCrashesLabel": "सर्व क्रॅश",
+  "fatalOnlyLabel": "फक्त घातक",
+  "nonFatalLabel": "गैर-घातक",
+  "last24hLabel": "गेले 24 तास",
+  "noCrashesFoundTitle": "कोणतेही क्रॅश सापडले नाहीत",
+  "noCrashesFoundMessage": "छान! निवडलेल्या फिल्टरसाठी कोणतेही क्रॅश रिपोर्ट केले गेले नाहीत.",
+  "crashDetailsTitle": "क्रॅश तपशील",
+  "copyCrashDetailsTooltip": "क्रॅश तपशील कॉपी करा",
+  "errorTypeLabel": "त्रुटी प्रकार",
+  "fatalLabel": "घातक",
+  "timestampLabel": "टाइमस्टॅम्प",
+  "appVersionLabel": "अॅप आवृत्ती",
+  "platformLabel": "प्लॅटफॉर्म",
+  "deviceLabel": "डिव्हाइस",
+  "userIdLabel": "वापरकर्ता आयडी",
+  "gateIdLabel": "गेट आयडी",
+  "errorMessageLabel": "त्रुटी संदेश",
+  "stackTraceLabel": "स्टॅक ट्रेस",
+
+  "building": "इमारत",
+  "memberStatus": "सदस्य स्थिती",
+  "allBuildings": "सर्व इमारती",
+  "towerA": "टॉवर A",
+  "towerB": "टॉवर B",
+  "allStatuses": "सर्व स्थिती",
+  "active": "सक्रिय",
+  "inactive": "निष्क्रिय",
+  "approvedMembersOnly": "फक्त मंजूर सदस्य",
+  "staffOnly": "फक्त कर्मचारी",
+  "dateRange": "दिनांक श्रेणी",
+  "allDates": "सर्व दिनांक",
+  "selectImageSource": "प्रतिमा स्रोत निवडा",
+  "camera": "कॅमेरा",
+  "gallery": "गॅलरी",
+  "confirmUpload": "अपलोडची पुष्टी करा",
+  "doYouWantToUpload": "तुम्हाला निवडलेल्या प्रतिमा अपलोड करायच्या आहेत का?",
+  "male": "पुरुष",
+  "female": "स्त्री",
+  "other": "इतर",
+  "gender": "लिंग",
+  "staffUpdatedSuccessfully": "कर्मचारी यशस्वीरित्या अपडेट केले",
+  "allowByGatekeeper": "गेटकीपरद्वारे परवानगी द्या",
+  "call": "कॉल",
+  "noPurposeSelected": "कोणताही उद्देश निवडला किंवा उपलब्ध नाही.",
+  "unknownPurpose": "अज्ञात उद्देश",
+  "noMembersAvailable": "कोणतेही सदस्य उपलब्ध नाहीत",
+  "clearSearch": "शोध साफ करा",
+  "clearAllNotifications": "सर्व नोटिफिकेशन साफ करा",
+  "clearAll": "सर्व साफ करा",
+  "unreadOnly": "फक्त न वाचलेले",
+  "resetToDefaults": "डीफॉल्टवर रीसेट करा",
+  "configure": "कॉन्फिगर करा",
+  "meilisearchSyncError": "मेलीसर्च सिंक त्रुटी",
+
+  "analyticsDashboard": "अॅनालिटिक्स डॅशबोर्ड",
+  "overview": "विहंगावलोकन",
+  "userBehavior": "वापरकर्ता वर्तन",
+  "performance": "कामगिरी",
+  "events": "घटना",
+  "loadingAnalyticsData": "अॅनालिटिक्स डेटा लोड करत आहे...",
+
+  "advancedSearch": "प्रगत शोध",
+  "searchFilters": "शोध फिल्टर",
+  "clearFilters": "साफ करा",
+
+  "observatory": "ऑब्झर्व्हेटरी",
+  "crashReportsSettings": "क्रॅश रिपोर्ट्स",
+
+  "errorLoadingCrashData": "क्रॅश डेटा लोड करताना त्रुटी",
+  "errorLoadingAnalyticsData": "अॅनालिटिक्स डेटा लोड करताना त्रुटी",
+  "errorSendingTestNotification": "टेस्ट नोटिफिकेशन पाठवताना त्रुटी",
+
+  "visitorMobileNumber": "पाहुणे मोबाइल नंबर",
+  "mobileNumberRequired": "मोबाइल नंबर आवश्यक आहे",
+  "pleaseEnter10DigitNumber": "कृपया १० अंकी नंबर टाका",
+  "noSpacesOrSpecialCharacters": "कोणतेही स्थान किंवा विशेष वर्ण अनुमती नाही",
+  "enterOtpSentToMobile": "तुमच्या मोबाइल नंबरवर पाठवलेला OTP टाका",
+  "otpRequired": "OTP आवश्यक आहे",
+  "selectPurposeOfVisit": "भेटीचा उद्देश निवडा",
+  "defaultCategory": "डिफॉल्ट श्रेणी",
+  "visitorIsAlreadyVerified": "पाहुणे आधीच सत्यापित आहे",
+  "somethingWentWrong": "काहीतरी चूक झाली",
+  "enterName": "नाव टाका",
+  "faceRegistrationComplete": "चेहरा नोंदणी पूर्ण",
+  "capturePhoto": "फोटो काढा",
+  "uploadPhoto": "फोटो अपलोड करा",
+  "registerPhoto": "फोटो नोंदवा",
+  "cameraPermissionRequired": "कॅमेरा परवानगी आवश्यक",
+  "needCameraAccessForQR": "QR कोड स्कॅन करण्यासाठी आम्हाला कॅमेरा प्रवेशाची गरज आहे",
+  "grantAccess": "प्रवेश द्या",
+  "verifying": "सत्यापित करत आहे...",
+  "scanQrCode": "QR कोड स्कॅन करा",
+  "positionQrCodeInFrame": "QR कोड फ्रेमच्या आत ठेवा",
+  "scanningWillHappenAutomatically": "स्कॅनिंग आपोआप होईल",
+  "flashOn": "फ्लॅश चालू",
+  "flashOff": "फ्लॅश बंद",
+  "pleaseWaitProcessingInfo": "कृपया प्रतीक्षा करा जेव्हा आम्ही माहिती प्रक्रिया करतो",
+  "visitorAllowed": "पाहुण्याला परवानगी दिली",
+  "visitorSuccessfullyVerified": "पाहुणे यशस्वीरित्या सत्यापित झाले आहे",
+  "verificationFailed": "सत्यापन अयशस्वी",
+  "howToScanQrCodes": "QR कोड कसे स्कॅन करावे",
+  "positionTheQrCode": "QR कोड स्थितीत ठेवा",
+  "ensureGoodLighting": "चांगला प्रकाश सुनिश्चित करा",
+  "useFlashIfNeeded": "आवश्यक असल्यास फ्लॅश वापरा",
+  "holdSteady": "स्थिर धरा",
+  "gotIt": "समजले",
+  "visitorApproved": "पाहुणे मंजूर",
+  "visitorRejected": "पाहुणे नाकारले",
+  "leaveAtGate": "गेटवर सोडा",
+  "memberNotReachable": "सदस्यापर्यंत पोहोचू शकत नाही !!",
+  "requestPermissionFromMember": "सदस्याकडून परवानगीची विनंती करा",
+  "visitorIsSelfCheckIn": "पाहुणे स्वतः चेक इन आहे",
+  "visitorAllowedByGatekeeper": "पाहुण्याला गेटकीपरने परवानगी दिली आहे",
+  "unknownRequestType": "अज्ञात विनंती प्रकार",
+  "request": "विनंती",
+  "finish": "समाप्त",
+  "mobile": "मोबाइल",
+  "comingFrom": "येत आहे",
+  "notSpecified": "निर्दिष्ट नाही",
+  "purpose": "उद्देश",
+  "delivery": "डिलिव्हरी",
+  "vendor": "विक्रेता",
+  "allowByGatekeeper": "गेटकीपरद्वारे परवानगी द्या",
+  "noImageCaptured": "कोणतीही प्रतिमा कॅप्चर केली नाही",
+  "imageUploadedSuccessfully": "प्रतिमा यशस्वीरित्या अपलोड केली",
+  "failedToUploadImage": "प्रतिमा अपलोड करण्यात अयशस्वी",
+  "errorProcessingImage": "प्रतिमा प्रक्रियेत त्रुटी",
+  "success": "यश",
+  "information": "माहिती",
+  "notificationResentAgain": "सूचना पुन्हा पाठवली",
+  "callInitiatedSuccessfully": "सदस्याला यशस्वीरित्या कॉल केला",
+  "imagePreview": "प्रतिमा पूर्वावलोकन",
+  "reviewCapturedPhoto": "तुमच्या कॅप्चर केलेल्या फोटोचे पुनरावलोकन करा",
+  "retake": "पुन्हा घ्या",
+  "upload": "अपलोड",
+  "onegate": "वनगेट",
+  "oneapp": "वनऐप",
+  "theAllInOneApp": "सर्व काही एका ऐपमध्ये",
+  "onesociety": "वनसोसायटी",
+  "experienceEaseOfCommunityManagement": "वनसोसायटीसह समुदायिक व्यवस्थापनाच्या सुलभतेचा अनुभव घ्या",
+  "nameSurname": "नाव आडनाव",
+  "pleaseEnterYourName": "कृपया तुमचे नाव टाका",
+  "locationRequired": "स्थान आवश्यक आहे",
+  "mumbai": "मुंबई",
+  "bandra": "बांद्रा",
+  "selectCategory": "श्रेणी निवडा",
+  "selectQualification": "पात्रता निवडा",
+  "selectIdProofType": "ओळख पुरावा प्रकार निवडा",
+  "uploadIdProofImage": "ओळख पुरावा प्रतिमा अपलोड करा",
+  "editStaff": "कर्मचारी संपादित करा",
+  "staff": "कर्मचारी",
+  "debugInfoCopiedToClipboard": "डिबग माहिती क्लिपबोर्डवर कॉपी केली",
+  "sessionDebugTool": "सत्र डिबग टूल",
+  "showTokenInfo": "टोकन माहिती दाखवा",
+  "checkValidity": "वैधता तपासा",
+  "manualRefresh": "मॅन्युअल रीफ्रेश",
+  "testExpiration": "समाप्ती चाचणी",
+  "testRefresh": "रीफ्रेश चाचणी",
+  "testError": "त्रुटी चाचणी",
+  "clearAllTokens": "सर्व टोकन साफ करा",
+  "close": "बंद करा",
+  "authTokenDebug": "ऑथ टोकन डिबग",
+  "forceRefresh": "जबरदस्तीने रीफ्रेश",
+  "clearTokens": "टोकन साफ करा",
+  "copyReport": "अहवाल कॉपी करा",
+  "allTokensCleared": "सर्व टोकन साफ केले",
+  "debugReportCopiedToClipboard": "डिबग अहवाल क्लिपबोर्डवर कॉपी केला",
+
+  "errorSendingOTPPleaseTryAgain": "OTP पाठवताना त्रुटी. कृपया पुन्हा प्रयत्न करा.",
+  "otpVerifiedSuccessfully": "OTP यशस्वीरित्या सत्यापित!",
+  "otpVerificationFailedPleaseTryAgain": "OTP सत्यापन अयशस्वी. कृपया पुन्हा प्रयत्न करा.",
+  "mobileNumberIsRequired": "मोबाइल नंबर आवश्यक आहे",
+  "noSpacesOrSpecialCharactersAllowed": "कोणतेही स्थान किंवा विशेष वर्ण अनुमती नाही",
+  "enterOTPSentToYourMobileNumber": "तुमच्या मोबाइल नंबरवर पाठवलेला OTP टाका",
+  "otpIsRequired": "OTP आवश्यक आहे",
+  "pleaseEnter6DigitOTP": "कृपया ६ अंकी OTP टाका",
+
+  "initializingRequest": "विनंती सुरू करत आहे...",
+  "uploadingImage": "प्रतिमा अपलोड करत आहे...",
+
+  "changeLanguageConfirmation": "तुम्हाला भाषा {language} मध्ये बदलायची आहे का? ऐप लगेच नवीन भाषा लागू करेल.",
+  "change": "बदला",
+
+  "passcodeVerifiedSuccessfully": "पासकोड यशस्वीरित्या सत्यापित!",
+  "invalidPasscodeTryAgain": "चुकीचा पासकोड. पुन्हा प्रयत्न करा.",
+  "errorVerifyingPasscode": "अवैध पासकोड: पासकोड सत्यापन अयशस्वी",
+  "parcels": "पार्सल",
+  "noParcelsFound": "कोणतेही पार्सल सापडले नाही.",
+  "pleaseSelectPurpose": "कृपया उद्देश्य निवडा",
+  "selfEntrySettings": "स्वयं प्रवेश सेटिंग्ज",
+  "enableDisableSelfEntry": "स्वयं प्रवेश सक्षम/अक्षम करा",
+  "changePassword": "पासवर्ड बदला",
+  "changeYourPassword": "आपला पासवर्ड बदला",
+  "currentPreference": "सध्याची प्राधान्यता: {preference}",
+  "couldNotLaunch": "{url} लॉन्च करू शकत नाही",
+  "screenNavigation": "स्क्रीन नेव्हिगेशन",
+  "noScreenNavigationRecorded": "अजूनपर्यंत कोणतेही स्क्रीन नेव्हिगेशन रेकॉर्ड केलेले नाही",
+
+  "noParcelsAvailable": "कोणतेही पार्सल उपलब्ध नाही",
+  "noParcelRegistered": "सध्या सिस्टममध्ये कोणतेही पार्सल नोंदणीकृत नाही.",
+  "somethingWentWrong": "काहीतरी चूक झाली",
+  "errorLoadingParcelList": "पार्सल यादी लोड करताना त्रुटी झाली. कृपया आपले कनेक्शन तपासा आणि पुन्हा प्रयत्न करा.",
+  "tryAgain": "पुन्हा प्रयत्न करा",
+
+  "enterMobileNumber": "मोबाइल नंबर टाका",
+  "mobileTab": "मोबाइल",
+  "passCodeTab": "पास कोड",
+  "enterTheVisitorMobileNumber": "पाहुण्याचा मोबाइल नंबर टाका",
+  "validatingMobileNumber": "मोबाइल नंबर सत्यापित करत आहे...",
+  "introducingOnegateBrand": "वनगेट आपल्या संपूर्ण डिजिटल संरक्षकाचा परिचय",
+  "secureDigitalWorld": "वनगेटसह आपले डिजिटल जग सुरक्षित करा,\nसर्व-इन-वन सुरक्षा अॅप्लिकेशन.",
+  "searchMembers": "सदस्यांना शोधा",
+
+  "gateSettings": "गेट सेटिंग्ज",
+  "@gateSettings": {
+    "description": "Gate settings title"
+  },
+
+  "staffs": "कर्मचारी",
+  "@staffs": {
+    "description": "Staff section title"
+  },
+
+  "viewYourSocietyStaffs": "आपल्या सोसायटीचे कर्मचारी पहा",
+  "@viewYourSocietyStaffs": {
+    "description": "Staff section subtitle"
+  },
+
+  "changePassword": "पासवर्ड बदला",
+  "@changePassword": {
+    "description": "Change password option"
+  },
+
+  "changeYourPassword": "आपला पासवर्ड बदला",
+  "@changeYourPassword": {
+    "description": "Change password description"
+  },
+
+  "chooseCameraPreference": "कॅमेरा प्राधान्य निवडा",
+  "@chooseCameraPreference": {
+    "description": "Camera preference selection description"
+  },
+
+  "changesSuccessful": "बदल यशस्वी",
+  "@changesSuccessful": {
+    "description": "Changes successful message"
+  },
+
+  "changesUpdated": "आपले बदल अपडेट केले आहेत",
+  "@changesUpdated": {
+    "description": "Changes updated message"
+  },
+
+  "saveFailed": "जतन करणे अयशस्वी",
+  "@saveFailed": {
+    "description": "Save failed message"
+  },
+
+  "allowDrawOverApps": "इतर अॅप्सवर दर्शविण्याची परवानगी द्या",
+  "@allowDrawOverApps": {
+    "description": "Allow draw over apps permission"
+  },
+
+  "drawOverAppsDescription": "इतर अॅप्सवर सामग्री दर्शविण्याची परवानगी द्या",
+  "@drawOverAppsDescription": {
+    "description": "Draw over apps permission description"
+  },
+
+  "allowEscapeDND": "डीएनडीमधून बाहेर पडण्याची परवानगी द्या",
+  "@allowEscapeDND": {
+    "description": "Allow escape DND permission"
+  },
+
+  "escapeDNDDescription": "डू नॉट डिस्टर्ब मोडमधून बाहेर पडण्याची परवानगी द्या",
+  "@escapeDNDDescription": {
+    "description": "Escape DND permission description"
+  },
+
+  "visitorsAndVehiclesSettings": "अभ्यागत आणि वाहन सेटिंग्ज",
+  "@visitorsAndVehiclesSettings": {
+    "description": "Visitors and vehicles settings title"
+  },
+
+  "allVisitorsWillBeAutoApproved": "सर्व अभ्यागतांना स्वयंचलितपणे मंजुरी दिली जाईल",
+  "@allVisitorsWillBeAutoApproved": {
+    "description": "Auto approval message"
+  },
+
+  "visitorsSettings": "अभ्यागत सेटिंग्ज",
+  "@visitorsSettings": {
+    "description": "Visitors settings title"
+  },
+
+  "markMandatoryFieldsForVisitors": "अभ्यागतांसाठी अनिवार्य फील्ड चिन्हांकित करा",
+  "@markMandatoryFieldsForVisitors": {
+    "description": "Mark mandatory fields instruction"
+  },
+
+  "configureDutyAlarms": "ड्यूटी अलार्म कॉन्फिगर करा",
+  "@configureDutyAlarms": {
+    "description": "Configure duty alarms title"
+  },
+
+  "enableDisableDutyAlarms": "ड्यूटी अलार्म सक्षम/अक्षम करा",
+  "@enableDisableDutyAlarms": {
+    "description": "Enable/disable duty alarms instruction"
+  },
+
+  "applicationSettings": "अॅप्लिकेशन सेटिंग्ज",
+  "@applicationSettings": {
+    "description": "Application settings title"
+  },
+
+  "monitorSystemHealthSearchNotifications": "सिस्टम आरोग्य, शोध आणि सूचनांचे निरीक्षण करा",
+  "@monitorSystemHealthSearchNotifications": {
+    "description": "System monitoring description"
+  },
+
+  "useFrontFacingCamera": "फ्रंट कॅमेरा वापरा",
+  "@useFrontFacingCamera": {
+    "description": "Front camera option"
+  },
+
+  "useRearFacingCamera": "बॅक कॅमेरा वापरा",
+  "@useRearFacingCamera": {
+    "description": "Back camera option"
+  },
+
+  "cameraSettingUpdatedSuccessfully": "कॅमेरा सेटिंग यशस्वीरित्या अपडेट केली",
+  "@cameraSettingUpdatedSuccessfully": {
+    "description": "Camera settings update success message"
+  },
+
+  "selectApprovalTime": "मंजुरी वेळ निवडा",
+  "@selectApprovalTime": {
+    "description": "Select approval time title"
+  },
+
+  "chooseVisitorApprovalDuration": "अभ्यागत मंजुरी कालावधी निवडा",
+  "@chooseVisitorApprovalDuration": {
+    "description": "Choose visitor approval duration instruction"
+  },
+
+  "approvalTimeoutDuration": "मंजुरी टाइमआउट कालावधी",
+  "@approvalTimeoutDuration": {
+    "description": "Approval timeout duration label"
+  },
+
+  "approvalTimeUpdatedSuccessfully": "मंजुरी वेळ यशस्वीरित्या अपडेट केली",
+  "@approvalTimeUpdatedSuccessfully": {
+    "description": "Approval time update success message"
+  },
+
+  "selectDataStorage": "डेटा स्टोरेज निवडा",
+  "@selectDataStorage": {
+    "description": "Select data storage title"
+  },
+
+  "languageChangedSuccessfully": "भाषा यशस्वीरित्या बदलली",
+  "@languageChangedSuccessfully": {
+    "description": "Language change success message"
+  },
+
+  "errorChangingLanguage": "भाषा बदलताना त्रुटी: {error}",
+  "@errorChangingLanguage": {
+    "description": "Language change error message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+
+  "currentPreferenceGate": "सध्याची प्राधान्यता: {gateName}",
+  "@currentPreferenceGate": {
+    "description": "Current gate preference",
+    "placeholders": {
+      "gateName": {
+        "type": "String",
+        "example": "Gate 1"
+      }
+    }
+  },
+
+  "notSelectedGate": "कोणतेही गेट निवडलेले नाही",
+  "@notSelectedGate": {
+    "description": "No gate selected message"
+  },
+
+  "currentPreferenceCamera": "सध्याची प्राधान्यता: {cameraType}",
+  "@currentPreferenceCamera": {
+    "description": "Current camera preference",
+    "placeholders": {
+      "cameraType": {
+        "type": "String",
+        "example": "Front Camera"
+      }
+    }
+  },
+
+  "notSelectedCamera": "कोणताही कॅमेरा निवडलेला नाही",
+  "@notSelectedCamera": {
+    "description": "No camera selected message"
+  },
+
+  "seconds": "सेकंद",
+  "@seconds": {
+    "description": "Seconds unit"
+  },
+
+  "visitorIsAllowedByGatekeeper": "अभ्यागताला सदस्याने पूर्व-मंजुरी दिली आहे",
+  "@visitorIsAllowedByGatekeeper": {
+    "description": "Pre-approved visitor status message"
+  },
+
+  "visitorIsAllowedByGatekeeperOriginal": "अभ्यागताला गेटकीपरने परवानगी दिली आहे",
+  "@visitorIsAllowedByGatekeeperOriginal": {
+    "description": "Original gatekeeper approval message"
+  },
+
+  "select": "निवडा",
+  "@select": {
+    "description": "Select button text"
+  },
+
+  "societyOffice": "सोसायटी कार्यालय",
+  "@societyOffice": {
+    "description": "Society office label"
+  },
+
+  "tapToViewDetails": "तपशील पाहण्यासाठी टॅप करा",
+  "@tapToViewDetails": {
+    "description": "Tap to view details instruction"
+  },
+
+  "errorProcessingSelection": "निवड प्रक्रियेत त्रुटी",
+  "@errorProcessingSelection": {
+    "description": "Selection processing error message"
+  },
+
+  "trying": "प्रयत्न करत आहे...",
+  "@trying": {
+    "description": "Trying message"
+  },
+
+  "inOutBook": "इन आउट बुक",
+  "@inOutBook": {
+    "description": "In out book label"
+  },
+
+  "visitorIn": "अभ्यागत इन",
+  "@visitorIn": {
+    "description": "Visitor in label"
+  },
+
+  "visitorOut": "अभ्यागत आउट",
+  "@visitorOut": {
+    "description": "Visitor out label"
+  },
+
+  "locationPermissionRequired": "स्थान परवानगी आवश्यक",
+  "@locationPermissionRequired": {
+    "description": "Location permission required title"
+  },
+
+  "locationPermissionMessage": "हे वैशिष्ट्य वापरण्यासाठी स्थान परवानगी आवश्यक आहे",
+  "@locationPermissionMessage": {
+    "description": "Location permission message"
+  },
+
+  "purposeEntry": "उद्देश प्रवेश",
+  "@purposeEntry": {
+    "description": "Purpose entry title"
+  },
+
+  "staffInformation": "कर्मचारी माहिती",
+  "@staffInformation": {
+    "description": "Staff information title"
+  },
+
+  "pleaseFillStaffDetails": "कृपया सर्व कर्मचारी तपशील भरा",
+  "@pleaseFillStaffDetails": {
+    "description": "Fill staff details instruction"
+  },
+
+  "staffName": "कर्मचारी नाव",
+  "@staffName": {
+    "description": "Staff name label"
+  },
+
+  "enterComingFromLocation": "येण्याचे स्थान प्रविष्ट करा",
+  "@enterComingFromLocation": {
+    "description": "Enter coming from location instruction"
+  },
+
+  "cabInformation": "कॅब माहिती",
+  "@cabInformation": {
+    "description": "Cab information title"
+  },
+
+  "pleaseFillCabDetails": "कृपया सर्व कॅब तपशील भरा",
+  "@pleaseFillCabDetails": {
+    "description": "Fill cab details instruction"
+  },
+
+  "cabDriverName": "कॅब ड्रायव्हर नाव",
+  "@cabDriverName": {
+    "description": "Cab driver name label"
+  },
+
+  "cabNumber": "कॅब नंबर",
+  "@cabNumber": {
+    "description": "Cab number label"
+  },
+
+  "deliveryPersonName": "डिलिव्हरी व्यक्ती नाव",
+  "@deliveryPersonName": {
+    "description": "Delivery person name label"
+  },
+
+  "enterNameOfDeliveryPerson": "डिलिव्हरी व्यक्तीचे नाव प्रविष्ट करा",
+  "@enterNameOfDeliveryPerson": {
+    "description": "Enter delivery person name instruction"
+  },
+
+  "selectDeliveryCompany": "डिलिव्हरी कंपनी निवडा",
+  "@selectDeliveryCompany": {
+    "description": "Select delivery company instruction"
+  },
+
+  "vendorName": "विक्रेता नाव",
+  "@vendorName": {
+    "description": "Vendor name label"
+  },
+
+  "enterNameOfVendor": "विक्रेत्याचे नाव प्रविष्ट करा",
+  "@enterNameOfVendor": {
+    "description": "Enter vendor name instruction"
+  },
+
+  "selectVendorCategory": "विक्रेता श्रेणी निवडा",
+  "@selectVendorCategory": {
+    "description": "Select vendor category instruction"
+  },
+
+  "guestInformation": "अभ्यागत माहिती",
+  "@guestInformation": {
+    "description": "Guest information title"
+  },
+
+  "pleaseFillGuestDetails": "कृपया सर्व अभ्यागत तपशील भरा",
+  "@pleaseFillGuestDetails": {
+    "description": "Fill guest details instruction"
+  },
+
+  "visitorId": "अभ्यागत आयडी",
+  "@visitorId": {
+    "description": "Visitor ID label"
+  },
+
+  "enterVisitorId": "अभ्यागत आयडी प्रविष्ट करा",
+  "@enterVisitorId": {
+    "description": "Enter visitor ID instruction"
+  },
+
+  "allow": "परवानगी द्या",
+  "@allow": {
+    "description": "Allow button text"
+  },
+
+  "deny": "नकार द्या",
+  "@deny": {
+    "description": "Deny button text"
+  },
+
+  "uploading": "अपलोड होत आहे...",
+  "@uploading": {
+    "description": "Uploading message"
+  },
+
+  "captureImage": "प्रतिमा कॅप्चर करा",
+  "@captureImage": {
+    "description": "Capture image button text"
+  },
+
+  "exportLogs": "लॉग एक्सपोर्ट करा",
+  "@exportLogs": {
+    "description": "Button text for exporting logs"
+  },
+
+  "applyFilter": "फिल्टर लागू करा",
+  "@applyFilter": {
+    "description": "Button text for applying filters"
+  },
+
+  "contactInformation": "संपर्क माहिती",
+  "@contactInformation": {
+    "description": "Section title for contact information"
+  },
+
+  "phoneNumber": "फोन नंबर",
+  "@phoneNumber": {
+    "description": "Label for phone number field"
+  },
+
+  "visitDetails": "भेट तपशील",
+  "@visitDetails": {
+    "description": "Section title for visit details"
+  },
+
+  "visitingUnit": "भेट देणारे युनिट",
+  "@visitingUnit": {
+    "description": "Label for visiting unit"
+  },
+
+  "societyOffice": "सोसायटी कार्यालय",
+  "@societyOffice": {
+    "description": "Label for society office"
+  },
+
+  "comingFrom": "येथून येत आहे",
+  "@comingFrom": {
+    "description": "Label for coming from field"
+  },
+
+  "cardNumber": "कार्ड नंबर",
+  "@cardNumber": {
+    "description": "Label for card number"
+  },
+
+  "visitorTimeline": "अभ्यागत टाइमलाइन",
+  "@visitorTimeline": {
+    "description": "Section title for visitor timeline"
+  },
+
+  "checkIn": "चेक इन",
+  "@checkIn": {
+    "description": "Label for check in time"
+  },
+
+  "checkOut": "चेक आउट",
+  "@checkOut": {
+    "description": "Label for check out time"
+  },
+
+  "approvedBy": "मंजूर केले",
+  "@approvedBy": {
+    "description": "Label for approved by field"
+  },
+
+  "notSpecified": "निर्दिष्ट नाही",
+  "@notSpecified": {
+    "description": "Text shown when information is not specified"
+  },
+
+  "tryAgain": "पुन्हा प्रयत्न करा",
+  "@tryAgain": {
+    "description": "Button text for trying again"
+  },
+
+  "requestPermission": "परवानगी विनंती",
+  "@requestPermission": {
+    "description": "Button text for requesting permission"
+  },
+
+  "searchHint": "शोधा",
+  "@searchHint": {
+    "description": "Hint text for search fields"
+  },
+
+  "allBuildings": "सर्व इमारती",
+  "@allBuildings": {
+    "description": "Option to select all buildings"
+  },
+
+  "cards": "कार्ड",
+  "@cards": {
+    "description": "Label for cards filter"
+  },
+
+  "actions": "कृती",
+  "@actions": {
+    "description": "Section title for actions"
+  },
+
+  "unknownVisitor": "अज्ञात",
+  "@unknownVisitor": {
+    "description": "Text shown for unknown visitor"
+  },
+
+  "inGate": "इन-गेट",
+  "@inGate": {
+    "description": "Label for in-gate field"
+  },
+
+  "purpose": "हेतू",
+  "@purpose": {
+    "description": "Label for purpose field"
+  },
+
+  "selectBuilding": "इमारत निवडा",
+  "@selectBuilding": {
+    "description": "Prompt to select a building"
+  },
+
+  "refresh": "रीफ्रेश",
+  "@refresh": {
+    "description": "Button text for refresh action"
+  },
+
+  "confirm": "पुष्टी",
+  "@confirm": {
+    "description": "Button text for confirm action"
+  },
+
+  "always": "नेहमी",
+  "@always": {
+    "description": "Text for always option"
+  },
+
+  "alwaysAllowed": "नेहमी परवानगी",
+  "@alwaysAllowed": {
+    "description": "Status text for always allowed visitors"
+  },
+
+  "retryIn": "पुन्हा प्रयत्न करा:",
+  "@retryIn": {
+    "description": "Text shown with countdown timer"
+  },
+
+  "active": "सक्रिय",
+  "@active": {
+    "description": "Status text for active items"
+  },
+
+  "inactive": "निष्क्रिय",
+  "@inactive": {
+    "description": "Status text for inactive items"
+  }
+} 

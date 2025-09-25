@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:chips_choice/chips_choice.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
+import 'package:flutter_onegate/presentation/widgets/enhanced_toast.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/route_tracker.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
+import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
+import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
+import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
+import 'dart:convert';
 
 class PasscodeEntryView extends StatefulWidget {
   final bool selfcheckinFlow;
@@ -27,6 +32,22 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
   List<String> listPassAlpha = ['G', 'S', 'A'];
   String selectedPassAlpha = 'A';
 
+  @override
+  void initState() {
+    super.initState();
+    _trackExpressEntryRoute();
+  }
+
+  // Track that user is in express entry flow
+  Future<void> _trackExpressEntryRoute() async {
+    if (widget.selfcheckinFlow) {
+      await RouteTracker.saveCurrentRoute(
+        'PasscodeEntryView',
+        isExpressEntry: true,
+      );
+    }
+  }
+
   void startLoading() => setState(() => isLoading = true);
 
   void stopLoading() => setState(() => isLoading = false);
@@ -36,7 +57,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Enter Passcode'),
+        title: Text(AppLocalizations.of(context)!.enterPasscode),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: const Color(0xff212427),
@@ -91,17 +112,18 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               RichText(
-                                text: const TextSpan(
+                                text: TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: 'Visitor Passcode',
-                                      style: TextStyle(
+                                      text: AppLocalizations.of(context)!
+                                          .visitorPasscode,
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                         color: Color(0xff212427),
                                       ),
                                     ),
-                                    TextSpan(
+                                    const TextSpan(
                                       text: ' *',
                                       style: TextStyle(
                                         fontSize: 16,
@@ -113,9 +135,10 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
-                                'Enter your 6-digit passcode to continue',
-                                style: TextStyle(
+                              Text(
+                                AppLocalizations.of(context)!
+                                    .enterSixDigitPasscode,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   color: Color(0xff57636C),
                                   fontWeight: FontWeight.w400,
@@ -147,9 +170,11 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Passcode is required';
+                            return AppLocalizations.of(context)!
+                                .passcodeRequired;
                           } else if (value.length != 6) {
-                            return 'Please enter a 6-digit passcode';
+                            return AppLocalizations.of(context)!
+                                .enterSixDigitValidation;
                           }
                           return null;
                         },
@@ -253,28 +278,118 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
 
                             stopLoading();
 
-                            if (result['success'] == true) {
-                              myFluttertoast(
-                                msg: "Passcode verified successfully!",
-                                backgroundColor: Colors.green,
+                            if (result['success'] == true &&
+                                result['data'] != null) {
+                              final visitorData = result['data'][0];
+
+                              // Parse unit details from the response (same as QR flow)
+                              List<BuildingAssignment> parsedUnitDetails = [];
+                              try {
+                                final dynamic unitDetailsValue =
+                                    visitorData['unit_details'];
+                                if (unitDetailsValue is String) {
+                                  final String cleanedJsonString =
+                                      unitDetailsValue
+                                          .replaceAll(r'\"', '"')
+                                          .replaceAll('"[', '[')
+                                          .replaceAll(']"', ']');
+                                  final List<dynamic> decodedUnitDetails =
+                                      jsonDecode(cleanedJsonString);
+                                  parsedUnitDetails = decodedUnitDetails
+                                      .map<BuildingAssignment>((unitJson) {
+                                    return BuildingAssignment(
+                                      unit_id: [
+                                        unitJson["building_unit"]?.toString() ??
+                                            ''
+                                      ],
+                                      company_id: visitorData['company_id'],
+                                    );
+                                  }).toList();
+                                }
+                              } catch (e) {
+                                print("❌ Error decoding unit details: $e");
+                              }
+
+                              // Create Visitor object from passcode verification data
+                              Visitor visitor = Visitor(
+                                id: visitorData['visitor_id'],
+                                name: visitorData['name'],
+                                mobile: visitorData['mobile'],
+                                visitor_image: visitorData['visitor_image'],
                               );
 
-                              Navigator.push(
+                              // Create VisitorLog object with unit details
+                              VisitorLog visitorLog = VisitorLog(
+                                visitor: visitor,
+                                visitor_coming_from: visitorData['coming_from'],
+                                visitor_purpose_Category_name:
+                                    visitorData['category'] ?? "Guest",
+                                visitor_purpose_category_id: 1,
+                                visitor_count: 1,
+                                company_id: visitorData['company_id'],
+                                initiated_from:
+                                    "passcode_entry", // Mark as passcode entry
+                                visitor_building_assignment: parsedUnitDetails,
+                              );
+
+                              // Show enhanced success toast
+                              showEnhancedToast(
+                                context,
+                                title: "Passcode Verified",
+                                message:
+                                    "Welcome ${visitor.name}! Proceeding to purpose entry.",
+                                backgroundColor: Colors.green,
+                                icon: Icons.verified_user,
+                              );
+
+                              // Store flag indicating entry came from passcode
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.setString(
+                                  'entry_method', 'passcode_entry');
+
+                              // Short delay to show success toast
+                              await Future.delayed(
+                                  const Duration(milliseconds: 1500));
+
+                              // Navigate to VisitorsInEntry with autopopulated data (same as QR flow)
+                              Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (_) => const SelfHomeView()),
+                                  builder: (context) => VisitorsInEntry(
+                                    selfcheckinFlow: widget.selfcheckinFlow,
+                                    comingfrom: visitorData['coming_from'],
+                                    searchedVisitor: visitor,
+                                    selectedValue: PurposeCategory1(
+                                        categoryId: 1,
+                                        categoryName:
+                                            visitorData['category'] ?? "Guest"),
+                                    mobile: visitor.mobile ?? "",
+                                    guestname: visitor.name ?? "",
+                                    isFromQRScan:
+                                        true, // Set to true so it uses visitorLog data like QR flow
+                                    visitorLog: visitorLog,
+                                    isGatekeeperQRPasscodeEntry:
+                                        false, // This is Express Entry flow
+                                  ),
+                                ),
                               );
                             } else {
                               myFluttertoast(
-                                msg: "Invalid passcode. Try again.",
+                                msg: AppLocalizations.of(context)!
+                                    .invalidPasscodeTryAgain,
                                 backgroundColor: Colors.red,
                               );
                             }
                           } catch (e) {
                             stopLoading();
-                            myFluttertoast(
-                              msg: "Error verifying passcode: $e",
-                              backgroundColor: Colors.red,
+                            showEnhancedToast(
+                              context,
+                              title: "Invalid Passcode",
+                              message: AppLocalizations.of(context)!
+                                  .errorVerifyingPasscode,
+                              backgroundColor: const Color(0xFFD32F2F),
+                              icon: Icons.lock_outline,
                             );
                           }
                         }
@@ -294,9 +409,9 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                             valueColor:
                                 AlwaysStoppedAnimation<Color>(Colors.white),
                           )
-                        : const Text(
-                            'Next',
-                            style: TextStyle(
+                        : Text(
+                            AppLocalizations.of(context)!.next,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 22,
                               wordSpacing: 1.2,
