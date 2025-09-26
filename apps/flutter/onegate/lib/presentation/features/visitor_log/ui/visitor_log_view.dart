@@ -32,6 +32,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
+import 'package:flutter_onegate/presentation/widgets/assign_card_popup.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -2985,6 +2986,7 @@ class VisitorLogItem extends StatefulWidget {
 class _VisitorLogItemState extends State<VisitorLogItem> {
   final bool _hasCallSupport = true;
   Future<void>? _launched;
+  String? _assignedCardNumber;
 
   @override
   void initState() {
@@ -2998,6 +3000,54 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
       path: phoneNumber,
     );
     await launchUrl(launchUri);
+  }
+
+  /// Check if Assign Card button should be shown
+  bool _shouldShowAssignCardButton() {
+    // Show Assign Card button only when:
+    // 1. The visitor entry is from Express Entry (initiated_from == "invited_guest")
+    // 2. The visitor_card_number is null or empty
+    // 3. The additional_details object contains "invited_guest": true
+
+    final isExpressEntry = widget.visitorLog.initiated_from == "invited_guest";
+    final currentCardNumber =
+        _assignedCardNumber ?? widget.visitorLog.visitor_card_number;
+    final hasNoCardNumber =
+        currentCardNumber == null || currentCardNumber.isEmpty;
+
+    return isExpressEntry && hasNoCardNumber;
+  }
+
+  /// Get the current card number (either assigned or original)
+  String? _getCurrentCardNumber() {
+    return _assignedCardNumber ?? widget.visitorLog.visitor_card_number;
+  }
+
+  /// Handle card assignment
+  void _handleAssignCard() {
+    if (widget.visitorLog.visitor_id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Visitor ID not found'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AssignCardPopup(
+        visitorId: widget.visitorLog.visitor_id!,
+        visitorName: widget.visitorLog.visitor?.name ?? 'Visitor',
+        onCardAssigned: (cardNumber) {
+          // Update the local state with the new card number
+          setState(() {
+            _assignedCardNumber = cardNumber;
+          });
+        },
+      ),
+    );
   }
 
   @override
@@ -3045,6 +3095,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           image: widget.visitorLog.visitor!.visitor_image,
                           unitList: unitList,
                           visitorLog: widget.visitorLog,
+                          assignedCardNumber:
+                              _assignedCardNumber, // Pass the assigned card number
                         ),
                       ),
                     );
@@ -3247,60 +3299,128 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             ],
                           ),
                         ),
-                      widget.visitorLog.visitor_card_number != null
+                      // Show either card number or Assign Card button
+                      _shouldShowAssignCardButton()
                           ? Container(
                               margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 2,
-                                horizontal: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: const [
-                                    Color.fromRGBO(255, 236, 158, 0.8),
-                                    Color.fromRGBO(255, 190, 168, 0.8),
-                                  ],
-                                  begin: Alignment.topRight,
-                                  end: Alignment.bottomLeft,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Color.fromRGBO(255, 190, 168, 1),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  widget.visitorLog.visitor_card_number != null
-                                      ? Lottie.asset(
-                                          'assets/json/idcard.json',
-                                          width: 30,
-                                          height: 30,
-                                          fit: BoxFit.cover,
-                                        )
-                                      : Icon(
-                                          Symbols.car_tag_rounded,
-                                          size: 30,
-                                          // color: Colors.red, // Optional color for the icon
-                                        ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    widget.visitorLog.visitor_card_number !=
-                                            null
-                                        ? widget.visitorLog.visitor_card_number!
-                                        : 'N/A',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 14,
-                                        ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: [
+                                      Color(0xff212427), // Black color
+                                      Color(0xff57636C), // Grey color
+                                    ],
                                   ),
-                                ],
+                                  borderRadius: BorderRadius.circular(
+                                      10), // Match checkout button
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xff212427)
+                                          .withOpacity(0.3),
+                                      blurRadius: 6, // Smaller shadow
+                                      offset:
+                                          const Offset(0, 2), // Smaller offset
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: _handleAssignCard,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          10), // Match checkout button
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, // Match checkout button
+                                      vertical: 10, // Match checkout button
+                                    ),
+                                    minimumSize: Size
+                                        .zero, // Remove default minimum size
+                                    tapTargetSize: MaterialTapTargetSize
+                                        .shrinkWrap, // Compact tap target
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.credit_card,
+                                        size:
+                                            16, // Match checkout button icon size
+                                      ),
+                                      const SizedBox(
+                                          width:
+                                              8), // Match checkout button spacing
+                                      Text(
+                                        'Assign Card',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium! // Match checkout button text style
+                                            .copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize:
+                                                  13, // Match checkout button font size
+                                              letterSpacing:
+                                                  0.5, // Match checkout button letter spacing
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             )
-                          : Spacer(),
+                          : _getCurrentCardNumber() != null &&
+                                  _getCurrentCardNumber()!.isNotEmpty
+                              ? Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                    horizontal: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: const [
+                                        Color.fromRGBO(255, 236, 158, 0.8),
+                                        Color.fromRGBO(255, 190, 168, 0.8),
+                                      ],
+                                      begin: Alignment.topRight,
+                                      end: Alignment.bottomLeft,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Color.fromRGBO(255, 190, 168, 1),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Lottie.asset(
+                                        'assets/json/idcard.json',
+                                        width: 30,
+                                        height: 30,
+                                        fit: BoxFit.cover,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        _getCurrentCardNumber()!,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 14,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const Spacer(),
                       (widget.visitorLog.visitor_check_out.toString().isEmpty ||
                               widget.visitorLog.visitor_check_out.toString() ==
                                   'null')
@@ -3675,22 +3795,22 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               right: 8,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+                  horizontal: 12,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xff2196F3),
-                      const Color(0xff1976D2),
+                      const Color(0xff4CAF50),
+                      const Color(0xff2E7D32),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xff2196F3).withOpacity(0.3),
+                      color: const Color(0xff4CAF50).withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -3702,7 +3822,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                     Icon(
                       Icons.how_to_reg,
                       color: Colors.white,
-                      size: 12,
+                      size: 14,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -3710,7 +3830,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
-                        fontSize: 10,
+                        fontSize: 11,
                         letterSpacing: 0.5,
                       ),
                     ),

@@ -6,14 +6,20 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/presentation/widgets/assign_card_popup.dart';
 
 class VisitorDetailsScreen extends StatefulWidget {
   final VisitorLog visitorLog;
   String? image;
   String? unitList;
+  String? assignedCardNumber; // Add parameter for assigned card number
 
   VisitorDetailsScreen(
-      {Key? key, required this.visitorLog, this.unitList, this.image})
+      {Key? key,
+      required this.visitorLog,
+      this.unitList,
+      this.image,
+      this.assignedCardNumber})
       : super(key: key);
 
   @override
@@ -25,6 +31,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
   double _imageHeight = 160.0; // Initial circular height
   final double _maxImageHeight = 300.0; // Maximum expanded height
   bool _isExpanded = false;
+  String? _assignedCardNumber;
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -32,6 +39,54 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
       path: phoneNumber,
     );
     await launchUrl(launchUri);
+  }
+
+  /// Check if Assign Card button should be shown
+  bool _shouldShowAssignCardButton() {
+    // Show Assign Card button only when:
+    // 1. The visitor entry is from Express Entry (initiated_from == "invited_guest")
+    // 2. The visitor_card_number is null or empty
+    // 3. The additional_details object contains "invited_guest": true
+
+    final isExpressEntry = widget.visitorLog.initiated_from == "invited_guest";
+    final currentCardNumber =
+        _assignedCardNumber ?? widget.visitorLog.visitor_card_number;
+    final hasNoCardNumber =
+        currentCardNumber == null || currentCardNumber.isEmpty;
+
+    return isExpressEntry && hasNoCardNumber;
+  }
+
+  /// Get the current card number (either assigned or original)
+  String? _getCurrentCardNumber() {
+    return _assignedCardNumber ?? widget.visitorLog.visitor_card_number;
+  }
+
+  /// Handle card assignment
+  void _handleAssignCard() {
+    if (widget.visitorLog.visitor_id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Visitor ID not found'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AssignCardPopup(
+        visitorId: widget.visitorLog.visitor_id!,
+        visitorName: widget.visitorLog.visitor?.name ?? 'Visitor',
+        onCardAssigned: (cardNumber) {
+          // Update the local state with the new card number
+          setState(() {
+            _assignedCardNumber = cardNumber;
+          });
+        },
+      ),
+    );
   }
 
   @override
@@ -42,6 +97,12 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
       ..addListener(() {
         _handleScroll();
       });
+
+    // Initialize assigned card number from passed parameter
+    if (widget.assignedCardNumber != null) {
+      _assignedCardNumber = widget.assignedCardNumber;
+    }
+
     super.initState();
   }
 
@@ -209,20 +270,105 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                 iconBg: const Color(
                                     0xffFFEBEE), // Light red background
                               ),
-                            if (widget.visitorLog.visitor_card_number != null &&
-                                widget
-                                    .visitorLog.visitor_card_number!.isNotEmpty)
-                              _buildInfoTile(
-                                icon: Icons.badge,
-                                title: "Card Number",
-                                subtitle:
-                                    widget.visitorLog.visitor_card_number ??
-                                        'N/A',
-                                iconColor:
-                                    Colors.white, // White icon for contrast
-                                iconBg: const Color(
-                                    0xffF44336), // Solid red background
-                              ),
+                            // Show either card number or Assign Card button
+                            _shouldShowAssignCardButton()
+                                ? Container(
+                                    margin:
+                                        const EdgeInsets.symmetric(vertical: 8),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Card Number",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.grey[700],
+                                              ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                              colors: [
+                                                Color(
+                                                    0xff212427), // Black color
+                                                Color(0xff57636C), // Grey color
+                                              ],
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xff212427)
+                                                    .withOpacity(0.3),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: ElevatedButton(
+                                            onPressed: _handleAssignCard,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.transparent,
+                                              foregroundColor: Colors.white,
+                                              elevation: 0,
+                                              shadowColor: Colors.transparent,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 12,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.credit_card,
+                                                  size: 18,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Assign Card',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium!
+                                                      .copyWith(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : _getCurrentCardNumber() != null &&
+                                        _getCurrentCardNumber()!.isNotEmpty
+                                    ? _buildInfoTile(
+                                        icon: Icons.badge,
+                                        title: "Card Number",
+                                        subtitle:
+                                            _getCurrentCardNumber() ?? 'N/A',
+                                        iconColor: Colors
+                                            .white, // White icon for contrast
+                                        iconBg: const Color(
+                                            0xffF44336), // Solid red background
+                                      )
+                                    : const SizedBox.shrink(),
                           ],
                         ),
                         SizedBox(height: isTablet ? 20 : 16),
@@ -244,22 +390,22 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                       right: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 12,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              const Color(0xff2196F3),
-                              const Color(0xff1976D2),
+                              const Color(0xff4CAF50),
+                              const Color(0xff2E7D32),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xff2196F3).withOpacity(0.3),
+                              color: const Color(0xff4CAF50).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -271,7 +417,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                             Icon(
                               Icons.how_to_reg,
                               color: Colors.white,
-                              size: 12,
+                              size: 14,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -279,7 +425,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 10,
+                                fontSize: 11,
                                 letterSpacing: 0.5,
                               ),
                             ),

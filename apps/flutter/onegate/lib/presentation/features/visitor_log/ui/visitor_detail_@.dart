@@ -343,22 +343,22 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                       right: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 12,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              const Color(0xff2196F3),
-                              const Color(0xff1976D2),
+                              const Color(0xff4CAF50),
+                              const Color(0xff2E7D32),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xff2196F3).withOpacity(0.3),
+                              color: const Color(0xff4CAF50).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -370,7 +370,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                             Icon(
                               Icons.how_to_reg,
                               color: Colors.white,
-                              size: 12,
+                              size: 14,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -378,7 +378,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 10,
+                                fontSize: 11,
                                 letterSpacing: 0.5,
                               ),
                             ),

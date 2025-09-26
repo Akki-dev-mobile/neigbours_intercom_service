@@ -1760,6 +1760,58 @@ class RemoteDataSource {
     }
   }
 
+  /// Verify Member Pass using mobile number from QR
+  Future<Map<String, dynamic>> verifyMemberPass({
+    required String mobile,
+    required String companyId,
+    required String gateName,
+    int? passId,
+  }) async {
+    try {
+      final String url = 'https://gateapi.cubeone.in/api/member/pass/verify';
+      final prefs = await SharedPreferences.getInstance();
+      final selectedGateName = prefs.getString('selected_gate') ?? gateName;
+      final resolvedCompanyId = await gateStorage.getSocietyId();
+
+      final Map<String, dynamic> requestData = {
+        "company_id": int.parse(resolvedCompanyId ?? companyId),
+        "in_gate": selectedGateName,
+        "passcode": null,
+        "mobile": mobile,
+        if (passId != null) "pass_id": passId,
+      };
+
+      log("🔍 Sending request to verify member pass: $requestData");
+
+      final response = await Dio().post(
+        url,
+        data: requestData,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': await _getAccessToken() != null
+                ? 'Bearer ${await _getAccessToken()}'
+                : '',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        log("✅ Member pass verified successfully: ${response.data}");
+        return response.data;
+      } else {
+        _handleErrorResponse();
+        log("❌ Failed to verify member pass. Status Code: ${response.statusCode}, Response: ${response.data}");
+        throw Exception('Failed to verify member pass');
+      }
+    } catch (e, stackTrace) {
+      _handleErrorResponse();
+      log("❌ Error verifying member pass: $e");
+      log("StackTrace: $stackTrace");
+      throw Exception('Failed to verify member pass');
+    }
+  }
+
   /// Fetch members for a company
   Future<List<dynamic>> getMember(int companyId) async {
     try {
@@ -2130,6 +2182,64 @@ class RemoteDataSource {
       } else {
         log("❌ PATCH API failed after retry due to unexpected error. Continuing with flow to not block user experience.");
       }
+    }
+  }
+
+  /// Update visitor card number for Express Entry visitors
+  Future<bool> updateVisitorCardNumber(int visitorId, String cardNumber) async {
+    try {
+      log("=== ASSIGN CARD PATCH API DEBUG ===");
+      log("Visitor ID: $visitorId");
+      log("Card Number: $cardNumber");
+
+      final Dio dio = Dio();
+      final String apiUrl =
+          '${ApiUrls.gateBaseUrl}/visitor/visitorLog/$visitorId';
+
+      log("PATCH API URL: $apiUrl");
+
+      // Prepare payload with card_number as per API specification
+      final Map<String, dynamic> patchData = {"card_number": cardNumber};
+
+      log("PATCH Payload: ${json.encode(patchData)}");
+
+      // Make the PATCH request
+      final Response response = await dio.patch(
+        apiUrl,
+        data: patchData,
+        options: Options(
+          headers: {
+            'user-agent': 'Dart/3.9 (dart:io)',
+            'content-type': 'application/json',
+            'accept-encoding': 'gzip',
+            'authorization':
+                'Bearer ${await _getAccessToken() ?? "accessToken"}',
+            'host': 'gateapi.cubeone.in',
+          },
+        ),
+      );
+
+      log("PATCH Response Status: ${response.statusCode}");
+      log("PATCH Response: ${response.data}");
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        log("✅ Visitor card number updated successfully - visitor_id: $visitorId");
+        return true;
+      } else {
+        log("❌ PATCH API returned unexpected status: ${response.statusCode}");
+        return false;
+      }
+    } on DioException catch (e) {
+      if (e.response != null) {
+        log("PATCH Error Response: ${e.response?.data}");
+        log("PATCH Error Status: ${e.response?.statusCode}");
+      }
+      log("❌ PATCH API failed: ${e.message}");
+      return false;
+    } catch (e, stackTrace) {
+      log("❌ Unexpected error in PATCH API: $e");
+      log("Stack trace: $stackTrace");
+      return false;
     }
   }
 
