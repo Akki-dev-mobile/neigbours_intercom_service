@@ -369,8 +369,6 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                                     isFromQRScan:
                                         true, // Set to true so it uses visitorLog data like QR flow
                                     visitorLog: visitorLog,
-                                    isGatekeeperQRPasscodeEntry:
-                                        false, // This is Express Entry flow
                                   ),
                                 ),
                               );

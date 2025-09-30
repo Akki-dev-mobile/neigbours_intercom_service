@@ -22,6 +22,7 @@ class VisitorLog {
     this.carNumber,
     this.initiated_from,
     this.approved_by, // Added field
+    this.visitor_card_entry_enabled, // Added field
   });
 
   final int? id;
@@ -43,6 +44,8 @@ class VisitorLog {
   final String? purpose_sub_category_name;
   final String? initiated_from; // Added field
   final String? approved_by; // Added field
+  final bool?
+      visitor_card_entry_enabled; // Track if visitor card entry was enabled at time of creation
 
   /// Creates a copy of this VisitorLog with the given fields replaced with new values
   VisitorLog copyWith({
@@ -65,6 +68,7 @@ class VisitorLog {
     String? purpose_sub_category_name,
     String? initiated_from,
     String? approved_by,
+    bool? visitor_card_entry_enabled,
   }) {
     return VisitorLog(
       id: id ?? this.id,
@@ -91,6 +95,8 @@ class VisitorLog {
           purpose_sub_category_name ?? this.purpose_sub_category_name,
       initiated_from: initiated_from ?? this.initiated_from,
       approved_by: approved_by ?? this.approved_by,
+      visitor_card_entry_enabled:
+          visitor_card_entry_enabled ?? this.visitor_card_entry_enabled,
     );
   }
 
@@ -118,6 +124,8 @@ class VisitorLog {
       'purpose_sub_category_name': purpose_sub_category_name,
       'initiated_from': initiated_from, // Added field to JSON output
       'approved_by': approved_by, // Added field to JSON output
+      'visitor_card_entry_enabled':
+          visitor_card_entry_enabled, // Added field to JSON output
     };
   }
 
@@ -180,6 +188,10 @@ class VisitorLog {
           : null,
       approved_by: json['additional_details'] is Map<String, dynamic>
           ? json['additional_details']['approved_by'] as String?
+          : null,
+      visitor_card_entry_enabled: json['additional_details']
+              is Map<String, dynamic>
+          ? json['additional_details']['visitor_card_entry_enabled'] as bool?
           : null,
     );
   }

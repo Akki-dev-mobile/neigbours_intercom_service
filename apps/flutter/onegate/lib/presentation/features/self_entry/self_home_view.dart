@@ -39,6 +39,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
     getfacerecinfo();
     _getSelectedGate();
     _trackExpressEntryRoute();
+    _enableKioskMode();
     super.initState();
   }
 
@@ -103,6 +104,19 @@ class _SelfHomeViewState extends State<SelfHomeView> {
       statusBarColor: Colors.transparent, // Hide status bar
       systemNavigationBarColor: Colors.transparent, // Hide navigation bar
     ));
+  }
+
+  Future<void> _enableKioskMode() async {
+    try {
+      // Engage system immersive UI first
+      enterKioskMode();
+      // Start Android kiosk/lock task mode via plugin
+      await _flutterKioskMode.start();
+    } catch (e) {
+      log("Error starting kiosk mode: $e");
+      // Still ensure immersive UI is applied even if plugin fails
+      enterKioskMode();
+    }
   }
 
   // Responsive Express Check-in label

@@ -45,8 +45,6 @@ class RequestPermissionPage extends StatefulWidget {
   List<String>? unitList;
   final String? request;
   final bool? selfcheckinFlow;
-  final bool?
-      isGatekeeperQRPasscodeEntry; // New parameter to distinguish Gatekeeper QR/Passcode entry
 
   RequestPermissionPage(
       {Key? key,
@@ -56,8 +54,7 @@ class RequestPermissionPage extends StatefulWidget {
       this.logID,
       this.visitorLog,
       this.unitList,
-      this.selfcheckinFlow,
-      this.isGatekeeperQRPasscodeEntry})
+      this.selfcheckinFlow})
       : super(key: key);
 
   @override

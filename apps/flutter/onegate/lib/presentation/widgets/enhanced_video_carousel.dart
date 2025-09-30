@@ -29,16 +29,16 @@ class _EnhancedVideoCarouselState extends State<EnhancedVideoCarousel> {
   // Video configurations
   final List<Map<String, String>> _videos = [
     {
-      'path': 'assets/media/videos/cyberonevideo1.mp4',
+      'path': 'assets/onegate/cyberonevideo1.mp4',
     },
     {
-      'path': 'assets/media/videos/cyberonevideo2.mp4',
+      'path': 'assets/onegate/cyberonevideo2.mp4',
     },
     {
-      'path': 'assets/media/videos/cyberonevideo3.mp4',
+      'path': 'assets/onegate/cyberonevideo3.mp4',
     },
     {
-      'path': 'assets/media/videos/cyberonevideo4.mp4',
+      'path': 'assets/onegate/cyberonevideo4.mp4',
     },
   ];
 

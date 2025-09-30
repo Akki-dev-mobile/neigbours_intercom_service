@@ -1,12 +1,43 @@
-import 'package:flutter_onegate/config/gateconfig_holder.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:developer';
 
 /// Centralized API URL manager
 class ApiUrls {
-  static String get gateBaseUrl =>
-      // "https://606a-103-178-133-37.ngrok-free.app/api";
-      // "https://stggateapi.cubeone.in/api";
+  // Environment configuration
+  static String? _environment;
 
-      GateConfigHolder.gateBaseUrl;
+  /// Set the environment manually (optional)
+  static void setEnvironment(String env) {
+    _environment = env.toLowerCase();
+  }
+
+  /// Get the current environment
+  static String get currentEnvironment {
+    return _environment ?? (kDebugMode ? 'staging' : 'production');
+  }
+
+  /// Get the appropriate gate base URL based on environment
+  static String get gateBaseUrl {
+    final env = currentEnvironment;
+    String url;
+
+    switch (env) {
+      case 'staging':
+      case 'stg':
+      case 'dev':
+      case 'development':
+        url = "https://gateapi.cubeone.in/api";
+        break;
+      case 'production':
+      case 'prod':
+      default:
+        url = "https://gateapi.cubeone.in/api";
+        break;
+    }
+
+    log('🌐 ApiUrls.gateBaseUrl: Environment=$env, URL=$url');
+    return url;
+  }
 
   static String get societyBaseUrl => 'https://societybackend.cubeone.in/api';
   static String get facerecinfoUrl =>
@@ -44,4 +75,20 @@ class ApiUrls {
   static String get unitList => '$societyBaseUrl/admin/units/list';
 
   static String get staffList => '$societyBaseUrl/admin/staffs/staffLists';
+
+  /// Utility method to get current environment info
+  static Map<String, String> getEnvironmentInfo() {
+    return {
+      'environment': currentEnvironment,
+      'gateBaseUrl': gateBaseUrl,
+      'isDebugMode': kDebugMode.toString(),
+      'isManualOverride': (_environment != null).toString(),
+    };
+  }
+
+  /// Reset environment to default (based on debug mode)
+  static void resetEnvironment() {
+    _environment = null;
+    log('🔄 ApiUrls: Environment reset to default (${currentEnvironment})');
+  }
 }

@@ -15,14 +15,12 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
-import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/bloc/visitor_log_bloc.dart';
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_Details.dart';
+import 'package:flutter_onegate/presentation/widgets/assign_card_popup.dart';
 import 'package:flutter_onegate/utils/app_utils.dart';
-import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lottie/lottie.dart';
@@ -31,8 +29,6 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
-import 'package:flutter_onegate/presentation/widgets/assign_card_popup.dart';
 
 class VisitorLogView extends StatefulWidget {
   String id;
@@ -2435,105 +2431,35 @@ class _VisitorLogViewState extends State<VisitorLogView>
     required String message,
     required IconData icon,
   }) {
-    final screenSize = MediaQuery.of(context).size;
-    final isTablet = screenSize.width > 600;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Container(
-          padding:
-              EdgeInsets.symmetric(vertical: isTablet ? 12 : 10, horizontal: 4),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(isTablet ? 12 : 10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.3),
-                      Colors.white.withOpacity(0.1),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: isTablet ? 28 : 24,
-                ),
+                  Text(
+                    message,
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
               ),
-              SizedBox(width: isTablet ? 16 : 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle_rounded,
-                          color: Colors.white,
-                          size: isTablet ? 18 : 16,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          title,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: isTablet ? 16 : 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      message,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.95),
-                        fontSize: isTablet ? 14 : 12,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.white,
-                  size: isTablet ? 16 : 14,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-        backgroundColor: Color(0xFF2E7D32), // Rich green color
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        margin: EdgeInsets.all(isTablet ? 20 : 16),
-        duration: const Duration(seconds: 4),
-        elevation: 8,
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
       ),
     );
   }
@@ -2986,7 +2912,6 @@ class VisitorLogItem extends StatefulWidget {
 class _VisitorLogItemState extends State<VisitorLogItem> {
   final bool _hasCallSupport = true;
   Future<void>? _launched;
-  String? _assignedCardNumber;
 
   @override
   void initState() {
@@ -3000,54 +2925,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
       path: phoneNumber,
     );
     await launchUrl(launchUri);
-  }
-
-  /// Check if Assign Card button should be shown
-  bool _shouldShowAssignCardButton() {
-    // Show Assign Card button only when:
-    // 1. The visitor entry is from Express Entry (initiated_from == "invited_guest")
-    // 2. The visitor_card_number is null or empty
-    // 3. The additional_details object contains "invited_guest": true
-
-    final isExpressEntry = widget.visitorLog.initiated_from == "invited_guest";
-    final currentCardNumber =
-        _assignedCardNumber ?? widget.visitorLog.visitor_card_number;
-    final hasNoCardNumber =
-        currentCardNumber == null || currentCardNumber.isEmpty;
-
-    return isExpressEntry && hasNoCardNumber;
-  }
-
-  /// Get the current card number (either assigned or original)
-  String? _getCurrentCardNumber() {
-    return _assignedCardNumber ?? widget.visitorLog.visitor_card_number;
-  }
-
-  /// Handle card assignment
-  void _handleAssignCard() {
-    if (widget.visitorLog.visitor_id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Visitor ID not found'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AssignCardPopup(
-        visitorId: widget.visitorLog.visitor_id!,
-        visitorName: widget.visitorLog.visitor?.name ?? 'Visitor',
-        onCardAssigned: (cardNumber) {
-          // Update the local state with the new card number
-          setState(() {
-            _assignedCardNumber = cardNumber;
-          });
-        },
-      ),
-    );
   }
 
   @override
@@ -3095,8 +2972,6 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           image: widget.visitorLog.visitor!.visitor_image,
                           unitList: unitList,
                           visitorLog: widget.visitorLog,
-                          assignedCardNumber:
-                              _assignedCardNumber, // Pass the assigned card number
                         ),
                       ),
                     );
@@ -3299,294 +3174,272 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             ],
                           ),
                         ),
-                      // Show either card number or Assign Card button
-                      _shouldShowAssignCardButton()
+                      // Show visitor ID card icon + number whenever a card number exists
+                      (widget.visitorLog.visitor_card_number != null &&
+                              widget.visitorLog.visitor_card_number!.isNotEmpty)
                           ? Container(
                               margin: const EdgeInsets.only(left: 8),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                    colors: [
-                                      Color(0xff212427), // Black color
-                                      Color(0xff57636C), // Grey color
-                                    ],
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2,
+                                horizontal: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: const [
+                                    Color.fromRGBO(255, 236, 158, 0.8),
+                                    Color.fromRGBO(255, 190, 168, 0.8),
+                                  ],
+                                  begin: Alignment.topRight,
+                                  end: Alignment.bottomLeft,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Color.fromRGBO(255, 190, 168, 1),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  widget.visitorLog.visitor_card_number != null
+                                      ? Lottie.asset(
+                                          'assets/json/idcard.json',
+                                          width: 30,
+                                          height: 30,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Icon(
+                                          Symbols.car_tag_rounded,
+                                          size: 30,
+                                          // color: Colors.red, // Optional color for the icon
+                                        ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    widget.visitorLog.visitor_card_number !=
+                                            null
+                                        ? widget.visitorLog.visitor_card_number!
+                                        : 'N/A',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 14,
+                                        ),
                                   ),
-                                  borderRadius: BorderRadius.circular(
-                                      10), // Match checkout button
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xff212427)
-                                          .withOpacity(0.3),
-                                      blurRadius: 6, // Smaller shadow
-                                      offset:
-                                          const Offset(0, 2), // Smaller offset
+                                ],
+                              ),
+                            )
+                          : Spacer(),
+                      // Show Assign Card when entry is not from gatekeeper and no card is set
+                      (widget.visitorLog.initiated_from != "gatekeeper") &&
+                              (widget.visitorLog.visitor_card_number == null ||
+                                  widget
+                                      .visitorLog.visitor_card_number!.isEmpty)
+                          ? Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xff212121),
+                                    Color(0xff424242),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  if (widget.visitorLog.visitor_id == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content:
+                                            Text('Error: Visitor ID not found'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AssignCardPopup(
+                                      visitorId: widget.visitorLog.visitor_id!,
+                                      visitorName:
+                                          widget.visitorLog.visitor?.name ??
+                                              'Visitor',
+                                      onCardAssigned: (cardNumber) {
+                                        // Refresh the list to show updated card
+                                        setState(() {});
+                                      },
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.credit_card, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Assign Card',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ],
                                 ),
-                                child: ElevatedButton(
-                                  onPressed: _handleAssignCard,
+                              ),
+                            )
+                          : (widget.visitorLog.visitor_check_out
+                                      .toString()
+                                      .isEmpty ||
+                                  widget.visitorLog.visitor_check_out
+                                          .toString() ==
+                                      'null')
+                              ? ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
+                                    backgroundColor: const Color(0xffF44336),
                                     foregroundColor: Colors.white,
                                     elevation: 0,
                                     shadowColor: Colors.transparent,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                          10), // Match checkout button
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, // Match checkout button
-                                      vertical: 10, // Match checkout button
-                                    ),
-                                    minimumSize: Size
-                                        .zero, // Remove default minimum size
-                                    tapTargetSize: MaterialTapTargetSize
-                                        .shrinkWrap, // Compact tap target
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.credit_card,
-                                        size:
-                                            16, // Match checkout button icon size
-                                      ),
-                                      const SizedBox(
-                                          width:
-                                              8), // Match checkout button spacing
-                                      Text(
-                                        'Assign Card',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium! // Match checkout button text style
-                                            .copyWith(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize:
-                                                  13, // Match checkout button font size
-                                              letterSpacing:
-                                                  0.5, // Match checkout button letter spacing
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            )
-                          : _getCurrentCardNumber() != null &&
-                                  _getCurrentCardNumber()!.isNotEmpty
-                              ? Container(
-                                  margin: const EdgeInsets.only(left: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                    horizontal: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: const [
-                                        Color.fromRGBO(255, 236, 158, 0.8),
-                                        Color.fromRGBO(255, 190, 168, 0.8),
-                                      ],
-                                      begin: Alignment.topRight,
-                                      end: Alignment.bottomLeft,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Color.fromRGBO(255, 190, 168, 1),
+                                      horizontal: 16,
+                                      vertical: 10,
                                     ),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Lottie.asset(
-                                        'assets/json/idcard.json',
-                                        width: 30,
-                                        height: 30,
-                                        fit: BoxFit.cover,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        _getCurrentCardNumber()!,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium!
-                                            .copyWith(
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 14,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : const Spacer(),
-                      (widget.visitorLog.visitor_check_out.toString().isEmpty ||
-                              widget.visitorLog.visitor_check_out.toString() ==
-                                  'null')
-                          ? ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xffF44336),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                              ),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    final isTablet =
-                                        MediaQuery.of(context).size.width > 768;
-                                    return Dialog(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Container(
-                                        width: isTablet ? 500 : double.infinity,
-                                        constraints: BoxConstraints(
-                                          maxWidth: isTablet
-                                              ? 500
-                                              : MediaQuery.of(context)
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) {
+                                        final isTablet =
+                                            MediaQuery.of(context).size.width >
+                                                768;
+                                        return Dialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Container(
+                                            width: isTablet
+                                                ? 500
+                                                : double.infinity,
+                                            constraints: BoxConstraints(
+                                              maxWidth: isTablet
+                                                  ? 500
+                                                  : MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.9,
+                                              maxHeight: MediaQuery.of(context)
                                                       .size
-                                                      .width *
-                                                  0.9,
-                                          maxHeight: MediaQuery.of(context)
-                                                  .size
-                                                  .height *
-                                              0.8,
-                                        ),
-                                        padding:
-                                            EdgeInsets.all(isTablet ? 32 : 24),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Confirm Checkout',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleLarge
-                                                  ?.copyWith(
-                                                    fontSize:
-                                                        isTablet ? 24 : 20,
-                                                    fontWeight: FontWeight.w700,
-                                                    color:
-                                                        const Color(0xff212427),
-                                                  ),
+                                                      .height *
+                                                  0.8,
                                             ),
-                                            SizedBox(
-                                                height: isTablet ? 24 : 20),
-                                            Container(
-                                              padding: EdgeInsets.all(
-                                                  isTablet ? 16 : 12),
-                                              decoration: BoxDecoration(
-                                                color: Colors.amber[50],
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                border: Border.all(
-                                                  color: Colors.amber[100]!,
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.info_outline_rounded,
-                                                    color: Colors.amber[700],
-                                                    size: isTablet ? 24 : 20,
-                                                  ),
-                                                  SizedBox(
-                                                      width:
-                                                          isTablet ? 16 : 12),
-                                                  Expanded(
-                                                    child: Text(
-                                                      'This action will permanently record the checkout time and cannot be undone.',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                            color: Colors
-                                                                .amber[800],
-                                                            fontSize: isTablet
-                                                                ? 15
-                                                                : 13,
-                                                            height: 1.4,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            SizedBox(
-                                                height: isTablet ? 32 : 28),
-                                            Row(
+                                            padding: EdgeInsets.all(
+                                                isTablet ? 32 : 24),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
-                                                Expanded(
-                                                  child: OutlinedButton(
-                                                    style: OutlinedButton
-                                                        .styleFrom(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                        vertical:
-                                                            isTablet ? 16 : 14,
-                                                      ),
-                                                      side: const BorderSide(
-                                                        color:
-                                                            Color(0xff57636C),
-                                                        width: 1,
-                                                      ),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(10),
-                                                      ),
-                                                    ),
-                                                    onPressed: () =>
-                                                        Navigator.pop(context),
-                                                    child: Text(
-                                                      'Cancel',
-                                                      style: TextStyle(
-                                                        color: const Color(
-                                                            0xff57636C),
-                                                        fontWeight:
-                                                            FontWeight.w600,
+                                                Text(
+                                                  'Confirm Checkout',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleLarge
+                                                      ?.copyWith(
                                                         fontSize:
-                                                            isTablet ? 16 : 14,
+                                                            isTablet ? 24 : 20,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: const Color(
+                                                            0xff212427),
                                                       ),
+                                                ),
+                                                SizedBox(
+                                                    height: isTablet ? 24 : 20),
+                                                Container(
+                                                  padding: EdgeInsets.all(
+                                                      isTablet ? 16 : 12),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.amber[50],
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    border: Border.all(
+                                                      color: Colors.amber[100]!,
+                                                      width: 1,
                                                     ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .info_outline_rounded,
+                                                        color:
+                                                            Colors.amber[700],
+                                                        size:
+                                                            isTablet ? 24 : 20,
+                                                      ),
+                                                      SizedBox(
+                                                          width: isTablet
+                                                              ? 16
+                                                              : 12),
+                                                      Expanded(
+                                                        child: Text(
+                                                          'This action will permanently record the checkout time and cannot be undone.',
+                                                          style: Theme.of(
+                                                                  context)
+                                                              .textTheme
+                                                              .bodySmall
+                                                              ?.copyWith(
+                                                                color: Colors
+                                                                    .amber[800],
+                                                                fontSize:
+                                                                    isTablet
+                                                                        ? 15
+                                                                        : 13,
+                                                                height: 1.4,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                                 SizedBox(
-                                                    width: isTablet ? 16 : 12),
-                                                Expanded(
-                                                  child: StatefulBuilder(
-                                                    builder:
-                                                        (context, setState) {
-                                                      bool isCheckingOut =
-                                                          false;
-                                                      return ElevatedButton(
-                                                        style: ElevatedButton
+                                                    height: isTablet ? 32 : 28),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: OutlinedButton(
+                                                        style: OutlinedButton
                                                             .styleFrom(
-                                                          backgroundColor:
-                                                              const Color(
-                                                                  0xffF44336),
-                                                          foregroundColor:
-                                                              Colors.white,
-                                                          elevation: 0,
                                                           padding: EdgeInsets
                                                               .symmetric(
                                                             vertical: isTablet
                                                                 ? 16
                                                                 : 14,
+                                                          ),
+                                                          side:
+                                                              const BorderSide(
+                                                            color: Color(
+                                                                0xff57636C),
+                                                            width: 1,
                                                           ),
                                                           shape:
                                                               RoundedRectangleBorder(
@@ -3596,190 +3449,226 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                                         10),
                                                           ),
                                                         ),
-                                                        onPressed: isCheckingOut
-                                                            ? null
-                                                            : () async {
-                                                                setState(() =>
-                                                                    isCheckingOut =
-                                                                        true);
-                                                                await Future.delayed(
-                                                                    const Duration(
-                                                                        milliseconds:
-                                                                            800));
-                                                                Navigator.of(
-                                                                        context)
-                                                                    .pop();
-                                                                widget
-                                                                    .onCheckOut();
-                                                                ScaffoldMessenger.of(
-                                                                        context)
-                                                                    .showSnackBar(
-                                                                  SnackBar(
-                                                                    content:
-                                                                        Row(
-                                                                      children: [
-                                                                        Container(
-                                                                          padding: const EdgeInsets
-                                                                              .all(
-                                                                              8),
-                                                                          decoration:
-                                                                              BoxDecoration(
-                                                                            color:
-                                                                                Colors.white.withOpacity(0.2),
-                                                                            borderRadius:
-                                                                                BorderRadius.circular(8),
-                                                                          ),
-                                                                          child:
-                                                                              const Icon(
-                                                                            Icons.check_circle_rounded,
-                                                                            color:
-                                                                                Colors.white,
-                                                                            size:
-                                                                                20,
-                                                                          ),
-                                                                        ),
-                                                                        const SizedBox(
-                                                                            width:
-                                                                                12),
-                                                                        const Expanded(
-                                                                          child:
-                                                                              Text(
-                                                                            'Visitor checked out successfully',
-                                                                            style:
-                                                                                TextStyle(color: Colors.white),
-                                                                          ),
-                                                                        ),
-                                                                      ],
-                                                                    ),
-                                                                    backgroundColor:
-                                                                        Colors
-                                                                            .green,
-                                                                    behavior:
-                                                                        SnackBarBehavior
-                                                                            .floating,
-                                                                    margin:
-                                                                        const EdgeInsets
-                                                                            .all(
-                                                                            16),
-                                                                    duration: const Duration(
-                                                                        milliseconds:
-                                                                            3000),
-                                                                    elevation:
-                                                                        8,
-                                                                  ),
-                                                                );
-                                                              },
-                                                        child: isCheckingOut
-                                                            ? SizedBox(
-                                                                width: isTablet
-                                                                    ? 24
-                                                                    : 22,
-                                                                height: isTablet
-                                                                    ? 24
-                                                                    : 22,
-                                                                child:
-                                                                    const CircularProgressIndicator(
-                                                                  valueColor: AlwaysStoppedAnimation<
-                                                                          Color>(
-                                                                      Colors
-                                                                          .white),
-                                                                  strokeWidth:
-                                                                      2.5,
-                                                                ),
-                                                              )
-                                                            : Text(
-                                                                'Confirm',
-                                                                style:
-                                                                    TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  fontSize:
-                                                                      isTablet
-                                                                          ? 16
-                                                                          : 14,
-                                                                  letterSpacing:
-                                                                      0.3,
-                                                                ),
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                                context),
+                                                        child: Text(
+                                                          'Cancel',
+                                                          style: TextStyle(
+                                                            color: const Color(
+                                                                0xff57636C),
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: isTablet
+                                                                ? 16
+                                                                : 14,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    SizedBox(
+                                                        width:
+                                                            isTablet ? 16 : 12),
+                                                    Expanded(
+                                                      child: StatefulBuilder(
+                                                        builder: (context,
+                                                            setState) {
+                                                          bool isCheckingOut =
+                                                              false;
+                                                          return ElevatedButton(
+                                                            style:
+                                                                ElevatedButton
+                                                                    .styleFrom(
+                                                              backgroundColor:
+                                                                  const Color(
+                                                                      0xffF44336),
+                                                              foregroundColor:
+                                                                  Colors.white,
+                                                              elevation: 0,
+                                                              padding: EdgeInsets
+                                                                  .symmetric(
+                                                                vertical:
+                                                                    isTablet
+                                                                        ? 16
+                                                                        : 14,
                                                               ),
-                                                      );
-                                                    },
-                                                  ),
+                                                              shape:
+                                                                  RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            10),
+                                                              ),
+                                                            ),
+                                                            onPressed:
+                                                                isCheckingOut
+                                                                    ? null
+                                                                    : () async {
+                                                                        setState(() =>
+                                                                            isCheckingOut =
+                                                                                true);
+                                                                        await Future.delayed(const Duration(
+                                                                            milliseconds:
+                                                                                800));
+                                                                        Navigator.of(context)
+                                                                            .pop();
+                                                                        widget
+                                                                            .onCheckOut();
+                                                                        ScaffoldMessenger.of(context)
+                                                                            .showSnackBar(
+                                                                          SnackBar(
+                                                                            content:
+                                                                                Row(
+                                                                              children: [
+                                                                                Container(
+                                                                                  padding: const EdgeInsets.all(8),
+                                                                                  decoration: BoxDecoration(
+                                                                                    color: Colors.white.withOpacity(0.2),
+                                                                                    borderRadius: BorderRadius.circular(8),
+                                                                                  ),
+                                                                                  child: const Icon(
+                                                                                    Icons.check_circle_rounded,
+                                                                                    color: Colors.white,
+                                                                                    size: 20,
+                                                                                  ),
+                                                                                ),
+                                                                                const SizedBox(width: 12),
+                                                                                const Expanded(
+                                                                                  child: Text(
+                                                                                    'Visitor checked out successfully',
+                                                                                    style: TextStyle(color: Colors.white),
+                                                                                  ),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                            backgroundColor:
+                                                                                Colors.green,
+                                                                            behavior:
+                                                                                SnackBarBehavior.floating,
+                                                                            margin:
+                                                                                const EdgeInsets.all(16),
+                                                                            duration:
+                                                                                const Duration(milliseconds: 3000),
+                                                                            elevation:
+                                                                                8,
+                                                                          ),
+                                                                        );
+                                                                      },
+                                                            child: isCheckingOut
+                                                                ? SizedBox(
+                                                                    width:
+                                                                        isTablet
+                                                                            ? 24
+                                                                            : 22,
+                                                                    height:
+                                                                        isTablet
+                                                                            ? 24
+                                                                            : 22,
+                                                                    child:
+                                                                        const CircularProgressIndicator(
+                                                                      valueColor: AlwaysStoppedAnimation<
+                                                                              Color>(
+                                                                          Colors
+                                                                              .white),
+                                                                      strokeWidth:
+                                                                          2.5,
+                                                                    ),
+                                                                  )
+                                                                : Text(
+                                                                    'Confirm',
+                                                                    style:
+                                                                        TextStyle(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w600,
+                                                                      fontSize:
+                                                                          isTablet
+                                                                              ? 16
+                                                                              : 14,
+                                                                      letterSpacing:
+                                                                          0.3,
+                                                                    ),
+                                                                  ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
-                                      ),
+                                          ),
+                                        );
+                                      },
                                     );
                                   },
-                                );
-                              },
-                              child: Text(
-                                'Checkout',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                      letterSpacing: 0.5,
-                                    ),
-                              ),
-                            )
-                          : Tooltip(
-                              message:
-                                  widget.visitorLog.visitor_check_out != null
+                                  child: Text(
+                                    'Checkout',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          letterSpacing: 0.5,
+                                        ),
+                                  ),
+                                )
+                              : Tooltip(
+                                  message: widget
+                                              .visitorLog.visitor_check_out !=
+                                          null
                                       ? DateFormat('dd-MM-yyyy hh:mm a').format(
                                           widget.visitorLog.visitor_check_out!)
                                       : "No check-out time",
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xffF44336).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: const Color(0xffF44336)
-                                        .withOpacity(0.3),
-                                    width: 1,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xffF44336)
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: const Color(0xffF44336)
+                                            .withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Symbols.directions_walk_rounded,
+                                          color: const Color(0xffF44336),
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          widget.visitorLog.visitor_check_out !=
+                                                  null
+                                              ? Utils.convertDateTimeFormat(
+                                                  widget.visitorLog
+                                                      .visitor_check_out!)
+                                              : "N/A",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: const Color(0xffF44336),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                                letterSpacing: 0.3,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Symbols.directions_walk_rounded,
-                                      color: const Color(0xffF44336),
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      widget.visitorLog.visitor_check_out !=
-                                              null
-                                          ? Utils.convertDateTimeFormat(widget
-                                              .visitorLog.visitor_check_out!)
-                                          : "N/A",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: const Color(0xffF44336),
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 12,
-                                            letterSpacing: 0.3,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
                     ],
                   ),
                 ),
@@ -3795,22 +3684,22 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
               right: 8,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 8,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xff4CAF50),
-                      const Color(0xff2E7D32),
+                      const Color(0xff2196F3),
+                      const Color(0xff1976D2),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xff4CAF50).withOpacity(0.3),
+                      color: const Color(0xff2196F3).withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -3822,7 +3711,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                     Icon(
                       Icons.how_to_reg,
                       color: Colors.white,
-                      size: 14,
+                      size: 12,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -3830,7 +3719,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
-                        fontSize: 11,
+                        fontSize: 10,
                         letterSpacing: 0.5,
                       ),
                     ),

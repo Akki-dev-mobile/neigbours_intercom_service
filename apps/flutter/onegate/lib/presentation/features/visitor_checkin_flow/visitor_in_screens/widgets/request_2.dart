@@ -8,6 +8,7 @@ import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../../generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
 
@@ -46,6 +47,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   final bool _isUploading = false;
   final double _uploadProgress = 0;
   bool? self;
+  bool _visitorCardEntryEnabled = false;
   // Different Lottie animations for Express Entry vs Gatekeeper flows
   static const Map<RequestType, String> expressEntryLottieAnimations = {
     RequestType.allowByGatekeeper:
@@ -90,7 +92,16 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   void initState() {
     super.initState();
     self = widget.selfcheckinFlow;
+    _loadVisitorCardSetting();
     _trackExpressEntryRoute();
+  }
+
+  // Load visitor card entry setting
+  Future<void> _loadVisitorCardSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _visitorCardEntryEnabled = prefs.getBool('visitorCardNumber') ?? false;
+    });
   }
 
   // Track that user is in express entry flow
@@ -344,18 +355,30 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
-                  if (self == true) {
-                    // Express Entry flow - show success dialog
+                  if (self == true && _visitorCardEntryEnabled) {
+                    // Express Entry flow with visitor card entry enabled - show success dialog
                     _showSuccessDialog();
                   } else {
-                    // Gatekeeper flow (both mobile and QR/Passcode) - navigate directly without dialog
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const GateDashboardView(),
-                      ),
-                      (Route<dynamic> route) => false,
-                    );
+                    // Express Entry flow with visitor card entry disabled OR Gatekeeper flow - navigate directly without dialog
+                    if (self == true) {
+                      // Express Entry - go to self entry home
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SelfHomeView(),
+                        ),
+                        (Route<dynamic> route) => false,
+                      );
+                    } else {
+                      // Gatekeeper flow - go to gatekeeper dashboard
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GateDashboardView(),
+                        ),
+                        (Route<dynamic> route) => false,
+                      );
+                    }
                   }
                 },
                 child: Container(
@@ -440,18 +463,31 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                       ),
                       child: TextButton.icon(
                         onPressed: () {
-                          if (self == true) {
-                            // Express Entry flow - show success dialog
+                          if (self == true && _visitorCardEntryEnabled) {
+                            // Express Entry flow with visitor card entry enabled - show success dialog
                             _showSuccessDialog();
                           } else {
-                            // Gatekeeper flow (both mobile and QR/Passcode) - navigate directly without dialog
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const GateDashboardView(),
-                              ),
-                              (Route<dynamic> route) => false,
-                            );
+                            // Express Entry flow with visitor card entry disabled OR Gatekeeper flow - navigate directly without dialog
+                            if (self == true) {
+                              // Express Entry - go to self entry home
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SelfHomeView(),
+                                ),
+                                (Route<dynamic> route) => false,
+                              );
+                            } else {
+                              // Gatekeeper flow - go to gatekeeper dashboard
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const GateDashboardView(),
+                                ),
+                                (Route<dynamic> route) => false,
+                              );
+                            }
                           }
                         },
                         icon: const Icon(Icons.check_circle_outline,

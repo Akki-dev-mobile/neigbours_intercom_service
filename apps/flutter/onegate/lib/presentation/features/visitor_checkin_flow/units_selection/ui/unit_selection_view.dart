@@ -1597,6 +1597,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       );
 
       // Create visitor log data for society office
+      // Get visitor card entry setting state
+      final prefs = await SharedPreferences.getInstance();
+      final visitorCardEntryEnabled =
+          prefs.getBool('visitorCardNumber') ?? false;
+
       final visitorLogData = VisitorLog(
         visitor_id: widget.visitor.id ?? 0,
         visitor_purpose_category_id: widget.purposeCategoryId == null
@@ -1618,10 +1623,11 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         is_checked_out: false,
         initiated_from:
             widget.selfcheckinFlow ? "self_entry" : "gatekeeper", // Mark source
+        visitor_card_entry_enabled:
+            visitorCardEntryEnabled, // Store setting state
       );
 
       // Save society office details to preferences
-      final prefs = await SharedPreferences.getInstance();
       final societyOfficeMemberDetails = [
         {
           "name": "Society Office",
@@ -1918,7 +1924,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             visitorLog: visitorLogData,
             logID: logID,
             selfcheckinFlow: widget.selfcheckinFlow,
-            isGatekeeperQRPasscodeEntry: false, // This is mobile entry flow
           ),
         ),
       );
@@ -2867,6 +2872,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       print('Error saving member details: $e');
     }
 
+    // Get visitor card entry setting state
+    final visitorCardEntryEnabled = prefs.getBool('visitorCardNumber') ?? false;
+
     return VisitorLog(
       visitor_id: int.parse(widget.visitor.id.toString()),
       visitor_purpose_category_id: widget.purposeCategoryId == null
@@ -2889,6 +2897,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       is_checked_out: false,
       visitor: widget.visitor,
       initiated_from: await _getInitiatedFromValue(), // Mark source
+      visitor_card_entry_enabled:
+          visitorCardEntryEnabled, // Store setting state
     );
   }
 

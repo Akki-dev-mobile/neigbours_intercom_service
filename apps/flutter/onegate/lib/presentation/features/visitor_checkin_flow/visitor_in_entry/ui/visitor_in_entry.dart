@@ -45,8 +45,6 @@ class VisitorsInEntry extends StatefulWidget {
   final String? guestname;
   final bool isFromQRScan;
   final VisitorLog? visitorLog;
-  final bool?
-      isGatekeeperQRPasscodeEntry; // New parameter to distinguish Gatekeeper QR/Passcode entry
 
   VisitorsInEntry({
     Key? key,
@@ -58,7 +56,6 @@ class VisitorsInEntry extends StatefulWidget {
     this.guestname,
     this.isFromQRScan = false,
     this.visitorLog,
-    this.isGatekeeperQRPasscodeEntry,
   }) : super(key: key);
 
   @override
@@ -876,8 +873,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 request: 'allowByGatekeeper',
                 logID: state.visitorLog.visitor?.id.toString(),
                 selfcheckinFlow: widget.selfcheckinFlow,
-                isGatekeeperQRPasscodeEntry:
-                    widget.isGatekeeperQRPasscodeEntry ?? false,
+                isGatekeeperQRPasscodeEntry: false, // This is mobile entry flow
               ),
             ),
           );
@@ -2438,8 +2434,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 ),
               ),
 
-              // Visitor ID Field (if enabled)
-              if (_visitorCardNumber == true) ...[
+              // Visitor ID Field (if enabled and NOT from QR/Passcode or Express Entry)
+              // Show only for Gatekeeper Mobile Number flow when visitor card entry is enabled
+              if (_visitorCardNumber == true &&
+                  !widget.selfcheckinFlow &&
+                  !widget.isFromQRScan) ...[
                 const SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20),

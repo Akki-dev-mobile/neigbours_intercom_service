@@ -24,6 +24,7 @@ import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 import '../../../../data/datasources/gate_storage.dart';
 
@@ -58,15 +59,19 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   bool _isScanComplete = false;
   bool _scanSuccessful = false;
   bool _isProcessing = false;
+  bool _isFrontCamera = false;
 
   // Camera state
   bool _isCameraPermissionGranted = false;
-  CameraFacing _cameraFacing = CameraFacing.back;
 
   // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _scanLineAnimation;
   late Animation<double> _scanCornerAnimation;
+
+  // Audio players for QR scan sounds
+  final AudioPlayer _successAudioPlayer = AudioPlayer();
+  final AudioPlayer _failureAudioPlayer = AudioPlayer();
 
   // Data source for API calls
   final RemoteDataSource remoteDataSource = RemoteDataSource();
@@ -129,6 +134,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   void dispose() {
     controller?.dispose();
     _animationController.dispose();
+    _successAudioPlayer.dispose();
+    _failureAudioPlayer.dispose();
     super.dispose();
   }
 
@@ -150,13 +157,22 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   Future<void> _toggleCamera() async {
     try {
-      await controller?.flipCamera();
-      if (mounted) {
-        setState(() {
-          _cameraFacing = _cameraFacing == CameraFacing.back
-              ? CameraFacing.front
-              : CameraFacing.back;
-        });
+      if (controller == null) return;
+      await controller!.flipCamera();
+      // Update local state (best-effort)
+      try {
+        final info = await controller!.getCameraInfo();
+        if (mounted) {
+          setState(() {
+            _isFrontCamera = info.toString().toLowerCase().contains('front');
+          });
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _isFrontCamera = !_isFrontCamera;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error flipping camera: $e');
@@ -184,11 +200,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         String? name;
         String? passcode;
         bool? isStaff;
-        int? passId;
-        String? image;
-        String? email;
-        String? city;
-        String? userId;
 
         dynamic scannedJson;
         try {
@@ -199,11 +210,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           id = scannedJson['id'];
           name = scannedJson['name'];
           isStaff = scannedJson['is_staff'];
-          passId = scannedJson['id']; // Use id as pass_id
-          image = scannedJson['image'];
-          email = scannedJson['email'];
-          city = scannedJson['city'];
-          userId = scannedJson['user_id'];
 
           passcode = scannedJson['passcode']?.toString();
         } catch (jsonError) {
@@ -211,135 +217,105 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           passcode = code;
         }
 
-        // If mobile number is found in QR, use member pass verification
-        Map<String, dynamic> result;
-        if (mobile != null && mobile.isNotEmpty) {
-          log("📱 Mobile number found in QR: $mobile, using member pass verification");
-          log("📱 Company ID: ${widget.companyId ?? "412"}");
-          log("📱 Pass ID: $passId");
-          result = await remoteDataSource.verifyMemberPass(
-            mobile: mobile,
-            companyId: widget.companyId ?? "412",
-            gateName: "Gate 777",
-            passId: passId,
-          );
-          log("📱 Member pass API response: $result");
-        } else {
-          log("🔑 No mobile found, using passcode verification");
-          result = await remoteDataSource.verifyPasscode(
-            companyId: widget.companyId ?? "",
-            passcode: passcode,
-          );
-          log("🔑 Passcode API response: $result");
-        }
-        // Handle response based on API type
-        bool isValid = false;
-        Map<String, dynamic> visitorData = {};
+        final result = await remoteDataSource.verifyPasscode(
+          companyId: widget.companyId ?? "",
+          passcode: passcode,
+        );
+        if (isStaff == true) {
+          // Play success sound for staff
+          _playSuccessSound();
 
-        // Check if it's a member pass response (new API)
-        if (result.containsKey('member') && result['member'] != null) {
-          log("✅ Member pass verification successful");
-          visitorData = result['member'];
-          isValid = true;
+          Visitor visitor = Visitor(
+            visitor_image: result['data'][0]['visitor_image'],
+            name: result['data'][0]['name'],
+            mobile: result['data'][0]['mobile'],
+            // visitor_image: visitorData['qr_code'],
+          );
+          VisitorLog visitorLog = VisitorLog(
+            visitor: visitor,
+            visitor_coming_from: result['data'][0]['coming_from'],
+            visitor_purpose_Category_name: "Staff",
+            visitor_purpose_category_id: 1,
+            visitor_count: 1,
+          );
+
+          Navigator.of(context).pop();
+
+          await Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RequestPermissionPage2(
+                status: widget.status,
+                visitor: visitor,
+                visitorLog: visitorLog,
+                request: 'allowByGatekeeper',
+                selfcheckinFlow: widget.self_checkin,
+                isGatekeeperQRPasscodeEntry: widget.isGatekeeperQRPasscodeEntry,
+              ),
+            ),
+          );
         }
-        // Check if it's a guest passcode response (old API)
-        else if (result['success'] == true &&
+        final bool isValid = result['success'] == true &&
             result['data'] != null &&
-            (result['data'] as List).isNotEmpty) {
-          log("✅ Guest passcode verification successful");
-          visitorData = result['data'][0];
-          isValid = true;
-        }
+            (result['data'] as List).isNotEmpty;
 
         if (isValid) {
-          // Handle staff members
-          if (isStaff == true || visitorData['is_staff'] == true) {
-            Visitor visitor = Visitor(
-              visitor_image:
-                  image ?? visitorData['visitor_image'] ?? visitorData['image'],
-              name: name ?? visitorData['name'],
-              mobile: mobile ?? visitorData['mobile'],
-            );
-            VisitorLog visitorLog = VisitorLog(
-              visitor: visitor,
-              visitor_coming_from: visitorData['coming_from'] ?? "QR Scan",
-              visitor_purpose_Category_name: "Staff",
-              visitor_purpose_category_id: 1,
-              visitor_count: 1,
-            );
+          // Play success sound
+          _playSuccessSound();
 
-            Navigator.of(context).pop();
+          final visitorData = result['data'][0];
 
-            await Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RequestPermissionPage2(
-                  status: widget.status,
-                  visitor: visitor,
-                  visitorLog: visitorLog,
-                  request: 'allowByGatekeeper',
-                  selfcheckinFlow: widget.self_checkin,
-                  isGatekeeperQRPasscodeEntry:
-                      widget.isGatekeeperQRPasscodeEntry,
-                ),
+          Visitor visitor = Visitor(
+            id: visitorData['visitor_id'],
+            name: visitorData['name'],
+            mobile: visitorData['mobile'],
+            // visitor_image: visitorData['qr_code'],
+          );
+
+          VisitorLog visitorLog = VisitorLog(
+            visitor: visitor,
+            visitor_coming_from: visitorData['coming_from'],
+            visitor_purpose_Category_name: visitorData['category'],
+            visitor_purpose_category_id: 1,
+            visitor_count: 1,
+            company_id: visitorData['company_id'],
+            initiated_from: "qr_code_scan", // Mark as QR code scan entry
+          );
+
+          setState(() {
+            _isVerifying = false;
+            _isProcessing = false;
+            _isScanComplete = true;
+            _scanSuccessful = true;
+          });
+
+          // Short delay to show success animation
+          await Future.delayed(const Duration(milliseconds: 800));
+
+          // Always redirect to purpose entry page with autopopulated guest data
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VisitorsInEntry(
+                selfcheckinFlow: widget.self_checkin,
+                comingfrom: visitorData['coming_from'],
+                searchedVisitor: visitor,
+                selectedValue:
+                    PurposeCategory1(categoryId: 1, categoryName: "Guest"),
+                mobile: mobile ?? visitor.mobile!,
+                guestname: name ?? visitor.name ?? "",
+                isFromQRScan: true, // Flag to indicate this is from QR scan
+                visitorLog: visitorLog,
               ),
-            );
-          } else {
-            // Handle regular visitors/members
-            Visitor visitor = Visitor(
-              id: passId ?? visitorData['visitor_id'] ?? visitorData['id'],
-              name: name ?? visitorData['name'],
-              mobile: mobile ?? visitorData['mobile'],
-              visitor_image:
-                  image ?? visitorData['visitor_image'] ?? visitorData['image'],
-            );
-
-            VisitorLog visitorLog = VisitorLog(
-              visitor: visitor,
-              visitor_coming_from: visitorData['coming_from'] ?? "QR Scan",
-              visitor_purpose_Category_name:
-                  visitorData['category'] ?? "Member",
-              visitor_purpose_category_id: 1,
-              visitor_count: 1,
-              company_id: visitorData['company_id'],
-              initiated_from: "qr_code_scan",
-            );
-
-            setState(() {
-              _isVerifying = false;
-              _isProcessing = false;
-              _isScanComplete = true;
-              _scanSuccessful = true;
-            });
-
-            // Short delay to show success animation
-            await Future.delayed(const Duration(milliseconds: 800));
-
-            // Always redirect to purpose entry page with autopopulated guest data
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => VisitorsInEntry(
-                  selfcheckinFlow: widget.self_checkin,
-                  comingfrom: visitorData['coming_from'] ?? "QR Scan",
-                  searchedVisitor: visitor,
-                  selectedValue:
-                      PurposeCategory1(categoryId: 1, categoryName: "Guest"),
-                  mobile: mobile ?? visitor.mobile!,
-                  guestname: name ?? visitor.name ?? "",
-                  isFromQRScan: true,
-                  visitorLog: visitorLog,
-                  isGatekeeperQRPasscodeEntry:
-                      widget.isGatekeeperQRPasscodeEntry,
-                ),
-              ),
-            );
-          }
+            ),
+          );
         } else {
           throw Exception("Invalid verification data received.");
         }
       } catch (e) {
         log("❌ Error processing QR scan: $e");
+        // Play failure sound
+        _playFailureSound();
         _showErrorDialog();
         await controller.resumeCamera();
         setState(() {
@@ -558,7 +534,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         QRView(
           key: qrKey,
           onQRViewCreated: _onQRViewCreated,
-          cameraFacing: _cameraFacing,
           overlay: QrScannerOverlayShape(
             borderColor: Colors.transparent,
             borderRadius: 16,
@@ -754,13 +729,11 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 label: _isFlashOn ? 'Flash On' : 'Flash Off',
               ),
               const SizedBox(width: 24),
-              // Switch camera button
+              // Flip camera button
               _buildRoundButton(
                 onPressed: _toggleCamera,
                 iconData: Icons.cameraswitch,
-                label: _cameraFacing == CameraFacing.back
-                    ? 'Rear Cam'
-                    : 'Front Cam',
+                label: _isFrontCamera ? 'Front' : 'Back',
               ),
               const SizedBox(width: 24),
               // Help button
@@ -1096,6 +1069,36 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     Future.delayed(const Duration(seconds: 4), () {
       _isDialogOpen = false;
     });
+  }
+
+  /// Play success sound for QR verification
+  Future<void> _playSuccessSound() async {
+    try {
+      // Ensure no overlapping sounds
+      await _failureAudioPlayer.stop();
+      await _successAudioPlayer.stop();
+      await _successAudioPlayer.setReleaseMode(ReleaseMode.stop);
+      await _successAudioPlayer.setVolume(1.0);
+      await _successAudioPlayer.play(AssetSource('media/audio/success.mp3'));
+      log("🔊 Success sound played");
+    } catch (e) {
+      log("❌ Error playing success sound: $e");
+    }
+  }
+
+  /// Play failure sound for invalid QR
+  Future<void> _playFailureSound() async {
+    try {
+      // Ensure no overlapping sounds
+      await _successAudioPlayer.stop();
+      await _failureAudioPlayer.stop();
+      await _failureAudioPlayer.setReleaseMode(ReleaseMode.stop);
+      await _failureAudioPlayer.setVolume(1.0);
+      await _failureAudioPlayer.play(AssetSource('media/audio/alarm.mp3'));
+      log("🔊 Failure sound played");
+    } catch (e) {
+      log("❌ Error playing failure sound: $e");
+    }
   }
 
   /// Enhanced error toast with gatekeeper app design

@@ -739,6 +739,15 @@ class RemoteDataSource {
       // Prepare the payload
       final Map<String, dynamic> data = visitorLog.toJson();
 
+      // Ensure additional_details contains initiated_from (API-driven, not SharedPreferences)
+      final Map<String, dynamic> additionalDetails = <String, dynamic>{};
+      if (visitorLog.initiated_from != null) {
+        additionalDetails['initiated_from'] = visitorLog.initiated_from;
+      }
+      if (additionalDetails.isNotEmpty) {
+        data['additional_details'] = additionalDetails;
+      }
+
       // Override datetime formatting to match API expectations (YYYY-MM-DD HH:MM:SS)
       data['visitor_check_in'] =
           _formatDateTime(visitorLog.visitor_check_in ?? DateTime.now());
@@ -2105,6 +2114,34 @@ class RemoteDataSource {
     return DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime);
   }
 
+  /// Helper method to extract host from URL for consistent host header
+  String _getHostFromUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.host;
+    } catch (e) {
+      log('Error parsing URL for host: $e');
+      // Fallback to current environment's host
+      return ApiUrls.currentEnvironment == 'staging'
+          ? 'stggateapi.cubeone.in'
+          : 'gateapi.cubeone.in';
+    }
+  }
+
+  /// Helper method to format card number with "V " prefix
+  String _formatCardNumber(String cardNumber) {
+    // Remove any existing "V " prefix and whitespace
+    String cleanNumber = cardNumber.trim();
+    if (cleanNumber.startsWith('V ')) {
+      cleanNumber = cleanNumber.substring(2);
+    } else if (cleanNumber.startsWith('V')) {
+      cleanNumber = cleanNumber.substring(1);
+    }
+
+    // Add "V " prefix to the clean number
+    return 'V $cleanNumber';
+  }
+
   /// Update visitor log for self entry visitors to sync with Gatekeeper dashboard
   /// Uses visitor_id in the PATCH endpoint with allow_status payload
   Future<void> _updateVisitorLogForSelfEntry(String visitorId,
@@ -2138,7 +2175,7 @@ class RemoteDataSource {
             'accept-encoding': 'gzip',
             'authorization':
                 'Bearer ${await _getAccessToken() ?? "accessToken"}',
-            'host': 'gateapi.cubeone.in',
+            'host': _getHostFromUrl(apiUrl),
           },
         ),
       );
@@ -2190,7 +2227,7 @@ class RemoteDataSource {
     try {
       log("=== ASSIGN CARD PATCH API DEBUG ===");
       log("Visitor ID: $visitorId");
-      log("Card Number: $cardNumber");
+      log("Card Number (raw): $cardNumber");
 
       final Dio dio = Dio();
       final String apiUrl =
@@ -2198,8 +2235,14 @@ class RemoteDataSource {
 
       log("PATCH API URL: $apiUrl");
 
-      // Prepare payload with card_number as per API specification
-      final Map<String, dynamic> patchData = {"card_number": cardNumber};
+      // Format card number with "V " prefix
+      final String formattedCardNumber = _formatCardNumber(cardNumber);
+      log("Card Number (formatted): $formattedCardNumber");
+
+      // Prepare payload with formatted card_number as per API specification
+      final Map<String, dynamic> patchData = {
+        "card_number": formattedCardNumber
+      };
 
       log("PATCH Payload: ${json.encode(patchData)}");
 
@@ -2214,7 +2257,7 @@ class RemoteDataSource {
             'accept-encoding': 'gzip',
             'authorization':
                 'Bearer ${await _getAccessToken() ?? "accessToken"}',
-            'host': 'gateapi.cubeone.in',
+            'host': _getHostFromUrl(apiUrl),
           },
         ),
       );

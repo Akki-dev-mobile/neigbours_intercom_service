@@ -127,16 +127,30 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Text(
-                                widget.visitorLog.visitorName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xff212427),
-                                      fontSize: isTablet ? 28 : 22,
-                                    ),
+                              child: Container(
+                                padding: EdgeInsets.only(
+                                  right: (widget.visitorLog.additionalDetails !=
+                                              null &&
+                                          widget.visitorLog.additionalDetails![
+                                                  'invited_guest'] ==
+                                              true)
+                                      ? 120 // Add padding when pre-approved badge is present
+                                      : 0,
+                                ),
+                                child: Text(
+                                  widget.visitorLog.visitorName,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xff212427),
+                                        fontSize: isTablet ? 28 : 22,
+                                      ),
+                                  softWrap: true,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
                             if (widget.visitorLog.visitorCount != null)

@@ -1777,7 +1777,7 @@ File: assets/onegate/theme.json
 File: assets/.env
 ================
 # Development Environment
-DEV_GATE_BASE_URL=https://stggateapi.cubeone.in/api
+DEV_GATE_BASE_URL=https://stgstggateapi.cubeone.in/api
 DEV_AUTH_URL=https://auth.dev.example.com/api/admin
 DEV_SOCIETY_URL=http://societybackend.cubeone.in/api
 
@@ -1787,7 +1787,7 @@ STAGING_AUTH_URL=https://auth.staging.example.com/api/admin
 STAGING_SOCIETY_URL=https://api.staging.example.com
 
 # Production Environment
-PROD_GATE_BASE_URL=https://stggateapi.cubeone.in/api
+PROD_GATE_BASE_URL=https://stgstggateapi.cubeone.in/api
 ; PROD_AUTH_URL=https://societybackend.cubeone.in/api
 PROD_SOCIETY_URL=https://socbackend.cubeone.in/api
 
@@ -4974,7 +4974,7 @@ class RemoteDataSource {
 
       var dio = Dio();
       var response = await dio.post(
-        'https://gateapi.cubeone.in/api/visitor/uploadFile',
+        'https://stggateapi.cubeone.in/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',
@@ -5196,7 +5196,7 @@ class RemoteDataSource {
       log("Request Data -> parcel_id: $parcelId, otp: $otp");
 
       final response = await http.post(
-        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtpVerify"),
+        Uri.parse("https://stgstggateapi.cubeone.in/api/visitor/parcelOtpVerify"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -5234,7 +5234,7 @@ class RemoteDataSource {
         formattedMobileNumber = formattedMobileNumber.substring(2);
       }
       final response = await http.post(
-        Uri.parse("https://stggateapi.cubeone.in/api/visitor/parcelOtp"),
+        Uri.parse("https://stgstggateapi.cubeone.in/api/visitor/parcelOtp"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -24515,7 +24515,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
       // Send FCM API request
       final apiResponse = Dio().post(
-        'https://stggateapi.cubeone.in/api/visitor/sendFcmNotification',
+        'https://stgstggateapi.cubeone.in/api/visitor/sendFcmNotification',
         options: Options(headers: {"Content-Type": "application/json"}),
         data: requestData,
       );
@@ -27935,7 +27935,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
       var dio = Dio();
       var response = await dio.post(
-        'https://gateapi.cubeone.in/api/visitor/uploadFile',
+        'https://stggateapi.cubeone.in/api/visitor/uploadFile',
         data: data,
         options: Options(
           contentType: 'multipart/form-data',
@@ -30793,7 +30793,7 @@ class VisitorLogsProvider extends ChangeNotifier {
   int totalPages = 1; // Assuming the API provides total page information
   String? searchText;
 GateStorage gateStorage = GateStorage();
-   final String baseUrl = 'https://gateapi.cubeone.in/api/visitor/log'; // Replace with your API endpoint
+   final String baseUrl = 'https://stggateapi.cubeone.in/api/visitor/log'; // Replace with your API endpoint
 
   Future<void> fetchVisitorLogs({int currentPage = 1, String? searchText}) async {
     isLoading = true;
@@ -30807,7 +30807,7 @@ GateStorage gateStorage = GateStorage();
       return;
     }
 
-    final String baseUrl = 'https://gateapi.cubeone.in/api/visitor/log';
+    final String baseUrl = 'https://stggateapi.cubeone.in/api/visitor/log';
     final String url = '$baseUrl?company_id=$companyId&page=$currentPage&search=${searchText ?? ""}';
 
     try {

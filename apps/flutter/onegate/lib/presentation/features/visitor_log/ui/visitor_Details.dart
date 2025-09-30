@@ -43,18 +43,15 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
   /// Check if Assign Card button should be shown
   bool _shouldShowAssignCardButton() {
-    // Show Assign Card button only when:
-    // 1. The visitor entry is from Express Entry (initiated_from == "invited_guest")
-    // 2. The visitor_card_number is null or empty
-    // 3. The additional_details object contains "invited_guest": true
+    // API-driven: show Assign Card when entry is not from gatekeeper and no card is set
+    final isNotGatekeeper = widget.visitorLog.initiated_from != "gatekeeper";
 
-    final isExpressEntry = widget.visitorLog.initiated_from == "invited_guest";
     final currentCardNumber =
         _assignedCardNumber ?? widget.visitorLog.visitor_card_number;
     final hasNoCardNumber =
         currentCardNumber == null || currentCardNumber.isEmpty;
 
-    return isExpressEntry && hasNoCardNumber;
+    return isNotGatekeeper && hasNoCardNumber;
   }
 
   /// Get the current card number (either assigned or original)
@@ -172,16 +169,31 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Text(
-                                widget.visitorLog.visitor?.name ?? "Guest",
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xff212427),
-                                      fontSize: isTablet ? 28 : 22,
-                                    ),
+                              child: Container(
+                                padding: EdgeInsets.only(
+                                  right: (widget.visitorLog.initiated_from ==
+                                              "invited_guest" ||
+                                          widget.visitorLog.initiated_from ==
+                                              "qr_code_scan" ||
+                                          widget.visitorLog.initiated_from ==
+                                              "passcode_entry")
+                                      ? 120 // Add padding when pre-approved badge is present
+                                      : 0,
+                                ),
+                                child: Text(
+                                  widget.visitorLog.visitor?.name ?? "Guest",
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xff212427),
+                                        fontSize: isTablet ? 28 : 22,
+                                      ),
+                                  softWrap: true,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
                             if (widget.visitorLog.visitor_count.toString() !=
@@ -270,7 +282,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                 iconBg: const Color(
                                     0xffFFEBEE), // Light red background
                               ),
-                            // Show either card number or Assign Card button
+                            // API-driven: for QR/Passcode/Express without card → show Assign Card; otherwise show card number if present
                             _shouldShowAssignCardButton()
                                 ? Container(
                                     margin:
@@ -394,14 +406,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xff4CAF50),
-                              const Color(0xff2E7D32),
-                            ],
-                          ),
+                          color: const Color(0xff4CAF50),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(

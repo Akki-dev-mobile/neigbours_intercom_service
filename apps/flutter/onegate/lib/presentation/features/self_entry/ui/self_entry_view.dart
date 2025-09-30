@@ -459,7 +459,6 @@ class _SelfEntryViewState extends State<SelfEntryView>
           searchedVisitor: visitor,
           selectedValue: purpose,
           mobile: _mobileController.text,
-          isGatekeeperQRPasscodeEntry: false, // This is Express Entry flow
         ),
       ),
     );

@@ -63,6 +63,7 @@ dependencies:
   carousel_slider: ^5.0.0
   chewie: ^1.8.5
   video_player: ^2.9.2
+  audioplayers: ^6.1.0
   numpad: ^0.0.2
   numpad_layout: ^0.0.3
   flutter_otp_text_field: ^1.1.1
@@ -169,12 +170,13 @@ flutter:
     - assets/
     - assets/media/images/
     - assets/media/videos/
-    - assets/onegate/theme.json
+    - assets/onegate/
     - assets/json/gates_mock.json
     - assets/json/media.json
     - assets/json/idcard.json
     - assets/json/approved.json
     - assets/media/audio/alarm.mp3
+    - assets/media/audio/success.mp3
     - assets/json/no_internet.json
     - assets/media/images/person-icon-1670.png
     - shorebird.yaml

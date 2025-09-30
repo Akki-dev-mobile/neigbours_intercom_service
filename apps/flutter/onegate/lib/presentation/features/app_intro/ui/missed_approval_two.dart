@@ -1297,17 +1297,17 @@ class VisitorInfoSection extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => VisitorDetailsScreen2(
-                              visitorLog: visitorInfo,
-                              isFromMissedApprovalScreen: true,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VisitorDetailsScreen2(
+                visitorLog: visitorInfo,
+                isFromMissedApprovalScreen: true,
               ),
             ),
           );
-              },
+        },
         child: Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -1324,10 +1324,10 @@ class VisitorInfoSection extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
                     vertical: 4,
-              ),
+                  ),
                   leading: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(28),
@@ -1338,15 +1338,15 @@ class VisitorInfoSection extends StatelessWidget {
                     ),
                     child: CircleAvatar(
                       radius: 26,
-                backgroundImage: visitorInfo.visitorImage.isNotEmpty
-                    ? NetworkImage(visitorInfo.visitorImage)
-                    : const NetworkImage(
-                        'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                child: visitorInfo.visitorImage.isEmpty
-                    ? Text(
+                      backgroundImage: visitorInfo.visitorImage.isNotEmpty
+                          ? NetworkImage(visitorInfo.visitorImage)
+                          : const NetworkImage(
+                              'https://images.unsplash.com/photo-1731778572747-315c9089bc69?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
+                      child: visitorInfo.visitorImage.isEmpty
+                          ? Text(
                               visitorInfo.visitorName.isNotEmpty
                                   ? visitorInfo.visitorName[0].toUpperCase()
-                            : 'G',
+                                  : 'G',
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
@@ -1354,24 +1354,24 @@ class VisitorInfoSection extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                     color: const Color(0xffF44336),
                                   ),
-                      )
-                    : null,
+                            )
+                          : null,
                     ),
-              ),
-              title: Text(
-                visitorInfo.visitorName,
+                  ),
+                  title: Text(
+                    visitorInfo.visitorName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: const Color(0xff212427),
                           fontSize: 16,
                           letterSpacing: 0.1,
                         ),
-              ),
+                  ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                      children: [
                         Row(
                           children: [
                             Container(
@@ -1388,11 +1388,11 @@ class VisitorInfoSection extends StatelessWidget {
                               child: Icon(
                                 _getPurposeIcon(
                                     visitorInfo.purposeSubCategoryName ??
-                        visitorInfo.purposeCategoryName),
+                                        visitorInfo.purposeCategoryName),
                                 color: const Color(0xffF44336),
                                 size: 15,
                               ),
-                  ),
+                            ),
                             const SizedBox(width: 14),
                             Flexible(
                               child: Text(
@@ -1411,29 +1411,29 @@ class VisitorInfoSection extends StatelessWidget {
                               ),
                             )
                           ],
-                  ),
-                ],
+                        ),
+                      ],
                     ),
-              ),
-            ),
-            Divider(
+                  ),
+                ),
+                Divider(
                   indent: 20,
                   endIndent: 20,
                   height: 16,
                   thickness: 1,
                   color: Colors.grey.shade200,
-            ),
+                ),
                 Container(
                   padding: const EdgeInsets.only(
                       bottom: 8.0, top: 6, left: 12, right: 12),
                   child: TimerActionSection(
-              visitorInfo: visitorInfo,
-              visitorLogId: visitorInfo.visitorLogId ?? 0,
-              onRetry: onRetry,
-              isLoading: isLoading,
+                    visitorInfo: visitorInfo,
+                    visitorLogId: visitorInfo.visitorLogId ?? 0,
+                    onRetry: onRetry,
+                    isLoading: isLoading,
                   ),
-            ),
-          ],
+                ),
+              ],
             ),
           ),
         ),

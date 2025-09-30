@@ -29,6 +29,20 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
     super.dispose();
   }
 
+  /// Helper method to format card number with "V " prefix
+  String _formatCardNumber(String cardNumber) {
+    // Remove any existing "V " prefix and whitespace
+    String cleanNumber = cardNumber.trim();
+    if (cleanNumber.startsWith('V ')) {
+      cleanNumber = cleanNumber.substring(2);
+    } else if (cleanNumber.startsWith('V')) {
+      cleanNumber = cleanNumber.substring(1);
+    }
+
+    // Add "V " prefix to the clean number
+    return 'V $cleanNumber';
+  }
+
   Future<void> _saveCardNumber() async {
     if (_cardNumberController.text.trim().isEmpty) {
       _showErrorToast('Please enter a card number');
@@ -40,14 +54,18 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
     });
 
     try {
+      final rawCardNumber = _cardNumberController.text.trim();
       final success = await _remoteDataSource.updateVisitorCardNumber(
         widget.visitorId,
-        _cardNumberController.text.trim(),
+        rawCardNumber,
       );
 
       if (success) {
-        // Call the callback with the new card number
-        widget.onCardAssigned(_cardNumberController.text.trim());
+        // Format the card number with "V " prefix for display
+        final formattedCardNumber = _formatCardNumber(rawCardNumber);
+
+        // Call the callback with the formatted card number
+        widget.onCardAssigned(formattedCardNumber);
 
         // Close the popup
         Navigator.of(context).pop();
