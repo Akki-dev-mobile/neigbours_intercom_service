@@ -1,6 +1,9 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:flutter/material.dart';
+
+// Export the dashboard loader
+export 'dashboard_loader.dart';
 import 'package:flutter/services.dart';
 import 'package:ionicons/ionicons.dart';
 
@@ -153,7 +156,7 @@ class CustomForm {
           ),
           TextFormField(
             readOnly: isReadOnly ?? false,
-            cursorColor: Colors.blue,
+            cursorColor: const Color(0xffF44336),
             // autovalidateMode: AutovalidateMode.onUserInteraction,
             focusNode: focusNode,
             onFieldSubmitted: onFieldSubmitted,
@@ -215,7 +218,7 @@ class CustomForm {
                 borderSide: BorderSide(
                   style: BorderStyle.solid,
                   width: 2,
-                  color: Colors.blue,
+                  color: const Color(0xffF44336),
                 ),
               ),
               prefixIcon: prefixIcon,
@@ -348,7 +351,7 @@ class CustomDropdown extends StatelessWidget {
             height: 5,
           ),
           DropdownButtonFormField<String>(
-            value: selectedItem ?? initialValue,
+            initialValue: selectedItem ?? initialValue,
             isExpanded: true,
             style: TextStyle(
               color: titleColor ?? Theme.of(context).colorScheme.onSurface,
@@ -383,7 +386,7 @@ class CustomDropdown extends StatelessWidget {
                 borderSide: const BorderSide(
                   style: BorderStyle.solid,
                   width: 2,
-                  color: Colors.blue,
+                  color: Color(0xffF44336),
                 ),
               ),
               disabledBorder: OutlineInputBorder(

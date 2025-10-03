@@ -137,7 +137,7 @@ class _CombinedInputFieldState extends State<CombinedInputField> {
                       borderRadius: BorderRadius.circular(15),
                       borderSide: BorderSide(
                         style: BorderStyle.solid,
-                        color: Colors.blue,
+                        color: const Color(0xffF44336),
                       ),
                     ),
                   ),
